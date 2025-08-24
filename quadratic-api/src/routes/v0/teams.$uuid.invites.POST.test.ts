@@ -3,19 +3,19 @@ jest.mock('auth0', () =>
   auth0Mock([
     {
       user_id: 'userOwner',
-      email: 'userOwner@test.com',
+      email: 'userowner@test.com',
     },
     {
       user_id: 'userEditor',
-      email: 'userEditor@test.com',
+      email: 'usereditor@test.com',
     },
     {
       user_id: 'userViewer',
-      email: 'userViewer@test.com',
+      email: 'userviewer@test.com',
     },
     {
       user_id: 'userNoRole',
-      email: 'userNoRole@test.com',
+      email: 'usernorole@test.com',
     },
     {
       user_id: 'duplicate_emails_user_1',
@@ -27,7 +27,7 @@ jest.mock('auth0', () =>
     },
     {
       user_id: 'userNotYetInDb',
-      email: 'userNotYetInDb@test.com',
+      email: 'usernotyetindb@test.com',
     },
   ])
 );
@@ -115,16 +115,16 @@ describe('POST /v0/teams/:uuid/invites', () => {
       await invite({ email: 'somebody@test.com', role: 'EDITOR' }, 'userEditor').expect(201).expect(expectInvite);
     });
     it('adds a user to the team if you have permission', async () => {
-      await invite({ email: 'userNoRole@test.com', role: 'EDITOR' }, 'userOwner').expect(200).expect(expectUser);
+      await invite({ email: 'usernorole@test.com', role: 'EDITOR' }, 'userOwner').expect(200).expect(expectUser);
     });
   });
 
   describe('inviting people already associated with the team', () => {
     it('rejects inviting yourself', async () => {
-      await invite({ email: 'userOwner@test.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
+      await invite({ email: 'userowner@test.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
     it('rejects inviting another existing user', async () => {
-      await invite({ email: 'userEditor@test.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
+      await invite({ email: 'usereditor@test.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
     it('rejects inviting an email associated with an existing invite', async () => {
       await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
@@ -138,13 +138,13 @@ describe('POST /v0/teams/:uuid/invites', () => {
 
   describe('inviting people who already have a Quadratic account', () => {
     it('creates an invite for a user who exists in auth0 but not yet our database', async () => {
-      await invite({ email: 'userNotYetInDb@test.com', role: 'VIEWER' }, 'userOwner').expect(201).expect(expectInvite);
+      await invite({ email: 'usernotyetindb@test.com', role: 'VIEWER' }, 'userOwner').expect(201).expect(expectInvite);
     });
     it('adds a user to the file', async () => {
-      await invite({ email: 'userNoRole@test.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+      await invite({ email: 'usernorole@test.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
     });
     it('rejects for a user in auth0 without an ID', async () => {
-      await invite({ email: 'userNoRole@test.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+      await invite({ email: 'usernorole@test.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
     });
   });
 

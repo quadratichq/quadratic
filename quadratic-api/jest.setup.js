@@ -8,10 +8,11 @@ jest.mock('./src/middleware/validateAccessToken', () => {
       // expected format is `Bearer ValidToken {user.sub} {user.email}`
       if (req.headers.authorization?.substring(0, 17) === 'Bearer ValidToken') {
         const sub_email = req.headers.authorization?.substring(18); // Extract user.sub from the Authorization header
-        const [sub, email] = sub_email.split(' ');
+        const [sub, emailStr] = sub_email.split(' ');
+        const email = (emailStr ? emailStr : `${sub}@test.com`).toLowerCase();
         req.auth = {
           sub,
-          email: email ? email : `${sub}@test.com`,
+          email,
         };
         return next();
       } else {

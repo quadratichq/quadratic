@@ -47,7 +47,6 @@ const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
 
 export type SubmitAIAnalystPromptArgs = {
-  chatId?: string;
   messageSource: string;
   content: Content;
   context: Context;
@@ -122,7 +121,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ chatId: promptChatId, messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
+      async ({ messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -141,7 +140,7 @@ export function useSubmitAIAnalystPrompt() {
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
-            id: promptChatId ?? v4(),
+            id: v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -151,7 +150,7 @@ export function useSubmitAIAnalystPrompt() {
         else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: promptChatId ?? v4(),
+              id: v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -247,7 +246,7 @@ export function useSubmitAIAnalystPrompt() {
         let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
-          chatId = prev.id ? prev.id : (promptChatId ?? v4());
+          chatId = prev.id ? prev.id : v4();
           return {
             ...prev,
             id: chatId,

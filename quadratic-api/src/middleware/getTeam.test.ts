@@ -3,11 +3,11 @@ jest.mock('auth0', () =>
   auth0Mock([
     {
       user_id: 'userOwner',
-      email: 'userOwner@example.com',
+      email: 'userowner@example.com',
     },
     {
       user_id: 'userNoTeam',
-      email: 'userNoTeam@example.com',
+      email: 'usernoteam@example.com',
     },
   ])
 );

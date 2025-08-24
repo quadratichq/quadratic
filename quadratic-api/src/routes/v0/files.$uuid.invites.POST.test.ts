@@ -11,7 +11,7 @@ jest.mock('auth0', () =>
     },
     {
       user_id: 'userViewer',
-      email: 'userViewer@example.com',
+      email: 'userviewer@example.com',
     },
     {
       user_id: 'userNoRole',
