@@ -64,8 +64,9 @@ const insertColumnRight: ActionSpec<void> = {
   isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated && sheets.sheet.cursor.canInsertColumn(),
   Icon: AddColumnRightIcon,
   run: () => {
-    pixiAppSettings.setContextMenu?.({});
     const columnsSelected = getColumnsSelected();
+    console.log(`insert column right: column: ${sheets.sheet.cursor.position.x + columnsSelected}, right: false`);
+    pixiAppSettings.setContextMenu?.({});
     quadraticCore.insertColumns(
       sheets.current,
       sheets.sheet.cursor.position.x + columnsSelected,
