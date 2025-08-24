@@ -493,6 +493,28 @@ export const MODELS_CONFIGURATION: {
     min_p: 0,
     repetition_penalty: 1.05,
   },
+  'baseten:deepseek-ai/DeepSeek-V3.1': {
+    model: 'deepseek-ai/DeepSeek-V3.1',
+    displayName: 'DeepSeek V3.1',
+    temperature: 0.2,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.5,
+    rate_per_million_output_tokens: 1.5,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
   'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
     model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
@@ -508,6 +530,28 @@ export const MODELS_CONFIGURATION: {
     imageSupport: false,
     rate_per_million_input_tokens: 0.45,
     rate_per_million_output_tokens: 1.8,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'fireworks:accounts/fireworks/models/deepseek-v3p1': {
+    model: 'accounts/fireworks/models/deepseek-v3p1',
+    displayName: 'DeepSeek V3.1',
+    temperature: 0.2,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.56,
+    rate_per_million_output_tokens: 1.68,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
     // Sampling parameters
