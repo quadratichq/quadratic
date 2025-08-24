@@ -1,5 +1,6 @@
 //! Used to draw autocomplete box.
 
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
@@ -14,6 +15,22 @@ export class BoxCells extends Graphics {
   private verticalDelete = false;
   private deleteRectangles?: Rectangle[];
   dirty = false;
+
+  constructor() {
+    super();
+    events.on('setDirty', this.setDirty);
+  }
+
+  destroy() {
+    super.destroy();
+    events.off('setDirty', this.setDirty);
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.boxCells) {
+      this.dirty = true;
+    }
+  };
 
   /**
    * @param rectangle in grid coordinates

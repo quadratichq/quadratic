@@ -2,10 +2,12 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { events } from '@/app/events/events';
 import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
@@ -59,7 +61,7 @@ export class SheetCursor {
 
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const heading = pixiApp.headings.headingSize;
+      const heading = content.headings.headingSize;
       return { x: heading.width, y: heading.height, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
@@ -80,7 +82,7 @@ export class SheetCursor {
   load(selectionString: string): void {
     this.jsSelection.load(selectionString);
     multiplayer.sendSelection(this.save());
-    pixiApp.cursor.dirty = true;
+    events.emit('setDirty', { cursor: true });
   }
 
   loadFromSelection(jsSelection: JsSelection, skipMultiplayer = false) {
@@ -89,7 +91,7 @@ export class SheetCursor {
     if (!skipMultiplayer) {
       multiplayer.sendSelection(this.save());
     }
-    pixiApp.cursor.dirty = true;
+    events.emit('setDirty', { cursor: true });
   }
 
   updatePosition(ensureVisible: boolean | JsCoordinate = true) {
@@ -411,7 +413,7 @@ export class SheetCursor {
   }
 
   private selectedTableNamesFromTableSelection(): string[] {
-    const cache = pixiApp.cellsSheet().tables.dataTablesCache;
+    const cache = this.sheet.dataTablesCache;
     if (!cache) return [];
     return this.jsSelection.getSelectedTableNames(this.sheets.current, cache, this.sheets.jsA1Context) as string[];
   }

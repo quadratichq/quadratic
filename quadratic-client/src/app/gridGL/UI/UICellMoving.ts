@@ -1,3 +1,4 @@
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -15,7 +16,20 @@ export class UICellMoving extends Container {
     super();
     this.graphics = this.addChild(new Graphics());
     this.visible = false;
+
+    events.on('setDirty', this.setDirty);
   }
+
+  destroy() {
+    super.destroy();
+    events.off('setDirty', this.setDirty);
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.cellMoving) {
+      this.dirty = true;
+    }
+  };
 
   // determines whether the move is legal (not sure we want this feature)
   private borderColor() {

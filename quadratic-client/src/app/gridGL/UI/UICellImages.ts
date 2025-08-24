@@ -1,4 +1,4 @@
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
@@ -28,7 +28,21 @@ export class UICellImages extends Container {
     this.resizing = this.addChild(new Graphics());
     events.on('changeSheet', this.changeSheet);
     events.on('updateImage', this.checkImageChange);
+    events.on('setDirty', this.setDirtyHandler);
   }
+
+  destroy() {
+    events.off('changeSheet', this.changeSheet);
+    events.off('updateImage', this.checkImageChange);
+    events.off('setDirty', this.setDirtyHandler);
+    super.destroy();
+  }
+
+  private setDirtyHandler = (dirty: DirtyObject) => {
+    if (dirty.cellImages) {
+      this.dirtyResizing = true;
+    }
+  };
 
   private checkImageChange = (image: CoreClientImage) => {
     if (
@@ -43,11 +57,6 @@ export class UICellImages extends Container {
 
   setDirty() {
     this.dirtyResizing = true;
-  }
-
-  destroy() {
-    events.off('changeSheet', this.changeSheet);
-    super.destroy();
   }
 
   private changeSheet = () => {

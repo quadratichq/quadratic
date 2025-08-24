@@ -1,8 +1,10 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
 import { hasPermissionToEditFile } from '@/app/actions';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
@@ -44,11 +46,19 @@ export class Cursor extends Container {
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
     this.cursorRectangle = new Rectangle();
+
+    events.on('setDirty', this.setDirty);
   }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.cursor) {
+      this.dirty = true;
+    }
+  };
 
   // redraws corners if there is an error
   private drawError(cell: JsCoordinate) {
-    const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
+    const error = content.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {
         const triangle = this.addChild(new Sprite(error.triangle.texture));
@@ -92,7 +102,7 @@ export class Cursor extends Container {
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
 
-    pixiApp.hoverTableColumnsSelection.clear();
+    content.hoverTableColumnsSelection.clear();
 
     // it so we can autocomplete within tables, then we should change this logic.
     // draw cursor but leave room for cursor indicator if needed
@@ -129,7 +139,7 @@ export class Cursor extends Container {
     if (!tableName) {
       let g = this.graphics;
       if (tableColumn) {
-        g = pixiApp.hoverTableColumnsSelection;
+        g = content.hoverTableColumnsSelection;
       }
       g.lineStyle({
         width: CURSOR_THICKNESS,

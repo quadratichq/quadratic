@@ -10,6 +10,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
@@ -107,7 +108,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           ...prev,
           showCodeEditor: false,
         }));
-        pixiApp.cellHighlights.clear();
+        content.cellHighlights.clear();
         multiplayer.sendEndCellEdit();
       } else {
         pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {

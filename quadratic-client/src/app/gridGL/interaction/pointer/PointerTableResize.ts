@@ -2,6 +2,7 @@ import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
@@ -49,7 +50,7 @@ export class PointerTableResize {
       this.selectionBottom = undefined;
       this.dragDirection = undefined;
       this.active = false;
-      pixiApp.boxCells.reset();
+      content.boxCells.reset();
       sheets.sheet.cursor.changeBoxCells(false);
       this.setCursorDirection(undefined);
       this.tableBounds = undefined;
@@ -268,7 +269,7 @@ export class PointerTableResize {
         y: boxCellsRectangle.y + boxCellsRectangle.height,
       };
 
-      pixiApp.boxCells.populate({
+      content.boxCells.populate({
         gridRectangle: boxCellsRectangle,
         horizontalDelete: this.stateHorizontal === 'shrink',
         verticalDelete: this.stateVertical === 'shrink',

@@ -140,9 +140,7 @@ export class CellsSheets extends Container<CellsSheet> {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
-      pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.headings.dirty = true;
+      events.emit('setDirty', { gridLines: true, cursor: true, headings: true });
     }
   }
 

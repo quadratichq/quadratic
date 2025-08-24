@@ -11,24 +11,22 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
+import {
+  SheetContentCache,
+  SheetDataTablesCache,
+  type SheetOffsets,
+  SheetOffsetsWasm,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
 export class Sheet {
   sheets: Sheets;
-  id: string;
+
+  private info: SheetInfo;
 
   cursor: SheetCursor;
-
-  name: string;
-  order: string;
-  color?: string;
-
   offsets: SheetOffsets;
-  bounds: GridBounds;
-  boundsWithoutFormatting: GridBounds;
-  formatBounds: GridBounds;
 
   // tracks which Grid lines should not be drawn b/c of overflow
   gridOverflowLines: GridOverflowLines;
@@ -39,28 +37,53 @@ export class Sheet {
   clamp: Rectangle;
 
   private _contentCache: SheetContentCache;
+  private _tablesCache: SheetDataTablesCache;
 
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
+    this.info = info;
     this.sheets = sheets;
-    this.id = info.sheet_id;
-    this.name = info.name;
-    this.order = info.order;
-    this.color = info.color ?? undefined;
     this.offsets = testSkipOffsetsLoad ? ({} as SheetOffsets) : SheetOffsetsWasm.load(info.offsets);
     this.cursor = new SheetCursor(this);
-    this.bounds = info.bounds;
-    this.boundsWithoutFormatting = info.bounds_without_formatting;
-    this.formatBounds = info.format_bounds;
     this.gridOverflowLines = new GridOverflowLines(this);
 
     // this will be imported via SheetInfo in the future
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
 
     this._contentCache = SheetContentCache.new_empty();
+    this._tablesCache = SheetDataTablesCache.new_empty();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
     events.on('contentCache', this.updateContentCache);
+    events.on('dataTablesCache', this.updateTablesCache);
+  }
+
+  get id(): string {
+    return this.info.sheet_id;
+  }
+
+  get name(): string {
+    return this.info.name;
+  }
+
+  get order(): string {
+    return this.info.order;
+  }
+
+  get color(): string | undefined {
+    return this.info.color ?? undefined;
+  }
+
+  get bounds(): GridBounds {
+    return this.info.bounds;
+  }
+
+  get boundsWithoutFormatting(): GridBounds {
+    return this.info.bounds_without_formatting;
+  }
+
+  get formatBounds(): GridBounds {
+    return this.info.format_bounds;
   }
 
   destroy() {
@@ -74,10 +97,21 @@ export class Sheet {
     return this._contentCache;
   }
 
+  get dataTablesCache(): SheetDataTablesCache {
+    return this._tablesCache;
+  }
+
   private updateContentCache = (sheetId: string, contentCache: SheetContentCache) => {
     if (sheetId === this.id) {
       this.contentCache.free();
       this._contentCache = contentCache;
+    }
+  };
+
+  private updateTablesCache = (sheetId: string, tablesCache: SheetDataTablesCache) => {
+    if (sheetId === this.id) {
+      this._tablesCache.free();
+      this._tablesCache = tablesCache;
     }
   };
 
@@ -99,8 +133,8 @@ export class Sheet {
 
   private updateBounds = (sheetsBounds: SheetBounds) => {
     if (this.id === sheetsBounds.sheet_id) {
-      this.bounds = sheetsBounds.bounds;
-      this.boundsWithoutFormatting = sheetsBounds.bounds_without_formatting;
+      this.info.bounds = sheetsBounds.bounds;
+      this.info.bounds_without_formatting = sheetsBounds.bounds_without_formatting;
     }
   };
 
@@ -110,14 +144,21 @@ export class Sheet {
   setName = (name: string): void => {
     if (name !== this.name) {
       quadraticCore.setSheetName(this.id, name);
-      this.name = name;
+      this.info.name = name;
+    }
+  };
+
+  setColor = (color: string | undefined): void => {
+    if (color !== this.color) {
+      quadraticCore.setSheetColor(this.id, color);
+      this.info.color = color ?? null;
     }
   };
 
   updateSheetInfo = (info: SheetInfo) => {
-    this.name = info.name;
-    this.order = info.order;
-    this.color = info.color ?? undefined;
+    this.info.name = info.name;
+    this.info.order = info.order;
+    this.info.color = info.color ?? null;
     this.offsets.free();
     this.offsets = SheetOffsetsWasm.load(info.offsets);
   };

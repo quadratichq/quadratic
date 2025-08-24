@@ -1,8 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
@@ -30,7 +32,7 @@ export class PointerImages {
 
   // Finds a line that is being hovered.
   private findImage(point: Point): { image: CellsImage; side?: ResizeSide } | undefined {
-    const cellsSheet = pixiApp.cellsSheets.current;
+    const cellsSheet = content.cellsSheets.current;
     if (!cellsSheet) return;
     const images = cellsSheet.getCellsImages();
     if (!images?.length) return;
@@ -91,22 +93,20 @@ export class PointerImages {
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
       this.resizing.end = { column: end.column, row: end.row };
-      pixiApp.cellImages.setDirty();
-      pixiApp
-        .cellsSheet()
-        .tables.resizeTable(
-          this.resizing.image.column,
-          this.resizing.image.row,
-          screenRectangle.width,
-          screenRectangle.height
-        );
+      events.emit('setDirty', { cellImages: true });
+      content.cellsSheets.current?.tables.resizeTable(
+        this.resizing.image.column,
+        this.resizing.image.row,
+        screenRectangle.width,
+        screenRectangle.height
+      );
       pixiApp.setViewportDirty();
       return true;
     }
 
     const search = this.findImage(point);
     if (search?.side) {
-      pixiApp.cellImages.activate(search.image);
+      content.cellImages.activate(search.image);
       if (search.side === 'bottom') {
         this.cursor = 'row-resize';
       } else if (search.side === 'right') {
@@ -116,7 +116,7 @@ export class PointerImages {
       }
       return true;
     }
-    pixiApp.cellImages.activate();
+    content.cellImages.activate();
     this.cursor = undefined;
     return false;
   }
@@ -139,7 +139,7 @@ export class PointerImages {
         originalHeight: table.tableBounds.height,
         end: { column: table.codeCell.x + table.codeCell.w - 1, row: table.codeCell.y + table.codeCell.h - 1 },
       };
-      pixiApp.cellImages.activate(search.image);
+      content.cellImages.activate(search.image);
       return true;
     }
     return false;
@@ -176,7 +176,7 @@ export class PointerImages {
       const originalHeight = this.resizing.originalHeight;
       this.resizing.table.resize(originalWidth, originalHeight);
       this.resizing.image.temporaryResize(originalWidth, originalHeight);
-      pixiApp.cellImages.setDirty();
+      events.emit('setDirty', { cellImages: true });
       pixiApp
         .cellsSheet()
         .tables.resizeTable(this.resizing.image.column, this.resizing.image.row, originalWidth, originalHeight);

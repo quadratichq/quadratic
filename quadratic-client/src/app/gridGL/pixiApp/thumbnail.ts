@@ -2,6 +2,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { apiClient } from '@/shared/api/apiClient';
@@ -72,10 +73,10 @@ class Thumbnail {
     const sheetId = sheets.getFirst().id;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     await pixiApp.prepareForCopying({ sheetId, cull: rectangle, gridLines: true, thumbnail: true });
-    pixiApp.gridLines.update(rectangle, undefined, true);
-    this.renderer.render(pixiApp.viewportContents);
+    content.gridLines.update(rectangle, undefined, true);
+    this.renderer.render(content);
     pixiApp.cleanUpAfterCopying();
-    pixiApp.gridLines.update(undefined, undefined, true);
+    content.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
       this.renderer.view.toBlob?.((blob) => resolve(blob));
     });

@@ -1,6 +1,7 @@
 import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type {
   A1Selection,
@@ -133,10 +134,7 @@ export class Sheets {
     if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { headings: true, gridLines: true, cursor: true, multiplayerCursor: true });
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -147,10 +145,7 @@ export class Sheets {
     offsets.forEach(({ column, row, size }) => {
       sheet.updateSheetOffsets(column, row, size);
     });
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { headings: true, gridLines: true, cursor: true, multiplayerCursor: true });
     events.emit('sheetOffsetsUpdated', sheetId);
   };
 
@@ -218,12 +213,15 @@ export class Sheets {
     if (value !== this._current && this.sheets.find((sheet) => sheet.id === value)) {
       this._current = value;
       pixiApp.viewport.dirty = true;
-      pixiApp.gridLines.dirty = true;
-      pixiApp.headings.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.multiplayerCursor.dirty = true;
-      pixiApp.boxCells.reset();
-      pixiApp.cellsSheets.show(value);
+      events.emit('setDirty', {
+        headings: true,
+        gridLines: true,
+        cursor: true,
+        multiplayerCursor: true,
+        boxCells: true,
+      });
+
+      content.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
     }
@@ -395,7 +393,7 @@ export class Sheets {
   getVisibleRect = (): Rect => {
     const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
     const scale = pixiApp.viewport.scale.x;
-    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
+    let { width: leftHeadingWidth, height: topHeadingHeight } = content.headings.headingSize;
     leftHeadingWidth /= scale;
     topHeadingHeight /= scale;
     const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);

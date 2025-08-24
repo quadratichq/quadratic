@@ -1,6 +1,7 @@
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
@@ -65,7 +66,20 @@ export class GridHeadings extends Container {
     this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
     this.gridHeadingsRows = new GridHeadingRows();
+
+    events.on('setDirty', this.setDirty);
   }
+
+  destroy() {
+    super.destroy();
+    events.off('setDirty', this.setDirty);
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.headings) {
+      this.dirty = true;
+    }
+  };
 
   // calculates static character size (used in overlap calculations)
   private calculateCharacterSize() {
@@ -197,7 +211,7 @@ export class GridHeadings extends Container {
         if (
           scale < 0.2 || // this fixes a bug where multi letter labels were not showing when zoomed out
           currentWidth > charactersWidth ||
-          pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
+          content.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
           // don't show numbers if it overlaps with the selected value (eg, hides B if selected A overlaps it)
           let xPosition = x + currentWidth / 2;

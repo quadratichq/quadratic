@@ -2,6 +2,7 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -46,9 +47,9 @@ export const TableRename = () => {
 
   const handleSave = useCallback(
     (value: string) => {
-      if (pixiApp.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
+      if (content.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
         renameTable({
-          sheetId: pixiApp.cellsSheets.current.sheetId,
+          sheetId: content.cellsSheets.current.sheetId,
           x: contextMenu.table.x,
           y: contextMenu.table.y,
           oldName: contextMenu.table.name,

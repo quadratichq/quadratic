@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
@@ -16,7 +17,7 @@ const ANIMATION_EASE = 'easeInOutSine';
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
-  const top = viewport.top + pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+  const top = viewport.top + content.headings.headingSize.height / pixiApp.viewport.scale.y;
   const placement = sheets.sheet.offsets.getYPlacement(top);
 
   // if the top row is partially visible, then return the next row
@@ -29,7 +30,7 @@ export function getVisibleTopRow(): number {
 
 export function getVisibleLeftColumn(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
-  const left = viewport.left + pixiApp.headings.headingSize.width / pixiApp.viewport.scale.x;
+  const left = viewport.left + content.headings.headingSize.width / pixiApp.viewport.scale.x;
   const placement = sheets.sheet.offsets.getXPlacement(left);
 
   // if the left column is partially visible, then return the next column
@@ -41,7 +42,8 @@ export function getVisibleLeftColumn(): number {
 }
 
 export function isRowVisible(row: number): boolean {
-  const { viewport, headings } = pixiApp;
+  const { viewport } = pixiApp;
+  const { headings } = content;
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
@@ -56,7 +58,8 @@ export function isRowVisible(row: number): boolean {
 }
 
 export function isColumnVisible(column: number): boolean {
-  const { viewport, headings } = pixiApp;
+  const { viewport } = pixiApp;
+  const { headings } = content;
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
@@ -94,7 +97,8 @@ function getYToEnsureCursorIsNotUnderTableHeader(
 
 export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsCoordinate | undefined {
   // returns true if the rect is visible in the viewport
-  const { viewport, headings } = pixiApp;
+  const { viewport } = pixiApp;
+  const { headings } = content;
   const sheet = sheets.sheet;
 
   const topLeftCell = sheet.getCellOffsets(min.x, min.y);
@@ -123,7 +127,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   }
 
   // calculate the new rowWidth when at new Y location
-  const newHeadingSize = pixiApp.headings.getFutureSizes(y);
+  const newHeadingSize = content.headings.getFutureSizes(y);
   const headingWidth = newHeadingSize.unscaledWidth;
 
   if (bottomRightCell.right > viewport.right) {
@@ -220,7 +224,7 @@ export function moveViewport(options: { center?: JsCoordinate; topLeft?: JsCoord
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
   const zoom = pixiApp.viewport.scale.x;
-  const { width, height } = pixiApp.headings.headingSize;
+  const { width, height } = content.headings.headingSize;
   const adjustX = width / zoom;
   const adjustY = height / zoom;
 
@@ -286,7 +290,7 @@ export function calculatePageUpDown(
 
   // calculate the viewport location, clamping it ot the top of the viewport
   // (taking into account the headings)
-  const gridHeadings = pixiApp.headings.headingSize.unscaledHeight;
+  const gridHeadings = content.headings.headingSize.unscaledHeight;
 
   const halfScreenHeight = viewport.screenHeightInWorldPixels / 2;
   let centerY = Math.min(gridHeadings - halfScreenHeight, -newCursorY + distanceTopToCursor);
