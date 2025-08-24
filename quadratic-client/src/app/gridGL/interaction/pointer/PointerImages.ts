@@ -91,7 +91,7 @@ export class PointerImages {
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
       this.resizing.end = { column: end.column, row: end.row };
-      pixiApp.cellImages.setDirty();
+      pixiApp.cellImages?.setDirty();
       pixiApp
         .cellsSheet()
         .tables.resizeTable(
@@ -106,7 +106,7 @@ export class PointerImages {
 
     const search = this.findImage(point);
     if (search?.side) {
-      pixiApp.cellImages.activate(search.image);
+      pixiApp.cellImages?.activate(search.image);
       if (search.side === 'bottom') {
         this.cursor = 'row-resize';
       } else if (search.side === 'right') {
@@ -116,7 +116,7 @@ export class PointerImages {
       }
       return true;
     }
-    pixiApp.cellImages.activate();
+    pixiApp.cellImages?.activate();
     this.cursor = undefined;
     return false;
   }
@@ -139,7 +139,7 @@ export class PointerImages {
         originalHeight: table.tableBounds.height,
         end: { column: table.codeCell.x + table.codeCell.w - 1, row: table.codeCell.y + table.codeCell.h - 1 },
       };
-      pixiApp.cellImages.activate(search.image);
+      pixiApp.cellImages?.activate(search.image);
       return true;
     }
     return false;
@@ -176,7 +176,7 @@ export class PointerImages {
       const originalHeight = this.resizing.originalHeight;
       this.resizing.table.resize(originalWidth, originalHeight);
       this.resizing.image.temporaryResize(originalWidth, originalHeight);
-      pixiApp.cellImages.setDirty();
+      pixiApp.cellImages?.setDirty();
       pixiApp
         .cellsSheet()
         .tables.resizeTable(this.resizing.image.column, this.resizing.image.row, originalWidth, originalHeight);

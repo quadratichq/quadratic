@@ -70,7 +70,9 @@ export class PointerHeading {
   handleEscape(): boolean {
     if (this.movingColRows) {
       this.movingColRows = undefined;
-      pixiApp.cellMoving.dirty = true;
+      if (pixiApp.cellMoving) {
+        pixiApp.cellMoving.dirty = true;
+      }
       pixiApp.viewport.disableMouseEdges();
     } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
@@ -84,7 +86,7 @@ export class PointerHeading {
     } else {
       return false;
     }
-    pixiApp.cursor.dirty = true;
+    pixiApp.setCursorDirty({ cursor: true });
     pixiApp.setViewportDirty();
     return true;
   }
@@ -151,7 +153,9 @@ export class PointerHeading {
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
       };
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
-      pixiApp.cellMoving.dirty = true;
+      if (pixiApp.cellMoving) {
+        pixiApp.cellMoving.dirty = true;
+      }
       this.cursor = 'grabbing';
     } else {
       if (intersects.corner) {
@@ -206,7 +210,9 @@ export class PointerHeading {
 
     // if the pointer is in a different column, we need to update the movingColRows
     this.movingColRows.place = isColumn ? current.column : current.row;
-    pixiApp.cellMoving.dirty = true;
+    if (pixiApp.cellMoving) {
+      pixiApp.cellMoving.dirty = true;
+    }
     return true;
   }
 
@@ -220,7 +226,7 @@ export class PointerHeading {
       return this.pointerMoveColRows(world, e);
     }
 
-    const { headings, gridLines, cursor } = pixiApp;
+    const { headings, gridLines } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
 
@@ -274,7 +280,7 @@ export class PointerHeading {
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, null, delta);
             gridLines.dirty = true;
-            cursor.dirty = true;
+            pixiApp.setCursorDirty({ cursor: true });
             headings.dirty = true;
             pixiApp.adjustHeadings({
               sheetId: sheets.current,
@@ -306,7 +312,7 @@ export class PointerHeading {
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.current, null, this.resizing.row, delta);
             gridLines.dirty = true;
-            cursor.dirty = true;
+            pixiApp.setCursorDirty({ cursor: true });
             headings.dirty = true;
             pixiApp.adjustHeadings({
               sheetId: sheets.current,
@@ -344,7 +350,9 @@ export class PointerHeading {
         }
       }
       this.movingColRows = undefined;
-      pixiApp.cellMoving.dirty = true;
+      if (pixiApp.cellMoving) {
+        pixiApp.cellMoving.dirty = true;
+      }
       pixiApp.viewport.disableMouseEdges();
     }
     return true;

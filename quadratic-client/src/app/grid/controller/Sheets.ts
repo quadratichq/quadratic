@@ -135,8 +135,7 @@ export class Sheets {
     this.updateSheetBar();
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    pixiApp.setCursorDirty();
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -149,8 +148,7 @@ export class Sheets {
     });
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    pixiApp.setCursorDirty();
     events.emit('sheetOffsetsUpdated', sheetId);
   };
 
@@ -220,9 +218,8 @@ export class Sheets {
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;
       pixiApp.headings.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.multiplayerCursor.dirty = true;
-      pixiApp.boxCells.reset();
+      pixiApp.setCursorDirty();
+      pixiApp.boxCells?.reset();
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();

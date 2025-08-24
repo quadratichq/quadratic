@@ -65,7 +65,10 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed, codeCell.language === 'Python');
+        pixiApp.cellHighlights?.fromCellsAccessed(
+          unsavedChanges ? null : cellsAccessed,
+          codeCell.language === 'Python'
+        );
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
@@ -75,7 +78,7 @@ export const useEditorCellHighlights = (
           return;
         }
 
-        pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed, false);
+        pixiApp.cellHighlights?.fromCellsAccessed(parsed.cells_accessed, false);
 
         parsed.spans.forEach((span, index) => {
           const cellRef = parsed.cells_accessed[index];
@@ -105,7 +108,7 @@ export const useEditorCellHighlights = (
           const editorCursorPosition = editorInst.getPosition();
 
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-            pixiApp.cellHighlights.setSelectedCell(index);
+            pixiApp.cellHighlights?.setSelectedCell(index);
           }
         });
 

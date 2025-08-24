@@ -33,8 +33,6 @@ export class Tables extends Container<Table> {
   // cache to speed up lookups
   private tablesCache: TablesCache;
 
-  dataTablesCache?: SheetDataTablesCache;
-
   // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
 
@@ -223,7 +221,7 @@ export class Tables extends Container<Table> {
     }
 
     this.cursorPosition(true);
-    pixiApp.singleCellOutlines.setDirty();
+    pixiApp.singleCellOutlines?.setDirty();
     pixiApp.setViewportDirty();
   };
 
@@ -551,7 +549,7 @@ export class Tables extends Container<Table> {
       this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
       if (sheetId === sheets.current) {
-        pixiApp.singleCellOutlines.setDirty();
+        pixiApp.singleCellOutlines?.setDirty();
       }
     }
   };

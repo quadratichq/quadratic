@@ -293,7 +293,7 @@ export class Multiplayer {
   private clearAllUsers() {
     if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] Clearing all users.');
     this.users.clear();
-    pixiApp.multiplayerCursor.dirty = true;
+    pixiApp.setCursorDirty({ multiplayerCursor: true });
     events.emit('multiplayerUpdate', this.getUsers());
     events.emit('multiplayerChangeSheet');
     events.emit('multiplayerCursor');
@@ -326,7 +326,7 @@ export class Multiplayer {
         player.sheet_id = update.sheet_id;
         events.emit('multiplayerChangeSheet');
         if (player.sheet_id === sheets.current) {
-          pixiApp.multiplayerCursor.dirty = true;
+          pixiApp.setCursorDirty({ multiplayerCursor: true });
           events.emit('multiplayerCursor');
         }
       }
@@ -339,7 +339,7 @@ export class Multiplayer {
         player.parsedSelection.load(player.selection);
       }
       if (player.sheet_id === sheets.current) {
-        pixiApp.multiplayerCursor.dirty = true;
+        pixiApp.setCursorDirty({ multiplayerCursor: true });
       }
     }
 
@@ -353,7 +353,7 @@ export class Multiplayer {
         }
         events.emit('multiplayerCellEdit', update.cell_edit, player);
       }
-      pixiApp.multiplayerCursor.dirty = true;
+      pixiApp.setCursorDirty({ multiplayerCursor: true });
     }
 
     if (update.viewport) {
@@ -471,7 +471,7 @@ export class Multiplayer {
       this.users.delete(sessionId);
     });
     events.emit('multiplayerUpdate', this.getUsers());
-    pixiApp.multiplayerCursor.dirty = true;
+    pixiApp.setCursorDirty({ multiplayerCursor: true });
 
     await this.checkVersion(room.version);
   }

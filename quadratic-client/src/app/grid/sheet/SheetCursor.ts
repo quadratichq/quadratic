@@ -80,7 +80,7 @@ export class SheetCursor {
   load(selectionString: string): void {
     this.jsSelection.load(selectionString);
     multiplayer.sendSelection(this.save());
-    pixiApp.cursor.dirty = true;
+    pixiApp.setCursorDirty({ cursor: true });
   }
 
   loadFromSelection(jsSelection: JsSelection, skipMultiplayer = false) {
@@ -89,7 +89,7 @@ export class SheetCursor {
     if (!skipMultiplayer) {
       multiplayer.sendSelection(this.save());
     }
-    pixiApp.cursor.dirty = true;
+    pixiApp.setCursorDirty({ cursor: true });
   }
 
   updatePosition(ensureVisible: boolean | JsCoordinate = true) {

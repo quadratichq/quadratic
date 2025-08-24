@@ -1,8 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { aiViewAtom } from '@/app/atoms/gridSettingsAtom';
+import { AILightWeight } from '@/app/ui/menus/AIAnalyst/AILightWeight';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
 type ConvertToTableResponse = z.infer<(typeof aiToolsSpec)[AITool.ConvertToTable]['responseSchema']>;
@@ -10,6 +13,7 @@ type ConvertToTableResponse = z.infer<(typeof aiToolsSpec)[AITool.ConvertToTable
 export const ConvertToTable = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ConvertToTableResponse, ConvertToTableResponse>>();
+    const aiView = useRecoilValue(aiViewAtom);
 
     useEffect(() => {
       if (loading) {
@@ -41,16 +45,19 @@ export const ConvertToTable = memo(
 
     const { table_name, selection } = toolArgs.data;
     return (
-      <ToolCard
-        icon={icon}
-        label={
-          <span>
-            {label} <span className="text-muted-foreground">| {table_name}</span>
-          </span>
-        }
-        description={`Converting ${selection} to data table`}
-        className={className}
-      />
+      <>
+        <ToolCard
+          icon={icon}
+          label={
+            <span>
+              {label} <span className="text-muted-foreground">| {table_name}</span>
+            </span>
+          }
+          description={`Converting ${selection} to data table`}
+          className={className}
+        />
+        {aiView && <AILightWeight height={100} a1={table_name} />}
+      </>
     );
   }
 );

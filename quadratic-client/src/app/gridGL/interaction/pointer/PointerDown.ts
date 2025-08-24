@@ -121,7 +121,7 @@ export class PointerDown {
 
     if ((event.ctrlKey || event.metaKey) && cursor.contains(column, row)) {
       this.unselectDown = new Rectangle(column, row, 0, 0);
-      pixiApp.cursor.dirty = true;
+      pixiApp.setCursorDirty({ cursor: true });
       return;
     }
 
@@ -159,7 +159,7 @@ export class PointerDown {
       if (this.unselectDown.width < 0) this.unselectDown.width -= 1;
       if (this.unselectDown.height < 0) this.unselectDown.height -= 1;
 
-      pixiApp.cursor.dirty = true;
+      pixiApp.setCursorDirty({ cursor: true });
       return;
     }
 
@@ -213,7 +213,7 @@ export class PointerDown {
         this.unselectDown.bottom
       );
       this.unselectDown = undefined;
-      pixiApp.cursor.dirty = true;
+      pixiApp.setCursorDirty({ cursor: true });
       return;
     }
 

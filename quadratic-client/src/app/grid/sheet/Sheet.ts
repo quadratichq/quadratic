@@ -11,7 +11,12 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
+import {
+  SheetContentCache,
+  SheetDataTablesCache,
+  type SheetOffsets,
+  SheetOffsetsWasm,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
@@ -39,6 +44,7 @@ export class Sheet {
   clamp: Rectangle;
 
   private _contentCache: SheetContentCache;
+  tablesCache: SheetDataTablesCache;
 
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this.sheets = sheets;
@@ -57,6 +63,7 @@ export class Sheet {
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
 
     this._contentCache = SheetContentCache.new_empty();
+    this.tablesCache = SheetDataTablesCache.new_empty();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);

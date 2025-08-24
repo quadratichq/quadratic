@@ -36,7 +36,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
     e.preventDefault();
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    pixiApp.copy?.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboardEvent', error);
@@ -191,7 +191,7 @@ export const copyToClipboard = async () => {
   try {
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    pixiApp.copy?.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboard', error);

@@ -6,7 +6,7 @@ import {
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { aiViewAtom, presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
@@ -16,6 +16,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
+import { AIView } from '@/app/ui/menus/AIAnalyst/AIView';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
@@ -53,6 +54,7 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+  const aiView = useRecoilValue(aiViewAtom);
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function QuadraticUI() {
       {!presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
+        {!presentationMode && !isEmbed && !aiView && <Toolbar />}
 
         <div
           style={{
@@ -124,13 +126,18 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {canEditFile && isAuthenticated && <AIAnalyst />}
-          <FileDragDropWrapper>
-            <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
-          </FileDragDropWrapper>
-          <CodeEditor />
-          <ValidationPanel />
+          {canEditFile && isAuthenticated && !aiView && <AIAnalyst />}
+          {!aiView && (
+            <>
+              <FileDragDropWrapper>
+                <QuadraticGrid />
+                {!presentationMode && <SheetBar />}
+              </FileDragDropWrapper>
+              <CodeEditor />
+              <ValidationPanel />
+            </>
+          )}
+          {aiView && <AIView />}
         </div>
 
         {!presentationMode && !isEmbed && <BottomBar />}

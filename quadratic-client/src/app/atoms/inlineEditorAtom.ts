@@ -32,7 +32,7 @@ export const inlineEditorAtom = atom({
           inlineEditorMonaco.focus();
         }
         inlineEditorKeyboard.cursorMode = newValue.editMode ? CursorMode.Edit : CursorMode.Enter;
-        pixiApp.cursor.dirty = true;
+        pixiApp.setCursorDirty({ cursor: true });
       });
     },
   ],

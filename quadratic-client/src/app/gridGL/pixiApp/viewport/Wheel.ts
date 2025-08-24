@@ -123,17 +123,20 @@ export class Wheel extends Plugin {
 
   protected headingSize: { width: number; height: number } = { width: CELL_HEIGHT, height: CELL_HEIGHT };
 
+  private ensureElement: HTMLElement | null;
+
   /**
    * This is called by {@link Viewport.wheel}.
    */
-  constructor(parent: Viewport, options: IWheelOptions = {}) {
+  constructor(parent: Viewport, options: IWheelOptions = {}, ensureElement: HTMLElement | null = null) {
     super(parent);
+    this.ensureElement = ensureElement;
     this.options = Object.assign({}, DEFAULT_WHEEL_OPTIONS, options);
     this.zoomKeyIsPressed = false;
     this.horizontalScrollKeyIsPressed = false;
     this.currentlyZooming = false;
     if (this.options.keyToPress) {
-      this.handleKeyPresses(this.options.keyToPress);
+      this.handleKeyPresses();
     }
     window.addEventListener('blur', this.handleBlur);
     window.addEventListener('pointerup', this.checkAndEmitZoomEnd);
@@ -141,9 +144,26 @@ export class Wheel extends Plugin {
     window.addEventListener('pointerout', this.checkAndEmitZoomEnd);
     window.addEventListener('pointerleave', this.checkAndEmitZoomEnd);
 
-    events.on('headingSize', (width, height) => {
-      this.headingSize = { width, height };
-    });
+    window.addEventListener('wheel', this.wheelHandler, { passive: false });
+
+    events.on('headingSize', this.updateHeadingSize);
+  }
+
+  private updateHeadingSize = (width: number, height: number) => {
+    this.headingSize = { width, height };
+  };
+
+  destroy() {
+    super.destroy();
+    window.removeEventListener('blur', this.handleBlur);
+    window.removeEventListener('pointerup', this.checkAndEmitZoomEnd);
+    window.removeEventListener('pointerdown', this.checkAndEmitZoomEnd);
+    window.removeEventListener('pointerout', this.checkAndEmitZoomEnd);
+    window.removeEventListener('pointerleave', this.checkAndEmitZoomEnd);
+    window.removeEventListener('wheel', this.wheelHandler);
+    window.removeEventListener('keydown', this.keyDownHandler);
+    window.removeEventListener('keyup', this.keyUpHandler);
+    events.off('headingSize', this.updateHeadingSize);
   }
 
   private handleBlur = (): void => {
@@ -152,31 +172,32 @@ export class Wheel extends Plugin {
     this.checkAndEmitZoomEnd();
   };
 
+  private keyDownHandler = (e: KeyboardEvent) => {
+    if (this.isZoomKey(e.code)) {
+      this.zoomKeyIsPressed = true;
+    }
+    if (this.isHorizontalScrollKey(e.code)) {
+      this.horizontalScrollKeyIsPressed = true;
+    }
+    this.checkAndEmitZoomEnd();
+  };
+
+  private keyUpHandler = (e: KeyboardEvent) => {
+    if (this.isZoomKey(e.code)) {
+      this.zoomKeyIsPressed = false;
+    }
+    if (this.isHorizontalScrollKey(e.code)) {
+      this.horizontalScrollKeyIsPressed = false;
+    }
+    this.checkAndEmitZoomEnd();
+  };
+
   /**
    * Handles keypress events and set the keyIsPressed boolean accordingly
-   *
-   * @param {array} codes - key codes that can be used to trigger zoom event
    */
-  protected handleKeyPresses(codes: string[]): void {
-    window.addEventListener('keydown', (e) => {
-      if (this.isZoomKey(e.code)) {
-        this.zoomKeyIsPressed = true;
-      }
-      if (this.isHorizontalScrollKey(e.code)) {
-        this.horizontalScrollKeyIsPressed = true;
-      }
-      this.checkAndEmitZoomEnd();
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (this.isZoomKey(e.code)) {
-        this.zoomKeyIsPressed = false;
-      }
-      if (this.isHorizontalScrollKey(e.code)) {
-        this.horizontalScrollKeyIsPressed = false;
-      }
-      this.checkAndEmitZoomEnd();
-    });
+  protected handleKeyPresses(): void {
+    window.addEventListener('keydown', this.keyDownHandler);
+    window.addEventListener('keyup', this.keyUpHandler);
   }
 
   public down(): boolean {
@@ -196,7 +217,7 @@ export class Wheel extends Plugin {
   }
 
   protected isZoomKey(key: string): key is (typeof ZOOM_KEY)[number] {
-    return ZOOM_KEY.includes(key);
+    return (this.options.keyToPress ?? ZOOM_KEY).includes(key);
   }
 
   protected isHorizontalScrollKey(key: string): key is (typeof HORIZONTAL_SCROLL_KEY)[number] {
@@ -256,7 +277,7 @@ export class Wheel extends Plugin {
   }
 
   // adjust is used to move the event for IFrames
-  private getPointerPosition(e: WheelEvent, adjust?: { x: number; y: number }) {
+  private getPointerPosition(e: WheelEvent, adjust?: { x: number; y: number }): Point {
     const point = new Point();
     this.parent.options.events.mapPositionToPoint(
       point,
@@ -319,6 +340,22 @@ export class Wheel extends Plugin {
   }
 
   public wheel(e: WheelEvent, adjust?: { x: number; y: number }): boolean {
+    // on normal operation, skip the wheel handler as it's handled with a
+    // non-passive version in this object
+    if (adjust) {
+      return this.wheelSpecial(e, adjust);
+    }
+    return true;
+  }
+
+  public wheelHandler = (e: WheelEvent) => {
+    if (this.ensureElement && this.ensureElement !== e.target) {
+      return true;
+    }
+    return this.wheelSpecial(e);
+  };
+
+  public wheelSpecial = (e: WheelEvent, adjust?: { x: number; y: number }): boolean => {
     this.doubleCheckZoomKey(e);
 
     // If paused or both zoom and horizontal keys are pressed do nothing
@@ -422,8 +459,10 @@ export class Wheel extends Plugin {
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }
+    e.stopPropagation();
+    e.preventDefault();
     return !this.parent.options.passiveWheel;
-  }
+  };
 
   private getDecelerationFactor(value: number): number {
     // No deceleration needed if the value is less than or equal to 0

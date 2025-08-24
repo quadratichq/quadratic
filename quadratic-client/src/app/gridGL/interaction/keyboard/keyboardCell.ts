@@ -107,7 +107,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           ...prev,
           showCodeEditor: false,
         }));
-        pixiApp.cellHighlights.clear();
+        pixiApp.cellHighlights?.clear();
         multiplayer.sendEndCellEdit();
       } else {
         pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {

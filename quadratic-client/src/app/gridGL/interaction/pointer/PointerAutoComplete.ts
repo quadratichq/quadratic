@@ -36,7 +36,7 @@ export class PointerAutoComplete {
     if (!this.selection) return false;
 
     // handle dragging from the corner
-    if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
+    if (pixiApp.cursor && intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
       this.screenSelection = sheet.getScreenRectangleFromRectangle(this.selection);
@@ -56,7 +56,7 @@ export class PointerAutoComplete {
       this.selection = undefined;
       this.screenSelection = undefined;
       this.active = false;
-      pixiApp.boxCells.reset();
+      pixiApp.boxCells?.reset();
       sheets.sheet.cursor.changeBoxCells(false);
       pixiApp.viewport.disableMouseEdges();
       htmlCellsHandler.enable();
@@ -67,7 +67,7 @@ export class PointerAutoComplete {
     if (isMobile) return false;
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
-      if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
+      if (pixiApp.cursor && intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
         this.cursor = 'crosshair';
       } else {
         this.cursor = undefined;
@@ -151,7 +151,7 @@ export class PointerAutoComplete {
           boxCellsRectangle.width = column + 1 - selection.x;
         }
 
-        pixiApp.boxCells.populate({
+        pixiApp.boxCells?.populate({
           gridRectangle: boxCellsRectangle,
           horizontalDelete: this.stateHorizontal === 'shrink',
           verticalDelete: this.stateVertical === 'shrink',

@@ -72,7 +72,7 @@ const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
-  const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+  const tableCodeCell = sheets.getById(sheetId)?.tables.getTableInPos(x, y);
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;

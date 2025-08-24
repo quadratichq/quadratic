@@ -425,7 +425,7 @@ class InlineEditorKeyboard {
     if (!location) return;
 
     inlineEditorHandler.cursorIsMoving = false;
-    pixiApp.cellHighlights.clearSelectedCell();
+    pixiApp.cellHighlights?.clearSelectedCell();
     const editingSheet = sheets.getById(location.sheetId);
     if (!editingSheet) {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');

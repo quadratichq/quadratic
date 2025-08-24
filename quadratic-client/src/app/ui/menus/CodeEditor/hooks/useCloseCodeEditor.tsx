@@ -17,7 +17,7 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
           set(codeEditorShowSaveChangesAlertAtom, true);
         } else {
           set(codeEditorShowCodeEditorAtom, false);
-          pixiApp.cellHighlights.clear();
+          pixiApp.cellHighlights?.clear();
           multiplayer.sendEndCellEdit();
           editorInst?.dispose();
         }

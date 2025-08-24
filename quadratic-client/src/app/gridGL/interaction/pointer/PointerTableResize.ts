@@ -49,7 +49,7 @@ export class PointerTableResize {
       this.selectionBottom = undefined;
       this.dragDirection = undefined;
       this.active = false;
-      pixiApp.boxCells.reset();
+      pixiApp.boxCells?.reset();
       sheets.sheet.cursor.changeBoxCells(false);
       this.setCursorDirection(undefined);
       this.tableBounds = undefined;
@@ -268,7 +268,7 @@ export class PointerTableResize {
         y: boxCellsRectangle.y + boxCellsRectangle.height,
       };
 
-      pixiApp.boxCells.populate({
+      pixiApp.boxCells?.populate({
         gridRectangle: boxCellsRectangle,
         horizontalDelete: this.stateHorizontal === 'shrink',
         verticalDelete: this.stateVertical === 'shrink',

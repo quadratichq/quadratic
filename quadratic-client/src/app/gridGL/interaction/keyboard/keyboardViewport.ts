@@ -69,8 +69,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   // Close overlay
   if (matchShortcut(Action.CloseOverlay, event)) {
     // clear copy range if it is showing
-    if (pixiApp.copy.isShowing()) {
-      pixiApp.copy.clearCopyRanges();
+    if (pixiApp.copy?.isShowing()) {
+      pixiApp.copy?.clearCopyRanges();
       return true;
     }
 
@@ -91,7 +91,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
       });
       return true;
     }
-    return pointer.handleEscape();
+    return pointer?.handleEscape() ?? false;
   }
 
   // Show go to menu

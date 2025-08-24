@@ -53,7 +53,6 @@ export class GridLines extends Graphics {
 
     if (!pixiAppSettings.showGridLines) {
       this.visible = false;
-      pixiApp.setViewportDirty();
       return;
     }
 

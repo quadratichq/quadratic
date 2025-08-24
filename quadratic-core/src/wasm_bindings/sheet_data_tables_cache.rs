@@ -19,6 +19,14 @@ impl SheetDataTablesCache {
             .unwrap_or_default()
     }
 
+    #[wasm_bindgen(js_name = "new_empty")]
+    pub fn new_empty() -> Self {
+        SheetDataTablesCache {
+            single_cell_tables: Default::default(),
+            multi_cell_tables: Default::default(),
+        }
+    }
+
     /// Returns what table is the table Pos at the given position.
     #[wasm_bindgen(js_name = "getTableInPos")]
     pub fn table_in_pos(&self, x: i32, y: i32) -> Option<Pos> {

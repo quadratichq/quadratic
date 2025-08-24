@@ -420,7 +420,7 @@ class InlineEditorHandler {
       height: this.height,
     }));
 
-    pixiApp.cursor.dirty = true;
+    pixiApp.setCursorDirty({ cursor: true });
   };
 
   // Toggle between normal editor and formula editor.

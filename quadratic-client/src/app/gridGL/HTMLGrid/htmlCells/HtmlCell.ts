@@ -49,10 +49,10 @@ export class HtmlCell {
   div: HTMLDivElement;
   iframe: HTMLIFrameElement;
 
-  private autoResizeTimeout: NodeJS.Timeout | undefined;
+  private autoResizeTimeout: number | undefined;
   private abortController = new AbortController();
 
-  constructor(htmlCell: JsHtmlOutput) {
+  constructor(htmlCell: JsHtmlOutput, aiView: boolean = false) {
     if (htmlCell.html === null) throw new Error('Expected html to be defined in HtmlCell constructor');
     this.htmlCell = htmlCell;
     const sheet = sheets.getById(htmlCell.sheet_id)!;
@@ -98,13 +98,15 @@ export class HtmlCell {
     this.div.append(this.border);
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
 
-    if (this.iframe.contentWindow?.document.readyState === 'complete') {
-      this.afterLoad();
-    }
-    this.iframe.addEventListener('load', this.afterLoad);
+    if (!aiView) {
+      if (this.iframe.contentWindow?.document.readyState === 'complete') {
+        this.afterLoad();
+      }
+      this.iframe.addEventListener('load', this.afterLoad);
 
-    if (this.sheet.id !== sheets.current) {
-      this.div.style.visibility = 'hidden';
+      if (this.sheet.id !== sheets.current) {
+        this.div.style.visibility = 'hidden';
+      }
     }
   }
 
@@ -368,7 +370,7 @@ export class HtmlCell {
         });
       }
     } else {
-      this.autoResizeTimeout = setTimeout(this.autoResize, 100);
+      this.autoResizeTimeout = window.setTimeout(this.autoResize, 100);
       this.abortController.signal.addEventListener(
         'abort',
         () => {
