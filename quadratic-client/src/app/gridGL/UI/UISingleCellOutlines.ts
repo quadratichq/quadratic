@@ -2,6 +2,7 @@
 
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -54,7 +55,7 @@ export class UISingleCellOutlines extends Graphics {
 
     if (!pixiAppSettings.showCellTypeOutlines) return;
 
-    const tables = pixiApp.cellsSheet().tables;
+    const tables = content.cellsSheet.tables;
     const bounds = pixiApp.viewport.getVisibleBounds();
     const boundsCells = sheets.sheet.getRectangleFromScreen(bounds);
 

@@ -9,7 +9,6 @@ import {
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
@@ -219,51 +218,6 @@ export class PixiApp {
     this.render();
   };
 
-  // called before and after a render
-  prepareForCopying = async (options: {
-    sheetId: string;
-    cull: Rectangle;
-    gridLines?: boolean;
-    ai?: boolean;
-    thumbnail?: boolean;
-  }): Promise<Container> => {
-    // this is expensive, so we do it first, before blocking the canvas renderer
-    await content.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
-
-    // this blocks the canvas renderer
-    this.copying = true;
-
-    content.gridLines.visible = options.gridLines ?? false;
-    content.uiCursor.visible = options.ai ?? false;
-    content.cellHighlights.visible = false;
-    content.multiplayerCursor.visible = false;
-    content.headings.visible = options.ai ?? false;
-    content.boxCells.visible = false;
-    content.cellsSheets.toggleOutlines(false);
-    content.copy.visible = false;
-    content.cellsSheets.cull(options.cull);
-    if (options.thumbnail) {
-      this.cellsSheet().tables.forceUpdate(options.cull);
-    }
-    return content;
-  };
-
-  cleanUpAfterCopying = (): void => {
-    content.gridLines.visible = true;
-    content.uiCursor.visible = true;
-    content.cellHighlights.visible = true;
-    content.multiplayerCursor.visible = true;
-    content.headings.visible = true;
-    content.boxCells.visible = true;
-    content.htmlPlaceholders.hide();
-    content.cellsSheets.toggleOutlines();
-    content.copy.visible = true;
-    const bounds = this.viewport.getVisibleBounds();
-    content.cellsSheets.cull(bounds);
-    this.cellsSheet().tables.forceUpdate(bounds);
-    this.copying = false;
-  };
-
   render(): void {
     this.viewport.addChild(content);
     this.renderer.render(this.stage);
@@ -328,11 +282,6 @@ export class PixiApp {
     }
   }
 
-  // todo: move to content
-  isCursorOnCodeCellOutput(): boolean {
-    return content.cellsSheets.isCursorOnCodeCellOutput();
-  }
-
   // called when the viewport is loaded from the URL
   urlViewportLoad(sheetId: string) {
     const cellsSheet = sheets.getById(sheetId);
@@ -344,25 +293,6 @@ export class PixiApp {
         scaleY: this.viewport.scale.y,
       };
     }
-  }
-
-  // todo: move to content
-  cellsSheet(): CellsSheet {
-    if (!content.cellsSheets.current) {
-      throw new Error('cellSheet not found in pixiApp');
-    }
-    return content.cellsSheets.current;
-  }
-
-  // todo: move to content
-  changeHoverTableHeaders(hoverTableHeaders: Container) {
-    content.hoverTableHeaders.removeChildren();
-    content.hoverTableHeaders.addChild(hoverTableHeaders);
-  }
-
-  // todo: move to content
-  cellsSheetsCreate() {
-    content.cellsSheets.create();
   }
 }
 

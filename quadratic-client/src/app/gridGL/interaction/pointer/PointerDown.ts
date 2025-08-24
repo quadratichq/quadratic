@@ -6,6 +6,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isLinux } from '@/shared/utils/isLinux';
@@ -73,7 +74,7 @@ export class PointerDown {
       if (!cursor.contains(column, row)) {
         cursor.moveTo(column, row);
       }
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
+      const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x: column, y: row });
       if (codeCell && codeCell?.language !== 'Import') {
         events.emit('contextMenu', {
           type: ContextMenuType.Grid,
@@ -89,7 +90,7 @@ export class PointerDown {
           column,
           row,
           // _could_ have an associated table if it's a cell inside a table on the grid
-          table: pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor.position),
+          table: content.cellsSheet.tables.getCodeCellIntersects(cursor.position),
         });
       }
       return;

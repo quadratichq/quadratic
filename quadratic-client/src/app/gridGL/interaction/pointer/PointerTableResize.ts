@@ -3,7 +3,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { content } from '@/app/gridGL/pixiApp/Content';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -117,7 +116,7 @@ export class PointerTableResize {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
     if (!this.active) {
-      const table = pixiApp.cellsSheet().tables.getTableIntersectsWorld(new Point(world.x - 4, world.y - 4));
+      const table = content.cellsSheet.tables.getTableIntersectsWorld(new Point(world.x - 4, world.y - 4));
       if (!!table && table.checkHover(world) && !table.codeCell.is_code) {
         const cornerHandle = new Rectangle(
           table.tableBounds.x + table.tableBounds.width - 4,

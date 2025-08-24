@@ -1,3 +1,4 @@
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { Background } from '@/app/gridGL/UI/Background';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
@@ -12,7 +13,7 @@ import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
 import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, type Rectangle } from 'pixi.js';
 
 export class Content extends Container {
   cellsSheets = new CellsSheets();
@@ -42,6 +43,8 @@ export class Content extends Container {
 
   debug = new Graphics();
 
+  copying = false;
+
   constructor() {
     super();
     this.addChild(
@@ -67,6 +70,62 @@ export class Content extends Container {
 
       this.debug
     );
+  }
+
+  get cellsSheet(): CellsSheet {
+    if (!this.cellsSheets.current) {
+      throw new Error('cellSheet not found in pixiApp');
+    }
+    return this.cellsSheets.current;
+  }
+
+  // called before and after a render
+  prepareForCopying = async (options: {
+    sheetId: string;
+    cull: Rectangle;
+    gridLines?: boolean;
+    ai?: boolean;
+    thumbnail?: boolean;
+  }): Promise<Container> => {
+    // this is expensive, so we do it first, before blocking the canvas renderer
+    await content.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
+
+    // this blocks the canvas renderer
+    this.copying = true;
+
+    content.gridLines.visible = options.gridLines ?? false;
+    content.uiCursor.visible = options.ai ?? false;
+    content.cellHighlights.visible = false;
+    content.multiplayerCursor.visible = false;
+    content.headings.visible = options.ai ?? false;
+    content.boxCells.visible = false;
+    content.cellsSheets.toggleOutlines(false);
+    content.copy.visible = false;
+    content.cellsSheets.cull(options.cull);
+    if (options.thumbnail) {
+      this.cellsSheet.tables.forceUpdate(options.cull);
+    }
+    return content;
+  };
+
+  cleanUpAfterCopying = (bounds: Rectangle): void => {
+    content.gridLines.visible = true;
+    content.uiCursor.visible = true;
+    content.cellHighlights.visible = true;
+    content.multiplayerCursor.visible = true;
+    content.headings.visible = true;
+    content.boxCells.visible = true;
+    content.htmlPlaceholders.hide();
+    content.cellsSheets.toggleOutlines();
+    content.copy.visible = true;
+    content.cellsSheets.cull(bounds);
+    this.cellsSheet.tables.forceUpdate(bounds);
+    this.copying = false;
+  };
+
+  changeHoverTableHeaders(hoverTableHeaders: Container) {
+    content.hoverTableHeaders.removeChildren();
+    content.hoverTableHeaders.addChild(hoverTableHeaders);
   }
 }
 

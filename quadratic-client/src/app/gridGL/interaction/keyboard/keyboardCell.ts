@@ -11,7 +11,6 @@ import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeybo
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { content } from '@/app/gridGL/pixiApp/Content';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -47,7 +46,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
     const pos = sheets.sheet.cursor.position;
     const { x: cursorX, y: cursorY } = pos;
-    const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
+    const codeCell = content.cellsSheet.tables.getCodeCellIntersects(pos);
     if (codeCell) {
       const tableStartX = codeCell.x;
       const tableStartY = codeCell.y;

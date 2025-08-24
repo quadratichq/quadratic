@@ -50,14 +50,15 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await pixiApp.prepareForCopying({ sheetId, cull: screenRect });
+  await content.prepareForCopying({ sheetId, cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
   const scale = imageWidth / (screenRect.width * resolution);
   transform.scale(scale, scale);
   renderer.render(content, { transform });
-  pixiApp.cleanUpAfterCopying();
+  const viewportBounds = pixiApp.viewport.getVisibleBounds();
+  content.cleanUpAfterCopying(viewportBounds);
 
   // force a pixiApp rerender to clean up interactions (I think)
   pixiApp.setViewportDirty();

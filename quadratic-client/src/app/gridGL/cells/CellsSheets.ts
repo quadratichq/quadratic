@@ -2,6 +2,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetInfo } from '@/app/quadratic-core-types';
 import type {
@@ -35,7 +36,7 @@ export class CellsSheets extends Container<CellsSheet> {
       const child = this.addChild(new CellsSheet(sheet.id));
       if (sheet.id === sheets.current) {
         this.current = child;
-        pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+        content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
       }
     }
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
@@ -63,7 +64,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
       } else {
         child.hide();
@@ -77,7 +78,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
       } else {
         child.hide();

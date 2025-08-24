@@ -362,7 +362,7 @@ export class SheetCursor {
   canConvertToDataTable = (): boolean => {
     const rectangle = this.sheet.cursor.getSingleRectangle();
     if (!rectangle) return false;
-    return !pixiApp.cellsSheet().tables.hasCodeCellInRect(rectangle);
+    return !content.cellsSheet.tables.hasCodeCellInRect(rectangle);
   };
 
   // getCopyRange(): RefRangeBounds | undefined {
@@ -425,7 +425,7 @@ export class SheetCursor {
       this.selectedTableNamesFromTableSelection().forEach((name) => names.add(name));
       const rects = this.getSheetRefRangeBounds();
       rects.forEach((rect) => {
-        const tables = pixiApp.cellsSheet().tables.getLargeTablesInRect(rect);
+        const tables = content.cellsSheet.tables.getLargeTablesInRect(rect);
         tables.forEach((table) => {
           if (table.codeCell.show_name && table.codeCell.y >= rect.y && table.codeCell.y <= rect.bottom - 1) {
             names.add(table.codeCell.name);

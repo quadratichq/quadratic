@@ -83,7 +83,7 @@ export class Sheets {
       this._current = this.sheets[0].id;
     }
 
-    pixiApp.cellsSheetsCreate();
+    content.cellsSheets.create();
     this.initialized = true;
   };
 

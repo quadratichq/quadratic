@@ -3,7 +3,6 @@ import { events } from '@/app/events/events';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { content } from '@/app/gridGL/pixiApp/Content';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -27,7 +26,7 @@ export const TableRename = () => {
       ) {
         return;
       } else {
-        const bounds = pixiApp.cellsSheet().tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
+        const bounds = content.cellsSheet.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
         if (bounds && inputRef.current) {
           setWidth(bounds.width);
           inputRef.current.style.top = `${bounds.y}px`;

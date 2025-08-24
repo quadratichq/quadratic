@@ -248,7 +248,7 @@ class InlineEditorHandler {
         }
       }
 
-      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
+      this.codeCell = content.cellsSheet.tables.getCodeCellIntersects(this.location);
       if (this.codeCell?.language === 'Import' && changeToFormula) {
         pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         this.closeIfOpen();

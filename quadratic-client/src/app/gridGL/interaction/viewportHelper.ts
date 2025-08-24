@@ -79,7 +79,7 @@ function getYToEnsureCursorIsNotUnderTableHeader(
   bounds: Rectangle,
   cell: Rectangle
 ): number | undefined {
-  const table = pixiApp.cellsSheet().tables.getTableIntersects(coordinate);
+  const table = content.cellsSheet.tables.getTableIntersects(coordinate);
   if (!table) return;
   const code = table.codeCell;
   if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {

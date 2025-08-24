@@ -87,10 +87,10 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(sheets.current, cell)) {
+    if (cursor.isSingleSelection() && content.cellsSheet.tables.isHtmlOrImage(sheets.current, cell)) {
       return;
     }
-    const tables = pixiApp.cellsSheet().tables;
+    const tables = content.cellsSheet.tables;
     let table = tables.getTableIntersects(cell);
     let tableName =
       table && table.codeCell.show_name && table.codeCell.y === cell.y ? table.getTableNameBounds() : undefined;
@@ -108,7 +108,7 @@ export class Cursor extends Container {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      !pixiApp.cellsSheet().tables.isInTableHeader(cell) &&
+      !content.cellsSheet.tables.isInTableHeader(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -171,7 +171,7 @@ export class Cursor extends Container {
   private drawTableCornerIndicator() {
     const tableName = sheets.sheet.cursor.getSingleFullTableSelectionName();
     if (!tableName) return;
-    const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
+    const table = content.cellsSheet.tables.getTableFromName(tableName);
     if (
       !table ||
       table.codeCell.is_html_image ||
@@ -317,7 +317,7 @@ export class Cursor extends Container {
 
   private cursorIsOnSpill() {
     const pos = sheets.sheet.cursor.position;
-    const table = pixiApp.cellsSheet().tables.getTable(pos.x, pos.y);
+    const table = content.cellsSheet.tables.getTable(pos.x, pos.y);
     return table?.codeCell.spill_error;
   }
 

@@ -125,7 +125,7 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
     const search = this.findImage(point);
     if (search && search.side) {
-      const table = pixiApp.cellsSheet().tables.getTableIntersects(search.image.pos);
+      const table = content.cellsSheet.tables.getTableIntersects(search.image.pos);
       if (!table) {
         console.error('Table not found in PointerImages.pointerDown');
         return false;
@@ -177,9 +177,12 @@ export class PointerImages {
       this.resizing.table.resize(originalWidth, originalHeight);
       this.resizing.image.temporaryResize(originalWidth, originalHeight);
       events.emit('setDirty', { cellImages: true });
-      pixiApp
-        .cellsSheet()
-        .tables.resizeTable(this.resizing.image.column, this.resizing.image.row, originalWidth, originalHeight);
+      content.cellsSheet.tables.resizeTable(
+        this.resizing.image.column,
+        this.resizing.image.row,
+        originalWidth,
+        originalHeight
+      );
       this.resizing = undefined;
       return true;
     }

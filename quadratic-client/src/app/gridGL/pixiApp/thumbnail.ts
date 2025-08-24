@@ -72,10 +72,11 @@ class Thumbnail {
   private generate = async (): Promise<Blob | null> => {
     const sheetId = sheets.getFirst().id;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
-    await pixiApp.prepareForCopying({ sheetId, cull: rectangle, gridLines: true, thumbnail: true });
+    await content.prepareForCopying({ sheetId, cull: rectangle, gridLines: true, thumbnail: true });
     content.gridLines.update(rectangle, undefined, true);
     this.renderer.render(content);
-    pixiApp.cleanUpAfterCopying();
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
+    content.cleanUpAfterCopying(viewportBounds);
     content.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
       this.renderer.view.toBlob?.((blob) => resolve(blob));

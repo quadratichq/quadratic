@@ -37,7 +37,7 @@ export class UICellMoving extends Container {
     // if (!moving) {
     //   throw new Error('Expected moving to be defined in drawMove');
     // }
-    // const cellsLabels = pixiApp.cellsSheet().cellsLabels;
+    // const cellsLabels = content.cellsSheet.cellsLabels;
     // const overlap = new Rectangle(moving.toColumn, moving.toRow, moving.width, moving.height);
     // if (cellsLabels.hasRectangle(overlap, moving.original ? [moving.original] : undefined)) {
     //   return getCSSVariableTint('warning');
