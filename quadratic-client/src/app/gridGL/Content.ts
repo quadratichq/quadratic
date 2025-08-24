@@ -38,15 +38,16 @@ export class Content extends Container {
   private headings = new GridHeadings(this);
   private boxCells = new BoxCells(this);
   private cellImages = new UICellImages();
+  private htmlPlaceholders = new HtmlPlaceholders();
+  private imagePlaceholders = new Container();
+  private validations = new UIValidations();
+  private singleCellOutlines = new UISingleCellOutlines();
+
   private uiMultiPlayerCursor = new UIMultiPlayerCursor();
   private uiCursor = new Cursor();
   private uiCopy = new UICopy();
-  private htmlPlaceholders = new HtmlPlaceholders();
-  private imagePlaceholders = new Container();
   private cellHighlights = new CellHighlights();
   private cellMoving = new UICellMoving();
-  private validations = new UIValidations();
-  private singleCellOutlines = new UISingleCellOutlines();
 
   // this is used to display content over the headings (table name and columns
   // when off the screen)
@@ -66,15 +67,15 @@ export class Content extends Container {
       this.headings.gridHeadingsRows,
       this.boxCells,
       this.cellImages,
+      this.htmlPlaceholders,
+      this.imagePlaceholders,
+      this.validations,
+      this.singleCellOutlines,
       this.uiMultiPlayerCursor,
       this.uiCursor,
       this.uiCopy,
-      this.htmlPlaceholders,
-      this.imagePlaceholders,
       this.cellHighlights,
       this.cellMoving,
-      this.validations,
-      this.singleCellOutlines,
       this.hoverTableHeaders,
       this.hoverTableColumnsSelection,
       this.headings,

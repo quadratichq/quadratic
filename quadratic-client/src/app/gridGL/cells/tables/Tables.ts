@@ -33,8 +33,6 @@ export class Tables extends Container<Table> {
   // cache to speed up lookups
   private tablesCache: TablesCache;
 
-  dataTablesCache?: SheetDataTablesCache;
-
   // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
 
