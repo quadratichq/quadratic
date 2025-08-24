@@ -314,6 +314,8 @@ mod tests {
         gc.delete_columns(sheet_id, vec![4, 5], None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
+        dbg!(gc.undo_stack());
+
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
@@ -409,6 +411,8 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1], None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
+
+        dbg!(gc.undo_stack());
 
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);

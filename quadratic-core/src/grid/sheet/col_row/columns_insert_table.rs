@@ -28,20 +28,22 @@ impl Sheet {
         dt: &DataTable,
         copy_formats: CopyFormats,
     ) -> bool {
-        if copy_formats == CopyFormats::After {
-            column >= pos.x && column < pos.x + dt.output_rect(pos, false).width() as i64
-        } else {
-            // CopyFormats::Before
-            column - 1 >= pos.x && column - 1 < pos.x + dt.output_rect(pos, false).width() as i64
+        match copy_formats {
+            CopyFormats::After | CopyFormats::None => {
+                column >= pos.x && column < pos.x + dt.output_rect(pos, false).width() as i64
+            }
+            CopyFormats::Before => {
+                column - 1 >= pos.x
+                    && column - 1 < pos.x + dt.output_rect(pos, false).width() as i64
+            }
         }
     }
 
     /// Returns true if the column is left of the table.
     fn is_column_before_table(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
-        if copy_formats == CopyFormats::After {
-            column < pos.x
-        } else {
-            column - 1 < pos.x
+        match copy_formats {
+            CopyFormats::After | CopyFormats::None => column < pos.x,
+            CopyFormats::Before => column - 1 < pos.x,
         }
     }
 
