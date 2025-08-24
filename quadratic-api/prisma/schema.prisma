@@ -11,6 +11,7 @@ datasource db {
 model User {
     id                  Int               @id @default(autoincrement())
     auth0Id             String            @unique @map("auth0_id")
+    email               String            @unique @map("email")
     eduStatus           EduStatus?        @map("edu_status")
     onboardingResponses Json?             @map("onboarding_responses")
     ownedFiles          File[]            @relation(name: "OwnerRelation")
@@ -25,6 +26,7 @@ model User {
     clientDataKv Json @default("{}") @map("client_data_kv")
 
     @@index([auth0Id])
+    @@index([email])
 }
 
 enum EduStatus {
@@ -246,6 +248,9 @@ model FileInvite {
 model QFeedback {
     id           Int      @id @default(autoincrement())
     feedback     String
+    // Additional context about the feedback source
+    // If it's null, that's “In-app” feedback (which was the first kind we used)
+    context      String?
     created_date DateTime @default(now())
     userId       Int?
     user         User?    @relation(fields: [userId], references: [id])

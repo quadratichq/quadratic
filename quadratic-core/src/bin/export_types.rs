@@ -22,10 +22,10 @@ use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsCellValueCode;
-use quadratic_core::grid::js_types::JsCellValueDescription;
 use quadratic_core::grid::js_types::JsCellValueKind;
+use quadratic_core::grid::js_types::JsCellValueRanges;
+use quadratic_core::grid::js_types::JsCellValueSummary;
 use quadratic_core::grid::js_types::JsChartContext;
-use quadratic_core::grid::js_types::JsChartSummaryContext;
 use quadratic_core::grid::js_types::JsCodeErrorContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
@@ -36,10 +36,9 @@ use quadratic_core::grid::js_types::JsHashRenderCells;
 use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
-use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsSheetNameToColor;
 use quadratic_core::grid::js_types::JsSheetPosText;
-use quadratic_core::grid::js_types::JsTablesContext;
+use quadratic_core::grid::js_types::JsSummaryContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
@@ -140,9 +139,10 @@ fn main() {
         JsCellsA1Values,
         JsCellValue,
         JsCellValueCode,
-        JsCellValueDescription,
+        JsCellValueSummary,
         JsCellValueKind,
         JsCellValuePos,
+        JsCellValueRanges,
         JsCellValueResult,
         JsChartContext,
         JsClipboard,
@@ -152,7 +152,6 @@ fn main() {
         JsCodeTableContext,
         JsColumnWidth,
         JsCoordinate,
-        JsChartSummaryContext,
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,
@@ -171,14 +170,13 @@ fn main() {
         JsResponse,
         JsReturnInfo,
         JsRowHeight,
-        JsSelectionContext,
         JsSheetFill,
         JsSheetNameToColor,
         JsSheetPosText,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
+        JsSummaryContext,
         JsTableInfo,
-        JsTablesContext,
         JsUpdateCodeCell,
         JsValidationWarning,
         NumberRange,

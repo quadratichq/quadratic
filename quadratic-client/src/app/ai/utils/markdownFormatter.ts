@@ -3,7 +3,7 @@
  * Uses markdown headers and formatting for clean, readable structure
  */
 
-type Data = object | string | number | null | undefined | Array<Data>;
+type Data = boolean | number | string | null | undefined | Array<Data> | object;
 
 function isObject(value: Data): value is Record<string, Data> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -63,12 +63,7 @@ function formatObjectAsMarkdown(obj: Record<string, Data>, level: number): strin
         result += `${label}:\n`;
         for (let i = 0; i < value.length; i++) {
           const item = value[i];
-          if (isObject(item)) {
-            result += formatObjectAsMarkdown(item, level + 1);
-            if (i < value.length - 1) {
-              result += '\n';
-            }
-          } else if (Array.isArray(item)) {
+          if (Array.isArray(item)) {
             // Handle 2D arrays (like starting_rect_values)
             result += `  Row ${i + 1}:\n`;
             for (let j = 0; j < item.length; j++) {
@@ -86,6 +81,11 @@ function formatObjectAsMarkdown(obj: Record<string, Data>, level: number): strin
               } else {
                 result += `    - ${String(cellValue)}\n`;
               }
+            }
+          } else if (isObject(item)) {
+            result += formatObjectAsMarkdown(item, level + 1);
+            if (i < value.length - 1) {
+              result += '\n';
             }
           } else {
             result += `  - ${String(item)}\n`;

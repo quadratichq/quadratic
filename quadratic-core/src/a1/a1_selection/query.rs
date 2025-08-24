@@ -67,6 +67,13 @@ impl A1Selection {
             .any(|range| range.contains_pos(pos, a1_context))
     }
 
+    /// Returns whether any range in `self` contains `rect`.
+    pub fn contains_rect(&self, rect: Rect, a1_context: &A1Context) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| range.might_intersect_rect(rect, a1_context))
+    }
+
     /// Returns the largest rectangle that can be formed by the selection,
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self, a1_context: &A1Context) -> Rect {

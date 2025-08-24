@@ -2,8 +2,6 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeErrorMessages } from '@/app/ai/hooks/useCodeErrorMessages';
 import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
-// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
@@ -24,13 +22,13 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
+  createTextContent,
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
@@ -49,7 +47,6 @@ const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
 
 export type SubmitAIAnalystPromptArgs = {
-  chatId?: string;
   messageSource: string;
   content: Content;
   context: Context;
@@ -79,53 +76,31 @@ export type SubmitAIAnalystPromptArgs = {
 export function useSubmitAIAnalystPrompt() {
   const aiModel = useAIModel();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
+  const { getSqlContext } = useSqlContextMessages();
+  const { getFilesContext } = useFilesContextMessages();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
-  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  // const { getSheetInfoContext } = useSheetInfoMessages();
+  const { getVisibleContext } = useVisibleContextMessages();
   const { getSummaryContext } = useSummaryContextMessages();
   const { getCodeErrorContext } = useCodeErrorMessages();
-  // const { getTablesContext } = useTablesContextMessages();
-  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
-  const { getVisibleContext } = useVisibleContextMessages();
-  const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
-  const { getSqlContext } = useSqlContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
-      async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [
-          sqlContext,
-          filesContext,
-          // sheetInfoContext,
-          // otherSheetsContext,
-          // tablesContext,
-          // currentSheetContext,
-          visibleContext,
-          summaryContext,
-          codeErrorContext,
-        ] = await Promise.all([
+      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
+        const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
-          // getSheetInfoContext({ sheets: sheets.sheets }),
-          // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-          // getTablesContext(),
-          // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
           getVisibleContext(),
-          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
+          getSummaryContext(),
           getCodeErrorContext(),
         ]);
 
         const messagesWithContext: ChatMessage[] = [
           ...sqlContext,
           ...filesContext,
-          // ...sheetInfoContext,
-          // ...otherSheetsContext,
-          // ...tablesContext,
           ...getCurrentDateTimeContext(),
-          // ...currentSheetContext,
           ...visibleContext,
           ...summaryContext,
           ...codeErrorContext,
@@ -135,21 +110,18 @@ export function useSubmitAIAnalystPrompt() {
         return messagesWithContext;
       },
     [
-      getCurrentDateTimeContext,
-      // getOtherSheetsContext,
-      getSummaryContext,
-      // getTablesContext,
-      // getCurrentSheetContext,
-      getVisibleContext,
-      getFilesContext,
-      // getSheetInfoContext,
       getSqlContext,
+      getFilesContext,
+      getCurrentDateTimeContext,
+      getVisibleContext,
+      getSummaryContext,
+      getCodeErrorContext,
     ]
   );
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ chatId: promptChatId, messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
+      async ({ messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -168,7 +140,7 @@ export function useSubmitAIAnalystPrompt() {
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
-            id: promptChatId ?? v4(),
+            id: v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -178,7 +150,7 @@ export function useSubmitAIAnalystPrompt() {
         else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: promptChatId ?? v4(),
+              id: v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -239,9 +211,9 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
+                currentContent = createTextContent('');
               }
               currentContent.text += '\n\nRequest aborted by the user.';
               currentContent.text = currentContent.text.trim();
@@ -255,7 +227,7 @@ export function useSubmitAIAnalystPrompt() {
 
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                content: [createTextContent('Request aborted by the user.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey: aiModel.modelKey,
@@ -274,7 +246,7 @@ export function useSubmitAIAnalystPrompt() {
         let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
-          chatId = prev.id ? prev.id : (promptChatId ?? v4());
+          chatId = prev.id ? prev.id : v4();
           return {
             ...prev,
             id: chatId,
@@ -289,7 +261,7 @@ export function useSubmitAIAnalystPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ context, chatMessages });
+            chatMessages = await updateInternalContext({ chatMessages });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
@@ -297,10 +269,7 @@ export function useSubmitAIAnalystPrompt() {
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
               debugAIContext(messagesForAI);
-              console.log('AIAnalyst messages with context:', {
-                context,
-                messagesForAI,
-              });
+              console.log('AIAnalyst messages:', messagesForAI);
             }
 
             if (debugFlag('debugLogReadableAIInternalContext')) {
@@ -351,6 +320,10 @@ export function useSubmitAIAnalystPrompt() {
             });
             chatMessages = nextChatMessages;
 
+            if (abortController.signal.aborted) {
+              break;
+            }
+
             if (response.toolCalls.length === 0) {
               getUserPromptSuggestions();
               break;
@@ -396,23 +369,13 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    content: [
-                      {
-                        type: 'text',
-                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
-                      },
-                    ],
+                    content: [createTextContent(`Error parsing ${toolCall.name} tool's arguments: ${error}`)],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: [
-                    {
-                      type: 'text',
-                      text: 'Unknown tool',
-                    },
-                  ],
+                  content: [createTextContent('Unknown tool')],
                 });
               }
             }
@@ -421,7 +384,7 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of importPDFToolCalls) {
               const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-              const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
+              const toolResultContent = await importPDF({ pdfImportArgs, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
                 content: toolResultContent,
@@ -477,9 +440,9 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
+                currentContent = createTextContent('');
               }
               currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               currentContent.text = currentContent.text.trim();
@@ -489,7 +452,7 @@ export function useSubmitAIAnalystPrompt() {
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
+                content: [createTextContent('Looks like there was a problem. Please try again.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey: aiModel.modelKey,

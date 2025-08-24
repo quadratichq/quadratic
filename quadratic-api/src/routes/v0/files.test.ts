@@ -1,20 +1,11 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { clearDb, createFile } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
-  const user_1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'test_user_1',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'test_user_2',
-    },
-  });
+  const [user_1] = await createUsers(['test_user_1', 'test_user_2']);
 
   const team = await dbClient.team.create({
     data: {
@@ -191,7 +182,7 @@ describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file updat
     const filePath = 'test_thumbnail.png';
 
     // update preview
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000001/thumbnail')
       .attach('thumbnail', filePath)
       .set('Accept', 'application/json')

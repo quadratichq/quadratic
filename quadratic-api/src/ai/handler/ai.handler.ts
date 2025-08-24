@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelOptions,
   isAnthropicModel,
@@ -193,9 +194,8 @@ export const handleAIRequest = async (
     const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
       role: 'assistant',
       content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
+        createTextContent(
+          JSON.stringify(
             error instanceof Error
               ? {
                   name: error.name,
@@ -203,8 +203,8 @@ export const handleAIRequest = async (
                   stack: error.stack,
                 }
               : error
-          ),
-        },
+          )
+        ),
       ],
       contextType: 'userPrompt',
       toolCalls: [],

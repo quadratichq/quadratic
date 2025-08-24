@@ -1,6 +1,23 @@
+import { auth0Mock } from '../../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'user1',
+      email: 'user1@example.com',
+      picture: 'https://s.gravatar.com/avat',
+      name: 'User One',
+    },
+    {
+      user_id: 'user2',
+      email: 'user2@example.com',
+      picture: 'https://s.gravatar.com/avat',
+      name: 'User Two',
+    },
+  ])
+);
+
 import request from 'supertest';
 import { app } from '../../app';
-import { auth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
@@ -23,7 +40,7 @@ beforeAll(async () => {
       uuid: '00000000-0000-4000-8000-000000000001',
       FileInvite: {
         create: {
-          email: 'userNotInSystemYet@example.com',
+          email: 'usernotinystemyet@example.com',
           role: 'EDITOR',
         },
       },
@@ -75,24 +92,6 @@ beforeAll(async () => {
 });
 
 afterAll(clearDb);
-
-// Mock Auth0 getUser
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'user1',
-      email: 'user1@example.com',
-      picture: 'https://s.gravatar.com/avat',
-      name: 'User One',
-    },
-    {
-      user_id: 'user2',
-      email: 'user2@example.com',
-      picture: 'https://s.gravatar.com/avat',
-      name: 'User Two',
-    },
-  ])
-);
 
 // Shape of the data that should always exist across any sharing request
 const expectSharingData = (res: any) => {

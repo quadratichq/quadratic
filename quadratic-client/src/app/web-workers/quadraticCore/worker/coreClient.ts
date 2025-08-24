@@ -578,15 +578,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAISelectionContexts',
           id: e.data.id,
-          selectionContexts: core.getAISelectionContexts(e.data),
-        });
-        return;
-
-      case 'clientCoreGetAITablesContext':
-        this.send({
-          type: 'coreClientGetAITablesContext',
-          id: e.data.id,
-          tablesContext: core.getAITablesContext(),
+          summaryContexts: core.getAISelectionContexts(e.data),
         });
         return;
 

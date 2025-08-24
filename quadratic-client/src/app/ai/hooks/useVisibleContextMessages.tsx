@@ -1,8 +1,8 @@
-import { maxRects, maxRows } from '@/app/ai/constants/context';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -12,7 +12,6 @@ export function useVisibleContextMessages() {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
     const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
-    const visibleA1String = jsSelection.toA1String(sheets.current, sheets.jsA1Context);
     jsSelection.free();
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
@@ -21,56 +20,70 @@ export function useVisibleContextMessages() {
       ? undefined
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
-          maxRects,
-          maxRows,
-          includeErroredCodeCells: true,
-          includeTablesSummary: true,
-          includeChartsSummary: true,
-          includeDataRectsSummary: true,
+          maxRows: undefined,
         });
+    const sheetContext = visibleContext?.length === 1 ? visibleContext[0] : undefined;
 
     let text = `
 # What the user can see
 
 - the user is in sheet '${sheetName}'
-- they see cells in ${visibleA1String}
 - their cursor is located at ${sheets.sheet.cursor.a1String()}
-- their selection is ${sheets.getA1String(sheets.current)}`;
+- their selection is ${sheets.getA1String(sheets.current)}
+`;
 
-    if (!!visibleContext && visibleContext.length === 1) {
-      const context = visibleContext[0];
-      if (context.tables_summary && context.tables_summary.length > 0) {
+    if (sheetContext) {
+      if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
         text += `
+## Data Tables in the visible area
 
-## Tables and Code Summary
-
-The user can see the following tables in the viewport:`;
-
-        for (const table of context.tables_summary) {
-          text += `
-- ${
-            table.table_type === 'python'
-              ? 'a Python table'
-              : table.table_type === 'javascript'
-                ? 'a JavaScript table'
-                : table.table_type === 'formula'
-                  ? 'a Formula table'
-                  : table.table_type === 'connection'
-                    ? `a connection of type ${table.connection_name}`
-                    : 'a Data table'
-          } named '${table.table_name}', with bounds of ${table.bounds}`;
+`;
+        for (const table of sheetContext.data_tables) {
+          text += `- '${table.data_table_name}' has bounds of (${table.bounds})\n`;
         }
       }
 
-      if (context.charts_summary && context.charts_summary.length > 0) {
+      if (sheetContext.code_tables && sheetContext.code_tables.length > 0) {
         text += `
+### Code tables in the visible area
 
-## Chart Summary
+`;
+        for (const table of sheetContext.code_tables) {
+          text += `- '${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}\n`;
+        }
+      }
 
-The user can see the following charts in the viewport:`;
-        for (const chart of context.charts_summary) {
-          text += `
-- a chart named ${chart.chart_name} with bounds of ${chart.bounds}`;
+      if (sheetContext.connections && sheetContext.connections.length > 0) {
+        text += `
+### Connections in the visible area
+
+`;
+        for (const table of sheetContext.connections) {
+          if (typeof table.language !== 'object' || !table.language.Connection) {
+            console.warn('Unexpected non-connection table in useSummaryContextMessages');
+            continue;
+          }
+          text += `- '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}\n`;
+        }
+      }
+
+      if (sheetContext.charts && sheetContext.charts.length > 0) {
+        text += `
+### Charts in the visible area
+
+`;
+        for (const chart of sheetContext.charts) {
+          text += `- '${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}\n`;
+        }
+      }
+
+      if (sheetContext.data_rects && sheetContext.data_rects.length > 0) {
+        text += `
+### Flat data in the visible area
+
+`;
+        for (const data of sheetContext.data_rects) {
+          text += `- data on the sheet at ${data.total_range}\n`;
         }
       }
     }
@@ -78,21 +91,15 @@ The user can see the following charts in the viewport:`;
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text,
-          },
-        ],
+        content: [createTextContent(text)],
         contextType: 'visibleData',
       },
       {
         role: 'assistant',
         content: [
-          {
-            type: 'text',
-            text: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
-          },
+          createTextContent(
+            `I understand the visible data, I will reference it to answer following messages. How can I help you?`
+          ),
         ],
         contextType: 'visibleData',
       },

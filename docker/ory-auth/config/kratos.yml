@@ -97,7 +97,7 @@ session:
       templates:
         jwt_template:
           jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
-          # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
+          claims_mapper_url: file:///etc/config/kratos/claims.jsonnet
           ttl: 24h # 24 hours (defaults to 10 minutes)
 cookies:
   domain: "localhost"

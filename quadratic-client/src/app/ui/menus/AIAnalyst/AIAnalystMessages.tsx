@@ -29,6 +29,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
+  createTextContent,
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
@@ -409,12 +410,7 @@ const PromptSuggestions = memo(() => {
           onClick={() =>
             submitPrompt({
               messageSource: 'User',
-              content: [
-                {
-                  type: 'text',
-                  text: suggestion.prompt,
-                },
-              ],
+              content: [createTextContent(suggestion.prompt)],
               context: {
                 ...(lastContext ?? defaultAIAnalystContext),
               },
