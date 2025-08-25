@@ -52,7 +52,7 @@ describe('GET /v0/teams/:uuid/billing/retention-discount', () => {
         .expect(401)
         .expect(expectError);
     });
-    it('responds with a 403 when user does not have access to the team', async () => {
+    it('responds with a 403 when user does not have TEAM_MANAGE access', async () => {
       await request(app)
         .get(`/v0/teams/00000000-0000-0000-0000-000000000000/billing/retention-discount`)
         .set('Authorization', `Bearer ValidToken userEditor`)
