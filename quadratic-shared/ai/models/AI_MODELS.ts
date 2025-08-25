@@ -153,7 +153,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -169,7 +169,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -290,6 +290,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
+    backupModelKey: 'openai:gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0.1,
     max_tokens: 32768,
