@@ -2,11 +2,11 @@ import { aiAnalystCurrentChatMessagesCountAtom, aiAnalystShowChatHistoryAtom } f
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
-import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { memo, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
+import { AIViewHeader } from './AIViewHeader';
 
 export const AIView = memo(() => {
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
@@ -36,7 +36,7 @@ export const AIView = memo(() => {
         onPaste={(e) => e.stopPropagation()}
       >
         <div className="mx-auto w-[800px]">
-          <AIAnalystHeader textareaRef={textareaRef} />
+          <AIViewHeader textareaRef={textareaRef} />
         </div>
 
         {showChatHistory && (

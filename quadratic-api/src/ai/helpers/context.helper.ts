@@ -38,8 +38,8 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.\n
-    
-${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
+
+${['AIAnalyst', 'AIAssistant', 'AIView'].includes(source) ? A1Docs : ''}\n\n
 ${source === 'AIAnalyst' ? ValidationDocs : ''}
 `),
     ],
@@ -70,7 +70,7 @@ Include a concise explanation of the actions you are taking to respond to the us
 Don't include tool details in your response. Reply in layman's terms what actions you are taking.\n
 
 ${
-  source === 'AIAnalyst' || source === 'PDFImport'
+  source === 'AIAnalyst' || source === 'PDFImport' || source === 'AIView'
     ? 'Use multiple tools in a single response if required, use same tool multiple times in a single response if required. Try to reduce tool call iterations.\n'
     : source === 'AIAssistant'
       ? 'Use only one tool in a single response.\n'

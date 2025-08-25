@@ -25,7 +25,7 @@ export const getModelKey = async (
   exceededBillingLimit: boolean
 ): Promise<AIModelKey> => {
   try {
-    if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
+    if (!['AIAnalyst', 'AIAssistant', 'AIView'].includes(inputArgs.source)) {
       return modelKey;
     }
 
