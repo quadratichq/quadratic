@@ -185,7 +185,6 @@ export const handleAIRequest = async (
         ? DEFAULT_BACKUP_MODEL_THINKING
         : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
 
-      // thinking backup model
       if (modelKey !== backupModelKey) {
         return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);
       }
