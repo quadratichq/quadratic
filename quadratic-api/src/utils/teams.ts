@@ -106,25 +106,21 @@ export function parseAndValidateClientDataKv(clientDataKv: unknown) {
 export async function getTeamRetentionDiscountEligibility(
   team: Team
 ): Promise<{ isEligible: true; stripeSubscriptionId: string } | { isEligible: false }> {
-  let isEligible = false;
-
   // Don't have an active subscription? No discount for you
   if (!team.stripeSubscriptionId || team.stripeSubscriptionStatus !== 'ACTIVE') {
-    return { isEligible };
+    return { isEligible: false };
   }
 
   // Already used it? No discount for you
   if (team.stripeSubscriptionRetentionCouponId) {
-    return { isEligible };
+    return { isEligible: false };
   }
 
   // Not a monthly subscription? No discount for you
   const isMonthly = await getIsMonthlySubscription(team.stripeSubscriptionId);
   if (!isMonthly) {
-    return { isEligible };
+    return { isEligible: false };
   }
 
-  // You're cool
-  isEligible = true;
-  return { isEligible, stripeSubscriptionId: team.stripeSubscriptionId };
+  return { isEligible: true, stripeSubscriptionId: team.stripeSubscriptionId };
 }
