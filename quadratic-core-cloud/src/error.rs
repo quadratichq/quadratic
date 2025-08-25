@@ -44,6 +44,9 @@ pub enum CoreCloudError {
     #[error("Unable to export file {0}: {1}")]
     ExportFile(String, String),
 
+    #[error("Javascript error: {0}")]
+    Javascript(String),
+
     #[error("Unable to import file {0}: {1}")]
     ImportFile(String, String),
 

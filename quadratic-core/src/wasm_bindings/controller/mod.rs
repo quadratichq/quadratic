@@ -107,6 +107,10 @@ impl GridController {
             crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
         });
 
+        grid.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);
+        });
+
         Ok(grid)
     }
 

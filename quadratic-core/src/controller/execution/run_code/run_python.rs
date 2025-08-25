@@ -11,8 +11,6 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        println!("running python");
-
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
         let code_cell = CodeCellValue {
@@ -21,15 +19,9 @@ impl GridController {
         };
         transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
-        println!("transaction: {:?}", transaction);
-        println!("transaction.is_server(): {:?}", transaction.is_server());
+
         if !transaction.is_server() {
-            println!(
-                "running python callback: {:?}",
-                self.run_python_callback.is_some()
-            );
             self.run_python_callback.as_mut().map(|f| {
-                println!("running python callback");
                 f(
                     transaction.id.to_string(),
                     sheet_pos.x as i32,

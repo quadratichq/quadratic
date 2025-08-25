@@ -158,13 +158,13 @@ with redirect_stdout(__quadratic_std_out__):
         let c_std_out = c_string("__quadratic_std_out__.getvalue()")?;
         let std_out_value = py.eval(&c_std_out, Some(&globals), None)?;
         let std_out_string = std_out_value.extract::<String>()?;
-        let std_out = std_out_string.is_empty().then_some(std_out_string);
+        let std_out = (!std_out_string.is_empty()).then_some(std_out_string);
 
         // capture std_err from python
         let c_std_err = c_string("__quadratic_std_err__.getvalue()")?;
         let std_err_value = py.eval(&c_std_err, Some(&globals), None)?;
         let std_err_string = std_err_value.extract::<String>()?;
-        let std_err = std_err_string.is_empty().then_some(std_err_string);
+        let std_err = (!std_err_string.is_empty()).then_some(std_err_string);
 
         Ok(JsCodeResult {
             transaction_id: transaction_id.to_string(),

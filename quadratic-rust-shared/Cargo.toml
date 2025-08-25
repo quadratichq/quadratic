@@ -6,7 +6,7 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aes = { version = "0.8.4", optional = true }
+aes = { version = "0.8.3", optional = true }
 arrow = { version = "=54.2.1", optional = true }
 arrow-array = { version = "=54.2.1", optional = true }
 async-trait = "0.1.80"
@@ -59,14 +59,14 @@ rust_decimal = "1.30.0"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = { version = "1.0.108" }
 snowflake-api = { git = "https://github.com/quadratichq/snowflake-rs", branch = "main", optional = true }
-sqlx = { version = "0.8.2", features = [
+sqlx = { version = "0.7.4", default-features = false, features = [
   "chrono",
   "uuid",
   "mysql",
   "postgres",
   "rust_decimal",
   "json",
-  "runtime-tokio-native-tls",
+  "runtime-tokio-native-tls"
 ], optional = true }
 strum = "0.27.1"
 strum_macros = "0.27.1"

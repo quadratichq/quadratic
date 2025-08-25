@@ -41,7 +41,9 @@ pub struct GridController {
     // contains current viewport position and sheet id, updated by render web worker on viewport change
     viewport_buffer: Option<ViewportBuffer>,
 
+    // callbacks for running python and javascript code
     run_python_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
+    run_javascript_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
 }
 
 impl Default for GridController {
@@ -58,6 +60,7 @@ impl Default for GridController {
             transactions: ActiveTransactions::new(0),
             viewport_buffer: None,
             run_python_callback: None,
+            run_javascript_callback: None,
         }
     }
 }

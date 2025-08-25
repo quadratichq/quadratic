@@ -9,6 +9,7 @@ mod core;
 mod error;
 mod file;
 mod health;
+mod javascript;
 mod message;
 mod multiplayer;
 mod python;

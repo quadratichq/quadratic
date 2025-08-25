@@ -5,15 +5,19 @@ use tokio::{
     task::JoinHandle,
 };
 
-use quadratic_core::controller::{
-    GridController, active_transactions::transaction_name::TransactionName,
-    execution::run_code::get_cells::JsCellsA1Response, operations::operation::Operation,
+use quadratic_core::{
+    controller::{
+        GridController, active_transactions::transaction_name::TransactionName,
+        execution::run_code::get_cells::JsCellsA1Response, operations::operation::Operation,
+    },
+    grid::CodeCellLanguage,
 };
 use uuid::Uuid;
 
 use crate::{
     error::{CoreCloudError, Result},
-    python::execute::execute,
+    javascript::execute::execute as execute_javascript,
+    python::execute::execute as execute_python,
 };
 
 // from main
@@ -98,12 +102,31 @@ pub(crate) async fn process_transaction(
     if let Ok(async_transaction) = async_transaction {
         if let Some(waiting_for_async) = async_transaction.waiting_for_async {
             // run python
-            let js_code_result = execute(
-                &waiting_for_async.code,
-                &transaction_id,
-                Box::new(get_cells),
-            )
-            .map_err(|e| CoreCloudError::Python(e.to_string()))?;
+            let execute_result = match waiting_for_async.language {
+                CodeCellLanguage::Python => execute_python(
+                    &waiting_for_async.code,
+                    &transaction_id,
+                    Box::new(get_cells),
+                ),
+                CodeCellLanguage::Javascript => {
+                    execute_javascript(
+                        &waiting_for_async.code,
+                        &transaction_id,
+                        Box::new(get_cells),
+                    )
+                    .await
+                }
+                // maybe skip these below?
+                CodeCellLanguage::Formula => todo!(),
+                CodeCellLanguage::Connection { .. } => todo!(),
+                CodeCellLanguage::Import { .. } => todo!(),
+            };
+            let js_code_result = match execute_result {
+                Ok(js_code_result) => js_code_result,
+                Err(e) => {
+                    return Err(CoreCloudError::Python(e.to_string()));
+                }
+            };
 
             // complete the transaction
             grid.lock()
@@ -148,27 +171,27 @@ mod tests {
         pos,
     };
 
-    #[tokio::test(flavor = "multi_thread")]
-    async fn test_core() {
+    async fn test_language(language: CodeCellLanguage, code: &str) -> CellValue {
         let grid = Arc::new(Mutex::new(GridController::test()));
         let sheet_id = grid.lock().await.sheet_ids()[0];
         let mut grid_lock = grid.lock().await;
         let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
         let to_number = |s: &str| CellValue::Number(decimal_from_str(s).unwrap());
-        let to_code =
-            |s: &str| CellValue::Code(CodeCellValue::new(CodeCellLanguage::Python, s.to_string()));
+        let to_code = |s: &str| CellValue::Code(CodeCellValue::new(language, s.to_string()));
 
         // set A1 to 1
         sheet.set_cell_values(pos![A1].into(), to_number("1").into());
 
         // set B2 to a Python cell
-        let code = "q.cells('A1') +  10".to_string();
         sheet.set_cell_values(pos![A2].into(), to_code(&code).into());
 
         // generate the operation
         let operation = Operation::ComputeCode {
             sheet_pos: pos![A2].to_sheet_pos(sheet_id),
         };
+
+        // Drop the grid_lock before calling process_transaction to avoid deadlock
+        drop(grid_lock);
 
         // process the transaction
         process_transaction(
@@ -180,12 +203,28 @@ mod tests {
         .await
         .unwrap();
 
-        let value = grid
-            .lock()
+        grid.lock()
             .await
             .try_sheet(sheet_id)
             .unwrap()
-            .display_value(pos![A2]);
-        assert_eq!(value, Some(to_number("11")));
+            .display_value(pos![A2])
+            .unwrap()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_core() {
+        let python_code = "q.cells('A1') +  10".to_string();
+        let python_value = test_language(CodeCellLanguage::Python, &python_code).await;
+        assert_eq!(
+            python_value,
+            CellValue::Number(decimal_from_str("11").unwrap())
+        );
+
+        let javascript_code = "q.cells('A1') +  10".to_string();
+        let javascript_value = test_language(CodeCellLanguage::Javascript, &javascript_code).await;
+        assert_eq!(
+            javascript_value,
+            CellValue::Number(decimal_from_str("11").unwrap())
+        );
     }
 }

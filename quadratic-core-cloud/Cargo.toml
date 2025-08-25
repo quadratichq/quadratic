@@ -11,6 +11,10 @@ axum-macros = "0.5.0"
 bytes = "1.6.1"
 chrono = { version = "=0.4.39", features = ["serde"] }
 dashmap = "6.1.0"
+deno_core = "0.355.0"
+deno_error = "0.7.0"
+# deno_timers = "0.34.0"  # Version conflict with deno_core - using built-in timer ops instead
+# deno_runtime = "0.221.0"  # Using deno_core only to avoid SQLite conflicts
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"
@@ -39,6 +43,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "storage" 
 ] }
 rayon = "1.8.0"
+regex = "1.11.1"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
@@ -59,4 +64,8 @@ tower-http = { version = "0.6.2", features = [
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
+neon = { version = "1.1.1", default-features = false, features = ["napi-6"] }
+urlencoding = "2.1.3"
+
+
 
