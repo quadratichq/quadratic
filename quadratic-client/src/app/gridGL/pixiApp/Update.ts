@@ -7,7 +7,6 @@ import {
   debugTimeReset,
 } from '@/app/gridGL/helpers/debugPerformance';
 import { FPS } from '@/app/gridGL/helpers/Fps';
-import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
@@ -16,20 +15,13 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
 
-  private scrollBarsHandler?: ScrollBarsHandler;
-
   firstRenderComplete = false;
 
   constructor() {
     if (debugFlag('debugShowFPS')) {
       this.fps = new FPS();
     }
-    events.on('scrollBarsHandler', this.setScrollBarsHandler);
   }
-
-  private setScrollBarsHandler = (scrollBarsHandler: ScrollBarsHandler) => {
-    this.scrollBarsHandler = scrollBarsHandler;
-  };
 
   start() {
     if (!this.raf) {
@@ -42,8 +34,6 @@ export class Update {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
     }
-    events.off('scrollBarsHandler', this.setScrollBarsHandler);
-    this.scrollBarsHandler = undefined;
   }
 
   private lastFocusElement?: HTMLElement;
@@ -85,7 +75,6 @@ export class Update {
       console.log('dirty: pixiApp viewport');
     }
 
-    this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
 
     const contentDirty = content.update(pixiApp.viewport.position, pixiApp.viewport.scaled);
