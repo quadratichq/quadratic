@@ -1,10 +1,12 @@
 //! Content is the main container for all data and UI elements. It is
 //! independent of any renderer.
 
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
+import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { Background } from '@/app/gridGL/UI/Background';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
@@ -22,7 +24,7 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, type Rectangle } from 'pixi.js';
+import { Container, Graphics, Point, type Rectangle } from 'pixi.js';
 
 export class Content extends Container {
   cellsSheets = new CellsSheets();
@@ -55,9 +57,10 @@ export class Content extends Container {
   copying = false;
   accentColor = colors.cursorCell;
 
-  // used to track the last time the content was updated (since its used by
-  // multiple renderers)
-  lastUpdateId = 0;
+  // keeps track of the last viewport position and scale that was used to update
+  // the content (some elements update differently based on the viewport)
+  private lastViewportPosition = new Point(-1, -1);
+  private lastViewportScale = 0;
 
   constructor() {
     super();
@@ -116,50 +119,50 @@ export class Content extends Container {
     thumbnail?: boolean;
   }): Promise<Container> => {
     // this is expensive, so we do it first, before blocking the canvas renderer
-    await content.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
+    await this.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
 
     // this blocks the canvas renderer
     this.copying = true;
 
-    content.gridLines.visible = options.gridLines ?? false;
-    content.uiCursor.visible = options.ai ?? false;
-    content.cellHighlights.visible = false;
-    content.multiplayerCursor.visible = false;
-    content.headings.visible = options.ai ?? false;
-    content.boxCells.visible = false;
-    content.cellsSheets.toggleOutlines(false);
-    content.copy.visible = false;
-    content.cellsSheets.cull(options.cull);
+    this.gridLines.visible = options.gridLines ?? false;
+    this.uiCursor.visible = options.ai ?? false;
+    this.cellHighlights.visible = false;
+    this.multiplayerCursor.visible = false;
+    this.headings.visible = options.ai ?? false;
+    this.boxCells.visible = false;
+    this.cellsSheets.toggleOutlines(false);
+    this.copy.visible = false;
+    this.cellsSheets.cull(options.cull);
     if (options.thumbnail) {
       this.cellsSheet.tables.forceUpdate(options.cull);
     }
-    return content;
+    return this;
   };
 
   cleanUpAfterCopying = (bounds: Rectangle): void => {
-    content.gridLines.visible = true;
-    content.uiCursor.visible = true;
-    content.cellHighlights.visible = true;
-    content.multiplayerCursor.visible = true;
-    content.headings.visible = true;
-    content.boxCells.visible = true;
-    content.htmlPlaceholders.hide();
-    content.cellsSheets.toggleOutlines();
-    content.copy.visible = true;
-    content.cellsSheets.cull(bounds);
+    this.gridLines.visible = true;
+    this.uiCursor.visible = true;
+    this.cellHighlights.visible = true;
+    this.multiplayerCursor.visible = true;
+    this.headings.visible = true;
+    this.boxCells.visible = true;
+    this.htmlPlaceholders.hide();
+    this.cellsSheets.toggleOutlines();
+    this.copy.visible = true;
+    this.cellsSheets.cull(bounds);
     this.cellsSheet.tables.forceUpdate(bounds);
     this.copying = false;
   };
 
   changeHoverTableHeaders(hoverTableHeaders: Container) {
-    content.hoverTableHeaders.removeChildren();
-    content.hoverTableHeaders.addChild(hoverTableHeaders);
+    this.hoverTableHeaders.removeChildren();
+    this.hoverTableHeaders.addChild(hoverTableHeaders);
   }
 
   adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
-    content.cellsSheets.adjustHeadings(options);
-    content.cellsSheets.adjustOffsetsBorders(options.sheetId);
-    content.cellsSheets.adjustCellsImages(options.sheetId);
+    this.cellsSheets.adjustHeadings(options);
+    this.cellsSheets.adjustOffsetsBorders(options.sheetId);
+    this.cellsSheets.adjustCellsImages(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.current]);
     if (sheets.current === options.sheetId) {
       events.emit('setDirty', {
@@ -172,7 +175,81 @@ export class Content extends Container {
     }
   }
 
-  update = () => {};
+  update(viewportPosition: Point, scale: number): boolean {
+    const viewportChanged =
+      this.lastViewportScale !== scale ||
+      viewportPosition.x !== this.lastViewportPosition.x ||
+      viewportPosition.y !== this.lastViewportPosition.y;
+    this.lastViewportScale = scale;
+    this.lastViewportPosition = viewportPosition;
+
+    const contentDirty =
+      this.gridLines.dirty ||
+      this.headings.dirty ||
+      this.boxCells.dirty ||
+      this.multiplayerCursor.dirty ||
+      this.uiCursor.dirty ||
+      this.cellImages.dirty ||
+      this.cellHighlights.isDirty() ||
+      this.cellMoving.dirty ||
+      this.validations.dirty ||
+      this.copy.dirty ||
+      this.singleCellOutlines.dirty ||
+      this.cellImages.dirty;
+
+    if (contentDirty && debugFlag('debugShowWhyRendering')) {
+      console.log(
+        `dirty: ${[
+          this.gridLines.dirty && 'gridLines',
+          this.headings.dirty && 'headings',
+          this.boxCells.dirty && 'boxCells',
+          this.multiplayerCursor.dirty && 'multiplayerCursor',
+          this.uiCursor.dirty && 'cursor',
+          this.cellImages.dirty && 'cellImages',
+          this.cellHighlights.isDirty() && 'cellHighlights',
+          this.cellMoving.dirty && 'cellMoving',
+          this.validations.dirty && 'validations',
+          this.copy.dirty && 'copy',
+          this.singleCellOutlines.dirty && 'singleCellOutlines',
+          this.cellImages.dirty && 'cellImages',
+        ]
+          .filter(Boolean)
+          .join(', ')}`
+      );
+    }
+
+    debugTimeReset();
+    this.gridLines.update();
+    debugTimeCheck('[Update] gridLines');
+    this.headings.update(viewportChanged);
+    debugTimeCheck('[Update] headings');
+    this.boxCells.update();
+    debugTimeCheck('[Update] boxCells');
+    this.cellHighlights.update();
+    debugTimeCheck('[Update] cellHighlights');
+    this.multiplayerCursor.update(viewportChanged);
+    debugTimeCheck('[Update] multiplayerCursor');
+    this.cellImages.update();
+    debugTimeCheck('[Update] cellImages');
+    this.cellMoving.update();
+    debugTimeCheck('[Update] cellMoving');
+    this.cellsSheets.update(viewportChanged);
+    debugTimeCheck('[Update] cellsSheets');
+    this.uiCursor.update(viewportChanged);
+    debugTimeCheck('[Update] cursor');
+    this.validations.update(viewportChanged);
+    debugTimeCheck('[Update] validations');
+    this.background.update(viewportChanged);
+    debugTimeCheck('[Update] backgrounds');
+    this.copy.update();
+    debugTimeCheck('[Update] copy');
+    this.singleCellOutlines.update(viewportChanged);
+    debugTimeCheck('[Update] singleCellOutlines');
+    this.cellImages.update();
+    debugTimeCheck('[Update] cellImages');
+
+    return contentDirty;
+  }
 }
 
 export const content = new Content();
