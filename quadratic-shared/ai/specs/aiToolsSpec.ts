@@ -691,7 +691,7 @@ Adds a data table to the sheet with sheet_name, requires the sheet name, top lef
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n\n
+Data tables are best for adding new tabular data to the sheet. Do not use this tool for adding non-tabular data to the sheet or data that requires inputs like calculators. Use set_cell_values for that kind of task.\n
 Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
 `,
     parameters: {
@@ -733,7 +733,7 @@ Do NOT use this tool if you want to convert existing data to a data table. Use c
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n
+Data tables are best for adding new tabular data to the sheet. Do not use this tool for adding non-tabular data to the sheet or data that requires inputs like calculators. Use set_cell_values for that kind of task.\n
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
@@ -746,6 +746,7 @@ Don't attempt to add formulas or code to data tables.\n`,
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+When adding new data or information to the sheet, bias towards using this function instead of add_data_table, unless the data is clearly tabular data.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
@@ -783,6 +784,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
 You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
 Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+When adding new data or information to the sheet, bias towards using this function instead of add_data_table, unless the data is clearly tabular data.\n
 CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
 When setting cell values, follow these rules for headers:\n
 1. The header row MUST be the first row in the cell_values array\n
@@ -1241,6 +1243,7 @@ If too large, the results will include page information:\n
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 There must be at least one non-null format to set.\n
+Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 `,
     parameters: {
       type: 'object',
@@ -1343,6 +1346,7 @@ Here are the formats you can set:\n
 - number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
 - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
 - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 There must be at least one format to set.\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
