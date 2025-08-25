@@ -33,9 +33,7 @@ async function handler(req: Request, res: Response) {
     throw new ApiError(403, 'User does not have permission to access billing for this team.');
   }
 
-  // Ensure team is eligible, or else callback
+  // Get team eligibility & return it
   const { isEligible } = await getTeamRetentionDiscountEligibility(team);
-
-  // You're good!
   return res.status(200).json({ isEligible });
 }

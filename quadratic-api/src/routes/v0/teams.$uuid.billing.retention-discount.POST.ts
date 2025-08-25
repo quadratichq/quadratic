@@ -39,7 +39,7 @@ async function handler(
     throw new ApiError(403, 'User does not have permission to access billing for this team.');
   }
 
-  // Make sure team is eligible (will throw if not)
+  // Check discount eligibility for team
   const retentionDiscount = await getTeamRetentionDiscountEligibility(team);
   if (!retentionDiscount.isEligible) {
     throw new ApiError(400, 'Team is not eligible for retention discount.');
