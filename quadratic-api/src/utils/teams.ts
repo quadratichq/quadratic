@@ -101,7 +101,8 @@ export function parseAndValidateClientDataKv(clientDataKv: unknown) {
 }
 
 /**
- * Throws, or returns the subscription ID if they're eligible
+ * Determines if a team is eligible for a retention discount, and returns the
+ * subscription ID if they are
  */
 export async function getTeamRetentionDiscountEligibility(
   team: Team
