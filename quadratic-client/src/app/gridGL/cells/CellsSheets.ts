@@ -59,20 +59,6 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll(id: string) {
-    this.children.forEach((child) => {
-      if (child.sheetId === id) {
-        if (this.current && this.current?.sheetId !== child.sheetId) {
-          child.show(pixiApp.viewport.getVisibleBounds());
-          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
-      } else {
-        child.hide();
-      }
-    });
-  }
-
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheetId === id) {
