@@ -1,3 +1,4 @@
+import { aiViewAtom } from '@/app/atoms/gridSettingsAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { TopBarFileNameAndLocationMenu } from '@/app/ui/menus/TopBar/TopBarFileNameAndLocationMenu';
@@ -13,9 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Label } from '@/shared/shadcn/ui/label';
+import { Switch } from '@/shared/shadcn/ui/switch';
+import { useRecoilState } from 'recoil';
 
 export const TopBar = () => {
   // TODO: what about embeddable view? should we show the file menu?
+
+  const [aiView, setAIView] = useRecoilState(aiViewAtom);
 
   return (
     <div
@@ -74,6 +80,8 @@ export const TopBar = () => {
       >
         {!isEmbed && (
           <>
+            <Switch id="ai-view" checked={aiView} onCheckedChange={setAIView} />
+            <Label htmlFor="ai-view">AI View</Label>
             <TopBarUsers />
             <div className="hidden md:block">
               <TopBarShareButton />

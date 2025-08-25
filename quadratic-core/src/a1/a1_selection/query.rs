@@ -636,6 +636,20 @@ impl A1Selection {
         })
     }
 
+    /// Returns the names of all TableRef table names in the selection.
+    pub fn table_refs(&self) -> Vec<String> {
+        let mut names = Vec::new();
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { range } => {
+                names.push(range.table_name.clone());
+            }
+            _ => (),
+        });
+        names.sort();
+        names.dedup();
+        names
+    }
+
     /// Replaces all table references to a specific table w/sheet refs.
     pub fn replace_table_refs_table(
         &self,

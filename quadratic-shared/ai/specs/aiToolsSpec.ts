@@ -684,7 +684,7 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
 `,
   },
   [AITool.AddDataTable]: {
-    sources: ['AIAnalyst', 'PDFImport'],
+    sources: ['AIAnalyst', 'PDFImport', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
@@ -827,7 +827,7 @@ This tool gets the code for a Python, JavaScript, Formula, or connection cell.
 Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
   },
   [AITool.SetCodeCellValue]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
@@ -907,7 +907,7 @@ Think carefully about the placement rules and examples. Always ensure the code c
 `,
   },
   [AITool.GetDatabaseSchemas]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
@@ -938,7 +938,7 @@ This tool should always be called before writing SQL. If you don't have the tabl
 `,
   },
   [AITool.SetSQLCodeCellValue]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
@@ -947,7 +947,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -1010,7 +1010,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -1373,7 +1373,7 @@ Completion is the delta that will be inserted at the cursor position in the code
 `,
   },
   [AITool.UserPromptSuggestions]: {
-    sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
+    sources: ['AIAnalyst', 'AIView', 'GetUserPromptSuggestions'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
@@ -1421,7 +1421,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
 `,
   },
   [AITool.PDFImport]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
@@ -1507,7 +1507,7 @@ The data table will include a table name as the first row, which will push down 
 `,
   },
   [AITool.WebSearch]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIView'],
     aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool searches the web for information based on the query.\n

@@ -178,7 +178,7 @@ export const handleAIRequest = async (
       },
     });
 
-    if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
+    if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant', 'AIView'].includes(args.source)) {
       const options = getModelOptions(modelKey, args);
 
       const backupModelKey = options.thinking
