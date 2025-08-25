@@ -38,8 +38,8 @@ impl GridController {
         let end_pos = rect.max;
 
         // first try html
-        if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html) {
-            if let Ok((ops, data_table_ops)) =
+        if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html)
+            && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
             {
                 self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
@@ -54,7 +54,6 @@ impl GridController {
 
                 return;
             }
-        }
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
@@ -544,7 +543,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id_1 = gc.sheet_ids()[0];
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet_id_2 = gc.sheet_ids()[1];
 
         gc.set_borders(

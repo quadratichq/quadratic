@@ -11,7 +11,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { isContentText } from 'quadratic-shared/ai/helpers/message.helper';
+import { createTextContent, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
@@ -124,7 +124,7 @@ export const AIUserMessageForm = memo(
         }
 
         submitPrompt({
-          content: [...files, { type: 'text', text: trimmedPrompt }],
+          content: [...files, createTextContent(trimmedPrompt)],
         });
       },
       [files, initialContent, submitPrompt]
@@ -138,7 +138,7 @@ export const AIUserMessageForm = memo(
     const handlePromptChange = useCallback(
       (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setPrompt(event.target.value);
-        onContentChange?.([...files, { type: 'text', text: event.target.value }]);
+        onContentChange?.([...files, createTextContent(event.target.value)]);
       },
       [files, onContentChange]
     );
@@ -146,7 +146,7 @@ export const AIUserMessageForm = memo(
     const handleFilesChange = useCallback(
       (newFiles: FileContent[]) => {
         setFiles(newFiles);
-        onContentChange?.([...newFiles, { type: 'text', text: prompt }]);
+        onContentChange?.([...newFiles, createTextContent(prompt)]);
       },
       [onContentChange, prompt]
     );
@@ -252,7 +252,7 @@ export const AIUserMessageForm = memo(
     return (
       <form
         className={cn(
-          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[:focus]:border-primary',
+          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
           editingOrDebugEditing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}

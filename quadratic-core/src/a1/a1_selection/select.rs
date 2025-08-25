@@ -374,15 +374,14 @@ impl A1Selection {
                                 }
                             }
                             ColRange::Col(col) => {
-                                if table.show_columns {
-                                    if let Some(col_index) = table.try_col_index(col) {
+                                if table.show_columns
+                                    && let Some(col_index) = table.try_col_index(col) {
                                         start = Some((
                                             table.bounds.min.x + col_index,
                                             table.bounds.min.y
                                                 + if table.show_name { 1 } else { 0 },
                                         ));
                                     }
-                                }
                             }
                             ColRange::ColRange(start_col, _) => {
                                 if let Some(col_index) = table.try_col_index(start_col) {
@@ -501,6 +500,14 @@ impl A1Selection {
                 end: CellRefRangeEnd::new_relative_xy(UNBOUNDED, last.end.row()),
             },
         });
+    }
+
+    /// Appends a selection to an existing selection and returns a new selection.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn append_selection(&self, other: &Self) -> Self {
+        let mut new_selection = self.clone();
+        new_selection.ranges.extend(other.ranges.clone());
+        new_selection
     }
 }
 

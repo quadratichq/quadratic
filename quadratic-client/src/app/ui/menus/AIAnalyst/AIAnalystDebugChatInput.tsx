@@ -27,17 +27,17 @@ export const AIAnalystDebugChatInput = memo(() => {
         setError(null);
         const newValue = e.target.value.trim();
         if (!newValue) {
-          setCurrentChat((prev) => ({ ...prev, messages: [] }));
+          setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages: [] }));
           return;
         }
 
         const parsedMessages = JSON.parse(newValue);
         const messages = ChatMessagesSchema.parse(parsedMessages);
-        setCurrentChat((prev) => ({ ...prev, messages }));
+        setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages }));
       } catch (error) {
         console.error(error);
         setError(`Invalid chat string: ${error}`);
-        setCurrentChat((prev) => ({ ...prev, messages: [] }));
+        setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages: [] }));
       }
     },
     [setCurrentChat]

@@ -34,8 +34,8 @@ impl GridController {
         ];
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name {
-            if self.data_table_at(sheet_pos).is_none() {
+        if let Some(code_cell_name) = code_cell_name
+            && self.data_table_at(sheet_pos).is_none() {
                 ops.push(Operation::DataTableOptionMeta {
                     sheet_pos,
                     name: Some(code_cell_name),
@@ -45,7 +45,6 @@ impl GridController {
                     show_columns: None,
                 });
             }
-        }
 
         ops
     }
@@ -207,7 +206,7 @@ mod test {
     #[test]
     fn test_rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         // (1, 1) = 1 + 1
         let first = |gc: &mut GridController| {
@@ -321,7 +320,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         second(&mut gc);
         third(&mut gc);
@@ -330,7 +329,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         first(&mut gc);
         third(&mut gc);
         second(&mut gc);
@@ -338,7 +337,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         third(&mut gc);
         second(&mut gc);
         first(&mut gc);
@@ -346,7 +345,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         third(&mut gc);
         first(&mut gc);
         second(&mut gc);

@@ -325,7 +325,7 @@ export class Drag extends Plugin {
           const deltaX = newPoint.x - this.last.x;
           this.parent.x += deltaX * (deltaX > 1 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1);
           const deltaY = newPoint.y - this.last.y;
-          this.parent.y += deltaY * (deltaY > 1 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1);
+          this.parent.y += deltaY * (deltaY > 1 && this.parent.y > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1);
           this.last = newPoint;
           if (!this.moved) {
             this.parent.emit('drag-start', {

@@ -1,7 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { CodeIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { useEffect, useState } from 'react';
 
 const examples = [
@@ -36,10 +37,10 @@ export function AIAnalystExamplePrompts() {
           key={title}
           className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
           onClick={() => {
-            mixpanel.track('[AIAnalyst].submitExamplePrompt', { title });
+            trackEvent('[AIAnalyst].submitExamplePrompt', { title });
             submitPrompt({
               messageSource: 'ExamplePrompts',
-              content: [{ type: 'text', text: prompt }],
+              content: [createTextContent(prompt)],
               context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
               messageIndex: 0,
             });

@@ -18,6 +18,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
 import logger from '../../utils/logger';
 
@@ -31,6 +32,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const {
     user: { id: userId },
   } = req;
+
+  const jwt = req.header('Authorization');
+  if (!jwt) {
+    throw new ApiError(403, 'User does not have a valid JWT.');
+  }
 
   const { body } = parseRequest(req, schema);
   const { chatId, fileUuid, messageSource, modelKey: clientModelKey, ...args } = body;
@@ -94,12 +100,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(args.source);
+    const toolUseContext = getToolUseContext(args.source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.language);
+    const quadraticContext = getQuadraticContext(args.source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
   }
 
@@ -158,11 +164,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       // If we aren't using s3 or the analytics bucket name is not set, don't save the data
       // This path is also used for self-hosted users, so we don't want to save the data in that case
       if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
-        return;
-      }
-
-      const jwt = req.header('Authorization');
-      if (!jwt) {
         return;
       }
 

@@ -14,6 +14,7 @@ import type {
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentPdfFile,
@@ -22,7 +23,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -30,10 +30,12 @@ import type {
   AIUsage,
   BedrockModelKey,
   Content,
+  ModelMode,
   ParsedAIResponse,
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): ContentBlock[] {
   return content
@@ -78,7 +80,10 @@ function convertToolResultContent(content: ToolResultContent): ToolResultContent
     });
 }
 
-export function getBedrockApiArgs(args: AIRequestHelperArgs): {
+export function getBedrockApiArgs(
+  args: AIRequestHelperArgs,
+  aiModelMode: ModelMode
+): {
   system: SystemContentBlock[] | undefined;
   messages: Message[];
   tools: Tool[] | undefined;
@@ -104,7 +109,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
             toolUse: {
               toolUseId: toolCall.id,
               name: toolCall.name,
-              input: JSON.parse(toolCall.arguments),
+              input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
           })),
         ],
@@ -135,14 +140,17 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     }
   }, []);
 
-  const tools = getBedrockTools(source, toolName);
+  const tools = getBedrockTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
@@ -228,12 +236,7 @@ export async function parseBedrockStream(
         if (chunk.contentBlockDelta.delta) {
           // text delta
           if ('text' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.text) {
-            const currentContent = {
-              ...(responseMessage.content.pop() ?? {
-                type: 'text',
-                text: '',
-              }),
-            };
+            const currentContent = { ...(responseMessage.content.pop() ?? createTextContent('')) };
             currentContent.text += chunk.contentBlockDelta.delta.text;
             responseMessage.content.push(currentContent);
           }
@@ -263,10 +266,7 @@ export async function parseBedrockStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -303,10 +303,7 @@ export function parseBedrockResponse(
 
   result.output?.message?.content?.forEach((contentBlock) => {
     if ('text' in contentBlock && contentBlock.text) {
-      responseMessage.content.push({
-        type: 'text',
-        text: contentBlock.text.trim(),
-      });
+      responseMessage.content.push(createTextContent(contentBlock.text.trim()));
     }
 
     if ('toolUse' in contentBlock && contentBlock.toolUse) {
@@ -320,10 +317,7 @@ export function parseBedrockResponse(
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

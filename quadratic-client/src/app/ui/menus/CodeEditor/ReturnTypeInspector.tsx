@@ -16,8 +16,9 @@ import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
-import mixpanel from 'mixpanel-browser';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { JSX, ReactNode } from 'react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -58,12 +59,12 @@ export const ReturnTypeInspector = memo(() => {
         variant="destructive"
         className="ml-auto"
         onClick={() => {
-          mixpanel.track('[AIAssistant].fixWithAI', {
+          trackEvent('[AIAssistant].fixWithAI', {
             language: codeCellRecoil.language,
           });
           submitPrompt({
             messageSource: 'FixWithAI',
-            content: [{ type: 'text', text: 'Fix the error in the code cell' }],
+            content: [createTextContent('Fix the error in the code cell')],
             messageIndex: 0,
             codeCell: codeCellRecoil,
           }).catch(console.error);

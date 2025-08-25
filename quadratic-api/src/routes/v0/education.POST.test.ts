@@ -1,44 +1,20 @@
-import request from 'supertest';
-import { app } from '../../app';
-import dbClient from '../../dbClient';
 import { auth0Mock } from '../../tests/auth0Mock';
-import { clearDb } from '../../tests/testDataGenerator';
-
-beforeAll(async () => {
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userHarvard',
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'userHarvard',
+      email: 'user@harvard.edu',
     },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userEligible',
+    {
+      user_id: 'userEligible',
+      email: 'user@eligible-domain.com',
     },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userIneligible',
+    {
+      user_id: 'userIneligible',
+      email: 'user@ineligible-domain.com',
     },
-  });
-});
-
-afterAll(clearDb);
-
-const auth0Users = [
-  {
-    user_id: 'userHarvard',
-    email: 'user@harvard.edu',
-  },
-  {
-    user_id: 'userEligible',
-    email: 'user@eligible-domain.com',
-  },
-  {
-    user_id: 'userIneligible',
-    email: 'user@ineligible-domain.com',
-  },
-];
-jest.mock('auth0', () => auth0Mock(auth0Users));
+  ])
+);
 jest.mock('quadratic-shared/sanityClient', () => ({
   sanityClient: {
     educationWhitelist: {
@@ -51,6 +27,34 @@ jest.mock('quadratic-shared/sanityClient', () => ({
   },
 }));
 
+import request from 'supertest';
+import { app } from '../../app';
+import dbClient from '../../dbClient';
+import { clearDb } from '../../tests/testDataGenerator';
+
+beforeAll(async () => {
+  await dbClient.user.create({
+    data: {
+      auth0Id: 'userHarvard',
+      email: 'user@harvard.edu',
+    },
+  });
+  await dbClient.user.create({
+    data: {
+      auth0Id: 'userEligible',
+      email: 'user@eligible-domain.com',
+    },
+  });
+  await dbClient.user.create({
+    data: {
+      auth0Id: 'userIneligible',
+      email: 'user@ineligible-domain.com',
+    },
+  });
+});
+
+afterAll(clearDb);
+
 describe('POST /v0/education', () => {
   describe('refresh education status', () => {
     it('marks an user from the universities list as enrolled', async () => {
@@ -62,7 +66,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userHarvard`)
+        .set('Authorization', `Bearer ValidToken userHarvard user@harvard.edu`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('ENROLLED');
@@ -78,7 +82,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userEligible`)
+        .set('Authorization', `Bearer ValidToken userEligible user@eligible-domain.com`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('ENROLLED');
@@ -94,7 +98,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userIneligible`)
+        .set('Authorization', `Bearer ValidToken userIneligible user@ineligible-domain.com`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('INELIGIBLE');

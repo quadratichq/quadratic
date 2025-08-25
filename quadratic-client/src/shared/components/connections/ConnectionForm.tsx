@@ -1,19 +1,21 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
+import { ConnectionFormAICheckbox } from '@/shared/components/connections/ConnectionFormAICheckbox';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
+  handleCancelForm: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
 };
@@ -22,16 +24,18 @@ export function ConnectionFormCreate({
   teamUuid,
   type,
   handleNavigateToListView,
+  handleNavigateToNewView,
 }: {
   teamUuid: string;
   type: ConnectionType;
   handleNavigateToListView: () => void;
+  handleNavigateToNewView: () => void;
 }) {
   const submit = useSubmit();
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = formValues;
-    mixpanel.track('[Connections].create', { type });
+    trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
@@ -39,6 +43,7 @@ export function ConnectionFormCreate({
 
   const props: ConnectionFormProps = {
     handleNavigateToListView,
+    handleCancelForm: () => handleNavigateToNewView(),
     handleSubmitForm,
   };
 
@@ -68,7 +73,7 @@ export function ConnectionFormEdit({
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
     const { name, type, ...typeDetails } = formValues;
-    mixpanel.track('[Connections].edit', { type });
+    trackEvent('[Connections].edit', { type });
     const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
@@ -81,6 +86,7 @@ export function ConnectionFormEdit({
       props={{
         connection: fetcher.data.connection,
         handleNavigateToListView,
+        handleCancelForm: () => handleNavigateToListView(),
         handleSubmitForm,
       }}
     />
@@ -107,8 +113,16 @@ function ConnectionFormWrapper({
   const { ConnectionForm } = connectionsByType[type];
   const { form } = connectionsByType[type].useConnectionForm(props.connection);
 
+  // Require the user check the acknowledge box (but this is not tracked in the form state)
+  const [aiCheckboxChecked, setAiCheckboxChecked] = useState(false);
+  const showError = form.formState.isSubmitted && !aiCheckboxChecked;
+
   // This is a middleware that tests the connection before saving
   const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
+    if (!aiCheckboxChecked) {
+      return;
+    }
+
     if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
       props.handleSubmitForm(formValues);
       return;
@@ -138,8 +152,11 @@ function ConnectionFormWrapper({
 
   return (
     <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
+      <ConnectionFormAICheckbox value={aiCheckboxChecked} setValue={setAiCheckboxChecked} showError={showError} />
+
       <ConnectionFormActions
         form={form}
+        handleCancelForm={props.handleCancelForm}
         handleNavigateToListView={props.handleNavigateToListView}
         connectionUuid={props.connection?.uuid}
         connectionType={type}

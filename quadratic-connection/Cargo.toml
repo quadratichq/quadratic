@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-connection"
-version = "0.15.2"
+version = "0.16.4"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -31,7 +31,14 @@ parquet = { version = "=54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ "auth", "environment", "net", "quadratic-api", "sql" ] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+  "auth",
+  "cache",
+  "environment",
+  "net",
+  "quadratic-api",
+  "sql",
+] }
 reqwest = { version = "0.11.22", features = [
   "cookies",
   "json",
@@ -62,9 +69,6 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 [dev-dependencies]
 dotenv = "0.15.0"
 fake = { version = "2.9.1", features = ["derive"] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
-  "test",
-] }
 tracing-test = "0.2.4"
 
 [features]

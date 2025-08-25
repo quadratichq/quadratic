@@ -1,3 +1,4 @@
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -6,22 +7,12 @@ export function useCurrentDateTimeContextMessages() {
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `The current date is ${new Date().toString()}.`,
-          },
-        ],
+        content: [createTextContent(`The current date is ${new Date().toString()}.`)],
         contextType: 'currentDate',
       },
       {
         role: 'assistant',
-        content: [
-          {
-            type: 'text',
-            text: `I understand the current date and user locale.`,
-          },
-        ],
+        content: [createTextContent(`I understand the current date and user locale.`)],
         contextType: 'currentDate',
       },
     ];

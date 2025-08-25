@@ -92,11 +92,10 @@ impl GridController {
             // chart_output setting since it may have been set by the user.
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
-            if let Some((w, h)) = old_data_table.chart_output {
-                if w > 0 && h > 0 {
+            if let Some((w, h)) = old_data_table.chart_output
+                && w > 0 && h > 0 {
                     new_data_table.chart_output = old_data_table.chart_output.to_owned();
                 }
-            }
         }
 
         // enforce unique data table names
@@ -190,8 +189,8 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
-            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
+            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user()
+                && let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows_to_resize = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
                     if !rows_to_resize.is_empty() {
                         transaction
@@ -201,7 +200,6 @@ impl GridController {
                             .extend(rows_to_resize);
                     }
                 }
-            }
 
             self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
 

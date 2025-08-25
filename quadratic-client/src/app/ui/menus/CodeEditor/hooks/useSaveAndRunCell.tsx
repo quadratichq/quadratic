@@ -5,12 +5,11 @@ import {
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useRecoilCallback } from 'recoil';
 
 export const useSaveAndRunCell = () => {
@@ -30,7 +29,6 @@ export const useSaveAndRunCell = () => {
           y: pos.y,
           codeString,
           language,
-          cursor: sheets.getCursorPosition(),
         });
 
         set(codeEditorEditorContentAtom, codeString);
@@ -71,7 +69,7 @@ export const useSaveAndRunCell = () => {
             ]);
           }
         }
-        mixpanel.track('[CodeEditor].cellRun', {
+        trackEvent('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
           language: codeCell.language,
         });

@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 
 /// A column in a database
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct SchemaColumn {
     pub name: String,
     pub r#type: String,
@@ -14,7 +14,7 @@ pub struct SchemaColumn {
 }
 
 /// A table in a database
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct SchemaTable {
     pub name: String,
     pub schema: String,

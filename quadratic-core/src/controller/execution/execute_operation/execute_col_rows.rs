@@ -57,8 +57,8 @@ impl GridController {
 
             sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = min_column;
 
@@ -80,7 +80,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -122,8 +121,8 @@ impl GridController {
 
             sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = min_row;
 
@@ -145,7 +144,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
         Ok(())
     }
@@ -204,8 +202,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = column + 1;
 
@@ -220,7 +218,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -240,8 +237,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = row + 1;
 
@@ -257,7 +254,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -292,8 +288,6 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use uuid::Uuid;
-
     use crate::{
         Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
         Value,
@@ -301,7 +295,7 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{rules::ValidationRule, validation::Validation},
+            sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
         },
         test_create_gc,
         test_util::*,
@@ -330,7 +324,7 @@ mod tests {
     fn adjust_code_cells_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.add_sheet(Some("Other".to_string()));
+        gc.add_sheet(Some("Other".to_string()), None, None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
         gc.set_code_cell(
@@ -767,8 +761,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -792,8 +786,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -817,8 +811,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -842,8 +836,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),

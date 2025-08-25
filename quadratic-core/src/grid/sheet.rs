@@ -16,6 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
+use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -32,6 +33,7 @@ pub mod clipboard;
 pub mod code;
 pub mod col_row;
 pub mod columns;
+mod content;
 pub mod data_table;
 pub mod data_tables;
 mod format_summary;
@@ -122,10 +124,10 @@ impl Sheet {
         }
 
         // Check if sheet name already exists
-        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
-            if existing_sheet_id != sheet_id {
-                return Err("Sheet name must be unique".to_string());
-            }
+        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name)
+            && existing_sheet_id != sheet_id
+        {
+            return Err("Sheet name must be unique".to_string());
         }
 
         Ok(())
@@ -153,32 +155,6 @@ impl Sheet {
                 pos,
             );
         });
-    }
-
-    /// Returns true if the cell at Pos has content (ie, not blank). Also checks
-    /// tables. Ignores Blanks except in tables.
-    pub fn has_content(&self, pos: Pos) -> bool {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y))
-            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
-        {
-            return true;
-        }
-        self.has_table_content(pos, false)
-    }
-
-    /// Returns true if the cell at Pos has content (ie, not blank). Ignores
-    /// Blanks in tables.
-    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y))
-            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
-        {
-            return true;
-        }
-        self.has_table_content_ignore_blanks(pos)
     }
 
     /// Returns true if the cell at Pos is at a vertical edge of a table.
@@ -230,13 +206,13 @@ impl Sheet {
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = self.cell_value_ref(pos) {
-            if !matches!(
+        if let Some(cell_value) = self.cell_value_ref(pos)
+            && !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
-            ) {
-                return Some(cell_value.clone());
-            }
+            )
+        {
+            return Some(cell_value.clone());
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
@@ -247,7 +223,7 @@ impl Sheet {
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
         self.display_value(pos).map(|value| JsCellValue {
             value: value.to_string(),
-            kind: value.type_name().to_string(),
+            kind: value.into(),
         })
     }
 
@@ -255,35 +231,58 @@ impl Sheet {
     pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
         self.display_value(pos).map(|cell_value| match cell_value {
             CellValue::Image(_) => {
-                CellValue::Image("Javascript chart".into()).to_cell_value_pos(pos)
+                CellValue::Image("Javascript chart code cell anchor".into()).to_cell_value_pos(pos)
             }
-            CellValue::Html(_) => CellValue::Html("Python chart".into()).to_cell_value_pos(pos),
+            CellValue::Html(_) => {
+                CellValue::Html("Python chart code cell anchor".into()).to_cell_value_pos(pos)
+            }
             _ => cell_value.to_cell_value_pos(pos),
         })
     }
 
-    /// Returns the JsCellValuePos in a rect
-    pub fn js_cell_value_pos_in_rect(
+    /// Returns the first and last rows of visible cell values in a rect for ai context.
+    pub fn js_cell_value_description(
         &self,
-        rect: Rect,
-        max_rows: Option<u32>,
-    ) -> Vec<Vec<JsCellValuePos>> {
-        let mut rect_values = Vec::new();
-        for y in rect
-            .y_range()
-            .take(max_rows.unwrap_or(rect.height()) as usize)
-        {
-            let mut row_values = Vec::new();
-            for x in rect.x_range() {
-                if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
-                    row_values.push(cell_value_pos);
-                }
+        bounds: Rect,
+        max_rows: Option<usize>,
+    ) -> JsCellValueSummary {
+        if let Some(max_rows) = max_rows {
+            let start_range = Rect::new(
+                bounds.min.x,
+                bounds.min.y,
+                bounds.max.x,
+                bounds.min.y + (bounds.height() as i64).min(max_rows as i64) - 1,
+            );
+            let start_values = self.cells_as_string(start_range);
+
+            let mut starting_last_row = bounds.max.y - max_rows as i64 + 1;
+            if starting_last_row < start_range.max.y {
+                starting_last_row = start_range.max.y + 1;
             }
-            if !row_values.is_empty() {
-                rect_values.push(row_values);
+            let mut end_values: Option<Vec<Vec<JsCellValueCode>>> = None;
+            let mut end_range: Option<Rect> = None;
+            if starting_last_row <= bounds.max.y {
+                let end_range_rect =
+                    Rect::new(bounds.min.x, starting_last_row, bounds.max.x, bounds.max.y);
+                end_values = Some(self.cells_as_string(end_range_rect));
+                end_range = Some(end_range_rect);
+            }
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: Some(start_range.a1_string()),
+                end_range: end_range.map(|r| r.a1_string()),
+                start_values: Some(start_values),
+                end_values,
+            }
+        } else {
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: None,
+                end_range: None,
+                start_values: None,
+                end_values: None,
             }
         }
-        rect_values
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -344,16 +343,16 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos) {
-            if let Some(data_table) = self.data_table_at(&data_table_pos) {
-                if !data_table.has_spill() && !data_table.has_error() {
-                    // pos relative to data table pos (top left pos)
-                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    let table_format = data_table.get_format(format_pos);
-                    let combined_format = table_format.combine(&sheet_format);
-                    return combined_format;
-                }
-            }
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos)
+            && let Some(data_table) = self.data_table_at(&data_table_pos)
+            && !data_table.has_spill()
+            && !data_table.has_error()
+        {
+            // pos relative to data table pos (top left pos)
+            let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+            let table_format = data_table.get_format(format_pos);
+            let combined_format = table_format.combine(&sheet_format);
+            return combined_format;
         }
 
         sheet_format
@@ -386,15 +385,15 @@ impl Sheet {
             if format.strike_through.is_some_and(|s| s) {
                 values.push("strike through".to_string());
             }
-            if let Some(text_color) = format.text_color {
-                if !text_color.is_empty() {
-                    values.push(format!("text color is {}", text_color.clone()));
-                }
+            if let Some(text_color) = format.text_color
+                && !text_color.is_empty()
+            {
+                values.push(format!("text color is {}", text_color.clone()));
             }
-            if let Some(fill_color) = format.fill_color {
-                if !fill_color.is_empty() {
-                    values.push(format!("fill color is {}", fill_color.clone()));
-                }
+            if let Some(fill_color) = format.fill_color
+                && !fill_color.is_empty()
+            {
+                values.push(format!("fill color is {}", fill_color.clone()));
             }
             if let Some(align) = format.align {
                 values.push(format!("horizontal align is {}", align.clone()));
@@ -555,7 +554,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
-    use crate::grid::js_types::{CellFormatSummary, CellType};
+    use crate::grid::js_types::{CellFormatSummary, CellType, JsCellValueKind};
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
@@ -954,66 +953,9 @@ mod test {
             js_cell_value,
             Some(JsCellValue {
                 value: "test".to_string(),
-                kind: "text".to_string()
+                kind: JsCellValueKind::Text
             })
         );
-    }
-
-    #[test]
-    fn test_has_content() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        let pos = Pos { x: 1, y: 1 };
-
-        // Empty cell should have no content
-        assert!(!sheet.has_content(pos));
-
-        // Text content
-        sheet.set_cell_value(pos, "test");
-        assert!(sheet.has_content(pos));
-
-        // Blank value should count as no content
-        sheet.set_cell_value(pos, CellValue::Blank);
-        assert!(!sheet.has_content(pos));
-
-        // Empty string should count as no content
-        sheet.set_cell_value(pos, "");
-        assert!(!sheet.has_content(pos));
-
-        // Number content
-        sheet.set_cell_value(pos, CellValue::Text("test".to_string()));
-        assert!(sheet.has_content(pos));
-
-        // Table content
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Array(Array::from(vec![vec!["test", "test"]])),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        sheet.data_table_insert_full(&pos, dt.clone());
-        assert!(sheet.has_content(pos));
-        assert!(sheet.has_content(Pos { x: 2, y: 2 }));
-        assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
-
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Single(CellValue::Image("Image".to_string())),
-            false,
-            Some(true),
-            Some(true),
-            Some((5, 5)),
-        );
-        let pos2 = Pos { x: 10, y: 10 };
-        sheet.data_table_insert_full(&pos2, dt);
-        assert!(sheet.has_content(pos2));
-        assert!(sheet.has_content(Pos { x: 14, y: 10 }));
-        assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
     }
 
     #[test]
@@ -1026,7 +968,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "test".to_string(),
-                kind: "text".to_string(),
+                kind: JsCellValueKind::Text,
                 pos: pos.a1_string(),
             })
         );
@@ -1037,8 +979,8 @@ mod test {
         assert_eq!(
             js_cell_value_pos,
             Some(JsCellValuePos {
-                value: "Javascript chart".to_string(),
-                kind: "image".to_string(),
+                value: "Javascript chart code cell anchor".to_string(),
+                kind: JsCellValueKind::Image,
                 pos: pos.a1_string(),
             })
         );
@@ -1049,8 +991,8 @@ mod test {
         assert_eq!(
             js_cell_value_pos,
             Some(JsCellValuePos {
-                value: "Python chart".to_string(),
-                kind: "html".to_string(),
+                value: "Python chart code cell anchor".to_string(),
+                kind: JsCellValueKind::Html,
                 pos: pos.a1_string(),
             })
         );
@@ -1062,10 +1004,10 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                max: Pos { x: 10, y: 100 },
             },
             Array::from(
-                (1..=1000)
+                (1..=100)
                     .map(|row| {
                         (1..=10)
                             .map(|_| {
@@ -1083,7 +1025,7 @@ mod test {
 
         let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.js_cell_value_pos_in_rect(
+        let result = sheet.js_cell_value_description(
             Rect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },
@@ -1091,41 +1033,16 @@ mod test {
             Some(max_rows),
         );
 
-        assert_eq!(js_cell_value_pos_in_rect.len(), max_rows as usize);
-
-        let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
-            .map(|row| {
-                (1..=10)
-                    .map(|col| {
-                        if row == 1 {
-                            JsCellValuePos {
-                                value: "heading".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        } else {
-                            JsCellValuePos {
-                                value: "value".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        }
-                    })
-                    .collect::<Vec<JsCellValuePos>>()
-            })
-            .collect::<Vec<Vec<JsCellValuePos>>>();
-
+        assert_eq!(result.total_range, "A1:J1000");
+        assert_eq!(result.start_range, Some("A1:J3".to_string()));
         assert_eq!(
-            js_cell_value_pos_in_rect,
-            expected_js_cell_value_pos_in_rect
+            result.start_values.unwrap().iter().flatten().count(),
+            max_rows * 10
+        );
+        assert_eq!(result.end_range, Some("A998:J1000".to_string()));
+        assert_eq!(
+            result.end_values.unwrap().iter().flatten().count(),
+            max_rows * 10
         );
     }
 
@@ -1282,76 +1199,5 @@ mod test {
         assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
         assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
         assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
-    }
-
-    #[test]
-    fn test_has_content_ignore_blank_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        let pos = pos![A1];
-
-        // Empty cell should have no content
-        assert!(!sheet.has_content_ignore_blank_table(pos));
-
-        // Text content
-        sheet.set_cell_value(pos, "test");
-        assert!(sheet.has_content_ignore_blank_table(pos));
-
-        // Blank value should count as no content
-        sheet.set_cell_value(pos, CellValue::Blank);
-        assert!(!sheet.has_content_ignore_blank_table(pos));
-
-        // Empty string should count as no content
-        sheet.set_cell_value(pos, "");
-        assert!(!sheet.has_content_ignore_blank_table(pos));
-
-        // Table with non-blank content
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Array(Array::from(vec![vec!["test", "test"]])),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        sheet.data_table_insert_full(&pos, dt.clone());
-        assert!(sheet.has_content_ignore_blank_table(pos));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
-
-        // Table with blank content should be ignored
-        sheet.test_set_code_run_array(10, 10, vec!["1", "", "", "4"], false);
-
-        let a1_context = gc.a1_context().clone();
-        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 10, y: 10 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 11, y: 10 }));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
-
-        // Chart output should still count as content
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Single(CellValue::Html("Html".to_string())),
-            false,
-            Some(true),
-            Some(true),
-            Some((5, 5)),
-        );
-        let pos3 = Pos { x: 20, y: 20 };
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos3, dt);
-
-        let a1_context = gc.a1_context().clone();
-        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(sheet.has_content_ignore_blank_table(pos3));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));
     }
 }

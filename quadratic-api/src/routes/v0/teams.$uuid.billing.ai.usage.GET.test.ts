@@ -111,7 +111,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it("check usage in user's free team", async () => {
       const messages = Array.from({ length: 5 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team1Id, messages });
@@ -132,7 +132,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('check usage in foreign team', async () => {
       const messages = Array.from({ length: 7 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team2Id, messages });
@@ -155,7 +155,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it("user's free team", async () => {
       const messages = Array.from({ length: 21 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team1Id, messages });
@@ -175,7 +175,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it("user's paid team", async () => {
       const messages = Array.from({ length: 23 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team1Id, messages });
@@ -194,7 +194,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('foreign free team', async () => {
       const messages = Array.from({ length: 21 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team2Id, messages });
@@ -214,7 +214,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
     it('foreign paid team', async () => {
       const messages = Array.from({ length: 23 }, (_, index) => ({
         messageIndex: index,
-        model: 'bedrock-anthropic:claude:thinking-toggle-off',
+        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
         messageType: 'userPrompt' as const,
       }));
       await createAIChat({ userId: owner1Id, teamId: team2Id, messages });

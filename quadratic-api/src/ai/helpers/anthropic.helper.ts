@@ -11,6 +11,7 @@ import type {
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentPdfFile,
@@ -19,7 +20,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -28,10 +28,12 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   Content,
+  ModelMode,
   ParsedAIResponse,
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
   return content
@@ -70,10 +72,7 @@ function convertContent(content: Content): Array<ContentBlockParam> {
         };
         return documentBlockParam;
       } else {
-        const textBlockParam: TextBlockParam = {
-          type: 'text' as const,
-          text: content.text.trim(),
-        };
+        const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
       }
     });
@@ -94,10 +93,7 @@ function convertToolResultContent(content: ToolResultContent): Array<TextBlockPa
         };
         return imageBlockParam;
       } else {
-        const textBlockParam: TextBlockParam = {
-          type: 'text' as const,
-          text: content.text.trim(),
-        };
+        const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
       }
     });
@@ -105,6 +101,7 @@ function convertToolResultContent(content: ToolResultContent): Array<TextBlockPa
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   promptCaching: boolean,
   thinking: boolean | undefined
 ): {
@@ -139,29 +136,27 @@ export function getAnthropicApiArgs(
                 (!!thinking || content.type === 'text')
             )
             .map((content) => {
-              if (content.type === 'anthropic_thinking') {
-                return {
-                  type: 'thinking' as const,
-                  thinking: content.text,
-                  signature: content.signature,
-                };
-              } else if (content.type === 'anthropic_redacted_thinking') {
-                return {
-                  type: 'redacted_thinking' as const,
-                  data: content.text,
-                };
-              } else {
-                return {
-                  type: 'text' as const,
-                  text: content.text.trim(),
-                };
+              switch (content.type) {
+                case 'anthropic_thinking':
+                  return {
+                    type: 'thinking' as const,
+                    thinking: content.text,
+                    signature: content.signature,
+                  };
+                case 'anthropic_redacted_thinking':
+                  return {
+                    type: 'redacted_thinking' as const,
+                    data: content.text,
+                  };
+                default:
+                  return createTextContent(content.text.trim());
               }
             }),
           ...message.toolCalls.map((toolCall) => ({
             type: 'tool_use' as const,
             id: toolCall.id,
             name: toolCall.name,
-            input: JSON.parse(toolCall.arguments),
+            input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
           })),
         ],
       };
@@ -175,10 +170,7 @@ export function getAnthropicApiArgs(
             tool_use_id: toolResult.id,
             content: convertToolResultContent(toolResult.content),
           })),
-          {
-            type: 'text' as const,
-            text: 'Given the above tool calls results, continue with your response.',
-          },
+          createTextContent('Given the above tool calls results, continue with your response.'),
         ],
       };
       return [...acc, anthropicMessages];
@@ -193,14 +185,17 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
-  const tools = getAnthropicTools(source, toolName);
+  const tools = getAnthropicTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
@@ -258,11 +253,7 @@ export async function parseAnthropicStream(
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
             if (chunk.content_block.text.trim()) {
-              responseMessage.content.push({
-                type: 'text',
-                text: chunk.content_block.text,
-              });
-
+              responseMessage.content.push(createTextContent(chunk.content_block.text));
               responseMessage.toolCalls.forEach((toolCall) => {
                 toolCall.loading = false;
               });
@@ -299,18 +290,16 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'content_block_delta':
           if (chunk.delta.type === 'text_delta') {
             if (chunk.delta.text) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'text') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
-                currentContent = {
-                  type: 'text',
-                  text: '',
-                };
+                currentContent = createTextContent('');
               }
 
               currentContent.text += chunk.delta.text ?? '';
@@ -334,7 +323,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.thinking) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -351,7 +340,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.signature) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -368,6 +357,7 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'content_block_stop':
           {
             const toolCall = responseMessage.toolCalls.pop();
@@ -376,6 +366,7 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'message_start':
           if (chunk.message.usage) {
             usage.inputTokens = Math.max(usage.inputTokens, chunk.message.usage.input_tokens);
@@ -387,6 +378,7 @@ export async function parseAnthropicStream(
             );
           }
           break;
+
         case 'message_delta':
           if (chunk.usage) {
             usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.output_tokens);
@@ -405,10 +397,7 @@ export async function parseAnthropicStream(
   );
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -446,12 +435,10 @@ export function parseAnthropicResponse(
     switch (message.type) {
       case 'text':
         if (message.text) {
-          responseMessage.content.push({
-            type: 'text',
-            text: message.text,
-          });
+          responseMessage.content.push(createTextContent(message.text));
         }
         break;
+
       case 'tool_use':
         responseMessage.toolCalls.push({
           id: message.id,
@@ -460,6 +447,7 @@ export function parseAnthropicResponse(
           loading: false,
         });
         break;
+
       case 'thinking':
         if (message.thinking) {
           responseMessage.content.push({
@@ -469,6 +457,7 @@ export function parseAnthropicResponse(
           });
         }
         break;
+
       case 'redacted_thinking':
         if (message.data) {
           responseMessage.content.push({
@@ -481,10 +470,7 @@ export function parseAnthropicResponse(
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

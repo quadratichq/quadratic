@@ -27,7 +27,12 @@ export const handleAnthropicRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.promptCaching, options.thinking);
+  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(
+    args,
+    options.aiModelMode,
+    options.promptCaching,
+    options.thinking
+  );
 
   const thinking: ThinkingConfigParam = options.thinking
     ? {

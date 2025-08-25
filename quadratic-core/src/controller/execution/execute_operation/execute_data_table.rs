@@ -784,8 +784,8 @@ impl GridController {
             let mut old_show_name = None;
             let mut old_show_columns = None;
 
-            if let Some(name) = name.as_mut() {
-                if old_name != *name {
+            if let Some(name) = name.as_mut()
+                && old_name != *name {
                     // sanitize table name
                     let table_name = sanitize_table_name(name.to_string());
 
@@ -807,7 +807,6 @@ impl GridController {
                     // mark code cells dirty to update meta data
                     transaction.add_code_cell(sheet_id, data_table_pos);
                 }
-            }
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.as_mut(), old_columns.as_ref()) {
@@ -870,13 +869,12 @@ impl GridController {
                     }
 
                     // if the header is first row, update the column names in the data table value
-                    if dt.header_is_first_row {
-                        if let Some(columns) = columns.as_ref() {
+                    if dt.header_is_first_row
+                        && let Some(columns) = columns.as_ref() {
                             for (index, column) in columns.iter().enumerate() {
                                 dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
                             }
                         }
-                    }
 
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
@@ -1146,14 +1144,13 @@ impl GridController {
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    if dt.header_is_first_row && column_header.is_none() {
-                        if let Some(values) = &values {
+                    if dt.header_is_first_row && column_header.is_none()
+                        && let Some(values) = &values {
                             let first_value = values[0].to_owned();
                             if !matches!(first_value, CellValue::Blank) {
                                 column_header = Some(first_value.to_string());
                             }
                         }
-                    }
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
@@ -1302,9 +1299,9 @@ impl GridController {
                         }
                     }
 
-                    if show_columns {
-                        if let Some(column_header) = &old_column_header {
-                            if let (Ok(value_x), Ok(value_y)) =
+                    if show_columns
+                        && let Some(column_header) = &old_column_header
+                            && let (Ok(value_x), Ok(value_y)) =
                                 (u32::try_from(display_index - 1), u32::try_from(0))
                             {
                                 sheet_cell_values.set(
@@ -1313,8 +1310,6 @@ impl GridController {
                                     column_header.to_owned().into(),
                                 );
                             }
-                        }
-                    }
 
                     // collect formats to flatten
                     let formats_rect = Rect::from_numbers(
@@ -1381,7 +1376,8 @@ impl GridController {
                     reverse_operations.extend(self.check_deleted_validations(
                         transaction,
                         sheet_id,
-                        deleted_selection,
+                        &deleted_selection,
+                        None,
                     ));
                 }
             }
@@ -2197,7 +2193,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let checkbox = test_create_checkbox(&mut gc, selection);
+        let checkbox = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
 
         gc.flatten_data_table(pos![sheet_id!a1], None);
@@ -2763,7 +2759,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 2, 2);
         let selection = A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context);
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
 
         let checkbox_pos = pos![sheet_id!a3];
         assert_validation_id(&gc, checkbox_pos, Some(validation.id));

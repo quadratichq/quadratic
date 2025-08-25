@@ -16,7 +16,7 @@ import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/compo
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useMemo } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -61,7 +61,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
           if ('toolCalls' in message) {
             for (const toolCall of message.toolCalls) {
               try {
-                const args = JSON.parse(toolCall.arguments);
+                const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                 aiToolsSpec[toolCall.name as AITool].responseSchema.parse(args);
                 const result = await aiToolsActions[toolCall.name as AITool](args, {
                   source: 'AIAnalyst',
@@ -109,7 +109,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               className="text-muted-foreground hover:text-foreground"
               disabled={loading || (currentUserMessagesCount === 0 && !showChatHistory)}
               onClick={() => {
-                mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessagesCount });
+                trackEvent('[AIAnalyst].startNewChat', { messageCount: currentUserMessagesCount });
                 setCurrentChat({
                   id: '',
                   name: '',
