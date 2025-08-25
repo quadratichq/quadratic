@@ -1,12 +1,17 @@
-import type { JsCellValueCode, JsCellValueDescription, JsGetAICellResult } from '@/app/quadratic-core-types';
-import BigNumber from 'bignumber.js';
+import { MAX_ROWS } from '@/app/ai/constants/context';
+import type {
+  JsCellValueCode,
+  JsCellValueRanges,
+  JsCellValueSummary,
+  JsGetAICellResult,
+} from '@/app/quadratic-core-types';
 
 const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): string => {
   if (showLanguage && cell.language && typeof cell.language !== 'object') {
     return `{"language": "${cell.language}", result: ${convertJsCellValue(cell, false)}}`;
   }
   if (cell.kind === 'Number') {
-    return new BigNumber(cell.value).toString();
+    return `"${cell.value}"`;
   } else if (cell.kind === 'Text') {
     return `"${cell.value}"`;
   } else if (cell.kind === 'Logical') {
@@ -38,8 +43,9 @@ const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): strin
 };
 
 /// Converts a jsGetAICellResult to markdown
-export const AICellsToMarkdown = (description: JsCellValueDescription, showLanguage: boolean): string => {
-  return `
+export const getAICellsToMarkdown = (description: JsCellValueRanges, showLanguage: boolean): string => {
+  if (description.values) {
+    return `
 \`\`\`json
 {
   "total_range": "${description.total_range}",
@@ -50,6 +56,26 @@ ${description.values.map((row) => `      [${row.map((cell) => convertJsCellValue
 }
 \`\`\`
 `;
+  }
+  return `
+Bounds: ${description.total_range}.
+`;
+};
+
+export const getAICellSummaryToMarkdown = (tableName: string | undefined, summary: JsCellValueSummary): string => {
+  let text = '';
+  if (summary.start_values && summary.start_range) {
+    text += `
+First rows${tableName ? ` of'${tableName}'` : ''}${summary.start_range !== summary.total_range ? ` (limited to ${MAX_ROWS} rows)` : ''}:
+${getAICellsToMarkdown({ total_range: summary.total_range, range: summary.start_range, values: summary.start_values }, false)}`;
+
+    if (summary.end_values && summary.end_range) {
+      text += `
+Last rows${tableName ? ` of '${tableName}'` : ''}${summary.end_range !== summary.total_range ? ` (limited to ${MAX_ROWS} rows)` : ''}:
+${getAICellsToMarkdown({ total_range: summary.total_range, range: summary.end_range, values: summary.end_values }, false)}`;
+    }
+  }
+  return text;
 };
 
 export const AICellResultToMarkdown = (result: JsGetAICellResult): string => {
@@ -59,12 +85,12 @@ export const AICellResultToMarkdown = (result: JsGetAICellResult): string => {
     let output = '';
     if (result.page !== result.total_pages) {
       output += `
-IMPORTANT: There are ${result.total_pages} pages in this result. Use this tool again with page = ${result.page + 1} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n`;
+IMPORTANT: There are ${result.total_pages} pages in this result. Use this tool again with page = ${result.page + 1} for the next page, only if needed for solving the user's request.\n\n`;
     } else if (result.page !== 0 || result.total_pages !== 0) {
       output += `
 The selection ${result.selection} for page = ${result.page + 1} (out of ${result.total_pages + 1}) has: `;
     }
-    output += result.values.map((value) => AICellsToMarkdown(value, true)).join('\n\n');
+    output += result.values.map((value) => getAICellsToMarkdown(value, true)).join('\n\n');
     return output;
   }
 };

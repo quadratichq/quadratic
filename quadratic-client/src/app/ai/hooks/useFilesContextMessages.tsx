@@ -1,4 +1,5 @@
 import {
+  createTextContent,
   filterImageFilesInChatMessages,
   filterPdfFilesInChatMessages,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -15,10 +16,8 @@ export function useFilesContextMessages() {
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
-Note: This is an internal message for context. Do not quote it in your response.\n\n
+            createTextContent(
+              `Note: This is an internal message for context. Do not quote it in your response.\n\n
 
 ${
   imageFiles.length === 0 && pdfFiles.length === 0
@@ -46,24 +45,21 @@ Use pdf files when prompted by calling the pdf_import for extracting data. Any r
     : ''
 }\n
 
-Use these attached files as context to answer my questions.
-`,
-            },
+Use these attached files as context to answer my questions.`
+            ),
           ],
           contextType: 'files',
         },
         {
           role: 'assistant',
           content: [
-            {
-              type: 'text',
-              text: `
-I understand the files context,
+            createTextContent(
+              `I understand the files context,
 ${imageFiles.length > 0 ? `I will use the attached images as context to answer your questions.` : ''}\n
 ${pdfFiles.length > 0 ? `When prompted, I will use pdf_import tool to extract data from the attached pdf files.` : ''}\n
 I will reference it to answer the following messages.\n
-How can I help you?`,
-            },
+How can I help you?`
+            ),
           ],
           contextType: 'files',
         },

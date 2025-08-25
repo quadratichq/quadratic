@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelOptions,
   isAnthropicModel,
@@ -184,7 +185,6 @@ export const handleAIRequest = async (
         ? DEFAULT_BACKUP_MODEL_THINKING
         : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
 
-      // thinking backup model
       if (modelKey !== backupModelKey) {
         return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);
       }
@@ -193,9 +193,8 @@ export const handleAIRequest = async (
     const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
       role: 'assistant',
       content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
+        createTextContent(
+          JSON.stringify(
             error instanceof Error
               ? {
                   name: error.name,
@@ -203,8 +202,8 @@ export const handleAIRequest = async (
                   stack: error.stack,
                 }
               : error
-          ),
-        },
+          )
+        ),
       ],
       contextType: 'userPrompt',
       toolCalls: [],

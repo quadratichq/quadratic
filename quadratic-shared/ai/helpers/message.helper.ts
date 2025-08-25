@@ -211,6 +211,13 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
   return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
 };
 
+export const createTextContent = (text: string): TextContent => {
+  return {
+    type: 'text' as const,
+    text,
+  };
+};
+
 // Cleans up old get_ tool messages to avoid expensive contexts.
 export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
   const CLEAN_UP_MESSAGE =
@@ -238,12 +245,7 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
             if (i < messages.length - CLEAN_UP_TOOL_CALLS_AFTER) {
               return {
                 id: toolResult.id,
-                content: [
-                  {
-                    type: 'text' as const,
-                    text: CLEAN_UP_MESSAGE,
-                  },
-                ],
+                content: [createTextContent(CLEAN_UP_MESSAGE)],
               };
             } else {
               return toolResult;
@@ -256,12 +258,7 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
               content:
                 content.length > 0
                   ? content
-                  : [
-                      {
-                        type: 'text' as const,
-                        text: 'NOTE: the results from this tool call have been removed from the context.',
-                      },
-                    ],
+                  : [createTextContent('NOTE: the results from this tool call have been removed from the context.')],
             };
           }
         }),
@@ -270,11 +267,4 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
       return message;
     }
   });
-};
-
-export const createTextContent = (text: string): TextContent => {
-  return {
-    type: 'text' as const,
-    text,
-  };
 };

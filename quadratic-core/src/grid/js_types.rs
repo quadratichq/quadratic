@@ -111,48 +111,14 @@ pub struct JsCellValuePos {
 }
 
 #[derive(Serialize, Debug, PartialEq, TS)]
-pub struct JsSelectionContext {
+pub struct JsSummaryContext {
     pub sheet_name: String,
-    pub data_rects: Vec<JsCellValueDescription>,
+    pub data_rects: Vec<JsCellValueSummary>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
-    pub tables_summary: Option<Vec<JsTableSummaryContext>>,
-    pub charts_summary: Option<Vec<JsChartSummaryContext>>,
-}
-
-// #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-// pub struct JsCellValuePosContext {
-//     pub sheet_name: String,
-//     pub rect_origin: String,
-//     pub rect_width: u32,
-//     pub rect_height: u32,
-//     pub starting_rect_values: Option<>,
-// }
-
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsTableSummaryContext {
-    pub sheet_name: String,
-    pub table_name: String,
-    pub table_type: JsTableType,
-    pub bounds: String,
-    pub connection_name: Option<String>,
-    pub connection_id: Option<String>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
-#[serde(rename_all = "camelCase")]
-pub enum JsTableType {
-    DataTable,
-    Formula,
-    Python,
-    Javascript,
-    Connection,
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsChartSummaryContext {
-    pub sheet_name: String,
-    pub chart_name: String,
-    pub bounds: String,
+    pub data_tables: Option<Vec<JsDataTableContext>>,
+    pub code_tables: Option<Vec<JsCodeTableContext>>,
+    pub connections: Option<Vec<JsCodeTableContext>>,
+    pub charts: Option<Vec<JsChartContext>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -167,21 +133,12 @@ pub struct JsCodeErrorContext {
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsTablesContext {
-    pub sheet_name: String,
-    pub data_tables: Vec<JsDataTableContext>,
-    pub code_tables: Vec<JsCodeTableContext>,
-    pub charts: Vec<JsChartContext>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsDataTableContext {
     pub sheet_name: String,
     pub data_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_rows_visible_values: JsCellValueDescription,
-    pub last_rows_visible_values: Option<JsCellValueDescription>,
+    pub values: Option<JsCellValueSummary>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -195,8 +152,7 @@ pub struct JsCodeTableContext {
     pub code_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_rows_visible_values: JsCellValueDescription,
-    pub last_rows_visible_values: Option<JsCellValueDescription>,
+    pub values: Option<JsCellValueSummary>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -424,16 +380,6 @@ pub struct JsClipboard {
     pub html: String,
 }
 
-// Used to serialize the checkboxes contained within a sheet.
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct JsValidationSheet {
-    // checkboxes that need to be rendered
-    checkboxes: Vec<(Pos, bool)>,
-
-    // validation errors that will be displayed
-    errors: Vec<(Pos, String)>,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsDataTableColumnHeader {
@@ -624,10 +570,21 @@ pub struct JsCellValueCode {
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsCellValueDescription {
+pub struct JsCellValueSummary {
+    pub total_range: String,
+
+    pub start_range: Option<String>,
+    pub end_range: Option<String>,
+
+    pub start_values: Option<Vec<Vec<JsCellValueCode>>>,
+    pub end_values: Option<Vec<Vec<JsCellValueCode>>>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCellValueRanges {
     pub total_range: String,
     pub range: String,
-    pub values: Vec<Vec<JsCellValueCode>>,
+    pub values: Option<Vec<Vec<JsCellValueCode>>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -635,7 +592,8 @@ pub struct JsGetAICellResult {
     pub selection: String,
     pub page: i32,
     pub total_pages: i32,
-    pub values: Vec<JsCellValueDescription>,
+
+    pub values: Vec<JsCellValueRanges>,
 }
 
 #[derive(Debug, Serialize, TS, PartialEq)]

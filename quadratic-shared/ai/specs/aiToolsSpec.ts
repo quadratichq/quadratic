@@ -6,7 +6,6 @@ import type {
   ModelMode,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
-import { CLEAN_UP_TOOL_CALLS_AFTER } from '../helpers/message.helper';
 
 // This provides a list of AI Tools in the order that they will be sent to the
 // AI model. If you want to change order, change it here instead of the spec
@@ -524,7 +523,7 @@ export type AIToolSpecRecord = {
 export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
-  claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+  claude: 'vertexai-anthropic:claude-sonnet-4@20250514',
   '4.1': 'azure-openai:gpt-4.1',
 };
 
@@ -565,7 +564,7 @@ const validationMessageErrorPrompt: Record<string, AIToolArgsPrimitive> = {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
     sources: ['ModelRouter'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Sets the AI Model to use for this user prompt.\n
 Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
@@ -587,7 +586,7 @@ Choose the AI model for this user prompt based on the following instructions, al
   },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
 You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
@@ -611,17 +610,15 @@ This name should be from user's perspective, not the assistant's.\n
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
     parameters: {
       type: 'object',
@@ -648,19 +645,17 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: [],
     description: `
 This tool checks if the cells in the chosen selection have any data.
 Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
@@ -690,13 +685,13 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n\n
+Data tables are best for adding new tabular data to the sheet. Do not use this tool for adding non-tabular data to the sheet or data that requires inputs like calculators. Use set_cell_values for that kind of task.\n
 Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
 `,
     parameters: {
@@ -738,7 +733,7 @@ Do NOT use this tool if you want to convert existing data to a data table. Use c
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 The added table on the sheet contains an extra row with the name of the data table. Always leave 2 rows of extra space on the bottom and 2 columns of extra space on the right when adding data tables on the sheet.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
-Data tables are best for adding new tabular data to the sheet.\n
+Data tables are best for adding new tabular data to the sheet. Do not use this tool for adding non-tabular data to the sheet or data that requires inputs like calculators. Use set_cell_values for that kind of task.\n
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
@@ -746,10 +741,12 @@ Don't attempt to add formulas or code to data tables.\n`,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+When adding new data or information to the sheet, bias towards using this function instead of add_data_table, unless the data is clearly tabular data.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
@@ -785,7 +782,9 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
+When adding new data or information to the sheet, bias towards using this function instead of add_data_table, unless the data is clearly tabular data.\n
 CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
 When setting cell values, follow these rules for headers:\n
 1. The header row MUST be the first row in the cell_values array\n
@@ -801,7 +800,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
   },
   [AITool.GetCodeCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool gets the code for a Python, JavaScript, Formula, or connection cell.
 Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
@@ -831,11 +830,10 @@ Use this code to fix errors or make improvements by updating it using the set_co
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You MUST use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.
 You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
@@ -843,7 +841,6 @@ Note: only name the code cell if it is new.\n
 If this tool created a spill you MUST delete the original code cell and recreate it at a different location to avoid multiple code cells in the sheet.
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -896,7 +893,6 @@ If this tool created a spill you MUST delete the original code cell and recreate
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -914,7 +910,7 @@ Think carefully about the placement rules and examples. Always ensure the code c
   },
   [AITool.GetDatabaseSchemas]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
 Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
@@ -945,14 +941,15 @@ This tool should always be called before writing SQL. If you don't have the tabl
   },
   [AITool.SetSQLCodeCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
 Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
+
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -962,10 +959,8 @@ For SQL Connection code cells:\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
-- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
-- Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
+- Use the existing SQL cell location if editing existing SQL code cell. Queries that are on a table that already exists in the sheet should be edits to existing code tables, not new tables unless the user specifically asks for a new table.\n
 `,
     parameters: {
       type: 'object',
@@ -1017,6 +1012,8 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
 - The Connection ID must be from an available database connection in the team.\n
@@ -1025,18 +1022,14 @@ For SQL Connection code cells:\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
-- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
-- Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
-
-Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
+- Use the existing SQL cell location if editing existing SQL code cell. Queries that are on a table that already exists in the sheet should be edits to existing code tables, not new tables unless the user specifically asks for a new table.\n
 `,
   },
 
   [AITool.SetFormulaCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
@@ -1074,7 +1067,6 @@ Never use set_formula_cell_value function to set the value of a cell to a value 
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
 Formulas placement instructions:\n
@@ -1096,13 +1088,13 @@ Examples:
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-IMPORTANT: Before moving a table, code, or a chart, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1131,17 +1123,20 @@ Target location is the top left corner of the target location on the current ope
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },
   [AITool.DeleteCells]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 `,
     parameters: {
       type: 'object',
@@ -1163,12 +1158,14 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     prompt: `
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
@@ -1201,7 +1198,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
   },
   [AITool.GetTextFormats]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
@@ -1235,17 +1232,18 @@ The get_text_formats tool returns the text formatting information of a selection
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
-CRITICALLY IMPORTANT: If too large, the results will include page information:\n
-- if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+If too large, the results will include page information:\n
+- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
 `,
   },
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 There must be at least one non-null format to set.\n
+Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 `,
     parameters: {
       type: 'object',
@@ -1348,12 +1346,13 @@ Here are the formats you can set:\n
 - number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
 - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
 - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 There must be at least one format to set.\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool provides inline completions for the code in the code cell you are currently editing, requires the completion for the code in the code cell.\n
 You are provided with the prefix and suffix of the cursor position in the code cell.\n
@@ -1379,7 +1378,7 @@ Completion is the delta that will be inserted at the cursor position in the code
   },
   [AITool.UserPromptSuggestions]: {
     sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -1427,7 +1426,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
@@ -1468,7 +1467,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   },
   [AITool.ConvertToTable]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool converts a selection of cells on a specified sheet into a data table.\n
 IMPORTANT: the selection can NOT contain any code cells or data tables.\n
@@ -1513,7 +1512,7 @@ The data table will include a table name as the first row, which will push down 
   },
   [AITool.WebSearch]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
@@ -1544,7 +1543,7 @@ It requires the query to search for.\n
   // This is tool internal to AI model and is called by `WebSearch` tool.
   [AITool.WebSearchInternal]: {
     sources: ['WebSearch'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n
@@ -1568,7 +1567,7 @@ It requires the query to search for.\n
   },
   [AITool.AddSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
@@ -1598,7 +1597,7 @@ This tool is meant to be used whenever users ask to create new sheets or ask to 
   },
   [AITool.DuplicateSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
@@ -1627,7 +1626,7 @@ This tool should be used primarily when users explicitly ask to create a new she
   },
   [AITool.RenameSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
@@ -1655,7 +1654,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
   },
   [AITool.DeleteSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool deletes a sheet in the file.\n
 It requires the name of the sheet to delete.\n
@@ -1679,7 +1678,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1708,7 +1707,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -1746,7 +1745,7 @@ It requires a array of objects with sheet names and new colors.\n
   },
   [AITool.TextSearch]: {
     sources: ['AIAnalyst', 'AIAssistant'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
@@ -1785,7 +1784,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
   },
   [AITool.RerunCode]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool reruns the code in code cells. This may also be known as "refresh the data" or "update the data".\n
 You can optionally provide a sheet name and/or a selection (in A1 notation) to rerun specific code cells.\n
@@ -1820,7 +1819,7 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
   },
   [AITool.ResizeColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
@@ -1858,7 +1857,7 @@ The size is either "default" or "auto". Auto will resize the column to the width
   },
   [AITool.ResizeRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
@@ -1896,7 +1895,7 @@ The size is either "default" or "auto". Auto will resize the row to the height o
   },
   [AITool.SetBorders]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool sets the borders in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
@@ -1961,7 +1960,7 @@ The border_selection must be one of: all, inner, outer, horizontal, vertical, le
   },
   [AITool.InsertColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool inserts columns in a sheet, adjusted columns to the right of the insertion. The new columns will share the formatting of the column provided.\n
 It requires the sheet name, the column to insert the columns at, whether to insert to the right or left of the column, and the number of columns to insert.\n
@@ -1998,7 +1997,7 @@ It requires the sheet name, the column to insert the columns at, whether to inse
   },
   [AITool.InsertRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool inserts rows in a sheet, adjusted rows below the insertion.\n
 It requires the sheet name, the row to insert the rows at, whether to insert below or above the row, and the number of rows to insert. The new rows will share the formatting of the row provided.\n
@@ -2035,7 +2034,7 @@ It requires the sheet name, the row to insert the rows at, whether to insert bel
   },
   [AITool.DeleteColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
 It requires the sheet name and an array of sheet columns to delete.\n
@@ -2065,7 +2064,7 @@ It requires the sheet name and an array of sheet columns to delete.\n`,
   },
   [AITool.DeleteRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
 It requires the sheet name and an array of sheet rows to delete.\n
@@ -2095,7 +2094,7 @@ It requires the sheet name and an array of sheet rows to delete.\n`,
   },
   [AITool.TableMeta]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
 `,
@@ -2153,9 +2152,10 @@ This tool sets the meta data for a table. One or more options can be changed on 
   },
   [AITool.TableColumnSettings]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
     parameters: {
       type: 'object',
@@ -2198,12 +2198,13 @@ In the parameters, include only columns that you want to change. The remaining c
     responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
     prompt: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 
   [AITool.GetValidations]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool gets the validations in a sheet.\n
 It requires the sheet name.\n
@@ -2227,7 +2228,7 @@ It requires the sheet name.\n
   },
   [AITool.AddMessage]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a message to a sheet using validations.\n`,
     parameters: {
@@ -2260,7 +2261,7 @@ This tool adds a message to a sheet using validations.\n`,
   },
   [AITool.AddLogicalValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
     parameters: {
@@ -2301,7 +2302,7 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
   },
   [AITool.AddListValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
 The list should have either a list_source_list or a list_source_selection, but not both.\n`,
@@ -2354,7 +2355,7 @@ This tool adds a text validation to a sheet. This can be used to limit the value
   },
   [AITool.AddTextValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2435,7 +2436,7 @@ This tool adds a text validation to a sheet. This validates a text string to ens
   },
   [AITool.AddNumberValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2488,7 +2489,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
   },
   [AITool.AddDateTimeValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2579,7 +2580,7 @@ This tool adds a date time validation to a sheet. This validates a date time to 
   },
   [AITool.RemoveValidations]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: ['disabled', 'fast', 'plus', 'max'],
     description: `
 This tool removes all validations in a sheet from a range.\n`,
     parameters: {

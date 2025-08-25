@@ -2,7 +2,6 @@
 //! this value and only recalculate when necessary.
 
 use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
-use std::cmp::Reverse;
 
 use super::Sheet;
 
@@ -365,7 +364,6 @@ impl Sheet {
     pub fn find_tabular_data_rects_in_selection_rects(
         &self,
         selection_rects: Vec<Rect>,
-        max_rects: Option<usize>,
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
@@ -444,11 +442,6 @@ impl Sheet {
                     tabular_data_rects.push(tabular_data_rect);
                 }
             }
-        }
-
-        if let Some(max_rects) = max_rects {
-            tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
-            tabular_data_rects.truncate(max_rects);
         }
 
         tabular_data_rects
@@ -1064,7 +1057,7 @@ mod test {
         );
 
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)]);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
@@ -1100,7 +1093,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)]);
         assert_eq!(tabular_data_rects.len(), 1);
         assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
     }

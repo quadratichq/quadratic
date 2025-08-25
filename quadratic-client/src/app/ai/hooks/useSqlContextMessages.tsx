@@ -1,6 +1,7 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -96,21 +97,15 @@ ${tablesText}
           return [
             {
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: contextText,
-                },
-              ],
+              content: [createTextContent(contextText)],
               contextType: 'sqlSchemas',
             },
             {
               role: 'assistant',
               content: [
-                {
-                  type: 'text',
-                  text: `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`,
-                },
+                createTextContent(
+                  `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`
+                ),
               ],
               contextType: 'sqlSchemas',
             },

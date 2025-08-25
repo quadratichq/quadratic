@@ -1,7 +1,40 @@
+import { auth0Mock } from '../../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'userOwner',
+      email: 'owner@example.com',
+    },
+    {
+      user_id: 'userEditor',
+      email: 'editor@example.com',
+    },
+    {
+      user_id: 'userViewer',
+      email: 'userviewer@example.com',
+    },
+    {
+      user_id: 'userNoRole',
+      email: 'norole@example.com',
+    },
+    {
+      user_id: 'duplicate_emails_user_1',
+      email: 'duplicate@example.com',
+    },
+    {
+      user_id: 'duplicate_emails_user_2',
+      email: 'duplicate@example.com',
+    },
+    {
+      user_id: 'userNotYetInDb',
+      email: 'nodb@example.com',
+    },
+  ])
+);
+
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { auth0Mock } from '../../tests/auth0Mock';
 import { expectError } from '../../tests/helpers';
 import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
@@ -45,39 +78,6 @@ beforeEach(async () => {
 });
 
 afterEach(clearDb);
-
-// Mock auth0 client calls
-const auth0Users = [
-  {
-    user_id: 'userOwner',
-    email: 'owner@example.com',
-  },
-  {
-    user_id: 'userEditor',
-    email: 'editor@example.com',
-  },
-  {
-    user_id: 'userViewer',
-    email: 'userViewer@example.com',
-  },
-  {
-    user_id: 'userNoRole',
-    email: 'norole@example.com',
-  },
-  {
-    user_id: 'duplicate_emails_user_1',
-    email: 'duplicate@example.com',
-  },
-  {
-    user_id: 'duplicate_emails_user_2',
-    email: 'duplicate@example.com',
-  },
-  {
-    user_id: 'userNotYetInDb',
-    email: 'nodb@example.com',
-  },
-];
-jest.mock('auth0', () => auth0Mock(auth0Users));
 
 const expectUser = (res: request.Response) => {
   expect(typeof res.body.userId).toBe('number');
@@ -151,13 +151,13 @@ describe('POST /v0/files/:uuid/invites', () => {
     it('rejects inviting the file owner', async () => {
       await invite({ email: 'owner@example.com', role: 'EDITOR' }, 'userEditor').expect(400).expect(expectError);
     });
-    it('rejects inviting yourself as an exisiting user', async () => {
+    it('rejects inviting yourself as an existing user', async () => {
       await invite({ email: 'editor@example.com', role: 'EDITOR' }, 'userEditor').expect(409).expect(expectError);
     });
-    it('rejects inviting another exisiting user', async () => {
+    it('rejects inviting another existing user', async () => {
       await invite({ email: 'editor@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
-    it('rejects inviting an email associated with an exisiting invite', async () => {
+    it('rejects inviting an email associated with an existing invite', async () => {
       await invite({ email: 'invite@example.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
     });
     it('rejects inviting an email associated with multiple accounts', async () => {
@@ -192,10 +192,10 @@ describe('POST /v0/files/:uuid/invites', () => {
           expect(res.body.email).toBe('all_caps_email@example.com');
         });
     });
-    it('transforms email to lowercase and finds exisiting invite', async () => {
+    it('transforms email to lowercase and finds existing invite', async () => {
       await invite({ email: 'INVITE@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
-    it('finds exisiting users through auth0 based on case insensitivity', async () => {
+    it('finds existing users through auth0 based on case insensitivity', async () => {
       await invite({ email: 'EDITOR@EXAMPLE.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
   });

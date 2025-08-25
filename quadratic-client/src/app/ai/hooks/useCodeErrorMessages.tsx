@@ -2,6 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { translateLanguageForAI } from '@/app/helpers/codeCellLanguage';
 import type { JsCodeErrorContext } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -88,21 +89,15 @@ There are no errors or spills in the file.`;
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: errorText,
-          },
-        ],
+        content: [createTextContent(errorText)],
         contextType: 'codeErrors',
       },
       {
         role: 'assistant',
         content: [
-          {
-            type: 'text',
-            text: `I understand the code errors in code cells in the sheets, I will reference it to answer messages related to fixing code errors or spill errors.`,
-          },
+          createTextContent(
+            `I understand the code errors in code cells in the sheets, I will reference it to answer messages related to fixing code errors or spill errors.`
+          ),
         ],
         contextType: 'codeErrors',
       },

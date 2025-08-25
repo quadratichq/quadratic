@@ -16,7 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
-use crate::grid::js_types::JsCellValueDescription;
+use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -125,9 +125,10 @@ impl Sheet {
 
         // Check if sheet name already exists
         if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name)
-            && existing_sheet_id != sheet_id {
-                return Err("Sheet name must be unique".to_string());
-            }
+            && existing_sheet_id != sheet_id
+        {
+            return Err("Sheet name must be unique".to_string());
+        }
 
         Ok(())
     }
@@ -209,9 +210,10 @@ impl Sheet {
             && !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
-            ) {
-                return Some(cell_value.clone());
-            }
+            )
+        {
+            return Some(cell_value.clone());
+        }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
         self.get_code_cell_value(pos)
@@ -238,23 +240,49 @@ impl Sheet {
         })
     }
 
-    /// Returns the description of cell values in a rect for ai context.
+    /// Returns the first and last rows of visible cell values in a rect for ai context.
     pub fn js_cell_value_description(
         &self,
-        rect: Rect,
+        bounds: Rect,
         max_rows: Option<usize>,
-    ) -> JsCellValueDescription {
-        let limited_rect = Rect::new(
-            rect.min.x,
-            rect.min.y,
-            rect.max.x,
-            rect.min.y
-                + max_rows
-                    .unwrap_or(rect.height() as usize)
-                    .min(rect.height() as usize) as i64
-                - 1,
-        );
-        self.cells_as_string(limited_rect, rect)
+    ) -> JsCellValueSummary {
+        if let Some(max_rows) = max_rows {
+            let start_range = Rect::new(
+                bounds.min.x,
+                bounds.min.y,
+                bounds.max.x,
+                bounds.min.y + (bounds.height() as i64).min(max_rows as i64) - 1,
+            );
+            let start_values = self.cells_as_string(start_range);
+
+            let mut starting_last_row = bounds.max.y - max_rows as i64 + 1;
+            if starting_last_row < start_range.max.y {
+                starting_last_row = start_range.max.y + 1;
+            }
+            let mut end_values: Option<Vec<Vec<JsCellValueCode>>> = None;
+            let mut end_range: Option<Rect> = None;
+            if starting_last_row <= bounds.max.y {
+                let end_range_rect =
+                    Rect::new(bounds.min.x, starting_last_row, bounds.max.x, bounds.max.y);
+                end_values = Some(self.cells_as_string(end_range_rect));
+                end_range = Some(end_range_rect);
+            }
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: Some(start_range.a1_string()),
+                end_range: end_range.map(|r| r.a1_string()),
+                start_values: Some(start_values),
+                end_values,
+            }
+        } else {
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: None,
+                end_range: None,
+                start_values: None,
+                end_values: None,
+            }
+        }
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -317,13 +345,15 @@ impl Sheet {
 
         if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos)
             && let Some(data_table) = self.data_table_at(&data_table_pos)
-                && !data_table.has_spill() && !data_table.has_error() {
-                    // pos relative to data table pos (top left pos)
-                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    let table_format = data_table.get_format(format_pos);
-                    let combined_format = table_format.combine(&sheet_format);
-                    return combined_format;
-                }
+            && !data_table.has_spill()
+            && !data_table.has_error()
+        {
+            // pos relative to data table pos (top left pos)
+            let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+            let table_format = data_table.get_format(format_pos);
+            let combined_format = table_format.combine(&sheet_format);
+            return combined_format;
+        }
 
         sheet_format
     }
@@ -356,13 +386,15 @@ impl Sheet {
                 values.push("strike through".to_string());
             }
             if let Some(text_color) = format.text_color
-                && !text_color.is_empty() {
-                    values.push(format!("text color is {}", text_color.clone()));
-                }
+                && !text_color.is_empty()
+            {
+                values.push(format!("text color is {}", text_color.clone()));
+            }
             if let Some(fill_color) = format.fill_color
-                && !fill_color.is_empty() {
-                    values.push(format!("fill color is {}", fill_color.clone()));
-                }
+                && !fill_color.is_empty()
+            {
+                values.push(format!("fill color is {}", fill_color.clone()));
+            }
             if let Some(align) = format.align {
                 values.push(format!("horizontal align is {}", align.clone()));
             }
@@ -1006,8 +1038,16 @@ mod test {
         );
 
         assert_eq!(result.total_range, "A1:J1000");
-        assert_eq!(result.range, "A1:J3");
-        assert_eq!(result.values.iter().flatten().count(), 10 * max_rows);
+        assert_eq!(result.start_range, Some("A1:J3".to_string()));
+        assert_eq!(
+            result.start_values.unwrap().iter().flatten().count(),
+            max_rows * 10
+        );
+        assert_eq!(result.end_range, Some("A998:J1000".to_string()));
+        assert_eq!(
+            result.end_values.unwrap().iter().flatten().count(),
+            max_rows * 10
+        );
     }
 
     #[test]
