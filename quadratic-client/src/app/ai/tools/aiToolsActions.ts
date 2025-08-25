@@ -15,7 +15,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   BorderStyle,
@@ -72,7 +72,7 @@ const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
-  const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+  const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;
@@ -241,7 +241,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
@@ -425,7 +425,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
@@ -467,7 +467,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         await waitForSetCodeCellValue(transactionId);
 
         // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
@@ -910,7 +910,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       for (const column of columns) {
         let newSize: number;
         if (size === 'auto') {
-          const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+          const maxWidth = await content.cellsSheets.getCellsContentMaxWidth(column);
           if (maxWidth === 0) {
             newSize = CELL_WIDTH;
           } else {
@@ -968,7 +968,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       for (const row of rows) {
         let newSize: number;
         if (size === 'auto') {
-          const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+          const maxHeight = await content.cellsSheets.getCellsContentMaxHeight(row);
           newSize = Math.max(maxHeight, CELL_HEIGHT);
         } else {
           newSize = CELL_HEIGHT;
@@ -1148,7 +1148,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { sheet_name, table_location, column_names } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const sheetRect = sheets.selectionToSheetRect(sheetId, table_location);
-      const sheet = pixiApp.cellsSheets.getById(sheetId);
+      const sheet = content.cellsSheets.getById(sheetId);
       if (!sheet) {
         return [createTextContent(`Error executing table column settings tool. Sheet not found: ${sheet_name}.`)];
       }

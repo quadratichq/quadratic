@@ -2,7 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { openLink } from '@/app/helpers/links';
 import type { Link } from '@/app/shared/types/links';
@@ -50,10 +50,10 @@ export class PointerLink {
   };
 
   private checkHoverLink = (world: Point): Link | undefined => {
-    if (!pixiApp.cellsSheets.current) {
+    if (!content.cellsSheets.current) {
       throw new Error('Expected cellsSheets.current to be defined in PointerLink');
     }
-    const link = pixiApp.cellsSheets.current.cellsLabels.intersectsLink(world);
+    const link = content.cellsSheets.current.cellsLabels.intersectsLink(world);
     return link;
   };
 
@@ -76,7 +76,7 @@ export class PointerLink {
     if (matchShortcut(Action.CmdClick, event) && !sheets.sheet.cursor.isMultiCursor()) {
       const link = this.checkHoverLink(world);
       if (link?.pos) {
-        quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {
+        quadraticCore.getDisplayCell(content.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {
           if (url) openLink(url);
         });
         return true;

@@ -10,10 +10,10 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TablesCache } from '@/app/gridGL/cells/tables/TablesCache';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
-import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, type Point, type Rectangle } from 'pixi.js';
@@ -32,8 +32,6 @@ export class Tables extends Container<Table> {
 
   // cache to speed up lookups
   private tablesCache: TablesCache;
-
-  dataTablesCache?: SheetDataTablesCache;
 
   // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
@@ -76,8 +74,6 @@ export class Tables extends Container<Table> {
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('updateImage', this.updateImage);
-
-    events.on('dataTablesCache', this.updateDataTablesCache);
   }
 
   destroy() {
@@ -93,8 +89,6 @@ export class Tables extends Container<Table> {
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);
     events.off('updateImage', this.updateImage);
-
-    events.off('dataTablesCache', this.updateDataTablesCache);
 
     super.destroy();
   }
@@ -131,7 +125,6 @@ export class Tables extends Container<Table> {
   get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
     if (!sheet) {
-      debugger;
       throw new Error(`Sheet ${this.cellsSheet.sheetId} not found in Tables.ts`);
     }
     return sheet;
@@ -147,7 +140,7 @@ export class Tables extends Container<Table> {
     const table = this.getTable(x, y);
     if (table) {
       if (table.codeCell.alternating_colors) {
-        const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+        const cellsSheet = content.cellsSheets.getById(this.sheet.id);
         if (cellsSheet) {
           cellsSheet.cellsFills.updateAlternatingColors(x, y, undefined);
         }
@@ -160,7 +153,7 @@ export class Tables extends Container<Table> {
 
   // Updates the cells markers for a single cell table
   private singleCellUpdate = (x: number, y: number, codeCell?: JsRenderCodeCell) => {
-    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    const cellsMarkers = content.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
     if (!cellsMarkers) return;
     if (codeCell?.state === 'RunError' || codeCell?.state === 'SpillError') {
       const box = this.sheet.getCellOffsets(x, y);
@@ -223,8 +216,7 @@ export class Tables extends Container<Table> {
     }
 
     this.cursorPosition(true);
-    pixiApp.singleCellOutlines.setDirty();
-    pixiApp.setViewportDirty();
+    events.emit('setDirty', { singleCellOutlines: true });
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -262,8 +254,8 @@ export class Tables extends Container<Table> {
   /// Returns the tables that are visible in the viewport.
   private getVisibleTables = (forceBounds?: Rectangle): Table[] => {
     const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
-    const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
-    const tables = this.dataTablesCache?.getLargeTablesInRect(
+    const cellBounds = this.sheet.getRectangleFromScreen(bounds);
+    const tables = this.sheet.dataTablesCache.getLargeTablesInRect(
       cellBounds.left,
       cellBounds.top,
       cellBounds.right - 1,
@@ -282,7 +274,7 @@ export class Tables extends Container<Table> {
 
   /// Forces an update of all tables to the given bounds (used by thumbnail generation)
   forceUpdate = (bounds: Rectangle) => {
-    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const gridHeading = content.headings.headingSize.unscaledHeight;
     const visibleTables = this.getVisibleTables(bounds);
     visibleTables?.forEach((table) => table.update(bounds, gridHeading));
   };
@@ -290,7 +282,7 @@ export class Tables extends Container<Table> {
   update = (dirtyViewport: boolean) => {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
-      const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+      const gridHeading = content.headings.headingSize.unscaledHeight;
       const visibleTables = this.getVisibleTables();
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
@@ -466,7 +458,7 @@ export class Tables extends Container<Table> {
     const table = this.getTable(x, y);
     if (table) {
       table.resize(width, height);
-      pixiApp.gridLines.dirty = true;
+      events.emit('setDirty', { gridLines: true });
     } else {
       throw new Error(`Table ${x},${y} not found in Tables.ts`);
     }
@@ -478,7 +470,7 @@ export class Tables extends Container<Table> {
     }
     return (
       !!htmlCellsHandler.findCodeCell(sheetId, cell.x, cell.y) ||
-      !!pixiApp.cellsSheets.getById(sheetId)?.cellsImages.isImageCell(cell.x, cell.y)
+      !!content.cellsSheets.getById(sheetId)?.cellsImages.isImageCell(cell.x, cell.y)
     );
   };
 
@@ -546,16 +538,6 @@ export class Tables extends Container<Table> {
     }
   };
 
-  private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
-    if (sheetId === this.sheet.id) {
-      this.dataTablesCache?.free();
-      this.dataTablesCache = dataTablesCache;
-      if (sheetId === sheets.current) {
-        pixiApp.singleCellOutlines.setDirty();
-      }
-    }
-  };
-
   /// Returns the table name if the cell is in the table header.
   getTableNameInNameOrColumn = (x: number, y: number): string | undefined => {
     const table = this.getTableIntersects({ x, y });
@@ -579,8 +561,8 @@ export class Tables extends Container<Table> {
 
   /// Returns the table that the cell intersects (excludes single cell tables).
   getTableIntersects = (cell: JsCoordinate): Table | undefined => {
-    if (this.dataTablesCache) {
-      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
+    if (this.sheet.dataTablesCache) {
+      const tablePos = this.sheet.dataTablesCache.getTableInPos(cell.x, cell.y);
       if (tablePos) {
         return this.getTable(tablePos.x, tablePos.y);
       }
@@ -613,8 +595,7 @@ export class Tables extends Container<Table> {
 
   // Returns single cell code cells that are in the given cell-based rectangle.
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
-    if (!this.dataTablesCache) return [];
-    const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
+    const tablePositions = this.sheet.dataTablesCache.getSingleCellTablesInRect(
       cellRectangle.left,
       cellRectangle.top,
       cellRectangle.right - 1,
@@ -635,8 +616,12 @@ export class Tables extends Container<Table> {
   /// Returns all Tables (ie, not single-cell code cells) that are within the
   /// cell-based rectangle
   getLargeTablesInRect = (rect: Rectangle): Table[] => {
-    if (!this.dataTablesCache) return [];
-    const tablePositions = this.dataTablesCache.getLargeTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+    const tablePositions = this.sheet.dataTablesCache.getLargeTablesInRect(
+      rect.x,
+      rect.y,
+      rect.right - 1,
+      rect.bottom - 1
+    );
     return tablePositions.flatMap((pos) => {
       const table = this.getTable(pos.x, pos.y);
       if (table) {
@@ -654,13 +639,11 @@ export class Tables extends Container<Table> {
 
   /// Returns whether there are any code cells with the cell-based rectangle
   hasCodeCellInRect = (r: Rectangle): boolean => {
-    if (!this.dataTablesCache) return false;
-    return this.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
+    return this.sheet.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
   };
 
   hasCodeCellInCurrentSelection = () => {
-    if (!this.dataTablesCache) return false;
-    return this.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+    return this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
   };
 
   //#endregion

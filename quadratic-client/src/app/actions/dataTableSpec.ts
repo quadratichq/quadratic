@@ -6,7 +6,7 @@ import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   CodeCellLanguage,
@@ -62,7 +62,7 @@ type DataTableSpec = Pick<
 
 export const getTable = (): JsRenderCodeCell | undefined => {
   const cursor = sheets.sheet.cursor.position;
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
+  return pixiAppSettings.contextMenu?.table ?? content.cellsSheet.tables.getCodeCellIntersects(cursor);
 };
 
 const getRow = (): number | undefined => {

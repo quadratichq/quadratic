@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point, Rectangle } from 'pixi.js';
@@ -54,7 +54,7 @@ export class HtmlCellResizing {
   }
 
   private resizeTable() {
-    pixiApp.cellsSheet().tables.resizeTable(this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    content.cellsSheet.tables.resizeTable(this.htmlCell.x, this.htmlCell.y, this.width, this.height);
   }
 
   private changeWidth(x: number) {

@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -81,7 +82,7 @@ export class PointerCellMoving {
   private reset = () => {
     this.movingCells = undefined;
     if (this.state === 'move') {
-      pixiApp.cellMoving.dirty = true;
+      events.emit('setDirty', { cellMoving: true });
       events.emit('cellMoving', false);
       pixiApp.viewport.disableMouseEdges();
       htmlCellsHandler.enable();
@@ -98,7 +99,7 @@ export class PointerCellMoving {
     const position = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
     this.movingCells.toColumn = Math.max(1, position.column + this.movingCells.offset.x);
     this.movingCells.toRow = Math.max(1, position.row + this.movingCells.offset.y);
-    pixiApp.cellMoving.dirty = true;
+    events.emit('setDirty', { cellMoving: true });
   };
 
   // Checks if mouse overlaps the selection rectangle. We do not check the
@@ -110,7 +111,7 @@ export class PointerCellMoving {
     cols: boolean,
     rows: boolean
   ): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
-    const cursorRectangle = pixiApp.cursor.cursorRectangle;
+    const cursorRectangle = content.uiCursor.cursorRectangle;
     if (!cursorRectangle) return false;
 
     // top-left corner + threshold
@@ -123,7 +124,7 @@ export class PointerCellMoving {
       }
 
       // if overlap indicator (autocomplete), then return false
-      const indicator = pixiApp.cursor.indicator;
+      const indicator = content.uiCursor.indicator;
       if (intersects.rectanglePoint(indicator, world)) {
         return false;
       }
@@ -216,7 +217,7 @@ export class PointerCellMoving {
     const overlap = this.moveOverlaps(world, !!colsHover, !!rowsHover);
     if (overlap) {
       this.state = 'hover';
-      const screenRectangle = pixiApp.cursor.cursorRectangle;
+      const screenRectangle = content.uiCursor.cursorRectangle;
       if (!screenRectangle) return false;
 
       // the offset is the clamped value of the rectangle based on where the user clicks

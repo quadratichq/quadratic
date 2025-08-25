@@ -1,7 +1,7 @@
 //! Draws the grid lines for column headers when they are sticky.
 
 import type { TableHeader } from '@/app/gridGL/cells/tables/TableHeader';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics } from 'pixi.js';
@@ -23,11 +23,11 @@ export class TableColumnHeadersGridLines extends Graphics {
 
   update = () => {
     this.clear();
-    if (pixiApp.gridLines?.visible) {
+    if (content.gridLines.visible) {
       const tableLines = this.header.getColumnHeaderLines();
       if (!tableLines) return;
       const { y0, y1, lines } = tableLines;
-      const currentLineStyle = pixiApp.gridLines.currentLineStyle;
+      const currentLineStyle = content.gridLines.currentLineStyle;
       if (!currentLineStyle) return;
 
       lines.forEach((line, index) => {
