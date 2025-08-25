@@ -495,7 +495,7 @@ export const MODELS_CONFIGURATION: {
   },
   'baseten:deepseek-ai/DeepSeek-V3.1': {
     model: 'deepseek-ai/DeepSeek-V3.1',
-    backupModelKey: 'fireworks:accounts/fireworks/models/deepseek-v3p1',
+    backupModelKey: 'azure-openai:gpt-4.1',
     displayName: 'DeepSeek V3.1',
     temperature: 0.2,
     max_tokens: 0, // use api default
