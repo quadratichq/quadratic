@@ -58,12 +58,12 @@ export function CancellationDialog({
   }, [isOpen]);
 
   const handleOpenDialog = () => {
-    trackEvent('[CancellationFlow].opened', { teamUuid });
+    trackEvent('[CancellationFlow].opened');
     setIsOpen(true);
   };
 
   const handleAcceptOffer = async () => {
-    trackEvent('[CancellationFlow].accepted-retention-offer', { teamUuid });
+    trackEvent('[CancellationFlow].accepted-retention-offer');
     setIsLoading(true);
 
     try {
@@ -79,7 +79,7 @@ export function CancellationDialog({
   };
 
   const handleDeclineOffer = () => {
-    trackEvent('[CancellationFlow].declined-retention-offer', { team_uuid: teamUuid });
+    trackEvent('[CancellationFlow].declined-retention-offer');
     setCurrentStep('get-feedback');
   };
 
@@ -92,7 +92,6 @@ export function CancellationDialog({
       if (feedbackToSubmit) {
         trackEvent('[CancellationFlow].submitted-feedback', {
           feedback: feedbackToSubmit,
-          teamUuid,
         });
         await apiClient.postFeedback({
           feedback: feedbackToSubmit,
