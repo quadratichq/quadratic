@@ -2,6 +2,7 @@ import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractio
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -83,14 +84,14 @@ export function useAIRequestToAPI() {
               ...prev.slice(0, -1),
               {
                 role: 'assistant',
-                content: [{ type: 'text', text }],
+                content: [createTextContent(text)],
                 contextType: 'userPrompt',
                 modelKey,
                 toolCalls: [],
               },
             ]);
             console.error(`Error retrieving data from AI API. Error: ${data}`);
-            return { error: true, content: [{ type: 'text', text }], toolCalls: [] };
+            return { error: true, content: [createTextContent(text)], toolCalls: [] };
           }
 
           if (stream) {
@@ -145,7 +146,7 @@ export function useAIRequestToAPI() {
           if (newResponseMessage.content.length === 0 && newResponseMessage.toolCalls.length === 0) {
             newResponseMessage = {
               ...newResponseMessage,
-              content: [{ type: 'text', text: 'Please try again.' }],
+              content: [createTextContent('Please try again.')],
             };
           }
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
@@ -161,23 +162,20 @@ export function useAIRequestToAPI() {
           };
         } catch (err: any) {
           if (err.name === 'AbortError') {
-            return { error: false, content: [{ type: 'text', text: 'Aborted by user' }], toolCalls: [] };
+            return { error: false, content: [createTextContent('Aborted by user')], toolCalls: [] };
           } else {
             responseMessage = {
               ...responseMessage,
               content: [
                 ...responseMessage.content,
-                {
-                  type: 'text',
-                  text: 'An error occurred while processing the response.',
-                },
+                createTextContent('An error occurred while processing the response.'),
               ],
             };
             setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
             console.error('Error in AI prompt handling:', err);
             return {
               error: true,
-              content: [{ type: 'text', text: 'An error occurred while processing the response.' }],
+              content: [createTextContent('An error occurred while processing the response.')],
               toolCalls: [],
             };
           }

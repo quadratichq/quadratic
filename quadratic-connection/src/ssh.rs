@@ -1,7 +1,9 @@
 use quadratic_rust_shared::{
     net::{ssh::SshConfig, ssh_tunnel::SshTunnel},
-    sql::{Connection, UsesSsh},
+    sql::Connection,
 };
+
+pub use quadratic_rust_shared::sql::UsesSsh;
 
 use crate::error::{ConnectionError, Result};
 

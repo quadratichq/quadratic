@@ -104,4 +104,4 @@ export const Component = () => {
 };
 
 // Note: there is no action for this route. Where necessary, we re-use the
-// exisiting action from the `api.files.$uuid` route that's used on the dashboard.
+// existing action from the `api.files.$uuid` route that's used on the dashboard.

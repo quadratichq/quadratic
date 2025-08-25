@@ -206,7 +206,7 @@ mod test {
     #[test]
     fn test_rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         // (1, 1) = 1 + 1
         let first = |gc: &mut GridController| {
@@ -320,7 +320,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         second(&mut gc);
         third(&mut gc);
@@ -329,7 +329,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         first(&mut gc);
         third(&mut gc);
         second(&mut gc);
@@ -337,7 +337,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         third(&mut gc);
         second(&mut gc);
         first(&mut gc);
@@ -345,7 +345,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         third(&mut gc);
         first(&mut gc);
         second(&mut gc);

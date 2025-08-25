@@ -319,6 +319,11 @@ impl SheetColumns {
     pub fn has_cell_value_ref(&self) -> &Contiguous2D<Option<bool>> {
         &self.has_cell_value
     }
+
+    /// Returns true if the given rectangle has any content.
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.has_cell_value.intersects(rect)
+    }
 }
 
 #[cfg(test)]

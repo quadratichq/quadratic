@@ -223,10 +223,10 @@ class InlineEditorHandler {
 
           const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
           if (jsCellValue) {
-            if (jsCellValue.kind === 'number') {
+            if (jsCellValue.kind === 'Number') {
               this.formatSummary.align = this.formatSummary.align ?? 'right';
             }
-            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            value = jsCellValue.kind === 'Number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
             if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
               try {
                 const number = new BigNumber(value).multipliedBy(100).toString();
@@ -238,7 +238,7 @@ class InlineEditorHandler {
             if (['date', 'date time'].includes(jsCellValue.kind)) {
               pixiAppSettings.setEditorInteractionState?.({
                 ...pixiAppSettings.editorInteractionState,
-                annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+                annotationState: `calendar${jsCellValue.kind === 'DateTime' ? '-time' : ''}`,
               });
             }
           } else {
@@ -478,7 +478,6 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-
   close = async ({
     deltaX = 0,
     deltaY = 0,
@@ -517,7 +516,6 @@ class InlineEditorHandler {
           y: this.location.y,
           language: 'Formula',
           codeString: value.slice(1),
-          cursor: sheets.getCursorPosition(),
         });
         trackEvent('[CodeEditor].cellRun', {
           type: 'Formula',
@@ -541,13 +539,7 @@ class InlineEditorHandler {
           }
           return false;
         } else {
-          quadraticCore.setCellValue(
-            location.sheetId,
-            location.x,
-            location.y,
-            value.trim(),
-            sheets.getCursorPosition()
-          );
+          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim());
           if (!skipChangeSheet) {
             events.emit('hoverCell');
           }

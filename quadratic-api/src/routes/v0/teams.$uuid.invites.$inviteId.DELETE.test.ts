@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb } from '../../tests/testDataGenerator';
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 const getInviteIdByEmail = async (email: string) => {
   const invite = await dbClient.teamInvite.findFirst({
@@ -17,26 +17,13 @@ const getInviteIdByEmail = async (email: string) => {
 };
 
 beforeEach(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
-  });
-  const userEditor = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor',
-    },
-  });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoRole',
-    },
-  });
+  const [userOwner, userEditor, userViewer] = await createUsers([
+    'userOwner',
+    'userEditor',
+    'userViewer',
+    'userNoRole',
+  ]);
+
   await dbClient.team.create({
     data: {
       name: 'Team',
