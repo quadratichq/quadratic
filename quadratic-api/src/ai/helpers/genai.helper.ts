@@ -10,12 +10,13 @@ import {
 } from '@google/genai';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -26,12 +27,14 @@ import type {
   AIUsage,
   Content,
   GeminiAIModelKey,
+  ModelMode,
   ParsedAIResponse,
   TextContent,
   ToolResultContent,
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Part[] {
   return content
@@ -57,7 +60,10 @@ function convertToolResultContent(content: ToolResultContent): string {
     .join('\n');
 }
 
-export function getGenAIApiArgs(args: AIRequestHelperArgs): {
+export function getGenAIApiArgs(
+  args: AIRequestHelperArgs,
+  aiModelMode: ModelMode
+): {
   system: GenAIContent | undefined;
   messages: GenAIContent[];
   tools: Tool[] | undefined;
@@ -90,7 +96,7 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
           ...message.toolCalls.map((toolCall) => ({
             functionCall: {
               name: toolCall.name,
-              args: JSON.parse(toolCall.arguments),
+              args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
           })),
         ],
@@ -123,7 +129,7 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
     }
   }, []);
 
-  const tools = getGenAITools(source, toolName);
+  const tools = getGenAITools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getGenAIToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
@@ -161,10 +167,10 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
   }
 }
 
-function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined {
+function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (!toolSpec.sources.includes(source)) {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
+    if (!toolSpec.sources.includes(source) || !toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
     if (name === AITool.WebSearchInternal) {
@@ -266,10 +272,7 @@ export async function parseGenAIStream(
               if (currentContent?.text.trim()) {
                 responseMessage.content.push(currentContent);
               }
-              currentContent = {
-                type: 'text',
-                text: '',
-              };
+              currentContent = createTextContent('');
             }
             currentContent.text += part.text;
             responseMessage.content.push(currentContent);
@@ -302,10 +305,7 @@ export async function parseGenAIStream(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -345,10 +345,7 @@ export function parseGenAIResponse(
   // text and tool calls
   candidate?.content?.parts?.forEach((message) => {
     if (message.text) {
-      responseMessage.content.push({
-        type: 'text',
-        text: message.text.trim(),
-      });
+      responseMessage.content.push(createTextContent(message.text.trim()));
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
         id: message.functionCall.id ?? v4(),
@@ -368,10 +365,7 @@ export function parseGenAIResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

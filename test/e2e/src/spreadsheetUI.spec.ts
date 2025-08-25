@@ -330,7 +330,7 @@ test('Code Editor Displays Return', async ({ page }) => {
     // Click run
     await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
-    // Check expected return test near the btotom of the code editor
+    // Check expected return test near the bottom of the code editor
     await expect(page.getByText(`Line ${i + 1} returned ${expectedOutputs[i]}`)).toBeVisible();
 
     // Click code editor
