@@ -307,4 +307,16 @@ export class Viewport extends PixiViewport {
       pixiApp.pointer.pointerMove(this.pixiApp.renderer.events.pointer);
     }
   };
+
+  changeX(x: number) {
+    if (this.x === x) return;
+    this.x = x;
+    this.dirty = true;
+  }
+
+  changeY(y: number) {
+    if (this.y === y) return;
+    this.y = y;
+    this.dirty = true;
+  }
 }
