@@ -23,7 +23,7 @@ export function CancellationDialog({
   handleNavigateToStripePortal,
   teamUuid,
 }: {
-  handleNavigateToStripePortal: () => Promise<void>;
+  handleNavigateToStripePortal: () => void;
   teamUuid: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);

@@ -86,7 +86,7 @@ export const Component = () => {
   );
 
   const handleNavigateToStripePortal = useCallback(() => {
-    return apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+    apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
       window.location.href = data.url;
     });
   }, [team.uuid]);
