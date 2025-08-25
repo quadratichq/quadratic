@@ -56,5 +56,6 @@ jest.mock('./src/stripe/stripe', () => {
     updateBilling: jest.fn().mockImplementation(async () => {}),
     updateCustomer: jest.fn().mockImplementation(async () => {}),
     updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
+    getIsMonthlySubscription: jest.fn().mockResolvedValue(false),
   };
 });
