@@ -5,6 +5,7 @@ import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 export type UsersRequest = {
   id: number;
   auth0Id: string;
+  email: string;
 };
 
 export type User = {

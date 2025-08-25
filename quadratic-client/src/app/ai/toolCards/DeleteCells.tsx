@@ -12,16 +12,17 @@ export const DeleteCells = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<DeleteCellsResponse, DeleteCellsResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.DeleteCells].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[DeleteCells] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.DeleteCells].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[DeleteCells] Failed to parse args: ', error);
       }
     }, [args, loading]);
 

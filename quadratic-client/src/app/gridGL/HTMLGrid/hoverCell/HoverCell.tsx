@@ -19,6 +19,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Rectangle } from 'pixi.js';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -254,7 +255,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
               language: codeCellCore.language,
             });
             submitPrompt({
-              content: [{ type: 'text', text: 'Fix the error in the code cell' }],
+              content: [createTextContent('Fix the error in the code cell')],
               messageSource: 'FixWithAI',
               messageIndex: 0,
               codeCell,

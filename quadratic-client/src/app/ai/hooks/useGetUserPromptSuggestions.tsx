@@ -1,6 +1,7 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystPromptSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
-import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
+import { createTextContent, getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -24,16 +25,14 @@ export const useGetUserPromptSuggestions = () => {
           {
             role: 'user',
             content: [
-              {
-                type: 'text',
-                text: `
-Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
+              createTextContent(
+                `Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
-\`\`\`json
-${JSON.stringify(chatPromptMessages)}
 \`\`\`
-`,
-              },
+${toMarkdown(chatPromptMessages, 'chat_messages')}
+\`\`\`
+`
+              ),
             ],
             contextType: 'userPrompt',
           },

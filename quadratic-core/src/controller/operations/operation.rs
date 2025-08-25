@@ -335,10 +335,19 @@ pub enum Operation {
     SetValidation {
         validation: Validation,
     },
+    /// Either finds an existing validation that matches this validation
+    /// (ignoring the id) and adds the selection to it, or creates a new one.
+    CreateOrUpdateValidation {
+        validation: Validation,
+    },
     /// Deletes a data validation rule.
     RemoveValidation {
         sheet_id: SheetId,
         validation_id: Uuid,
+    },
+    RemoveValidationSelection {
+        sheet_id: SheetId,
+        selection: A1Selection,
     },
     /// Creates, updates, or deletes a data validation warning.
     SetValidationWarning {

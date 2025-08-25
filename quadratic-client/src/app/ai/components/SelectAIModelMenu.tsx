@@ -28,6 +28,7 @@ const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   { label: string; description: string }
 > = {
   fast: { label: 'Fast', description: 'Good for everyday tasks' },
+  plus: { label: 'Plus', description: 'Mid speed, mid intelligence' },
   max: { label: 'Max', description: 'Very slow, but most capable' },
 };
 
@@ -36,7 +37,8 @@ interface SelectAIModelMenuProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
-  const { debug } = useDebugFlags();
+  const { debugFlags } = useDebugFlags();
+  const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
   const {
     modelKey: selectedModel,
@@ -54,8 +56,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
-    return debug ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
-  }, [debug]);
+    return debugShowAIModelMenu ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
+  }, [debugShowAIModelMenu]);
 
   const dropdownModels = useMemo(
     () =>
@@ -144,7 +146,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
       )}
 
-      {debug ? (
+      {debugShowAIModelMenu ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -174,8 +176,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               >
                 <div className="flex w-full items-center justify-between text-xs">
                   <span className="pr-4">
-                    {(debug ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - ` : '') +
-                      modelConfig.displayName}
+                    {(debugShowAIModelMenu
+                      ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
+                      : '') + modelConfig.displayName}
                   </span>
                 </div>
               </DropdownMenuCheckboxItem>
@@ -187,7 +190,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           open={!loading && isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
-          description="Fast is our fastest model available. Max is much slower but offers the most intelligence."
+          description="Fast is our fastest model. Plus is great in most situations. Max is max intelligence but extremely slow."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}

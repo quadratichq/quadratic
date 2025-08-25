@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsers } from '../../auth/auth';
+import { getUsers, type UsersRequest } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
@@ -61,9 +61,13 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   const dbUsers = dbFile.UserFileRole;
 
   // Lookup extra user info in Auth0
-  const usersToSearchFor: { id: number; auth0Id: string }[] = dbUsers.map(({ user }) => user);
+  const usersToSearchFor: UsersRequest[] = dbUsers.map(({ user }) => user);
   if (dbFile.ownerUser) {
-    usersToSearchFor.push({ id: dbFile.ownerUser.id, auth0Id: dbFile.ownerUser.auth0Id });
+    usersToSearchFor.push({
+      id: dbFile.ownerUser.id,
+      auth0Id: dbFile.ownerUser.auth0Id,
+      email: dbFile.ownerUser.email,
+    });
   }
   const usersById = await getUsers(usersToSearchFor);
 

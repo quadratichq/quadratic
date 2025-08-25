@@ -150,6 +150,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
   },
 
   // AI group
+  debugShowAIModelMenu: {
+    initial: false,
+    title: 'Show AI Model Menu',
+    description: 'Shows the AI model menu in the AI chat. Otherwise, it shows what a normal user will see.',
+    group: 'AI',
+  },
   debugShowAIInternalContext: {
     initial: false,
     title: 'Show AI Internal Context',

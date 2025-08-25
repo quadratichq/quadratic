@@ -434,9 +434,10 @@ impl DataTable {
 
         // Check if table name already exists
         if let Some(table) = a1_context.table_map.try_table(name)
-            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()) {
-                return Err("Table name must be unique".to_string());
-            }
+            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into())
+        {
+            return Err("Table name must be unique".to_string());
+        }
 
         std::result::Result::Ok(true)
     }
@@ -550,6 +551,36 @@ impl DataTable {
     pub fn has_error(&self) -> bool {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => code_run.error.is_some(),
+            _ => false,
+        }
+    }
+
+    /// Helper function to determine if the DataTable's CodeRun has an error.
+    /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
+    pub fn has_error_include_single_formula_error(&self) -> bool {
+        match self.kind {
+            DataTableKind::CodeRun(ref code_run) => {
+                if code_run.error.is_some() {
+                    true
+                } else {
+                    // also need to check if the formula has an error
+                    if self.get_language() == CodeCellLanguage::Formula {
+                        match &self.value {
+                            Value::Array(_) => false,
+                            Value::Tuple(_) => false,
+                            Value::Single(v) => {
+                                if let CellValue::Error(_) = v {
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                }
+            }
             _ => false,
         }
     }
@@ -766,8 +797,11 @@ impl DataTable {
         if self.is_html_or_image() {
             return false;
         }
-
-        matches!(self.value, Value::Single(_))
+        match &self.value {
+            Value::Single(_) => true,
+            Value::Array(a) => a.width() * a.height() < 2,
+            Value::Tuple(_) => false,
+        }
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
@@ -827,6 +861,11 @@ impl DataTable {
         }
 
         rows
+    }
+
+    /// Returns true if the data table is a formula table
+    pub fn is_formula_table(&self) -> bool {
+        matches!(self.get_language(), CodeCellLanguage::Formula)
     }
 }
 

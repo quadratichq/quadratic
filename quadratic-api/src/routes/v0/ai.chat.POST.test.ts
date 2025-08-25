@@ -1,3 +1,4 @@
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
@@ -10,11 +11,11 @@ const payload: AIRequestBody = {
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
   messageSource: 'User',
-  modelKey: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  modelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
   messages: [
     {
       role: 'user',
-      content: [{ type: 'text', text: 'Hello' }],
+      content: [createTextContent('Hello')],
       contextType: 'userPrompt',
     },
   ],
@@ -31,10 +32,7 @@ jest.mock('@anthropic-ai/bedrock-sdk', () => ({
       create: jest.fn().mockResolvedValue({
         id: 'msg_mock123',
         content: [
-          {
-            type: 'text',
-            text: 'This is a mocked response from Claude',
-          },
+          createTextContent('This is a mocked response from Claude'),
           {
             type: 'tool_use',
             id: 'tool_123',
@@ -90,12 +88,7 @@ describe('POST /v0/ai/chat', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             role: 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: 'This is a mocked response from Claude',
-              },
-            ],
+            content: [createTextContent('This is a mocked response from Claude')],
             contextType: 'userPrompt',
             toolCalls: [
               {

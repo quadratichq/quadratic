@@ -64,6 +64,16 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
         return 'sql';
       case 'SNOWFLAKE':
         return 'sql';
+      case 'BIGQUERY':
+        return 'sql';
+      case 'COCKROACHDB':
+        return 'pgsql';
+      case 'MARIADB':
+        return 'mysql';
+      case 'SUPABASE':
+        return 'pgsql';
+      case 'NEON':
+        return 'pgsql';
     }
   }
 
@@ -96,4 +106,14 @@ export const getConnectionKind = (language?: CodeCellLanguage): string | undefin
   }
 
   return undefined;
+};
+
+export const translateLanguageForAI = (language: CodeCellLanguage): string => {
+  if (typeof language === 'string') {
+    return language;
+  } else if (typeof language === 'object') {
+    return `a connection cell of type ${language.Connection.kind}`;
+  }
+
+  return 'Python';
 };

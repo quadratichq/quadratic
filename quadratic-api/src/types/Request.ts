@@ -5,6 +5,11 @@ export interface UploadFile extends Express.Multer.File {
   key?: string; // Available using `S3`.
 }
 
+export interface Auth {
+  sub: string;
+  email: string;
+}
+
 // API Request that extends the express-jwt Request type
 // middleware is used to these fields
 // auth is added by validateAccessToken
@@ -12,9 +17,7 @@ export interface UploadFile extends Express.Multer.File {
 // document is added by fileMiddleware
 // file is added by the multer middleware
 export interface Request extends JWTRequest {
-  auth?: {
-    sub: string;
-  };
+  auth?: Auth;
   user?: User;
   quadraticFile?: File;
   file?: UploadFile;
@@ -25,11 +28,11 @@ export type RequestWithFile = Request & {
 };
 
 export type RequestWithOptionalAuth = JWTRequest & {
-  auth?: { sub: string };
+  auth?: Auth;
 };
 
 export type RequestWithAuth = JWTRequest & {
-  auth: { sub: string };
+  auth: Auth;
 };
 
 export type RequestWithUser = RequestWithAuth & {

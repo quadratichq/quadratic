@@ -353,7 +353,7 @@ impl CellValue {
     pub fn to_cell_value_pos(self, pos: Pos) -> JsCellValuePos {
         JsCellValuePos {
             value: self.to_string(),
-            kind: self.type_name().to_string(),
+            kind: self.into(),
             pos: pos.a1_string(),
         }
     }
@@ -611,9 +611,17 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn parse_from_str(value: &str) -> CellValue {
-        // check for duration
-        if let Ok(duration) = value.parse() {
-            return CellValue::Duration(duration);
+        if let Some(duration) = CellValue::unpack_duration(value) {
+            return duration;
+        }
+        if let Some(time) = CellValue::unpack_time(value) {
+            return time;
+        }
+        if let Some(date) = CellValue::unpack_date(value) {
+            return date;
+        }
+        if let Some(date_time) = CellValue::unpack_date_time(value) {
+            return date_time;
         }
 
         // check for number

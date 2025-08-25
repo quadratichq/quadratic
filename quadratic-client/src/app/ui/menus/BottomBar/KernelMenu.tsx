@@ -196,9 +196,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
         <DropdownMenuItem
           disabled={disableRunCodeCell}
-          onClick={() =>
-            quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.a1String(), sheets.getCursorPosition())
-          }
+          onClick={() => quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.a1String())}
         >
           Run selected code
           <DropdownMenuShortcut className="pl-4">
@@ -206,18 +204,14 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition())}
-        >
+        <DropdownMenuItem onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined)}>
           Run all code in sheet
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition())}
-        >
+        <DropdownMenuItem onClick={() => quadraticCore.rerunCodeCells(undefined, undefined)}>
           Run all code in file
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
