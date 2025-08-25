@@ -181,7 +181,7 @@ export class Content extends Container {
       viewportPosition.x !== this.lastViewportPosition.x ||
       viewportPosition.y !== this.lastViewportPosition.y;
     this.lastViewportScale = scale;
-    this.lastViewportPosition = viewportPosition;
+    this.lastViewportPosition = viewportPosition.clone();
 
     const contentDirty =
       this.gridLines.dirty ||
