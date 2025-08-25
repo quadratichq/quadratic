@@ -6,7 +6,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { ensureTeamIsEligibleForRetentionDiscountOrThrow } from '../../utils/teams';
+import { getTeamRetentionDiscountEligibility } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -33,9 +33,9 @@ async function handler(req: Request, res: Response) {
     throw new ApiError(403, 'User does not have permission to access billing for this team.');
   }
 
-  // Make sure team is eligible (will throw if not)
-  await ensureTeamIsEligibleForRetentionDiscountOrThrow(team);
+  // Ensure team is eligible, or else callback
+  const { isEligible } = await getTeamRetentionDiscountEligibility(team);
 
   // You're good!
-  return res.status(200).json({ isEligible: true });
+  return res.status(200).json({ isEligible });
 }

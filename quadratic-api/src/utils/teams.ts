@@ -103,23 +103,28 @@ export function parseAndValidateClientDataKv(clientDataKv: unknown) {
 /**
  * Throws, or returns the subscription ID if they're eligible
  */
-export async function ensureTeamIsEligibleForRetentionDiscountOrThrow(team: Team) {
+export async function getTeamRetentionDiscountEligibility(
+  team: Team
+): Promise<{ isEligible: true; stripeSubscriptionId: string } | { isEligible: false }> {
+  let isEligible = false;
+
   // Don't have an active subscription? No discount for you
   if (!team.stripeSubscriptionId || team.stripeSubscriptionStatus !== 'ACTIVE') {
-    throw new ApiError(400, 'Team does not have an active subscription.');
+    return { isEligible };
   }
 
   // Already used it? No discount for you
   if (team.stripeSubscriptionRetentionCouponId) {
-    throw new ApiError(400, 'Team has already used the retention discount.');
+    return { isEligible };
   }
 
   // Not a monthly subscription? No discount for you
   const isMonthly = await getIsMonthlySubscription(team.stripeSubscriptionId);
   if (!isMonthly) {
-    throw new ApiError(400, 'Team is not eligible for this discount.');
+    return { isEligible };
   }
 
   // You're cool
-  return { stripeSubscriptionId: team.stripeSubscriptionId };
+  isEligible = true;
+  return { isEligible, stripeSubscriptionId: team.stripeSubscriptionId };
 }

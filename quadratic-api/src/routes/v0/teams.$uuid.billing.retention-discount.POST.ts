@@ -9,7 +9,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { stripe } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { ensureTeamIsEligibleForRetentionDiscountOrThrow } from '../../utils/teams';
+import { getTeamRetentionDiscountEligibility } from '../../utils/teams';
 
 export default [
   validateRequestSchema(
@@ -40,7 +40,10 @@ async function handler(
   }
 
   // Make sure team is eligible (will throw if not)
-  const { stripeSubscriptionId } = await ensureTeamIsEligibleForRetentionDiscountOrThrow(team);
+  const retentionDiscount = await getTeamRetentionDiscountEligibility(team);
+  if (!retentionDiscount.isEligible) {
+    throw new ApiError(400, 'Team is not eligible for retention discount.');
+  }
 
   try {
     // Create a 50% off coupon for the next month
@@ -52,7 +55,7 @@ async function handler(
     });
 
     // Apply the coupon to the subscription
-    await stripe.subscriptions.update(stripeSubscriptionId, {
+    await stripe.subscriptions.update(retentionDiscount.stripeSubscriptionId, {
       discounts: [
         {
           coupon: coupon.id,
