@@ -140,7 +140,7 @@ export function CancellationDialog({
             </div>
             <DialogFooter className="flex items-center">
               {isLoading && <SpinnerIcon className="mr-2 text-primary" />}
-              <Button variant="outline-destructive" onClick={handleDeclineOffer} disabled={isLoading}>
+              <Button variant="outline" onClick={handleDeclineOffer} disabled={isLoading}>
                 Continue cancellation
               </Button>
               <Button onClick={handleAcceptOffer} disabled={isLoading}>
@@ -167,7 +167,7 @@ export function CancellationDialog({
             </div>
             <DialogFooter className="flex items-center">
               {isLoading && <SpinnerIcon className="mr-2 text-primary" />}
-              <Button variant="outline-destructive" onClick={handleSubmitFeedback} disabled={isLoading}>
+              <Button variant="outline" onClick={handleSubmitFeedback} disabled={isLoading}>
                 Continue cancellation
               </Button>
             </DialogFooter>

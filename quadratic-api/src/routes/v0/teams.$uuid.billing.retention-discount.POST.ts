@@ -51,7 +51,7 @@ async function handler(
       percent_off: 50,
       duration: 'once',
       // FYI: 40 char max
-      name: 'Thanks for staying! 50% discount applied',
+      name: 'Thanks for staying!',
     });
 
     // Apply the coupon to the subscription
