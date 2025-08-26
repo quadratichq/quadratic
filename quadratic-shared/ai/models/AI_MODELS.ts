@@ -30,12 +30,12 @@ export const MODELS_CONFIGURATION: {
   // settings and price correspond to the current 'DEFAULT_MODEL_ROUTER_MODEL'
   'quadratic:quadratic-auto:thinking-toggle-off': {
     model: 'quadratic-auto',
-    displayName: 'auto',
+    displayName: 'Default',
     temperature: 0.1,
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'quadratic',
     promptCaching: false,
     thinking: false,
@@ -203,12 +203,12 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4-20250514',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off',
-    displayName: 'claude sonnet 4',
+    displayName: 'Claude Sonnet 4',
     temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: false,
@@ -240,7 +240,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'max',
+    mode: 'enabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -291,12 +291,12 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+    displayName: 'GPT-4.1',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -309,12 +309,12 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-4.1-mini-2025-04-14': {
     model: 'gpt-4.1-mini-2025-04-14',
     backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
-    displayName: 'gpt 4.1 mini',
+    displayName: 'GPT-4.1-mini',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -349,7 +349,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -502,7 +502,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'enabled',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,

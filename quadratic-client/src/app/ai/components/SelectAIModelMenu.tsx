@@ -19,15 +19,16 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo } from 'react';
 
-const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
-  Exclude<ModelMode, 'disabled'>,
-  { label: string; description: string }
-> = {
-  fast: { label: 'Default', description: 'Good for everyday tasks' },
-  max: { label: 'Max', description: 'Very slow, but most capable' },
+// Specific models to show in the UI
+const FEATURED_MODELS: { [key: string]: { displayName: string; provider: string } } = {
+  'baseten:deepseek-ai/DeepSeek-V3.1': { displayName: 'Default', provider: 'Quadratic' },
+  'anthropic:claude-sonnet-4:thinking-toggle-off': { displayName: 'Claude Sonnet 4', provider: 'Anthropic' },
+  'openai:gpt-4.1-2025-04-14': { displayName: 'GPT-4.1', provider: 'OpenAI' },
+  'openai:gpt-5-2025-08-07': { displayName: 'GPT-5', provider: 'OpenAI' },
+  'openai:o3-2025-04-16': { displayName: 'o3', provider: 'OpenAI' },
 };
 
 interface SelectAIModelMenuProps {
@@ -66,7 +67,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
             selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
         )
-        .sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
+        .sort(([, a], [, b]) => (a.mode === 'enabled' ? -1 : 1) + (b.mode === 'enabled' ? 1 : -1)),
     [modelConfigs, selectedModelConfig.thinkingToggle, thinkingToggle]
   );
 
@@ -88,30 +89,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
   );
 
-  const selectedModelMode = useMemo(
-    () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
-    [selectedModelConfig.mode]
-  );
-  const setModelMode = useCallback(
-    (mode: ModelMode) => {
-      const nextModel = modelConfigs.find(
-        ([_, modelConfig]) =>
-          modelConfig.mode === mode &&
-          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
-      );
-
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-      }
-    },
-    [modelConfigs, setSelectedModel, thinkingToggle]
-  );
-  const selectedModelLabel = useMemo(() => {
-    return (
-      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ||
-      'Default'
-    );
-  }, [selectedModelMode]);
+  const selectedModelDisplayInfo = useMemo(() => {
+    return FEATURED_MODELS[selectedModel] || { displayName: selectedModelConfig.displayName, provider: 'Unknown' };
+  }, [selectedModel, selectedModelConfig.displayName]);
 
   const { setKnowsAboutModelPicker } = useUserDataKv();
   // Disabled: AI tooltip after 5 prompts
@@ -185,7 +165,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           open={!loading && isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
-          description="Default is our fastest model. Max is max intelligence but extremely slow."
+          description="Choose from different AI models with varying capabilities and speeds."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}
@@ -195,7 +175,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 setKnowsAboutModelPicker(true);
               }}
             >
-              Model: {selectedModelLabel}
+              Model: {selectedModelDisplayInfo.displayName}
               <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
             </PopoverTrigger>
 
@@ -209,19 +189,22 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               </div>
 
               <form className="flex flex-col gap-1 rounded border border-border text-sm">
-                <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
-                  {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
+                <RadioGroup value={selectedModel} className="flex flex-col gap-0">
+                  {Object.entries(FEATURED_MODELS).map(([modelKey, { displayName, provider }], i) => (
                     <Label
                       className={cn(
                         'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
                         i !== 0 && 'border-t border-border'
                       )}
-                      key={mode}
-                      onPointerDown={() => setModelMode(mode as ModelMode)}
+                      key={modelKey}
+                      onPointerDown={() => {
+                        trackEvent('[AI].model.change', { model: modelKey });
+                        setSelectedModel(modelKey as AIModelKey);
+                      }}
                     >
-                      <RadioGroupItem value={mode} className="mr-2" />
-                      <strong className="font-bold">{label}</strong>
-                      <span className="ml-auto font-normal">{description}</span>
+                      <RadioGroupItem value={modelKey} className="mr-2" />
+                      <strong className="font-bold">{displayName}</strong>
+                      <span className="ml-auto font-normal">{provider}</span>
                     </Label>
                   ))}
                 </RadioGroup>
