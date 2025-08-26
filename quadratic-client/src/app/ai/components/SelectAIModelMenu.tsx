@@ -23,7 +23,7 @@ import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/type
 import { memo, useCallback, useMemo } from 'react';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
-  Exclude<ModelMode, 'disabled' | 'plus'>,
+  Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
   fast: { label: 'Default', description: 'Good for everyday tasks' },
@@ -54,9 +54,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
-    return debugShowAIModelMenu
-      ? configs
-      : configs.filter(([_, config]) => config.mode !== 'disabled' && config.mode !== 'plus');
+    return debugShowAIModelMenu ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
   }, [debugShowAIModelMenu]);
 
   const dropdownModels = useMemo(
@@ -109,9 +107,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [modelConfigs, setSelectedModel, thinkingToggle]
   );
   const selectedModelLabel = useMemo(() => {
-    // Fallback to 'fast' (Default) if plus mode is selected since we've removed it
-    const mode = selectedModelMode === 'plus' ? 'fast' : selectedModelMode;
-    return MODEL_MODES_LABELS_DESCRIPTIONS[mode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label || 'Default';
+    return (
+      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ||
+      'Default'
+    );
   }, [selectedModelMode]);
 
   const { setKnowsAboutModelPicker } = useUserDataKv();
