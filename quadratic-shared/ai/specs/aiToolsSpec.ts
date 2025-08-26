@@ -1571,6 +1571,8 @@ It requires the query to search for.\n
     description: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
 `,
     parameters: {
       type: 'object',
@@ -1593,6 +1595,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
 `,
   },
   [AITool.DuplicateSheet]: {
