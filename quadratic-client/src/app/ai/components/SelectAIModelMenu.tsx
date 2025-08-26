@@ -118,7 +118,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   // If they've already seen the popover, don't show it.
   // Otherwise, only show it to them when they've used the AI a bit.
   const isOpenDidYouKnowDialog = useMemo(
-    () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
+    () => false, // Disabled: AI tooltip after 5 prompts
     [knowsAboutModelPicker, userMessagesCount]
   );
 
