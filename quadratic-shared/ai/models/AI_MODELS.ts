@@ -498,7 +498,7 @@ export const MODELS_CONFIGURATION: {
     model: 'deepseek-ai/DeepSeek-V3.1',
     backupModelKey: 'azure-openai:gpt-4.1',
     displayName: 'DeepSeek V3.1',
-    temperature: 0.2,
+    temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
@@ -512,7 +512,7 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
     // Sampling parameters
-    top_p: 0.8,
+    top_p: 0.95,
     top_k: 20,
     min_p: 0,
     repetition_penalty: 1.05,
