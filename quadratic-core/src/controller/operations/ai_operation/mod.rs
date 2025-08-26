@@ -16,7 +16,7 @@ use crate::{
 
 mod from_operation;
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Clone, Debug, PartialEq, TS)]
 #[serde(tag = "type")]
 pub enum AIOperation {
     /// Sets cell values in a range

@@ -115,7 +115,15 @@ impl GridController {
 
         transaction.send_transaction();
 
-        transaction.send_ai_updates(self);
+        if transaction.complete {
+            self.change_tracker.add_changes(
+                transaction
+                    .forward_operations
+                    .iter()
+                    .flat_map(|op| AIOperation::from_operation(op, self))
+                    .collect::<Vec<_>>(),
+            );
+        }
 
         if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)

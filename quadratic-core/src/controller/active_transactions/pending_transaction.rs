@@ -193,27 +193,6 @@ impl PendingTransaction {
         }
     }
 
-    /// Sends the forward transaction to the AI.
-    pub fn send_ai_updates(&self, gc: &GridController) {
-        if self.complete && (cfg!(target_family = "wasm") || cfg!(test)) {
-            let ops = self
-                .forward_operations
-                .iter()
-                .flat_map(|op| AIOperation::from_operation(op, gc))
-                .collect::<Vec<_>>();
-
-            if !ops.is_empty() {
-                // send the ops to the client to populate the AI
-                if let Ok(ops_str) = serde_json::to_string(&JsAITransactions {
-                    ops,
-                    source: self.source,
-                }) {
-                    crate::wasm_bindings::js::jsSendAIUpdates(ops_str.into_bytes());
-                }
-            }
-        }
-    }
-
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
         if self.complete
@@ -233,9 +212,10 @@ impl PendingTransaction {
             };
 
             if self.is_undo_redo()
-                && let Some(cursor) = &self.cursor_undo_redo {
-                    crate::wasm_bindings::js::jsSetCursor(cursor.clone());
-                }
+                && let Some(cursor) = &self.cursor_undo_redo
+            {
+                crate::wasm_bindings::js::jsSetCursor(cursor.clone());
+            }
 
             if self.generate_thumbnail {
                 crate::wasm_bindings::js::jsGenerateThumbnail();

@@ -2,12 +2,15 @@ use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
     SheetPos,
     a1::A1Context,
-    controller::active_transactions::pending_transaction::PendingTransaction,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction, change_tracker::ChangeTracker,
+    },
     grid::{DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
+mod change_tracker;
 pub mod dependencies;
 pub mod execution;
 pub mod export;
@@ -40,6 +43,8 @@ pub struct GridController {
     // the viewport buffer is a shared array buffer that is accessed by the render web worker and the controller
     // contains current viewport position and sheet id, updated by render web worker on viewport change
     viewport_buffer: Option<ViewportBuffer>,
+
+    change_tracker: ChangeTracker,
 }
 
 impl Default for GridController {
@@ -55,6 +60,7 @@ impl Default for GridController {
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
             viewport_buffer: None,
+            change_tracker: ChangeTracker::default(),
         }
     }
 }
