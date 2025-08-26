@@ -29,13 +29,13 @@ export const ColorSheets = memo(
     const icon = <GridActionIcon />;
     const label = 'Color sheets';
 
-    const results = useMemo(() => {
-      if (!toolArgs?.success) {
-        return '';
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return toolArgs.data.sheet_names_to_color
+          .map((sheet_name_to_color) => sheet_name_to_color.sheet_name)
+          .join(', ');
       }
-      return `Changed sheet colors: ${toolArgs.data.sheet_names_to_color
-        .map((sheet_name_to_color) => sheet_name_to_color.sheet_name)
-        .join(', ')}\n`;
+      return '';
     }, [toolArgs?.data?.sheet_names_to_color, toolArgs?.success]);
 
     if (loading) {
@@ -48,6 +48,6 @@ export const ColorSheets = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return <ToolCard icon={icon} label={label} description={results} className={className} />;
+    return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }
 );

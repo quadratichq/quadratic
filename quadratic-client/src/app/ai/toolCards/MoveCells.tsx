@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type MoveCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.MoveCells]['responseSchema']>;
@@ -29,6 +29,13 @@ export const MoveCells = memo(
     const icon = <GridActionIcon />;
     const label = 'Action: move';
 
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `"${toolArgs.data.source_selection_rect}" to "${toolArgs.data.target_top_left_position}"`;
+      }
+      return '';
+    }, [toolArgs?.data?.source_selection_rect, toolArgs?.data?.target_top_left_position, toolArgs?.success]);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -39,13 +46,6 @@ export const MoveCells = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={` from ${toolArgs.data.source_selection_rect} to ${toolArgs.data.target_top_left_position}`}
-        className={className}
-      />
-    );
+    return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }
 );
