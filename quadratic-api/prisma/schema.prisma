@@ -23,7 +23,8 @@ model User {
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
-    clientDataKv Json @default("{}") @map("client_data_kv")
+    clientDataKv  Json            @default("{}") @map("client_data_kv")
+    ScheduledTask ScheduledTask[]
 
     @@index([auth0Id])
     @@index([email])
@@ -77,6 +78,7 @@ model File {
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
+    ScheduledTask    ScheduledTask[]
 
     @@index([uuid])
     @@index([ownerTeamId])
@@ -319,4 +321,52 @@ model AnalyticsAIChatMessage {
     @@index([chatId, messageIndex])
     @@index([chatId])
     @@index([model])
+}
+
+// Scheduled Tasks
+
+enum ScheduledTaskStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+}
+
+enum ScheduledTaskLogStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+    FAILED
+}
+
+model ScheduledTask {
+    id               Int                 @id @default(autoincrement())
+    uuid             String              @unique @default(uuid())
+    fileId           Int                 @map("file_id")
+    file             File                @relation(fields: [fileId], references: [id])
+    userId           Int                 @map("user_id")
+    user             User                @relation(fields: [userId], references: [id])
+    cronExpression   String              @map("cron_expression")
+    nextRunTime      DateTime            @map("next_run_time")
+    lastRunTime      DateTime?           @map("last_run_time")
+    status           ScheduledTaskStatus @default(ACTIVE) @map("status")
+    operations       Bytes
+    createdDate      DateTime            @default(now()) @map("created_date")
+    updatedDate      DateTime            @default(now()) @map("updated_date")
+    ScheduledTaskLog ScheduledTaskLog[]
+
+    @@index([uuid])
+    @@index([fileId])
+    @@index([userId])
+}
+
+model ScheduledTaskLog {
+    id              Int                    @id @default(autoincrement())
+    scheduledTaskId Int                    @map("scheduled_task_id")
+    scheduledTask   ScheduledTask          @relation(fields: [scheduledTaskId], references: [id])
+    status          ScheduledTaskLogStatus @default(PENDING) @map("status")
+    error           String?                @map("error")
+    createdDate     DateTime               @default(now()) @map("created_date")
+
+    @@index([scheduledTaskId])
+    @@index([status])
 }

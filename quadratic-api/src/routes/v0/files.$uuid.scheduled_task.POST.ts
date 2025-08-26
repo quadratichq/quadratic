@@ -1,0 +1,70 @@
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { z } from 'zod';
+import { getFile } from '../../middleware/getFile';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { parseRequest } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
+import { createScheduledTask, getNextRunTime } from '../../utils/scheduledTasks';
+const { FILE_EDIT } = FilePermissionSchema.enum;
+
+export default [validateAccessToken, userMiddleware, handler];
+
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+  body: z.object({
+    cronExpression: z
+      .string()
+      .min(1, 'cronExpression is required')
+      .refine((val) => {
+        try {
+          getNextRunTime(val);
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'Invalid cron expression'),
+    operations: z.record(z.any()),
+  }),
+});
+
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']>) {
+  let validatedData;
+  try {
+    validatedData = parseRequest(req, schema);
+  } catch (error) {
+    throw error;
+  }
+
+  const {
+    body: { cronExpression, operations },
+    params: { uuid },
+  } = validatedData;
+
+  const {
+    user: { id: userMakingRequestId },
+  } = req;
+
+  const {
+    file: { id: fileId },
+    userMakingRequest: { filePermissions },
+  } = await getFile({ uuid, userId: userMakingRequestId });
+
+  if (!filePermissions.includes(FILE_EDIT)) {
+    throw new ApiError(403, "You don't have access to this file");
+  }
+
+  const result = await createScheduledTask({
+    userId: userMakingRequestId,
+    fileId,
+    cronExpression,
+    operations,
+  });
+
+  return res.status(201).json(result);
+}
