@@ -98,7 +98,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'plus',
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: true,
