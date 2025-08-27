@@ -239,7 +239,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'enabled',
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -367,7 +367,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -429,6 +429,25 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_input_tokens: 0.4,
     rate_per_million_output_tokens: 1.6,
     rate_per_million_cache_read_tokens: 0.1,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:o3': {
+    model: 'o3',
+    backupModelKey: 'openai:o3-2025-04-16',
+    displayName: 'o3',
+    temperature: 1, // only temperature 1 is supported for o3
+    max_tokens: 100000,
+    canStream: false, // stream is not supported for o3
+    canStreamWithToolCalls: false,
+    mode: 'enabled',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 2,
+    rate_per_million_output_tokens: 8,
+    rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
   'xai:grok-4-0709': {

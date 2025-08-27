@@ -27,8 +27,8 @@ const FEATURED_MODELS: { [key: string]: { displayName: string; provider: string 
   'baseten:deepseek-ai/DeepSeek-V3.1': { displayName: 'Default', provider: 'Quadratic' },
   'anthropic:claude-sonnet-4:thinking-toggle-on': { displayName: 'Claude Sonnet 4', provider: 'Anthropic' },
   'azure-openai:gpt-4.1': { displayName: 'GPT-4.1', provider: 'OpenAI' },
-  'openai:gpt-5-2025-08-07': { displayName: 'GPT-5', provider: 'OpenAI' },
-  'openai:o3-2025-04-16': { displayName: 'o3', provider: 'OpenAI' },
+  'azure-openai:gpt-5': { displayName: 'GPT-5', provider: 'OpenAI' },
+  'azure-openai:o3': { displayName: 'o3', provider: 'OpenAI' },
 };
 
 interface SelectAIModelMenuProps {
