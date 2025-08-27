@@ -108,7 +108,7 @@ export async function deleteScheduledTask(scheduledTaskId: number): Promise<void
  ===============================
 */
 
-type ScheduledTaskLogResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/logs.GET.response'][0];
+type ScheduledTaskLogResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response'][0];
 
 export function resultToScheduledTaskLogResponse(result: ScheduledTaskLog): ScheduledTaskLogResponse {
   return {

@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getFile } from '../../middleware/getFile';
@@ -7,7 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getNextRunTime, getScheduledTask, updateScheduledTask } from '../../utils/scheduledTasks';
+import { getScheduledTask, getScheduledTaskLogs } from '../../utils/scheduledTasks';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -17,26 +18,14 @@ const schema = z.object({
     uuid: z.string().uuid(),
     scheduledTaskUuid: z.string().uuid(),
   }),
-  body: z.object({
-    cronExpression: z
-      .string()
-      .min(1, 'cronExpression is required')
-      .refine((val) => {
-        try {
-          getNextRunTime(val);
-          return true;
-        } catch {
-          return false;
-        }
-      }, 'Invalid cron expression'),
-    operations: z.record(z.any()),
-  }),
 });
 
-async function handler(req: RequestWithUser, res: Response<any>) {
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response']>
+) {
   const {
     params: { uuid, scheduledTaskUuid },
-    body,
   } = parseRequest(req, schema);
 
   const {
@@ -48,14 +37,11 @@ async function handler(req: RequestWithUser, res: Response<any>) {
   } = await getFile({ uuid, userId: userMakingRequestId });
 
   if (!filePermissions.includes(FILE_EDIT)) {
-    throw new ApiError(403, 'Permission denied');
+    throw new ApiError(403, "You don't have access to this file");
   }
 
   const task = await getScheduledTask(scheduledTaskUuid);
-  const result = await updateScheduledTask({
-    ...body,
-    scheduledTaskId: task.id,
-  });
+  const result = await getScheduledTaskLogs(task.id);
 
   return res.status(200).json(result);
 }
