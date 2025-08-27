@@ -3,7 +3,7 @@ use crate::{
     a1::A1Selection,
     controller::{
         GridController,
-        operations::{ai_operation::AIOperation, operation::Operation},
+        operations::{operation::Operation, tracked_operation::TrackedOperation},
     },
     grid::{DataTable, file::sheet_schema::SheetSchema},
 };
@@ -33,7 +33,7 @@ fn get_table_name(data_table: Option<&DataTable>) -> Option<String> {
     data_table.as_ref().map(|dt| dt.name.to_string())
 }
 
-impl AIOperation {
+impl TrackedOperation {
     pub fn from_operation(operation: &Operation, gc: &GridController) -> Option<Self> {
         match operation {
             Operation::SetCellValues { sheet_pos, values } => Some(Self::SetCellValues {

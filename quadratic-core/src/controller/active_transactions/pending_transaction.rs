@@ -12,14 +12,10 @@ use crate::{
     Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
-        GridController,
-        execution::TransactionSource,
-        operations::{ai_operation::AIOperation, operation::Operation},
-        transaction::Transaction,
+        execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellValue, Sheet, SheetId,
-        js_types::{JsAITransactions, JsValidationWarning},
+        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},

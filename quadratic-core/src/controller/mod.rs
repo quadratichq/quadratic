@@ -3,14 +3,14 @@ use crate::{
     SheetPos,
     a1::A1Context,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction, change_tracker::ChangeTracker,
+        active_transactions::pending_transaction::PendingTransaction,
+        tracked_transaction::TrackedTransactions,
     },
     grid::{DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
-mod change_tracker;
 pub mod dependencies;
 pub mod execution;
 pub mod export;
@@ -21,6 +21,7 @@ pub mod sheet_offsets;
 pub mod sheets;
 pub mod test_util;
 pub mod thumbnail;
+pub mod tracked_transaction;
 pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
@@ -44,7 +45,9 @@ pub struct GridController {
     // contains current viewport position and sheet id, updated by render web worker on viewport change
     viewport_buffer: Option<ViewportBuffer>,
 
-    change_tracker: ChangeTracker,
+    // tracks all transactions that have been applied since the user joined the
+    // file
+    tracked_transactions: TrackedTransactions,
 }
 
 impl Default for GridController {
@@ -60,7 +63,7 @@ impl Default for GridController {
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
             viewport_buffer: None,
-            change_tracker: ChangeTracker::default(),
+            tracked_transactions: Default::default(),
         }
     }
 }

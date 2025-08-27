@@ -1442,11 +1442,6 @@ export interface CoreClientGetAICodeErrors {
   errors: Map<string, JsCodeErrorContext[]> | undefined;
 }
 
-export interface CoreClientAIUpdates {
-  type: 'coreClientAIUpdates';
-  update: Uint8Array;
-}
-
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1639,5 +1634,4 @@ export type CoreClientMessage =
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
-  | CoreClientGetAICodeErrors
-  | CoreClientAIUpdates;
+  | CoreClientGetAICodeErrors;

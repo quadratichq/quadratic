@@ -59,7 +59,6 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
-    sendAIUpdates: (ops: Uint8Array) => void;
   };
 
 class CoreClient {
@@ -96,7 +95,6 @@ class CoreClient {
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
-    self.sendAIUpdates = coreClient.sendAIUpdates;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
@@ -966,10 +964,6 @@ class CoreClient {
 
   sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
     this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
-  };
-
-  sendAIUpdates = (update: Uint8Array) => {
-    this.send({ type: 'coreClientAIUpdates', update }, update.buffer);
   };
 }
 

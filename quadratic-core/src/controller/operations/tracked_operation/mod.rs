@@ -1,4 +1,4 @@
-//! This turns operations into AI operations that can be sent to the client and
+//! This turns Operations into TrackedOperations that can be sent to the client and
 //! shared with the AI.
 //!
 //! This can be used to keep an active chat up to date with changes to the file.
@@ -18,7 +18,7 @@ mod from_operation;
 
 #[derive(Serialize, Clone, Debug, PartialEq, TS)]
 #[serde(tag = "type")]
-pub enum AIOperation {
+pub enum TrackedOperation {
     /// Sets cell values in a range
     SetCellValues {
         selection: String,

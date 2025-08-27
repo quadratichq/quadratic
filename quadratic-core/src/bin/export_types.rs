@@ -15,8 +15,9 @@ use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Values;
-use quadratic_core::controller::operations::ai_operation::AIOperation;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::operations::tracked_operation::TrackedOperation;
+use quadratic_core::controller::tracked_transaction::TrackedTransaction;
 use quadratic_core::controller::transaction_types::JsCellValueResult;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
@@ -109,7 +110,6 @@ fn main() {
     s += &generate_type_declarations!(
         A1Error,
         A1Selection,
-        AIOperation,
         ArraySize,
         Axis,
         BorderSelection,
@@ -206,6 +206,8 @@ fn main() {
         TableRef,
         TextCase,
         TextMatch,
+        TrackedOperation,
+        TrackedTransaction,
         TransactionName,
         TransactionSource,
         TransientResize,
