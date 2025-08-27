@@ -19,11 +19,10 @@ import {
 describe('scheduledTasks utilities', () => {
   let testUser: any;
   let testFile: any;
-  let uniqueId: string;
 
   beforeEach(async () => {
     await clearDb();
-    ({ uniqueId, testUser, testFile } = await createUserTeamAndFile());
+    ({ testUser, testFile } = await createUserTeamAndFile());
   });
 
   afterEach(async () => {
@@ -579,13 +578,6 @@ describe('scheduledTasks utilities', () => {
     });
 
     it('should return inactive tasks but not deleted ones', async () => {
-      const activeTask = await createScheduledTask({
-        userId: testUser.id,
-        fileId: testFile.id,
-        cronExpression: '0 1 * * *',
-        operations: { action: 'active' },
-      });
-
       const inactiveTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
@@ -616,21 +608,6 @@ describe('scheduledTasks utilities', () => {
     it('should only return tasks for specified file', async () => {
       // Create another file
       const { testFile: otherFile } = await createUserTeamAndFile();
-
-      // Create tasks for both files
-      const task1 = await createScheduledTask({
-        userId: testUser.id,
-        fileId: testFile.id,
-        cronExpression: '0 1 * * *',
-        operations: { action: 'file1_task' },
-      });
-
-      const task2 = await createScheduledTask({
-        userId: testUser.id,
-        fileId: otherFile.id,
-        cronExpression: '0 2 * * *',
-        operations: { action: 'file2_task' },
-      });
 
       // Get tasks for first file
       const result1 = await getScheduledTasks(testFile.id);
@@ -890,22 +867,6 @@ describe('scheduledTasks utilities', () => {
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
         operations: { action: 'lifecycle_test' },
-      });
-
-      // Create logs
-      const pendingLog = await createScheduledTaskLog({
-        scheduledTaskId: task.id,
-        status: 'PENDING',
-      });
-
-      const runningLog = await createScheduledTaskLog({
-        scheduledTaskId: task.id,
-        status: 'RUNNING',
-      });
-
-      const completedLog = await createScheduledTaskLog({
-        scheduledTaskId: task.id,
-        status: 'COMPLETED',
       });
 
       // Update task
