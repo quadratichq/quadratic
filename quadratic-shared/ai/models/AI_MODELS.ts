@@ -30,7 +30,7 @@ export const MODELS_CONFIGURATION: {
   // settings and price correspond to the current 'DEFAULT_MODEL_ROUTER_MODEL'
   'quadratic:quadratic-auto:thinking-toggle-off': {
     model: 'quadratic-auto',
-    displayName: 'auto',
+    displayName: 'Default',
     temperature: 0.1,
     max_tokens: 8192,
     canStream: true,
@@ -203,7 +203,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4-20250514',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off',
-    displayName: 'claude sonnet 4',
+    displayName: 'Claude Sonnet 4',
     temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
@@ -219,16 +219,15 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4-20250514',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
-    displayName: 'claude sonnet 4',
+    displayName: 'Claude Sonnet 4',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: true,
-    thinkingToggle: true,
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
@@ -240,7 +239,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'max',
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -291,7 +290,7 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+    displayName: 'GPT-4.1',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -309,7 +308,7 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-4.1-mini-2025-04-14': {
     model: 'gpt-4.1-mini-2025-04-14',
     backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
-    displayName: 'gpt 4.1 mini',
+    displayName: 'GPT-4.1-mini',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -349,7 +348,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -368,7 +367,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -399,12 +398,12 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-4.1': {
     model: 'gpt-4.1',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+    displayName: 'GPT-4.1',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'enabled',
     provider: 'azure-openai',
     promptCaching: true,
     strictParams: true,
@@ -430,6 +429,25 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_input_tokens: 0.4,
     rate_per_million_output_tokens: 1.6,
     rate_per_million_cache_read_tokens: 0.1,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:o3': {
+    model: 'o3',
+    backupModelKey: 'openai:o3-2025-04-16',
+    displayName: 'o3',
+    temperature: 1, // only temperature 1 is supported for o3
+    max_tokens: 100000,
+    canStream: false, // stream is not supported for o3
+    canStreamWithToolCalls: false,
+    mode: 'enabled',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 2,
+    rate_per_million_output_tokens: 8,
+    rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
   'xai:grok-4-0709': {
@@ -502,7 +520,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'enabled',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,
