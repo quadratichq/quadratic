@@ -49,5 +49,5 @@ export const ApiSchemasScheduledTasks = {
   }),
 
   // List Scheduled Task Logs
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/logs.GET.response': z.array(ScheduledTaskLogSchema),
+  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response': z.array(ScheduledTaskLogSchema),
 };

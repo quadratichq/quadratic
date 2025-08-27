@@ -40,10 +40,8 @@ async function handler(
     throw new ApiError(403, 'Permission denied');
   }
 
-  // First get the scheduled task to retrieve its numeric ID
-  const existingTask = await getScheduledTask(scheduledTaskUuid);
-
-  await deleteScheduledTask(existingTask.id);
+  const task = await getScheduledTask(scheduledTaskUuid);
+  await deleteScheduledTask(task.id);
 
   return res.status(200).json({ message: 'Scheduled task deleted' });
 }
