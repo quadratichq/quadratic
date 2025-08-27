@@ -123,11 +123,12 @@ model Team {
     Connection   Connection[]
 
     // Billing
-    stripeCustomerId              String?             @unique @map("stripe_customer_id")
-    stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")
-    stripeSubscriptionStatus      SubscriptionStatus? @map("stripe_subscription_status")
-    stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
-    stripeSubscriptionLastUpdated DateTime?           @map("stripe_subscription_last_updated")
+    stripeCustomerId                    String?             @unique @map("stripe_customer_id")
+    stripeSubscriptionId                String?             @unique @map("stripe_subscription_id")
+    stripeSubscriptionStatus            SubscriptionStatus? @map("stripe_subscription_status")
+    stripeCurrentPeriodEnd              DateTime?           @map("stripe_current_period_end")
+    stripeSubscriptionLastUpdated       DateTime?           @map("stripe_subscription_last_updated")
+    stripeSubscriptionRetentionCouponId String?             @map("stripe_subscription_retention_coupon_id")
 
     // Key/value storage used by Quadratic client on the Team.
     // It remembers things like closing the onboarding banner.
