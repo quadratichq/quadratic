@@ -73,6 +73,25 @@ impl Sheet {
         }
     }
 
+    /// Returns the data table pos of the data table that contains a position
+    pub fn is_in_non_single_code_cell_code_table(&self, pos: Pos) -> bool {
+        if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
+            if pos != data_table_pos {
+                true
+            } else if let Some(data_table) = self.data_tables.get_at(&data_table_pos) {
+                if !matches!(data_table.kind, DataTableKind::CodeRun(_)) {
+                    true
+                } else {
+                    !data_table.is_single_value()
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables
@@ -231,13 +250,17 @@ impl Sheet {
                 }
                 let output_rect = data_table.output_rect(data_table_pos, false);
                 if let Some(exclude_x) = exclude_x
-                    && exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
-                        return false;
-                    }
+                    && exclude_x >= output_rect.min.x
+                    && exclude_x <= output_rect.max.x
+                {
+                    return false;
+                }
                 if let Some(exclude_y) = exclude_y
-                    && exclude_y >= output_rect.min.y && exclude_y <= output_rect.max.y {
-                        return false;
-                    }
+                    && exclude_y >= output_rect.min.y
+                    && exclude_y <= output_rect.max.y
+                {
+                    return false;
+                }
                 true
             })
     }
@@ -252,9 +275,10 @@ impl Sheet {
         let sheet_id = self.id;
         for pos in positions.into_iter() {
             if let Some(cell_value) = self.cell_value_mut(pos)
-                && let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
-                }
+                && let Some(code_cell_value) = cell_value.code_cell_value_mut()
+            {
+                func(code_cell_value, pos.to_sheet_pos(sheet_id));
+            }
         }
     }
 

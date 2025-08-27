@@ -2,6 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { CodeIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { useEffect, useState } from 'react';
 
 const examples = [
@@ -39,7 +40,7 @@ export function AIAnalystExamplePrompts() {
             trackEvent('[AIAnalyst].submitExamplePrompt', { title });
             submitPrompt({
               messageSource: 'ExamplePrompts',
-              content: [{ type: 'text', text: prompt }],
+              content: [createTextContent(prompt)],
               context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
               messageIndex: 0,
             });

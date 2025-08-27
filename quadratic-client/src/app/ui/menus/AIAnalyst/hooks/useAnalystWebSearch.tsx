@@ -1,6 +1,10 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystWebSearchAtom } from '@/app/atoms/aiAnalystAtom';
-import { isContentGoogleSearchGroundingMetadata, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  createTextContent,
+  isContentGoogleSearchGroundingMetadata,
+  isContentText,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_SEARCH_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -29,12 +33,7 @@ export const useAnalystWebSearch = () => {
         const messages: ChatMessage[] = [
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Use the google_search tool and search the web for: ${query}`,
-              },
-            ],
+            content: [createTextContent(`Use the google_search tool and search the web for: ${query}`)],
             contextType: 'userPrompt',
           },
         ];
@@ -61,7 +60,7 @@ export const useAnalystWebSearch = () => {
         let internal: InternalMessage | undefined = undefined;
 
         if (abortController.signal.aborted) {
-          toolResultContent = [{ type: 'text', text: 'Request aborted by the user.' }];
+          toolResultContent = [createTextContent('Request aborted by the user.')];
         } else {
           toolResultContent = response.content.filter((content) => isContentText(content));
           internal = {

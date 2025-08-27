@@ -116,7 +116,7 @@ export const FormattingBar = memo(() => {
   return (
     <>
       {createPortal(
-        <div className="-left-10000 -top-10000 -z-10000 absolute">
+        <div className="absolute -left-[10000px] -top-[10000px] z-[10000]">
           <div id="measurement-container" className="flex w-fit flex-row">
             <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
             <DateFormatting ref={dateFormattingRef} hideLabel={true} />

@@ -15,7 +15,7 @@ export const handleBedrockRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
+  const { system, messages, tools, tool_choice } = getBedrockApiArgs(args, options.aiModelMode);
 
   const apiArgs: ConverseStreamRequest | ConverseRequest = {
     modelId: model,

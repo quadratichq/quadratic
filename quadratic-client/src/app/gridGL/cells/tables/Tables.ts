@@ -139,11 +139,7 @@ export class Tables extends Container<Table> {
 
   /// Returns true if the code cell has no UI and is 1x1.
   private isCodeCellSingle = (codeCell: JsRenderCodeCell): boolean => {
-    return (
-      codeCell.state === 'SpillError' ||
-      codeCell.state === 'RunError' ||
-      (codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns)
-    );
+    return codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
   };
 
   /// Deletes a table from Tables and removes cache.

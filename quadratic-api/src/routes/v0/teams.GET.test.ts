@@ -2,52 +2,43 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb } from '../../tests/testDataGenerator';
-
-beforeEach(async () => {
-  const teamOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'teamOwner',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoTeam',
-    },
-  });
-  await dbClient.team.create({
-    data: {
-      name: 'Test Team 1',
-      uuid: '00000000-0000-4000-8000-000000000001',
-      UserTeamRole: {
-        create: [
-          {
-            userId: teamOwner.id,
-            role: 'OWNER',
-          },
-        ],
-      },
-    },
-  });
-  await dbClient.team.create({
-    data: {
-      name: 'Test Team 2',
-      uuid: '00000000-0000-4000-8000-000000000002',
-      UserTeamRole: {
-        create: [
-          {
-            userId: teamOwner.id,
-            role: 'OWNER',
-          },
-        ],
-      },
-    },
-  });
-});
-
-afterEach(clearDb);
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 describe('GET /v0/teams', () => {
+  beforeEach(async () => {
+    const [teamOwner] = await createUsers(['teamOwner', 'userNoTeam']);
+    await dbClient.team.create({
+      data: {
+        name: 'Test Team 1',
+        uuid: '00000000-0000-4000-8000-000000000001',
+        UserTeamRole: {
+          create: [
+            {
+              userId: teamOwner.id,
+              role: 'OWNER',
+            },
+          ],
+        },
+      },
+    });
+    await dbClient.team.create({
+      data: {
+        name: 'Test Team 2',
+        uuid: '00000000-0000-4000-8000-000000000002',
+        UserTeamRole: {
+          create: [
+            {
+              userId: teamOwner.id,
+              role: 'OWNER',
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  afterEach(clearDb);
+
   describe('bad request', () => {
     it('responds with 401 if no token is provided', async () => {
       await request(app).get(`/v0/teams/00000000-0000-4000-8000-000000000001`).expect(401).expect(expectError);

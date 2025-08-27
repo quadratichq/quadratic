@@ -118,4 +118,15 @@ export class CellsTextHashValidations extends Container {
       }
     }
   }
+
+  reposition() {
+    this.warnings.forEach((warning) => {
+      const { pos } = warning;
+      const offset = sheets.sheet.getCellOffsets(pos.x, pos.y);
+      const sprite = this.warningSprites.get(`${pos.x},${pos.y}`);
+      if (sprite) {
+        sprite[0].position.set(offset.x + offset.width, offset.y);
+      }
+    });
+  }
 }

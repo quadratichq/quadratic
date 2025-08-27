@@ -3,6 +3,7 @@ import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractio
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -38,10 +39,7 @@ export function useCodeEditorCompletions({ language }: { language: CodeCellLangu
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
-You are a code editor assistant, you are inside a code editor of code cell of spreadsheet application called Quadratic.\n
+            createTextContent(`You are a code editor assistant, you are inside a code editor of code cell of spreadsheet application called Quadratic.\n
 The language of the code cell is ${language}.\n
 ${
   schemaJsonForAi &&
@@ -76,9 +74,7 @@ Never try to insert the following code:
 - Never suggest Polars functions
 `
     : ''
-}
-`,
-            },
+}`),
           ],
           contextType: 'userPrompt',
         },

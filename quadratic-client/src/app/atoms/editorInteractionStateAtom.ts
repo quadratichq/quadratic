@@ -72,6 +72,9 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
             ],
           };
         });
+        if (!add) {
+          events.emit('transactionEndUpdated', transaction.transactionId);
+        }
       };
 
       const handleTransactionStart = (transaction: TransactionInfo) => {

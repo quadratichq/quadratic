@@ -40,7 +40,7 @@ beforeAll(async () => {
       uuid: '00000000-0000-4000-8000-000000000001',
       FileInvite: {
         create: {
-          email: 'userNotInSystemYet@example.com',
+          email: 'usernotinystemyet@example.com',
           role: 'EDITOR',
         },
       },
