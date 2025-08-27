@@ -13,7 +13,7 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
-const schema = z.object({
+const createScheduledTaskSchema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
@@ -33,10 +33,12 @@ const schema = z.object({
   }),
 });
 
+export type CreateScheduledTaskSchema = z.infer<typeof createScheduledTaskSchema>;
+
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']>) {
   let validatedData;
   try {
-    validatedData = parseRequest(req, schema);
+    validatedData = parseRequest(req, createScheduledTaskSchema);
   } catch (error) {
     throw error;
   }

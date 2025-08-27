@@ -14,6 +14,8 @@ export const ScheduledTaskSchema = z.object({
   updatedDate: z.string().datetime(),
 });
 
+export type ScheduledTask = z.infer<typeof ScheduledTaskSchema>;
+
 export const ScheduledTaskLogSchema = z.object({
   id: z.number(),
   scheduledTaskId: z.number(),

@@ -9,7 +9,7 @@ import dbClient from '../dbClient';
  ===============================
 */
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 // Convert a database result to a response object
 export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledTaskResponse {
