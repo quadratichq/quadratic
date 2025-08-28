@@ -16,9 +16,25 @@ export const ConnectionFormSemantic = ({ form, semanticDescription }: Connection
       defaultValue={semanticDescription}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Tell us about your data</FormLabel>
+          <FormLabel>Semantic description (optional)</FormLabel>
           <FormControl>
-            <Textarea autoComplete="off" className="h-48" placeholder="Semantic placeholder copy here" {...field} />
+            <Textarea
+              autoComplete="off"
+              className="h-48"
+              placeholder="Information you put here will be used by AI to help better understand your data. Accurate descriptions will help AI understand your database and its purpose. This setting will be used by AI across your entire team. Example: 
+
+connection: product-team
+purpose: viewing sales data on all our product lines  
+
+table: widget-sales
+purpose: all the historical sales for all widgets sold in North America.
+columns:
+  - column_name: 158394
+    description: this column contains the regions in which sales can occur 
+  - column_name: sales_accounting
+    description: number of total sales in corresponding region"
+              {...field}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
