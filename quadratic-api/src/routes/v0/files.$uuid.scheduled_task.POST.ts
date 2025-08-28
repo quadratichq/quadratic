@@ -29,7 +29,7 @@ const createScheduledTaskSchema = z.object({
           return false;
         }
       }, 'Invalid cron expression'),
-    operations: z.record(z.any()),
+    operations: z.any(),
   }),
 });
 

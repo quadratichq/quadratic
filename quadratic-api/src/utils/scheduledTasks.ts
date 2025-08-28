@@ -16,7 +16,7 @@ export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledT
   return {
     ...result,
     nextRunTime: result.nextRunTime.toISOString(),
-    lastRunTime: result.lastRunTime?.toISOString() || '',
+    lastRunTime: result.lastRunTime?.toISOString() || null,
     operations: JSON.parse(result.operations.toString()),
     createdDate: result.createdDate.toISOString(),
     updatedDate: result.updatedDate.toISOString(),

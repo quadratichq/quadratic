@@ -61,7 +61,7 @@ export const ScheduledTask = () => {
     saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cron,
-      operations: {},
+      operations: '',
     });
   }, [saveScheduledTask, currentTask, cron]);
 
