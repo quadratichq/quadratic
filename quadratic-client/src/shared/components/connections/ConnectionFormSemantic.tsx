@@ -21,10 +21,7 @@ export const ConnectionFormSemantic = ({ form, semanticDescription }: Connection
             <Textarea
               autoComplete="off"
               className="h-48"
-              placeholder="Information you put here will be used by AI to help better understand your data. Accurate descriptions will help AI understand your database and its purpose. This setting will be used by AI across your entire team. Example: 
-
-connection: product-team
-purpose: viewing sales data on all our product lines  
+              placeholder="Information put here will be used by AI to better understand your database. Example: 
 
 table: widget-sales
 purpose: all the historical sales for all widgets sold in North America.
