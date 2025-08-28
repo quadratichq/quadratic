@@ -29,7 +29,7 @@ export function QuadraticApp() {
   const [multiplayerLoading, setMultiplayerLoading] = useState(true);
 
   // Load scheduled tasks
-  useLoadScheduledTasks(fileUuid);
+  useLoadScheduledTasks();
 
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {

@@ -1,32 +1,42 @@
-import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+//! This is a Jotai atom that manages the state of the scheduled tasks menu.
+
+import {
+  editorInteractionStateFileUuidAtom,
+  editorInteractionStateShowValidationAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
-import { atom, useAtom, useSetAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import type { ScheduledTask } from 'quadratic-shared/typesAndSchemasScheduledTasks';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+
+export const CREATE_TASK_ID = 'CREATE';
 
 export interface ScheduledTasks {
   show: boolean;
-  currentTaskId: string | null;
+  currentTaskId: string | typeof CREATE_TASK_ID | null;
   tasks: ScheduledTask[];
 }
 
 const defaultScheduledTasks: ScheduledTasks = {
-  show: true, // TODO: should be false for release
-  currentTaskId: null,
+  show: true,
+  currentTaskId: 'CREATE',
   tasks: [],
 };
 
 export const scheduledTasksAtom = atom<ScheduledTasks>(defaultScheduledTasks);
 
-export const useLoadScheduledTasks = (fileUuid?: string) => {
+export const useLoadScheduledTasks = () => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
+  const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
   useEffect(() => {
     if (fileUuid) {
       scheduledTasksAPI.get(fileUuid).then((tasks) => {
         setScheduledTasks((prev) => ({ ...prev, tasks }));
+
+        console.log({ scheduledTasks: tasks });
       });
     }
   }, [fileUuid, setScheduledTasks]);
@@ -38,20 +48,62 @@ export const useLoadScheduledTasks = (fileUuid?: string) => {
   }, [scheduledTasks.show, setScheduledTasks, showValidation]);
 };
 
-export const useShowScheduledTasks = (): { showScheduledTasks: () => void; closeScheduledTasks: () => void } => {
-  const setScheduledTasks = useSetAtom(scheduledTasksAtom);
+export interface ScheduledTaskToSave {
+  uuid: string;
+  cronExpression: string;
+  operations: string;
+}
+
+interface ScheduledTasksActions {
+  showScheduledTasks: () => void;
+  closeScheduledTasks: () => void;
+  newScheduledTask: () => void;
+  saveScheduledTask: (task: ScheduledTaskToSave) => Promise<void>;
+  scheduledTasks: ScheduledTasks;
+  currentTask: ScheduledTask | null;
+}
+
+export const useScheduledTasks = (): ScheduledTasksActions => {
+  const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
+  const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
   const showScheduledTasks = useCallback(() => {
     if (!!showValidation) {
       setShowValidation(false);
     }
-    setScheduledTasks((prev) => ({ ...prev, show: true }));
+    setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: null }));
   }, [showValidation, setShowValidation, setScheduledTasks]);
 
   const closeScheduledTasks = useCallback(() => {
     setScheduledTasks((prev) => ({ ...prev, show: false }));
   }, [setScheduledTasks]);
 
-  return { showScheduledTasks, closeScheduledTasks };
+  const newScheduledTask = useCallback(() => {
+    setScheduledTasks((prev) => ({ ...prev, currentTaskId: CREATE_TASK_ID }));
+  }, [setScheduledTasks]);
+
+  const currentTask = useMemo(() => {
+    if (scheduledTasks.currentTaskId) {
+      return scheduledTasks.tasks.find((task) => task.uuid === scheduledTasks.currentTaskId) ?? null;
+    }
+    return null;
+  }, [scheduledTasks.currentTaskId, scheduledTasks.tasks]);
+
+  const saveScheduledTask = useCallback(
+    async (task: ScheduledTaskToSave) => {
+      debugger;
+      if (!fileUuid) return;
+
+      if (scheduledTasks.currentTaskId === CREATE_TASK_ID) {
+        const results = await scheduledTasksAPI.create(fileUuid, task);
+        console.log(results);
+      } else {
+        await scheduledTasksAPI.update(fileUuid, task.uuid, task);
+      }
+    },
+    [scheduledTasks.currentTaskId, fileUuid]
+  );
+
+  return { showScheduledTasks, closeScheduledTasks, newScheduledTask, scheduledTasks, currentTask, saveScheduledTask };
 };

@@ -19,4 +19,16 @@ export const scheduledTasksAPI = {
       ApiSchemas['/v0/files/:uuid/scheduled_task.GET.response']
     );
   },
+
+  update: (
+    fileId: string,
+    taskId: string,
+    body: ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.request']
+  ) => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task/${taskId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+      ApiSchemas['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response']
+    );
+  },
 };
