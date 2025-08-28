@@ -1447,6 +1447,17 @@ class Core {
       this.handleCoreError('getAICodeErrors', e);
     }
   }
+
+  getAITransactions() {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const result = this.gridController.getAITransactions();
+      console.log(result);
+      return result;
+    } catch (e) {
+      this.handleCoreError('getAITransactions', e);
+    }
+  }
 }
 
 export const core = new Core();

@@ -80,4 +80,14 @@ impl GridController {
             }
         }
     }
+
+    #[wasm_bindgen(js_name = "getAITransactions")]
+    pub fn js_get_ai_transactions(&self) -> Result<JsValue, JsValue> {
+        let transactions = self.get_tracked_transactions();
+        serde_wasm_bindgen::to_value(transactions).map_err(|e| {
+            JsValue::from_str(&format!(
+                "[ai_context.rs] error occurred while serializing ai transactions: {e:?}"
+            ))
+        })
+    }
 }

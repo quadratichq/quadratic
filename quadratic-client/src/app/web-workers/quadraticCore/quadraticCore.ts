@@ -43,6 +43,7 @@ import type {
   SheetBounds,
   SheetInfo,
   SheetRect,
+  TrackedTransaction,
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
@@ -75,6 +76,7 @@ import type {
   CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
+  CoreClientGetAITransactions,
   CoreClientGetCellFormatSummary,
   CoreClientGetCellValue,
   CoreClientGetCodeCell,
@@ -1768,6 +1770,15 @@ class QuadraticCore {
         id,
         maxErrors,
       });
+    });
+  }
+
+  getAITransactions(): Promise<TrackedTransaction[]> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAITransactions) => {
+        resolve(message.transactions);
+      };
     });
   }
 }

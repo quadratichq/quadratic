@@ -1,5 +1,6 @@
 //! Tracks changes to the grid since the user joined the file.
 
+use serde::Serialize;
 use ts_rs::TS;
 
 use crate::controller::{
@@ -11,7 +12,7 @@ use crate::controller::{
     operations::tracked_operation::TrackedOperation,
 };
 
-#[derive(Debug, Clone, PartialEq, TS)]
+#[derive(Debug, Serialize, Clone, PartialEq, TS)]
 pub struct TrackedTransaction {
     source: TransactionSource,
     transaction_name: TransactionName,
@@ -19,7 +20,7 @@ pub struct TrackedTransaction {
     time_stamp: u64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Clone, PartialEq)]
 pub struct TrackedTransactions {
     changes: Vec<TrackedTransaction>,
 }
@@ -42,13 +43,13 @@ impl GridController {
                     .iter()
                     .flat_map(|op| TrackedOperation::from_operation(op, self))
                     .collect::<Vec<_>>(),
-                time_stamp: crate::wasm_bindings::js::timestamp() as u64,
+                time_stamp: crate::wasm_bindings::js::jsTimestamp() as u64,
             });
         }
     }
 
     /// Get the changes from the change tracker.
-    pub fn get_changes(&self) -> &Vec<TrackedTransaction> {
+    pub fn get_tracked_transactions(&self) -> &Vec<TrackedTransaction> {
         &self.tracked_transactions.changes
     }
 }

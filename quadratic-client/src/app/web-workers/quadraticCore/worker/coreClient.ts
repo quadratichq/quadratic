@@ -793,6 +793,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAITransactions':
+        this.send({
+          type: 'coreClientGetAITransactions',
+          id: e.data.id,
+          transactions: core.getAITransactions(),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

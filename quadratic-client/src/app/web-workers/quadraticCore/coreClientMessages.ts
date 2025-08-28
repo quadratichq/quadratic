@@ -26,6 +26,7 @@ import type {
   Pos,
   SearchOptions,
   SheetRect,
+  TrackedTransaction,
   TransactionName,
   Validation,
   ValidationUpdate,
@@ -1442,6 +1443,17 @@ export interface CoreClientGetAICodeErrors {
   errors: Map<string, JsCodeErrorContext[]> | undefined;
 }
 
+export interface ClientCoreGetAITransactions {
+  type: 'clientCoreGetAITransactions';
+  id: number;
+}
+
+export interface CoreClientGetAITransactions {
+  type: 'coreClientGetAITransactions';
+  id: number;
+  transactions: TrackedTransaction[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1540,7 +1552,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatSelection
   | ClientCoreHasCellData
   | ClientCoreRemoveValidationSelection
-  | ClientCoreGetAICodeErrors;
+  | ClientCoreGetAICodeErrors
+  | ClientCoreGetAITransactions;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1634,4 +1647,5 @@ export type CoreClientMessage =
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
-  | CoreClientGetAICodeErrors;
+  | CoreClientGetAICodeErrors
+  | CoreClientGetAITransactions;
