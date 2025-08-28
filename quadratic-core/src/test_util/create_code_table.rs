@@ -80,7 +80,7 @@ pub fn test_create_code_table_with_values(
         cell_value,
         index: None,
     };
-    gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
+    gc.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
 
     gc.data_table_at(pos.to_sheet_pos(sheet_id))
         .unwrap()
@@ -99,6 +99,7 @@ pub fn test_create_formula(
         formula.to_string(),
         None,
         None,
+        false,
     );
     gc.data_table_at(sheet_pos).unwrap().clone()
 }

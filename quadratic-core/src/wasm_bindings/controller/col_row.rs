@@ -9,13 +9,14 @@ impl GridController {
         sheet_id: String,
         columns: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let columns = serde_json::from_str(&columns)
                 .map_err(|e| format!("Unable to parse columns: {e}"))?;
-            self.delete_columns(sheet_id, columns, cursor);
+            self.delete_columns(sheet_id, columns, cursor, is_ai);
             Ok(None)
         })
     }
@@ -29,12 +30,13 @@ impl GridController {
         count: i32,
         after: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let count = count.max(1);
-            self.insert_columns(sheet_id, column, count as u32, after, cursor);
+            self.insert_columns(sheet_id, column, count as u32, after, cursor, is_ai);
             Ok(None)
         })
     }
@@ -46,13 +48,14 @@ impl GridController {
         sheet_id: String,
         rows: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let rows =
                 serde_json::from_str(&rows).map_err(|e| format!("Unable to parse rows: {e}"))?;
-            self.delete_rows(sheet_id, rows, cursor);
+            self.delete_rows(sheet_id, rows, cursor, is_ai);
             Ok(None)
         })
     }
@@ -66,12 +69,13 @@ impl GridController {
         count: i32,
         after: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let count = count.max(1);
-            self.insert_rows(sheet_id, row, count as u32, after, cursor);
+            self.insert_rows(sheet_id, row, count as u32, after, cursor, is_ai);
             Ok(None)
         })
     }
@@ -85,6 +89,7 @@ impl GridController {
         col_end: i32,
         to: i32,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
@@ -95,6 +100,7 @@ impl GridController {
                 col_end as i64,
                 to as i64,
                 cursor,
+                is_ai,
             );
             Ok(None)
         })
@@ -109,6 +115,7 @@ impl GridController {
         row_end: i32,
         to: i32,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
@@ -119,6 +126,7 @@ impl GridController {
                 row_end as i64,
                 to as i64,
                 cursor,
+                is_ai,
             );
             Ok(None)
         })

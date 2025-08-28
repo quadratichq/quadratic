@@ -10,6 +10,7 @@ impl GridController {
         border_selection: String,
         style: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let selection =
@@ -27,7 +28,7 @@ impl GridController {
                 None => None,
             };
 
-            self.set_borders(selection, border_selection, style, cursor);
+            self.set_borders(selection, border_selection, style, cursor, is_ai);
             Ok(None)
         })
     }

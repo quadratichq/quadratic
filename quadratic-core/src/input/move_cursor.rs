@@ -314,6 +314,7 @@ mod tests {
             Some(Some(false)),
             Some(Some(false)),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);

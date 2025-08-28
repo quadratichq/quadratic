@@ -15,7 +15,7 @@ impl GridController {
 
         transaction.add_borders(sheet_id);
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.generate_thumbnail |= self.thumbnail_dirty_borders(sheet_id, &borders);
 
             transaction

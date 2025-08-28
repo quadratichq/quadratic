@@ -214,7 +214,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
           rect.left,
           rect.top,
           rect.left,
-          rect.bottom - 1
+          rect.bottom - 1,
+          false
         );
       } else {
         quadraticCore.autocomplete(
@@ -226,7 +227,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
           rect.left + 1,
           rect.top,
           rect.right - 1,
-          rect.bottom - 1
+          rect.bottom - 1,
+          false
         );
       }
     }
@@ -249,7 +251,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
           rect.left,
           rect.top,
           rect.right - 1,
-          rect.top
+          rect.top,
+          false
         );
       } else {
         quadraticCore.autocomplete(
@@ -261,7 +264,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
           rect.left,
           rect.top + 1,
           rect.right - 1,
-          rect.bottom - 1
+          rect.bottom - 1,
+          false
         );
       }
     }

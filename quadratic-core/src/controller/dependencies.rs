@@ -148,6 +148,7 @@ mod test {
             },
             "1".to_string(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -159,6 +160,7 @@ mod test {
             "A1 + 5".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.get_dependent_code_cells(SheetRect {

@@ -288,11 +288,11 @@ mod tests {
         let mut gc = test_create_gc();
 
         // Set some cell formats
-        gc.set_bold(&A1Selection::test_a1("a1:j190"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("a1:j190"), Some(true), None, false)
             .unwrap();
-        gc.set_italic(&A1Selection::test_a1("b1"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("b1"), Some(true), None, false)
             .unwrap();
-        gc.set_underline(&A1Selection::test_a1("c1"), Some(true), None)
+        gc.set_underline(&A1Selection::test_a1("c1"), Some(true), None, false)
             .unwrap();
 
         let selection = A1Selection::test_a1("A1:J190");
@@ -313,7 +313,7 @@ mod tests {
     fn test_get_ai_cell_formats_content_with_page_break() {
         let mut gc = test_create_gc();
 
-        gc.set_bold(&A1Selection::test_a1("a1:j190"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("a1:j190"), Some(true), None, false)
             .unwrap();
 
         let selection = A1Selection::test_a1("a1:j190");
@@ -335,7 +335,7 @@ mod tests {
         let mut gc = test_create_gc();
         let selection = A1Selection::test_a1("A1:J1000");
 
-        gc.set_bold(&selection, Some(true), None).unwrap();
+        gc.set_bold(&selection, Some(true), None, false).unwrap();
         let result = gc.get_ai_cell_formats(selection, 0).unwrap();
 
         // ensure we message AI that there are too many pages

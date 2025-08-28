@@ -21,6 +21,8 @@ extern "C" {
 
     #[wasm_bindgen(js_namespace = console)]
     pub(crate) fn timeEnd(name: &str);
+
+    pub(crate) fn timestamp() -> f32;
 }
 
 #[cfg(not(test))]

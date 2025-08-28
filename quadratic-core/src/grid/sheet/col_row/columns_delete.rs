@@ -96,7 +96,7 @@ impl Sheet {
     ) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction
                 .reverse_operations
                 .extend(self.reverse_borders_ops_for_column(column));
@@ -136,7 +136,7 @@ impl Sheet {
 
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
             transaction
                 .reverse_operations
@@ -201,12 +201,22 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_set_values(&mut gc, sheet_id, pos![A1], 4, 4);
 
-        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_cell_wrap(&A1Selection::test_a1("A1"), CellWrap::Clip, None, false)
             .unwrap();
-        gc.set_cell_wrap(&A1Selection::test_a1("A1"), CellWrap::Clip, None)
-            .unwrap();
-        gc.set_fill_color(&A1Selection::test_a1("D4"), Some("blue".to_string()), None)
-            .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1("D4"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
 
         gc.set_code_cell(
             pos![sheet_id!B5],
@@ -214,6 +224,7 @@ mod tests {
             "{A1, B1}".to_string(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             pos![sheet_id!D5],
@@ -221,14 +232,15 @@ mod tests {
             "{A1, B1}".to_string(),
             None,
             None,
+            false,
         );
 
-        gc.set_bold(&A1Selection::test_a1("A1:A"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("A1:A"), Some(true), None, false)
             .unwrap();
-        gc.set_italic(&A1Selection::test_a1("D1:D"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("D1:D"), Some(true), None, false)
             .unwrap();
 
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
 
         assert_display_cell_value(&gc, sheet_id, 1, 1, "1");
         assert_cell_format_fill_color(&gc, sheet_id, 3, 4, "blue");

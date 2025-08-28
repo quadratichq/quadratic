@@ -172,7 +172,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
 
-        gc.insert_columns(sheet_id, 1, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
 
@@ -195,7 +195,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_columns(sheet_id, 1, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
 
@@ -220,7 +220,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_columns(sheet_id, 10, 1, false, None);
+        gc.insert_columns(sheet_id, 10, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
@@ -240,7 +240,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
@@ -250,7 +250,7 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_columns(sheet_id, 2, 1, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
@@ -271,7 +271,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
@@ -289,7 +289,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_columns(sheet_id, 5, 1, false, None);
+        gc.insert_columns(sheet_id, 5, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
@@ -314,7 +314,7 @@ mod tests {
         test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.insert_columns(sheet_id, 3, 1, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
 
@@ -333,7 +333,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
 
         gc.undo(None);
@@ -347,7 +347,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
 
         clear_js_calls();
-        gc.insert_columns(sheet_id, 1, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
         expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);

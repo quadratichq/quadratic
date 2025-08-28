@@ -163,6 +163,7 @@ export class UrlParamsUser {
         sheetId: firstSheet.id,
         location: insertAt,
         cursor: sheets.sheet.cursor.position.toString(),
+        isAi: false,
       });
     }
 

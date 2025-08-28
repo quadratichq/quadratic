@@ -45,7 +45,7 @@ impl Sheet {
         });
 
         // create undo operations for the inserted row
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             // reverse operation to delete the row (this will also shift all impacted rows)
             transaction.reverse_operations.push(Operation::DeleteRow {
                 sheet_id: self.id,

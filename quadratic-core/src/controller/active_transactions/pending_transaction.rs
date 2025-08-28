@@ -191,7 +191,9 @@ impl PendingTransaction {
 
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
-        if self.complete && self.is_user_undo_redo() && (cfg!(target_family = "wasm") || cfg!(test))
+        if self.complete
+            && self.is_user_ai_undo_redo()
+            && (cfg!(target_family = "wasm") || cfg!(test))
         {
             let transaction_id = self.id.to_string();
 
@@ -206,9 +208,10 @@ impl PendingTransaction {
             };
 
             if self.is_undo_redo()
-                && let Some(cursor) = &self.cursor_undo_redo {
-                    crate::wasm_bindings::js::jsSetCursor(cursor.clone());
-                }
+                && let Some(cursor) = &self.cursor_undo_redo
+            {
+                crate::wasm_bindings::js::jsSetCursor(cursor.clone());
+            }
 
             if self.generate_thumbnail {
                 crate::wasm_bindings::js::jsGenerateThumbnail();
@@ -224,7 +227,7 @@ impl PendingTransaction {
     /// Returns whether the transaction is from an action directly performed by
     /// the local user; i.e., whether it is `User` or `Unsaved`. This does not
     /// include undo/redo.
-    pub fn is_user(&self) -> bool {
+    fn is_user(&self) -> bool {
         self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
@@ -236,6 +239,14 @@ impl PendingTransaction {
         self.source == TransactionSource::Redo
     }
 
+    fn is_ai(&self) -> bool {
+        self.source == TransactionSource::AI
+    }
+
+    pub fn is_user_ai(&self) -> bool {
+        self.is_user() || self.is_ai()
+    }
+
     /// Returns whether the transaction is from an undo/redo.
     pub fn is_undo_redo(&self) -> bool {
         self.is_undo() || self.is_redo()
@@ -243,8 +254,8 @@ impl PendingTransaction {
 
     /// Returns whether the transaction is from the local user, including
     /// undo/redo.
-    pub fn is_user_undo_redo(&self) -> bool {
-        self.is_user() || self.is_undo_redo()
+    pub fn is_user_ai_undo_redo(&self) -> bool {
+        self.is_user_ai() || self.is_undo_redo()
     }
 
     /// Returns whether the transaction is from another multiplayer user.
@@ -608,6 +619,21 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    fn is_ai() {
+        let transaction = PendingTransaction {
+            source: TransactionSource::AI,
+            ..Default::default()
+        };
+        assert!(transaction.is_ai());
+
+        let transaction = PendingTransaction {
+            source: TransactionSource::User,
+            ..Default::default()
+        };
+        assert!(!transaction.is_ai());
     }
 
     #[test]

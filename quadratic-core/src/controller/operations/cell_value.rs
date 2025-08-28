@@ -555,6 +555,7 @@ mod test {
             },
             "hello".to_string(),
             None,
+            false,
         );
         let operations = client.last_transaction().unwrap().operations.clone();
 
@@ -827,7 +828,7 @@ mod test {
             y: 2,
             sheet_id,
         };
-        gc.set_cell_value(sheet_pos, "hello".to_string(), None);
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None, false);
 
         let sheet_pos_2 = SheetPos {
             x: 2,
@@ -840,6 +841,7 @@ mod test {
             "5 + 5".to_string(),
             None,
             None,
+            false,
         );
 
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
@@ -869,7 +871,7 @@ mod test {
             y: 2,
             sheet_id,
         };
-        gc.set_cell_value(sheet_pos, "hello".to_string(), None);
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None, false);
 
         let sheet_pos_2 = SheetPos {
             x: 2,
@@ -882,6 +884,7 @@ mod test {
             "5 + 5".to_string(),
             None,
             None,
+            false,
         );
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
@@ -915,14 +918,14 @@ mod test {
 
         // add a cell to the right of the data table
         let sheet_pos = SheetPos::new(sheet_id, 4, 3);
-        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None, false);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // add a cell to the bottom of the data table
         let sheet_pos = SheetPos::new(sheet_id, 1, 6);
-        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None, false);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
@@ -938,7 +941,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
 
         let selection = A1Selection::test_a1("A5:C7");
-        gc.delete_cells(&selection, None);
+        gc.delete_cells(&selection, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
 
@@ -961,7 +964,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
 
         // should delete part of the first row of the data table
-        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None);
+        gc.delete_cells(&A1Selection::test_a1("A1:C4"), None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
 
         gc.undo(None);

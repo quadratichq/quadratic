@@ -297,7 +297,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
 
-        gc.delete_columns(sheet_id, vec![4, 5], None);
+        gc.delete_columns(sheet_id, vec![4, 5], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
         gc.undo(None);
@@ -315,7 +315,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B10], 3, 2);
 
         // Delete columns outside data table range
-        gc.delete_columns(sheet_id, vec![5, 6], None);
+        gc.delete_columns(sheet_id, vec![5, 6], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 2, false);
 
@@ -335,7 +335,7 @@ mod tests {
         test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 2);
 
         // Delete middle column for A1
-        gc.delete_columns(sheet_id, vec![2], None);
+        gc.delete_columns(sheet_id, vec![2], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
 
         gc.undo(None);
@@ -356,7 +356,7 @@ mod tests {
         assert_table_count(&gc, sheet_id, 1);
 
         // Delete anchor column (first column)
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
         assert_table_count(&gc, sheet_id, 0);
         assert_display_cell_value(&gc, sheet_id, 1, 1, "");
 
@@ -382,7 +382,7 @@ mod tests {
         test_create_code_table(&mut gc, sheet_id, pos![B1], 3, 1);
 
         // Readonly table should not be modified
-        gc.delete_columns(sheet_id, vec![3], None);
+        gc.delete_columns(sheet_id, vec![3], None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
 
@@ -392,7 +392,7 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
 
         // delete the column before the code table
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
 
@@ -418,7 +418,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 1, 3);
 
         // Delete first column
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
 
         assert_table_count(&gc, sheet_id, 0);
 
@@ -441,7 +441,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         // Delete first column (which contains the data table anchor cell)
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
@@ -465,7 +465,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 5, 1);
 
         // Delete columns including anchor column
-        gc.delete_columns(SheetId::TEST, vec![1, 3], None);
+        gc.delete_columns(SheetId::TEST, vec![1, 3], None, false);
 
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         assert_table_count(&gc, sheet_id, 1);
@@ -491,7 +491,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B10], 3, 1);
 
         // Delete columns that overlap with both tables
-        gc.delete_columns(sheet_id, vec![2, 3], None);
+        gc.delete_columns(sheet_id, vec![2, 3], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 1, 1, false);
         assert_table_count(&gc, sheet_id, 2);
@@ -519,7 +519,7 @@ mod tests {
         test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 2);
 
         // Delete all columns that contain the table
-        gc.delete_columns(SheetId::TEST, vec![1, 2, 3], None);
+        gc.delete_columns(SheetId::TEST, vec![1, 2, 3], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
         gc.undo(None);
@@ -543,7 +543,7 @@ mod tests {
         test_create_data_table_with_values(&mut gc, sheet_id, pos![D1], 2, 1, &["C", "D"]);
 
         // Delete all columns containing both tables
-        gc.delete_columns(sheet_id, vec![1, 2, 4, 5], None);
+        gc.delete_columns(sheet_id, vec![1, 2, 4, 5], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
         gc.undo(None);
@@ -567,7 +567,7 @@ mod tests {
         test_create_data_table_with_values(&mut gc, sheet_id, pos![B1], 2, 1, &["A", "B"]);
 
         // Delete more columns than the table occupies
-        gc.delete_columns(sheet_id, vec![1, 2, 3, 4], None);
+        gc.delete_columns(sheet_id, vec![1, 2, 3, 4], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
         gc.undo(None);
@@ -596,15 +596,16 @@ mod tests {
                 direction: SortDirection::Ascending,
             }]),
             None,
+            false,
         );
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], false);
 
         // Delete an unsorted column (column 2)
-        gc.delete_columns(sheet_id, vec![2], None);
+        gc.delete_columns(sheet_id, vec![2], None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], false);
 
         // Delete the sorted column (column 1)
-        gc.delete_columns(sheet_id, vec![1], None);
+        gc.delete_columns(sheet_id, vec![1], None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], true);
 
         gc.undo(None);
@@ -626,7 +627,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
 
         // Delete a column that intersects with the chart
-        gc.delete_columns(sheet_id, vec![3], None);
+        gc.delete_columns(sheet_id, vec![3], None, false);
 
         // Verify the chart was resized
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 4, false);
@@ -642,7 +643,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.delete_columns(sheet_id, vec![1, 2], None);
+        gc.delete_columns(sheet_id, vec![1, 2], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A2], 2, 3, false);
 
         gc.undo(None);
@@ -661,7 +662,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 5, 3);
 
-        gc.delete_columns(sheet_id, vec![2, 3, 4], None);
+        gc.delete_columns(sheet_id, vec![2, 3, 4], None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
         gc.undo(None);
