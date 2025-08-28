@@ -66,19 +66,12 @@ export const ScheduledTaskInterval = (props: Props) => {
 
   const [every, setEvery] = useState<Every>('days');
 
-  const onChangeEvery = useCallback((every: string) => {
-    setEvery(every as Every);
-    if (every === 'days') {
-      setCronFields(CronExpressionParser.parse('0 0 0 * * 1-7', { strict: true }).fields);
-    }
-  }, []);
-
   const [cronFields, setCronFields] = useState<CronFieldCollection | undefined>();
 
   useEffect(() => {
     if (!cron) {
       setEvery('days');
-      setCronFields(CronExpressionParser.parse('0 0 0 * * 1-7', { strict: true }).fields);
+      setCronFields(CronExpressionParser.parse('0 0 * * 1-7').fields);
       return;
     }
     try {
@@ -130,12 +123,35 @@ export const ScheduledTaskInterval = (props: Props) => {
         setMinute(null);
         return;
       }
-      const newCronFields = CronFieldCollection.from(cronFields, { minute: [minute as any] });
+      const newCronFields = CronExpressionParser.parse(`${minute} * * * *`).fields;
       setMinute(minute);
       setCronFields(newCronFields);
       setCron(newCronFields.stringify(false));
     },
     [cronFields, every, setCron]
+  );
+
+  const onChangeEvery = useCallback(
+    (every: string) => {
+      setEvery(every as Every);
+      if (every === 'days') {
+        const fields = CronExpressionParser.parse('0 0 * * 1-7').fields;
+        setCronFields(fields);
+        setMinute(null);
+        setCron(fields.stringify(false));
+      } else if (every === 'hour') {
+        const fields = CronExpressionParser.parse('0 * * * *').fields;
+        setCronFields(fields);
+        setMinute(0);
+        setCron(fields.stringify(false));
+      } else if (every === 'minute') {
+        const fields = CronExpressionParser.parse('* * * * *').fields;
+        setCronFields(fields);
+        setMinute(null);
+        setCron(fields.stringify(false));
+      }
+    },
+    [setCron, setCronFields, setMinute, setEvery]
   );
 
   return (
@@ -164,7 +180,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                     (cronFields.dayOfWeek.values.length === 1 && cronFields.dayOfWeek.values[0] === 0))
                 }
                 onClick={() => {
-                  setCronFields(CronExpressionParser.parse('0 0 0 * * 1-7', { strict: true }).fields);
+                  setCronFields(CronExpressionParser.parse('0 0 * * 1-7').fields);
                 }}
               >
                 all
@@ -174,7 +190,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 size="sm"
                 variant="link"
                 onClick={() => {
-                  setCronFields(CronExpressionParser.parse('0 0 0 * * 1', { strict: true }).fields);
+                  setCronFields(CronExpressionParser.parse('0 0 * * 1').fields);
                 }}
               >
                 clear
