@@ -55,11 +55,11 @@ export const useOnboardingLoaderData = () => {
 };
 
 export const Component = () => {
-  useRemoveInitialLoadingUI();
-
   useEffect(() => {
     trackEvent('[Onboarding].loaded');
   }, []);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>

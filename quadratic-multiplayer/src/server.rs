@@ -92,7 +92,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     // TODO(ddimaria): we do this check for every WS connection.  Does this
     // data change ofter or can it be cached?
-    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let jwks = get_jwks(&config.jwks_uri).await?;
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
 
