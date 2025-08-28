@@ -40,12 +40,7 @@ export const DuplicateSheet = memo(
     }
 
     return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={`${toolArgs.data.name_of_new_sheet} (before ${toolArgs.data.sheet_name_to_duplicate})`}
-        className={className}
-      />
+      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.name_of_new_sheet}"`} className={className} />
     );
   }
 );

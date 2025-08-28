@@ -39,8 +39,6 @@ export const SetTextFormats = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard icon={icon} label={label} description={` from ${toolArgs.data.selection}`} className={className} />
-    );
+    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} />;
   }
 );

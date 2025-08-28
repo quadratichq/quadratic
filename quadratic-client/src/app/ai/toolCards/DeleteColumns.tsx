@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type DeleteColumnsResponse = z.infer<(typeof aiToolsSpec)[AITool.DeleteColumns]['responseSchema']>;
@@ -29,6 +29,13 @@ export const DeleteColumns = memo(
     const icon = <GridActionIcon />;
     const label = 'Delete columns';
 
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}": ` : ''}${toolArgs.data.columns.join(', ')}`;
+      }
+      return '';
+    }, [toolArgs?.data?.columns, toolArgs?.data?.sheet_name, toolArgs?.success]);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -38,8 +45,6 @@ export const DeleteColumns = memo(
     } else if (!toolArgs || !toolArgs.data) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
-
-    const description = `Columns ${toolArgs.data.columns.join(', ')} have been deleted in sheet "${toolArgs.data.sheet_name}".`;
 
     return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }

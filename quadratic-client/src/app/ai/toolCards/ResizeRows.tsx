@@ -12,31 +12,29 @@ export const ResizeRows = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ResizeRowsResponse, ResizeRowsResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = args ? JSON.parse(args) : {};
-          setToolArgs(aiToolsSpec[AITool.ResizeRows].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[ResizeRows] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = args ? JSON.parse(args) : {};
+        setToolArgs(aiToolsSpec[AITool.ResizeRows].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[ResizeRows] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
     const label = 'Resize rows';
 
-    const description = useMemo(
-      () =>
-        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Rows in sheet "${toolArgs?.data?.sheet_name}" within selection "${toolArgs?.data?.selection}" have been resized.`
-          : toolArgs?.data?.sheet_name && !toolArgs?.data?.selection
-            ? `Rows in sheet "${toolArgs.data.sheet_name}" have been resized.`
-            : 'Rows in all sheets have been resized.',
-      [toolArgs?.data?.selection, toolArgs?.data?.sheet_name]
-    );
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}"!` : ''}${toolArgs.data.selection} ${toolArgs.data.size}`;
+      }
+      return '';
+    }, [toolArgs?.data?.selection, toolArgs?.data?.sheet_name, toolArgs?.data?.size, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
