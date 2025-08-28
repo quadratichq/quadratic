@@ -21,6 +21,7 @@ export const ConnectionTypeSchema = z.enum([
   'SUPABASE',
   'NEON',
 ]);
+export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {

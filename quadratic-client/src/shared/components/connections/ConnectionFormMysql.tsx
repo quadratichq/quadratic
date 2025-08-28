@@ -7,6 +7,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsMysqlSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
@@ -15,7 +16,7 @@ import { z } from 'zod';
 
 const ConnectionFormMysqlSchema = z.object({
   name: ConnectionNameSchema,
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.MYSQL),
   ...ConnectionTypeDetailsMysqlSchema.shape,
 });

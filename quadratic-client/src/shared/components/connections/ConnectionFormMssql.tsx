@@ -7,6 +7,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsMssqlSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections.js';
@@ -15,7 +16,7 @@ import { z } from 'zod';
 
 const ConnectionFormMssqlSchema = z.object({
   name: ConnectionNameSchema,
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.MSSQL),
   ...ConnectionTypeDetailsMssqlSchema.shape,
 });

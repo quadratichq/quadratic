@@ -6,6 +6,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsNeonSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
@@ -14,7 +15,7 @@ import { z } from 'zod';
 
 const ConnectionFormNeonSchema = z.object({
   name: ConnectionNameSchema,
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.NEON),
   ...ConnectionTypeDetailsNeonSchema.shape,
 });

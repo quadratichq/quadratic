@@ -1,5 +1,4 @@
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
-import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { InfoIcon } from '@/shared/components/Icons';
@@ -9,6 +8,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsSupabaseSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 const ConnectionFormSupabaseSchema = z.object({
   name: ConnectionNameSchema,
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.SUPABASE),
   ...ConnectionTypeDetailsSupabaseSchema.shape,
 });
@@ -33,7 +33,6 @@ const DEFAULTS = {
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
-    semanticDescription: connection?.semanticDescription || undefined,
     type: 'SUPABASE',
     host: String(connection?.typeDetails?.host || ''),
     port: String(connection?.typeDetails?.port || DEFAULTS.PORT),
@@ -145,8 +144,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
-
-        <ConnectionFormSemantic form={form} />
 
         {children}
       </form>

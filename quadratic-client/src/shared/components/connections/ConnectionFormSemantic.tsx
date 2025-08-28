@@ -10,21 +10,19 @@ interface ConnectionFormSemanticProps {
 // Change the component signature to use the new props type
 export const ConnectionFormSemantic = ({ form, semanticDescription }: ConnectionFormSemanticProps) => {
   return (
-    <>
-      <FormField
-        control={form.control}
-        name="semanticDescription"
-        defaultValue={semanticDescription}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tell us about your data</FormLabel>
-            <FormControl>
-              <Textarea autoComplete="off" className="h-48" placeholder="Semantic placeholder copy here" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </>
+    <FormField
+      control={form.control}
+      name="semanticDescription"
+      defaultValue={semanticDescription}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Tell us about your data</FormLabel>
+          <FormControl>
+            <Textarea autoComplete="off" className="h-48" placeholder="Semantic placeholder copy here" {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 };
