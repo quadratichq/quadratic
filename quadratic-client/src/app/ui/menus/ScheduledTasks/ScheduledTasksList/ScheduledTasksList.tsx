@@ -1,7 +1,9 @@
 import { ScheduledTasksListHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksListHeader';
-import { scheduledTasksAtom } from '@/jotai/scheduledTasksAtom';
+import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ScheduledTasksIcon } from '@/shared/components/Icons';
+import { joinListWith } from '@/shared/components/JointListWith';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import { useAtomValue } from 'jotai';
 
 export const ScheduledTasksList = () => {
@@ -18,6 +20,7 @@ export const ScheduledTasksList = () => {
       <ScheduledTasksListHeader />
 
       {isEmpty && <EmptyScheduledTaskList />}
+      {!isEmpty && <ScheduledTaskListBody />}
     </div>
   );
 };
@@ -33,6 +36,63 @@ const EmptyScheduledTaskList = () => {
           Learn More.
         </a>
       </div>
+    </div>
+  );
+};
+
+const convertDays = (days: number[] | null, time: string | null) => {
+  if (!days || days.length === 0) return `Every day at ${time}`;
+  let daysString = [];
+  for (const day of days) {
+    if (day === 0 || day === 7) {
+      daysString.push('Sun');
+    } else if (day === 1) {
+      daysString.push('Mon');
+    } else if (day === 2) {
+      daysString.push('Tue');
+    } else if (day === 3) {
+      daysString.push('Wed');
+    } else if (day === 4) {
+      daysString.push('Thu');
+    } else if (day === 5) {
+      daysString.push('Fri');
+    } else if (day === 6) {
+      daysString.push('Sat');
+    }
+  }
+  return `${joinListWith({ arr: daysString, conjunction: 'and' })} at ${time}`;
+};
+
+const ScheduledTaskListBody = () => {
+  const { editableScheduledTasks, showScheduledTasks } = useScheduledTasks();
+
+  return (
+    <div className="flex flex-col gap-3">
+      {editableScheduledTasks.map((task) => {
+        let duration = '';
+        switch (task.every) {
+          case 'days':
+            duration = convertDays(task.days, task.time);
+            break;
+          case 'hour':
+            duration = `Every hour at the ${task.minute} minute`;
+            break;
+          case 'minute':
+            duration = 'Every minute';
+            break;
+        }
+        return (
+          <Button
+            key={task.uuid}
+            className="flex items-center justify-between"
+            variant="outline"
+            onClick={() => showScheduledTasks(task.uuid)}
+          >
+            <div className="font-bold">Run sheet</div>
+            <div className="text-muted-foreground">{duration}</div>
+          </Button>
+        );
+      })}
     </div>
   );
 };

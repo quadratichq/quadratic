@@ -16,7 +16,7 @@ export const ScheduledTaskHeader = () => {
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
-            onClick={showScheduledTasks}
+            onClick={() => showScheduledTasks()}
           >
             <ArrowBackIcon />
           </Button>

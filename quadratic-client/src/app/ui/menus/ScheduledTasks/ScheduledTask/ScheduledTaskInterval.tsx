@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { cronToTimeDays } from '@/app/ui/menus/ScheduledTasks/convertCronTime';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -13,9 +13,11 @@ interface Props {
   setCron: (cron: string) => void;
 }
 
-type Every = 'days' | 'hour' | 'minute' | 'month';
+export const DEFAULT_CRON_INTERVAL_TYPE: ScheduledTaskIntervalType = 'days';
 
-const EVERY: { value: Every; label: string }[] = [
+export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute';
+
+const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = [
   {
     value: 'days',
     label: 'Days',
@@ -64,7 +66,7 @@ const DAYS: { value: string; label: string }[] = [
 export const ScheduledTaskInterval = (props: Props) => {
   const { cron, setCron } = props;
 
-  const [every, setEvery] = useState<Every>('days');
+  const [every, setEvery] = useState<ScheduledTaskIntervalType>('days');
 
   const [cronFields, setCronFields] = useState<CronFieldCollection | undefined>();
 
@@ -82,14 +84,7 @@ export const ScheduledTaskInterval = (props: Props) => {
     }
   }, [cron]);
 
-  const timeDays = useMemo(() => {
-    if (!cronFields || !cronFields.hour || !cronFields.minute || every !== 'days') return '';
-
-    const hour = cronFields.hour.values[0] < 10 ? `0${cronFields.hour.values[0]}` : cronFields.hour.values[0];
-    const minute = cronFields.minute.values[0] < 10 ? `0${cronFields.minute.values[0]}` : cronFields.minute.values[0];
-    return `${hour}:${minute}`;
-  }, [cronFields, every]);
-
+  const timeDays = useMemo(() => cronToTimeDays(cron), [cron]);
   const setTimeDays = useCallback(
     (time: string) => {
       if (!cronFields || every !== 'days') return;
@@ -133,7 +128,7 @@ export const ScheduledTaskInterval = (props: Props) => {
 
   const onChangeEvery = useCallback(
     (every: string) => {
-      setEvery(every as Every);
+      setEvery(every as ScheduledTaskIntervalType);
       if (every === 'days') {
         const fields = CronExpressionParser.parse('0 0 * * 1-7').fields;
         setCronFields(fields);
@@ -203,7 +198,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 key={day.value}
                 variant="outline"
                 className="w-8 text-xs hover:bg-transparent"
-                pressed={cronFields?.dayOfWeek?.values.includes(parseInt(day.value) as DayOfWeekRange)}
+                pressed={cronFields?.dayOfWeek?.values.includes(parseInt(day.value) as DayOfWeekRange) ?? false}
                 onPressedChange={(pressed) => {
                   if (!cronFields) return;
                   setCronFields((prevFields) => {

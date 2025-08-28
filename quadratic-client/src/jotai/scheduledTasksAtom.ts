@@ -4,8 +4,10 @@ import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { cronToDays, cronToMinute, cronToTimeDays, cronType } from '@/app/ui/menus/ScheduledTasks/convertCronTime';
+import type { ScheduledTaskIntervalType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 import type { ScheduledTask } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -18,9 +20,20 @@ export interface ScheduledTasks {
   tasks: ScheduledTask[];
 }
 
+// Convert the scheduled task to an editable object
+export interface ScheduledTaskEditable {
+  uuid: string;
+  nextRunTime: string;
+  lastRunTime: string | null;
+  every: ScheduledTaskIntervalType;
+  days: number[] | null;
+  time: string | null;
+  minute: number | null;
+}
+
 const defaultScheduledTasks: ScheduledTasks = {
   show: true,
-  currentTaskId: 'CREATE',
+  currentTaskId: null,
   tasks: [],
 };
 
@@ -34,10 +47,7 @@ export const useLoadScheduledTasks = () => {
   useEffect(() => {
     if (fileUuid) {
       scheduledTasksAPI.get(fileUuid).then((tasks) => {
-        console.log(tasks);
         setScheduledTasks((prev) => ({ ...prev, tasks }));
-
-        console.log({ scheduledTasks: tasks });
       });
     }
   }, [fileUuid, setScheduledTasks]);
@@ -56,25 +66,48 @@ export interface ScheduledTaskToSave {
 }
 
 interface ScheduledTasksActions {
-  showScheduledTasks: () => void;
+  showScheduledTasks: (taskId?: string) => void;
   closeScheduledTasks: () => void;
   newScheduledTask: () => void;
   saveScheduledTask: (task: ScheduledTaskToSave) => Promise<void>;
   scheduledTasks: ScheduledTasks;
   currentTask: ScheduledTask | null;
+  editableScheduledTasks: ScheduledTaskEditable[];
+  deleteScheduledTask: (taskId: string) => void;
 }
+
+export const scheduledTasksEditableAtom = atom<ScheduledTaskEditable[]>((get) => {
+  const scheduledTasks = get(scheduledTasksAtom);
+
+  // Transform ScheduledTask[] to ScheduledTaskEditable[]
+  return scheduledTasks.tasks.map((task) => {
+    return {
+      uuid: task.uuid,
+      nextRunTime: task.nextRunTime,
+      lastRunTime: task.lastRunTime,
+      every: cronType(task.cronExpression),
+      days: cronToDays(task.cronExpression),
+      time: cronToTimeDays(task.cronExpression),
+      minute: cronToMinute(task.cronExpression),
+    } as ScheduledTaskEditable;
+  });
+});
 
 export const useScheduledTasks = (): ScheduledTasksActions => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
+  const editableScheduledTasks = useAtomValue(scheduledTasksEditableAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
-  const showScheduledTasks = useCallback(() => {
-    if (!!showValidation) {
-      setShowValidation(false);
-    }
-    setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: null }));
-  }, [showValidation, setShowValidation, setScheduledTasks]);
+  const showScheduledTasks = useCallback(
+    (taskId?: string) => {
+      if (!!showValidation) {
+        setShowValidation(false);
+      }
+      setScheduledTasks((prev) => ({ ...prev, show: true, currentTaskId: taskId ?? null }));
+    },
+    [showValidation, setShowValidation, setScheduledTasks]
+  );
 
   const closeScheduledTasks = useCallback(() => {
     setScheduledTasks((prev) => ({ ...prev, show: false }));
@@ -95,17 +128,42 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
     async (task: ScheduledTaskToSave) => {
       if (!fileUuid) return;
       if (scheduledTasks.currentTaskId === CREATE_TASK_ID) {
-        const results = await scheduledTasksAPI.create(fileUuid, {
+        const created = await scheduledTasksAPI.create(fileUuid, {
           cronExpression: task.cronExpression,
           operations: task.operations,
         });
-        console.log(results);
+        setScheduledTasks((prev) => ({
+          ...prev,
+          tasks: [...prev.tasks, created],
+        }));
       } else {
-        await scheduledTasksAPI.update(fileUuid, task.uuid, task);
+        const updated = await scheduledTasksAPI.update(fileUuid, task.uuid, task);
+        setScheduledTasks((prev) => ({
+          ...prev,
+          tasks: prev.tasks.map((task) => (task.uuid === updated.uuid ? updated : task)),
+        }));
       }
     },
-    [scheduledTasks.currentTaskId, fileUuid]
+    [fileUuid, scheduledTasks.currentTaskId, setScheduledTasks]
   );
 
-  return { showScheduledTasks, closeScheduledTasks, newScheduledTask, scheduledTasks, currentTask, saveScheduledTask };
+  const deleteScheduledTask = useCallback(
+    async (taskId: string) => {
+      if (!fileUuid) return;
+      await scheduledTasksAPI.delete(fileUuid, taskId);
+      setScheduledTasks((prev) => ({ ...prev, tasks: prev.tasks.filter((task) => task.uuid !== taskId) }));
+    },
+    [fileUuid, setScheduledTasks]
+  );
+
+  return {
+    showScheduledTasks,
+    closeScheduledTasks,
+    newScheduledTask,
+    scheduledTasks,
+    currentTask,
+    saveScheduledTask,
+    editableScheduledTasks,
+    deleteScheduledTask,
+  };
 };

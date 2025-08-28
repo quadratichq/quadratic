@@ -27,7 +27,8 @@ const TASKS: { value: tasks; label: string }[] = [
 ];
 
 export const ScheduledTask = () => {
-  const { closeScheduledTasks, currentTask, saveScheduledTask } = useScheduledTasks();
+  const { closeScheduledTasks, currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } =
+    useScheduledTasks();
 
   const [task, setTask] = useState<string>('run-all-code');
 
@@ -58,12 +59,20 @@ export const ScheduledTask = () => {
   const onSave = useCallback(() => {
     if (!cron) return;
 
+    // const operations = create_cron_operations(sheet, range)
     saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cron,
       operations: '',
     });
   }, [saveScheduledTask, currentTask, cron]);
+
+  const onDelete = useCallback(() => {
+    if (currentTask) {
+      deleteScheduledTask(currentTask.uuid);
+      showScheduledTasks();
+    }
+  }, [currentTask, deleteScheduledTask, showScheduledTasks]);
 
   return (
     <div
@@ -114,11 +123,20 @@ export const ScheduledTask = () => {
         </div>
       </div>
 
-      <div className="m-2 flex justify-end gap-2">
-        <Button onClick={onSave}>Save</Button>
-        <Button onClick={closeScheduledTasks} variant="secondary">
-          Cancel
-        </Button>
+      <div className="m-2 flex flex-row justify-between">
+        {currentTask ? (
+          <Button onClick={onDelete} variant="secondary">
+            Delete
+          </Button>
+        ) : (
+          <div></div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button onClick={closeScheduledTasks} variant="secondary">
+            Cancel
+          </Button>
+          <Button onClick={onSave}>Save</Button>
+        </div>
       </div>
     </div>
   );

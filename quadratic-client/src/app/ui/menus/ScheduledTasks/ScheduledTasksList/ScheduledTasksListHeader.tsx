@@ -7,11 +7,11 @@ export const ScheduledTasksListHeader = () => {
   const { closeScheduledTasks, newScheduledTask } = useScheduledTasks();
 
   return (
-    <div className="flex w-full justify-between px-2 py-2">
+    <div className="mt-2 flex w-full justify-between px-2 pb-4">
       <span className="flex items-center text-sm font-bold">Scheduled Tasks</span>
 
       <div className="flex items-center gap-2">
-        <TooltipPopover label="New chat">
+        <TooltipPopover label="New scheduled task">
           <Button
             variant="ghost"
             size="icon-sm"
