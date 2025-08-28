@@ -42,7 +42,9 @@ export const ScheduledTask = () => {
   const [sheet, setSheet] = useState(sheets.current);
   const [range, setRange] = useState<A1Selection | undefined>();
   const [rangeError, setRangeError] = useState(false);
-  const [cron, setCron] = useState<string | undefined>();
+
+  // default cron expression is every day at midnight
+  const [cron, setCron] = useState('0 0 * * *');
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
     if (selection) {
@@ -59,7 +61,7 @@ export const ScheduledTask = () => {
     saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cron,
-      operations: '',
+      operations: {},
     });
   }, [saveScheduledTask, currentTask, cron]);
 

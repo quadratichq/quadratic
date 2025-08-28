@@ -51,7 +51,7 @@ export const useLoadScheduledTasks = () => {
 export interface ScheduledTaskToSave {
   uuid: string;
   cronExpression: string;
-  operations: string;
+  operations: any;
 }
 
 interface ScheduledTasksActions {
@@ -92,11 +92,12 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
 
   const saveScheduledTask = useCallback(
     async (task: ScheduledTaskToSave) => {
-      debugger;
       if (!fileUuid) return;
-
       if (scheduledTasks.currentTaskId === CREATE_TASK_ID) {
-        const results = await scheduledTasksAPI.create(fileUuid, task);
+        const results = await scheduledTasksAPI.create(fileUuid, {
+          cronExpression: task.cronExpression,
+          operations: task.operations,
+        });
         console.log(results);
       } else {
         await scheduledTasksAPI.update(fileUuid, task.uuid, task);

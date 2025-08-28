@@ -200,6 +200,7 @@ export const ScheduledTaskInterval = (props: Props) => {
           <div className="align-center flex w-full flex-row justify-between gap-1 border p-2">
             {DAYS.map((day) => (
               <Toggle
+                key={day.value}
                 variant="outline"
                 className="w-8 text-xs hover:bg-transparent"
                 pressed={cronFields?.dayOfWeek?.values.includes(parseInt(day.value) as DayOfWeekRange)}
