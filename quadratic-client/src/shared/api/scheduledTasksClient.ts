@@ -12,9 +12,9 @@ export const scheduledTasksAPI = {
   },
 
   /// Gets all scheduled tasks in a file
-  get: (uuid: string): Promise<ApiTypes['/v0/files/:uuid/scheduled_task.GET.response']> => {
+  get: (fileId: string): Promise<ApiTypes['/v0/files/:uuid/scheduled_task.GET.response']> => {
     return fetchFromApi(
-      `/v0/files/${uuid}/scheduled_task`,
+      `/v0/files/${fileId}/scheduled_task`,
       { method: 'GET' },
       ApiSchemas['/v0/files/:uuid/scheduled_task.GET.response']
     );

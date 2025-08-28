@@ -34,6 +34,7 @@ export const useLoadScheduledTasks = () => {
   useEffect(() => {
     if (fileUuid) {
       scheduledTasksAPI.get(fileUuid).then((tasks) => {
+        console.log(tasks);
         setScheduledTasks((prev) => ({ ...prev, tasks }));
 
         console.log({ scheduledTasks: tasks });
