@@ -37,11 +37,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Ok create the connection
-  const { name, type, typeDetails } = connection;
+  const { name, type, typeDetails, semanticDescription } = connection;
   const result = await dbClient.connection.create({
     data: {
       name,
       teamId,
+      semanticDescription,
       type,
       typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
     },
