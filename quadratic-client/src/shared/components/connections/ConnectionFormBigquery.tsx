@@ -1,3 +1,4 @@
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -5,6 +6,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsBigquerySchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
@@ -13,7 +15,7 @@ import { z } from 'zod';
 
 const ConnectionFormBigquerySchema = z.object({
   name: ConnectionNameSchema,
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.BIGQUERY),
   ...ConnectionTypeDetailsBigquerySchema.shape,
 });
@@ -26,6 +28,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     project_id: connection?.typeDetails?.project_id || '',
     dataset: connection?.typeDetails?.dataset || '',
     service_account_configuration: String(connection?.typeDetails?.service_account_configuration || ''),
+    semanticDescription: String(connection?.semanticDescription || ''),
   };
 
   const form = useForm<FormValues>({
@@ -103,6 +106,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+
+        <ConnectionFormSemantic form={form} />
+
         {children}
       </form>
     </Form>

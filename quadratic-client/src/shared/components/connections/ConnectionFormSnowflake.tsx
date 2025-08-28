@@ -1,3 +1,4 @@
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -28,6 +29,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     database: String(connection?.typeDetails?.database || ''),
     username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
+    semanticDescription: String(connection?.semanticDescription || ''),
   };
 
   const form = useForm<FormValues>({
@@ -142,6 +144,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+
+        <ConnectionFormSemantic form={form} />
+
         {children}
       </form>
     </Form>

@@ -2,7 +2,6 @@ import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/a
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import { ConnectionFormAICheckbox } from '@/shared/components/connections/ConnectionFormAICheckbox';
-import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
@@ -157,7 +156,6 @@ function ConnectionFormWrapper({
 
   return (
     <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
-      <ConnectionFormSemantic form={form} semanticDescription={props.connection?.semanticDescription} />
       <ConnectionFormAICheckbox value={aiCheckboxChecked} setValue={setAiCheckboxChecked} showError={showError} />
 
       <ConnectionFormActions
