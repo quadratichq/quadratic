@@ -56,7 +56,7 @@ const ConnectionSchema = z.object({
   name: ConnectionNameSchema,
   uuid: z.string().uuid(),
   isDemo: z.boolean().optional(),
-
+  semanticDescription: z.string().optional(),
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
 });
@@ -123,7 +123,14 @@ export const ConnectionTypeDetailsBigquerySchema = z.object({
  */
 
 export const ConnectionListSchema = z.array(
-  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true, isDemo: true })
+  ConnectionSchema.pick({
+    uuid: true,
+    name: true,
+    createdDate: true,
+    type: true,
+    semanticDescription: true,
+    isDemo: true,
+  })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
@@ -134,6 +141,7 @@ export const ApiSchemasConnections = {
   // Create connection
   '/v0/teams/:uuid/connections.POST.request': ConnectionSchema.pick({
     name: true,
+    semanticDescription: true,
     type: true,
     typeDetails: true,
   }),
@@ -143,7 +151,11 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/connections/:connectionUuid.GET.response': ConnectionSchema,
 
   // Update connection
-  '/v0/teams/:uuid/connections/:connectionUuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
+  '/v0/teams/:uuid/connections/:connectionUuid.PUT.request': ConnectionSchema.pick({
+    name: true,
+    semanticDescription: true,
+    typeDetails: true,
+  }),
   '/v0/teams/:uuid/connections/:connectionUuid.PUT.response': ConnectionSchema,
 
   // Delete connection

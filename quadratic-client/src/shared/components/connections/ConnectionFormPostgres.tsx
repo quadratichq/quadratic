@@ -15,6 +15,7 @@ import { z } from 'zod';
 
 const ConnectionFormPostgresSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: z.string().optional(),
   type: z.literal(ConnectionTypeSchema.enum.POSTGRES),
   ...ConnectionTypeDetailsPostgresSchema.shape,
 });

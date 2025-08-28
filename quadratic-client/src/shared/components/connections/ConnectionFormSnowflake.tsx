@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 const ConnectionFormSnowflakeSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: z.string().optional(),
   type: z.literal(ConnectionTypeSchema.enum.SNOWFLAKE),
   ...ConnectionTypeDetailsSnowflakeSchema.shape,
 });

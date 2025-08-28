@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 const ConnectionFormBigquerySchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: z.string().optional(),
   type: z.literal(ConnectionTypeSchema.enum.BIGQUERY),
   ...ConnectionTypeDetailsBigquerySchema.shape,
 });

@@ -14,6 +14,7 @@ import { z } from 'zod';
 
 const ConnectionFormNeonSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: z.string().optional(),
   type: z.literal(ConnectionTypeSchema.enum.NEON),
   ...ConnectionTypeDetailsNeonSchema.shape,
 });

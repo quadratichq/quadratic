@@ -165,14 +165,15 @@ enum ConnectionType {
 
 model Connection {
     // Generic details
-    id          Int       @id @default(autoincrement())
-    uuid        String    @unique @default(uuid()) // used in URLs
-    createdDate DateTime  @default(now()) @map("created_date")
-    updatedDate DateTime  @default(now()) @map("updated_date")
-    archived    DateTime?
-    name        String
-    team        Team      @relation(fields: [teamId], references: [id])
-    teamId      Int       @map("team_id")
+    id                  Int       @id @default(autoincrement())
+    uuid                String    @unique @default(uuid()) // used in URLs
+    createdDate         DateTime  @default(now()) @map("created_date")
+    updatedDate         DateTime  @default(now()) @map("updated_date")
+    archived            DateTime?
+    name                String
+    team                Team      @relation(fields: [teamId], references: [id])
+    teamId              Int       @map("team_id")
+    semanticDescription String?   @map("semantic_description")
     // secretArn       String // AWS Secret Manager ARN
 
     // Type-specific details

@@ -2,6 +2,7 @@ import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/a
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import { ConnectionFormAICheckbox } from '@/shared/components/connections/ConnectionFormAICheckbox';
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
@@ -34,9 +35,9 @@ export function ConnectionFormCreate({
   const submit = useSubmit();
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
-    const { name, type, ...typeDetails } = formValues;
+    const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].create', { type });
-    const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
+    const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
@@ -72,9 +73,13 @@ export function ConnectionFormEdit({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
-    const { name, type, ...typeDetails } = formValues;
+    const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].edit', { type });
-    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
+    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, {
+      name,
+      semanticDescription,
+      typeDetails,
+    });
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
@@ -152,6 +157,7 @@ function ConnectionFormWrapper({
 
   return (
     <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
+      <ConnectionFormSemantic form={form} semanticDescription={props.connection?.semanticDescription} />
       <ConnectionFormAICheckbox value={aiCheckboxChecked} setValue={setAiCheckboxChecked} showError={showError} />
 
       <ConnectionFormActions

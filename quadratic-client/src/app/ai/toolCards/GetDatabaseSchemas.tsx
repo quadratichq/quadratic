@@ -15,6 +15,7 @@ export const GetDatabaseSchemas = memo(
       if (!loading) {
         try {
           const json = JSON.parse(args);
+          console.log('json', json);
           setToolArgs(aiToolsSpec[AITool.GetDatabaseSchemas].responseSchema.safeParse(json));
         } catch (error) {
           setToolArgs(undefined);
