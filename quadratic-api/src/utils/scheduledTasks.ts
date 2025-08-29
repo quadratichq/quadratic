@@ -46,14 +46,15 @@ export async function createScheduledTask(data: {
 export async function updateScheduledTask(data: {
   scheduledTaskId: number;
   cronExpression: string;
-  operations: any;
+  operations?: any;
 }): Promise<ScheduledTaskResponse> {
+  console.log(data);
   const result = await dbClient.scheduledTask.update({
     where: { id: data.scheduledTaskId },
     data: {
       cronExpression: data.cronExpression,
       nextRunTime: getNextRunTime(data.cronExpression),
-      operations: Buffer.from(JSON.stringify(data.operations)),
+      operations: data.operations ? Buffer.from(JSON.stringify(data.operations)) : undefined,
       updatedDate: new Date(),
     },
   });
