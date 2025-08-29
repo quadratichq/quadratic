@@ -27,7 +27,7 @@ const TASKS: { value: tasks; label: string }[] = [
 ];
 
 export const ScheduledTask = () => {
-  const { closeScheduledTasks, currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } =
+  const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, closeScheduledTasks } =
     useScheduledTasks();
 
   const [task, setTask] = useState<string>('run-all-code');
@@ -56,16 +56,17 @@ export const ScheduledTask = () => {
     }
   }, []);
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
     if (!cron) return;
 
     // const operations = create_cron_operations(sheet, range)
-    saveScheduledTask({
+    await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cron,
       operations: '',
     });
-  }, [saveScheduledTask, currentTask, cron]);
+    closeScheduledTasks();
+  }, [cron, saveScheduledTask, currentTask?.uuid, closeScheduledTasks]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
