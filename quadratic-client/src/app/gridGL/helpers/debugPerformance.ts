@@ -4,15 +4,11 @@ const MINIMUM_MS_TO_DISPLAY = 10;
 
 let lastTime = 0;
 
-export function debugTimeReset(): void {
-  lastTime = performance.now();
-}
+export type DebugTimes = Record<string, number>;
 
 export function debugTimeStart(name: string, times: DebugTimes): void {
   times[name] = performance.now();
 }
-
-export type DebugTimes = Record<string, number>;
 
 export function debugTimeEnd(name: string, times: DebugTimes): void {
   const start = times[name];
@@ -23,6 +19,20 @@ export function debugTimeEnd(name: string, times: DebugTimes): void {
   }
 }
 
+export function debugShowTimes(name: string, times: Record<string, number>): void {
+  if (debugFlag('debugStartupTime')) {
+    console.log(
+      `${name}\n${'*'.repeat(name.length)}\n${Object.entries(times)
+        .map(([key, value]) => `${key}: ${Math.round(value)}ms`)
+        .join('\n')}`
+    );
+  }
+}
+
+export function debugTimeReset(): void {
+  lastTime = performance.now();
+}
+
 export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): void {
   if (!debugFlag('debugShowTime')) return;
   const now = performance.now();
@@ -30,14 +40,6 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
     console.log(`[Time Check] ${name}: ${Math.round(now - lastTime)}ms`);
   }
   lastTime = now;
-}
-
-export function debugShowTimes(name: string, times: Record<string, number>): void {
-  console.log(
-    `${name}\n${'*'.repeat(name.length)}\n${Object.entries(times)
-      .map(([key, value]) => `${key}: ${Math.round(value)}ms`)
-      .join('\n')}`
-  );
 }
 
 export function debugRendererLight(on: boolean): void {

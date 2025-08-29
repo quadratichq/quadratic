@@ -24,6 +24,7 @@ import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
+import { debugShowTimes, debugTimeEnd, debugTimeStart, type DebugTimes } from '@/app/gridGL/helpers/debugPerformance';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
@@ -63,6 +64,9 @@ export class PixiApp {
   // this is used to display content over the headings (table name and columns
   // when off the screen)
   private hoverTableHeaders: Container;
+
+  // used to track performance of pixiApp.init
+  private times: DebugTimes = {};
 
   // used to draw selection (via Cursor.ts) for hoverTableHeaders content
   hoverTableColumnsSelection: Graphics;
@@ -123,6 +127,7 @@ export class PixiApp {
   }
 
   init = (): Promise<void> => {
+    debugTimeStart('pixiApp.init', this.times);
     return new Promise((resolve) => {
       // we cannot initialize pixi until the bitmap fonts are loaded
       if (!isBitmapFontLoaded()) {
@@ -154,6 +159,8 @@ export class PixiApp {
     } else {
       this.alreadyRendered = true;
     }
+    debugTimeEnd('pixiApp.init', this.times);
+    debugShowTimes('[pixiApp] times', this.times);
   };
 
   private initCanvas = () => {
