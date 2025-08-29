@@ -5,6 +5,7 @@ import { joinListWith } from '@/shared/components/JointListWith';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useAtomValue } from 'jotai';
+import type { JSX } from 'react';
 
 export const ScheduledTasksList = () => {
   const scheduledTasks = useAtomValue(scheduledTasksAtom);
@@ -40,8 +41,25 @@ const EmptyScheduledTaskList = () => {
   );
 };
 
-const convertDays = (days: number[] | null, time: string | null) => {
-  if (!days || days.length === 0) return `Every day at ${time}`;
+const convertDays = (days: number[] | null, time: string | null): JSX.Element => {
+  // need to convert the time string from GMT to local time
+  const timeParts = time?.split(':');
+  if (timeParts) {
+    const hours = parseInt(timeParts[0]);
+    const minutes = parseInt(timeParts[1]);
+    const localTime = new Date();
+    localTime.setHours(hours);
+    localTime.setMinutes(minutes);
+    time = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  const timeDisplay = time ?? '';
+  if (!days || days.length === 0)
+    return (
+      <div className="block text-left">
+        <div>Every day</div>
+        <div className="text-xs text-muted-foreground">{timeDisplay}</div>
+      </div>
+    );
   let daysString = [];
   for (const day of days) {
     if (day === 0 || day === 7) {
@@ -60,7 +78,12 @@ const convertDays = (days: number[] | null, time: string | null) => {
       daysString.push('Sat');
     }
   }
-  return `${joinListWith({ arr: daysString, conjunction: 'and' })} at ${time}`;
+  return (
+    <>
+      <div>{joinListWith({ arr: daysString, conjunction: 'and' })}</div>
+      <div className="text-xs text-muted-foreground">{timeDisplay}</div>
+    </>
+  );
 };
 
 const ScheduledTaskListBody = () => {
@@ -69,22 +92,27 @@ const ScheduledTaskListBody = () => {
   return (
     <div className="flex flex-col gap-3">
       {editableScheduledTasks.map((task) => {
-        let duration = '';
+        let duration: JSX.Element;
         switch (task.every) {
           case 'days':
             duration = convertDays(task.days, task.time);
             break;
           case 'hour':
-            duration = `Every hour at the ${task.minute} minute`;
+            duration = (
+              <>
+                <div>Every hour</div>
+                <div>at the {task.minute} minute</div>
+              </>
+            );
             break;
           case 'minute':
-            duration = 'Every minute';
+            duration = <div>Every minute</div>;
             break;
         }
         return (
           <Button
             key={task.uuid}
-            className="flex items-center justify-between"
+            className="flex h-fit items-center justify-between"
             variant="outline"
             onClick={() => showScheduledTasks(task.uuid)}
           >

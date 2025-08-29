@@ -27,8 +27,7 @@ const TASKS: { value: tasks; label: string }[] = [
 ];
 
 export const ScheduledTask = () => {
-  const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, closeScheduledTasks } =
-    useScheduledTasks();
+  const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
 
   const [task, setTask] = useState<string>('run-all-code');
 
@@ -65,8 +64,8 @@ export const ScheduledTask = () => {
       cronExpression: cron,
       operations: '',
     });
-    closeScheduledTasks();
-  }, [cron, saveScheduledTask, currentTask?.uuid, closeScheduledTasks]);
+    showScheduledTasks();
+  }, [cron, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
@@ -133,7 +132,7 @@ export const ScheduledTask = () => {
           <div></div>
         )}
         <div className="flex justify-end gap-2">
-          <Button onClick={closeScheduledTasks} variant="secondary">
+          <Button onClick={() => showScheduledTasks()} variant="secondary">
             Cancel
           </Button>
           <Button onClick={onSave}>Save</Button>

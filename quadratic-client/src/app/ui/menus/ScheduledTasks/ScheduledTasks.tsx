@@ -1,18 +1,24 @@
 import { ScheduledTask } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTask';
 import { ScheduledTasksList } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksList';
-import { scheduledTasksAtom } from '@/jotai/scheduledTasksAtom';
-import { useAtomValue } from 'jotai';
+import { useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 
 export const ScheduledTasks = () => {
-  const scheduledTasks = useAtomValue(scheduledTasksAtom);
+  const { show, currentTask, closeScheduledTasks } = useScheduledTasks();
 
-  if (!scheduledTasks.show) {
+  if (!show) {
     return null;
   }
 
-  if (scheduledTasks.currentTaskId) {
-    return <ScheduledTask />;
-  } else {
-    return <ScheduledTasksList />;
-  }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      closeScheduledTasks();
+    }
+  };
+
+  return (
+    <div onKeyDown={handleKeyDown} tabIndex={0}>
+      {currentTask && <ScheduledTask />}
+      {!currentTask && <ScheduledTasksList />}
+    </div>
+  );
 };

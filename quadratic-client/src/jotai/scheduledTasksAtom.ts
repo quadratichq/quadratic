@@ -74,6 +74,7 @@ interface ScheduledTasksActions {
   currentTask: ScheduledTask | null;
   editableScheduledTasks: ScheduledTaskEditable[];
   deleteScheduledTask: (taskId: string) => void;
+  show: boolean;
 }
 
 export const scheduledTasksEditableAtom = atom<ScheduledTaskEditable[]>((get) => {
@@ -157,6 +158,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
   );
 
   return {
+    show: scheduledTasks.show,
     showScheduledTasks,
     closeScheduledTasks,
     newScheduledTask,

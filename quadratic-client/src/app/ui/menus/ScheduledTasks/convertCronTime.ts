@@ -7,8 +7,9 @@ import CronExpressionParser from 'cron-parser';
 export const cronType = (cron?: string): ScheduledTaskIntervalType => {
   if (!cron) return DEFAULT_CRON_INTERVAL_TYPE;
   const cronFields = CronExpressionParser.parse(cron).fields;
-  if (!cronFields.minute.isWildcard) return 'minute';
   if (!cronFields.hour.isWildcard && !cronFields.minute.isWildcard) return 'days';
+  if (!cronFields.minute.isWildcard && cronFields.hour.isWildcard) return 'hour';
+  if (!cronFields.minute.isWildcard) return 'minute';
 
   return DEFAULT_CRON_INTERVAL_TYPE;
 };
