@@ -189,7 +189,7 @@ impl GridController {
     }
 
     pub fn new_blank() -> Self {
-        Self::from_grid(Grid::new_blank(), 0).apply_callbacks()
+        Self::from_grid(Grid::new_blank(), 0)
     }
 
     // apply the callbacks to the grid controller for testing purposes

@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -356,31 +356,30 @@ mod tests {
     fn test_execute_compute_code_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("three".into()));
 
+        // Create a single code cell for testing
+        gc.set_code_cell(
+            (1, 1, sheet_id).into(),
+            CodeCellLanguage::Javascript,
+            "console.log('test')".to_string(),
+            None,
+            None,
+        );
+
+        // Clear JS calls to count only our execution
+        clear_js_calls();
+
+        // Test execute_compute_code_selection
         let mut transaction = PendingTransaction::default();
         gc.execute_compute_code_selection(
             &mut transaction,
             Operation::ComputeCodeSelection {
-                selection: A1Selection::test_a1("A1,B1,C1"),
+                selection: A1Selection::test_a1("A1"),
             },
         );
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Text("one".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("two".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
-            Some(CellValue::Text("three".into()))
-        );
+        // For now, just verify the function runs without panicking
+        // We can add execution verification once we confirm the basic flow works
+        expect_js_call_count("jsRunJavascript", 1, true);
     }
 }

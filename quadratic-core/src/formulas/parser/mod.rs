@@ -106,7 +106,7 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// ```rust
 /// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, controller::GridController, grid::SheetId};
 ///
-/// let g = GridController::new();
+/// let g = GridController::test();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
@@ -126,7 +126,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// ```rust
 /// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, controller::GridController, grid::SheetId};
 ///
-/// let g = GridController::new();
+/// let g = GridController::test();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_a1_to_rc("SUM(B$3)", g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
