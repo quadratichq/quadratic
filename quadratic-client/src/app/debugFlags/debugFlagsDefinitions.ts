@@ -1,7 +1,7 @@
 //! Definitions and display settings for all debug flags. These are accessible
 //! in the app via the Cmd+Option+Shift+I (Ctrl+Alt+Shift+I in windows) menu.
 
-export const debugFlagGroups = ['Rendering', 'Transactions', 'Misc.', 'UI', 'WebWorkers', 'AI', 'Playwright'];
+export const debugFlagGroups = ['Rendering', 'Transactions', 'Times', 'Misc.', 'UI', 'WebWorkers', 'AI', 'Playwright'];
 
 export type DebugFlagGroup = (typeof debugFlagGroups)[number];
 
@@ -44,7 +44,8 @@ export type DebugFlagKeys =
   | 'debugAIAnalystChatStringInput'
   | 'debugAIAnalystChatEditing'
   | 'debugShowTopLeftPosition'
-  | 'debugShowCoordinates';
+  | 'debugShowCoordinates'
+  | 'debugShowAPITimes';
 
 export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
@@ -63,12 +64,6 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     initial: false,
     title: 'Show cause of rendering',
     description: 'Shows why rendering is happening. This is useful for debugging rendering issues.',
-    group: 'Rendering',
-  },
-  debugShowTime: {
-    initial: true,
-    title: 'Show rendering time',
-    description: 'Shows unexpectedly high rendering time in console',
     group: 'Rendering',
   },
   debugShowCellsSheetCulling: {
@@ -116,13 +111,27 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     group: 'Transactions',
   },
 
-  // Misc. group
+  // Times group
   debugStartupTime: {
     initial: false,
     title: 'Show Startup Time',
     description: 'Show startup time information',
-    group: 'Misc.',
+    group: 'Times',
   },
+  debugShowTime: {
+    initial: true,
+    title: 'Show rendering time',
+    description: 'Shows unexpectedly high rendering time in console',
+    group: 'Times',
+  },
+  debugShowAPITimes: {
+    initial: false,
+    title: 'Show API Times',
+    description: 'Show API times in console',
+    group: 'Times',
+  },
+
+  // Misc. group
   debugShowFileIO: {
     initial: false,
     title: 'Show File I/O',
