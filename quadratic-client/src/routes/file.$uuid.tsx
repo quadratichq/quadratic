@@ -1,5 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { debugShowTimes, debugTimeEnd, debugTimeStart } from '@/app/gridGL/helpers/debugPerformance';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -34,27 +35,32 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
   currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  // We don't need to wait for this to complete, so it doesn't slow down the initial load time
-  const loadPixi = () => {
-    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
-    loadAssets().catch((e) => console.error('Error loading assets', e));
-    if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  const times: Record<string, number> = {};
+
+  const loadPixi = async () => {
+    debugTimeStart('loadAssets', times);
+    try {
+      await loadAssets();
+    } catch (e) {
+      console.error('Error loading pixi assets', e);
+    }
+    debugTimeEnd('loadAssets', times);
   };
 
   // load file information from the api
   const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
-    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] loadFileFromApi (all)');
+    debugTimeStart('loadFileFromApi', times);
 
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
-      if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] fetching file from api');
+      debugTimeStart('apiClient.files.get', times);
       data = await apiClient.files.get(uuid);
-      if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] fetching file from api');
+      debugTimeEnd('apiClient.files.get', times);
     } catch (error: any) {
-      if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] retrieving auth');
+      debugTimeStart('authClient.isAuthenticated', times);
       const isLoggedIn = await authClient.isAuthenticated();
-      if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] retrieving auth');
+      debugTimeEnd('authClient.isAuthenticated', times);
       if (error.status === 403 && !isLoggedIn) {
         return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
       }
@@ -70,20 +76,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // initialize the core module within client
   const initializeCore = async () => {
-    if (debugFlag('debugStartupTime')) {
-      console.time('[file.$uuid.tsx] initialize core in the client');
-    }
+    debugTimeStart('initCoreClient', times);
     await initCoreClient();
-    if (debugFlag('debugStartupTime')) {
-      console.timeEnd('[file.$uuid.tsx] initialize core in the client');
-    }
-  };
-
-  // start the web workers
-  const initializeWorkers = async () => {
-    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing workers');
-    initWorkers();
-    if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
+    debugTimeEnd('initCoreClient', times);
   };
 
   const { uuid } = params as { uuid: string };
@@ -94,11 +89,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
   const isVersionHistoryPreview = checkpointId !== null;
 
-  loadPixi();
-
   const [data] = await Promise.all([
     loadFileFromApi(uuid, isVersionHistoryPreview),
-    initializeWorkers(),
+    loadPixi(),
+    initWorkers(),
     initializeCore(),
   ]);
 
@@ -119,7 +113,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // initialize Core web worker
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] file loaded in core');
+  debugTimeStart('quadraticCore.load', times);
   const result = await quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
@@ -127,7 +121,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] file loaded in core');
+  debugTimeEnd('quadraticCore.load', times);
   if (result.error) {
     if (!isVersionHistoryPreview) {
       captureEvent({
@@ -174,7 +168,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     isOnPaidPlan: data.team.isOnPaidPlan,
   });
 
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] loadFileFromApi (all)');
+  debugTimeEnd('loadFileFromApi', times);
+  if (debugFlag('debugStartupTime')) debugShowTimes('[file.$uuid.tsx] times', times);
   return data;
 };
 
