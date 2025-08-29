@@ -36,6 +36,7 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const times: Record<string, number> = {};
+  debugTimeStart('total', times);
 
   const loadPixi = async () => {
     debugTimeStart('loadAssets', times);
@@ -49,8 +50,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // load file information from the api
   const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
-    debugTimeStart('loadFileFromApi', times);
-
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
@@ -58,9 +57,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       data = await apiClient.files.get(uuid);
       debugTimeEnd('apiClient.files.get', times);
     } catch (error: any) {
-      debugTimeStart('authClient.isAuthenticated', times);
       const isLoggedIn = await authClient.isAuthenticated();
-      debugTimeEnd('authClient.isAuthenticated', times);
       if (error.status === 403 && !isLoggedIn) {
         return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
       }
@@ -168,7 +165,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     isOnPaidPlan: data.team.isOnPaidPlan,
   });
 
-  debugTimeEnd('loadFileFromApi', times);
+  debugTimeEnd('total', times);
   if (debugFlag('debugStartupTime')) debugShowTimes('[file.$uuid.tsx] times', times);
   return data;
 };

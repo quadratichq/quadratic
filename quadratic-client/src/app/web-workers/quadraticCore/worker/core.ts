@@ -95,11 +95,12 @@ class Core {
     message: ClientCoreLoad,
     renderPort: MessagePort
   ): Promise<{ version: string } | { error: string }> => {
+    const times: DebugTimes = {};
+    debugTimeStart('total', times);
+
     this.teamUuid = message.teamUuid;
 
     coreRender.init(renderPort);
-
-    const times: DebugTimes = {};
 
     try {
       const results = await Promise.all([this.fetchGridFile(message.url, times), this.loadCore(times)]);
@@ -113,6 +114,7 @@ class Core {
 
     if (debugFlag('debugWebWorkers')) console.log('[core] GridController loaded');
 
+    debugTimeEnd('total', times);
     if (debugFlag('debugStartupTime')) debugShowTimes('[core.loadFile] times', times);
 
     return { version: this.gridController.getVersion() };

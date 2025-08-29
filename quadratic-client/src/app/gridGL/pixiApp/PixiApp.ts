@@ -127,7 +127,7 @@ export class PixiApp {
   }
 
   init = (): Promise<void> => {
-    debugTimeStart('pixiApp.init', this.times);
+    debugTimeStart('total', this.times);
     return new Promise((resolve) => {
       // we cannot initialize pixi until the bitmap fonts are loaded
       if (!isBitmapFontLoaded()) {
@@ -159,7 +159,7 @@ export class PixiApp {
     } else {
       this.alreadyRendered = true;
     }
-    debugTimeEnd('pixiApp.init', this.times);
+    debugTimeEnd('total', this.times);
     debugShowTimes('[pixiApp] times', this.times);
   };
 
