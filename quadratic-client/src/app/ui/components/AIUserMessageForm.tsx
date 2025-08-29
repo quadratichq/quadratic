@@ -4,6 +4,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
+import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -297,7 +298,7 @@ export const AIUserMessageForm = memo(
           ref={textareaRef}
           value={prompt}
           className={cn(
-            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
             editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
             (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
           )}
@@ -417,35 +418,40 @@ const AIUserMessageFormFooter = memo(
       <>
         <div
           className={cn(
-            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs text-muted-foreground',
+            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs',
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+          <div className="flex items-center gap-1">
+            <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+            <AIUserMessageFormConnectionsButton disabled={disabled} />
+          </div>
 
-          <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
-          <div className="flex items-center gap-3">
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                  {children as React.ReactElement}
-                </TooltipPopover>
-              )}
-            >
-              <Button
-                size="icon-sm"
-                className="rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submitPrompt();
-                }}
-                disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+            <div className="flex items-center gap-3">
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                    {children as React.ReactElement}
+                  </TooltipPopover>
+                )}
               >
-                <ArrowUpwardIcon />
-              </Button>
-            </ConditionalWrapper>
+                <Button
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    submitPrompt();
+                  }}
+                  disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+                >
+                  <ArrowUpwardIcon />
+                </Button>
+              </ConditionalWrapper>
+            </div>
           </div>
         </div>
 

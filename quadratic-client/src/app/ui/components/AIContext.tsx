@@ -5,10 +5,11 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import type { CodeCell } from '@/app/shared/types/codeCell';
-import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { cn } from '@/shared/shadcn/utils';
@@ -79,10 +80,6 @@ export const AIContext = memo(
       }
     }, [initialContext, loading, messages, messagesCount, setContext]);
 
-    const handleOnCloseSelectContextMenu = useCallback(() => {
-      textareaRef.current?.focus();
-    }, [textareaRef]);
-
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
         setFiles(files.filter((f) => f !== file));
@@ -90,17 +87,19 @@ export const AIContext = memo(
       [files, setFiles]
     );
 
+    const handleOnClickConnection = useCallback(
+      (connectionUuid: string) => {
+        setContext?.((prev) => ({
+          ...prev,
+          connections: prev.connections?.filter((c) => c.uuid !== connectionUuid),
+        }));
+      },
+      [setContext]
+    );
+
     // const handleOnClickSelection = useCallback(() => {
     //   setContext?.((prev) => ({ ...prev, selection: undefined }));
     // }, [setContext]);
-
-    const handleOnClickCurrentSheet = useCallback(() => {
-      setContext?.((prev) => ({
-        ...prev,
-        sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
-        currentSheet: '',
-      }));
-    }, [setContext]);
 
     return (
       <div
@@ -110,15 +109,21 @@ export const AIContext = memo(
           loading && 'select-none opacity-60'
         )}
       >
-        {editing && context && setContext && (
-          <AIAnalystSelectContextMenu
-            context={context}
-            setContext={setContext}
-            disabled={disabled}
-            onClose={handleOnCloseSelectContextMenu}
-          />
-        )}
-
+        {context &&
+          setContext &&
+          context.connections &&
+          context.connections.map((connection) => (
+            <ContextPill
+              key={connection.uuid}
+              primary={connection.name}
+              primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
+              // TODO: fix types
+              // @ts-ignore
+              secondary={getCodeCell(connection.type)?.label ?? 'Connection'}
+              onClick={() => handleOnClickConnection(connection.uuid)}
+              noClose={false}
+            />
+          ))}
         {files
           .filter((file) => isFileSupported(file.mimeType))
           .map((file, index) => (
@@ -131,34 +136,6 @@ export const AIContext = memo(
           ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
-
-        {!!context.currentSheet && (
-          <ContextPill
-            key={context.currentSheet}
-            primary={context.currentSheet}
-            secondary={'Sheet'}
-            onClick={handleOnClickCurrentSheet}
-            noClose={disabled || !setContext}
-          />
-        )}
-
-        {context.sheets
-          .filter((sheet) => sheet !== context.currentSheet)
-          .map((sheet) => (
-            <ContextPill
-              key={sheet}
-              primary={sheet}
-              secondary={'Sheet'}
-              noClose={disabled || !setContext}
-              onClick={() =>
-                setContext?.((prev) => ({
-                  ...prev,
-                  sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
-                  currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
-                }))
-              }
-            />
-          ))}
       </div>
     );
   }
@@ -166,14 +143,18 @@ export const AIContext = memo(
 
 type ContextPillProps = {
   primary: string;
+  primaryIcon?: React.ReactNode;
   secondary: string;
   onClick?: () => void;
   noClose: boolean;
 };
-const ContextPill = memo(({ primary, secondary, onClick, noClose }: ContextPillProps) => {
+const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
-      <span className="max-w-24 truncate">{primary}</span>
+      <span className="flex items-center gap-1">
+        {primaryIcon}
+        <span className="max-w-24 truncate">{primary}</span>
+      </span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
