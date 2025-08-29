@@ -3,7 +3,7 @@ import { ScheduledTasksList } from '@/app/ui/menus/ScheduledTasks/ScheduledTasks
 import { useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 
 export const ScheduledTasks = () => {
-  const { show, currentTask, closeScheduledTasks } = useScheduledTasks();
+  const { show, currentTaskId, closeScheduledTasks } = useScheduledTasks();
 
   if (!show) {
     return null;
@@ -17,8 +17,8 @@ export const ScheduledTasks = () => {
 
   return (
     <div onKeyDown={handleKeyDown} tabIndex={0}>
-      {currentTask && <ScheduledTask />}
-      {!currentTask && <ScheduledTasksList />}
+      {currentTaskId && <ScheduledTask />}
+      {!currentTaskId && <ScheduledTasksList />}
     </div>
   );
 };

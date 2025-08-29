@@ -7,7 +7,7 @@ import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTa
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 type tasks = 'run-selected-cells' | 'run-sheet-cells' | 'run-all-code';
 
@@ -30,14 +30,6 @@ export const ScheduledTask = () => {
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
 
   const [task, setTask] = useState<string>('run-all-code');
-
-  useEffect(() => {
-    if (currentTask) {
-      console.log(currentTask);
-      // todo: set the task based on the operations to the current task
-      // need to parse the operations and set the task based on the operations (regrettably)
-    }
-  }, [currentTask]);
 
   const [sheet, setSheet] = useState(sheets.current);
   const [range, setRange] = useState<A1Selection | undefined>();

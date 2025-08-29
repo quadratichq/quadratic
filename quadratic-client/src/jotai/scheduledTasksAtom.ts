@@ -72,6 +72,7 @@ interface ScheduledTasksActions {
   saveScheduledTask: (task: ScheduledTaskToSave) => Promise<void>;
   scheduledTasks: ScheduledTasks;
   currentTask: ScheduledTask | null;
+  currentTaskId: string | null;
   editableScheduledTasks: ScheduledTaskEditable[];
   deleteScheduledTask: (taskId: string) => void;
   show: boolean;
@@ -164,6 +165,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
     newScheduledTask,
     scheduledTasks,
     currentTask,
+    currentTaskId: scheduledTasks.currentTaskId,
     saveScheduledTask,
     editableScheduledTasks,
     deleteScheduledTask,

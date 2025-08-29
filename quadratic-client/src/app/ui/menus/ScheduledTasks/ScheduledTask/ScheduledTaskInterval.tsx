@@ -65,8 +65,8 @@ const DAYS: { value: string; label: string }[] = [
 
 export const ScheduledTaskInterval = (props: Props) => {
   const { cron, setCron } = props;
-
-  const [every, setEvery] = useState<ScheduledTaskIntervalType>('days');
+  console.log(cron, cronType(cron));
+  const [every, setEvery] = useState<ScheduledTaskIntervalType>(cronType(cron));
 
   const [cronFields, setCronFields] = useState<CronFieldCollection | undefined>();
 
