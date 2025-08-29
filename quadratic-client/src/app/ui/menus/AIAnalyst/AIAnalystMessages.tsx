@@ -402,11 +402,11 @@ const PromptSuggestions = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-2 px-2">
+    <div className="flex flex-row flex-wrap gap-2 px-2">
       {promptSuggestions.suggestions.map((suggestion, index) => (
         <div
           key={`${index}-${suggestion.label}`}
-          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+          className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
           onClick={() =>
             submitPrompt({
               messageSource: 'User',

@@ -111,6 +111,7 @@ export default function QuadraticUI() {
       }}
     >
       {!presentationMode && !isEmbed && <QuadraticSidebar />}
+      {canEditFile && isAuthenticated && <AIAnalyst />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && !isEmbed && <Toolbar />}
@@ -124,7 +125,6 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {canEditFile && isAuthenticated && <AIAnalyst />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

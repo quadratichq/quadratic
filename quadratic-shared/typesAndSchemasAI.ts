@@ -237,6 +237,15 @@ const ContextSchema = z.object({
   sheets: z.array(z.string()),
   currentSheet: z.string(),
   selection: z.string().optional(),
+  connections: z
+    .array(
+      z.object({
+        uuid: z.string(),
+        name: z.string(),
+        type: z.string(),
+      })
+    )
+    .optional(),
   codeCell: z
     .object({
       sheetId: z.string(),
