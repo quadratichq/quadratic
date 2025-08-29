@@ -24,7 +24,6 @@ pub struct RedisStreamsConfig {
     pub host: String,
     pub port: String,
     pub password: String,
-    pub active_channels: String,
 }
 
 /// Redis Streams connection
@@ -174,6 +173,29 @@ impl super::PubSub for RedisConnection {
     /// Remove an a key within an active channel
     async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
         let () = self.multiplex.zrem(set_key, channel).await?;
+        Ok(())
+    }
+
+    /// Get a list of scheduled tasks
+    async fn scheduled_tasks(&mut self, set_key: &str) -> Result<Vec<String>> {
+        let tasks = self
+            .multiplex
+            .zrangebyscore(set_key, "-inf", "+inf")
+            .await?;
+        Ok(tasks)
+    }
+
+    /// Insert or update a key within an active channel
+    async fn upsert_scheduled_task(&mut self, set_key: &str, task: &str) -> Result<()> {
+        let score = Utc::now().timestamp_millis();
+        let () = self.multiplex.zadd(set_key, task, score).await?;
+
+        Ok(())
+    }
+
+    /// Remove an a key within an active channel
+    async fn remove_scheduled_task(&mut self, set_key: &str, task: &str) -> Result<()> {
+        let () = self.multiplex.zrem(set_key, task).await?;
         Ok(())
     }
 
@@ -353,7 +375,6 @@ pub mod tests {
             host: "0.0.0.0".into(),
             port: "6379".into(),
             password: "".into(),
-            active_channels: Uuid::new_v4().to_string(),
         });
 
         (config, channel)

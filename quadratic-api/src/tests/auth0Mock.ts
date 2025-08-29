@@ -17,3 +17,31 @@ export const auth0Mock = (
     }),
   })),
 });
+
+// This mock is used for tests that need to handle any user ID pattern
+export const genericAuth0Mock = () => {
+  return {
+    ManagementClient: jest.fn().mockImplementation(() => ({
+      getUsers: jest.fn().mockImplementation(({ q }: { q: string }) => {
+        // Extract user IDs from the query and return mock users
+        const userIds = q.match(/test-user-\w+|other-user-\w+/g) || [];
+        return userIds.map((user_id) => ({
+          user_id,
+          email: `${user_id}@example.com`,
+          name: user_id.includes('test-user') ? 'Test User' : 'Other User',
+        }));
+      }),
+      getUsersByEmail: jest.fn().mockImplementation((email: string) => {
+        // Mock user lookup by email
+        const user_id = email.split('@')[0];
+        return [
+          {
+            user_id,
+            email,
+            name: user_id.includes('test-user') ? 'Test User' : 'Other User',
+          },
+        ];
+      }),
+    })),
+  };
+};

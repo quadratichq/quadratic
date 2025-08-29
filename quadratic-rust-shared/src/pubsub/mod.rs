@@ -53,6 +53,26 @@ pub trait PubSub {
         channel: &str,
     ) -> impl Future<Output = Result<()>> + Send;
 
+    /// Get a list of scheduled tasks
+    fn scheduled_tasks(
+        &mut self,
+        set_key: &str,
+    ) -> impl Future<Output = Result<Vec<String>>> + Send;
+
+    /// Upsert a scheduled task
+    fn upsert_scheduled_task(
+        &mut self,
+        set_key: &str,
+        task: &str,
+    ) -> impl Future<Output = Result<()>> + Send;
+
+    /// Remove a scheduled task
+    fn remove_scheduled_task(
+        &mut self,
+        set_key: &str,
+        task: &str,
+    ) -> impl Future<Output = Result<()>> + Send;
+
     /// Subscribe to a channel
     fn subscribe(&mut self, channel: &str, group: &str) -> impl Future<Output = Result<()>> + Send;
 
