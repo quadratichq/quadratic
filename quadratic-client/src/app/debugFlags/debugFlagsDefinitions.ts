@@ -13,7 +13,40 @@ export interface DebugFlagDescription {
   restart?: boolean;
 }
 
-export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
+export type DebugFlagKeys =
+  | 'debug'
+  | 'debugShowFPS'
+  | 'debugShowWhyRendering'
+  | 'debugShowTime'
+  | 'debugShowCellsSheetCulling'
+  | 'debugShowCellsHashBoxes'
+  | 'debugShowHashUpdates'
+  | 'debugShowCellHashesInfo'
+  | 'debugShowLoadingHashes'
+  | 'debugShowRunComputation'
+  | 'debugShowOfflineTransactions'
+  | 'debugStartupTime'
+  | 'debugShowFileIO'
+  | 'debugShowAnalytics'
+  | 'debugOffline'
+  | 'debugGridSettings'
+  | 'debugShowMultiplayer'
+  | 'debugShowVersionCheck'
+  | 'debugSaveURLState'
+  | 'debugShowUILogs'
+  | 'debugShowFocus'
+  | 'debugWebWorkers'
+  | 'debugWebWorkersMessages'
+  | 'debugShowAIModelMenu'
+  | 'debugShowAIInternalContext'
+  | 'debugLogJsonAIInternalContext'
+  | 'debugLogReadableAIInternalContext'
+  | 'debugAIAnalystChatStringInput'
+  | 'debugAIAnalystChatEditing'
+  | 'debugShowTopLeftPosition'
+  | 'debugShowCoordinates';
+
+export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
     initial: false,
     title: 'Debug Flag',
@@ -63,6 +96,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Show loading hashes',
     group: 'Rendering',
   },
+  debugShowHashUpdates: {
+    initial: false,
+    title: 'Show hash updates',
+    description: 'Show hash updates in console',
+    group: 'Rendering',
+  },
 
   debugShowRunComputation: {
     initial: false,
@@ -88,6 +127,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     initial: false,
     title: 'Show File I/O',
     description: 'Show file input/output operations',
+    group: 'Misc.',
+  },
+  debugShowAnalytics: {
+    initial: false,
+    title: 'Show Analytics',
+    description: 'Show analytics information',
     group: 'Misc.',
   },
   debugOffline: {

@@ -1,5 +1,4 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { Container } from 'pixi.js';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
 
@@ -26,24 +25,24 @@ export function debugRendererLight(on: boolean): void {
   }
 }
 
-let count = 0;
-let visibleCount = 0;
-function countChildren(parent: Container): void {
-  count++;
-  if (parent.visible) {
-    visibleCount++;
-  }
-  parent.children.forEach((child) => {
-    if (child instanceof Container) {
-      countChildren(child);
-    }
-  });
-}
+// let count = 0;
+// let visibleCount = 0;
+// function countChildren(parent: Container): void {
+//   count++;
+//   if (parent.visible) {
+//     visibleCount++;
+//   }
+//   parent.children.forEach((child) => {
+//     if (child instanceof Container) {
+//       countChildren(child);
+//     }
+//   });
+// }
 
-export function debugShowChildren(parent: Container, name?: string): void {
-  if (!debugFlag('debugShowCountRenderedObjects')) return;
-  count = 0;
-  visibleCount = 0;
-  countChildren(parent);
-  console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
-}
+// export function debugShowChildren(parent: Container, name?: string): void {
+//   if (!debugFlag('debugShowCountRenderedObjects')) return;
+//   count = 0;
+//   visibleCount = 0;
+//   countChildren(parent);
+//   console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
+// }

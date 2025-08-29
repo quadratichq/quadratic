@@ -34,10 +34,57 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
   currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  // Start loading PIXI assets early and asynchronously
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
-  loadAssets().catch((e) => console.error('Error loading assets', e));
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  // We don't need to wait for this to complete, so it doesn't slow down the initial load time
+  const loadPixi = () => {
+    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
+    loadAssets().catch((e) => console.error('Error loading assets', e));
+    if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  };
+
+  // load file information from the api
+  const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
+    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] loadFileFromApi (all)');
+
+    // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
+    let data: ApiTypes['/v0/files/:uuid.GET.response'];
+    try {
+      if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] fetching file from api');
+      data = await apiClient.files.get(uuid);
+      if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] fetching file from api');
+    } catch (error: any) {
+      if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] retrieving auth');
+      const isLoggedIn = await authClient.isAuthenticated();
+      if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] retrieving auth');
+      if (error.status === 403 && !isLoggedIn) {
+        return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
+      }
+      if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
+      throw new Response('Failed to load file from server.', { status: error.status });
+    }
+    if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO'))
+      console.log(
+        `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
+      );
+    return data;
+  };
+
+  // initialize the core module within client
+  const initializeCore = async () => {
+    if (debugFlag('debugStartupTime')) {
+      console.time('[file.$uuid.tsx] initialize core in the client');
+    }
+    await initCoreClient();
+    if (debugFlag('debugStartupTime')) {
+      console.timeEnd('[file.$uuid.tsx] initialize core in the client');
+    }
+  };
+
+  // start the web workers
+  const initializeWorkers = async () => {
+    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing workers');
+    initWorkers();
+    if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
+  };
 
   const { uuid } = params as { uuid: string };
 
@@ -47,38 +94,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
   const isVersionHistoryPreview = checkpointId !== null;
 
-  // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
-  let data: ApiTypes['/v0/files/:uuid.GET.response'];
-  try {
-    data = await apiClient.files.get(uuid);
-  } catch (error: any) {
-    const isLoggedIn = await authClient.isAuthenticated();
-    if (error.status === 403 && !isLoggedIn) {
-      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
-    }
-    if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
-    throw new Response('Failed to load file from server.', { status: error.status });
-  }
-  if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO'))
-    console.log(
-      `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
-    );
+  loadPixi();
 
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing workers');
-  initWorkers();
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
+  const [data] = await Promise.all([
+    loadFileFromApi(uuid, isVersionHistoryPreview),
+    initializeWorkers(),
+    initializeCore(),
+  ]);
 
-  if (debugFlag('debugStartupTime')) {
-    console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  }
-
-  if (debugFlag('debugStartupTime')) {
-    console.time('[file.$uuid.tsx] initialize core in the client');
-  }
-  await initCoreClient();
-  if (debugFlag('debugStartupTime')) {
-    console.timeEnd('[file.$uuid.tsx] initialize core in the client');
-  }
+  // we were redirected to login, so we don't need to do anything else
+  if (data instanceof Response) return data;
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -94,6 +119,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // initialize Core web worker
+  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] file loaded in core');
   const result = await quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
@@ -101,7 +127,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
-
+  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] file loaded in core');
   if (result.error) {
     if (!isVersionHistoryPreview) {
       captureEvent({
@@ -144,13 +170,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
 
-  if (debugFlag('debugStartupTime'))
-    console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-
   registerEventAnalyticsData({
     isOnPaidPlan: data.team.isOnPaidPlan,
   });
 
+  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] loadFileFromApi (all)');
   return data;
 };
 

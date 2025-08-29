@@ -20,7 +20,7 @@ export function isBitmapFontLoaded(): boolean {
 }
 
 export async function loadAssets() {
-  if (debugFlag('debugStartupTime')) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  if (debugFlag('debugStartupTime')) console.time('[loadAssets] Loading Bitmap fonts and icons');
   if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
@@ -61,5 +61,5 @@ export async function loadAssets() {
 
   events.emit('bitmapFontsLoaded');
 
-  if (debugFlag('debugStartupTime')) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  if (debugFlag('debugStartupTime')) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons');
 }
