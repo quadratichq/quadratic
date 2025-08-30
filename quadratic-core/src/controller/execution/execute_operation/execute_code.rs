@@ -151,12 +151,31 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            self.execute_compute_code_selection(
-                transaction,
-                Operation::ComputeCodeSelection {
-                    selection: A1Selection::from_single_cell(sheet_pos),
-                },
-            );
+            if !transaction.is_user_undo_redo() && !transaction.is_server() {
+                dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
+                return;
+            }
+            let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+                // sheet may have been deleted in a multiplayer operation
+                return;
+            };
+            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(sheet_pos.into()) {
+                match code_cell_value.language {
+                    CodeCellLanguage::Python => {
+                        self.run_python(transaction, sheet_pos, code_cell_value.code);
+                    }
+                    CodeCellLanguage::Formula => {
+                        self.run_formula(transaction, sheet_pos, code_cell_value.code);
+                    }
+                    CodeCellLanguage::Connection { kind, id } => {
+                        self.run_connection(transaction, sheet_pos, code_cell_value.code, kind, id);
+                    }
+                    CodeCellLanguage::Javascript => {
+                        self.run_javascript(transaction, sheet_pos, code_cell_value.code);
+                    }
+                    CodeCellLanguage::Import => {} // no-op
+                }
+            }
         }
     }
 
@@ -166,57 +185,43 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCodeSelection { selection } = op {
-            if !transaction.is_user_undo_redo() && !transaction.is_server() {
-                dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
-                return;
-            }
-            let sheet_id = selection.sheet_id;
-            let Some(sheet) = self.try_sheet(sheet_id) else {
-                // sheet may have been deleted in a multiplayer operation
-                return;
-            };
+            let mut new_ops = Vec::new();
 
-            // Collect all code cells to execute to avoid borrowing conflicts
-            let mut code_cells_to_execute = Vec::new();
+            // TODO: these loops are super expensive. Once we move all code to
+            // data_tables, we can use the cache instead. We can't use the cache
+            // now, since the cache is not populated until after the code is
+            // executed.
 
-            // loop through the positions in the selection
-            for rect in selection.rects(self.a1_context()) {
-                for pos in rect.iter() {
-                    let sheet_pos = SheetPos {
-                        x: pos.x,
-                        y: pos.y,
-                        sheet_id,
-                    };
+            if let Some(selection) = selection {
+                let sheet_id = selection.sheet_id;
+                let Some(sheet) = self.try_sheet(sheet_id) else {
+                    // sheet may have been deleted in a multiplayer operation
+                    return;
+                };
 
-                    // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
-                    // we just continue to the next position
-                    if let Some(CellValue::Code(value)) = sheet.cell_value(pos) {
-                        code_cells_to_execute.push((sheet_pos, value.language, value.code));
-                    }
+                // loop through the positions in the selection
+                for rect in selection.rects_unbounded(self.a1_context()) {
+                    sheet.columns.iter_content_in_rect(rect).for_each(|pos| {
+                        if matches!(sheet.cell_value(pos.into()), Some(CellValue::Code(_))) {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                            });
+                        }
+                    });
+                }
+            } else {
+                let sheets = self.sheets();
+                for sheet in sheets {
+                    sheet.columns.iter_content().for_each(|pos| {
+                        if matches!(sheet.cell_value(pos.into()), Some(CellValue::Code(_))) {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet.id),
+                            });
+                        }
+                    });
                 }
             }
-
-            // drop the sheet
-            let _ = sheet;
-
-            // execute all the collected code cells
-            for (sheet_pos, language, code) in code_cells_to_execute {
-                match language {
-                    CodeCellLanguage::Python => {
-                        self.run_python(transaction, sheet_pos, code);
-                    }
-                    CodeCellLanguage::Formula => {
-                        self.run_formula(transaction, sheet_pos, code);
-                    }
-                    CodeCellLanguage::Connection { kind, id } => {
-                        self.run_connection(transaction, sheet_pos, code, kind, id);
-                    }
-                    CodeCellLanguage::Javascript => {
-                        self.run_javascript(transaction, sheet_pos, code);
-                    }
-                    CodeCellLanguage::Import => {} // no-op
-                }
-            }
+            transaction.operations.extend(new_ops);
         }
     }
 }
@@ -227,7 +232,10 @@ mod tests {
         CellValue, Pos, SheetPos,
         a1::A1Selection,
         controller::{
-            GridController, active_transactions::pending_transaction::PendingTransaction,
+            GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
@@ -359,27 +367,45 @@ mod tests {
 
         // Create a single code cell for testing
         gc.set_code_cell(
-            (1, 1, sheet_id).into(),
-            CodeCellLanguage::Javascript,
-            "console.log('test')".to_string(),
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "NOW()".to_string(),
             None,
             None,
         );
 
-        // Clear JS calls to count only our execution
-        clear_js_calls();
+        let value1 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
 
         // Test execute_compute_code_selection
-        let mut transaction = PendingTransaction::default();
-        gc.execute_compute_code_selection(
-            &mut transaction,
-            Operation::ComputeCodeSelection {
-                selection: A1Selection::test_a1("A1"),
-            },
-        );
+        let ops = vec![Operation::ComputeCodeSelection { selection: None }];
+        gc.start_user_transaction(ops, None, TransactionName::Unknown);
 
-        // For now, just verify the function runs without panicking
-        // We can add execution verification once we confirm the basic flow works
-        expect_js_call_count("jsRunJavascript", 1, true);
+        let value2 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value2 != value1);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::from_single_cell(pos![sheet_id!A1])),
+        }];
+        gc.start_user_transaction(ops, None, TransactionName::Unknown);
+
+        let value3 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value3 != value2);
+
+        // Wait 1 second to ensure we get a different timestamp
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let ops = vec![Operation::ComputeCodeSelection {
+            selection: Some(A1Selection::all(sheet_id)),
+        }];
+        gc.start_user_transaction(ops, None, TransactionName::Unknown);
+
+        let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
+        assert!(value4 != value3);
     }
 }

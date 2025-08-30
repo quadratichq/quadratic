@@ -1,5 +1,3 @@
-use serde::Serialize;
-
 use crate::{
     a1::A1Selection,
     controller::{operations::operation::Operation, transaction::Transaction},
@@ -152,20 +150,26 @@ impl GridController {
         Ok(())
     }
 
-    /// Computes the code for a selection
-    #[wasm_bindgen(js_name = "computeCodeSelectionEncode")]
-    pub fn js_compute_code_selection_encode(
+    /// Computes the code for a selection. If sheet_id and selection are not
+    /// provided, then all code cells in the file are computed.
+    #[wasm_bindgen(js_name = "scheduledTaskEncode")]
+    pub fn js_scheduled_task_encode(
         &mut self,
-        selection: String,
-        sheet_id: String,
+        sheet_id: Option<String>,
+        selection: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id =
-                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-                .map_err(|e| format!("Invalid selection: {e}"))?;
-            let ops = vec![Operation::ComputeCodeSelection { selection }];
-
+            let ops = if let (Some(sheet_id), Some(selection)) = (sheet_id, selection) {
+                let sheet_id =
+                    SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+                let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                    .map_err(|e| format!("Invalid selection: {e}"))?;
+                vec![Operation::ComputeCodeSelection {
+                    selection: Some(selection),
+                }]
+            } else {
+                vec![Operation::ComputeCodeSelection { selection: None }]
+            };
             let binary_ops = Transaction::serialize_and_compress(ops).map_err(|e| e.to_string())?;
 
             Ok(Some(
@@ -174,13 +178,27 @@ impl GridController {
         })
     }
 
-    #[wasm_bindgen(js_name = "computeCodeSelectionDecode")]
-    pub fn js_compute_code_selection_decode(&mut self, binary_ops: Vec<u8>) -> JsValue {
+    #[wasm_bindgen(js_name = "scheduledTaskDecode")]
+    pub fn js_scheduled_task_decode(&mut self, binary_ops: Vec<u8>) -> JsValue {
         capture_core_error(|| {
-            let ops = Transaction::decompress_and_deserialize(&binary_ops)?;
-            Ok(Some(
-                serde_wasm_bindgen::to_value(&ops).unwrap_or(JsValue::UNDEFINED),
-            ))
+            let ops = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
+                .map_err(|e| e.to_string())?;
+            if ops.len() == 1
+                && let Operation::ComputeCodeSelection { selection } = &ops[0]
+            {
+                if let Ok(value) = serde_wasm_bindgen::to_value(&match selection {
+                    Some(s) => s.to_string(None, self.a1_context()),
+                    None => "all".to_string(),
+                }) {
+                    Ok(Some(value))
+                } else {
+                    Err(format!("Could not serialize selection: {selection:?}"))
+                }
+            } else {
+                Err(format!(
+                    "Could not decode the Expected exactly one ComputeCodeSelection operation, got {ops:?}"
+                ))
+            }
         })
     }
 }

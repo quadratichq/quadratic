@@ -61,6 +61,15 @@ impl SheetContentCache {
         }
         Some((min, max))
     }
+
+    pub fn iter_content_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.has_cell_value
+            .nondefault_rects_in_rect(rect)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+    }
 }
 
 #[wasm_bindgen]
