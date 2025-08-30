@@ -185,11 +185,23 @@ impl GridController {
 
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::test(), 0)
+        Self::from_grid(Grid::test(), 0).apply_callbacks()
     }
 
     pub fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
+    }
+
+    // apply the callbacks to the grid controller for testing purposes
+    pub fn apply_callbacks(mut self) -> Self {
+        self.with_run_python_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
+        });
+        self.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);
+        });
+
+        self
     }
 }
 

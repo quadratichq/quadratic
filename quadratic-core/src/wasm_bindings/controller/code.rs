@@ -1,4 +1,9 @@
-use crate::a1::A1Selection;
+use serde::Serialize;
+
+use crate::{
+    a1::A1Selection,
+    controller::{operations::operation::Operation, transaction::Transaction},
+};
 
 use super::*;
 
@@ -145,5 +150,37 @@ impl GridController {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    /// Computes the code for a selection
+    #[wasm_bindgen(js_name = "computeCodeSelectionEncode")]
+    pub fn js_compute_code_selection_encode(
+        &mut self,
+        selection: String,
+        sheet_id: String,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Invalid selection: {e}"))?;
+            let ops = vec![Operation::ComputeCodeSelection { selection }];
+
+            let binary_ops = Transaction::serialize_and_compress(ops).map_err(|e| e.to_string())?;
+
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&binary_ops).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
+    }
+
+    #[wasm_bindgen(js_name = "computeCodeSelectionDecode")]
+    pub fn js_compute_code_selection_decode(&mut self, binary_ops: Vec<u8>) -> JsValue {
+        capture_core_error(|| {
+            let ops = Transaction::decompress_and_deserialize(&binary_ops)?;
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&ops).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 }

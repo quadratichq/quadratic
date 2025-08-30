@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -151,39 +151,71 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
+            self.execute_compute_code_selection(
+                transaction,
+                Operation::ComputeCodeSelection {
+                    selection: A1Selection::from_single_cell(sheet_pos),
+                },
+            );
+        }
+    }
+
+    pub(super) fn execute_compute_code_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeSelection { selection } = op {
             if !transaction.is_user_undo_redo() && !transaction.is_server() {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
-            let sheet_id = sheet_pos.sheet_id;
+            let sheet_id = selection.sheet_id;
             let Some(sheet) = self.try_sheet(sheet_id) else {
                 // sheet may have been deleted in a multiplayer operation
                 return;
             };
-            let pos: Pos = sheet_pos.into();
 
-            // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.cell_value(pos) {
-                Some(CellValue::Code(value)) => (value.language, value.code),
+            // Collect all code cells to execute to avoid borrowing conflicts
+            let mut code_cells_to_execute = Vec::new();
 
-                // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
-                _ => return,
-            };
+            // loop through the positions in the selection
+            for rect in selection.rects(self.a1_context()) {
+                for pos in rect.iter() {
+                    let sheet_pos = SheetPos {
+                        x: pos.x,
+                        y: pos.y,
+                        sheet_id,
+                    };
 
-            match language {
-                CodeCellLanguage::Python => {
-                    self.run_python(transaction, sheet_pos, code);
+                    // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
+                    // we just continue to the next position
+                    if let Some(CellValue::Code(value)) = sheet.cell_value(pos) {
+                        code_cells_to_execute.push((sheet_pos, value.language, value.code));
+                    }
                 }
-                CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, sheet_pos, code);
+            }
+
+            // drop the sheet
+            let _ = sheet;
+
+            // execute all the collected code cells
+            for (sheet_pos, language, code) in code_cells_to_execute {
+                match language {
+                    CodeCellLanguage::Python => {
+                        self.run_python(transaction, sheet_pos, code);
+                    }
+                    CodeCellLanguage::Formula => {
+                        self.run_formula(transaction, sheet_pos, code);
+                    }
+                    CodeCellLanguage::Connection { kind, id } => {
+                        self.run_connection(transaction, sheet_pos, code, kind, id);
+                    }
+                    CodeCellLanguage::Javascript => {
+                        self.run_javascript(transaction, sheet_pos, code);
+                    }
+                    CodeCellLanguage::Import => {} // no-op
                 }
-                CodeCellLanguage::Connection { kind, id } => {
-                    self.run_connection(transaction, sheet_pos, code, kind, id);
-                }
-                CodeCellLanguage::Javascript => {
-                    self.run_javascript(transaction, sheet_pos, code);
-                }
-                CodeCellLanguage::Import => {} // no-op
             }
         }
     }
@@ -193,6 +225,7 @@ impl GridController {
 mod tests {
     use crate::{
         CellValue, Pos, SheetPos,
+        a1::A1Selection,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation,
@@ -317,5 +350,36 @@ mod tests {
             sheet.data_table_at(&pos![A1]).unwrap().chart_output,
             Some((4, 5))
         );
+    }
+
+    #[test]
+    fn test_execute_compute_code_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a single code cell for testing
+        gc.set_code_cell(
+            (1, 1, sheet_id).into(),
+            CodeCellLanguage::Javascript,
+            "console.log('test')".to_string(),
+            None,
+            None,
+        );
+
+        // Clear JS calls to count only our execution
+        clear_js_calls();
+
+        // Test execute_compute_code_selection
+        let mut transaction = PendingTransaction::default();
+        gc.execute_compute_code_selection(
+            &mut transaction,
+            Operation::ComputeCodeSelection {
+                selection: A1Selection::test_a1("A1"),
+            },
+        );
+
+        // For now, just verify the function runs without panicking
+        // We can add execution verification once we confirm the basic flow works
+        expect_js_call_count("jsRunJavascript", 1, true);
     }
 }
