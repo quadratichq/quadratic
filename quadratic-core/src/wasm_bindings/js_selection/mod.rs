@@ -38,6 +38,13 @@ impl JsSelection {
 
 #[wasm_bindgen]
 impl JsSelection {
+    #[wasm_bindgen(js_name = "clone")]
+    pub fn clone(&self) -> Self {
+        Self {
+            selection: self.selection.clone(),
+        }
+    }
+
     #[wasm_bindgen(js_name = "excludeCells")]
     pub fn exclude_cells(&mut self, x0: u32, y0: u32, x1: u32, y1: u32, context: &JsA1Context) {
         self.selection.exclude_cells(

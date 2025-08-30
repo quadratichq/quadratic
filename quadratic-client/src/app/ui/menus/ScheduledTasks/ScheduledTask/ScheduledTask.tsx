@@ -1,6 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { A1Selection } from '@/app/quadratic-core-types';
-import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { scheduledTaskEncode, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { ScheduledTaskHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHeader';
 import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
@@ -29,19 +28,36 @@ const TASKS: { value: tasks; label: string }[] = [
 export const ScheduledTask = () => {
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
 
-  const [task, setTask] = useState<string>('run-all-code');
+  const [task, setTask] = useState<string>(currentTask?.operations ?? 'run-all-code');
 
   const [sheet, setSheet] = useState(sheets.current);
-  const [range, setRange] = useState<A1Selection | undefined>();
+  const [range, setRange] = useState<JsSelection | undefined>();
   const [rangeError, setRangeError] = useState(false);
+
+  const setTaskCallback = useCallback(
+    (task: string) => {
+      setTask(task);
+      if (task === 'run-selected-cells') {
+        if (range) {
+          setTask(scheduledTaskEncode(range));
+        } else {
+          const newRange = sheets.sheet.cursor.jsSelection.clone();
+          setTask(scheduledTaskEncode(newRange));
+          setRange(newRange);
+        }
+      }
+    },
+    [range]
+  );
 
   // default cron expression is every day at midnight
   const [cron, setCron] = useState('0 0 * * *');
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
     if (selection) {
-      setRange(selection.selection());
+      setRange(selection);
       setRangeError(false);
+      setTask(scheduledTaskEncode(selection));
     } else {
       setRange(undefined);
     }
@@ -82,7 +98,7 @@ export const ScheduledTask = () => {
             className="flex flex-col gap-1"
             options={TASKS}
             value={task}
-            onChange={setTask}
+            onChange={setTaskCallback}
           />
 
           {task === 'run-sheet-cells' && (
@@ -103,7 +119,7 @@ export const ScheduledTask = () => {
             <SheetRange
               label="Run code in range"
               labelClassName="text-xs text-gray-500"
-              initial={range}
+              initial={range?.selection()}
               onChangeSelection={changeSelection}
               triggerError={rangeError}
               changeCursor={true}
