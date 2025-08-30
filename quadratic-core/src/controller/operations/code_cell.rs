@@ -35,16 +35,17 @@ impl GridController {
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableOptionMeta {
-                    sheet_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
-                    show_name: None,
-                    show_columns: None,
-                });
-            }
+            && self.data_table_at(sheet_pos).is_none()
+        {
+            ops.push(Operation::DataTableOptionMeta {
+                sheet_pos,
+                name: Some(code_cell_name),
+                alternating_colors: None,
+                columns: None,
+                show_name: None,
+                show_columns: None,
+            });
+        }
 
         ops
     }
