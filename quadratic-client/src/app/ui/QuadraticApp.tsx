@@ -4,6 +4,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -36,7 +37,7 @@ export function QuadraticApp() {
           setOfflineLoading(false);
           return;
         }
-
+        startupTimer.start('multiplayerSync');
         if (!loggedInUser) {
           const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
           multiplayer.init(fileUuid, anonymous, true);
@@ -52,6 +53,7 @@ export function QuadraticApp() {
     if (offlineLoading) {
       const updateOfflineLoading = () => {
         setOfflineLoading(false);
+        startupTimer.end('offlineSync');
       };
       events.on('offlineTransactionsApplied', updateOfflineLoading);
       return () => {
@@ -65,6 +67,7 @@ export function QuadraticApp() {
     if (multiplayerLoading) {
       const updateMultiplayerLoading = () => {
         setMultiplayerLoading(false);
+        startupTimer.end('multiplayerSync');
       };
       events.on('multiplayerSynced', updateMultiplayerLoading);
       return () => {
@@ -95,5 +98,6 @@ export function QuadraticApp() {
   if (offlineLoading || multiplayerLoading) {
     return null;
   }
+
   return <QuadraticUIContext />;
 }
