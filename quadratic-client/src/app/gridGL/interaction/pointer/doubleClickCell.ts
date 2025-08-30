@@ -4,7 +4,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 
@@ -29,7 +29,7 @@ export async function doubleClickCell(options: {
   }
 
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
-  const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
+  const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x: column, y: row });
   const language = codeCell?.language;
 
   // Open the correct code editor

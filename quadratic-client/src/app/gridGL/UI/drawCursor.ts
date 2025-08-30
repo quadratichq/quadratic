@@ -3,6 +3,7 @@
 
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
@@ -69,7 +70,7 @@ export const drawInfiniteSelection = (options: {
 
   // we use headingSize to avoid getting column/row 0 from the viewport in
   // getScreenRectangle
-  const headingSize = pixiApp.headings.headingSize;
+  const headingSize = content.headings.headingSize;
 
   const bounds = pixiApp.viewport.getVisibleBounds();
   bounds.x = Math.max(bounds.x, 0);

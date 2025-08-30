@@ -2,7 +2,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -73,14 +72,12 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
             <QColorPicker
               onChangeComplete={(change: ColorResult) => {
                 const color = convertReactColorToString(change);
-                sheets.sheet.color = color;
-                quadraticCore.setSheetColor(sheets.current, color);
+                sheets.sheet.setColor(color);
                 handleClose();
                 focusGrid();
               }}
               onClear={() => {
-                sheets.sheet.color = undefined;
-                quadraticCore.setSheetColor(sheets.current, undefined);
+                sheets.sheet.setColor(undefined);
                 handleClose();
                 focusGrid();
               }}

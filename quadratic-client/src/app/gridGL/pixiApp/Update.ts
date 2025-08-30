@@ -8,6 +8,7 @@ import {
 } from '@/app/gridGL/helpers/debugPerformance';
 import { FPS } from '@/app/gridGL/helpers/Fps';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 
@@ -65,12 +66,12 @@ export class Update {
   private update = () => {
     if (pixiApp.destroyed) return;
 
-    if (pixiApp.copying) {
+    if (content.copying) {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
 
-    if (!pixiApp.cellsSheets.isReady()) {
+    if (!content.cellsSheets.isReady()) {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
@@ -80,71 +81,16 @@ export class Update {
     }
 
     const viewportChanged = pixiApp.viewport.updateViewport();
-    let rendererDirty =
-      pixiApp.gridLines.dirty ||
-      pixiApp.headings.dirty ||
-      pixiApp.boxCells.dirty ||
-      pixiApp.multiplayerCursor.dirty ||
-      pixiApp.cursor.dirty ||
-      pixiApp.cellImages.dirty ||
-      pixiApp.cellHighlights.isDirty() ||
-      pixiApp.cellMoving.dirty ||
-      pixiApp.validations.dirty ||
-      pixiApp.copy.dirty ||
-      pixiApp.singleCellOutlines.dirty;
-
-    if (rendererDirty && debugFlag('debugShowWhyRendering')) {
-      console.log(
-        `dirty: ${[
-          pixiApp.viewport.dirty && 'viewport',
-          pixiApp.gridLines.dirty && 'gridLines',
-          pixiApp.headings.dirty && 'headings',
-          pixiApp.boxCells.dirty && 'boxCells',
-          pixiApp.multiplayerCursor.dirty && 'multiplayerCursor',
-          pixiApp.cursor.dirty && 'cursor',
-          pixiApp.cellImages.dirty && 'cellImages',
-          pixiApp.cellHighlights.isDirty() && 'cellHighlights',
-          pixiApp.cellMoving.dirty && 'cellMoving',
-          pixiApp.validations.dirty && 'validations',
-          pixiApp.copy.dirty && 'copy',
-          pixiApp.singleCellOutlines.dirty && 'singleCellOutlines',
-        ]
-          .filter(Boolean)
-          .join(', ')}`
-      );
+    if (viewportChanged && debugFlag('debugShowWhyRendering')) {
+      console.log('dirty: pixiApp viewport');
     }
 
-    debugTimeReset();
-    pixiApp.gridLines.update();
-    debugTimeCheck('[Update] gridLines');
-    pixiApp.headings.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] headings');
-    pixiApp.boxCells.update();
-    debugTimeCheck('[Update] boxCells');
-    pixiApp.cellHighlights.update();
-    debugTimeCheck('[Update] cellHighlights');
-    pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] multiplayerCursor');
-    pixiApp.cellImages.update();
-    debugTimeCheck('[Update] cellImages');
-    pixiApp.cellMoving.update();
-    debugTimeCheck('[Update] cellMoving');
-    pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] cellsSheets');
-    pixiApp.cursor.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] cursor');
-    pixiApp.validations.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] validations');
-    pixiApp.background.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] backgrounds');
-    pixiApp.copy.update();
-    debugTimeCheck('[Update] copy');
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
-    pixiApp.singleCellOutlines.update(viewportChanged);
-    debugTimeCheck('[Update] singleCellOutlines');
 
-    if (pixiApp.viewport.dirty || rendererDirty) {
+    const contentDirty = content.update(pixiApp.viewport.position, pixiApp.viewport.scaled);
+
+    if (pixiApp.viewport.dirty || contentDirty) {
       debugTimeReset();
       pixiApp.viewport.dirty = false;
       pixiApp.renderer.render(pixiApp.stage);

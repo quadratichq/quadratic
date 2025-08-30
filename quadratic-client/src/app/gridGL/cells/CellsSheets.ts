@@ -2,6 +2,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetInfo } from '@/app/quadratic-core-types';
 import type {
@@ -14,8 +15,6 @@ import type { Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
-  current?: CellsSheet;
-
   constructor() {
     super();
     events.on('addSheet', this.addSheet);
@@ -28,16 +27,20 @@ export class CellsSheets extends Container<CellsSheet> {
     super.destroy();
   }
 
+  get current(): CellsSheet | undefined {
+    return this.children.find((child) => child.sheetId === sheets.current);
+  }
+
   async create() {
     this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
-      const child = this.addChild(new CellsSheet(sheet.id));
-      if (sheet.id === sheets.current) {
-        this.current = child;
-        pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-      }
+      this.addChild(new CellsSheet(sheet.id));
     }
+    if (this.current) {
+      content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+    }
+
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
@@ -56,28 +59,12 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll(id: string) {
-    this.children.forEach((child) => {
-      if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
-          child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
-      } else {
-        child.hide();
-      }
-    });
-  }
-
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
+        if (this.current && this.current?.sheetId !== child.sheetId) {
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
       } else {
         child.hide();
@@ -140,9 +127,7 @@ export class CellsSheets extends Container<CellsSheet> {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
-      pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.headings.dirty = true;
+      events.emit('setDirty', { gridLines: true, cursor: true, headings: true });
     }
   }
 

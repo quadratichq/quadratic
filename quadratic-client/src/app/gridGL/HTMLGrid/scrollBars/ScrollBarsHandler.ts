@@ -5,6 +5,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Point, Rectangle } from 'pixi.js';
@@ -121,7 +122,7 @@ export class ScrollBarsHandler {
 
     const viewport = pixiApp.viewport;
     const { screenWidth, screenHeight } = viewport;
-    const { headingSize } = pixiApp.headings;
+    const { headingSize } = content.headings;
     const viewportBounds = viewport.getVisibleBounds();
     const contentSize = sheets.sheet.getScrollbarBounds();
     const dragging = this.dragging;
@@ -233,7 +234,7 @@ export class ScrollBarsHandler {
     if (!delta) return 0;
     const last = pixiApp.viewport.x;
     pixiApp.viewport.x -= delta * this.scrollbarScaleX;
-    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
+    pixiApp.viewport.x = Math.min(content.headings.headingSize.width, pixiApp.viewport.x);
     return (last - pixiApp.viewport.x) / this.scrollbarScaleX;
   };
 
@@ -243,7 +244,7 @@ export class ScrollBarsHandler {
     if (!delta) return 0;
     const last = pixiApp.viewport.y;
     pixiApp.viewport.y -= delta * this.scrollbarScaleY;
-    pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
+    pixiApp.viewport.y = Math.min(content.headings.headingSize.height, pixiApp.viewport.y);
     return (last - pixiApp.viewport.y) / this.scrollbarScaleY;
   };
 }

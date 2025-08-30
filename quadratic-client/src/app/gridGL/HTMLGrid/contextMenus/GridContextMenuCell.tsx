@@ -2,7 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
 
@@ -25,7 +25,7 @@ export function GridContextMenuCell() {
         setRowAvailable(false);
       }
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
-      setCanRunSelection(pixiApp.cellsSheet().tables.hasCodeCellInCurrentSelection());
+      setCanRunSelection(content.cellsSheet.tables.hasCodeCellInCurrentSelection());
     };
 
     updateCursor();

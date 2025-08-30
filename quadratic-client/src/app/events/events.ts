@@ -34,6 +34,18 @@ import type {
 import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
+export interface DirtyObject {
+  gridLines?: boolean;
+  headings?: boolean;
+  cursor?: boolean;
+  cellHighlights?: boolean;
+  multiplayerCursor?: boolean;
+  boxCells?: boolean;
+  singleCellOutlines?: boolean;
+  cellMoving?: boolean;
+  cellImages?: boolean;
+}
+
 interface EventTypes {
   needRefresh: (state: RefreshType) => void;
 
@@ -147,8 +159,6 @@ interface EventTypes {
   pixiAppSettingsInitialized: () => void;
   filesFromIframeInitialized: () => void;
 
-  gridLinesDirty: () => void;
-
   coreError: (from: string, error: Error | unknown) => void;
 
   scrollBarsHandler: (scrollBarsHandler: ScrollBarsHandler) => void;
@@ -160,6 +170,8 @@ interface EventTypes {
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
   debugFlags: () => void;
+
+  setDirty: (dirty: DirtyObject) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -42,7 +42,7 @@ export class GridOverflowLines {
     } else {
       this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, width - 1, height - 1));
     }
-    events.emit('gridLinesDirty');
+    events.emit('setDirty', { gridLines: true });
   }
 
   // returns a list of ranges of y-values that need to be drawn (excluding the

@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -31,7 +31,7 @@ export const CodeRunning = () => {
       if (current) {
         // we move the code run indicator to the start of the data if table ui is showing
         // todo: in case of the table, we should replace the code language indicator with this indicator
-        const table = pixiApp.cellsSheets
+        const table = content.cellsSheets
           .getById(current.sheetPos.sheetId)
           ?.tables.getTable(current.sheetPos.x, current.sheetPos.y);
         let y = current.sheetPos.y;
