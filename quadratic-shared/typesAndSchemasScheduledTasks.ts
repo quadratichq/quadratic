@@ -6,13 +6,15 @@ export const ScheduledTaskSchema = z.object({
   fileId: z.number(),
   userId: z.number(),
   nextRunTime: z.string().datetime(),
-  lastRunTime: z.string().datetime().optional(),
+  lastRunTime: z.string().datetime().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
   cronExpression: z.string(),
   operations: z.any(),
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
 });
+
+export type ScheduledTask = z.infer<typeof ScheduledTaskSchema>;
 
 export const ScheduledTaskLogSchema = z.object({
   id: z.number(),

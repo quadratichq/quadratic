@@ -261,13 +261,15 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "toA1String")]
     pub fn to_string(
         &self,
-        default_sheet_id: String,
+        default_sheet_id: Option<String>,
         context: &JsA1Context,
     ) -> Result<String, String> {
-        let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
+        let default_sheet_id = default_sheet_id
+            .map(|default_sheet_id| SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string()))
+            .transpose()?;
         Ok(self
             .selection
-            .to_string(Some(default_sheet_id), context.get_context()))
+            .to_string(default_sheet_id, context.get_context()))
     }
 
     #[wasm_bindgen(js_name = "cursorIsOnHtmlImage")]

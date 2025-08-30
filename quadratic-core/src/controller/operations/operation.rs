@@ -193,7 +193,7 @@ pub enum Operation {
     /// Runs the code cell at an A1Selection.
     /// Currently just used for scheduled tasks.
     ComputeCodeSelection {
-        selection: A1Selection,
+        selection: Option<A1Selection>,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.

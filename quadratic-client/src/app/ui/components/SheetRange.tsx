@@ -13,6 +13,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
+  labelClassName?: string;
+
   initial?: A1Selection;
   onChangeSelection: (jsSelection: JsSelection | undefined) => void;
 
@@ -29,6 +31,8 @@ interface Props {
 
   onlyCurrentSheet?: string;
   onlyCurrentSheetError?: string;
+
+  forceSheetName?: boolean;
 }
 
 export const SheetRange = (props: Props) => {
@@ -41,6 +45,7 @@ export const SheetRange = (props: Props) => {
     readOnly,
     onlyCurrentSheet,
     onlyCurrentSheetError,
+    forceSheetName,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const [input, setInput] = useState<string>('');
@@ -57,10 +62,10 @@ export const SheetRange = (props: Props) => {
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     const jsSelection = sheets.sheet.cursor.jsSelection;
-    setInput(jsSelection.toA1String(a1SheetId, sheets.jsA1Context));
+    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
     onChangeRange(jsSelection);
     setRangeError(undefined);
-  }, [a1SheetId, onChangeRange]);
+  }, [a1SheetId, onChangeRange, forceSheetName]);
 
   const updateValue = useCallback(
     (value: string) => {
@@ -103,9 +108,9 @@ export const SheetRange = (props: Props) => {
     }
 
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
-    setInput(jsSelection.toA1String(a1SheetId, sheets.jsA1Context));
+    setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
     jsSelection.free();
-  }, [changeCursor, a1SheetId, initial]);
+  }, [changeCursor, a1SheetId, initial, forceSheetName]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
@@ -135,7 +140,11 @@ export const SheetRange = (props: Props) => {
 
   return (
     <div>
-      {props.label && <Label htmlFor={label}>{label}</Label>}
+      {props.label && (
+        <Label className={props.labelClassName} htmlFor={label}>
+          {label}
+        </Label>
+      )}
 
       <div className="flex w-full items-center space-x-2">
         <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>

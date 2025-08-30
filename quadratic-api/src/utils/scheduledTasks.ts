@@ -9,14 +9,14 @@ import dbClient from '../dbClient';
  ===============================
 */
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 // Convert a database result to a response object
 export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledTaskResponse {
   return {
     ...result,
     nextRunTime: result.nextRunTime.toISOString(),
-    lastRunTime: result.lastRunTime?.toISOString() || '',
+    lastRunTime: result.lastRunTime?.toISOString() ?? null,
     operations: JSON.parse(result.operations.toString()),
     createdDate: result.createdDate.toISOString(),
     updatedDate: result.updatedDate.toISOString(),
@@ -46,14 +46,15 @@ export async function createScheduledTask(data: {
 export async function updateScheduledTask(data: {
   scheduledTaskId: number;
   cronExpression: string;
-  operations: any;
+  operations?: any;
 }): Promise<ScheduledTaskResponse> {
+  console.log(data);
   const result = await dbClient.scheduledTask.update({
     where: { id: data.scheduledTaskId },
     data: {
       cronExpression: data.cronExpression,
       nextRunTime: getNextRunTime(data.cronExpression),
-      operations: Buffer.from(JSON.stringify(data.operations)),
+      operations: data.operations ? Buffer.from(JSON.stringify(data.operations)) : undefined,
       updatedDate: new Date(),
     },
   });
