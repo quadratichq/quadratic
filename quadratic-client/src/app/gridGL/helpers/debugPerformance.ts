@@ -4,31 +4,6 @@ const MINIMUM_MS_TO_DISPLAY = 10;
 
 let lastTime = 0;
 
-export type DebugTimes = Record<string, number>;
-
-export function debugTimeStart(name: string, times: DebugTimes): void {
-  times[name] = performance.now();
-}
-
-export function debugTimeEnd(name: string, times: DebugTimes): void {
-  const start = times[name];
-  if (!start) {
-    console.error('Expected debugTimeStart to be called before debugTimeEnd');
-  } else {
-    times[name] = performance.now() - start;
-  }
-}
-
-export function debugShowTimes(name: string, times: Record<string, number>): void {
-  if (debugFlag('debugStartupTime')) {
-    console.log(
-      `${name}\n${'*'.repeat(name.length)}\n${Object.entries(times)
-        .map(([key, value]) => `${key}: ${Math.round(value)}ms`)
-        .join('\n')}`
-    );
-  }
-}
-
 export function debugTimeReset(): void {
   lastTime = performance.now();
 }

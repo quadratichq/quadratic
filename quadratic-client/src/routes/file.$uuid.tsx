@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { debugShowTimes, debugTimeEnd, debugTimeStart } from '@/app/gridGL/helpers/debugPerformance';
+import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -35,17 +35,16 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
   currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  const times: Record<string, number> = {};
-  debugTimeStart('total', times);
+  startupTimer.start('file.loader');
 
   const loadPixi = async () => {
-    debugTimeStart('loadAssets', times);
+    startupTimer.start('file.loader.loadPixi');
     try {
       await loadAssets();
     } catch (e) {
       console.error('Error loading pixi assets', e);
     }
-    debugTimeEnd('loadAssets', times);
+    startupTimer.end('file.loader.loadPixi');
   };
 
   // load file information from the api
@@ -53,9 +52,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
-      debugTimeStart('apiClient.files.get', times);
+      startupTimer.start('file.loader.files.get');
       data = await apiClient.files.get(uuid);
-      debugTimeEnd('apiClient.files.get', times);
+      startupTimer.end('file.loader.files.get');
     } catch (error: any) {
       const isLoggedIn = await authClient.isAuthenticated();
       if (error.status === 403 && !isLoggedIn) {
@@ -73,9 +72,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // initialize the core module within client
   const initializeCore = async () => {
-    debugTimeStart('initCoreClient', times);
+    startupTimer.start('file.loader.initCoreClient');
     await initCoreClient();
-    debugTimeEnd('initCoreClient', times);
+    startupTimer.end('file.loader.initCoreClient');
   };
 
   const { uuid } = params as { uuid: string };
@@ -110,7 +109,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // initialize Core web worker
-  debugTimeStart('quadraticCore.load', times);
+  startupTimer.start('file.loader.quadraticCore.load');
   const result = await quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
@@ -118,7 +117,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
-  debugTimeEnd('quadraticCore.load', times);
+  startupTimer.end('file.loader.quadraticCore.load');
   if (result.error) {
     if (!isVersionHistoryPreview) {
       captureEvent({
@@ -165,8 +164,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     isOnPaidPlan: data.team.isOnPaidPlan,
   });
 
-  debugTimeEnd('total', times);
-  if (debugFlag('debugStartupTime')) debugShowTimes('[file.$uuid.tsx] times', times);
+  startupTimer.end('file.loader');
   return data;
 };
 

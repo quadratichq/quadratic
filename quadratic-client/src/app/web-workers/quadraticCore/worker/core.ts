@@ -7,7 +7,6 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { debugShowTimes, debugTimeEnd, debugTimeStart, type DebugTimes } from '@/app/gridGL/helpers/debugPerformance';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
@@ -76,18 +75,19 @@ class Core {
     coreClient.sendCoreError(from, error);
   };
 
-  private fetchGridFile = async (file: string, times: DebugTimes): Promise<Uint8Array> => {
-    debugTimeStart('fetchGridFile', times);
+  private fetchGridFile = async (file: string): Promise<Uint8Array> => {
+    coreClient.sendStartupTimer('core.loadFile.fetchGridFile', { start: performance.now() });
     const res = await fetch(file);
     const array = new Uint8Array(await res.arrayBuffer());
-    debugTimeEnd('fetchGridFile', times);
+    coreClient.sendStartupTimer('fileSize', { start: array.length });
+    coreClient.sendStartupTimer('core.loadFile.fetchGridFile', { end: performance.now() });
     return array;
   };
 
-  private loadCore = async (times: DebugTimes) => {
-    debugTimeStart('loadCore', times);
+  private loadCore = async () => {
+    coreClient.sendStartupTimer('core.loadFile.loadCore', { start: performance.now() });
     await initCore();
-    debugTimeEnd('loadCore', times);
+    coreClient.sendStartupTimer('core.loadFile.loadCore', { end: performance.now() });
   };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
@@ -95,18 +95,17 @@ class Core {
     message: ClientCoreLoad,
     renderPort: MessagePort
   ): Promise<{ version: string } | { error: string }> => {
-    const times: DebugTimes = {};
-    debugTimeStart('total', times);
+    coreClient.sendStartupTimer('core.loadFile', { start: performance.now() });
 
     this.teamUuid = message.teamUuid;
 
     coreRender.init(renderPort);
 
     try {
-      const results = await Promise.all([this.fetchGridFile(message.url, times), this.loadCore(times)]);
-      debugTimeStart('newFromFile', times);
+      const results = await Promise.all([this.fetchGridFile(message.url), this.loadCore()]);
+      coreClient.sendStartupTimer('core.loadFile.newFromFile', { start: performance.now() });
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
-      debugTimeEnd('newFromFile', times);
+      coreClient.sendStartupTimer('core.loadFile.newFromFile', { end: performance.now() });
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);
       return { error: 'Unable to load file' };
@@ -114,8 +113,7 @@ class Core {
 
     if (debugFlag('debugWebWorkers')) console.log('[core] GridController loaded');
 
-    debugTimeEnd('total', times);
-    if (debugFlag('debugStartupTime')) debugShowTimes('[core.loadFile] times', times);
+    coreClient.sendStartupTimer('core.loadFile', { end: performance.now() });
 
     return { version: this.gridController.getVersion() };
   };
