@@ -189,6 +189,10 @@ export const CronToListEntry = ({ className, cron }: { className: string; cron: 
     let days: JSX.Element;
     if (fields.dayOfWeek.isWildcard || fields.dayOfWeek.values.length >= 7) {
       days = <span>Every day</span>;
+    } else if (fields.dayOfWeek.values.length === 5 && fields.dayOfWeek.values.every((day) => day > 0 && day < 6)) {
+      days = <span>Every weekday</span>;
+    } else if (fields.dayOfWeek.values.length === 2 && fields.dayOfWeek.values.every((day) => day === 0 || day === 6)) {
+      days = <span>Every weekend</span>;
     } else {
       days = <JoinListWith arr={fields.dayOfWeek.values.map((day) => DAYS_STRING[day])} conjunction="and" />;
     }
