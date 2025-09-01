@@ -10,7 +10,11 @@ import { setUser } from '@sentry/react';
 type User = AuthUser | undefined;
 
 export function googleAnalyticsAvailable(): boolean {
-  return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
+  return (
+    !import.meta.env.DEV &&
+    import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG &&
+    import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none'
+  );
 }
 
 // This runs in the root loader, so analytics calls can run inside loaders.
@@ -66,8 +70,9 @@ function loadGoogleAnalytics(user: User) {
 
 function initAmplitudeAnalytics(user: User) {
   if (
-    !import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY &&
-    import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
+    import.meta.env.DEV ||
+    !import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY ||
+    import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY === 'none'
   ) {
     return;
   }
@@ -80,7 +85,7 @@ function initAmplitudeAnalytics(user: User) {
 }
 
 function configureSentry(user: User) {
-  if (user) {
+  if (user && !import.meta.env.DEV) {
     setUser({ email: user.email, id: user.sub });
     if (debugFlag('debugShow')) console.log('[Analytics] Sentry user set');
   }

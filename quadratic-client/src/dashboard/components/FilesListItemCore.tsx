@@ -70,7 +70,7 @@ export function FilesListItemCore({
                   "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
               )}
             >
-              <Avatar alt={creator.name} src={creator.picture}>
+              <Avatar alt={creator.name} src={import.meta.env.DEV ? '' : creator.picture}>
                 {creator.name[0]}
               </Avatar>
             </button>

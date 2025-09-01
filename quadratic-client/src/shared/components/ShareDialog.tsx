@@ -324,7 +324,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
           isYou={owner.id === data.userMakingRequest.id}
           email={owner.email}
           name={owner.name}
-          picture={owner.picture}
+          picture={import.meta.env.DEV ? '' : owner.picture}
           action={<Type className="pr-4">Owner</Type>}
         />
       )}
@@ -754,7 +754,7 @@ function ManageUser({
       isYou={isLoggedInUser}
       email={user.email}
       name={user.name}
-      picture={user.picture}
+      picture={import.meta.env.DEV ? '' : user.picture}
       error={error}
       action={
         isReadOnly ? (

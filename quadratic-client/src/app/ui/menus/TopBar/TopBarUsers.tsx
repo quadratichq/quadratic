@@ -98,7 +98,7 @@ export const TopBarUsers = () => {
             <You
               displayName={displayName(user ?? anonymous, true)}
               initial={displayInitials(user ?? anonymous)}
-              picture={user?.picture ?? ''}
+              picture={import.meta.env.DEV ? '' : (user?.picture ?? '')}
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="text-sm">
