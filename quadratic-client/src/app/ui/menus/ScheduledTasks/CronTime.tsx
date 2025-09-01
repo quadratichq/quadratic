@@ -11,13 +11,20 @@ export const MIDNIGHT_LOCAL_MINUTE = new Date(0, 0, 0, 0, 0, 0).getUTCMinutes();
 
 export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute';
 
+export const getLocalTimeZoneAbbreviation = (): string => {
+  return (
+    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+      .formatToParts(new Date())
+      .find((part) => part.type === 'timeZoneName')?.value ?? ''
+  );
+};
+
 export interface CronResults {
   cron: string;
   cronType: ScheduledTaskIntervalType;
   days: number[];
   localTimeString: string;
   localMinute: number;
-  localTimeZoneAbbreviation: string;
 
   changeInterval: (interval: string) => void;
   changeDaysTime: (time: string) => void;
@@ -39,14 +46,6 @@ const hourMinuteLocalToUTC = (hour: number, minute: number): { hour: number; min
   const hourUTC = date.getUTCHours();
   const minuteUTC = date.getUTCMinutes();
   return { hour: hourUTC, minute: minuteUTC };
-};
-
-const getLocalTimeZoneAbbreviation = (): string => {
-  return (
-    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
-      .formatToParts(new Date())
-      .find((part) => part.type === 'timeZoneName')?.value ?? ''
-  );
 };
 
 // Provides setting and displaying cron expressions for ScheduledTask
@@ -77,11 +76,8 @@ export const UseCron = (initialCron?: string): CronResults => {
   const localMinute = useMemo((): number => {
     if (fields.minute.isWildcard) return MIDNIGHT_LOCAL_MINUTE;
     const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
-    console.log('localMinute', fields.minute.values[0], minute);
     return minute;
   }, [fields]);
-
-  const localTimeZoneAbbreviation = useMemo((): string => getLocalTimeZoneAbbreviation(), []);
 
   const changeInterval = useCallback(
     (every: string) => {
@@ -166,7 +162,6 @@ export const UseCron = (initialCron?: string): CronResults => {
     days,
     localTimeString,
     localMinute,
-    localTimeZoneAbbreviation,
 
     changeInterval,
     changeDaysTime,

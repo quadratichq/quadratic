@@ -1,6 +1,10 @@
 //! This is the interval component for the scheduled task.
 
-import { type CronResults, type ScheduledTaskIntervalType } from '@/app/ui/menus/ScheduledTasks/CronTime';
+import {
+  getLocalTimeZoneAbbreviation,
+  type CronResults,
+  type ScheduledTaskIntervalType,
+} from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -30,7 +34,6 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
     days,
     localTimeString,
     localMinute,
-    localTimeZoneAbbreviation,
 
     changeInterval,
     changeDaysTime,
@@ -107,7 +110,7 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
                 onChange={(e) => changeDaysTime(e.target.value)}
                 className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
               />
-              <div className="text-sm text-gray-500">{localTimeZoneAbbreviation}</div>
+              <div className="text-sm text-gray-500">{getLocalTimeZoneAbbreviation()}</div>
             </div>
           </div>
         </div>
