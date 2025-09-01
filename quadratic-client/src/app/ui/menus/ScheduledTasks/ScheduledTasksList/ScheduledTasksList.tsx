@@ -1,9 +1,12 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { scheduledTaskDecode } from '@/app/quadratic-core/quadratic_core';
 import { CronToListEntry } from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ScheduledTasksListHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksListHeader';
 import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ScheduledTasksIcon } from '@/shared/components/Icons';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { useAtomValue } from 'jotai';
 
 export const ScheduledTasksList = () => {
@@ -40,6 +43,33 @@ const EmptyScheduledTaskList = () => {
   );
 };
 
+const ScheduledTaskName = ({ className, operations }: { className: string; operations: Uint8Array }) => {
+  try {
+    const decoded = scheduledTaskDecode(operations);
+    if (!decoded) {
+      return <div className={cn('bold', className)}>Run entire file</div>;
+    }
+    if (decoded.isAllSelected()) {
+      return (
+        <div className={cn('bold block text-left', className)}>
+          Run <span className="font-normal">'{decoded.getSheetName(sheets.jsA1Context)}'</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className={cn('block text-left', className)}>
+          <div className="bold">
+            Run <span className="font-normal">{decoded.toA1String(undefined, sheets.jsA1Context)}</span>
+          </div>
+        </div>
+      );
+    }
+  } catch (e) {
+    console.error('Error decoding scheduled task', e);
+    return null;
+  }
+};
+
 const ScheduledTaskListBody = () => {
   const { scheduledTasks, showScheduledTasks } = useScheduledTasks();
 
@@ -49,12 +79,12 @@ const ScheduledTaskListBody = () => {
         return (
           <Button
             key={task.uuid}
-            className="flex h-fit items-center justify-between"
+            className="flex h-fit items-start justify-between"
             variant="outline"
             onClick={() => showScheduledTasks(task.uuid)}
           >
-            <div className="font-bold">Run sheet</div>
-            <CronToListEntry cron={task.cronExpression} />
+            <ScheduledTaskName className="block flex-grow text-left" operations={task.operations} />
+            <CronToListEntry className="block w-[100px] shrink-0 text-left" cron={task.cronExpression} />
           </Button>
         );
       })}

@@ -121,23 +121,17 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
             </Label>
             <Input
               type="number"
+              min={0}
+              max={59}
               id="minute-picker"
-              value={localMinute ?? ''}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                if (isNaN(val)) {
-                  changeHoursMinute();
-                  return;
-                }
-                if (val < 0) {
-                  changeHoursMinute(0);
-                } else if (val > 59) {
-                  changeHoursMinute(59);
-                } else {
-                  changeHoursMinute(val);
+              defaultValue={localMinute ?? ''}
+              onBlur={(e) => changeHoursMinute(e.target.value)}
+              className="w-16"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  changeHoursMinute(e.currentTarget.value);
                 }
               }}
-              className="w-16"
             />
           </div>
         </div>

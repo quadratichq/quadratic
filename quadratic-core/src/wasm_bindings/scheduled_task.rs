@@ -25,22 +25,16 @@ pub fn js_scheduled_task_encode(selection: Option<JsSelection>) -> Result<JsValu
 }
 
 #[wasm_bindgen(js_name = "scheduledTaskDecode")]
-pub fn js_scheduled_task_decode(
-    binary_ops: Vec<u8>,
-    context: &JsA1Context,
-) -> Result<JsValue, String> {
+pub fn js_scheduled_task_decode(binary_ops: Vec<u8>) -> Result<Option<JsSelection>, String> {
     let ops = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
         .map_err(|e| e.to_string())?;
     if ops.len() == 1
         && let Operation::ComputeCodeSelection { selection } = &ops[0]
     {
-        if let Ok(value) = serde_wasm_bindgen::to_value(&match selection {
-            Some(s) => s.to_string(None, context.get_context()),
-            None => "all".to_string(),
-        }) {
-            Ok(value)
+        if let Some(selection) = selection {
+            Ok(Some(JsSelection::new_with_selection(selection.clone())))
         } else {
-            Err(format!("Could not serialize selection: {selection:?}"))
+            Ok(None)
         }
     } else {
         Err(format!(

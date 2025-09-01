@@ -14,15 +14,15 @@ type TaskType = 'run-selected-cells' | 'run-sheet-cells' | 'run-all-code';
 const TASKS: { value: TaskType; label: string }[] = [
   {
     value: 'run-all-code',
-    label: 'Run all code in file',
+    label: 'Run entire file',
   },
   {
     value: 'run-sheet-cells',
-    label: 'Run all code in sheet',
+    label: 'Run entire sheet',
   },
   {
     value: 'run-selected-cells',
-    label: 'Run selected code',
+    label: 'Run selected cells',
   },
 ];
 
@@ -34,8 +34,7 @@ export const ScheduledTask = () => {
   // decode any existing operations
   useEffect(() => {
     if (currentTask?.operations) {
-      const task = scheduledTaskDecode(currentTask.operations, sheets.jsA1Context);
-      setRange(new JsSelection(task));
+      setRange(scheduledTaskDecode(currentTask.operations));
     }
   }, [currentTask?.operations]);
 
@@ -84,7 +83,7 @@ export const ScheduledTask = () => {
   const onSave = useCallback(async () => {
     if (!cronResults.cron) return;
 
-    const operations = scheduledTaskEncode(range);
+    const operations = scheduledTaskEncode(range?.clone());
 
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
@@ -120,7 +119,7 @@ export const ScheduledTask = () => {
             onChange={setTaskCallback}
           />
 
-          {(task === 'run-sheet-cells' || task === 'run-selected-cells') && (
+          {task === 'run-sheet-cells' && (
             <ValidationDropdown
               className="flex flex-col gap-1"
               label="Sheet"

@@ -1,6 +1,7 @@
 //! Utilities to help convert cron expressions to different formats
 
 import { JoinListWith } from '@/shared/components/JointListWith';
+import { cn } from '@/shared/shadcn/utils';
 import CronExpressionParser, { CronFieldCollection, type DayOfWeekRange } from 'cron-parser';
 import { useCallback, useMemo, useState, type JSX } from 'react';
 
@@ -23,7 +24,7 @@ export interface CronResults {
   changeDaysDay: (day: string) => void;
   changeDaysAll: () => void;
   changeDaysClear: () => void;
-  changeHoursMinute: (minute?: number) => void;
+  changeHoursMinute: (minute: string) => void;
 }
 
 const hourMinuteUTCToLocal = (hour: number, minute: number): { hour: number; minute: number } => {
@@ -74,8 +75,9 @@ export const UseCron = (initialCron?: string): CronResults => {
   }, [fields]);
 
   const localMinute = useMemo((): number => {
-    if (fields.hour.isWildcard) return MIDNIGHT_LOCAL_MINUTE;
+    if (fields.minute.isWildcard) return MIDNIGHT_LOCAL_MINUTE;
     const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
+    console.log('localMinute', fields.minute.values[0], minute);
     return minute;
   }, [fields]);
 
@@ -112,7 +114,7 @@ export const UseCron = (initialCron?: string): CronResults => {
         hour: [convertedHour as any],
         minute: [convertedMinute as any],
       });
-      setCron(newCronFields.stringify(false));
+      setCron(newCronFields.stringify());
     },
     [cron, setCron]
   );
@@ -133,7 +135,7 @@ export const UseCron = (initialCron?: string): CronResults => {
         const newFields = CronFieldCollection.from(fields, {
           dayOfWeek: newValues,
         });
-        return newFields.stringify(false);
+        return newFields.stringify();
       });
     },
     [setCron]
@@ -148,13 +150,12 @@ export const UseCron = (initialCron?: string): CronResults => {
   }, [fields.hour.values, fields.minute.values]);
 
   const changeHoursMinute = useCallback(
-    (minute?: number) => {
-      if (minute === undefined) return;
-
-      const { minute: convertedMinute } = hourMinuteLocalToUTC(0, minute);
-
+    (minute: string) => {
+      if (!minute || isNaN(Number(minute))) return;
+      const { minute: convertedMinute } = hourMinuteLocalToUTC(0, Number(minute));
+      console.log('changeHoursMinute', minute, convertedMinute);
       const newCronFields = CronExpressionParser.parse(`${convertedMinute} * * * *`).fields;
-      setCron(newCronFields.stringify(false));
+      setCron(newCronFields.stringify());
     },
     [setCron]
   );
@@ -179,7 +180,7 @@ export const UseCron = (initialCron?: string): CronResults => {
 const DAYS_STRING = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // Displays a cron expression in a list entry format in ScheduledTasksList
-export const CronToListEntry = ({ cron }: { cron: string }): JSX.Element => {
+export const CronToListEntry = ({ className, cron }: { className: string; cron: string }): JSX.Element => {
   const fields = CronExpressionParser.parse(cron).fields;
 
   // days
@@ -193,8 +194,8 @@ export const CronToListEntry = ({ cron }: { cron: string }): JSX.Element => {
     const localTime = new Date(Date.UTC(0, 0, 0, fields.hour.values[0], fields.minute.values[0], 0));
     const localTimeString = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     return (
-      <div className="block text-left text-muted-foreground">
-        <div className="max-w-[150px]">
+      <div className={cn('block text-left text-muted-foreground', className)}>
+        <div>
           {days} at {localTimeString} {getLocalTimeZoneAbbreviation()}
         </div>
       </div>
@@ -204,9 +205,13 @@ export const CronToListEntry = ({ cron }: { cron: string }): JSX.Element => {
   // hourly
   if (!fields.minute.isWildcard && fields.hour.isWildcard) {
     const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
-    return <div className="block text-left text-muted-foreground">Every hour at the {minute} minute</div>;
+    return (
+      <div className={cn('block text-left text-muted-foreground', className)}>
+        Hourly at :{minute < 10 ? `0${minute}` : minute} {getLocalTimeZoneAbbreviation()}
+      </div>
+    );
   }
 
   // minute
-  return <div>Every minute</div>;
+  return <div className={cn('block text-left text-muted-foreground', className)}>Every minute</div>;
 };
