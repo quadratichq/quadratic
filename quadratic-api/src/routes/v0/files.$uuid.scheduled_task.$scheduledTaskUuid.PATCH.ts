@@ -29,7 +29,7 @@ const schema = z.object({
           return false;
         }
       }, 'Invalid cron expression'),
-    operations: z.any(),
+    operations: z.instanceof(Uint8Array),
   }),
 });
 

@@ -29,19 +29,14 @@ const createScheduledTaskSchema = z.object({
           return false;
         }
       }, 'Invalid cron expression'),
-    operations: z.any(),
+    operations: z.instanceof(Uint8Array),
   }),
 });
 
 export type CreateScheduledTaskSchema = z.infer<typeof createScheduledTaskSchema>;
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']>) {
-  let validatedData;
-  try {
-    validatedData = parseRequest(req, createScheduledTaskSchema);
-  } catch (error) {
-    throw error;
-  }
+  const validatedData = parseRequest(req, createScheduledTaskSchema);
 
   const {
     body: { cronExpression, operations },
