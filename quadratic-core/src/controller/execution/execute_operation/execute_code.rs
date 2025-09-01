@@ -202,7 +202,7 @@ impl GridController {
                 // loop through the positions in the selection
                 for rect in selection.rects_unbounded(self.a1_context()) {
                     sheet.columns.iter_content_in_rect(rect).for_each(|pos| {
-                        if matches!(sheet.cell_value(pos.into()), Some(CellValue::Code(_))) {
+                        if matches!(sheet.cell_value(pos), Some(CellValue::Code(_))) {
                             new_ops.push(Operation::ComputeCode {
                                 sheet_pos: pos.to_sheet_pos(sheet_id),
                             });
@@ -213,7 +213,7 @@ impl GridController {
                 let sheets = self.sheets();
                 for sheet in sheets {
                     sheet.columns.iter_content().for_each(|pos| {
-                        if matches!(sheet.cell_value(pos.into()), Some(CellValue::Code(_))) {
+                        if matches!(sheet.cell_value(pos), Some(CellValue::Code(_))) {
                             new_ops.push(Operation::ComputeCode {
                                 sheet_pos: pos.to_sheet_pos(sheet.id),
                             });

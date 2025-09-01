@@ -1019,10 +1019,9 @@ mod tests {
 
     #[test]
     fn test_select_sheet() {
-        let context = A1Context::default();
-        let mut selection = A1Selection::test_a1("A1");
-        selection.select_sheet(SheetId::TEST.to_string());
-        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1")]);
+        let mut selection = A1Selection::default(SheetId::TEST);
+        selection.select_sheet(SheetId::TEST.to_string()).unwrap();
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
         assert_eq!(selection.sheet_id, SheetId::TEST);
     }
 }

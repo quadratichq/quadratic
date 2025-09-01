@@ -39,7 +39,7 @@ impl JsSelection {
 #[wasm_bindgen]
 impl JsSelection {
     #[wasm_bindgen(js_name = "clone")]
-    pub fn clone(&self) -> Self {
+    pub fn clone_js(&self) -> Self {
         Self {
             selection: self.selection.clone(),
         }

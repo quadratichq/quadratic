@@ -127,7 +127,7 @@ impl GridController {
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::ComputeCodeSelection { .. } => {
-                    self.execute_compute_code_selection(transaction, op)
+                    self.execute_compute_code_selection(transaction, op);
                 }
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {

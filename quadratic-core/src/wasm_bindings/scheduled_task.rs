@@ -4,7 +4,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::{
     controller::{operations::operation::Operation, transaction::Transaction},
-    wasm_bindings::{js_a1_context::JsA1Context, js_selection::JsSelection},
+    wasm_bindings::js_selection::JsSelection,
 };
 
 /// Computes the code for a selection. If sheet_id and selection are not
