@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { scheduledTaskEncode, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { UseCron } from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ScheduledTaskHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHeader';
 import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
@@ -51,10 +52,7 @@ export const ScheduledTask = () => {
   );
 
   // default cron expression is every day at midnight local time
-  const defaultTime = new Date(0, 0, 0, 0, 0, 0);
-  const [cron, setCron] = useState(
-    currentTask?.cronExpression ?? `${defaultTime.getUTCMinutes()} ${defaultTime.getUTCHours()} * * *`
-  );
+  const cronResults = UseCron(currentTask?.cronExpression);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
     if (selection) {
@@ -67,16 +65,16 @@ export const ScheduledTask = () => {
   }, []);
 
   const onSave = useCallback(async () => {
-    if (!cron) return;
+    if (!cronResults.cron) return;
 
     // const operations = create_cron_operations(sheet, range)
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
-      cronExpression: cron,
+      cronExpression: cronResults.cron,
       operations: '',
     });
     showScheduledTasks();
-  }, [cron, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
+  }, [cronResults.cron, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
@@ -130,7 +128,7 @@ export const ScheduledTask = () => {
             />
           )}
 
-          <ScheduledTaskInterval cron={cron} setCron={setCron} />
+          <ScheduledTaskInterval cronResults={cronResults} />
         </div>
       </div>
 
