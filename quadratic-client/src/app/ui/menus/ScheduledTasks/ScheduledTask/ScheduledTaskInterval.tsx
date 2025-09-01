@@ -1,3 +1,5 @@
+//! This is the interval component for the scheduled task.
+
 import { cronToTimeDays, cronType } from '@/app/ui/menus/ScheduledTasks/convertCronTime';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -6,90 +8,40 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import type { DayOfWeekRange } from 'cron-parser';
 import { CronExpressionParser, CronFieldCollection } from 'cron-parser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface Props {
-  cron: string | undefined;
-  setCron: (cron: string) => void;
+  cron: string;
+  setCron: (cron: string | ((current: string) => string)) => void;
 }
-
-export const DEFAULT_CRON_INTERVAL_TYPE: ScheduledTaskIntervalType = 'days';
 
 export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute';
 
-const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = [
-  {
-    value: 'days',
-    label: 'Days',
-  },
-  {
-    value: 'hour',
-    label: 'Hourly',
-  },
-  {
-    value: 'minute',
-    label: 'Every minute',
-  },
+const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
+  ['days', 'Days'],
+  ['hour', 'Hourly'],
+  ['minute', 'Every minute'],
 ];
+const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = EVERY_ENTRY.map(([value, label]) => ({
+  value,
+  label,
+}));
 
-const DAYS: { value: string; label: string }[] = [
-  {
-    value: '1',
-    label: 'Mon',
-  },
-  {
-    value: '2',
-    label: 'Tue',
-  },
-  {
-    value: '3',
-    label: 'Wed',
-  },
-  {
-    value: '4',
-    label: 'Thu',
-  },
-  {
-    value: '5',
-    label: 'Fri',
-  },
-  {
-    value: '6',
-    label: 'Sat',
-  },
-  {
-    value: '7',
-    label: 'Sun',
-  },
-];
+const DAYS_STRING = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS: { value: string; label: string }[] = DAYS_STRING.map((day, index) => ({
+  value: String(index === 6 ? 0 : index + 1),
+  label: day,
+}));
 
 export const ScheduledTaskInterval = (props: Props) => {
   const { cron, setCron } = props;
-  console.log(cron, cronType(cron));
-  const [every, setEvery] = useState<ScheduledTaskIntervalType>(cronType(cron));
 
-  const [cronFields, setCronFields] = useState<CronFieldCollection | undefined>();
-
-  useEffect(() => {
-    if (!cron) {
-      setEvery('days');
-      setCronFields(CronExpressionParser.parse('0 0 * * 1-7').fields);
-      return;
-    }
-    try {
-      const interval = CronExpressionParser.parse(cron);
-      setCronFields(interval.fields);
-      setEvery(cronType(cron));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [cron]);
-
+  const every = useMemo(() => cronType(cron), [cron]);
   const timeDays = useMemo(() => cronToTimeDays(cron), [cron]);
 
   const changeTimeDays = useCallback(
     (time: string) => {
-      if (!cronFields || every !== 'days') return;
+      if (!cron || every !== 'days') return;
       const hour = parseInt(time.split(':')[0]);
       const minute = parseInt(time.split(':')[1]);
 
@@ -100,84 +52,87 @@ export const ScheduledTaskInterval = (props: Props) => {
         return;
       }
 
+      const date = new Date(0, 0, 0, hour, minute, 0);
+      const convertedHour = date.getUTCHours();
+      const convertedMinute = date.getUTCMinutes();
+
       // we use any b/c we're checking the range and type above. otherwise it would be an annoying type to define
-      const newCronFields = CronFieldCollection.from(cronFields, {
-        hour: [hour as any],
-        minute: [minute as any],
+      const newCronFields = CronFieldCollection.from(CronExpressionParser.parse(cron).fields, {
+        hour: [convertedHour as any],
+        minute: [convertedMinute as any],
       });
-      setCronFields(newCronFields);
       setCron(newCronFields.stringify(false));
     },
-    [cronFields, every, setCron]
+    [cron, every, setCron]
   );
 
   // what minute during the hour to run
-  const minute = useMemo(() => {
-    if (!cronFields || every !== 'hour') return null;
-    return cronFields.minute.values[0] ?? null;
-  }, [cronFields, every]);
+  const localMinute = useMemo(() => {
+    if (!cron || every !== 'hour') return 0;
+    const minute = CronExpressionParser.parse(cron).fields.minute.values[0];
+    const date = new Date(Date.UTC(0, 0, 0, 0, minute, 0));
+    return date.getMinutes();
+  }, [cron, every]);
 
   const changeMinute = useCallback(
     (minute?: number) => {
-      if (!cronFields || every !== 'hour') return;
+      if (!cron || every !== 'hour') return;
       if (minute === undefined) return;
 
-      const newCronFields = CronExpressionParser.parse(`${minute} * * * *`).fields;
-      setCronFields(newCronFields);
+      const date = new Date(0, 0, 0, 0, minute, 0);
+      const convertedMinute = date.getUTCMinutes();
+
+      const newCronFields = CronExpressionParser.parse(`${convertedMinute} * * * *`).fields;
       setCron(newCronFields.stringify(false));
     },
-    [cronFields, every, setCron]
+    [cron, every, setCron]
   );
 
   const onChangeEvery = useCallback(
     (every: string) => {
-      setEvery(every as ScheduledTaskIntervalType);
       if (every === 'days') {
-        const fields = CronExpressionParser.parse('0 0 * * 1-7').fields;
-        setCronFields(fields);
-        setCron(fields.stringify(false));
+        const date = new Date(0, 0, 0, 0, 0, 0);
+        setCron(`${date.getUTCHours()} ${date.getUTCMinutes()} * * 1-7`);
       } else if (every === 'hour') {
-        const fields = CronExpressionParser.parse('0 * * * *').fields;
-        setCronFields(fields);
-        setCron(fields.stringify(false));
+        const date = new Date(0, 0, 0, 0, 0, 0);
+        setCron(`${date.getUTCHours()} * * * *`);
       } else if (every === 'minute') {
-        const fields = CronExpressionParser.parse('* * * * *').fields;
-        setCronFields(fields);
-        setCron(fields.stringify(false));
+        setCron('* * * * *');
       }
-    },
-    [setCron, setCronFields, setEvery]
-  );
-
-  const days = useMemo(() => {
-    if (!cronFields || every !== 'days') return null;
-    return cronFields.dayOfWeek.values;
-  }, [cronFields, every]);
-
-  const changeDays = useCallback(
-    (day: string) => {
-      setCronFields((prevFields) => {
-        if (!prevFields) return prevFields;
-
-        const value = parseInt(day) as DayOfWeekRange;
-        const newValues = day
-          ? [...prevFields.dayOfWeek.values.filter((v) => v !== value), value]
-          : prevFields.dayOfWeek.values.filter((v) => v !== value);
-
-        // can't have 0 days
-        if (newValues.length === 0) return prevFields;
-        const newFields = CronFieldCollection.from(prevFields, {
-          dayOfWeek: newValues,
-        });
-        setCron(newFields.stringify(false));
-        setCronFields(newFields);
-        return newFields;
-      });
     },
     [setCron]
   );
 
-  console.log(cron);
+  const days = useMemo(() => {
+    if (!cron || every !== 'days') return null;
+    const daysParsed = CronExpressionParser.parse(cron).fields.dayOfWeek;
+    if (daysParsed.isWildcard) return [0, 1, 2, 3, 4, 5, 6];
+    const days = daysParsed.values;
+    if (days.length === 0) return [0, 1, 2, 3, 4, 5, 6];
+    return days;
+  }, [cron, every]);
+
+  const changeDays = useCallback(
+    (day: string) => {
+      setCron((prevCron) => {
+        if (!prevCron) return prevCron;
+
+        const value = parseInt(day) as DayOfWeekRange;
+        const fields = CronExpressionParser.parse(prevCron).fields;
+        const newValues = fields.dayOfWeek.values.includes(value)
+          ? [...fields.dayOfWeek.values.filter((v) => v !== value)]
+          : [...fields.dayOfWeek.values.filter((v) => v !== value), value];
+
+        // can't have 0 days
+        if (newValues.length === 0) return prevCron;
+        const newFields = CronFieldCollection.from(fields, {
+          dayOfWeek: newValues,
+        });
+        return newFields.stringify(false);
+      });
+    },
+    [setCron]
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -193,20 +148,14 @@ export const ScheduledTaskInterval = (props: Props) => {
       {every === 'days' && (
         <div className="flex flex-col gap-1">
           <div className="flex flex-row justify-between align-bottom text-xs text-gray-500">
-            <div>Day{cronFields?.dayOfWeek?.values.length === 1 ? '' : 's'}</div>
+            <div>Day{days && days.length === 1 ? '' : 's'}</div>
             <div>
               <Button
                 className="h-fit py-0 text-gray-500"
                 size="sm"
                 variant="link"
-                disabled={
-                  cronFields?.dayOfWeek &&
-                  (cronFields.dayOfWeek.values.length === 8 ||
-                    (cronFields.dayOfWeek.values.length === 1 && cronFields.dayOfWeek.values[0] === 0))
-                }
-                onClick={() => {
-                  setCronFields(CronExpressionParser.parse('0 0 * * 1-7').fields);
-                }}
+                disabled={days?.length === 1}
+                onClick={() => setCron('0 0 * * 1-7')}
               >
                 all
               </Button>
@@ -214,9 +163,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 className="h-fit py-0 text-gray-500"
                 size="sm"
                 variant="link"
-                onClick={() => {
-                  setCronFields(CronExpressionParser.parse('0 0 * * 1').fields);
-                }}
+                onClick={() => setCron('0 0 * * 1')}
               >
                 clear
               </Button>
@@ -244,14 +191,23 @@ export const ScheduledTaskInterval = (props: Props) => {
             <Label htmlFor="time-picker" className="text-xs text-gray-500">
               Time
             </Label>
-            <Input
-              type="time"
-              id="time-picker"
-              step="60"
-              value={timeDays}
-              onChange={(e) => changeTimeDays(e.target.value)}
-              className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-            />
+            <div className="align-center flex items-center gap-1">
+              <Input
+                type="time"
+                id="time-picker"
+                step="60"
+                value={timeDays}
+                onChange={(e) => changeTimeDays(e.target.value)}
+                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+              />
+              <div className="text-sm text-gray-500">
+                {
+                  new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+                    .formatToParts(new Date())
+                    .find((part) => part.type === 'timeZoneName')?.value
+                }
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -265,7 +221,7 @@ export const ScheduledTaskInterval = (props: Props) => {
             <Input
               type="number"
               id="minute-picker"
-              value={minute ?? ''}
+              value={localMinute ?? ''}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
                 if (isNaN(val)) {

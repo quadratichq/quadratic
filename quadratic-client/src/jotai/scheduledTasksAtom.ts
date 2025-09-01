@@ -4,10 +4,8 @@ import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { cronToDays, cronToMinute, cronToTimeDays, cronType } from '@/app/ui/menus/ScheduledTasks/convertCronTime';
-import type { ScheduledTaskIntervalType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
-import { atom, useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import type { ScheduledTask } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -18,17 +16,6 @@ export interface ScheduledTasks {
   show: boolean;
   currentTaskId: string | typeof CREATE_TASK_ID | null;
   tasks: ScheduledTask[];
-}
-
-// Convert the scheduled task to an editable object
-export interface ScheduledTaskEditable {
-  uuid: string;
-  nextRunTime: string;
-  lastRunTime: string | null;
-  every: ScheduledTaskIntervalType;
-  days: number[] | null;
-  time: string | null;
-  minute: number | null;
 }
 
 const defaultScheduledTasks: ScheduledTasks = {
@@ -73,32 +60,13 @@ interface ScheduledTasksActions {
   scheduledTasks: ScheduledTasks;
   currentTask: ScheduledTask | null;
   currentTaskId: string | null;
-  editableScheduledTasks: ScheduledTaskEditable[];
   deleteScheduledTask: (taskId: string) => void;
   show: boolean;
 }
 
-export const scheduledTasksEditableAtom = atom<ScheduledTaskEditable[]>((get) => {
-  const scheduledTasks = get(scheduledTasksAtom);
-
-  // Transform ScheduledTask[] to ScheduledTaskEditable[]
-  return scheduledTasks.tasks.map((task) => {
-    return {
-      uuid: task.uuid,
-      nextRunTime: task.nextRunTime,
-      lastRunTime: task.lastRunTime,
-      every: cronType(task.cronExpression),
-      days: cronToDays(task.cronExpression),
-      time: cronToTimeDays(task.cronExpression),
-      minute: cronToMinute(task.cronExpression),
-    } as ScheduledTaskEditable;
-  });
-});
-
 export const useScheduledTasks = (): ScheduledTasksActions => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
-  const editableScheduledTasks = useAtomValue(scheduledTasksEditableAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
   const showScheduledTasks = useCallback(
@@ -167,7 +135,6 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
     currentTask,
     currentTaskId: scheduledTasks.currentTaskId,
     saveScheduledTask,
-    editableScheduledTasks,
     deleteScheduledTask,
   };
 };

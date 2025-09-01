@@ -1,3 +1,4 @@
+import { cronToDays, cronToMinute, cronToTimeDays, cronType } from '@/app/ui/menus/ScheduledTasks/convertCronTime';
 import { ScheduledTasksListHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksListHeader';
 import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ScheduledTasksIcon } from '@/shared/components/Icons';
@@ -47,9 +48,7 @@ const convertDays = (days: number[] | null, time: string | null): JSX.Element =>
   if (timeParts) {
     const hours = parseInt(timeParts[0]);
     const minutes = parseInt(timeParts[1]);
-    const localTime = new Date();
-    localTime.setHours(hours);
-    localTime.setMinutes(minutes);
+    const localTime = new Date(Date.UTC(0, 0, 0, hours, minutes, 0));
     time = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
   const timeDisplay = time ?? '';
@@ -79,29 +78,29 @@ const convertDays = (days: number[] | null, time: string | null): JSX.Element =>
     }
   }
   return (
-    <>
+    <div className="block text-left">
       <div>{joinListWith({ arr: daysString, conjunction: 'and' })}</div>
       <div className="text-xs text-muted-foreground">{timeDisplay}</div>
-    </>
+    </div>
   );
 };
 
 const ScheduledTaskListBody = () => {
-  const { editableScheduledTasks, showScheduledTasks } = useScheduledTasks();
+  const { scheduledTasks, showScheduledTasks } = useScheduledTasks();
 
   return (
     <div className="flex flex-col gap-3">
-      {editableScheduledTasks.map((task) => {
+      {scheduledTasks.tasks.map((task) => {
         let duration: JSX.Element;
-        switch (task.every) {
+        switch (cronType(task.cronExpression)) {
           case 'days':
-            duration = convertDays(task.days, task.time);
+            duration = convertDays(cronToDays(task.cronExpression), cronToTimeDays(task.cronExpression));
             break;
           case 'hour':
             duration = (
               <>
                 <div>Every hour</div>
-                <div>at the {task.minute} minute</div>
+                <div>at the {cronToMinute(task.cronExpression)} minute</div>
               </>
             );
             break;

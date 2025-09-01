@@ -50,8 +50,11 @@ export const ScheduledTask = () => {
     [range]
   );
 
-  // default cron expression is every day at midnight
-  const [cron, setCron] = useState('0 0 * * *');
+  // default cron expression is every day at midnight local time
+  const defaultTime = new Date(0, 0, 0, 0, 0, 0);
+  const [cron, setCron] = useState(
+    currentTask?.cronExpression ?? `${defaultTime.getUTCMinutes()} ${defaultTime.getUTCHours()} * * *`
+  );
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
     if (selection) {
