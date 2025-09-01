@@ -9,7 +9,7 @@ import { Toggle } from '@/shared/shadcn/ui/toggle';
 import type { DayOfWeekRange } from 'cron-parser';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ['days', 'Days'],
+  ['days', 'On days'],
   ['hour', 'Hourly'],
   ['minute', 'Every minute'],
 ];

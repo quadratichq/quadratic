@@ -44,7 +44,7 @@ pub fn js_scheduled_task_decode(
         }
     } else {
         Err(format!(
-            "Could not decode the Expected exactly one ComputeCodeSelection operation, got {ops:?}"
+            "Could not decode: Expected exactly one ComputeCodeSelection operation, got {ops:?}"
         ))
     }
 }

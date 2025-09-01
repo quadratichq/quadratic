@@ -9,7 +9,7 @@ export const ScheduledTaskSchema = z.object({
   lastRunTime: z.string().datetime().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
   cronExpression: z.string(),
-  operations: z.any(),
+  operations: z.instanceof(Uint8Array),
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
 });

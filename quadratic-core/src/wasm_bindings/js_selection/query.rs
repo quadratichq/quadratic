@@ -16,6 +16,15 @@ impl JsSelection {
         self.selection.sheet_id.to_string()
     }
 
+    #[wasm_bindgen(js_name = "getSheetName")]
+    pub fn sheet_name(&self, context: &JsA1Context) -> String {
+        context
+            .get_context()
+            .try_sheet_id(self.selection.sheet_id)
+            .map(|name| name.to_string())
+            .unwrap_or_default()
+    }
+
     /// Get A1Selection as a JsValue.
     #[wasm_bindgen]
     pub fn selection(&self) -> Result<JsValue, String> {

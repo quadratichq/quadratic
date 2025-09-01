@@ -57,8 +57,7 @@ export const UseCron = (initialCron?: string): CronResults => {
   const cronType = useMemo(() => {
     if (!fields.hour.isWildcard && !fields.minute.isWildcard) return 'days';
     if (!fields.minute.isWildcard && fields.hour.isWildcard) return 'hour';
-    if (!fields.minute.isWildcard) return 'minute';
-    return 'days';
+    return 'minute';
   }, [fields]);
 
   const days = useMemo((): number[] => {
@@ -68,7 +67,7 @@ export const UseCron = (initialCron?: string): CronResults => {
 
   const localTimeString = useMemo((): string => {
     if (fields.hour.isWildcard || fields.minute.isWildcard) {
-      return `${MIDNIGHT_LOCAL_HOUR < 0 ? `0${MIDNIGHT_LOCAL_HOUR}` : MIDNIGHT_LOCAL_HOUR}:${MIDNIGHT_LOCAL_MINUTE < 0 ? `0${MIDNIGHT_LOCAL_MINUTE}` : MIDNIGHT_LOCAL_MINUTE}`;
+      return `${MIDNIGHT_LOCAL_HOUR < 10 ? `0${MIDNIGHT_LOCAL_HOUR}` : MIDNIGHT_LOCAL_HOUR}:${MIDNIGHT_LOCAL_MINUTE < 10 ? `0${MIDNIGHT_LOCAL_MINUTE}` : MIDNIGHT_LOCAL_MINUTE}`;
     }
     const { hour, minute } = hourMinuteUTCToLocal(fields.hour.values[0], fields.minute.values[0]);
     return `${hour < 10 ? `0${hour}` : hour}:${minute < 10 ? `0${minute}` : minute}`;

@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { scheduledTaskEncode, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { JsSelection, scheduledTaskDecode, scheduledTaskEncode } from '@/app/quadratic-core/quadratic_core';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { UseCron } from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ScheduledTaskHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHeader';
@@ -7,11 +7,11 @@ import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTa
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type tasks = 'run-selected-cells' | 'run-sheet-cells' | 'run-all-code';
+type TaskType = 'run-selected-cells' | 'run-sheet-cells' | 'run-all-code';
 
-const TASKS: { value: tasks; label: string }[] = [
+const TASKS: { value: TaskType; label: string }[] = [
   {
     value: 'run-all-code',
     label: 'Run all code in file',
@@ -29,36 +29,53 @@ const TASKS: { value: tasks; label: string }[] = [
 export const ScheduledTask = () => {
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
 
-  const [task, setTask] = useState<string>(currentTask?.operations ?? 'run-all-code');
-
-  const [sheet, setSheet] = useState(sheets.current);
   const [range, setRange] = useState<JsSelection | undefined>();
-  const [rangeError, setRangeError] = useState(false);
 
-  const setTaskCallback = useCallback(
-    (task: string) => {
-      setTask(task);
-      if (task === 'run-selected-cells') {
-        if (range) {
-          setTask(scheduledTaskEncode(range));
-        } else {
-          const newRange = sheets.sheet.cursor.jsSelection.clone();
-          setTask(scheduledTaskEncode(newRange));
-          setRange(newRange);
-        }
-      }
-    },
-    [range]
-  );
+  // decode any existing operations
+  useEffect(() => {
+    if (currentTask?.operations) {
+      const task = scheduledTaskDecode(currentTask.operations, sheets.jsA1Context);
+      setRange(new JsSelection(task));
+    }
+  }, [currentTask?.operations]);
+
+  const [rangeError] = useState(false);
+
+  const setTaskCallback = useCallback((task: string) => {
+    if (task === 'run-all-code') {
+      setRange(undefined);
+    } else if (task === 'run-sheet-cells') {
+      const selection = new JsSelection(sheets.current);
+      selection.selectSheet(sheets.current);
+      setRange(selection);
+    } else if (task === 'run-selected-cells') {
+      setRange(sheets.sheet.cursor.jsSelection.clone());
+    }
+  }, []);
+
+  const task = useMemo((): TaskType => {
+    if (!range) return 'run-all-code';
+    if (range.isAllSelected()) return 'run-sheet-cells';
+    return 'run-selected-cells';
+  }, [range]);
 
   // default cron expression is every day at midnight local time
   const cronResults = UseCron(currentTask?.cronExpression);
 
+  const setSheet = useCallback((sheet: string) => {
+    const selection = new JsSelection(sheet);
+    selection.selectSheet(sheet);
+    setRange(selection);
+  }, []);
+
+  const sheetId = useMemo((): string => {
+    if (!range) return sheets.current;
+    return range.getSheetId();
+  }, [range]);
+
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
     if (selection) {
       setRange(selection);
-      setRangeError(false);
-      setTask(scheduledTaskEncode(selection));
     } else {
       setRange(undefined);
     }
@@ -67,14 +84,15 @@ export const ScheduledTask = () => {
   const onSave = useCallback(async () => {
     if (!cronResults.cron) return;
 
-    // const operations = create_cron_operations(sheet, range)
+    const operations = scheduledTaskEncode(range);
+
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronResults.cron,
-      operations: '',
+      operations,
     });
     showScheduledTasks();
-  }, [cronResults.cron, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
+  }, [cronResults.cron, range, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
@@ -102,13 +120,13 @@ export const ScheduledTask = () => {
             onChange={setTaskCallback}
           />
 
-          {task === 'run-sheet-cells' && (
+          {(task === 'run-sheet-cells' || task === 'run-selected-cells') && (
             <ValidationDropdown
               className="flex flex-col gap-1"
               label="Sheet"
               labelClassName="text-xs text-gray-500"
               onChange={setSheet}
-              value={sheet}
+              value={sheetId}
               options={sheets.sheets.map((sheet) => ({
                 value: sheet.id,
                 label: sheet.name,
@@ -125,6 +143,7 @@ export const ScheduledTask = () => {
               triggerError={rangeError}
               changeCursor={true}
               readOnly={false}
+              onlyCurrentSheet={sheetId}
             />
           )}
 
