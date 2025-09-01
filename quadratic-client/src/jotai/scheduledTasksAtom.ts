@@ -19,7 +19,7 @@ export interface ScheduledTasks {
 }
 
 const defaultScheduledTasks: ScheduledTasks = {
-  show: true,
+  show: false,
   currentTaskId: null,
   tasks: [],
 };
