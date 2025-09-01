@@ -42,6 +42,15 @@
   <link rel="preload" as="image" href="/images/logo_etching.png" />
   <link rel="preload" as="image" href="/images/logo_loading.gif" />
 
+  <script>
+    // disables the React DevTools message
+    const oldConsoleLog = console.info;
+    console.info = (...args) => {
+      if (args[0]?.includes('Download the React DevTools')) return;
+      oldConsoleLog(...args);
+    };
+  </script>
+
   <!-- Google Tag Manager -->
   <!-- <script>
     (function (w, d, s, l, i) {
