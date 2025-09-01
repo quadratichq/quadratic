@@ -48,6 +48,7 @@ const getLocalTimeZoneAbbreviation = (): string => {
   );
 };
 
+// Provides setting and displaying cron expressions for ScheduledTask
 export const UseCron = (initialCron?: string): CronResults => {
   const [cron, setCron] = useState(initialCron ?? `${MIDNIGHT_LOCAL_MINUTE} ${MIDNIGHT_LOCAL_HOUR} * * 1-7`);
 
@@ -178,6 +179,7 @@ export const UseCron = (initialCron?: string): CronResults => {
 
 const DAYS_STRING = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Displays a cron expression in a list entry format in ScheduledTasksList
 export const CronToListEntry = ({ cron }: { cron: string }): JSX.Element => {
   const fields = CronExpressionParser.parse(cron).fields;
 
