@@ -20,7 +20,6 @@ const schema = z.object({
 });
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.GET.response']>) {
-  console.log('GET /v0/files/:uuid/scheduled_task');
   let validatedData;
   try {
     validatedData = parseRequest(req, schema);

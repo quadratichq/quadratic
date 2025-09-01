@@ -93,6 +93,7 @@ export async function getScheduledTask(scheduledTaskUuid: string): Promise<Sched
 export async function getScheduledTasks(fileId: number): Promise<ScheduledTaskResponse[]> {
   const result = await dbClient.scheduledTask.findMany({
     where: { fileId, status: { not: 'DELETED' } },
+    orderBy: { createdDate: 'asc' },
   });
 
   return result.map(resultToScheduledTaskResponse);
