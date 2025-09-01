@@ -8,7 +8,6 @@ import {
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
@@ -110,7 +109,6 @@ export const QuadraticSidebar = () => {
               pressed={showScheduledTasks.show}
               onPressedChange={() => {
                 setShowScheduledTasks((prev) => ({ ...prev, show: !prev.show, currentTaskId: null }));
-                focusGrid();
               }}
             >
               <ScheduledTasksIcon />

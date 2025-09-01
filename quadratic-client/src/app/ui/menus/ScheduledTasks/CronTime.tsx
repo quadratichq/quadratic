@@ -31,6 +31,7 @@ export interface CronResults {
   changeDaysDay: (day: string) => void;
   changeDaysAll: () => void;
   changeDaysClear: () => void;
+  changeDaysWeekdays: () => void;
   changeHoursMinute: (minute: string) => void;
 }
 
@@ -145,6 +146,10 @@ export const UseCron = (initialCron?: string): CronResults => {
     setCron(`${fields.minute.values[0]} ${fields.hour.values[0]} * * 1`);
   }, [fields.hour.values, fields.minute.values]);
 
+  const changeDaysWeekdays = useCallback(() => {
+    setCron(`${fields.minute.values[0]} ${fields.hour.values[0]} * * 1-5`);
+  }, [fields.hour.values, fields.minute.values]);
+
   const changeHoursMinute = useCallback(
     (minute: string) => {
       if (!minute || isNaN(Number(minute))) return;
@@ -168,6 +173,7 @@ export const UseCron = (initialCron?: string): CronResults => {
     changeDaysDay,
     changeDaysAll,
     changeDaysClear,
+    changeDaysWeekdays,
     changeHoursMinute,
   };
 };

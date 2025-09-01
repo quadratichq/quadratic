@@ -16,7 +16,7 @@ export const ScheduledTasks = () => {
   };
 
   return (
-    <div onKeyDown={handleKeyDown} tabIndex={0}>
+    <div onKeyDown={handleKeyDown}>
       {currentTaskId && <ScheduledTask />}
       {!currentTaskId && <ScheduledTasksList />}
     </div>

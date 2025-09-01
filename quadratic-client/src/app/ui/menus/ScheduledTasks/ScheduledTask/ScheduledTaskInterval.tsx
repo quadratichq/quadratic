@@ -40,6 +40,7 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
     changeDaysDay,
     changeDaysAll,
     changeDaysClear,
+    changeDaysWeekdays,
     changeHoursMinute,
   } = props.cronResults;
 
@@ -67,6 +68,15 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
                 onClick={() => changeDaysAll()}
               >
                 all
+              </Button>
+              <Button
+                className="h-fit py-0 text-gray-500"
+                size="sm"
+                variant="link"
+                disabled={days.length === 1}
+                onClick={() => changeDaysWeekdays()}
+              >
+                weekdays
               </Button>
               <Button
                 className="h-fit py-0 text-gray-500"

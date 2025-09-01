@@ -75,13 +75,14 @@ const ScheduledTaskListBody = () => {
 
   return (
     <div className="flex flex-col gap-3">
-      {scheduledTasks.tasks.map((task) => {
+      {scheduledTasks.tasks.map((task, i) => {
         return (
           <Button
             key={task.uuid}
             className="flex h-fit items-start justify-between"
             variant="outline"
             onClick={() => showScheduledTasks(task.uuid)}
+            autoFocus={i === 0}
           >
             <ScheduledTaskName className="block flex-grow text-left" operations={task.operations} />
             <CronToListEntry className="block w-[100px] shrink-0 text-left" cron={task.cronExpression} />
