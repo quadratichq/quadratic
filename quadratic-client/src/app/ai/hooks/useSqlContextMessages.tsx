@@ -1,6 +1,7 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
@@ -39,7 +40,7 @@ export function useSqlContextMessages() {
                   connection.uuid,
                   teamUuid,
                   false,
-                  5000
+                  GET_SCHEMA_TIMEOUT
                 );
                 const tableNames = schema?.tables?.map((table) => table.name) || [];
 

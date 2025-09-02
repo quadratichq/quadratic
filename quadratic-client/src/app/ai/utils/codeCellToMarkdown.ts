@@ -4,6 +4,7 @@ import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLang
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 
 export const codeCellToMarkdown = async (sheetId: string, x: number, y: number): Promise<string> => {
   const codeCellCore = await quadraticCore.getCodeCell(sheetId, x, y);
@@ -26,7 +27,7 @@ export const codeCellToMarkdown = async (sheetId: string, x: number, y: number):
       connection.id,
       teamUuid,
       true,
-      5000
+      GET_SCHEMA_TIMEOUT
     );
   }
   const schemaMarkdownForAi = schemaData ? toMarkdown(schemaData, 'database_schema') : undefined;

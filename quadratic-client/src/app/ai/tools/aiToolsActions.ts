@@ -39,6 +39,7 @@ import {
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import Color from 'color';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -309,7 +310,13 @@ export const aiToolsActions: AIToolActionsRecord = {
       const schemas = await Promise.all(
         connections.map(async (connection) => {
           try {
-            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid, true, 5000);
+            const schema = await connectionClient.schemas.get(
+              connection.type,
+              connection.uuid,
+              teamUuid,
+              true,
+              GET_SCHEMA_TIMEOUT
+            );
 
             if (!schema) {
               return {
