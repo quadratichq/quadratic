@@ -24,7 +24,9 @@ export const codeCellToMarkdown = async (sheetId: string, x: number, y: number):
     schemaData = await connectionClient.schemas.get(
       connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
       connection.id,
-      teamUuid
+      teamUuid,
+      true,
+      5000
     );
   }
   const schemaMarkdownForAi = schemaData ? toMarkdown(schemaData, 'database_schema') : undefined;

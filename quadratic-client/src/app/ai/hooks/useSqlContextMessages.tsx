@@ -34,7 +34,13 @@ export function useSqlContextMessages() {
           const connectionTableInfo = await Promise.all(
             connections.map(async (connection) => {
               try {
-                const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+                const schema = await connectionClient.schemas.get(
+                  connection.type,
+                  connection.uuid,
+                  teamUuid,
+                  false,
+                  5000
+                );
                 const tableNames = schema?.tables?.map((table) => table.name) || [];
 
                 return {

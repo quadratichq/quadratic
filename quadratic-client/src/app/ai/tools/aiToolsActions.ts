@@ -309,7 +309,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const schemas = await Promise.all(
         connections.map(async (connection) => {
           try {
-            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid, true, 5000);
 
             if (!schema) {
               return {
