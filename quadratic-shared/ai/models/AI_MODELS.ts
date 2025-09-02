@@ -8,7 +8,7 @@ export const DEFAULT_MODEL_VERSION = 27;
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX';
+export const DEFAULT_MODEL: AIModelKey = 'baseten:deepseek-ai/DeepSeek-V3.1';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
@@ -98,7 +98,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'plus',
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: true,
@@ -153,7 +153,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -169,7 +169,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -278,7 +278,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -290,6 +290,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
+    backupModelKey: 'openai:gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0.1,
     max_tokens: 32768,
@@ -493,6 +494,29 @@ export const MODELS_CONFIGURATION: {
     min_p: 0,
     repetition_penalty: 1.05,
   },
+  'baseten:deepseek-ai/DeepSeek-V3.1': {
+    model: 'deepseek-ai/DeepSeek-V3.1',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'DeepSeek V3.1',
+    temperature: 0.6,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'fast',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.5,
+    rate_per_million_output_tokens: 1.5,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.95,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
   'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
     model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
@@ -508,6 +532,29 @@ export const MODELS_CONFIGURATION: {
     imageSupport: false,
     rate_per_million_input_tokens: 0.45,
     rate_per_million_output_tokens: 1.8,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'fireworks:accounts/fireworks/models/deepseek-v3p1': {
+    model: 'accounts/fireworks/models/deepseek-v3p1',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'DeepSeek V3.1',
+    temperature: 0.2,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.56,
+    rate_per_million_output_tokens: 1.68,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
     // Sampling parameters

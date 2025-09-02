@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type MoveSheetResponse = z.infer<(typeof aiToolsSpec)[AITool.MoveSheet]['responseSchema']>;
@@ -29,6 +29,13 @@ export const MoveSheet = memo(
     const icon = <GridActionIcon />;
     const label = 'Reorder sheet';
 
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `"${toolArgs.data.sheet_name}" ${toolArgs.data.insert_before_sheet_name ? `moved before "${toolArgs.data.insert_before_sheet_name}"` : 'moved to the end of the list'}`;
+      }
+      return '';
+    }, [toolArgs?.data?.insert_before_sheet_name, toolArgs?.data?.sheet_name, toolArgs?.success]);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -39,13 +46,6 @@ export const MoveSheet = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={`"${toolArgs.data.sheet_name}" ${toolArgs.data.insert_before_sheet_name ? `moved before "${toolArgs.data.insert_before_sheet_name}"` : 'moved to the end of the list'}`}
-        className={className}
-      />
-    );
+    return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }
 );

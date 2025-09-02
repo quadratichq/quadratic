@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type RenameSheetResponse = z.infer<(typeof aiToolsSpec)[AITool.RenameSheet]['responseSchema']>;
@@ -29,6 +29,13 @@ export const RenameSheet = memo(
     const icon = <GridActionIcon />;
     const label = 'Rename sheet';
 
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `"${toolArgs.data.sheet_name}" -> "${toolArgs.data.new_name}"`;
+      }
+      return '';
+    }, [toolArgs?.data?.new_name, toolArgs?.data?.sheet_name, toolArgs?.success]);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -39,13 +46,6 @@ export const RenameSheet = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description={`"${toolArgs.data.sheet_name}" -> "${toolArgs.data.new_name}"`}
-        className={className}
-      />
-    );
+    return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }
 );
