@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.16.4",
+  "version": "0.17.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -58,7 +58,6 @@
     "lint:prettier": "npm run lint:prettier --workspace=quadratic-client",
     "lint:clippy": "cargo clippy --all-targets --all-features --all -- -D warnings",
     "lint:clippy:fix": "cargo clippy --all-targets --all-features --all --fix --allow-dirty -- -D warnings",
-    "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "kill-port 3000 && kill-port 8000 && kill-port 3001 && kill-port 3002 && kill-port 3003 && kill-port 6379 && kill-port 8001 && kill-port 5432 && kill-port 4566 && kill-port 80 && kill-port 443",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",

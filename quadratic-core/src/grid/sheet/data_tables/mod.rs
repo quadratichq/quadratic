@@ -529,4 +529,9 @@ impl SheetDataTables {
     pub fn cache_ref(&self) -> &SheetDataTablesCache {
         &self.cache
     }
+
+    /// Returns true if the given rectangle has any content.
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.cache.has_content(rect)
+    }
 }

@@ -40,19 +40,30 @@ type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
 export const connectionClient = {
   schemas: {
+    // ignore case of connection type
     get: async (
       connectionType:
         | 'postgres'
+        | 'POSTGRES'
         | 'mysql'
+        | 'MYSQL'
         | 'mssql'
+        | 'MSSQL'
         | 'snowflake'
+        | 'SNOWFLAKE'
         | 'cockroachdb'
-        | 'bigquery'
+        | 'COCKROACHDB'
+        | 'BIGQUERY'
         | 'mariadb'
+        | 'MARIADB'
         | 'supabase'
-        | 'neon',
+        | 'SUPABASE'
+        | 'neon'
+        | 'NEON',
       connectionId: string,
-      teamUuid: string
+      teamUuid: string,
+      forceCacheRefresh: boolean = false,
+      timeout: number = 60000
     ): Promise<SqlSchemaResponse | null> => {
       // This might get called on a public file (where the user might not be
       // logged in but can still access the file). If they're not logged in,
@@ -66,9 +77,11 @@ export const connectionClient = {
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);
 
-      const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
+      const url = `${API_URL}/${connectionType.toLowerCase()}/schema/${connectionId}?force_cache_refresh=${forceCacheRefresh}`;
+      const res = await fetch(url, {
         method: 'GET',
         headers,
+        signal: AbortSignal.timeout(timeout),
       });
       if (!res.ok) {
         throw new Error('Failed to get the schema from the connection service');

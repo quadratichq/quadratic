@@ -11,7 +11,7 @@ datasource db {
 model User {
     id                  Int               @id @default(autoincrement())
     auth0Id             String            @unique @map("auth0_id")
-    email               String?           @unique @map("email")
+    email               String            @unique @map("email")
     eduStatus           EduStatus?        @map("edu_status")
     onboardingResponses Json?             @map("onboarding_responses")
     ownedFiles          File[]            @relation(name: "OwnerRelation")
@@ -249,7 +249,7 @@ model QFeedback {
     id           Int      @id @default(autoincrement())
     feedback     String
     // Additional context about the feedback source
-    // If it's null, that's in-app feedback (which was the first kind we used)
+    // If it's null, that's “In-app” feedback (which was the first kind we used)
     context      String?
     created_date DateTime @default(now())
     userId       Int?
