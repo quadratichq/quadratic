@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { JsSelection, scheduledTaskDecode, scheduledTaskEncode } from '@/app/quadratic-core/quadratic_core';
 import { SheetRange } from '@/app/ui/components/SheetRange';
@@ -109,6 +110,22 @@ export const ScheduledTask = () => {
     }
   }, [currentTask, deleteScheduledTask, showScheduledTasks]);
 
+  const [sheetList, setSheetList] = useState<{ value: string; label: string }[]>([]);
+  useEffect(() => {
+    const setSheets = () => setSheetList(sheets.sheets.map((sheet) => ({ value: sheet.id, label: sheet.name })));
+    events.on('sheetsInfo', setSheets);
+    events.on('addSheet', setSheets);
+    events.on('deleteSheet', setSheets);
+    events.on('sheetInfoUpdate', setSheets);
+    setSheets();
+    return () => {
+      events.off('sheetsInfo', setSheets);
+      events.off('addSheet', setSheets);
+      events.off('deleteSheet', setSheets);
+      events.off('sheetInfoUpdate', setSheets);
+    };
+  }, []);
+
   return (
     <div
       className="border-gray relative flex h-full shrink-0 flex-col justify-between border-l bg-background px-3 text-sm"
@@ -135,10 +152,7 @@ export const ScheduledTask = () => {
               labelClassName="text-xs text-gray-500"
               onChange={setSheet}
               value={sheetId}
-              options={sheets.sheets.map((sheet) => ({
-                value: sheet.id,
-                label: sheet.name,
-              }))}
+              options={sheetList}
             />
           )}
 
