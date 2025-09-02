@@ -7,6 +7,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
@@ -33,6 +34,8 @@ type AIContextProps = {
   editing: boolean;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  selectedConnectionUuid: string;
+  setSelectedConnectionUuid: (connectionUuid: string) => void;
 };
 export const AIContext = memo(
   ({
@@ -45,11 +48,14 @@ export const AIContext = memo(
     editing,
     disabled,
     textareaRef,
+    selectedConnectionUuid,
+    setSelectedConnectionUuid,
   }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [, setCurrentSheet] = useState(sheets.sheet.name);
+    const { connections } = useConnectionsFetcher();
 
     useEffect(() => {
       const updateCurrentSheet = () => {
@@ -89,12 +95,9 @@ export const AIContext = memo(
 
     const handleOnClickConnection = useCallback(
       (connectionUuid: string) => {
-        setContext?.((prev) => ({
-          ...prev,
-          connections: prev.connections?.filter((c) => c.uuid !== connectionUuid),
-        }));
+        setSelectedConnectionUuid('');
       },
-      [setContext]
+      [setSelectedConnectionUuid]
     );
 
     // const handleOnClickSelection = useCallback(() => {
@@ -111,19 +114,21 @@ export const AIContext = memo(
       >
         {context &&
           setContext &&
-          context.connections &&
-          context.connections.map((connection) => (
-            <ContextPill
-              key={connection.uuid}
-              primary={connection.name}
-              primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
-              // TODO: fix types
-              // @ts-ignore
-              secondary={getCodeCell(connection.type)?.label ?? 'Connection'}
-              onClick={() => handleOnClickConnection(connection.uuid)}
-              noClose={false}
-            />
-          ))}
+          selectedConnectionUuid &&
+          connections
+            .filter((connection) => connection.uuid === selectedConnectionUuid)
+            .map((connection) => (
+              <ContextPill
+                key={connection.uuid}
+                primary={connection.name}
+                primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
+                // TODO: fix types
+                // @ts-ignore
+                secondary={getCodeCell(connection.type)?.label ?? 'Connection'}
+                onClick={() => handleOnClickConnection(connection.uuid)}
+                noClose={disabled}
+              />
+            ))}
         {files
           .filter((file) => isFileSupported(file.mimeType))
           .map((file, index) => (

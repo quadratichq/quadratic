@@ -1,4 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -6,6 +7,8 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -13,7 +16,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
-import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { ConnectionContent, Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
   memo,
@@ -26,7 +29,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import { type SetterOrUpdater } from 'recoil';
+import { useRecoilValue, type SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -91,9 +94,13 @@ export const AIUserMessageForm = memo(
       [fileTypes]
     );
 
+    const { connections } = useConnectionsFetcher();
+    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+    const [selectedConnectionUuid, setSelectedConnectionUuid] = useState<string>('');
     const [files, setFiles] = useState<FileContent[]>([]);
     const [prompt, setPrompt] = useState<string>('');
     useEffect(() => {
+      setSelectedConnectionUuid(initialContent?.find((item) => item.type === 'connection')?.uuid ?? '');
       setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
       setPrompt(
         initialContent
@@ -122,13 +129,27 @@ export const AIUserMessageForm = memo(
         if (initialContent === undefined) {
           setPrompt('');
           setFiles([]);
+          setSelectedConnectionUuid('');
         }
 
+        let connectionContent: ConnectionContent[] = [];
+        if (selectedConnectionUuid) {
+          const matchingConnection = connections.find((connection) => connection.uuid === selectedConnectionUuid);
+          if (matchingConnection) {
+            connectionContent.push({
+              type: 'connection',
+              uuid: matchingConnection.uuid,
+              name: matchingConnection.name,
+            });
+          }
+        }
+
+        console.log('submitPrompt', [...files, createTextContent(trimmedPrompt), ...connectionContent]);
         submitPrompt({
-          content: [...files, createTextContent(trimmedPrompt)],
+          content: [...files, ...connectionContent, createTextContent(trimmedPrompt)],
         });
       },
-      [files, initialContent, submitPrompt]
+      [connections, files, initialContent, selectedConnectionUuid, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -251,82 +272,97 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <form
-        className={cn(
-          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
-          editingOrDebugEditing ? '' : 'select-none'
+      <div className="relative">
+        {messagesCount === 0 && (
+          <AIAnalystExamplePrompts
+            exampleSet={files.length > 0 ? 'file-pdf' : selectedConnectionUuid ? 'connection' : 'empty'}
+            prompt={prompt}
+            submit={submit}
+            selectedConnectionUuid={selectedConnectionUuid}
+            setSelectedConnectionUuid={setSelectedConnectionUuid}
+          />
         )}
-        onSubmit={(e) => e.preventDefault()}
-        onClick={handleClickForm}
-        onPaste={handlePasteOrDrop}
-        onDrop={handlePasteOrDrop}
-      >
-        {editingOrDebugEditing && dragOver && (
-          <div
-            className="absolute bottom-2 left-2 right-2 top-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
-            onDrop={handlePasteOrDrop}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-          >
-            <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
-              <span className="text-sm font-bold">Drop files here</span>
-              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
-            </div>
-          </div>
-        )}
-
-        <EditButton
-          show={!editingOrDebugEditing && !loading && waitingOnMessageIndex === undefined}
-          loading={loading}
-          setEditing={setEditing}
-          textareaRef={textareaRef}
-        />
-
-        <AIContext
-          initialContext={ctx.initialContext}
-          context={ctx.context}
-          setContext={ctx.setContext}
-          files={files}
-          setFiles={handleFilesChange}
-          editing={editingOrDebugEditing}
-          isFileSupported={isFileSupported}
-          disabled={disabled}
-          textareaRef={textareaRef}
-        />
-
-        <Textarea
-          ref={textareaRef}
-          value={prompt}
+        <form
           className={cn(
-            'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-            editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-            (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+            'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
+            editingOrDebugEditing ? '' : 'select-none'
           )}
-          onChange={handlePromptChange}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-          placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-          autoHeight={true}
-          maxHeight={maxHeight}
-          disabled={waitingOnMessageIndex !== undefined}
-          onDragEnter={handleDrag}
-        />
+          onSubmit={(e) => e.preventDefault()}
+          onClick={handleClickForm}
+          onPaste={handlePasteOrDrop}
+          onDrop={handlePasteOrDrop}
+        >
+          {editingOrDebugEditing && dragOver && (
+            <div
+              className="absolute bottom-2 left-2 right-2 top-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
+              onDrop={handlePasteOrDrop}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+            >
+              <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+                <span className="text-sm font-bold">Drop files here</span>
+                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+              </div>
+            </div>
+          )}
 
-        <AIUsageExceeded show={showAIUsageExceeded} />
+          <EditButton
+            show={!editingOrDebugEditing && !loading && waitingOnMessageIndex === undefined}
+            loading={loading}
+            setEditing={setEditing}
+            textareaRef={textareaRef}
+          />
 
-        <AIUserMessageFormFooter
-          show={editing}
-          loading={loading}
-          waitingOnMessageIndex={waitingOnMessageIndex}
-          textareaRef={textareaRef}
-          prompt={prompt}
-          submitPrompt={() => submit(prompt)}
-          abortPrompt={abortPrompt}
-          disabled={disabled}
-          handleFiles={handleFiles}
-          fileTypes={fileTypes}
-        />
-      </form>
+          <AIContext
+            initialContext={ctx.initialContext}
+            context={ctx.context}
+            setContext={ctx.setContext}
+            files={files}
+            setFiles={handleFilesChange}
+            editing={editingOrDebugEditing}
+            isFileSupported={isFileSupported}
+            disabled={disabled}
+            textareaRef={textareaRef}
+            selectedConnectionUuid={selectedConnectionUuid}
+            setSelectedConnectionUuid={setSelectedConnectionUuid}
+          />
+
+          <Textarea
+            ref={textareaRef}
+            value={prompt}
+            className={cn(
+              'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
+              editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+              (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+            )}
+            onChange={handlePromptChange}
+            onKeyDown={handleKeyDown}
+            autoComplete="off"
+            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
+            autoHeight={true}
+            maxHeight={maxHeight}
+            disabled={waitingOnMessageIndex !== undefined}
+            onDragEnter={handleDrag}
+          />
+
+          <AIUsageExceeded show={showAIUsageExceeded} />
+
+          <AIUserMessageFormFooter
+            show={editing}
+            loading={loading}
+            waitingOnMessageIndex={waitingOnMessageIndex}
+            textareaRef={textareaRef}
+            prompt={prompt}
+            submitPrompt={() => submit(prompt)}
+            abortPrompt={abortPrompt}
+            disabled={disabled}
+            handleFiles={handleFiles}
+            fileTypes={fileTypes}
+            selectedConnectionUuid={selectedConnectionUuid}
+            setSelectedConnectionUuid={setSelectedConnectionUuid}
+          />
+        </form>
+      </div>
     );
   })
 );
@@ -396,6 +432,8 @@ type AIUserMessageFormFooterProps = {
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
+  selectedConnectionUuid: string;
+  setSelectedConnectionUuid: (connectionUuid: string) => void;
 };
 const AIUserMessageFormFooter = memo(
   ({
@@ -409,6 +447,8 @@ const AIUserMessageFormFooter = memo(
     disabled,
     handleFiles,
     fileTypes,
+    selectedConnectionUuid,
+    setSelectedConnectionUuid,
   }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
@@ -424,7 +464,12 @@ const AIUserMessageFormFooter = memo(
         >
           <div className="flex items-center gap-1">
             <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
-            <AIUserMessageFormConnectionsButton disabled={disabled} />
+            <AIUserMessageFormConnectionsButton
+              disabled={disabled}
+              selectedConnectionUuid={selectedConnectionUuid}
+              setSelectedConnectionUuid={setSelectedConnectionUuid}
+              textareaRef={textareaRef}
+            />
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">

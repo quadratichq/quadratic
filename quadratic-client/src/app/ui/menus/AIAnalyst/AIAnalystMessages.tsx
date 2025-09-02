@@ -16,7 +16,6 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
-import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
@@ -155,10 +154,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       scrollToBottom();
     }
   }, [promptSuggestionsCount, scrollToBottom]);
-
-  if (messagesCount === 0) {
-    return <AIAnalystExamplePrompts />;
-  }
 
   return (
     <div

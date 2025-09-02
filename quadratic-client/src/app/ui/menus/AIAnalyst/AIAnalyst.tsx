@@ -7,7 +7,6 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
-import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
@@ -93,7 +92,6 @@ export const AIAnalyst = memo(() => {
             <>
               {isEmptyState ? (
                 <div className="flex h-full flex-col justify-center gap-2 px-2 py-0.5">
-                  <AIAnalystExamplePrompts />
                   {promptUI}
                   <AIAnalystEmptyStateWaypoint />
                 </div>

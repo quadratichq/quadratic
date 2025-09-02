@@ -237,15 +237,6 @@ const ContextSchema = z.object({
   sheets: z.array(z.string()),
   currentSheet: z.string(),
   selection: z.string().optional(),
-  connections: z
-    .array(
-      z.object({
-        uuid: z.string(),
-        name: z.string(),
-        type: z.string(),
-      })
-    )
-    .optional(),
   codeCell: z
     .object({
       sheetId: z.string(),
@@ -283,6 +274,13 @@ const TextContentSchema = z.preprocess(
 );
 export type TextContent = z.infer<typeof TextContentSchema>;
 
+const ConnectionContentSchema = z.object({
+  type: z.literal('connection'),
+  uuid: z.string(),
+  name: z.string(),
+});
+export type ConnectionContent = z.infer<typeof ConnectionContentSchema>;
+
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
   data: z.string(),
@@ -316,7 +314,7 @@ const GoogleSearchGroundingMetadataSchema = z.object({
 });
 export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
-const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
+const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema, ConnectionContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
