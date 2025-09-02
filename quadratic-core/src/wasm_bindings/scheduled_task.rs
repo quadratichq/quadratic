@@ -12,9 +12,9 @@ use crate::{
 #[wasm_bindgen(js_name = "scheduledTaskEncode")]
 pub fn js_scheduled_task_encode(selection: Option<JsSelection>) -> Result<JsValue, String> {
     let ops = if let Some(selection) = selection {
-        let selection = selection.get_selection();
+        let selection = selection.get_owned_selection();
         vec![Operation::ComputeCodeSelection {
-            selection: Some(selection.clone()),
+            selection: Some(selection),
         }]
     } else {
         vec![Operation::ComputeCodeSelection { selection: None }]

@@ -73,7 +73,6 @@ export const ScheduledTask = () => {
   }, [range]);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
-    console.log(selection);
     if (selection) {
       setRange(selection);
       setRangeError(false);
@@ -87,7 +86,6 @@ export const ScheduledTask = () => {
     if (!cronResults.cron || cronResults.cronError || rangeError) return;
     const cloned = range?.clone();
     const operations = scheduledTaskEncode(cloned);
-    cloned?.free();
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronResults.cron,

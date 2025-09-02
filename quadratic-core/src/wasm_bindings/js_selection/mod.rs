@@ -34,6 +34,10 @@ impl JsSelection {
     pub fn get_selection(&self) -> &A1Selection {
         &self.selection
     }
+
+    pub fn get_owned_selection(self) -> A1Selection {
+        self.selection
+    }
 }
 
 #[wasm_bindgen]

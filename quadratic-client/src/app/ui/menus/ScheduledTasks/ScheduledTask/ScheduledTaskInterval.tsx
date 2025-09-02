@@ -11,13 +11,12 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
-import { type DayOfWeekRange } from 'cron-parser';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
   ['days', 'On days'],
   ['hour', 'Hourly'],
   ['minute', 'Every minute'],
-  ['custom', 'Custom cron'],
+  ['custom', 'Custom CRON'],
 ];
 const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = EVERY_ENTRY.map(([value, label]) => ({
   value,
@@ -104,7 +103,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 key={day.value}
                 variant="outline"
                 className="w-8 text-xs hover:bg-transparent"
-                pressed={days?.includes(parseInt(day.value) as DayOfWeekRange) ?? false}
+                pressed={days?.includes(Number(day.value)) ?? false}
                 onPressedChange={() => changeDaysDay(day.value)}
               >
                 {day.label}

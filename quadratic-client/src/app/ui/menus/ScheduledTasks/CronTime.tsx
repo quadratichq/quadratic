@@ -57,6 +57,7 @@ const isCustomCron = (fields: CronFieldCollection): boolean => {
   return (
     !fields.dayOfMonth.isWildcard ||
     !fields.month.isWildcard ||
+    fields.dayOfWeek.values.includes('L') ||
     (fields.hour.values.length !== 1 && !fields.hour.isWildcard) ||
     (fields.minute.values.length !== 1 && !fields.minute.isWildcard) ||
     fields.second.values.length !== 1 ||
@@ -103,7 +104,6 @@ export const UseCron = (initialCron?: string): CronResults => {
       try {
         // ensure the cron expression is valid before updating the actual cron expression
         CronExpressionParser.parse(input);
-        _setCustomCron(input);
         setCronError(undefined);
         setCron(input);
       } catch (e: any) {
@@ -116,7 +116,8 @@ export const UseCron = (initialCron?: string): CronResults => {
   const days = useMemo((): number[] => {
     if (!fields) return [];
     if (fields.dayOfWeek.isWildcard) return [0, 1, 2, 3, 4, 5, 6];
-    return fields.dayOfWeek.values;
+    if (fields.dayOfWeek.values.includes('L')) return [0, 1, 2, 3, 4, 5, 6];
+    return fields.dayOfWeek.values as number[];
   }, [fields]);
 
   const localTimeString = useMemo((): string => {
@@ -256,20 +257,28 @@ export const CronToListEntry = ({ className, cron }: { className: string; cron: 
 
   // custom
   if (isCustomCron(fields)) {
-    return <div className={cn(className, 'block text-right text-muted-foreground')}>{cron}</div>;
+    return <div className={cn('text-muted-foreground', className)}>{cron}</div>;
   }
 
   // days
-  if (!fields.hour.isWildcard && !fields.minute.isWildcard) {
+  if (!fields.hour.isWildcard && !fields.minute.isWildcard && !fields.dayOfWeek.values.includes('L')) {
     let days: JSX.Element;
     if (fields.dayOfWeek.isWildcard || fields.dayOfWeek.values.length >= 7) {
       days = <span>Every day</span>;
-    } else if (fields.dayOfWeek.values.length === 5 && fields.dayOfWeek.values.every((day) => day > 0 && day < 6)) {
+    } else if (
+      fields.dayOfWeek.values.length === 5 &&
+      fields.dayOfWeek.values.every((day) => !isNaN(Number(day)) && Number(day) > 0 && Number(day) < 6)
+    ) {
       days = <span>Every weekday</span>;
     } else if (fields.dayOfWeek.values.length === 2 && fields.dayOfWeek.values.every((day) => day === 0 || day === 6)) {
       days = <span>Every weekend</span>;
     } else {
-      days = <JoinListWith arr={fields.dayOfWeek.values.map((day) => DAYS_STRING[day])} conjunction="and" />;
+      days = (
+        <JoinListWith
+          arr={fields.dayOfWeek.values.flatMap((day) => (!isNaN(Number(day)) ? [DAYS_STRING[Number(day)]] : []))}
+          conjunction="and"
+        />
+      );
     }
     const localTime = new Date(Date.UTC(0, 0, 0, fields.hour.values[0], fields.minute.values[0], 0));
     const localTimeString = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
