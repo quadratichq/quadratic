@@ -37,7 +37,7 @@ interface Props {
 
 export const SheetRange = (props: Props) => {
   const {
-    onChangeSelection: onChangeRange,
+    onChangeSelection,
     label,
     initial,
     triggerError,
@@ -63,15 +63,15 @@ export const SheetRange = (props: Props) => {
   const onInsert = useCallback(() => {
     const jsSelection = sheets.sheet.cursor.jsSelection;
     setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
-    onChangeRange(jsSelection);
+    onChangeSelection(jsSelection);
     setRangeError(undefined);
-  }, [a1SheetId, onChangeRange, forceSheetName]);
+  }, [a1SheetId, onChangeSelection, forceSheetName]);
 
   const updateValue = useCallback(
     (value: string) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
-        onChangeRange(selection);
+        onChangeSelection(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
           sheets.changeSelection(selection);
@@ -82,15 +82,18 @@ export const SheetRange = (props: Props) => {
       } catch (e: any) {
         try {
           const parsed = JSON.parse(e);
+          console.log(parsed);
           if (parsed.InvalidSheetName) {
             setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+          } else {
+            setRangeError(parsed.type);
           }
         } catch (_) {
           // ignore
         }
       }
     },
-    [a1SheetId, onChangeRange, onlyCurrentSheetError]
+    [a1SheetId, onChangeSelection, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(

@@ -38,7 +38,7 @@ export const ScheduledTask = () => {
     }
   }, [currentTask?.operations]);
 
-  const [rangeError] = useState(false);
+  const [rangeError, setRangeError] = useState(false);
 
   const setTaskCallback = useCallback((task: string) => {
     if (task === 'run-all-code') {
@@ -73,23 +73,36 @@ export const ScheduledTask = () => {
   }, [range]);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
+    console.log(selection);
     if (selection) {
       setRange(selection);
+      setRangeError(false);
     } else {
       setRange(undefined);
+      setRangeError(true);
     }
   }, []);
 
   const onSave = useCallback(async () => {
-    if (!cronResults.cron || cronResults.cronError) return;
-    const operations = scheduledTaskEncode(range?.clone());
+    if (!cronResults.cron || cronResults.cronError || rangeError) return;
+    const cloned = range?.clone();
+    const operations = scheduledTaskEncode(cloned);
+    cloned?.free();
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronResults.cron,
       operations,
     });
     showScheduledTasks();
-  }, [cronResults.cron, cronResults.cronError, range, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
+  }, [
+    cronResults.cron,
+    cronResults.cronError,
+    rangeError,
+    range,
+    saveScheduledTask,
+    currentTask?.uuid,
+    showScheduledTasks,
+  ]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
@@ -137,7 +150,7 @@ export const ScheduledTask = () => {
               labelClassName="text-xs text-gray-500"
               initial={range?.selection()}
               onChangeSelection={changeSelection}
-              triggerError={rangeError}
+              triggerError={!!range}
               changeCursor={true}
               readOnly={false}
               onlyCurrentSheet={sheetId}
@@ -160,7 +173,7 @@ export const ScheduledTask = () => {
           <Button onClick={() => showScheduledTasks()} variant="secondary">
             Cancel
           </Button>
-          <Button disabled={!!cronResults.cronError} onClick={onSave}>
+          <Button disabled={!!cronResults.cronError || rangeError} onClick={onSave}>
             Save
           </Button>
         </div>
