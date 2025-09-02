@@ -51,7 +51,7 @@ export const Component = () => {
                   <Avatar
                     key={key}
                     alt={user.name}
-                    src={getAuth0AvatarSrc(user.picture)}
+                    src={import.meta.env.DEV ? '' : getAuth0AvatarSrc(user.picture)}
                     className={sharedAvatarClasses}
                   >
                     {user.name}

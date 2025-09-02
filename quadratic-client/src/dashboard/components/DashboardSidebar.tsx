@@ -230,7 +230,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
-              <Avatar src={user?.picture} alt={user?.name} size="xs">
+              <Avatar src={import.meta.env.DEV ? '' : user?.picture} alt={user?.name} size="xs">
                 {user?.name}
               </Avatar>
               <p className={`truncate text-xs`}>{user?.email}</p>
