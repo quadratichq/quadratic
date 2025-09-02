@@ -5,7 +5,7 @@ import { genericAuth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 jest.mock('auth0', () => genericAuth0Mock());
 

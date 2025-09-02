@@ -88,7 +88,7 @@ pub fn type_from_descriptor_with_pool(message: &[u8], pool: DescriptorPool) -> O
 
     // try each message type in the pool
     for descriptor in pool.all_messages() {
-        if let Ok(_message) = DynamicMessage::decode(descriptor.clone(), &message[..]) {
+        if let Ok(_message) = DynamicMessage::decode(descriptor.clone(), message) {
             type_name = Some(descriptor.full_name().to_string());
             break;
         }

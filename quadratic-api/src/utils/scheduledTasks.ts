@@ -9,15 +9,15 @@ import dbClient from '../dbClient';
  ===============================
 */
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 // Convert a database result to a response object
 export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledTaskResponse {
   return {
     ...result,
     nextRunTime: result.nextRunTime.toISOString(),
-    lastRunTime: result.lastRunTime?.toISOString() || '',
-    operations: JSON.parse(result.operations.toString()),
+    lastRunTime: result.lastRunTime?.toISOString() ?? null,
+    operations: Array.from(new Uint8Array(result.operations)),
     createdDate: result.createdDate.toISOString(),
     updatedDate: result.updatedDate.toISOString(),
   };
@@ -28,14 +28,15 @@ export async function createScheduledTask(data: {
   userId: number;
   fileId: number;
   cronExpression: string;
-  operations: any;
+  operations: number[];
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.create({
     data: {
       ...data,
       nextRunTime: getNextRunTime(data.cronExpression),
       status: 'ACTIVE',
-      operations: Buffer.from(JSON.stringify(data.operations)),
+      // Convert base64 string to Buffer for database storage
+      operations: Buffer.from(new Uint8Array(data.operations)),
     },
   });
 
@@ -46,14 +47,16 @@ export async function createScheduledTask(data: {
 export async function updateScheduledTask(data: {
   scheduledTaskId: number;
   cronExpression: string;
-  operations: any;
+  operations?: number[];
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.update({
     where: { id: data.scheduledTaskId },
     data: {
       cronExpression: data.cronExpression,
       nextRunTime: getNextRunTime(data.cronExpression),
-      operations: Buffer.from(JSON.stringify(data.operations)),
+
+      // Convert number array to Buffer for database storage
+      operations: Buffer.from(new Uint8Array(data.operations ?? [])),
       updatedDate: new Date(),
     },
   });
@@ -92,6 +95,7 @@ export async function getScheduledTask(scheduledTaskUuid: string): Promise<Sched
 export async function getScheduledTasks(fileId: number): Promise<ScheduledTaskResponse[]> {
   const result = await dbClient.scheduledTask.findMany({
     where: { fileId, status: { not: 'DELETED' } },
+    orderBy: { createdDate: 'asc' },
   });
 
   return result.map(resultToScheduledTaskResponse);

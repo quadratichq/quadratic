@@ -20,16 +20,16 @@ impl GridController {
         transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
 
-        if !transaction.is_server() {
-            self.run_python_callback.as_mut().map(|f| {
-                f(
-                    transaction.id.to_string(),
-                    sheet_pos.x as i32,
-                    sheet_pos.y as i32,
-                    sheet_pos.sheet_id.to_string(),
-                    code,
-                )
-            });
+        if !transaction.is_server()
+            && let Some(f) = self.run_python_callback.as_mut()
+        {
+            f(
+                transaction.id.to_string(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                code,
+            );
         }
     }
 }

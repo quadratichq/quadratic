@@ -13,7 +13,7 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
-const schema = z.object({
+const createScheduledTaskSchema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
@@ -29,17 +29,14 @@ const schema = z.object({
           return false;
         }
       }, 'Invalid cron expression'),
-    operations: z.record(z.any()),
+    operations: z.number().array(),
   }),
 });
 
+export type CreateScheduledTaskSchema = z.infer<typeof createScheduledTaskSchema>;
+
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']>) {
-  let validatedData;
-  try {
-    validatedData = parseRequest(req, schema);
-  } catch (error) {
-    throw error;
-  }
+  const validatedData = parseRequest(req, createScheduledTaskSchema);
 
   const {
     body: { cronExpression, operations },

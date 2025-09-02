@@ -8,6 +8,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { useLoadScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -26,6 +27,9 @@ export function QuadraticApp() {
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
   const [multiplayerLoading, setMultiplayerLoading] = useState(true);
+
+  // Load scheduled tasks
+  useLoadScheduledTasks();
 
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {
