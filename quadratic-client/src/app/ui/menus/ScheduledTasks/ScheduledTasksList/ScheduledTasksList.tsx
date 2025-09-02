@@ -43,9 +43,9 @@ const EmptyScheduledTaskList = () => {
   );
 };
 
-const ScheduledTaskName = ({ className, operations }: { className: string; operations: Uint8Array }) => {
+const ScheduledTaskName = ({ className, operations }: { className: string; operations: number[] }) => {
   try {
-    const decoded = scheduledTaskDecode(operations);
+    const decoded = scheduledTaskDecode(new Uint8Array(operations));
     if (!decoded) {
       return <div className={cn('bold', className)}>Run entire file</div>;
     }

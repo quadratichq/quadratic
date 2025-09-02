@@ -9,7 +9,7 @@ export const ScheduledTaskSchema = z.object({
   lastRunTime: z.string().datetime().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
   cronExpression: z.string(),
-  operations: z.instanceof(Uint8Array),
+  operations: z.number().array(),
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
 });
@@ -31,7 +31,7 @@ export const ApiSchemasScheduledTasks = {
   // Create a Scheduled Task
   '/v0/files/:uuid/scheduled_task.POST.request': z.object({
     cronExpression: z.string(),
-    operations: z.any(),
+    operations: z.number().array(),
   }),
   '/v0/files/:uuid/scheduled_task.POST.response': ScheduledTaskSchema,
 
@@ -41,7 +41,7 @@ export const ApiSchemasScheduledTasks = {
   // Update a Scheduled Task
   '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.request': z.object({
     cronExpression: z.string(),
-    operations: z.any(),
+    operations: z.number().array(),
   }),
   '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response': ScheduledTaskSchema,
 

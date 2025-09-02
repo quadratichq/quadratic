@@ -6,16 +6,18 @@ import {
   type ScheduledTaskIntervalType,
 } from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
+import { DOCUMENTATION_CRON } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
-import type { DayOfWeekRange } from 'cron-parser';
+import { type DayOfWeekRange } from 'cron-parser';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
   ['days', 'On days'],
   ['hour', 'Hourly'],
   ['minute', 'Every minute'],
+  ['custom', 'Custom cron'],
 ];
 const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = EVERY_ENTRY.map(([value, label]) => ({
   value,
@@ -28,12 +30,18 @@ const DAYS: { value: string; label: string }[] = DAYS_STRING.map((day, index) =>
   label: day,
 }));
 
-export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
+interface Props {
+  cronResults: CronResults;
+}
+
+export const ScheduledTaskInterval = (props: Props) => {
   const {
     cronType,
     days,
     localTimeString,
     localMinute,
+    customCron,
+    cronError,
 
     changeInterval,
     changeDaysTime,
@@ -42,6 +50,7 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
     changeDaysClear,
     changeDaysWeekdays,
     changeHoursMinute,
+    changeCustomCron,
   } = props.cronResults;
 
   return (
@@ -132,20 +141,40 @@ export const ScheduledTaskInterval = (props: { cronResults: CronResults }) => {
             <Label htmlFor="minute-picker" className="text-xs text-gray-500">
               Run at minute
             </Label>
-            <Input
-              type="number"
-              min={0}
-              max={59}
-              id="minute-picker"
-              defaultValue={localMinute ?? ''}
-              onBlur={(e) => changeHoursMinute(e.target.value)}
-              className="w-16"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  changeHoursMinute(e.currentTarget.value);
-                }
-              }}
-            />
+            <div className="align-center flex flex-row items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                max={59}
+                id="minute-picker"
+                defaultValue={localMinute ?? ''}
+                onBlur={(e) => changeHoursMinute(e.target.value)}
+                className="w-16"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    changeHoursMinute(e.currentTarget.value);
+                  }
+                }}
+              />
+              <div className="text-sm text-gray-500">{getLocalTimeZoneAbbreviation()}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cronType === 'custom' && (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="custom-cron" className="text-xs text-gray-500">
+            Custom cron
+          </Label>
+          <Input type="text" id="custom-cron" value={customCron} onChange={(e) => changeCustomCron(e.target.value)} />
+          {cronError && <div className="mb-2 text-xs text-red-500">{cronError}</div>}
+          <div className="text-xs text-gray-500">
+            See the{' '}
+            <a href={DOCUMENTATION_CRON} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              documentation
+            </a>{' '}
+            for more information about cron expressions.
           </div>
         </div>
       )}

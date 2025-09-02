@@ -49,7 +49,7 @@ export const useLoadScheduledTasks = () => {
 export interface ScheduledTaskToSave {
   uuid: string;
   cronExpression: string;
-  operations: any;
+  operations: Uint8Array<ArrayBuffer>;
 }
 
 interface ScheduledTasksActions {
@@ -97,17 +97,21 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
   const saveScheduledTask = useCallback(
     async (task: ScheduledTaskToSave) => {
       if (!fileUuid) return;
+
       if (scheduledTasks.currentTaskId === CREATE_TASK_ID) {
         const created = await scheduledTasksAPI.create(fileUuid, {
           cronExpression: task.cronExpression,
-          operations: task.operations,
+          operations: Array.from(task.operations),
         });
         setScheduledTasks((prev) => ({
           ...prev,
           tasks: [...prev.tasks, created],
         }));
       } else {
-        const updated = await scheduledTasksAPI.update(fileUuid, task.uuid, task);
+        const updated = await scheduledTasksAPI.update(fileUuid, task.uuid, {
+          cronExpression: task.cronExpression,
+          operations: Array.from(task.operations),
+        });
         setScheduledTasks((prev) => ({
           ...prev,
           tasks: prev.tasks.map((task) => (task.uuid === updated.uuid ? updated : task)),

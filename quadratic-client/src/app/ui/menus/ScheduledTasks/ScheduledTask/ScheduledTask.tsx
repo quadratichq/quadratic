@@ -34,7 +34,7 @@ export const ScheduledTask = () => {
   // decode any existing operations
   useEffect(() => {
     if (currentTask?.operations) {
-      setRange(scheduledTaskDecode(currentTask.operations));
+      setRange(scheduledTaskDecode(new Uint8Array(currentTask.operations)));
     }
   }, [currentTask?.operations]);
 
@@ -58,7 +58,7 @@ export const ScheduledTask = () => {
     return 'run-selected-cells';
   }, [range]);
 
-  // default cron expression is every day at midnight local time
+  // holds all data/fns for the cron expression
   const cronResults = UseCron(currentTask?.cronExpression);
 
   const setSheet = useCallback((sheet: string) => {
@@ -81,17 +81,15 @@ export const ScheduledTask = () => {
   }, []);
 
   const onSave = useCallback(async () => {
-    if (!cronResults.cron) return;
-
+    if (!cronResults.cron || cronResults.cronError) return;
     const operations = scheduledTaskEncode(range?.clone());
-
     await saveScheduledTask({
       uuid: currentTask?.uuid ?? CREATE_TASK_ID,
       cronExpression: cronResults.cron,
       operations,
     });
     showScheduledTasks();
-  }, [cronResults.cron, range, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
+  }, [cronResults.cron, cronResults.cronError, range, saveScheduledTask, currentTask?.uuid, showScheduledTasks]);
 
   const onDelete = useCallback(() => {
     if (currentTask) {
@@ -162,7 +160,9 @@ export const ScheduledTask = () => {
           <Button onClick={() => showScheduledTasks()} variant="secondary">
             Cancel
           </Button>
-          <Button onClick={onSave}>Save</Button>
+          <Button disabled={!!cronResults.cronError} onClick={onSave}>
+            Save
+          </Button>
         </div>
       </div>
     </div>
