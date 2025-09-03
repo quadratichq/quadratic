@@ -119,9 +119,9 @@ export const AIContext = memo(
                 key={connection.uuid}
                 primary={connection.name}
                 primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
-                // TODO: fix types
-                // @ts-ignore
-                secondary={getCodeCell(connection.type)?.label ?? 'Connection'}
+                secondary={
+                  getCodeCell({ Connection: { kind: connection.type, id: connection.uuid } })?.label ?? 'Connection'
+                }
                 onClick={handleOnClickConnection}
                 noClose={disabled}
               />
