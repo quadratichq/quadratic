@@ -1,4 +1,4 @@
-//! Utilities to help convert cron expressions to different formats
+//! Stores data for the ScheduledTaskInterval component.
 
 import { JoinListWith } from '@/shared/components/JointListWith';
 import { cn } from '@/shared/shadcn/utils';
@@ -19,7 +19,7 @@ export const getLocalTimeZoneAbbreviation = (): string => {
   );
 };
 
-export interface CronResults {
+export interface CronInterval {
   cron: string;
   cronType: ScheduledTaskIntervalType;
   days: number[];
@@ -65,7 +65,7 @@ const isCustomCron = (fields: CronFieldCollection): boolean => {
 };
 
 // Provides setting and displaying cron expressions for ScheduledTask
-export const UseCron = (initialCron?: string): CronResults => {
+export const UseCronInterval = (initialCron?: string): CronInterval => {
   const [cron, setCron] = useState(initialCron ?? `${MIDNIGHT_LOCAL_MINUTE} ${MIDNIGHT_LOCAL_HOUR} * * 1-7`);
   const [custom, setCustom] = useState(false);
 

@@ -120,11 +120,11 @@ export const SheetRange = (props: Props) => {
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
     setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
     jsSelection.free();
-    console.log('initial running');
   }, [changeCursor, a1SheetId, initial, forceSheetName]);
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
+    console.log('onfocus???');
     try {
       const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {

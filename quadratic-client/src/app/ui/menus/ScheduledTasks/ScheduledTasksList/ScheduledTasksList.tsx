@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { scheduledTaskDecode } from '@/app/quadratic-core/quadratic_core';
-import { CronToListEntry } from '@/app/ui/menus/ScheduledTasks/CronTime';
 import { ScheduledTasksListHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksListHeader';
+import { CronToListEntry } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ScheduledTasksIcon } from '@/shared/components/Icons';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';

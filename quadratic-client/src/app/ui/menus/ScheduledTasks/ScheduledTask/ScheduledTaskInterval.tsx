@@ -2,9 +2,9 @@
 
 import {
   getLocalTimeZoneAbbreviation,
-  type CronResults,
+  type CronInterval,
   type ScheduledTaskIntervalType,
-} from '@/app/ui/menus/ScheduledTasks/CronTime';
+} from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { DOCUMENTATION_CRON } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -30,7 +30,7 @@ const DAYS: { value: string; label: string }[] = DAYS_STRING.map((day, index) =>
 }));
 
 interface Props {
-  cronResults: CronResults;
+  cronInterval: CronInterval;
 }
 
 export const ScheduledTaskInterval = (props: Props) => {
@@ -50,10 +50,10 @@ export const ScheduledTaskInterval = (props: Props) => {
     changeDaysWeekdays,
     changeHoursMinute,
     changeCustomCron,
-  } = props.cronResults;
+  } = props.cronInterval;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mt-5 flex flex-col gap-4 px-1 pb-1">
       <ValidationDropdown
         className="flex flex-col gap-1"
         label="Run interval"
