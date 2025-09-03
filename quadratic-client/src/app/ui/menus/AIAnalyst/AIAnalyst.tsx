@@ -4,6 +4,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
@@ -47,6 +48,8 @@ export const AIAnalyst = memo(() => {
       const containerRect = panel.getBoundingClientRect();
       const newPanelWidth = event.x - (containerRect.left - 2);
       setPanelWidth(newPanelWidth);
+
+      events.emit('resizeAIAnalystPanel');
     },
     [setPanelWidth]
   );
