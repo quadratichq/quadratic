@@ -81,6 +81,7 @@ export const FormattingBar = memo(() => {
     };
 
     checkFit();
+    // TODO: resize AI
     window.addEventListener('resize', checkFit);
     return () => {
       window.removeEventListener('resize', checkFit);
@@ -130,53 +131,51 @@ export const FormattingBar = memo(() => {
         document.body
       )}
 
-      <div className="flex h-full w-full flex-grow" ref={menuRef}>
-        <div className="flex h-full w-full justify-center">
-          <div className="flex flex-shrink select-none">
-            {!hiddenItems.includes('NumberFormatting') && (
-              <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
-            )}
-            {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
-            {!hiddenItems.includes('TextFormatting') && (
-              <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
-            )}
-            {!hiddenItems.includes('FillAndBorderFormatting') && (
-              <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
-            )}
-            {!hiddenItems.includes('AlignmentFormatting') && (
-              <AlignmentFormatting key="main-alignment-formatting" formatSummary={formatSummary} />
-            )}
-            {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
-          </div>
-
-          {hiddenItems.length > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="flex select-none">
-                  <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="hidden w-fit p-2 md:block" align="start">
-                <div className="flex gap-1 text-sm">
-                  {hiddenItems.includes('NumberFormatting') && (
-                    <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
-                  )}
-                  {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
-                  {hiddenItems.includes('TextFormatting') && (
-                    <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
-                  )}
-                  {hiddenItems.includes('FillAndBorderFormatting') && (
-                    <FillAndBorderFormatting key="hidden-fill-and-border-formatting" formatSummary={formatSummary} />
-                  )}
-                  {hiddenItems.includes('AlignmentFormatting') && (
-                    <AlignmentFormatting key="hidden-alignment-formatting" formatSummary={formatSummary} />
-                  )}
-                  {hiddenItems.includes('Clear') && <Clear key="hidden-clear" />}
-                </div>
-              </PopoverContent>
-            </Popover>
+      <div className="flex h-full w-full flex-grow px-1" ref={menuRef}>
+        <div className="flex flex-shrink select-none">
+          {!hiddenItems.includes('NumberFormatting') && (
+            <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
           )}
+          {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
+          {!hiddenItems.includes('TextFormatting') && (
+            <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
+          )}
+          {!hiddenItems.includes('FillAndBorderFormatting') && (
+            <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
+          )}
+          {!hiddenItems.includes('AlignmentFormatting') && (
+            <AlignmentFormatting key="main-alignment-formatting" formatSummary={formatSummary} />
+          )}
+          {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
         </div>
+
+        {hiddenItems.length > 0 && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className="flex select-none">
+                <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="hidden w-fit p-2 md:block" align="start">
+              <div className="flex gap-1 text-sm">
+                {hiddenItems.includes('NumberFormatting') && (
+                  <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
+                )}
+                {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
+                {hiddenItems.includes('TextFormatting') && (
+                  <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
+                )}
+                {hiddenItems.includes('FillAndBorderFormatting') && (
+                  <FillAndBorderFormatting key="hidden-fill-and-border-formatting" formatSummary={formatSummary} />
+                )}
+                {hiddenItems.includes('AlignmentFormatting') && (
+                  <AlignmentFormatting key="hidden-alignment-formatting" formatSummary={formatSummary} />
+                )}
+                {hiddenItems.includes('Clear') && <Clear key="hidden-clear" />}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
     </>
   );
