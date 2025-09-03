@@ -57,7 +57,6 @@ const isCustomCron = (fields: CronFieldCollection): boolean => {
   return (
     !fields.dayOfMonth.isWildcard ||
     !fields.month.isWildcard ||
-    fields.dayOfWeek.values.includes('L') ||
     (fields.hour.values.length !== 1 && !fields.hour.isWildcard) ||
     (fields.minute.values.length !== 1 && !fields.minute.isWildcard) ||
     fields.second.values.length !== 1 ||
@@ -116,7 +115,6 @@ export const UseCron = (initialCron?: string): CronResults => {
   const days = useMemo((): number[] => {
     if (!fields) return [];
     if (fields.dayOfWeek.isWildcard) return [0, 1, 2, 3, 4, 5, 6];
-    if (fields.dayOfWeek.values.includes('L')) return [0, 1, 2, 3, 4, 5, 6];
     return fields.dayOfWeek.values as number[];
   }, [fields]);
 
@@ -261,7 +259,7 @@ export const CronToListEntry = ({ className, cron }: { className: string; cron: 
   }
 
   // days
-  if (!fields.hour.isWildcard && !fields.minute.isWildcard && !fields.dayOfWeek.values.includes('L')) {
+  if (!fields.hour.isWildcard && !fields.minute.isWildcard) {
     let days: JSX.Element;
     if (fields.dayOfWeek.isWildcard || fields.dayOfWeek.values.length >= 7) {
       days = <span>Every day</span>;
