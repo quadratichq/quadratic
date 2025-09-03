@@ -4,7 +4,6 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -23,7 +22,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React from 'react';
 import { Link } from 'react-router';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
@@ -32,7 +31,7 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  // const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -66,7 +65,7 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -85,7 +84,7 @@ export const QuadraticSidebar = () => {
 
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
-            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
+            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>

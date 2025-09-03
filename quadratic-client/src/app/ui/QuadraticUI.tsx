@@ -15,7 +15,7 @@ import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
-import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
+import { ConnectionsSidebar } from '@/app/ui/connections/ConnectionsSidebar';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
@@ -111,7 +111,7 @@ export default function QuadraticUI() {
       }}
     >
       {!presentationMode && !isEmbed && <QuadraticSidebar />}
-      {canEditFile && isAuthenticated && <AIAnalyst />}
+      {canEditFile && isAuthenticated && <ConnectionsSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && !isEmbed && <Toolbar />}

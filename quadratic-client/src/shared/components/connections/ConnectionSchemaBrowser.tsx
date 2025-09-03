@@ -21,12 +21,14 @@ export const ConnectionSchemaBrowser = ({
   teamUuid,
   type,
   uuid,
+  onTableQueryAction,
 }: {
   TableQueryAction: React.FC<{ query: string }>;
   teamUuid: string;
   selfContained?: boolean;
   type?: ConnectionType;
   uuid?: string;
+  onTableQueryAction?: (query: string) => void;
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
@@ -127,6 +129,8 @@ export const ConnectionSchemaBrowser = ({
           onValueChange={(newIndexStr) => {
             const newIndex = Number(newIndexStr);
             setSelectedTableIndex(newIndex);
+
+            onTableQueryAction?.(getTableQuery({ table: filteredTables[newIndex], connectionKind: data.type }));
           }}
           className="block"
         >
