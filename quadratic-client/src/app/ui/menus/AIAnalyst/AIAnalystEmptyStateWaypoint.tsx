@@ -1,3 +1,5 @@
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
+
 export function AIAnalystEmptyStateWaypoint() {
   return (
     <div className="relative">
