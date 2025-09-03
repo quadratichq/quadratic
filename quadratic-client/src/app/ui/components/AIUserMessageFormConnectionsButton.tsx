@@ -69,7 +69,7 @@ export function AIUserMessageFormConnectionsButton({
 
         {connections.length > 0 && (
           <>
-            <DropdownMenuSeparator className="!block" />
+            <DropdownMenuSeparator />
             <DropdownMenuRadioGroup
               value={selectedConnectionUuid}
               onValueChange={(connectionUuid) => {
