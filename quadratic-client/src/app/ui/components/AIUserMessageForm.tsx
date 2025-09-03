@@ -146,7 +146,6 @@ export const AIUserMessageForm = memo(
           }
         }
 
-        console.log('submitPrompt', [...files, createTextContent(trimmedPrompt), ...connectionContent]);
         submitPrompt({
           content: [...files, ...connectionContent, createTextContent(trimmedPrompt)],
         });
