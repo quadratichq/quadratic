@@ -306,6 +306,7 @@ export const ApiSchemas = {
   '/v0/feedback.POST.request': z.object({
     feedback: z.string(),
     userEmail: z.string().optional(),
+    context: z.string(),
   }),
   '/v0/feedback.POST.response': z.object({
     message: z.string(),

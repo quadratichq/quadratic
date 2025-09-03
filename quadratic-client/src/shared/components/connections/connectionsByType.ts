@@ -10,13 +10,23 @@ import * as Supabase from '@/shared/components/connections/ConnectionFormSupabas
 import type { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ReactNode } from 'react';
 import type { SubmitHandler, UseFormReturn } from 'react-hook-form';
+import AthenaLogo from './logo-athena.svg?react';
 import BigqueryLogo from './logo-bigquery.svg?react';
+import CassandraLogo from './logo-cassandra.svg?react';
+import ClickhouseLogo from './logo-clickhouse.svg?react';
 import CockroachdbLogo from './logo-cockroachdb.svg?react';
+import DatabricksLogo from './logo-databricks.svg?react';
+import DynamoDBLogo from './logo-dynamodb.svg?react';
 import MariadbLogo from './logo-mariadb.svg?react';
+import MongoLogo from './logo-mongodb.svg?react';
 import MssqlLogo from './logo-mssql.svg?react';
 import MysqlLogo from './logo-mysql.svg?react';
 import NeonLogo from './logo-neon.svg?react';
+import OracleLogo from './logo-oracle.svg?react';
+import OtherLogo from './logo-other.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
+import RedshiftLogo from './logo-redshift.svg?react';
+import S3Logo from './logo-s3.svg?react';
 import SnowflakeLogo from './logo-snowflake.svg?react';
 import SupabaseLogo from './logo-supabase.svg?react';
 
@@ -104,5 +114,65 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: NeonLogo,
     ConnectionForm: Neon.ConnectionForm,
     useConnectionForm: Neon.useConnectionForm,
+  },
+};
+
+export type PotentialConnectionType =
+  | 'DATABRICKS'
+  | 'REDSHIFT'
+  | 'ATHENA'
+  | 'S3'
+  | 'DYNAMODB'
+  | 'CASSANDRA'
+  | 'CLICKHOUSE'
+  | 'MONGODB'
+  | 'ORACLE'
+  | 'OTHER';
+export const potentialConnectionsByType: Record<
+  PotentialConnectionType,
+  {
+    name: string;
+    Logo: typeof ClickhouseLogo;
+  }
+> = {
+  DATABRICKS: {
+    name: 'Databricks',
+    Logo: DatabricksLogo,
+  },
+  REDSHIFT: {
+    name: 'Redshift',
+    Logo: RedshiftLogo,
+  },
+  ATHENA: {
+    name: 'Athena',
+    Logo: AthenaLogo,
+  },
+  S3: {
+    name: 'S3',
+    Logo: S3Logo,
+  },
+  DYNAMODB: {
+    name: 'DynamoDB',
+    Logo: DynamoDBLogo,
+  },
+  CASSANDRA: {
+    name: 'Cassandra',
+    Logo: CassandraLogo,
+  },
+  CLICKHOUSE: {
+    name: 'ClickHouse',
+    Logo: ClickhouseLogo,
+  },
+  MONGODB: {
+    name: 'MongoDB',
+    Logo: MongoLogo,
+  },
+  ORACLE: {
+    name: 'Oracle',
+    Logo: OracleLogo,
+  },
+  OTHER: {
+    name: 'Other',
+    Logo: OtherLogo,
   },
 };

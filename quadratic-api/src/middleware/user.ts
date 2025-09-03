@@ -48,26 +48,38 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
 };
 
 const getOrCreateUser = async (auth: Auth) => {
-  // First try to get the user
-  let user;
+  // If auth doesn't know them, return null user
+  if (!auth) {
+    return { user: null, userCreated: false };
+  }
+
+  // Try to find the user by email
   if (auth.email) {
-    user = await dbClient.user.findUnique({
+    const userByEmail = await dbClient.user.findUnique({
       where: {
         email: auth.email,
       },
     });
-  } else if (auth.sub) {
-    user = await dbClient.user.findUnique({
+    if (userByEmail) {
+      return { user: userByEmail, userCreated: false };
+    }
+  }
+
+  // Try to find the user by sub
+  if (auth.sub) {
+    const userBySub = await dbClient.user.findUnique({
       where: {
         auth0Id: auth.sub,
       },
     });
-  } else {
-    return { user: null, userCreated: false };
+    if (userBySub) {
+      return { user: userBySub, userCreated: false };
+    }
   }
 
-  if (user) {
-    return { user, userCreated: false };
+  // If they don't have an email or sub, return null user
+  if (!auth.email || !auth.sub) {
+    return { user: null, userCreated: false };
   }
 
   // If they don't exist yet, create them
@@ -77,6 +89,7 @@ const getOrCreateUser = async (auth: Auth) => {
       email: auth.email,
     },
   });
+
   // Do extra work since it's their first time logging in
   await runFirstTimeUserLogic(newUser);
 

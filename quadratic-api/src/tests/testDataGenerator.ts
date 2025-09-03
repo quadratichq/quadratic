@@ -18,7 +18,7 @@ type AnalyticsAIChatData = Parameters<typeof dbClient.analyticsAIChat.create>[0]
  */
 export async function createUser({ auth0Id }: Partial<UserData>) {
   const id = auth0Id ?? randomUUID();
-  const email = `${id}@test.com`;
+  const email = `${id}@test.com`.toLowerCase();
   const user = await dbClient.user.create({
     data: {
       auth0Id: id,
@@ -196,7 +196,7 @@ export async function createAIChat(
   const messages = data.messages ?? [
     {
       messageIndex: 1,
-      model: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+      model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
       messageType: 'userPrompt' as const,
     },
   ];

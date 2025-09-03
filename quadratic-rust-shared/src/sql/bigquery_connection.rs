@@ -71,6 +71,15 @@ impl BigqueryConnection {
         })
     }
 
+    pub async fn new_from_config(config: BigqueryConfig) -> Result<Self> {
+        BigqueryConnection::new(
+            config.service_account_configuration,
+            config.project_id,
+            config.dataset,
+        )
+        .await
+    }
+
     pub async fn raw_query(
         &mut self,
         sql: &str,
@@ -478,13 +487,7 @@ pub mod tests {
     pub async fn new_connection() -> BigqueryConnection {
         let config = new_config().await;
 
-        BigqueryConnection::new(
-            config.service_account_configuration,
-            config.project_id,
-            config.dataset,
-        )
-        .await
-        .unwrap()
+        BigqueryConnection::new_from_config(config).await.unwrap()
     }
 
     pub fn expected_bigquery_schema() -> Vec<SchemaColumn> {

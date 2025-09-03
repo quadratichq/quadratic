@@ -248,6 +248,9 @@ model FileInvite {
 model QFeedback {
     id           Int      @id @default(autoincrement())
     feedback     String
+    // Additional context about the feedback source
+    // If it's null, that's “In-app” feedback (which was the first kind we used)
+    context      String?
     created_date DateTime @default(now())
     userId       Int?
     user         User?    @relation(fields: [userId], references: [id])

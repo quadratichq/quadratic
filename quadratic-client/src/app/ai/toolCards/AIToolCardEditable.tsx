@@ -32,7 +32,7 @@ const AIToolCallEditor = memo(({ toolCall, onToolCallChange }: AIToolCallEditorP
 
   const prettyArguments = useMemo(() => {
     try {
-      return JSON.stringify(JSON.parse(toolCall.arguments), null, 2);
+      return JSON.stringify(toolCall.arguments ? JSON.parse(toolCall.arguments) : {}, null, 2);
     } catch {
       return toolCall.arguments;
     }

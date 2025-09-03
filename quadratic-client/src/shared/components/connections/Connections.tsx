@@ -7,16 +7,28 @@ import {
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
-import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import {
+  connectionsByType,
+  potentialConnectionsByType,
+  type PotentialConnectionType,
+} from '@/shared/components/connections/connectionsByType';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
+import { ConnectionsPotential } from '@/shared/components/connections/ConnectionsPotential';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
-import { ArrowBackIcon } from '@/shared/components/Icons';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
-import { Button } from '@/shared/shadcn/ui/button';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/shared/shadcn/ui/breadcrumb';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
@@ -33,12 +45,14 @@ type Props = {
 export type NavigateToListView = () => void;
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
+export type NavigateToCreatePotentialView = (type: PotentialConnectionType) => void;
 
 type ConnectionState =
   | { view: 'edit'; uuid: string; type: ConnectionType }
   | { view: 'details'; uuid: string; type: ConnectionType }
   | { view: 'new' }
   | { view: 'create'; type: ConnectionType }
+  | { view: 'create-potential'; type: PotentialConnectionType }
   | { view: 'list' };
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, sshPublicKey }: Props) => {
@@ -141,6 +155,10 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
     setActiveConnectionState({ view: 'create', type: connectionType });
   }, []);
+  const handleNavigateToCreatePotentialView: NavigateToCreatePotentialView = useCallback((connectionType) => {
+    setActiveConnectionState({ view: 'create-potential', type: connectionType });
+    trackEvent('[Connections].click-potential-connection', { type: connectionType });
+  }, []);
   const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ view: 'edit', uuid: connectionUuid, type: connectionType });
   }, []);
@@ -151,14 +169,30 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     setActiveConnectionState({ view: 'new' });
   }, []);
 
+  const connectionsBreadcrumb = useMemo(
+    () => ({ label: 'Connections', onClick: handleNavigateToListView }),
+    [handleNavigateToListView]
+  );
+  const connectionsNewBreadcrumb = useMemo(
+    () => ({ label: 'New', onClick: handleNavigateToNewView }),
+    [handleNavigateToNewView]
+  );
+
   return (
     <div className={'grid-cols-12 gap-12 md:grid'}>
       <div className="col-span-8">
         {activeConnectionState.view === 'edit' ? (
           <>
-            <ConnectionHeader onBack={handleNavigateToListView}>
-              Edit {connectionsByType[activeConnectionState.type].name} connection
-            </ConnectionHeader>
+            <ConnectionBreadcrumbs
+              breadcrumbs={[
+                connectionsBreadcrumb,
+                {
+                  label: `Edit`,
+                  onClick: handleNavigateToListView,
+                },
+              ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
+            />
             <ConnectionFormEdit
               connectionUuid={activeConnectionState.uuid}
               connectionType={activeConnectionState.type}
@@ -168,9 +202,16 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           </>
         ) : activeConnectionState.view === 'details' ? (
           <>
-            <ConnectionHeader onBack={handleNavigateToListView}>
-              Browse {connectionsByType[activeConnectionState.type].name} schema
-            </ConnectionHeader>
+            <ConnectionBreadcrumbs
+              breadcrumbs={[
+                connectionsBreadcrumb,
+                {
+                  label: 'Browse',
+                  onClick: handleNavigateToListView,
+                },
+              ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
+            />
             <ConnectionDetails
               connectionUuid={activeConnectionState.uuid}
               connectionType={activeConnectionState.type}
@@ -179,18 +220,44 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           </>
         ) : activeConnectionState.view === 'new' ? (
           <>
-            <ConnectionHeader onBack={handleNavigateToListView}>New connection</ConnectionHeader>
-            <ConnectionsNew handleNavigateToCreateView={handleNavigateToCreateView} />
+            <ConnectionBreadcrumbs
+              breadcrumbs={[connectionsBreadcrumb, { label: `New`, onClick: handleNavigateToListView }]}
+            />
+            <ConnectionsNew
+              handleNavigateToCreateView={handleNavigateToCreateView}
+              handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
+            />
           </>
         ) : activeConnectionState.view === 'create' ? (
           <>
-            <ConnectionHeader onBack={handleNavigateToNewView}>
-              New connection: {connectionsByType[activeConnectionState.type].name}
-            </ConnectionHeader>
+            <ConnectionBreadcrumbs
+              breadcrumbs={[
+                connectionsBreadcrumb,
+                connectionsNewBreadcrumb,
+                { label: connectionsByType[activeConnectionState.type].name },
+              ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
+            />
             <ConnectionFormCreate
               teamUuid={teamUuid}
               type={activeConnectionState.type}
               handleNavigateToListView={handleNavigateToListView}
+              handleNavigateToNewView={handleNavigateToNewView}
+            />
+          </>
+        ) : activeConnectionState.view === 'create-potential' ? (
+          <>
+            <ConnectionBreadcrumbs
+              breadcrumbs={[
+                connectionsBreadcrumb,
+                connectionsNewBreadcrumb,
+                { label: potentialConnectionsByType[activeConnectionState.type].name },
+              ]}
+              Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
+            />
+            <ConnectionsPotential
+              handleNavigateToNewView={handleNavigateToNewView}
+              connectionType={activeConnectionState.type}
             />
           </>
         ) : (
@@ -212,16 +279,39 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   );
 };
 
-function ConnectionHeader({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
-  return (
-    <div className="flex items-center gap-2 pb-3">
-      <Button variant="ghost" size="icon" onClick={onBack}>
-        <ArrowBackIcon />
-      </Button>
-      <h3 className="text-md flex items-center justify-between gap-3">{children}</h3>
-    </div>
-  );
-}
+const ConnectionBreadcrumbs = memo(
+  ({
+    breadcrumbs,
+    Logo,
+  }: {
+    breadcrumbs: Array<{ label: string; onClick?: () => void }>;
+    Logo?: React.ComponentType;
+  }) => {
+    return (
+      <div className="flex items-center gap-2 pb-5 pt-0.5">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map(({ label, onClick }, i) =>
+              i === breadcrumbs.length - 1 ? (
+                <BreadcrumbPage key={label + i}>{label}</BreadcrumbPage>
+              ) : (
+                <Fragment key={label + i}>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink onClick={onClick} className="cursor-pointer">
+                      {label}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                </Fragment>
+              )
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="ml-auto h-8">{Logo && <Logo />}</div>
+      </div>
+    );
+  }
+);
 
 function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
   const type = searchParams.get('initial-connection-type');

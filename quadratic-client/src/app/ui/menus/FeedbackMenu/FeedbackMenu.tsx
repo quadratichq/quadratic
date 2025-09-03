@@ -49,7 +49,7 @@ export const FeedbackMenu = () => {
 
     try {
       closeMenu();
-      await apiClient.postFeedback({ feedback, userEmail });
+      await apiClient.postFeedback({ feedback, userEmail, context: 'In-app' });
       setValue('');
       addGlobalSnackbar('Feedback submitted! Thank you.');
     } catch (error) {
