@@ -57,6 +57,7 @@ export const AIAnalyst = memo(() => {
       autoFocusRef={autoFocusRef}
       textareaRef={textareaRef}
       messageIndex={messagesCount}
+      showPromptSuggestions={true}
     />
   );
 
@@ -152,7 +153,7 @@ function AIAnalystEmptyStateWaypoint() {
             <LanguageIcon language="mssql" />
           </div>
           <h3 className="mt-2 text-sm font-medium">Chat with your data</h3>
-          <p className="text-xs text-muted-foreground">Postgres, MySQL, Microsoft SQL, & more.</p>
+          <p className="text-xs text-muted-foreground">Support for Postgres, MySQL, MSSQL, & more.</p>
         </div>
       </div>
     </div>

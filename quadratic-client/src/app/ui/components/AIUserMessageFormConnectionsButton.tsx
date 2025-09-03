@@ -1,6 +1,6 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
+import { DatabaseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -39,6 +39,9 @@ export function AIUserMessageFormConnectionsButton({
             className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
             variant="ghost"
             disabled={disabled}
+            onClick={() => {
+              trackEvent('[AIConnectionsPicker].show');
+            }}
           >
             <DatabaseIcon className="" />
           </Button>
@@ -52,35 +55,37 @@ export function AIUserMessageFormConnectionsButton({
           e.preventDefault();
           textareaRef.current?.focus();
         }}
+        className="max-w-xs"
       >
-        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            // TODO: event tracking for this feature
-            trackEvent('[AIUserMessageFormConnectionsButton].manageConnections');
+            trackEvent('[AIConnectionsPicker].manageConnections');
             setShowConnectionsMenu(true);
           }}
           className="pl-8"
         >
-          Add / manage connections
-          <SettingsIcon className="ml-auto text-muted-foreground" />
+          Manage…
         </DropdownMenuItem>
 
         {connections.length > 0 && (
           <>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="!block" />
             <DropdownMenuRadioGroup
               value={selectedConnectionUuid}
               onValueChange={(connectionUuid) => {
-                // TODO: event tracking
-                setSelectedConnectionUuid(selectedConnectionUuid === connectionUuid ? '' : connectionUuid);
+                if (selectedConnectionUuid === connectionUuid) {
+                  trackEvent('[AIConnectionsPicker].unselectConnection');
+                  setSelectedConnectionUuid('');
+                } else {
+                  trackEvent('[AIConnectionsPicker].selectConnection');
+                  setSelectedConnectionUuid(connectionUuid);
+                }
               }}
             >
               {connections.map((connection) => (
-                // TODO: handle long connection names
                 <DropdownMenuRadioItem value={connection.uuid} key={connection.uuid} className="gap-4">
-                  {connection.name}
-                  <LanguageIcon language={connection.type} className="ml-auto" />
+                  <span className="truncate">{connection.name}</span>
+                  <LanguageIcon language={connection.type} className="ml-auto flex-shrink-0" />
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>

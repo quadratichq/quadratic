@@ -1,6 +1,6 @@
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 
-type ContextType = 'empty' | 'connection' | 'file-pdf'; // | 'file-pdf' | 'file-image' | 'file-csv' | 'file-excel'
+type ContextType = 'empty' | 'connection' | 'file-pdf'; // | 'file-image' | 'file-csv' | 'file-excel'
 const examplesByContextType: Record<ContextType, Array<{ title: string; prompt: string }>> = {
   empty: [
     // {
@@ -72,7 +72,7 @@ Output the SQL query and describe the visualization to render.`,
   // TODO: file-csv, file-excel, file-image, ...
 };
 
-export function AIAnalystExamplePrompts({
+export function AIAnalystPromptSuggestions({
   exampleSet,
   prompt,
   submit,
