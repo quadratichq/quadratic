@@ -30,16 +30,27 @@ const TASKS: { value: TaskType; label: string }[] = [
 export const ScheduledTask = () => {
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
 
+  const [task, setTask] = useState<TaskType>('run-all-code');
+
   const [range, setRange] = useState<JsSelection | undefined>();
 
   // decode any existing operations
   useEffect(() => {
+    if (!currentTask) return;
     if (currentTask?.operations) {
-      setRange(scheduledTaskDecode(new Uint8Array(currentTask.operations)));
+      const range = scheduledTaskDecode(new Uint8Array(currentTask.operations));
+      if (!range) {
+        setTask('run-sheet-cells');
+      } else if (range.isAllSelected()) {
+        setTask('run-sheet-cells');
+      } else {
+        setTask('run-selected-cells');
+      }
+      setRange(range);
     }
-  }, [currentTask?.operations]);
+  }, [currentTask]);
 
-  const [rangeError, setRangeError] = useState(false);
+  const [rangeError, setRangeError] = useState<string | undefined>(undefined);
 
   const setTaskCallback = useCallback((task: string) => {
     if (task === 'run-all-code') {
@@ -52,12 +63,6 @@ export const ScheduledTask = () => {
       setRange(sheets.sheet.cursor.jsSelection.clone());
     }
   }, []);
-
-  const task = useMemo((): TaskType => {
-    if (!range) return 'run-all-code';
-    if (range.isAllSelected()) return 'run-sheet-cells';
-    return 'run-selected-cells';
-  }, [range]);
 
   // holds all data/fns for the cron expression
   const cronResults = UseCron(currentTask?.cronExpression);
@@ -74,12 +79,12 @@ export const ScheduledTask = () => {
   }, [range]);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
+    console.log('changing selection...');
     if (selection) {
       setRange(selection);
-      setRangeError(false);
+      setRangeError(undefined);
     } else {
-      setRange(undefined);
-      setRangeError(true);
+      setRangeError('Selection is empty');
     }
   }, []);
 
@@ -162,7 +167,8 @@ export const ScheduledTask = () => {
               labelClassName="text-xs text-gray-500"
               initial={range?.selection()}
               onChangeSelection={changeSelection}
-              triggerError={!!range}
+              onError={setRangeError}
+              triggerError={!!rangeError}
               changeCursor={true}
               readOnly={false}
               onlyCurrentSheet={sheetId}
@@ -185,7 +191,7 @@ export const ScheduledTask = () => {
           <Button onClick={() => showScheduledTasks()} variant="secondary">
             Cancel
           </Button>
-          <Button disabled={!!cronResults.cronError || rangeError} onClick={onSave}>
+          <Button disabled={!!cronResults.cronError || !!rangeError} onClick={onSave}>
             Save
           </Button>
         </div>

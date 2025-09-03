@@ -17,6 +17,7 @@ interface Props {
 
   initial?: A1Selection;
   onChangeSelection: (jsSelection: JsSelection | undefined) => void;
+  onError?: (error: string | undefined) => void;
 
   // used to trigger an error if the range is empty
   triggerError?: boolean;
@@ -56,6 +57,7 @@ export const SheetRange = (props: Props) => {
       return onlyCurrentSheet;
     }
     const id = changeCursor === true ? sheets.current : (changeCursor ?? sheets.current);
+    console.log('a1SheetId???', id);
     return id;
   }, [changeCursor, onlyCurrentSheet]);
 
@@ -71,6 +73,7 @@ export const SheetRange = (props: Props) => {
     (value: string) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
+        console.log('changing selection...');
         onChangeSelection(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
@@ -80,24 +83,28 @@ export const SheetRange = (props: Props) => {
           inputRef.current?.focus();
         }
       } catch (e: any) {
+        console.log('error???', e);
         try {
           const parsed = JSON.parse(e);
-          console.log(parsed);
           if (parsed.InvalidSheetName) {
             setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+            props.onError?.(onlyCurrentSheetError ?? 'Invalid sheet name');
           } else {
-            setRangeError(parsed.type);
+            const error = parsed.type === 'InvalidCellReference' ? 'Invalid cell reference' : parsed.type;
+            setRangeError(error);
+            props.onError?.(error);
           }
         } catch (_) {
           // ignore
         }
       }
     },
-    [a1SheetId, onChangeSelection, onlyCurrentSheetError]
+    [a1SheetId, onChangeSelection, onlyCurrentSheetError, props]
   );
 
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
+      console.log('blur???');
       const value = e.currentTarget.value;
       updateValue(value);
     },
@@ -113,6 +120,7 @@ export const SheetRange = (props: Props) => {
     const jsSelection = sheets.A1SelectionToJsSelection(initial);
     setInput(jsSelection.toA1String(forceSheetName ? a1SheetId : undefined, sheets.jsA1Context));
     jsSelection.free();
+    console.log('initial running');
   }, [changeCursor, a1SheetId, initial, forceSheetName]);
 
   const onFocus = useCallback(() => {

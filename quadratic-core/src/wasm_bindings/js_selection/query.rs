@@ -1,8 +1,13 @@
 use wasm_bindgen::prelude::*;
 
-use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};
+use crate::{
+    a1::{CellRefRange, UNBOUNDED},
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+};
 
 use super::*;
+
+const MAX_RANGE_TO_DISPLAY: i64 = 100_000_000;
 
 #[wasm_bindgen]
 impl JsSelection {
@@ -358,5 +363,19 @@ impl JsSelection {
             .iter()
             .map(|c| *c as u32)
             .collect()
+    }
+
+    #[wasm_bindgen(js_name = "outOfRange")]
+    pub fn out_of_range(&self) -> bool {
+        self.selection.ranges.iter().any(|range| {
+            if let CellRefRange::Sheet { range } = range {
+                (range.start.col() != UNBOUNDED && range.start.col() > MAX_RANGE_TO_DISPLAY)
+                    || (range.end.col() != UNBOUNDED && range.end.col() > MAX_RANGE_TO_DISPLAY)
+                    || (range.start.row() != UNBOUNDED && range.start.row() > MAX_RANGE_TO_DISPLAY)
+                    || (range.end.row() != UNBOUNDED && range.end.row() > MAX_RANGE_TO_DISPLAY)
+            } else {
+                false
+            }
+        })
     }
 }

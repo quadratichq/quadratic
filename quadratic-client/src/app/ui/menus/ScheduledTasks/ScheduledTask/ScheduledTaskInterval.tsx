@@ -13,7 +13,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ['days', 'On days'],
+  ['days', 'Once per day'],
   ['hour', 'Hourly'],
   ['minute', 'Every minute'],
   ['custom', 'Custom CRON'],
