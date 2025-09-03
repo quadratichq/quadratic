@@ -85,7 +85,8 @@ Use the get_database_schemas tool to retrieve detailed column information, data 
           // format as lightweight context message
           validConnections
             // If there's a selected connection, only show the tables for that connection
-            .filter((conn) => conn.connectionId === selectedConnection?.uuid)
+            // Otherwise put all connections in context
+            .filter((conn) => selectedConnection && conn.connectionId === selectedConnection.uuid)
             .forEach((conn) => {
               const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
