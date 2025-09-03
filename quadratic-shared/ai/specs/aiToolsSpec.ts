@@ -1747,7 +1747,7 @@ It requires a array of objects with sheet names and new colors.\n
 `,
   },
   [AITool.TextSearch]: {
-    sources: ['AIAnalyst', 'AIAssistant'],
+    sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
@@ -1777,7 +1777,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
           description: 'The sheet name to search in. If not provided, then it searches all sheets.',
         },
       },
-      required: ['query', 'case_sensitive', 'whole_cell', 'search_code', 'sheet_name'],
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
