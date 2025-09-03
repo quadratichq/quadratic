@@ -131,6 +131,7 @@ export class PointerHeading {
       };
       this.active = true;
     } else if (
+      !intersects.corner &&
       !isRightClick &&
       !cursor.isMultiRange() &&
       !cursor.isAllSelected() &&
@@ -153,19 +154,17 @@ export class PointerHeading {
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       pixiApp.cellMoving.dirty = true;
       this.cursor = 'grabbing';
-    } else {
-      if (intersects.corner) {
-        if (this.downTimeout) {
-          this.downTimeout = undefined;
-          zoomToFit();
-        } else {
-          cursor.selectAll(e.shiftKey);
-          this.downTimeout = window.setTimeout(() => {
-            if (this.downTimeout) {
-              this.downTimeout = undefined;
-            }
-          }, DOUBLE_CLICK_TIME);
-        }
+    } else if (intersects.corner) {
+      if (this.downTimeout) {
+        this.downTimeout = undefined;
+        zoomToFit();
+      } else {
+        cursor.selectAll(e.shiftKey);
+        this.downTimeout = window.setTimeout(() => {
+          if (this.downTimeout) {
+            this.downTimeout = undefined;
+          }
+        }, DOUBLE_CLICK_TIME);
       }
 
       // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
