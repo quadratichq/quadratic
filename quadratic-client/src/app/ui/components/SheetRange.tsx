@@ -57,7 +57,6 @@ export const SheetRange = (props: Props) => {
       return onlyCurrentSheet;
     }
     const id = changeCursor === true ? sheets.current : (changeCursor ?? sheets.current);
-    console.log('a1SheetId???', id);
     return id;
   }, [changeCursor, onlyCurrentSheet]);
 
@@ -73,7 +72,6 @@ export const SheetRange = (props: Props) => {
     (value: string) => {
       try {
         const selection = sheets.stringToSelection(value, a1SheetId);
-        console.log('changing selection...');
         onChangeSelection(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
@@ -83,7 +81,6 @@ export const SheetRange = (props: Props) => {
           inputRef.current?.focus();
         }
       } catch (e: any) {
-        console.log('error???', e);
         try {
           const parsed = JSON.parse(e);
           if (parsed.InvalidSheetName) {
@@ -104,7 +101,6 @@ export const SheetRange = (props: Props) => {
 
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
-      console.log('blur???');
       const value = e.currentTarget.value;
       updateValue(value);
     },
@@ -124,7 +120,6 @@ export const SheetRange = (props: Props) => {
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
-    console.log('onfocus???');
     try {
       const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {
