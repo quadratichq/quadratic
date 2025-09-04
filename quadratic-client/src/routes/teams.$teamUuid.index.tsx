@@ -48,7 +48,7 @@ export const Component = () => {
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="flex items-center">
                 {users.slice(0, 6).map((user, key) => (
                   <Avatar key={key} alt={user.name} src={user.picture} className={sharedAvatarClasses}>
-                    {user.name}
+                    {user.name ? user.name : user.email}
                   </Avatar>
                 ))}
                 <div

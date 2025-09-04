@@ -231,7 +231,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <DropdownMenu>
             <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
               <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
-                {loggedInUser?.name}
+                {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
               </Avatar>
               <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
             </DropdownMenuTrigger>
