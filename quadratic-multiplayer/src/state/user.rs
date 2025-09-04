@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
+use quadratic_rust_shared::multiplayer::message::{UserState, UserStateUpdate};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 
 pub(crate) type UserSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
@@ -32,6 +33,23 @@ pub(crate) struct User {
     pub last_heartbeat: DateTime<Utc>,
 }
 
+impl Into<quadratic_rust_shared::multiplayer::message::User> for User {
+    fn into(self) -> quadratic_rust_shared::multiplayer::message::User {
+        quadratic_rust_shared::multiplayer::message::User {
+            session_id: self.session_id,
+            user_id: self.user_id,
+            connection_id: self.connection_id,
+            first_name: self.first_name,
+            last_name: self.last_name,
+            email: self.email,
+            image: self.image,
+            index: self.index,
+            permissions: self.permissions,
+            state: self.state,
+        }
+    }
+}
+
 impl PartialEq for User {
     fn eq(&self, other: &Self) -> bool {
         self.session_id == other.session_id
@@ -40,45 +58,6 @@ impl PartialEq for User {
             && self.last_name == other.last_name
             && self.image == other.image
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-pub(crate) struct CellEdit {
-    pub active: bool,
-    pub text: String,
-    pub cursor: u32,
-    pub code_editor: bool,
-    pub inline_code_editor: bool,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct UserState {
-    pub sheet_id: Uuid,
-    pub selection: String,
-    pub code_running: String,
-    pub cell_edit: CellEdit,
-    pub x: f64,
-    pub y: f64,
-    pub visible: bool,
-    pub viewport: String,
-    pub follow: Option<Uuid>,
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct UserStateUpdate {
-    pub sheet_id: Option<Uuid>,
-    pub selection: Option<String>,
-    pub cell_edit: Option<CellEdit>,
-    pub code_running: Option<String>,
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-    pub visible: Option<bool>,
-    pub viewport: Option<String>,
-
-    // empty string signifies removing follow; otherwise we'll parse the string for the Uuid
-    pub follow: Option<String>,
 }
 
 impl State {
@@ -221,9 +200,11 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::{error::MpError, test_util::setup};
-
     use super::*;
+
+    use crate::{error::MpError, test_util::setup};
+    use quadratic_rust_shared::multiplayer::message::CellEdit;
+
     #[tokio::test]
     async fn removes_stale_users_in_room() {
         // add 2 users to a room

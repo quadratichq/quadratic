@@ -1,0 +1,48 @@
+import { fetchFromApi } from '@/shared/api/fetchFromApi';
+import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
+
+export const scheduledTasksAPI = {
+  /// Creates a new scheduled task
+  create: (
+    fileId: string,
+    body: ApiTypes['/v0/files/:uuid/scheduled_task.POST.request']
+  ): Promise<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']> => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/files/:uuid/scheduled_task.POST.response']
+    );
+  },
+
+  /// Gets all scheduled tasks in a file
+  get: (fileId: string): Promise<ApiTypes['/v0/files/:uuid/scheduled_task.GET.response']> => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task`,
+      { method: 'GET' },
+      ApiSchemas['/v0/files/:uuid/scheduled_task.GET.response']
+    );
+  },
+
+  update: (
+    fileId: string,
+    taskId: string,
+    body: ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.request']
+  ): Promise<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response']> => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task/${taskId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+      ApiSchemas['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response']
+    );
+  },
+
+  delete: (
+    fileId: string,
+    taskId: string
+  ): Promise<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response']> => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task/${taskId}`,
+      { method: 'DELETE' },
+      ApiSchemas['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response']
+    );
+  },
+};

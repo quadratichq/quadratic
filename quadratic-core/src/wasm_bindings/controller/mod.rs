@@ -36,7 +36,7 @@ impl GridController {
     ) -> Result<GridController, JsValue> {
         set_panic_hook();
 
-        match file::import(file).map_err(|e| e.to_string()) {
+        let mut grid = match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
                 let mut grid = GridController::from_grid(file, last_sequence_num as u64);
 
@@ -97,10 +97,20 @@ impl GridController {
                         }
                     drop(html);
                 }
-                Ok(grid)
+                grid
             }
-            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {e}"))),
-        }
+            Err(e) => return Err(JsValue::from_str(&format!("Failed to import grid: {e}"))),
+        };
+
+        grid.with_run_python_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
+        });
+
+        grid.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);
+        });
+
+        Ok(grid)
     }
 
     #[wasm_bindgen(js_name = "test")]
@@ -159,4 +169,25 @@ impl GridController {
     pub fn js_redo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
+
+    // /// Checks for pending callbacks without blocking.
+    // /// Returns the callback if available, or None if no callbacks are pending.
+    // #[cfg(target_family = "wasm")]
+    // pub fn try_receive_callback(&self) {
+    //     println!("trying to receive callback");
+    //     if let Ok(callback) = self.receive_callback() {
+    //         match callback {
+    //             Callback::RunPython(python_callback) => {
+    //                 let PythonCallback {
+    //                     transaction_id,
+    //                     x,
+    //                     y,
+    //                     sheet_id,
+    //                     code,
+    //                 } = python_callback;
+    //                 crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
+    //             }
+    //         }
+    //     }
+    // }
 }

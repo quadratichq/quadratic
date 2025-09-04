@@ -1,0 +1,71 @@
+[package]
+name = "quadratic-core-cloud"
+version = "0.15.2"
+edition = "2024"
+authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
+
+[dependencies]
+axum = { version = "0.8.1", features = ["macros"] }
+axum-extra = { version = "0.10.0", features = ["typed-header"] }
+axum-macros = "0.5.0"
+bytes = "1.6.1"
+chrono = { version = "=0.4.39", features = ["serde"] }
+dashmap = "6.1.0"
+deno_core = "0.355.0"
+deno_error = "0.7.0"
+# deno_timers = "0.34.0"  # Version conflict with deno_core - using built-in timer ops instead
+# deno_runtime = "0.221.0"  # Using deno_core only to avoid SQLite conflicts
+dotenv = "0.15.0"
+envy = "0.4.2"
+futures = "0.3.29"
+futures-util = { version = "0.3.29", default-features = false, features = [
+    "sink",
+    "std",
+] }
+headers = "0.4.0"
+jsonwebtoken = "9.2.0"
+openssl = { version = "0.10.72", features = ["vendored"] }
+prost = "0.13.5"
+prost-reflect = "0.15.2"
+prost-types = "0.13.5"
+pyo3 = { version = "0.25.1", features = ["auto-initialize"] }
+quadratic-core = { path = "../quadratic-core", default-features = false, features = [
+    "console_error_panic_hook",
+    "js",
+] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+    "auth",
+    "environment",
+    "net",
+    "protobuf",
+    "pubsub",
+    "quadratic-api",
+    "storage" 
+] }
+rayon = "1.8.0"
+regex = "1.11.1"
+reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+strum = "0.27.1"
+strum_macros = "0.27.1"
+thiserror = "2.0.12"
+tokio = { version = "1.44.2", features = ["full"] }
+tokio-tungstenite = "0.26"
+tokio-util = "0.7.11"
+tonic = { version = "0.12", features = [] }
+tower = { version = "0.5.2", features = ["util"] }
+tower-http = { version = "0.6.2", features = [
+    "cors",
+    "fs",
+    "trace",
+    "validate-request",
+] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+uuid = { version = "1.6.1", features = ["serde", "v4"] }
+neon = { version = "1.1.1", default-features = false, features = ["napi-6"] }
+urlencoding = "2.1.3"
+
+
+

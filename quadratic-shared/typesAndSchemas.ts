@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
+import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -446,6 +447,11 @@ export const ApiSchemas = {
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)
    */
   ...ApiSchemasConnections,
+
+  /**
+   * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled_task/*`)
+   */
+  ...ApiSchemasScheduledTasks,
 
   /**
    * ===========================================================================
