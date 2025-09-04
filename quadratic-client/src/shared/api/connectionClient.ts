@@ -59,7 +59,9 @@ export const connectionClient = {
         | 'supabase'
         | 'SUPABASE'
         | 'neon'
-        | 'NEON',
+        | 'NEON'
+        | 'synced'
+        | 'SYNCED',
       connectionId: string,
       teamUuid: string,
       forceCacheRefresh: boolean = false

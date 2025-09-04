@@ -17,6 +17,7 @@ use crate::{
 use quadratic_rust_shared::quadratic_api::Connection as ApiConnection;
 
 pub(crate) mod bigquery;
+pub(crate) mod datafusion;
 pub(crate) mod mssql;
 pub(crate) mod mysql;
 pub(crate) mod postgres;

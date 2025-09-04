@@ -161,6 +161,7 @@ enum ConnectionType {
     MARIADB
     NEON
     SUPABASE
+    SYNCED
 }
 
 model Connection {

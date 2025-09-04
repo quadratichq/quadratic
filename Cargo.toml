@@ -17,6 +17,7 @@ repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
 version = "0.16.4"
 
+[workspace.dependencies]
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

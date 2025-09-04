@@ -60,6 +60,7 @@ export const colors = {
   languageMariadb: '#00758f',
   languageSupabase: '#249edc',
   languageNeon: '#336791',
+  languageSynced: '#ffc800',
   languageJavascript: '#ca8a04',
   link: '#2463eb',
 

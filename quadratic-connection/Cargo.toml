@@ -5,8 +5,8 @@ edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
-arrow = "=54.2.1"
-arrow-schema = "=54.2.1"
+arrow = "54.2.1"
+arrow-schema = "54.2.1"
 axum = { version = "0.7.1", features = ["macros", "tokio"] }
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 axum-macros = "0.4.1"
@@ -27,7 +27,7 @@ hyper-util = { version = "0.1.5", features = ["service"] }
 jsonwebtoken = "9.2.0"
 log = "0.4.21"
 openssl = { version = "0.10.72", features = ["vendored"] }
-parquet = { version = "=54.2.1", default-features = false, features = [
+parquet = { version = "54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
 ] }

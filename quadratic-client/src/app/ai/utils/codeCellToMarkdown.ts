@@ -59,7 +59,9 @@ ${
   language === 'BIGQUERY'
     ? 'When generating BigQuery queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
-}\n`
+}
+${language === 'SYNCED' ? 'When generating synced queries, do not include the schema name in the query.' : ''}
+\n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
 Use any functions that are part of the ${language} library.\n
 A code cell can return only one type of value as specified in the Quadratic documentation.\n
