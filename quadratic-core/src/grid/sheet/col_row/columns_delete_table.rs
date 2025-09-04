@@ -412,8 +412,6 @@ mod tests {
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
 
-        dbg!(gc.undo_stack());
-
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
