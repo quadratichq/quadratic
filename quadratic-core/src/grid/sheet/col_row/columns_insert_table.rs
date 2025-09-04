@@ -62,12 +62,10 @@ impl Sheet {
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
             if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
-                let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && column >= pos.x
-                        && column < pos.x + output_rect.width() as i64
+                        && Self::is_column_inside_table(column, pos, dt, copy_formats)
                     {
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
@@ -400,5 +398,32 @@ mod tests {
         check(5 + 1, CopyFormats::Before, true);
         check(6 + 1, CopyFormats::Before, false);
         check(2 + 1, CopyFormats::Before, false);
+    }
+
+    #[test]
+    fn test_insert_column_before_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        gc.insert_columns(sheet_id, 1, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 1, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 2, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 3, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
     }
 }
