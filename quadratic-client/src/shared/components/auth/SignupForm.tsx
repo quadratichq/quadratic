@@ -63,7 +63,7 @@ export const SignupForm = memo(() => {
                 <FormLabel>{'Email'}</FormLabel>
                 <FormControl>
                   <Input
-                    data-testid="login-email"
+                    data-testid="signup-email"
                     className="h-12 rounded-md border border-gray-300 px-3 text-base"
                     autoCapitalize="off"
                     type="text"
@@ -85,7 +85,7 @@ export const SignupForm = memo(() => {
                 <FormLabel>{'Password'}</FormLabel>
                 <FormControl>
                   <Input
-                    data-testid="login-password"
+                    data-testid="signup-password"
                     className="h-12 rounded-md border border-gray-300 px-3 text-base"
                     autoCapitalize="off"
                     type="password"
@@ -107,7 +107,7 @@ export const SignupForm = memo(() => {
                   <FormLabel>{'First name'}</FormLabel>
                   <FormControl>
                     <Input
-                      data-testid="login-first-name"
+                      data-testid="signup-first-name"
                       className="h-12 rounded-md border border-gray-300 px-3 text-base"
                       autoCapitalize="off"
                       type="text"
@@ -128,7 +128,7 @@ export const SignupForm = memo(() => {
                   <FormLabel>{'Last name'}</FormLabel>
                   <FormControl>
                     <Input
-                      data-testid="login-last-name"
+                      data-testid="signup-last-name"
                       className="h-12 rounded-md border border-gray-300 px-3 text-base"
                       autoCapitalize="off"
                       type="text"
@@ -143,7 +143,7 @@ export const SignupForm = memo(() => {
           </div>
 
           <Button
-            data-testid="login-submit"
+            data-testid="signup-submit"
             type="submit"
             disabled={form.formState.isSubmitting}
             className="h-12 w-full rounded-md text-base font-medium"

@@ -626,8 +626,8 @@ export class Control {
 
   runRust() {
     if (this.quitting) return;
-    this.ui.print("rust", "upgrading...");
-    this.rust = spawn("rustup", ["upgrade"]);
+    this.ui.print("rust", "installing...");
+    this.rust = spawn("rustup", ["show"]);
     this.rust.on("close", (code) => {
       if (code === 0) {
         this.ui.print("rust", "completed");

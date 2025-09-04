@@ -41,6 +41,11 @@ export const workosClient: AuthClient = {
    * Return whether the user is authenticated and the session is valid.
    */
   async isAuthenticated(): Promise<boolean> {
+    const token = await this.getTokenOrRedirect(true);
+    if (token) {
+      return true;
+    }
+
     document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     await disposeClient();
     const client = await getClient();
