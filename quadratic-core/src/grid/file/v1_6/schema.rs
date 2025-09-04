@@ -278,6 +278,7 @@ pub enum ConnectionKind {
     Mariadb,
     Supabase,
     Neon,
+    Synced,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

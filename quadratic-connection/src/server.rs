@@ -35,6 +35,9 @@ use crate::{
     proxy::proxy,
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
+        datafusion::{
+            query as query_datafusion, schema as schema_datafusion, test as test_datafusion,
+        },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -142,6 +145,11 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/bigquery/test", post(test_bigquery))
         .route("/bigquery/query", post(query_bigquery))
         .route("/bigquery/schema/:id", get(schema_bigquery))
+        //
+        // datafusion
+        .route("/synced/test", post(test_datafusion))
+        .route("/synced/query", post(query_datafusion))
+        .route("/synced/schema/:id", get(schema_datafusion))
         //
         // proxy
         .route("/proxy", any(proxy))

@@ -7,6 +7,7 @@ import * as Neon from '@/shared/components/connections/ConnectionFormNeon';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import * as Supabase from '@/shared/components/connections/ConnectionFormSupabase';
+import * as Synced from '@/shared/components/connections/ConnectionFormSynced';
 import type { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ReactNode } from 'react';
 import type { SubmitHandler, UseFormReturn } from 'react-hook-form';
@@ -114,6 +115,12 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: NeonLogo,
     ConnectionForm: Neon.ConnectionForm,
     useConnectionForm: Neon.useConnectionForm,
+  },
+  SYNCED: {
+    name: 'Synced',
+    Logo: S3Logo,
+    ConnectionForm: Synced.ConnectionForm,
+    useConnectionForm: Synced.useConnectionForm,
   },
 };
 

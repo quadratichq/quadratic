@@ -265,6 +265,8 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'BIGQUERY':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    case 'SYNCED':
+      return `SELECT * FROM \`${name}\` LIMIT 100`;
     default:
       return '';
   }

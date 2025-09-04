@@ -21,6 +21,7 @@ use self::{
 
 pub mod bigquery_connection;
 pub mod cockroachdb_connection;
+pub mod datafusion_connection;
 pub mod error;
 pub mod mariadb_connection;
 pub mod mssql_connection;

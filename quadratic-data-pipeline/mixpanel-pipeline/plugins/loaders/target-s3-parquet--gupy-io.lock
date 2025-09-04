@@ -1,0 +1,110 @@
+{
+  "plugin_type": "loaders",
+  "name": "target-s3-parquet",
+  "namespace": "target_s3_parquet",
+  "variant": "gupy-io",
+  "label": "S3 Parquet",
+  "docs": "https://hub.meltano.com/loaders/target-s3-parquet--gupy-io",
+  "repo": "https://github.com/gupy-io/target-s3-parquet",
+  "pip_url": "git+https://github.com/gupy-io/target-s3-parquet.git",
+  "description": "AWS S3 - Apache Parquet File Format",
+  "logo_url": "https://hub.meltano.com/assets/logos/loaders/s3-parquet.png",
+  "capabilities": [
+    "about",
+    "schema-flattening",
+    "stream-maps"
+  ],
+  "settings_group_validation": [
+    [
+      "athena_database",
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "s3_path"
+    ]
+  ],
+  "settings": [
+    {
+      "name": "add_record_metadata",
+      "kind": "boolean",
+      "label": "Add Record Metadata",
+      "description": "A boolean whether to add record metadata"
+    },
+    {
+      "name": "athena_database",
+      "kind": "string",
+      "label": "Athena Database",
+      "description": "The Athena database."
+    },
+    {
+      "name": "aws_access_key_id",
+      "kind": "string",
+      "label": "AWS Access Key ID",
+      "description": "Your AWS access key ID.",
+      "sensitive": true
+    },
+    {
+      "name": "aws_secret_access_key",
+      "kind": "string",
+      "label": "AWS Secret Access Key",
+      "description": "Your AWS secret access key.",
+      "sensitive": true
+    },
+    {
+      "name": "flattening_enabled",
+      "kind": "boolean",
+      "label": "Flattening Enabled",
+      "description": "'True' to enable schema flattening and automatically expand nested properties."
+    },
+    {
+      "name": "flattening_max_depth",
+      "kind": "integer",
+      "label": "Flattening Max Depth",
+      "description": "The max depth to flatten schemas."
+    },
+    {
+      "name": "load_method",
+      "kind": "options",
+      "value": "append-only",
+      "label": "Load Method",
+      "description": "The method to use when loading data into the destination. `append-only` will always write all input records whether that records already exists or not. `upsert` will update existing records and insert new records. `overwrite` will delete all existing records and insert all input records.",
+      "options": [
+        {
+          "label": "Append Only",
+          "value": "append-only"
+        },
+        {
+          "label": "Upsert",
+          "value": "upsert"
+        },
+        {
+          "label": "Overwrite",
+          "value": "overwrite"
+        }
+      ]
+    },
+    {
+      "name": "s3_path",
+      "kind": "string",
+      "label": "S3 Path",
+      "description": "The s3 path to the target output file"
+    },
+    {
+      "name": "stream_map_config",
+      "kind": "object",
+      "label": "Stream Map Config",
+      "description": "User-defined config values to be used within map expressions."
+    },
+    {
+      "name": "stream_maps",
+      "kind": "object",
+      "label": "Stream Maps",
+      "description": "Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html)."
+    },
+    {
+      "name": "stringify_schema",
+      "kind": "boolean",
+      "label": "Stringify Schema",
+      "description": "A boolean whether to stringify Schema"
+    }
+  ]
+}
