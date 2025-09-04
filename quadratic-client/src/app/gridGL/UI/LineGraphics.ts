@@ -1,6 +1,6 @@
-//! Fake graphics class that uses sprites instead of PIXI.Graphics to draw
-//! simple shapes. This is necessary because PIXI.Graphics does not properly
-//! support very large offsets (> 300m).
+//! Line graphics class that uses sprites instead of PIXI.Graphics to draw
+//! simple shapes (axis lines and rects). This is necessary because
+//! PIXI.Graphics does not properly support very large offsets (> 300m).
 
 import { Container, Sprite, Texture } from 'pixi.js';
 
@@ -19,8 +19,14 @@ interface DrawLineOptions {
   strokeWidth?: number;
 }
 
-export class FakeGraphics extends Container {
+export class LineGraphics extends Container {
   private current = 0;
+  private scaled: boolean;
+
+  constructor(scaled: boolean) {
+    super();
+    this.scaled = scaled;
+  }
 
   private getSprite(): Sprite {
     if (this.current >= this.children.length) {
@@ -47,6 +53,9 @@ export class FakeGraphics extends Container {
   drawRect(x0: number, y0: number, x1: number, y1: number, options: DrawRectOptions = {}) {
     const { fill, strokeWidth, alpha, strokeTint, strokeAlpha } = options;
     const sprite = this.getSprite();
+    if (this.scaled) {
+      strokeWidth = (strokeWidth ?? 1) / pixiApp.viewport.scaled;
+    }
     this.drawHorizontalLine(x0, x1 - (strokeWidth ?? 1), y0, { tint: strokeTint, alpha: strokeAlpha, strokeWidth });
     if (strokeWidth !== undefined) {
       sprite.position.set(x0 + (strokeWidth ?? 1), y0 + (strokeWidth ?? 1));

@@ -8,7 +8,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
-import { Container, Sprite, Texture, type ILineStyleOptions, type Rectangle } from 'pixi.js';
+import { LineGraphics } from '@/app/gridGL/UI/LineGraphics';
+import { type Rectangle } from 'pixi.js';
 
 interface GridLine {
   column?: number;
@@ -21,15 +22,12 @@ interface GridLine {
 
 const GRID_LINE_ALPHA = 0.1;
 
-export class GridLines extends Container {
-  currentLineStyle: ILineStyleOptions = { alpha: 0 };
+export class GridLines extends LineGraphics {
   dirty = true;
 
   // cache of lines used for snapping
   gridLinesX: GridLine[] = [];
   gridLinesY: GridLine[] = [];
-
-  current: number = 0;
 
   // line width that takes scale into account (so it always draws as 1 pixel)
   lineWidth: number = 1;
@@ -68,8 +66,9 @@ export class GridLines extends Container {
       return;
     }
 
-    this.current = 0;
     this.visible = true;
+    this.clear();
+
     this.alpha = gridAlpha * GRID_LINE_ALPHA;
     this.lineWidth = 1 / scale;
 
@@ -87,45 +86,8 @@ export class GridLines extends Container {
     const range = this.drawHorizontalLines(bounds);
     this.drawVerticalLines(bounds, range);
 
-    this.hideRemainingLines();
+    this.finish();
   };
-
-  private getLine(): Sprite {
-    if (this.current >= this.children.length) {
-      const line = this.addChild(new Sprite(Texture.WHITE));
-      line.tint = 0;
-      return line;
-    } else {
-      const line = this.children[this.current] as Sprite;
-      line.visible = true;
-      this.current++;
-      return line;
-    }
-  }
-
-  private drawHorizontalLine(x0: number, x1: number, y: number) {
-    if (y + 1 < sheets.sheet.clamp.top) return;
-    const line = this.getLine();
-    line.position.set(x0, y - this.lineWidth / 2);
-    line.width = x1 - x0;
-    line.height = this.lineWidth;
-    return line;
-  }
-
-  private drawVerticalLine(y0: number, y1: number, x: number) {
-    if (x + 1 < sheets.sheet.clamp.left) return;
-    const line = this.getLine();
-    line.position.set(x - this.lineWidth / 2, y0 - this.lineWidth / 2);
-    line.width = this.lineWidth;
-    line.height = y1 - y0;
-    return line;
-  }
-
-  private hideRemainingLines() {
-    for (let i = this.current; i < this.children.length; i++) {
-      this.children[i].visible = false;
-    }
-  }
 
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
     const sheet = sheets.sheet;

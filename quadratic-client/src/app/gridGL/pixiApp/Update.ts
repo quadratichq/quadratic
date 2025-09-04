@@ -115,7 +115,7 @@ export class Update {
     }
 
     debugTimeReset();
-    pixiApp.gridLines.update();
+    pixiApp.gridLines.update(undefined, undefined, pixiApp.viewport.dirty);
     debugTimeCheck('[Update] gridLines');
     pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
