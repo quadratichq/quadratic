@@ -2,6 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -11,7 +12,6 @@ export function useVisibleContextMessages() {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
     const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
-    const visibleA1String = jsSelection.toA1String(sheets.current, sheets.jsA1Context);
     jsSelection.free();
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
@@ -28,7 +28,6 @@ export function useVisibleContextMessages() {
 # What the user can see
 
 - the user is in sheet '${sheetName}'
-- they see cells in ${visibleA1String}
 - their cursor is located at ${sheets.sheet.cursor.a1String()}
 - their selection is ${sheets.getA1String(sheets.current)}
 `;
@@ -62,7 +61,7 @@ export function useVisibleContextMessages() {
         for (const table of sheetContext.connections) {
           if (typeof table.language !== 'object' || !table.language.Connection) {
             console.warn('Unexpected non-connection table in useSummaryContextMessages');
-            break;
+            continue;
           }
           text += `- '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}\n`;
         }
@@ -92,21 +91,15 @@ export function useVisibleContextMessages() {
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text,
-          },
-        ],
+        content: [createTextContent(text)],
         contextType: 'visibleData',
       },
       {
         role: 'assistant',
         content: [
-          {
-            type: 'text',
-            text: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
-          },
+          createTextContent(
+            `I understand the visible data, I will reference it to answer following messages. How can I help you?`
+          ),
         ],
         contextType: 'visibleData',
       },

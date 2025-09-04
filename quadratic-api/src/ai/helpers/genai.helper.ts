@@ -10,6 +10,7 @@ import {
 } from '@google/genai';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentText,
   isInternalMessage,
@@ -271,10 +272,7 @@ export async function parseGenAIStream(
               if (currentContent?.text.trim()) {
                 responseMessage.content.push(currentContent);
               }
-              currentContent = {
-                type: 'text',
-                text: '',
-              };
+              currentContent = createTextContent('');
             }
             currentContent.text += part.text;
             responseMessage.content.push(currentContent);
@@ -307,10 +305,7 @@ export async function parseGenAIStream(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -350,10 +345,7 @@ export function parseGenAIResponse(
   // text and tool calls
   candidate?.content?.parts?.forEach((message) => {
     if (message.text) {
-      responseMessage.content.push({
-        type: 'text',
-        text: message.text.trim(),
-      });
+      responseMessage.content.push(createTextContent(message.text.trim()));
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
         id: message.functionCall.id ?? v4(),
@@ -373,10 +365,7 @@ export function parseGenAIResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

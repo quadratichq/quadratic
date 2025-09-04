@@ -1,6 +1,8 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -33,7 +35,13 @@ export function useSqlContextMessages() {
           const connectionTableInfo = await Promise.all(
             connections.map(async (connection) => {
               try {
-                const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+                const schema = await connectionClient.schemas.get(
+                  connection.type,
+                  connection.uuid,
+                  teamUuid,
+                  false,
+                  GET_SCHEMA_TIMEOUT
+                );
                 const tableNames = schema?.tables?.map((table) => table.name) || [];
 
                 return {
@@ -96,21 +104,15 @@ ${tablesText}
           return [
             {
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: contextText,
-                },
-              ],
+              content: [createTextContent(contextText)],
               contextType: 'sqlSchemas',
             },
             {
               role: 'assistant',
               content: [
-                {
-                  type: 'text',
-                  text: `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`,
-                },
+                createTextContent(
+                  `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`
+                ),
               ],
               contextType: 'sqlSchemas',
             },

@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -27,7 +26,7 @@ export default [
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
-    user: { id: userId, auth0Id },
+    user: { id: userId, email },
   } = req as RequestWithUser;
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
@@ -45,12 +44,8 @@ async function handler(req: Request, res: Response) {
 
   // create a stripe customer if one doesn't exist
   if (!team?.stripeCustomerId) {
-    // Get user email from Auth0
-    const auth0Record = await getUsers([{ id: userId, auth0Id }]);
-    const auth0User = auth0Record[userId];
-
     // create Stripe customer
-    const stripeCustomer = await createCustomer(team.name, auth0User.email);
+    const stripeCustomer = await createCustomer(team.name, email);
     await dbClient.team.update({
       where: { uuid },
       data: { stripeCustomerId: stripeCustomer.id },

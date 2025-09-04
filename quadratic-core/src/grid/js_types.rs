@@ -378,16 +378,6 @@ pub struct JsClipboard {
     pub html: String,
 }
 
-// Used to serialize the checkboxes contained within a sheet.
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct JsValidationSheet {
-    // checkboxes that need to be rendered
-    checkboxes: Vec<(Pos, bool)>,
-
-    // validation errors that will be displayed
-    errors: Vec<(Pos, String)>,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsDataTableColumnHeader {

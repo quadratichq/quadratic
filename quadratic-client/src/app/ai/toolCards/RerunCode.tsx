@@ -29,15 +29,18 @@ export const RerunCode = memo(
     const icon = <GridActionIcon />;
     const label = 'Rerun code';
 
-    const description = useMemo(
-      () =>
-        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Code in sheet "${toolArgs.data.sheet_name}" within selection "${toolArgs.data.selection}" has been rerun.`
-          : toolArgs?.data?.sheet_name && !toolArgs?.data?.selection
-            ? `Code in sheet "${toolArgs.data.sheet_name}" has been rerun.`
-            : 'Code in all sheets has been rerun.',
-      [toolArgs?.data?.selection, toolArgs?.data?.sheet_name]
-    );
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return toolArgs.data.sheet_name && toolArgs.data.selection
+          ? `"${toolArgs.data.sheet_name}": ${toolArgs.data.selection}`
+          : toolArgs.data.sheet_name && !toolArgs.data.selection
+            ? `"${toolArgs.data.sheet_name}"`
+            : !toolArgs.data.sheet_name && toolArgs.data.selection
+              ? toolArgs.data.selection
+              : 'All sheets';
+      }
+      return '';
+    }, [toolArgs?.data?.selection, toolArgs?.data?.sheet_name, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;

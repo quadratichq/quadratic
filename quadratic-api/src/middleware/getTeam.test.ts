@@ -1,23 +1,26 @@
+import { auth0Mock } from '../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'userOwner',
+      email: 'userowner@example.com',
+    },
+    {
+      user_id: 'userNoTeam',
+      email: 'usernoteam@example.com',
+    },
+  ])
+);
+
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
-import { auth0Mock } from '../tests/auth0Mock';
 import { expectError } from '../tests/helpers';
-import { clearDb } from '../tests/testDataGenerator';
+import { clearDb, createUsers } from '../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoTeam',
-    },
-  });
-
-  let team = await dbClient.team.create({
+  const [userOwner] = await createUsers(['userOwner', 'userNoTeam']);
+  await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
@@ -34,19 +37,6 @@ beforeAll(async () => {
 });
 
 afterAll(clearDb);
-
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'userOwner',
-      email: 'owner@example.com',
-    },
-    {
-      user_id: 'userNoTeam',
-      email: 'noteam@example.com',
-    },
-  ])
-);
 
 // These are just for testing the middleware function that supplies team info
 // to all the `/teams/:uuid` routes

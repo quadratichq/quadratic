@@ -25,6 +25,7 @@ import type {
   JsCodeCell,
   JsCodeErrorContext,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
@@ -413,7 +414,11 @@ class QuadraticCore {
     });
   }
 
-  getAICells(selection: string, sheetId: string, page: number): Promise<string | JsResponse | undefined> {
+  getAICells(
+    selection: string,
+    sheetId: string,
+    page: number
+  ): Promise<string | JsResponse | JsGetAICellResult | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAICells) => {

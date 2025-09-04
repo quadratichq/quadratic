@@ -13,7 +13,6 @@ import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -26,26 +25,23 @@ import type {
   FormatUpdate,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsGetAICellResult,
-  JsResponse,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
+  SheetPos,
   SheetRect,
 } from '@/app/quadratic-core-types';
 import {
   columnNameToIndex,
   convertTableToSheetPos,
-  selectionToSheetRect,
-  stringToSelection,
   xyToA1,
   type JsSelection,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import Color from 'color';
-import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -130,38 +126,9 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   }
 
   if (tableCodeCell.is_html) {
-    const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
-    const dataUrl = (await htmlCell?.getImageDataUrl()) ?? '';
-    if (dataUrl) {
-      const { mimeType, data } = dataUrlToMimeTypeAndData(dataUrl);
-      if (isSupportedImageMimeType(mimeType) && !!data) {
-        return [
-          {
-            type: 'data',
-            data,
-            mimeType,
-            fileName: tableCodeCell.name,
-          },
-          createTextContent('Executed set code cell value tool successfully to create a plotly chart.'),
-        ];
-      }
-    }
+    return [createTextContent('Executed set code cell value tool successfully to create a plotly chart.')];
   } else if (tableCodeCell.is_html_image) {
-    const image = pixiApp.cellsSheets.getById(sheetId)?.cellsImages.findCodeCell(x, y);
-    if (image?.dataUrl) {
-      const { mimeType, data } = dataUrlToMimeTypeAndData(image.dataUrl);
-      if (isSupportedImageMimeType(mimeType) && !!data) {
-        return [
-          {
-            type: 'data',
-            data,
-            mimeType,
-            fileName: tableCodeCell.name,
-          },
-          createTextContent('Executed set code cell value tool successfully to create a javascript chart.'),
-        ];
-      }
-    }
+    return [createTextContent('Executed set code cell value tool successfully to create a javascript chart.')];
   }
 
   return [
@@ -298,12 +265,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     // Get team UUID from the current context
     const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
     if (!teamUuid) {
-      return [
-        {
-          type: 'text',
-          text: 'Unable to retrieve database schemas. Access to team is required.',
-        },
-      ];
+      return [createTextContent('Unable to retrieve database schemas. Access to team is required.')];
     }
 
     // Import the connection client
@@ -312,10 +274,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
     } catch (error) {
       return [
-        {
-          type: 'text',
-          text: 'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.',
-        },
+        createTextContent(
+          'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.'
+        ),
       ];
     }
 
@@ -330,19 +291,17 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (connections.length === 0) {
         return [
-          {
-            type: 'text',
-            text: `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`,
-          },
+          createTextContent(
+            `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`
+          ),
         ];
       }
     } catch (connectionError) {
       console.warn('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
       return [
-        {
-          type: 'text',
-          text: `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`,
-        },
+        createTextContent(
+          `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`
+        ),
       ];
     }
 
@@ -351,7 +310,13 @@ export const aiToolsActions: AIToolActionsRecord = {
       const schemas = await Promise.all(
         connections.map(async (connection) => {
           try {
-            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+            const schema = await connectionClient.schemas.get(
+              connection.type,
+              connection.uuid,
+              teamUuid,
+              true,
+              GET_SCHEMA_TIMEOUT
+            );
 
             if (!schema) {
               return {
@@ -383,10 +348,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Filter out null results
       if (schemas.length === 0) {
         return [
-          {
-            type: 'text',
-            text: 'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.',
-          },
+          createTextContent(
+            'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.'
+          ),
         ];
       }
 
@@ -424,20 +388,18 @@ export const aiToolsActions: AIToolActionsRecord = {
         : '';
 
       return [
-        {
-          type: 'text',
-          text: schemaText
+        createTextContent(
+          schemaText
             ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
-            : `No database schema information available.${summaryText}`,
-        },
+            : `No database schema information available.${summaryText}`
+        ),
       ];
     } catch (error) {
       console.error('[GetDatabaseSchemas] Unexpected error:', error);
       return [
-        {
-          type: 'text',
-          text: `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`,
-        },
+        createTextContent(
+          `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`
+        ),
       ];
     }
   },
@@ -653,12 +615,11 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
-      if ((response as JsResponse)?.error) {
-        return [
-          createTextContent(`There was an error executing the get cells tool ${(response as JsResponse)?.error}`),
-        ];
-      } else if (typeof response === 'object') {
-        return [createTextContent(AICellResultToMarkdown(response as any as JsGetAICellResult))];
+      if (!response || typeof response === 'string' || ('error' in response && response.error)) {
+        const error = typeof response === 'string' ? response : response?.error;
+        return [createTextContent(`There was an error executing the get cells tool ${error}`)];
+      } else if ('values' in response) {
+        return [createTextContent(AICellResultToMarkdown(response))];
       } else {
         // should not be reached
         return [createTextContent('There was an error executing the get cells tool')];
@@ -934,7 +895,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize columns tool. Invalid selection: ${e.message}.`)];
       }
@@ -994,7 +955,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize rows tool. Invalid selection: ${e.message}.`)];
       }
@@ -1297,18 +1258,18 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
     if (args.code_cell_name) {
       try {
-        const tableSheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
+        const tableSheetPos: SheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
         if (tableSheetPos) {
-          codePos = { x: tableSheetPos.x, y: tableSheetPos.y };
-          sheetId = tableSheetPos.sheetId.id;
+          codePos = { x: Number(tableSheetPos.x), y: Number(tableSheetPos.y) };
+          sheetId = tableSheetPos.sheet_id.id;
         }
       } catch (e) {}
     }
     if (!codePos && args.code_cell_position) {
       try {
-        const sheetRect = selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position, sheets.jsA1Context);
-        codePos = { x: sheetRect.min.x, y: sheetRect.min.y };
-        sheetId = sheetRect.sheetId.id;
+        const sheetRect: SheetRect = sheets.selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position);
+        codePos = { x: Number(sheetRect.min.x), y: Number(sheetRect.min.y) };
+        sheetId = sheetRect.sheet_id.id;
       } catch (e) {}
     }
 
