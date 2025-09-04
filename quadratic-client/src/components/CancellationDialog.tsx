@@ -15,7 +15,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type CancellationStep = 'loading-eligibility' | 'offer-discount' | 'get-feedback' | 'applying-discount';
 
@@ -57,12 +57,12 @@ export function CancellationDialog({
     }
   }, [isOpen]);
 
-  const handleOpenDialog = () => {
+  const handleOpenDialog = useCallback(() => {
     trackEvent('[CancellationFlow].opened');
     setIsOpen(true);
-  };
+  }, []);
 
-  const handleAcceptOffer = async () => {
+  const handleAcceptOffer = useCallback(async () => {
     trackEvent('[CancellationFlow].accepted-retention-offer');
     setIsLoading(true);
 
@@ -76,14 +76,14 @@ export function CancellationDialog({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleDeclineOffer = () => {
+  const handleDeclineOffer = useCallback(() => {
     trackEvent('[CancellationFlow].declined-retention-offer');
     setCurrentStep('get-feedback');
-  };
+  }, []);
 
-  const handleSubmitFeedback = async () => {
+  const handleSubmitFeedback = useCallback(async () => {
     const feedbackToSubmit = feedback.trim();
     setIsLoading(true);
 
@@ -108,7 +108,7 @@ export function CancellationDialog({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
