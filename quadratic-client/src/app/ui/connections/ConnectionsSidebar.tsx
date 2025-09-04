@@ -10,7 +10,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
-import { AddIcon, ArrowBackIcon, CloseIcon } from '@/shared/components/Icons';
+import { AddIcon, AIIcon, ArrowBackIcon, CloseIcon, EditIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -167,13 +167,24 @@ export const ConnectionsSidebar = memo(() => {
         {viewState === 'detail' && (
           <div className="flex flex-col px-3">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary">Chat</Button>
+              <Button variant="outline">
+                <AIIcon className="mr-2" />
+                Chat with your data
+              </Button>
 
-              <Button variant="secondary" onClick={() => setViewState('edit')}>
-                Edit
+              <Button variant="outline" onClick={() => setViewState('edit')}>
+                <EditIcon className="mr-2" />
+                Edit details
+              </Button>
+
+              <Button variant="outline" onClick={() => setViewState('delete')}>
+                <SaveAndRunIcon className="mr-2" />
+                Query with SQL
               </Button>
             </div>
-            <div className="-mx-2">
+
+            <div className="-mx-2 pt-4">
+              <h2 className="mx-2 text-sm font-medium">Preview</h2>
               <ConnectionSchemaBrowser
                 teamUuid={teamUuid}
                 type={'MYSQL'}

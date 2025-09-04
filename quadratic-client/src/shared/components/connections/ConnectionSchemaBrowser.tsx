@@ -61,34 +61,36 @@ export const ConnectionSchemaBrowser = ({
       className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 truncate">
-            {data && data.type ? (
-              <>
-                <div className="flex h-6 w-6 flex-shrink-0 items-center">
-                  <LanguageIcon language={data.type} />
-                </div>
-                <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
-              </>
-            ) : (
-              <Skeleton className="h-4 w-24" />
-            )}
+        {!onTableQueryAction && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 truncate">
+              {data && data.type ? (
+                <>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center">
+                    <LanguageIcon language={data.type} />
+                  </div>
+                  <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
+                </>
+              ) : (
+                <Skeleton className="h-4 w-24" />
+              )}
+            </div>
+            <div className="flex flex-row-reverse items-center gap-1">
+              <TableQueryAction
+                query={
+                  !isLoading && data && filteredTables[selectedTableIndex]
+                    ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
+                    : ''
+                }
+              />
+              <TooltipPopover label="Reload schema">
+                <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                  <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+                </Button>
+              </TooltipPopover>
+            </div>
           </div>
-          <div className="flex flex-row-reverse items-center gap-1">
-            <TableQueryAction
-              query={
-                !isLoading && data && filteredTables[selectedTableIndex]
-                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
-                  : ''
-              }
-            />
-            <TooltipPopover label="Reload schema">
-              <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
-                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
-              </Button>
-            </TooltipPopover>
-          </div>
-        </div>
+        )}
         <div className="relative">
           <Input
             ref={inputRef}
