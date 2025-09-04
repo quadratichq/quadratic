@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type InsertRowsResponse = z.infer<(typeof aiToolsSpec)[AITool.InsertRows]['responseSchema']>;
@@ -29,6 +29,13 @@ export const InsertRows = memo(
     const icon = <GridActionIcon />;
     const label = 'Insert rows';
 
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}": ` : ''}${toolArgs.data.count} row${toolArgs.data.count > 1 ? `s` : ''} inserted at "${toolArgs.data.row}".`;
+      }
+      return '';
+    }, [toolArgs?.data?.count, toolArgs?.data?.row, toolArgs?.data?.sheet_name, toolArgs?.success]);
+
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -38,8 +45,6 @@ export const InsertRows = memo(
     } else if (!toolArgs || !toolArgs.data) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
-
-    const description = `${toolArgs.data.count > 1 ? `${toolArgs.data.count} rows have` : 'A row has'} been inserted in sheet "${toolArgs.data.sheet_name}" at row "${toolArgs.data.row}".`;
 
     return <ToolCard icon={icon} label={label} description={description} className={className} />;
   }
