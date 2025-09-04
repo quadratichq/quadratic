@@ -35,6 +35,18 @@ export interface AIAnalystState {
   };
   waitingOnMessageIndex?: number;
   delaySeconds: number;
+  planningMode: {
+    enabled: boolean;
+    currentPlan: string;
+    planSteps: Array<{
+      id: string;
+      content: string;
+      isEditing: boolean;
+    }>;
+    planEdited: boolean;
+    loading: boolean;
+    originalQuery: string;
+  };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -63,6 +75,14 @@ export const defaultAIAnalystState: AIAnalystState = {
   },
   waitingOnMessageIndex: undefined,
   delaySeconds: 0,
+  planningMode: {
+    enabled: false,
+    currentPlan: '',
+    planSteps: [],
+    planEdited: false,
+    loading: false,
+    originalQuery: '',
+  },
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
@@ -389,6 +409,55 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
       return {
         ...prev,
         waitingOnMessageIndex: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystPlanningModeAtom = createSelector('planningMode');
+export const aiAnalystPlanningModeEnabledAtom = selector<boolean>({
+  key: 'aiAnalystPlanningModeEnabledAtom',
+  get: ({ get }) => get(aiAnalystPlanningModeAtom).enabled,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        planningMode: {
+          ...prev.planningMode,
+          enabled: newValue,
+          // Reset planning state when toggling off
+          ...(newValue ? {} : {
+            currentPlan: '',
+            planSteps: [],
+            planEdited: false,
+            loading: false,
+            originalQuery: '',
+          }),
+        },
+      };
+    });
+  },
+});
+
+export const aiAnalystPlanningModeLoadingAtom = selector<boolean>({
+  key: 'aiAnalystPlanningModeLoadingAtom',
+  get: ({ get }) => get(aiAnalystPlanningModeAtom).loading,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        planningMode: {
+          ...prev.planningMode,
+          loading: newValue,
+        },
       };
     });
   },

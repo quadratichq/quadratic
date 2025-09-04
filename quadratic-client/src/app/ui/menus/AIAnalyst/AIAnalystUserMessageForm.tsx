@@ -3,6 +3,7 @@ import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPlanningModeEnabledAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -11,6 +12,7 @@ import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/c
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { useSubmitAIAnalystPlanningPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPlanningPrompt';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -27,19 +29,33 @@ export const AIAnalystUserMessageForm = memo(
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
+    const planningModeEnabled = useRecoilValue(aiAnalystPlanningModeEnabledAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+    const { submitPlanningPrompt } = useSubmitAIAnalystPlanningPrompt();
 
     const handleSubmit = useCallback(
       ({ content }: SubmitPromptArgs) => {
         trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
-        submitPrompt({
-          messageSource: 'User',
-          content,
-          context,
-          messageIndex: props.messageIndex,
-        });
+        
+        if (planningModeEnabled && userMessagesCount === 0) {
+          // Use planning mode for the first message when enabled
+          submitPlanningPrompt({
+            messageSource: 'User',
+            content,
+            context,
+            messageIndex: props.messageIndex,
+          });
+        } else {
+          // Use regular submission
+          submitPrompt({
+            messageSource: 'User',
+            content,
+            context,
+            messageIndex: props.messageIndex,
+          });
+        }
       },
-      [context, props.messageIndex, submitPrompt, userMessagesCount]
+      [context, props.messageIndex, submitPrompt, submitPlanningPrompt, userMessagesCount, planningModeEnabled]
     );
 
     const formOnKeyDown = useRecoilCallback(

@@ -1,5 +1,7 @@
 import {
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystPlanningModeAtom,
+  aiAnalystPlanningModeEnabledAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -11,19 +13,27 @@ import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatN
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { AIPlanningInterface } from '@/app/ui/menus/AIAnalyst/AIPlanningInterface';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 
 export const AIAnalyst = memo(() => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const planningModeEnabled = useRecoilValue(aiAnalystPlanningModeEnabledAtom);
+  const planningMode = useRecoilValue(aiAnalystPlanningModeAtom);
+  const setPlanningMode = useSetRecoilState(aiAnalystPlanningModeAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -48,6 +58,43 @@ export const AIAnalyst = memo(() => {
     },
     [setPanelWidth]
   );
+
+  const handleExecutePlan = useCallback((plan: string) => {
+    // Submit the plan as a regular AI prompt for execution
+    const planContent = [
+      createTextContent(`Please execute this plan:\n\n${plan}\n\nOriginal request: ${planningMode.originalQuery}`)
+    ];
+    
+    submitPrompt({
+      messageSource: 'User',
+      content: planContent,
+      context: defaultAIAnalystContext,
+      messageIndex: messagesCount,
+    });
+
+    // Clear planning mode
+    setPlanningMode(prev => ({
+      ...prev,
+      currentPlan: '',
+      planSteps: [],
+      planEdited: false,
+      loading: false,
+      originalQuery: '',
+    }));
+  }, [setPlanningMode, planningMode.originalQuery, submitPrompt, messagesCount]);
+
+  const handleCancelPlan = useCallback(() => {
+    setPlanningMode(prev => ({
+      ...prev,
+      currentPlan: '',
+      planSteps: [],
+      planEdited: false,
+      loading: false,
+      originalQuery: '',
+    }));
+  }, [setPlanningMode]);
+
+  const showPlanningInterface = planningModeEnabled && (planningMode.currentPlan || planningMode.loading);
 
   if (!showAIAnalyst || presentationMode) {
     return null;
@@ -77,6 +124,11 @@ export const AIAnalyst = memo(() => {
 
           {showChatHistory ? (
             <AIAnalystChatHistory />
+          ) : showPlanningInterface ? (
+            <AIPlanningInterface
+              onExecutePlan={handleExecutePlan}
+              onCancel={handleCancelPlan}
+            />
           ) : (
             <>
               <AIAnalystMessages textareaRef={textareaRef} />

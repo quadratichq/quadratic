@@ -76,7 +76,7 @@ export function CancellationDialog({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [addGlobalSnackbar, teamUuid]);
 
   const handleDeclineOffer = useCallback(() => {
     trackEvent('[CancellationFlow].declined-retention-offer');
@@ -108,7 +108,7 @@ export function CancellationDialog({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [addGlobalSnackbar, feedback, handleNavigateToStripePortal, loggedInUser?.email]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

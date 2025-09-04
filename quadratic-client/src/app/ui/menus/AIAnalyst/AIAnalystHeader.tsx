@@ -6,6 +6,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPlanningModeEnabledAtom,
   aiAnalystShowChatHistoryAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
@@ -13,6 +14,8 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
 import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
+import { Switch } from '@/shared/shadcn/ui/switch';
+import { Label } from '@/shared/shadcn/ui/label';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -43,6 +46,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [planningModeEnabled, setPlanningModeEnabled] = useRecoilState(aiAnalystPlanningModeEnabledAtom);
 
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
@@ -151,6 +155,23 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
           </TooltipPopover>
         </div>
       </div>
+
+      {!showChatHistory && (
+        <div className="flex items-center gap-2 px-4 py-1 border-b border-border bg-muted/30">
+          <Label htmlFor="planning-mode" className="text-xs font-medium text-muted-foreground">
+            Planning Mode
+          </Label>
+          <Switch
+            id="planning-mode"
+            checked={planningModeEnabled}
+            onCheckedChange={setPlanningModeEnabled}
+            disabled={loading || currentUserMessagesCount > 0}
+          />
+          <TooltipPopover label="Create a comprehensive plan before execution" side="right">
+            <div className="text-xs text-muted-foreground">ⓘ</div>
+          </TooltipPopover>
+        </div>
+      )}
 
       {showStartFreshMsg && (
         <SubheaderMessage caretPosFromRight={86}>Long chat? New topic? Fresh chats = better results.</SubheaderMessage>
