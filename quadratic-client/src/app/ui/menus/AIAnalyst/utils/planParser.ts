@@ -13,25 +13,27 @@ export interface PlanStep {
 export function parsePlanIntoSteps(planText: string): PlanStep[] {
   if (!planText.trim()) return [];
 
-  const lines = planText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  const lines = planText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
   const steps: PlanStep[] = [];
   let currentStep = '';
   let isInStep = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+
     // Check if this line starts a new step
-    const isStepStart = (
+    const isStepStart =
       // Numbered lists: 1. 2. 1) 2) (1) (2) etc.
       /^\s*\(?(\d+)[.)]\s+/.test(line) ||
-      // Bullet points: - * • 
+      // Bullet points: - * •
       /^\s*[-*•]\s+/.test(line) ||
-      // Headers: # ## ### 
+      // Headers: # ## ###
       /^\s*#{1,6}\s+/.test(line) ||
       // Step indicators: Step 1, Phase 1, etc.
-      /^\s*(step|phase|stage|task|objective)\s+\d+/i.test(line)
-    );
+      /^\s*(step|phase|stage|task|objective)\s+\d+/i.test(line);
 
     if (isStepStart || (!isInStep && line.trim())) {
       // Save previous step if it exists
@@ -42,7 +44,7 @@ export function parsePlanIntoSteps(planText: string): PlanStep[] {
           isEditing: false,
         });
       }
-      
+
       // Start new step
       currentStep = line;
       isInStep = true;
@@ -88,16 +90,14 @@ export function parsePlanIntoSteps(planText: string): PlanStep[] {
  * Converts steps back into a single plan text
  */
 export function stepsToText(steps: PlanStep[]): string {
-  return steps.map(step => step.content).join('\n\n');
+  return steps.map((step) => step.content).join('\n\n');
 }
 
 /**
  * Updates a specific step in the steps array
  */
 export function updateStep(steps: PlanStep[], stepId: string, updates: Partial<PlanStep>): PlanStep[] {
-  return steps.map(step => 
-    step.id === stepId ? { ...step, ...updates } : step
-  );
+  return steps.map((step) => (step.id === stepId ? { ...step, ...updates } : step));
 }
 
 /**
@@ -119,5 +119,5 @@ export function addStep(steps: PlanStep[], position: number, content: string): P
  * Removes a step
  */
 export function removeStep(steps: PlanStep[], stepId: string): PlanStep[] {
-  return steps.filter(step => step.id !== stepId);
+  return steps.filter((step) => step.id !== stepId);
 }

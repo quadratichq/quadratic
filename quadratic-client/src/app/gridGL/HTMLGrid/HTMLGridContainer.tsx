@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
 import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
+import { RangeHighlightOverlay } from '@/app/ui/menus/AIAnalyst/RangeHighlightOverlay';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenu';
 import { TableColumnHeaderRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableColumnHeaderRename';
@@ -106,6 +107,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />
+              <RangeHighlightOverlay />
               <SuggestionDropDown />
             </div>
           </div>

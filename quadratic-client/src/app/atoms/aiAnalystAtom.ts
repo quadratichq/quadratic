@@ -430,13 +430,15 @@ export const aiAnalystPlanningModeEnabledAtom = selector<boolean>({
           ...prev.planningMode,
           enabled: newValue,
           // Reset planning state when toggling off
-          ...(newValue ? {} : {
-            currentPlan: '',
-            planSteps: [],
-            planEdited: false,
-            loading: false,
-            originalQuery: '',
-          }),
+          ...(newValue
+            ? {}
+            : {
+                currentPlan: '',
+                planSteps: [],
+                planEdited: false,
+                loading: false,
+                originalQuery: '',
+              }),
         },
       };
     });

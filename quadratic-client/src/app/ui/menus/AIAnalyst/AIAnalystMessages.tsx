@@ -1,6 +1,7 @@
 import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
+import { ChatMessageWithRanges } from '@/app/ui/menus/AIAnalyst/ChatMessageWithRanges';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -259,20 +260,29 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       }
                     />
                   ) : item.type === 'text' ? (
-                    <Markdown
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      text={item.text}
-                      onChange={
-                        debugAIAnalystChatEditing &&
-                        ((text) => {
+                    debugAIAnalystChatEditing ? (
+                      <Markdown
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        text={item.text}
+                        onChange={(text) => {
                           const newMessage = { ...message, content: [...message.content] };
                           newMessage.content[contentIndex] = { ...item, text };
                           const newMessages = [...messages];
                           (newMessages as typeof messages)[index] = newMessage as typeof message;
                           setMessages(newMessages);
-                        })
-                      }
-                    />
+                        }}
+                      />
+                    ) : (
+                      <ChatMessageWithRanges
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        content={item.text}
+                        messageId={`${index}-${contentIndex}`}
+                        onRangeClick={(range) => {
+                          // TODO: Navigate to range in sheet
+                          console.log('Range clicked:', range);
+                        }}
+                      />
+                    )
                   ) : null
                 )}
 

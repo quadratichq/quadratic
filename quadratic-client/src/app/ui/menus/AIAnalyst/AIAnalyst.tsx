@@ -59,32 +59,35 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
-  const handleExecutePlan = useCallback((plan: string) => {
-    // Submit the plan as a regular AI prompt for execution
-    const planContent = [
-      createTextContent(`Please execute this plan:\n\n${plan}\n\nOriginal request: ${planningMode.originalQuery}`)
-    ];
-    
-    submitPrompt({
-      messageSource: 'User',
-      content: planContent,
-      context: defaultAIAnalystContext,
-      messageIndex: messagesCount,
-    });
+  const handleExecutePlan = useCallback(
+    (plan: string) => {
+      // Submit the plan as a regular AI prompt for execution
+      const planContent = [
+        createTextContent(`Please execute this plan:\n\n${plan}\n\nOriginal request: ${planningMode.originalQuery}`),
+      ];
 
-    // Clear planning mode
-    setPlanningMode(prev => ({
-      ...prev,
-      currentPlan: '',
-      planSteps: [],
-      planEdited: false,
-      loading: false,
-      originalQuery: '',
-    }));
-  }, [setPlanningMode, planningMode.originalQuery, submitPrompt, messagesCount]);
+      submitPrompt({
+        messageSource: 'User',
+        content: planContent,
+        context: defaultAIAnalystContext,
+        messageIndex: messagesCount,
+      });
+
+      // Clear planning mode
+      setPlanningMode((prev) => ({
+        ...prev,
+        currentPlan: '',
+        planSteps: [],
+        planEdited: false,
+        loading: false,
+        originalQuery: '',
+      }));
+    },
+    [setPlanningMode, planningMode.originalQuery, submitPrompt, messagesCount]
+  );
 
   const handleCancelPlan = useCallback(() => {
-    setPlanningMode(prev => ({
+    setPlanningMode((prev) => ({
       ...prev,
       currentPlan: '',
       planSteps: [],
@@ -125,10 +128,7 @@ export const AIAnalyst = memo(() => {
           {showChatHistory ? (
             <AIAnalystChatHistory />
           ) : showPlanningInterface ? (
-            <AIPlanningInterface
-              onExecutePlan={handleExecutePlan}
-              onCancel={handleCancelPlan}
-            />
+            <AIPlanningInterface onExecutePlan={handleExecutePlan} onCancel={handleCancelPlan} />
           ) : (
             <>
               <AIAnalystMessages textareaRef={textareaRef} />

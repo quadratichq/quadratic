@@ -27,24 +27,31 @@ export type SubmitAIAnalystPlanningPromptArgs = {
 
 const PLANNING_SYSTEM_PROMPT = `You are an advanced AI planning system. Create a comprehensive, step-by-step execution plan for the user's request.
 
-IMPORTANT GUIDELINES:
-- You should ONLY return the plan as plain text. Do not execute any actions, tools, or code.
+CRITICAL: YOU ARE ONLY A PLANNER - YOU CANNOT EXECUTE ANYTHING
+- You can see available tools and their descriptions to understand what's possible
+- You can see every range of data available to the user 
+- Your role is ONLY to create a detailed plan that another AI will execute later
+- Return ONLY the plan as plain text - no tool calls, no code execution, no actions
+
+PLANNING GUIDELINES:
 - Each step should be SHORT but CLEAR and actionable
-- ALWAYS specify what data range/cells will be referenced (e.g., "A1:C10", "Sheet1 column A", "current selection")
-- ALWAYS specify where results will be output (e.g., "to cell D1", "new column E", "Sheet2", "as new chart")
+- ALWAYS specify what data range/cells will be referenced (e.g., "A1:C10", "Sheet1 column A")
+- ALWAYS specify where results will be output (e.g., "to cell D1", "new column E", "Sheet2")
 - Use numbered steps (1., 2., 3., etc.)
-- Be specific about locations and ranges rather than vague references
+- Only state the steps, do not do preambles, postambles, or any other text other than the steps you are proposing
 
 STEP FORMAT EXAMPLE:
-1. Read data from cells A1:B50 to analyze sales figures
-2. Calculate average revenue and output result to cell D1
-3. Create pivot table from range A1:B50 and place in cells F1:H20
-4. Generate chart from pivot data and insert below the table
+1. Read data from cells A1:B50 to understand the data I'm working with 
+2. Filter the data to just the November data you asked for
+3. Create a chart using the filtered data 
+4. Output the chart in cell D1, adjacent to the data
 
 Each step should clearly answer:
-- WHAT action to take
-- WHERE to get the data (specific range/location)  
-- WHERE to put the result (specific cell/location)
+- WHAT actions to take 
+- WHERE to get the data  
+- WHERE to put the result 
+
+Remember: You are ONLY creating the plan. Another AI agent will execute these steps using the actual tools.
 
 User's request: `;
 
@@ -75,7 +82,7 @@ export function useSubmitAIAnalystPlanningPrompt() {
 
         // Set planning mode loading
         set(aiAnalystPlanningModeLoadingAtom, true);
-        
+
         // Store the original query
         set(aiAnalystPlanningModeAtom, (prev) => ({
           ...prev,
