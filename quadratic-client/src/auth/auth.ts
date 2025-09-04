@@ -39,9 +39,6 @@ const getAuthClient = async (): Promise<AuthClient> => {
   }
 
   switch (AUTH_TYPE) {
-    case 'auth0':
-      cachedAuthClient = (await import('@/auth/auth0')).auth0Client;
-      return cachedAuthClient;
     case 'ory':
       cachedAuthClient = (await import('@/auth/ory')).oryClient;
       return cachedAuthClient;

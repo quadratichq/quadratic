@@ -1,4 +1,3 @@
-import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { cn } from '@/shared/shadcn/utils';
 import type { ImgHTMLAttributes } from 'react';
 import React, { forwardRef, memo, useCallback, useMemo } from 'react';
@@ -32,7 +31,7 @@ export const Avatar = memo(
           <img
             alt={alt}
             ref={ref}
-            src={getAuth0AvatarSrc(src)}
+            src={src}
             crossOrigin="anonymous"
             onError={handleError}
             style={{ ...stylePreset, ...style }}

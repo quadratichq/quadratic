@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/node';
 import type { Algorithm } from 'jsonwebtoken';
 import type { GetVerificationKey } from 'jwks-rsa';
 import jwksRsa from 'jwks-rsa';
-import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../../env-vars';
+import { JWKS_URI, ORY_ADMIN_HOST } from '../../env-vars';
 import logger from '../../utils/logger';
 import type { ByEmailUser, User, UsersRequest } from './auth';
 
@@ -20,7 +20,7 @@ export const jwtConfigOry = {
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: ORY_JWKS_URI,
+    jwksUri: JWKS_URI,
   }) as GetVerificationKey,
   algorithms: ['RS256'] as Algorithm[],
 };

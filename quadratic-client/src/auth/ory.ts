@@ -112,7 +112,7 @@ export const oryClient: AuthClient = {
   /**
    * Tries to get a token for the current user from the Ory client.
    * If the token is still valid, it'll pull it from a cache. If it’s expired,
-   * it will fail and we will manually redirect the user to auth0 to re-authenticate
+   * it will fail and we will manually redirect the user to ory to re-authenticate
    * and get a new token.
    */
   async getTokenOrRedirect(skipRedirect?: boolean) {

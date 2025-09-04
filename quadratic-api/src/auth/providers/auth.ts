@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { AUTH_TYPE } from '../../env-vars';
-import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './auth0';
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
@@ -39,8 +38,6 @@ export type ByEmailUser = {
 
 export const getUsers = async (users: UsersRequest[]): Promise<Record<number, User>> => {
   switch (AUTH_TYPE) {
-    case 'auth0':
-      return await getUsersFromAuth0(users);
     case 'ory':
       return await getUsersFromOry(users);
     case 'workos':
@@ -52,8 +49,6 @@ export const getUsers = async (users: UsersRequest[]): Promise<Record<number, Us
 
 export const getUsersByEmail = async (email: string): Promise<ByEmailUser[]> => {
   switch (AUTH_TYPE) {
-    case 'auth0':
-      return await getUsersFromAuth0ByEmail(email);
     case 'ory':
       return await getUsersFromOryByEmail(email);
     case 'workos':
@@ -65,8 +60,6 @@ export const getUsersByEmail = async (email: string): Promise<ByEmailUser[]> => 
 
 export const jwtConfig = () => {
   switch (AUTH_TYPE) {
-    case 'auth0':
-      return jwtConfigAuth0;
     case 'ory':
       return jwtConfigOry;
     case 'workos':
