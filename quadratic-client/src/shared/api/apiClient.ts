@@ -56,6 +56,22 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
       },
+      retentionDiscount: {
+        async get(uuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${uuid}/billing/retention-discount`,
+            { method: 'GET' },
+            ApiSchemas['/v0/teams/:uuid/billing/retention-discount.GET.response']
+          );
+        },
+        async create(uuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${uuid}/billing/retention-discount`,
+            { method: 'POST' },
+            ApiSchemas['/v0/teams/:uuid/billing/retention-discount.POST.response']
+          );
+        },
+      },
       async aiUsage(uuid: string) {
         const data = await fetchFromApi(
           `/v0/teams/${uuid}/billing/ai/usage`,
