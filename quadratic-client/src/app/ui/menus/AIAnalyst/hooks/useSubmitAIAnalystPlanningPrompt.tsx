@@ -136,7 +136,7 @@ export function useSubmitAIAnalystPlanningPrompt() {
             chatId,
             source: 'AIAnalyst',
             messageSource,
-            modelKey: aiModel.modelKey,
+            modelKey: 'openai:o3-2025-04-16', // Always use o3 for planning, regardless of selected model
             messages: messagesWithContext,
             useStream: false, // Don't stream for planning
             toolName: undefined,
