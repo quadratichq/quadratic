@@ -450,6 +450,12 @@ export const ApiSchemas = {
   }),
   '/v0/teams/:uuid/billing/portal/session.GET.response': z.object({ url: z.string() }),
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
+  '/v0/teams/:uuid/billing/retention-discount.GET.response': z.object({
+    isEligible: z.boolean(),
+  }),
+  '/v0/teams/:uuid/billing/retention-discount.POST.response': z.object({
+    message: z.string(),
+  }),
 
   /**
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)

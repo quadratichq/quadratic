@@ -299,7 +299,7 @@ export const AIToolsArgsSchema = {
     page: numberSchema,
   }),
   [AITool.HasCellData]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
@@ -368,24 +368,24 @@ export const AIToolsArgsSchema = {
     case_sensitive: booleanSchema,
     whole_cell: booleanSchema,
     search_code: booleanSchema,
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
   }),
   [AITool.RerunCode]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string().nullable().optional(),
   }),
   [AITool.ResizeColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     size: z.enum(['auto', 'default']),
   }),
   [AITool.ResizeRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     size: z.enum(['auto', 'default']),
   }),
   [AITool.SetBorders]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     color: z.string(),
     line: z
@@ -398,27 +398,27 @@ export const AIToolsArgsSchema = {
       .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
   }),
   [AITool.InsertColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     column: z.string(),
     right: booleanSchema,
     count: numberSchema,
   }),
   [AITool.InsertRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     row: numberSchema,
     below: booleanSchema,
     count: numberSchema,
   }),
   [AITool.DeleteColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     columns: z.array(z.string()),
   }),
   [AITool.DeleteRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     rows: z.array(numberSchema),
   }),
   [AITool.TableMeta]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     table_location: z.string(),
     new_table_name: z.string().nullable().optional(),
     first_row_is_column_names: booleanSchema.nullable().optional(),
@@ -427,7 +427,7 @@ export const AIToolsArgsSchema = {
     alternating_row_colors: booleanSchema.nullable().optional(),
   }),
   [AITool.TableColumnSettings]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     table_location: z.string(),
     column_names: z.array(
       z.object({
@@ -438,17 +438,17 @@ export const AIToolsArgsSchema = {
     ),
   }),
   [AITool.GetValidations]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
   }),
   [AITool.AddMessage]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     message_title: z.string().nullable().optional(),
     message_text: z.string().nullable().optional(),
   }),
   [AITool.AddLogicalValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       show_checkbox: booleanSchema.nullable().optional(),
       ignore_blank: booleanSchema.nullable().optional(),
@@ -456,7 +456,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddListValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       drop_down: booleanSchema.nullable().optional(),
@@ -466,7 +466,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddTextValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       max_length: numberSchema.nullable().optional(),
@@ -481,7 +481,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddNumberValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       range: z.string().nullable().optional(),
@@ -491,7 +491,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddDateTimeValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       date_range: z.string().nullable().optional(),
@@ -507,7 +507,7 @@ export const AIToolsArgsSchema = {
     })
     .merge(validationMessageErrorSchema),
   [AITool.RemoveValidations]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
 } as const;
@@ -802,8 +802,9 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+This tool gets the full code for a Python, JavaScript, Formula, or connection cell.\n
+Use this tool to view the code in an existing code cell so you can fix errors or make improvements. Once you've read the code, you can improve it using the set_code_cell_value tool call.\n
+This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -825,8 +826,9 @@ Use this code to fix errors or make improvements by updating it using the set_co
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
     prompt: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+This tool gets the full code for a Python, JavaScript, Formula, or connection cell.\n
+Use this tool to view the code in an existing code cell so you can fix errors or make improvements. Once you've read the code, you can improve it using the set_code_cell_value tool call.\n
+This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n`,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
@@ -1747,10 +1749,12 @@ It requires a array of objects with sheet names and new colors.\n
 `,
   },
   [AITool.TextSearch]: {
-    sources: ['AIAnalyst', 'AIAssistant'],
+    sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
+Use this tool when looking for a specific piece of output in the file.\n
+This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -1783,6 +1787,8 @@ This tool searches for text in cells within a specific sheet or the entire file.
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
     prompt: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
+Use this tool when looking for a specific piece of output in the file.\n
+This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
 `,
   },
   [AITool.RerunCode]: {
@@ -1826,8 +1832,9 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
     description: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
-The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The selection is a range of columns, for example: A1:D1.\n
 The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -1838,8 +1845,7 @@ The size is either "default" or "auto". Auto will resize the column to the width
         },
         selection: {
           type: 'string',
-          description:
-            'The selection (in A1 notation) of columns to resize, for example: A1:D1 (the rows do not matter)',
+          description: 'The selection (in A1 notation) of columns to resize, for example: A1:D1',
         },
         size: {
           type: 'string',
@@ -1854,8 +1860,9 @@ The size is either "default" or "auto". Auto will resize the column to the width
     prompt: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
-The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The selection is a range of columns, for example: A1:D1.\n
 The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
 `,
   },
   [AITool.ResizeRows]: {
@@ -1864,8 +1871,9 @@ The size is either "default" or "auto". Auto will resize the column to the width
     description: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
-The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The selection is a range of rows, for example: A1:A100.\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+Use this tool when the user specifically asks to resize rows.\n
 `,
     parameters: {
       type: 'object',
@@ -1876,8 +1884,7 @@ The size is either "default" or "auto". Auto will resize the row to the height o
         },
         selection: {
           type: 'string',
-          description:
-            'The selection (in A1 notation) of rows to resize, for example: A1:D1 (the columns do not matter)',
+          description: 'The selection (in A1 notation) of rows to resize, for example: A1:A100',
         },
         size: {
           type: 'string',
@@ -1892,8 +1899,9 @@ The size is either "default" or "auto". Auto will resize the row to the height o
     prompt: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
-The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The selection is a range of rows in A1 notation, for example: A1:A100.\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+Use this tool when the user specifically asks to resize rows.\n
 `,
   },
   [AITool.SetBorders]: {
