@@ -39,16 +39,15 @@ export const ConvertToTable = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    const { table_name, selection } = toolArgs.data;
     return (
       <ToolCard
         icon={icon}
         label={
           <span>
-            {label} <span className="text-muted-foreground">| {table_name}</span>
+            {label} <span className="text-muted-foreground">| {toolArgs.data.table_name}</span>
           </span>
         }
-        description={`Converting ${selection} to data table`}
+        description={toolArgs.data.selection}
         className={className}
       />
     );

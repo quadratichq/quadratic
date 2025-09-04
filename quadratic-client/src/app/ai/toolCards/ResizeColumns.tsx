@@ -12,31 +12,29 @@ export const ResizeColumns = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ResizeColumnsResponse, ResizeColumnsResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = args ? JSON.parse(args) : {};
-          setToolArgs(aiToolsSpec[AITool.ResizeColumns].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[ResizeColumns] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = args ? JSON.parse(args) : {};
+        setToolArgs(aiToolsSpec[AITool.ResizeColumns].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[ResizeColumns] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
     const label = 'Resize columns';
 
-    const description = useMemo(
-      () =>
-        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Columns in sheet "${toolArgs.data.sheet_name}" within selection "${toolArgs.data.selection}" have been resized.`
-          : toolArgs?.data?.sheet_name && !toolArgs?.data?.selection
-            ? `Columns in sheet "${toolArgs.data.sheet_name}" have been resized.`
-            : 'Columns in all sheets have been resized.',
-      [toolArgs?.data?.selection, toolArgs?.data?.sheet_name]
-    );
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}"!` : ''}${toolArgs.data.selection} ${toolArgs.data.size}`;
+      }
+      return '';
+    }, [toolArgs?.data?.selection, toolArgs?.data?.sheet_name, toolArgs?.data?.size, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
