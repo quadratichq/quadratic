@@ -1,0 +1,16 @@
+version: 1
+default_environment: dev
+project_id: 0198f7cf-9795-7cd8-9a2e-dd7e72e1590b
+environments:
+- name: dev
+- name: staging
+- name: prod
+plugins:
+  extractors:
+  - name: tap-mixpanel
+    variant: hotgluexyz
+    pip_url: git+https://github.com/hotgluexyz/tap-mixpanel.git
+  loaders:
+  - name: target-parquet-custom
+    namespace: custom
+    executable: ./target-parquet-custom.py
