@@ -34,9 +34,9 @@ export function ConnectionFormCreate({
   const submit = useSubmit();
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
-    const { name, type, ...typeDetails } = formValues;
+    const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].create', { type });
-    const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
+    const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
@@ -72,9 +72,13 @@ export function ConnectionFormEdit({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
-    const { name, type, ...typeDetails } = formValues;
+    const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].edit', { type });
-    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
+    const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, {
+      name,
+      semanticDescription,
+      typeDetails,
+    });
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };

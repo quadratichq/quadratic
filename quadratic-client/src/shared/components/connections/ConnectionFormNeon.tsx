@@ -1,4 +1,5 @@
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -6,6 +7,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsNeonSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
@@ -14,6 +16,7 @@ import { z } from 'zod';
 
 const ConnectionFormNeonSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.NEON),
   ...ConnectionTypeDetailsNeonSchema.shape,
 });
@@ -35,6 +38,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     database: String(connection?.typeDetails?.database || ''),
     username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
+    semanticDescription: String(connection?.semanticDescription || ''),
   };
 
   const form = useForm<FormValues>({
@@ -133,6 +137,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             )}
           />
         </div>
+
+        <ConnectionFormSemantic form={form} />
 
         {children}
       </form>
