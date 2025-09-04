@@ -13,17 +13,17 @@ jest.mock('auth0', () =>
   ])
 );
 
-import { getUsersFromAuth0 } from './auth0';
+import { getUsers } from './auth';
 
-describe('auth0.ts', () => {
+describe('auth.ts', () => {
   it('finds existing users', async () => {
-    const result = await getUsersFromAuth0([
+    const result = await getUsers([
       { id: 1, auth0Id: 'user1', email: 'user1@test.com' },
       { id: 2, auth0Id: 'user2', email: 'user2@test.com' },
     ]);
     expect(Object.keys(result).length).toEqual(2);
   });
   it('throws when looking up a user that does not exist', async () => {
-    expect(getUsersFromAuth0([{ id: 3, auth0Id: 'user3', email: 'user3@test.com' }])).rejects.toThrow();
+    expect(getUsers([{ id: 3, auth0Id: 'user3', email: 'user3@test.com' }])).rejects.toThrow();
   });
 });
