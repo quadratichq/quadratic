@@ -802,8 +802,9 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+This tool gets the full code for a Python, JavaScript, Formula, or connection cell.\n
+Use this tool to view the code in an existing code cell so you can fix errors or make improvements. Once you've read the code, you can improve it using the set_code_cell_value tool call.\n
+This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -825,8 +826,9 @@ Use this code to fix errors or make improvements by updating it using the set_co
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
     prompt: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+This tool gets the full code for a Python, JavaScript, Formula, or connection cell.\n
+Use this tool to view the code in an existing code cell so you can fix errors or make improvements. Once you've read the code, you can improve it using the set_code_cell_value tool call.\n
+This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n`,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
@@ -1751,6 +1753,8 @@ It requires a array of objects with sheet names and new colors.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
+Use this tool when looking for a specific piece of output in the file.\n
+This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -1783,6 +1787,8 @@ This tool searches for text in cells within a specific sheet or the entire file.
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
     prompt: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
+Use this tool when looking for a specific piece of output in the file.\n
+This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
 `,
   },
   [AITool.RerunCode]: {
@@ -1866,6 +1872,7 @@ This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+Use this tool when the user specifically asks to resize rows or when the user asks to prettify the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -1894,6 +1901,7 @@ This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+Use this tool when the user specifically asks to resize rows or when the user asks to prettify the sheet.\n
 `,
   },
   [AITool.SetBorders]: {
