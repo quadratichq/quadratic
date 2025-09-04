@@ -2,6 +2,7 @@ import {
   debugFlagDefaults,
   debugFlagDescriptions,
   type DebugFlag,
+  type DebugFlagKeys,
   type DebugFlagOptions,
 } from '@/app/debugFlags/debugFlagsDefinitions';
 import { events } from '@/app/events/events';
@@ -84,7 +85,7 @@ export const debugFlagWait = async (key: DebugFlag) => {
   return debugFlag(key);
 };
 
-export const debugFlag = (key: DebugFlag) => {
+export const debugFlag = (key: DebugFlagKeys) => {
   return debugFlags.getFlag(key);
 };
 

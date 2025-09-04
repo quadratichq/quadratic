@@ -20,19 +20,20 @@ export function isBitmapFontLoaded(): boolean {
 }
 
 export async function loadAssets() {
-  if (debugFlag('debugStartupTime')) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
-  createBorderTypes();
-
   // Load PixiJS fonts for canvas
-  const bundle = {
+  const fontBundle = {
     OpenSans: '/fonts/opensans/OpenSans.fnt',
     'OpenSans-Bold': '/fonts/opensans/OpenSans-Bold.fnt',
     'OpenSans-Italic': '/fonts/opensans/OpenSans-Italic.fnt',
     'OpenSans-BoldItalic': '/fonts/opensans/OpenSans-BoldItalic.fnt',
+  };
+  // Add bundles to Assets
+  Assets.addBundle('fontBundle', fontBundle);
 
+  const iconBundle = {
     'icon-formula': '/images/icon-formula.png',
     'icon-python': '/images/icon-python.png',
     'icon-javascript': '/images/icon-javascript.png',
@@ -46,20 +47,25 @@ export async function loadAssets() {
     'sort-ascending': '/images/sort-ascending.svg',
     'sort-descending': '/images/sort-descending.svg',
   };
-  // Add bundles to Assets
-  Assets.addBundle('bundle', bundle);
-  await Assets.loadBundle('bundle');
+  Assets.addBundle('iconBundle', iconBundle);
 
   // Load HTML fonts for Input
   const openSansPromise = loadFont('OpenSans');
   const openSansBoldPromise = loadFont('OpenSans-Bold');
   const openSansItalicPromise = loadFont('OpenSans-Italic');
   const openSansBoldItalicPromise = loadFont('OpenSans-BoldItalic');
-  await Promise.all([openSansPromise, openSansBoldPromise, openSansItalicPromise, openSansBoldItalicPromise]);
+  await Promise.all([
+    openSansPromise,
+    openSansBoldPromise,
+    openSansItalicPromise,
+    openSansBoldItalicPromise,
+    Assets.loadBundle('fontBundle'),
+  ]);
+
+  // we don't need to wait for the icon bundle to load to start the renderWorker
+  Assets.loadBundle('iconBundle');
 
   assetsLoaded = true;
 
   events.emit('bitmapFontsLoaded');
-
-  if (debugFlag('debugStartupTime')) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
 }

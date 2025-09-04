@@ -60,7 +60,7 @@ function loadGoogleAnalytics(user: User) {
     document.head.appendChild(script_1);
     document.head.appendChild(script_2);
 
-    if (debugFlag('debugShow')) console.log('[Analytics] Google activated with UTM data:', utmData);
+    if (debugFlag('debugShowAnalytics')) console.log('[Analytics] Google activated with UTM data:', utmData);
   }
 }
 
@@ -76,12 +76,12 @@ function initAmplitudeAnalytics(user: User) {
     defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true },
   });
 
-  if (debugFlag('debugShow')) console.log('[Analytics] Amplitude activated');
+  if (debugFlag('debugShowAnalytics')) console.log('[Analytics] Amplitude activated');
 }
 
 function configureSentry(user: User) {
   if (user) {
     setUser({ email: user.email, id: user.sub });
-    if (debugFlag('debugShow')) console.log('[Analytics] Sentry user set');
+    if (debugFlag('debugShowAnalytics')) console.log('[Analytics] Sentry user set');
   }
 }

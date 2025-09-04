@@ -76,25 +76,18 @@ class Core {
   };
 
   private fetchGridFile = async (file: string): Promise<Uint8Array> => {
-    if (debugFlag('debugStartupTime')) {
-      console.time('[core] Loading grid file from API');
-    }
+    coreClient.sendStartupTimer('core.loadFile.fetchGridFile', { start: performance.now() });
     const res = await fetch(file);
     const array = new Uint8Array(await res.arrayBuffer());
-    if (debugFlag('debugStartupTime')) {
-      console.timeEnd('[core] Loading grid file from API');
-    }
+    coreClient.sendStartupTimer('fileSize', { start: array.length });
+    coreClient.sendStartupTimer('core.loadFile.fetchGridFile', { end: performance.now() });
     return array;
   };
 
   private loadCore = async () => {
-    if (debugFlag('debugStartupTime')) {
-      console.time('[core] Loading core');
-    }
+    coreClient.sendStartupTimer('core.loadFile.loadCore', { start: performance.now() });
     await initCore();
-    if (debugFlag('debugStartupTime')) {
-      console.timeEnd('[core] Loading core');
-    }
+    coreClient.sendStartupTimer('core.loadFile.loadCore', { end: performance.now() });
   };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
@@ -102,19 +95,25 @@ class Core {
     message: ClientCoreLoad,
     renderPort: MessagePort
   ): Promise<{ version: string } | { error: string }> => {
+    coreClient.sendStartupTimer('core.loadFile', { start: performance.now() });
+
     this.teamUuid = message.teamUuid;
 
     coreRender.init(renderPort);
 
     try {
       const results = await Promise.all([this.fetchGridFile(message.url), this.loadCore()]);
+      coreClient.sendStartupTimer('core.loadFile.newFromFile', { start: performance.now() });
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
+      coreClient.sendStartupTimer('core.loadFile.newFromFile', { end: performance.now() });
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);
       return { error: 'Unable to load file' };
     }
 
     if (debugFlag('debugWebWorkers')) console.log('[core] GridController loaded');
+
+    coreClient.sendStartupTimer('core.loadFile', { end: performance.now() });
 
     return { version: this.gridController.getVersion() };
   };
