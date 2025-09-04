@@ -71,6 +71,7 @@ export const TopBarUsers = () => {
     const viewport = user.viewport;
 
     return {
+      email: user.email,
       name: displayName(user, false),
       initials: displayInitials(user),
       avatarSrc: user.image,
@@ -98,7 +99,11 @@ export const TopBarUsers = () => {
     <>
       <div className="flex flex-row-reverse items-stretch gap-2 self-stretch">
         <DropdownMenu>
-          <DropdownMenuTrigger className="self-center" disabled={Boolean(anonymous)}>
+          <DropdownMenuTrigger
+            data-testid="top-bar-users-dropdown-trigger"
+            className="self-center"
+            disabled={Boolean(anonymous)}
+          >
             <You
               displayName={displayName(loggedInUser ?? anonymous, true)}
               initial={displayInitials(loggedInUser ?? anonymous)}
@@ -119,6 +124,7 @@ export const TopBarUsers = () => {
         </DropdownMenu>
         {visibleUsers.map(
           ({
+            email,
             name,
             initials,
             avatarSrc,
@@ -134,6 +140,7 @@ export const TopBarUsers = () => {
                 <TooltipTrigger asChild>
                   <button onClick={handleFollow} disabled={isFollowingYou}>
                     <UserAvatar
+                      email={email}
                       name={name}
                       initials={initials}
                       avatarSrc={avatarSrc}
@@ -176,6 +183,7 @@ export const TopBarUsers = () => {
             >
               {extraUsers.map(
                 ({
+                  email,
                   name,
                   initials,
                   avatarSrc,
@@ -196,6 +204,7 @@ export const TopBarUsers = () => {
                       }}
                     >
                       <UserAvatar
+                        email={email}
                         name={name}
                         initials={initials}
                         avatarSrc={avatarSrc}
@@ -220,6 +229,7 @@ export const TopBarUsers = () => {
 };
 
 function UserAvatar({
+  email,
   name,
   initials,
   avatarSrc,
@@ -227,6 +237,7 @@ function UserAvatar({
   isBeingFollowedByYou,
   isFollowingYou,
 }: {
+  email: string;
   name: string;
   initials: string;
   avatarSrc: string;
@@ -235,7 +246,7 @@ function UserAvatar({
   isFollowingYou: boolean;
 }) {
   return (
-    <div className="relative">
+    <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
       <Avatar
         alt={name}
         src={avatarSrc}

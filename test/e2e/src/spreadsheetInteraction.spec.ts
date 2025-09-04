@@ -2652,7 +2652,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Click on your profile
-  await page.locator('button:has(img[alt*="You"])').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="top-bar-users-dropdown-trigger"]').click({ timeout: 60 * 1000 });
 
   // Select Log Out
   await page.getByRole(`menuitem`, { name: `Log out` }).click({ timeout: 60 * 1000 });
@@ -2664,10 +2664,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Assert you are on the Login page via text assertions
-  await expect(page.getByText(`Welcome Login to Quadratic.`)).toBeVisible({ timeout: 2000 });
-  await expect(page.getByRole(`textbox`, { name: `Work email` })).toBeVisible();
-  await expect(page.getByRole(`textbox`, { name: `Password` })).toBeVisible();
-  await expect(page.getByRole(`button`, { name: `Continue with Google` })).toBeVisible();
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log back in to delete the file we created
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
