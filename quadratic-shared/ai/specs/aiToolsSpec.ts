@@ -1832,8 +1832,9 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
     description: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
-The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The selection is a range of columns, for example: A1:D1.\n
 The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -1844,8 +1845,7 @@ The size is either "default" or "auto". Auto will resize the column to the width
         },
         selection: {
           type: 'string',
-          description:
-            'The selection (in A1 notation) of columns to resize, for example: A1:D1 (the rows do not matter)',
+          description: 'The selection (in A1 notation) of columns to resize, for example: A1:D1',
         },
         size: {
           type: 'string',
@@ -1860,8 +1860,9 @@ The size is either "default" or "auto". Auto will resize the column to the width
     prompt: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
-The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The selection is a range of columns, for example: A1:D1.\n
 The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+Use this tool when the user specifically asks to resize columns or when the user asks to prettify the sheet.\n
 `,
   },
   [AITool.ResizeRows]: {
@@ -1870,9 +1871,9 @@ The size is either "default" or "auto". Auto will resize the column to the width
     description: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
-The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The selection is a range of rows, for example: A1:A100.\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
-Use this tool when the user specifically asks to resize rows or when the user asks to prettify the sheet.\n
+Use this tool when the user specifically asks to resize rows.\n
 `,
     parameters: {
       type: 'object',
@@ -1883,8 +1884,7 @@ Use this tool when the user specifically asks to resize rows or when the user as
         },
         selection: {
           type: 'string',
-          description:
-            'The selection (in A1 notation) of rows to resize, for example: A1:D1 (the columns do not matter)',
+          description: 'The selection (in A1 notation) of rows to resize, for example: A1:A100',
         },
         size: {
           type: 'string',
@@ -1899,9 +1899,9 @@ Use this tool when the user specifically asks to resize rows or when the user as
     prompt: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
-The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The selection is a range of rows in A1 notation, for example: A1:A100.\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
-Use this tool when the user specifically asks to resize rows or when the user asks to prettify the sheet.\n
+Use this tool when the user specifically asks to resize rows.\n
 `,
   },
   [AITool.SetBorders]: {
