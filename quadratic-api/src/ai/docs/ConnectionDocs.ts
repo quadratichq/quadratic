@@ -18,7 +18,7 @@ There are some slight differences between SQL syntax across databases to keep in
 * COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES
 * MARIADB has the same syntax as MySQL
 
-In PostgreSQL, identifiers like table names and column names that contain spaces or are reserved keywords need to be enclosed in double quotes.
+In PostgreSQL, identifiers like table names and column names that contain spaces or are reserved keywords need to be enclosed in double quotes. Additionally, Date and other words are reserved keywords that need enclosed in double quotes.
 
 ## SQL references
 
