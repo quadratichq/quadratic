@@ -117,7 +117,7 @@ export const AIAnalyst = memo(() => {
         <div
           className={cn(
             'h-full w-full',
-            showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
+            showChatHistory || showPlanningInterface ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
           )}
         >
           <AIAnalystHeader textareaRef={textareaRef} />

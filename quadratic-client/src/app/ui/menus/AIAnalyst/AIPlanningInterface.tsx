@@ -108,13 +108,13 @@ export const AIPlanningInterface = memo(({ onExecutePlan, onCancel }: AIPlanning
   const canExecute = hasSteps && planSteps.some(step => step.content.trim());
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-muted/20">
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold">Plan Review & Edit</span>
+              <span className="text-lg font-semibold">Review Plan</span>
               {planEdited && (
                 <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
                   Modified
@@ -138,7 +138,7 @@ export const AIPlanningInterface = memo(({ onExecutePlan, onCancel }: AIPlanning
               disabled={!canExecute}
               className="min-w-24"
             >
-              Execute Plan
+              Execute
             </Button>
           </div>
         </div>
@@ -151,8 +151,8 @@ export const AIPlanningInterface = memo(({ onExecutePlan, onCancel }: AIPlanning
       </div>
 
       {/* Steps content - scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="p-4 space-y-4 pb-8">
           {planSteps.map((step, index) => (
             <PlanStep
               key={step.id}
