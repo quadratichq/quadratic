@@ -299,7 +299,7 @@ export const AIToolsArgsSchema = {
     page: numberSchema,
   }),
   [AITool.HasCellData]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
@@ -368,24 +368,24 @@ export const AIToolsArgsSchema = {
     case_sensitive: booleanSchema,
     whole_cell: booleanSchema,
     search_code: booleanSchema,
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
   }),
   [AITool.RerunCode]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string().nullable().optional(),
   }),
   [AITool.ResizeColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     size: z.enum(['auto', 'default']),
   }),
   [AITool.ResizeRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     size: z.enum(['auto', 'default']),
   }),
   [AITool.SetBorders]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     color: z.string(),
     line: z
@@ -398,27 +398,27 @@ export const AIToolsArgsSchema = {
       .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
   }),
   [AITool.InsertColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     column: z.string(),
     right: booleanSchema,
     count: numberSchema,
   }),
   [AITool.InsertRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     row: numberSchema,
     below: booleanSchema,
     count: numberSchema,
   }),
   [AITool.DeleteColumns]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     columns: z.array(z.string()),
   }),
   [AITool.DeleteRows]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     rows: z.array(numberSchema),
   }),
   [AITool.TableMeta]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     table_location: z.string(),
     new_table_name: z.string().nullable().optional(),
     first_row_is_column_names: booleanSchema.nullable().optional(),
@@ -427,7 +427,7 @@ export const AIToolsArgsSchema = {
     alternating_row_colors: booleanSchema.nullable().optional(),
   }),
   [AITool.TableColumnSettings]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     table_location: z.string(),
     column_names: z.array(
       z.object({
@@ -438,17 +438,17 @@ export const AIToolsArgsSchema = {
     ),
   }),
   [AITool.GetValidations]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
   }),
   [AITool.AddMessage]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     message_title: z.string().nullable().optional(),
     message_text: z.string().nullable().optional(),
   }),
   [AITool.AddLogicalValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       show_checkbox: booleanSchema.nullable().optional(),
       ignore_blank: booleanSchema.nullable().optional(),
@@ -456,7 +456,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddListValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       drop_down: booleanSchema.nullable().optional(),
@@ -466,7 +466,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddTextValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       max_length: numberSchema.nullable().optional(),
@@ -481,7 +481,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddNumberValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       range: z.string().nullable().optional(),
@@ -491,7 +491,7 @@ export const AIToolsArgsSchema = {
     .merge(validationMessageErrorSchema),
   [AITool.AddDateTimeValidation]: z
     .object({
-      sheet_name: z.string().optional(),
+      sheet_name: z.string().nullable().optional(),
       selection: z.string(),
       ignore_blank: booleanSchema.nullable().optional(),
       date_range: z.string().nullable().optional(),
@@ -507,7 +507,7 @@ export const AIToolsArgsSchema = {
     })
     .merge(validationMessageErrorSchema),
   [AITool.RemoveValidations]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
 } as const;
@@ -1777,7 +1777,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
           description: 'The sheet name to search in. If not provided, then it searches all sheets.',
         },
       },
-      required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code', 'sheet_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
