@@ -1,14 +1,13 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
     {
-      // `user_id` in Auth0 is `auth0Id` in our system
-      user_id: 'user1',
-      email: 'user2@example.com',
+      id: 'user1',
+      email: 'user1@test.com',
     },
     {
-      user_id: 'user2',
-      email: 'user2@example.com',
+      id: 'user2',
+      email: 'user2@test.com',
     },
   ])
 );

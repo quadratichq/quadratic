@@ -1,29 +1,29 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
     {
-      user_id: 'team_1_owner',
-      email: 'team_1_owner@example.com',
-      // picture: null,
-      name: 'Test User 1',
+      id: 'team_1_owner',
+      email: 'team_1_owner@test.com',
+      firstName: 'Test',
+      lastName: 'User 1',
     },
     {
-      user_id: 'team_1_editor',
-      email: 'team_1_editor@example.com',
-      // picture: null,
-      name: 'Test User 2',
+      id: 'team_1_editor',
+      email: 'team_1_editor@test.com',
+      firstName: 'Test',
+      lastName: 'User 2',
     },
     {
-      user_id: 'team_1_viewer',
-      email: 'team_1_viewer@example.com',
-      // picture: null,
-      name: 'Test User 3',
+      id: 'team_1_viewer',
+      email: 'team_1_viewer@test.com',
+      firstName: 'Test',
+      lastName: 'User 3',
     },
     {
-      user_id: 'user_without_team',
-      email: 'user_without_team@example.com',
-      // picture: null,
-      name: 'Test User 4',
+      id: 'user_without_team',
+      email: 'user_without_team@test.com',
+      firstName: 'Test',
+      lastName: 'User 4',
     },
   ])
 );
@@ -84,15 +84,15 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.files).toHaveLength(1);
           expect(typeof res.body.files[0].file.creatorId).toBe('number');
 
-          expect(res.body.users[0].email).toBe('team_1_owner@example.com');
+          expect(res.body.users[0].email).toBe('team_1_owner@test.com');
           expect(res.body.users[0].role).toBe('OWNER');
           expect(res.body.users[0].name).toBe('Test User 1');
 
-          expect(res.body.users[1].email).toBe('team_1_editor@example.com');
+          expect(res.body.users[1].email).toBe('team_1_editor@test.com');
           expect(res.body.users[1].role).toBe('EDITOR');
           expect(res.body.users[1].name).toBe('Test User 2');
 
-          expect(res.body.users[2].email).toBe('team_1_viewer@example.com');
+          expect(res.body.users[2].email).toBe('team_1_viewer@test.com');
           expect(res.body.users[2].role).toBe('VIEWER');
           expect(res.body.users[2].name).toBe('Test User 3');
         });

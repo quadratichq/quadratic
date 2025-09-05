@@ -1,17 +1,19 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
     {
-      user_id: 'user1',
-      email: 'user1@example.com',
-      picture: 'https://s.gravatar.com/avat',
-      name: 'User One',
+      id: 'user1',
+      email: 'user1@test.com',
+      firstName: 'User',
+      lastName: 'One',
+      profilePictureUrl: 'https://s.gravatar.com/avat',
     },
     {
-      user_id: 'user2',
-      email: 'user2@example.com',
-      picture: 'https://s.gravatar.com/avat',
-      name: 'User Two',
+      id: 'user2',
+      email: 'user2@test.com',
+      firstName: 'User',
+      lastName: 'Two',
+      profilePictureUrl: 'https://s.gravatar.com/avat',
     },
   ])
 );
@@ -40,7 +42,7 @@ beforeAll(async () => {
       uuid: '00000000-0000-4000-8000-000000000001',
       FileInvite: {
         create: {
-          email: 'usernotinystemyet@example.com',
+          email: 'usernotinystemyet@test.com',
           role: 'EDITOR',
         },
       },
