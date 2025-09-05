@@ -1,16 +1,5 @@
 import { workosMock } from '../tests/workosMock';
-jest.mock('@workos-inc/node', () =>
-  workosMock([
-    {
-      id: 'userOwner',
-      email: 'userowner@test.com',
-    },
-    {
-      id: 'userNoTeam',
-      email: 'usernoteam@test.com',
-    },
-  ])
-);
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'userOwner' }, { id: 'userNoTeam' }]));
 
 import request from 'supertest';
 import { app } from '../app';

@@ -1,22 +1,10 @@
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () =>
   workosMock([
-    {
-      id: 'userOwner',
-      email: 'userowner@test.com',
-    },
-    {
-      id: 'userEditor',
-      email: 'usereditor@test.com',
-    },
-    {
-      id: 'userViewer',
-      email: 'userviewer@test.com',
-    },
-    {
-      id: 'userNoRole',
-      email: 'usernorole@test.com',
-    },
+    { id: 'userOwner' },
+    { id: 'userEditor' },
+    { id: 'userViewer' },
+    { id: 'userNoRole' },
     {
       id: 'duplicate_emails_user_1',
       email: 'duplicate_emails_user@test.com',
@@ -25,10 +13,7 @@ jest.mock('@workos-inc/node', () =>
       id: 'duplicate_emails_user_2',
       email: 'duplicate_emails_user@test.com',
     },
-    {
-      id: 'userNotYetInDb',
-      email: 'usernotyetindb@test.com',
-    },
+    { id: 'userNotYetInDb' },
   ])
 );
 

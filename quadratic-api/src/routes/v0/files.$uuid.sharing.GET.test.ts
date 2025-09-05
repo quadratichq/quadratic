@@ -3,14 +3,12 @@ jest.mock('@workos-inc/node', () =>
   workosMock([
     {
       id: 'user1',
-      email: 'user1@test.com',
       firstName: 'User',
       lastName: 'One',
       profilePictureUrl: 'https://s.gravatar.com/avat',
     },
     {
       id: 'user2',
-      email: 'user2@test.com',
       firstName: 'User',
       lastName: 'Two',
       profilePictureUrl: 'https://s.gravatar.com/avat',

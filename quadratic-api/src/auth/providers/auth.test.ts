@@ -1,16 +1,5 @@
 import { workosMock } from '../../tests/workosMock';
-jest.mock('@workos-inc/node', () =>
-  workosMock([
-    {
-      id: 'user1',
-      email: 'user1@test.com',
-    },
-    {
-      id: 'user2',
-      email: 'user2@test.com',
-    },
-  ])
-);
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
 
 import { getUsers } from './auth';
 

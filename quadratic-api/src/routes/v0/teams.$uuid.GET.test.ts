@@ -3,25 +3,21 @@ jest.mock('@workos-inc/node', () =>
   workosMock([
     {
       id: 'team_1_owner',
-      email: 'team_1_owner@test.com',
       firstName: 'Test',
       lastName: 'User 1',
     },
     {
       id: 'team_1_editor',
-      email: 'team_1_editor@test.com',
       firstName: 'Test',
       lastName: 'User 2',
     },
     {
       id: 'team_1_viewer',
-      email: 'team_1_viewer@test.com',
       firstName: 'Test',
       lastName: 'User 3',
     },
     {
       id: 'user_without_team',
-      email: 'user_without_team@test.com',
       firstName: 'Test',
       lastName: 'User 4',
     },

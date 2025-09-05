@@ -1,7 +1,7 @@
 export const workosMock = (
   workosUsers: Array<{
     id: string;
-    email: string;
+    email?: string;
     firstName?: string;
     lastName?: string;
     profilePictureUrl?: string;
@@ -11,7 +11,9 @@ export const workosMock = (
     userManagement: {
       listUsers: jest.fn().mockImplementation(({ email }: { email: string }) => {
         return {
-          data: workosUsers.filter(({ email: workosEmail }) => workosEmail.toLowerCase() === email.toLowerCase()),
+          data: workosUsers
+            .map((user) => ({ ...user, email: user.email?.toLowerCase() ?? `${user.id}@test.com`.toLowerCase() }))
+            .filter(({ email: workosEmail }) => workosEmail === email.toLowerCase()),
         };
       }),
     },
