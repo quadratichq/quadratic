@@ -127,6 +127,15 @@ export const LicenseSchema = z.object({
   status: z.enum(['active', 'exceeded', 'revoked']),
 });
 
+const passwordSchema = z
+  .string()
+  .min(8, { message: 'Must be at least 8 characters.' })
+  .refine((password) => /[A-Z]/.test(password), { message: 'Must contain at least one uppercase letter.' })
+  .refine((password) => /[a-z]/.test(password), { message: 'Must contain at least one lowercase letter.' })
+  .refine((password) => /[\\!"#$%&'()+,\-./:;<=>?@[\]^_`{|}~]/.test(password), {
+    message: 'Must contain at least one special character.',
+  });
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -517,6 +526,75 @@ export const ApiSchemas = {
     exceededBillingLimit: z.boolean(),
     billingLimit: z.number().optional(),
     currentPeriodUsage: z.number().optional(),
+  }),
+
+  '/v0/auth/login-with-password.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+    password: z.string(),
+  }),
+  '/v0/auth/login-with-password.POST.response': z.object({
+    message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
+  }),
+
+  '/v0/auth/signup-with-password.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+    password: passwordSchema,
+    firstName: z.string().min(1, { message: 'Must be at least 1 character.' }),
+    lastName: z.string().min(1, { message: 'Must be at least 1 character.' }),
+  }),
+  '/v0/auth/signup-with-password.POST.response': z.object({
+    message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
+  }),
+
+  '/v0/auth/authenticate-with-code.POST.request': z.object({
+    code: z.string(),
+  }),
+  '/v0/auth/authenticate-with-code.POST.response': z.object({
+    message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
+  }),
+
+  '/v0/auth/send-reset-password.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+  }),
+  '/v0/auth/send-reset-password.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/v0/auth/verify-email.POST.request': z.object({
+    pendingAuthenticationToken: z.string(),
+    code: z.string(),
+  }),
+  '/v0/auth/verify-email.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/v0/auth/reset-password.POST.request': z.object({
+    token: z.string(),
+    password: passwordSchema,
+  }),
+  '/v0/auth/reset-password.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/v0/auth/send-magic-auth-code.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+  }),
+  '/v0/auth/send-magic-auth-code.POST.response': z.object({
+    message: z.string(),
+    email: z.string().email('Must be a valid email address.').optional(),
+    pendingAuthenticationToken: z.string().optional(),
+  }),
+
+  '/v0/auth/authenticate-with-magic-code.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+    code: z.string(),
+  }),
+  '/v0/auth/authenticate-with-magic-code.POST.response': z.object({
+    message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
   }),
 };
 

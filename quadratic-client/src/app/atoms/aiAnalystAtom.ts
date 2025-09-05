@@ -85,34 +85,49 @@ export const defaultAIAnalystState: AIAnalystState = {
   },
 };
 
+export let aiAnalystInitialized = false;
+
 export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
-    async ({ getPromise, setSelf, trigger }) => {
+    ({ setSelf, trigger, getLoadable }) => {
       if (trigger === 'get') {
-        const showAIAnalyst = await getPromise(showAIAnalystOnStartupAtom);
+        const showAIAnalyst = getLoadable(showAIAnalystOnStartupAtom).getValue();
         setSelf({
           ...defaultAIAnalystState,
           showAIAnalyst,
         });
 
-        const user = await getPromise(editorInteractionStateUserAtom);
-        const fileUuid = await getPromise(editorInteractionStateFileUuidAtom);
+        const user = getLoadable(editorInteractionStateUserAtom).getValue();
+        const fileUuid = getLoadable(editorInteractionStateFileUuidAtom).getValue();
         if (!!user?.email && fileUuid) {
-          try {
-            await aiAnalystOfflineChats.init(user.email, fileUuid);
-            const chats = await aiAnalystOfflineChats.loadChats();
-            setSelf({
-              ...defaultAIAnalystState,
-              showAIAnalyst,
-              chats,
+          aiAnalystOfflineChats
+            .init(user.email, fileUuid)
+            .then(() =>
+              aiAnalystOfflineChats.loadChats().then((chats) => {
+                setSelf({
+                  ...defaultAIAnalystState,
+                  showAIAnalyst,
+                  chats,
+                });
+              })
+            )
+            .then(() => {
+              aiAnalystInitialized = true;
+              events.emit('aiAnalystInitialized');
+            })
+            .catch((error) => {
+              console.error('[AIAnalystOfflineChats]: ', error);
+            })
+            .finally(() => {
+              aiAnalystInitialized = true;
+              events.emit('aiAnalystInitialized');
             });
-          } catch (error) {
-            console.error('[AIAnalystOfflineChats]: ', error);
-          }
+        } else {
+          aiAnalystInitialized = true;
+          events.emit('aiAnalystInitialized');
         }
-        events.emit('aiAnalystInitialized');
       }
     },
     ({ onSet }) => {

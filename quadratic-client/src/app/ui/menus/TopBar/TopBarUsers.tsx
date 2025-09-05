@@ -17,24 +17,28 @@ import {
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const TopBarUsers = () => {
   const submit = useSubmit();
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser } = useRootRouteLoaderData();
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
   const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-  const anonymous = !user
-    ? {
-        index: multiplayer.index,
-        colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
-      }
-    : undefined;
+  const anonymous = useMemo(
+    () =>
+      !loggedInUser
+        ? {
+            index: multiplayer.index,
+            colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
+          }
+        : undefined,
+    [loggedInUser]
+  );
 
   const handleFollow = ({
     isFollowingYou,
@@ -67,6 +71,7 @@ export const TopBarUsers = () => {
     const viewport = user.viewport;
 
     return {
+      email: user.email,
       name: displayName(user, false),
       initials: displayInitials(user),
       avatarSrc: user.image,
@@ -94,15 +99,19 @@ export const TopBarUsers = () => {
     <>
       <div className="flex flex-row-reverse items-stretch gap-2 self-stretch">
         <DropdownMenu>
-          <DropdownMenuTrigger className="self-center" disabled={Boolean(anonymous)}>
+          <DropdownMenuTrigger
+            data-testid="top-bar-users-dropdown-trigger"
+            className="self-center"
+            disabled={Boolean(anonymous)}
+          >
             <You
-              displayName={displayName(user ?? anonymous, true)}
-              initial={displayInitials(user ?? anonymous)}
-              picture={user?.picture ?? ''}
+              displayName={displayName(loggedInUser ?? anonymous, true)}
+              initial={displayInitials(loggedInUser ?? anonymous)}
+              picture={loggedInUser?.picture ?? ''}
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="text-sm">
-            <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+            <DropdownMenuItem disabled>{loggedInUser?.email}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
@@ -115,6 +124,7 @@ export const TopBarUsers = () => {
         </DropdownMenu>
         {visibleUsers.map(
           ({
+            email,
             name,
             initials,
             avatarSrc,
@@ -130,6 +140,7 @@ export const TopBarUsers = () => {
                 <TooltipTrigger asChild>
                   <button onClick={handleFollow} disabled={isFollowingYou}>
                     <UserAvatar
+                      email={email}
                       name={name}
                       initials={initials}
                       avatarSrc={avatarSrc}
@@ -172,6 +183,7 @@ export const TopBarUsers = () => {
             >
               {extraUsers.map(
                 ({
+                  email,
                   name,
                   initials,
                   avatarSrc,
@@ -192,6 +204,7 @@ export const TopBarUsers = () => {
                       }}
                     >
                       <UserAvatar
+                        email={email}
                         name={name}
                         initials={initials}
                         avatarSrc={avatarSrc}
@@ -216,6 +229,7 @@ export const TopBarUsers = () => {
 };
 
 function UserAvatar({
+  email,
   name,
   initials,
   avatarSrc,
@@ -223,6 +237,7 @@ function UserAvatar({
   isBeingFollowedByYou,
   isFollowingYou,
 }: {
+  email: string;
   name: string;
   initials: string;
   avatarSrc: string;
@@ -231,7 +246,7 @@ function UserAvatar({
   isFollowingYou: boolean;
 }) {
   return (
-    <div className="relative">
+    <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
       <Avatar
         alt={name}
         src={avatarSrc}
