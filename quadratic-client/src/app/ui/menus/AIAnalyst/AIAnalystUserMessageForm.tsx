@@ -41,8 +41,8 @@ export const AIAnalystUserMessageForm = memo(
       ({ content }: SubmitPromptArgs) => {
         trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
 
-        if (planningModeEnabled && userMessagesCount === 0) {
-          // Use planning mode for the first message when enabled
+        if (planningModeEnabled) {
+          // Use planning mode when enabled
           submitPlanningPrompt({
             messageSource: 'User',
             content,
@@ -102,7 +102,7 @@ export const AIAnalystUserMessageForm = memo(
                   variant="ghost"
                   size="sm"
                   onClick={() => setPlanningModeEnabled(!planningModeEnabled)}
-                  disabled={loading || userMessagesCount > 0}
+                  disabled={loading}
                   className={cn(
                     'h-7 rounded-md px-2 text-xs transition-colors',
                     planningModeEnabled
