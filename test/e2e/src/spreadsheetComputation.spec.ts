@@ -415,9 +415,7 @@ test('Formatting', async ({ page }) => {
   //--------------------------------
 
   // Take initial screenshot
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-formatting-pre.png', {
-    maxDiffPixels: 500,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-formatting-pre.png');
 
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
@@ -435,9 +433,7 @@ test('Formatting', async ({ page }) => {
 
   // After code finishes executing, screenshot assertion that cells and sheet looks like it should
   // Take final screenshot
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-formatting-post.png', {
-    maxDiffPixels: 0.01,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-formatting-post.png');
 
   // Cleanup newly created files
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });

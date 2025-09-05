@@ -71,7 +71,7 @@ export function FilesListItemCore({
               )}
             >
               <Avatar alt={creator.name} src={creator.picture}>
-                {creator.name[0]}
+                {creator.name?.[0] ? creator.name?.[0] : creator.email?.[0]}
               </Avatar>
             </button>
           </TooltipPopover>

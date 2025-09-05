@@ -1,8 +1,7 @@
-import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
-import NewFileButton from '@/dashboard/components/NewFileButton';
+import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Avatar } from '@/shared/components/Avatar';
@@ -48,13 +47,8 @@ export const Component = () => {
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="flex items-center">
                 {users.slice(0, 6).map((user, key) => (
-                  <Avatar
-                    key={key}
-                    alt={user.name}
-                    src={getAuth0AvatarSrc(user.picture)}
-                    className={sharedAvatarClasses}
-                  >
-                    {user.name}
+                  <Avatar key={key} alt={user.name} src={user.picture} className={sharedAvatarClasses}>
+                    {user.name ? user.name : user.email}
                   </Avatar>
                 ))}
                 <div

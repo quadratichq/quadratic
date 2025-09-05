@@ -1,16 +1,5 @@
-import { auth0Mock } from '../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'firstTimeUser',
-      email: 'firsttimeuser@test.com',
-    },
-    {
-      user_id: 'user1',
-      email: 'user1@test.com',
-    },
-  ])
-);
+import { workosMock } from '../tests/workosMock';
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'firstTimeUser' }, { id: 'user1' }]));
 
 import request from 'supertest';
 import { app } from '../app';

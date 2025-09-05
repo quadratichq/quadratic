@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsers } from '../../auth/auth';
+import { getUsers } from '../../auth/providers/auth';
 import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';

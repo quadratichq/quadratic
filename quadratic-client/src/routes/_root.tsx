@@ -5,12 +5,12 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { useLoggedInUserChange } from '@/shared/hooks/useLoggedInUserChange';
 import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import type { LoaderFunctionArgs } from 'react-router';
-import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
+import { Outlet, useLoaderData, useRouteError, useRouteLoaderData } from 'react-router';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -19,14 +19,23 @@ export type RootLoaderData = {
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<RootLoaderData | Response> => {
-  const [isAuthenticated, user] = await Promise.all([authClient.isAuthenticated(), authClient.user()]);
-  initializeAnalytics(user);
+export const loader = async (): Promise<RootLoaderData | Response> => {
+  const loggedInUser = await authClient.user();
 
-  return { isAuthenticated, loggedInUser: user };
+  if (loggedInUser?.email) {
+    window.localStorage.setItem('loggedInUserEmail', loggedInUser.email);
+  } else {
+    window.localStorage.removeItem('loggedInUserEmail');
+  }
+
+  initializeAnalytics(loggedInUser);
+  return { isAuthenticated: !!loggedInUser, loggedInUser };
 };
 
 export const Component = () => {
+  const { loggedInUser } = useLoaderData<typeof loader>();
+  useLoggedInUserChange({ loggedInUser });
+
   return (
     <MuiTheme>
       <GlobalSnackbarProvider>

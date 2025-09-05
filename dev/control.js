@@ -526,8 +526,8 @@ export class Control {
     runRust() {
         if (this.quitting)
             return;
-        this.ui.print("rust", "upgrading...");
-        this.rust = spawn("rustup", ["upgrade"]);
+        this.ui.print("rust", "installing...");
+        this.rust = spawn("rustup", ["show"]);
         this.rust.on("close", (code) => {
             if (code === 0) {
                 this.ui.print("rust", "completed");
@@ -545,10 +545,6 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const dockerDev = this.cli.options.dockerDev;
-            if (dockerDev) {
-                resolve(true);
-            }
             const servicesLocal = this.cli.options.servicesLocal;
             const redis = servicesLocal
                 ? spawn("redis-cli", ["ping"])
@@ -567,10 +563,6 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const dockerDev = this.cli.options.dockerDev;
-            if (dockerDev) {
-                resolve(true);
-            }
             const servicesLocal = this.cli.options.servicesLocal;
             const postgres = servicesLocal
                 ? spawn("pg_isready")

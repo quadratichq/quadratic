@@ -1,34 +1,19 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
+    { id: 'userOwner' },
+    { id: 'userEditor' },
+    { id: 'userViewer' },
+    { id: 'userNoRole' },
     {
-      user_id: 'userOwner',
-      email: 'userowner@test.com',
-    },
-    {
-      user_id: 'userEditor',
-      email: 'usereditor@test.com',
-    },
-    {
-      user_id: 'userViewer',
-      email: 'userviewer@test.com',
-    },
-    {
-      user_id: 'userNoRole',
-      email: 'usernorole@test.com',
-    },
-    {
-      user_id: 'duplicate_emails_user_1',
+      id: 'duplicate_emails_user_1',
       email: 'duplicate_emails_user@test.com',
     },
     {
-      user_id: 'duplicate_emails_user_2',
+      id: 'duplicate_emails_user_2',
       email: 'duplicate_emails_user@test.com',
     },
-    {
-      user_id: 'userNotYetInDb',
-      email: 'usernotyetindb@test.com',
-    },
+    { id: 'userNotYetInDb' },
   ])
 );
 

@@ -114,7 +114,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();
     const body = error ? String(error?.message) : children;
-    const classDestructive = error?.type !== 'custom' ? 'text-destructive' : '';
+    const classDestructive = error ? 'text-destructive' : '';
 
     if (!body) {
       return null;

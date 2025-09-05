@@ -221,7 +221,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -429,7 +429,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(newMemberCount).toBe(2);
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -529,7 +529,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -631,7 +631,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -777,7 +777,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
 
   // Assert that the 'Manage billing' button is visible
   // This indicates that the user has an active subscription to manage
-  await expect(page.getByRole(`button`, { name: `Manage billing` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Manage subscription` })).toBeVisible({ timeout: 60 * 1000 });
 
   // **CLEANUP**
   // Cancel the Pro plan subscription for this account

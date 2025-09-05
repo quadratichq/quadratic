@@ -1,13 +1,21 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { OAuthProvider } from '@/auth/auth';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
-  LOGIN_WITH_REDIRECT: () => '/login?from=' + encodeURIComponent(window.location.pathname),
-  SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
+  LOGIN_WITH_REDIRECT: () => `/login?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
   LOGIN_RESULT: '/login-result',
+  SIGNUP: '/signup',
+  SIGNUP_WITH_REDIRECT: () =>
+    `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
+  VERIFY_EMAIL: '/verify-email',
+  SEND_MAGIC_AUTH_CODE: '/send-magic-auth-code',
+  MAGIC_AUTH_CODE: '/magic-auth-code',
+  SEND_RESET_PASSWORD: '/send-reset-password',
+  RESET_PASSWORD: '/reset-password',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
@@ -79,14 +87,23 @@ export const ROUTES = {
     },
   },
 
+  WORKOS_OAUTH: ({ provider, redirectTo }: { provider: OAuthProvider; redirectTo: string }) => {
+    const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
+    return getWorkosOauthUrl({ provider, state });
+  },
+  WORKOS_IFRAME_OAUTH: ({ provider }: { provider: OAuthProvider }) => {
+    const state = encodeURIComponent(JSON.stringify({ closeOnComplete: true }));
+    return getWorkosOauthUrl({ provider, state });
+  },
+
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
-};
+} as const;
 
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
   DASHBOARD: 'dashboard',
-};
+} as const;
 
 export const SEARCH_PARAMS = {
   SHEET: { KEY: 'sheet' },
@@ -95,4 +112,13 @@ export const SEARCH_PARAMS = {
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
   // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
   CHECKPOINT: { KEY: 'checkpoint' },
-};
+  LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
+  REDIRECT_TO: { KEY: 'redirectTo' },
+} as const;
+
+function getWorkosOauthUrl(args: { provider: OAuthProvider; state: string }) {
+  const { provider, state } = args;
+  const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
+  const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
+  return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+}

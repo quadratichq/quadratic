@@ -9,7 +9,7 @@ import { aiAnalystOfflineChats } from './aiAnalystChats';
 
 describe('aiAnalystOfflineChats', () => {
   beforeAll(async () => {
-    await aiAnalystOfflineChats.init('test@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.init('test@test.com', 'test-fileId');
   });
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe('aiAnalystOfflineChats', () => {
 
   it('properly defines user email and fileId', () => {
     expect(aiAnalystOfflineChats).toBeDefined();
-    expect(aiAnalystOfflineChats.userEmail).toBe('test@example.com');
+    expect(aiAnalystOfflineChats.userEmail).toBe('test@test.com');
     expect(aiAnalystOfflineChats.fileId).toBe('test-fileId');
   });
 
@@ -181,7 +181,7 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(3);
 
-    await aiAnalystOfflineChats.deleteFile('test@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.deleteFile('test@test.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
@@ -206,7 +206,7 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
-    await aiAnalystOfflineChats.init('different@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.init('different@test.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
@@ -231,7 +231,7 @@ describe('aiAnalystOfflineChats', () => {
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
     // Init with different fileId
-    await aiAnalystOfflineChats.init('test@example.com', 'different-fileId');
+    await aiAnalystOfflineChats.init('test@test.com', 'different-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 });
