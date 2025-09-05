@@ -1,6 +1,6 @@
 {
   "name": "quadratic-shared",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
