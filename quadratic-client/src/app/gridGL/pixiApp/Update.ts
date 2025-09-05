@@ -147,7 +147,7 @@ export class Update {
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
       pixiApp.viewport.dirty = false;
-      pixiApp.renderer.render(pixiApp.viewportContents, { transform: pixiApp.viewport.worldTransform });
+      pixiApp.renderer.render(pixiApp.viewport);
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
