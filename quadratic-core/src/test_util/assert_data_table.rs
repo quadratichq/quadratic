@@ -106,9 +106,13 @@ pub fn assert_data_table_size(
                 width as u32,
                 (if include_ui { 1 } else { 0 }) + height as u32
             )),
-            "Chart size at {} is not {:?}",
+            "Chart size at {} is not {:?} (it's {:?})",
             pos,
-            data_table.chart_output
+            data_table.chart_output,
+            Some((
+                width as u32,
+                (if include_ui { 1 } else { 0 }) + height as u32
+            ))
         );
         return;
     }

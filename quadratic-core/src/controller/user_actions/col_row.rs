@@ -13,7 +13,7 @@ impl GridController {
         let ops = vec![Operation::DeleteColumns {
             sheet_id,
             columns,
-            copy_formats: CopyFormats::After,
+            copy_formats: CopyFormats::None,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
@@ -22,6 +22,11 @@ impl GridController {
     /// insertion. DF: While confusing, it was created originally to support
     /// copying formats, but later turned into a differentiator for inserting
     /// columns, since the behavior was different for insert to left vs right.
+    ///
+    /// For example:
+    /// - if you're in C and insert to the left, then column = C and after = true
+    /// - if you're in C and insert to the right, then column = D and after = false
+    /// - if you're in C and insert to the right with 3 columns selected, then column = F and after = false
     pub fn insert_columns(
         &mut self,
         sheet_id: SheetId,

@@ -1,5 +1,13 @@
 #[cfg(test)]
-use crate::{CellValue, Pos, controller::GridController, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::SheetId};
+
+#[track_caller]
+#[cfg(test)]
+pub fn assert_cell_value_type(gc: &GridController, pos: SheetPos, value_type: &str) {
+    let sheet = gc.sheet(pos.sheet_id);
+    let cell_value = sheet.cell_value(pos.into()).unwrap_or(CellValue::Blank);
+    assert_eq!(cell_value.type_name(), value_type);
+}
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]

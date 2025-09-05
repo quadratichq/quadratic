@@ -7,11 +7,46 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::Sheet,
+    CopyFormats, Pos,
+    controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::{DataTable, Sheet},
 };
 
 impl Sheet {
+    /*
+        /// For example:
+        /// - if you're in C and insert to the left, then column = C and CopyFormats::After
+        /// - if you're in C and insert to the right, then column = D and CopyFormats::Before
+        /// - if you're in C and insert to the right with 3 columns selected, then column = F and CopyFormats::Before
+
+    */
+
+    /// Returns true if the column is inside the table.
+    fn is_column_inside_table(
+        column: i64,
+        pos: Pos,
+        dt: &DataTable,
+        copy_formats: CopyFormats,
+    ) -> bool {
+        match copy_formats {
+            CopyFormats::After | CopyFormats::None => {
+                column >= pos.x && column < pos.x + dt.output_rect(pos, false).width() as i64
+            }
+            CopyFormats::Before => {
+                column - 1 >= pos.x
+                    && column - 1 < pos.x + dt.output_rect(pos, false).width() as i64
+            }
+        }
+    }
+
+    /// Returns true if the column is left of the table.
+    fn is_column_before_table(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
+        match copy_formats {
+            CopyFormats::After | CopyFormats::None => column < pos.x,
+            CopyFormats::Before => column - 1 < pos.x,
+        }
+    }
+
     /// Insert columns in data tables that overlap the inserted column.
     pub(crate) fn check_insert_tables_columns(
         &mut self,
@@ -21,65 +56,46 @@ impl Sheet {
     ) {
         let sheet_id = self.id;
 
-        let source_column = match copy_formats {
-            CopyFormats::After => column - 1,
-            _ => column,
-        };
-
         let all_pos_intersecting_columns = self
             .data_tables
             .get_pos_after_column_sorted(column - 1, false);
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
             if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
-                let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && column >= pos.x && column < pos.x + output_rect.width() as i64 {
-                            dt.chart_output = Some((width + 1, height));
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                        && Self::is_column_inside_table(column, pos, dt, copy_formats)
+                    {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                    }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
-                    if !dt.is_code()
-                        && source_column >= pos.x
-                        && (column < pos.x + output_rect.width() as i64
-                            || (CopyFormats::Before == copy_formats
-                                && column < pos.x + output_rect.width() as i64 + 1))
-                        && let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                            let column_index =
-                                dt.get_column_index_from_display_index(display_column_index, true);
-                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                    if !dt.is_code() && Self::is_column_inside_table(column, pos, dt, copy_formats)
+                    {
+                        let display_column_index = u32::try_from(column - pos.x)?;
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
+                        dt.insert_column_sorted(column_index as usize, None, None)?;
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
                         }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
+                        }
+                    }
                 }
-
                 Ok(())
             }) {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
@@ -101,11 +117,8 @@ impl Sheet {
             .get_pos_after_column_sorted(column, false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    (copy_formats == CopyFormats::Before && pos.x > column)
-                        || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
-                        || (copy_formats != CopyFormats::Before && pos.x >= column)
-                })
+                self.data_table_at(pos)
+                    .is_some_and(|_| Self::is_column_before_table(column, *pos, copy_formats))
             })
             .collect::<Vec<_>>();
 
@@ -116,11 +129,8 @@ impl Sheet {
             .get_pos_in_columns_sorted(&[column], false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    (!dt.is_code() || dt.is_html_or_image())
-                        && copy_formats == CopyFormats::Before
-                        && pos.x == column
-                })
+                self.data_table_at(pos)
+                    .is_some_and(|_| copy_formats == CopyFormats::After && column == pos.x)
             })
             .collect::<Vec<_>>();
 
@@ -162,6 +172,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         controller::GridController, test_create_code_table, test_util::*, wasm_bindings::js::*,
     };
@@ -240,17 +251,19 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+        assert_cell_value_type(&gc, pos![sheet_id!C2], "import");
 
         gc.undo(None);
+        assert_cell_value_type(&gc, pos![sheet_id!B2], "import");
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_columns(sheet_id, 2, 1, false, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
@@ -351,5 +364,66 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
         expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);
+    }
+
+    #[test]
+    fn test_column_is_inside_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
+        let code = test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
+        // For example:
+        // - if you're in C and insert to the left, then column = C and CopyFormats::After
+        // - if you're in C and insert to the right, then column = D and CopyFormats::Before
+        // - if you're in C and insert to the right with 3 columns selected, then column = F and CopyFormats::Before
+
+        let check = |column: i64, copy_formats: CopyFormats, expected: bool| {
+            assert!(Sheet::is_column_inside_table(column, pos![C1], &dt, copy_formats) == expected);
+            assert!(
+                Sheet::is_column_inside_table(column, pos![C7], &code, copy_formats) == expected
+            );
+        };
+
+        // insert to the left
+        check(3, CopyFormats::After, true);
+        check(4, CopyFormats::After, true);
+        check(5, CopyFormats::After, true);
+        check(6, CopyFormats::After, false);
+        check(2, CopyFormats::After, false);
+
+        // insert to the right
+        check(3 + 1, CopyFormats::Before, true);
+        check(4 + 1, CopyFormats::Before, true);
+        check(5 + 1, CopyFormats::Before, true);
+        check(6 + 1, CopyFormats::Before, false);
+        check(2 + 1, CopyFormats::Before, false);
+    }
+
+    #[test]
+    fn test_insert_column_before_chart() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
+
+        gc.insert_columns(sheet_id, 1, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 1, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 2, 1, false, None);
+        assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
+
+        gc.insert_columns(sheet_id, 3, 1, true, None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
+        gc.undo(None);
+        assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
     }
 }
