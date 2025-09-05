@@ -4858,6 +4858,10 @@ test('Multiple Columns Resizing', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
   // Assert that color filled cell's width updates per expanded column 2 width
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_1.png', {
     maxDiffPixelRatio: 0.001,
@@ -4963,6 +4967,10 @@ test('Multiple Rows Resizing', async ({ page }) => {
   // Create new file
   await uploadFile(page, { fileName, fileType });
 
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_initial.png', {
     maxDiffPixelRatio: 0.001,
   });
@@ -4976,6 +4984,10 @@ test('Multiple Rows Resizing', async ({ page }) => {
   await page.mouse.move(60, 318);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert that color filled cell's width height per expanded row 2 height
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_1.png', {
