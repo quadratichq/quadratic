@@ -24,7 +24,7 @@ pub(crate) struct Config {
     pub(crate) pubsub_password: String,
     pub(crate) pubsub_active_channels: String,
 
-    pub(crate) auth0_jwks_uri: String,
+    pub(crate) jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
 }
