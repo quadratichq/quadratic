@@ -159,6 +159,8 @@ interface EventTypes {
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
+  resizeAIAnalystPanel: () => void;
+
   debugFlags: () => void;
 }
 
