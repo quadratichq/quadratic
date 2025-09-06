@@ -5,7 +5,7 @@ import type { GetVerificationKey } from 'jwks-rsa';
 import jwksRsa from 'jwks-rsa';
 import { JWKS_URI, ORY_ADMIN_HOST } from '../../env-vars';
 import logger from '../../utils/logger';
-import type { ByEmailUser, User, UsersRequest } from './auth';
+import type { User, UsersRequest } from './auth';
 
 const config = new Configuration({
   basePath: ORY_ADMIN_HOST,
@@ -71,17 +71,4 @@ export const getUsersFromOry = async (users: UsersRequest[]): Promise<Record<num
   }, {});
 
   return usersById;
-};
-
-export const getUsersFromOryByEmail = async (email: string): Promise<ByEmailUser[]> => {
-  let identities;
-
-  try {
-    identities = (await sdk.listIdentities({ credentialsIdentifier: email })).data;
-  } catch (error) {
-    logger.error('Error in getUsersFromOryByEmail', error);
-    return [];
-  }
-
-  return identities.map(({ id }) => ({ user_id: id }));
 };

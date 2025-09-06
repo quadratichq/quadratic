@@ -86,7 +86,7 @@ pub mod tests {
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct Claims {
-        sub: String,
+        email: String,
         exp: usize,
     }
 
