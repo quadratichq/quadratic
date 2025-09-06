@@ -1,13 +1,20 @@
 import type { Response } from 'express';
-import { getLastAIPromptMessageIndex, getLastUserMessageType } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getLastUserMessage,
+  getLastUserMessageType,
+  isContentText,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
@@ -30,7 +37,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat.POST.response']>) {
   const {
-    user: { id: userId },
+    user: { id: userId, email: userEmail },
   } = req;
 
   const jwt = req.header('Authorization');
@@ -97,20 +104,22 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   const source = args.source;
-  const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+  const userMessage = getLastUserMessage(args.messages);
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(args.source, modelKey);
+    const toolUseContext = getToolUseContext(source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.source, args.language);
+    const quadraticContext = getQuadraticContext(source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
   }
 
   const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
   if (parsedResponse) {
+    modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);
   }
 
@@ -118,9 +127,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
 
   const chat = await dbClient.analyticsAIChat.upsert({
-    where: {
-      chatId,
-    },
+    where: { chatId },
     create: {
       userId,
       fileId,
@@ -156,29 +163,66 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     },
   });
 
-  // Save the data to s3
-  try {
-    if (ownerTeam.settingAnalyticsAi) {
-      const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+  if (ownerTeam.settingAnalyticsAi) {
+    // If we are using s3 and the analytics bucket name is set, save the data
+    // This path is also used for self-hosted users, so we don't want to save the data in that case
+    if (STORAGE_TYPE === 's3' && getBucketName(S3Bucket.ANALYTICS)) {
+      try {
+        const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
 
-      // If we aren't using s3 or the analytics bucket name is not set, don't save the data
-      // This path is also used for self-hosted users, so we don't want to save the data in that case
-      if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
-        return;
+        const contents = Buffer.from(JSON.stringify(args)).toString('base64');
+        const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+        const s3Key = response.key;
+
+        await dbClient.analyticsAIChatMessage.update({
+          where: { chatId_messageIndex: { chatId: chat.id, messageIndex } },
+          data: { s3Key },
+        });
+      } catch (error) {
+        logger.error('Error in ai.chat.POST handler', error);
       }
-
-      const contents = Buffer.from(JSON.stringify(args)).toString('base64');
-      const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
-      const s3Key = response.key;
-
-      await dbClient.analyticsAIChatMessage.update({
-        where: {
-          chatId_messageIndex: { chatId: chat.id, messageIndex },
-        },
-        data: { s3Key },
-      });
     }
-  } catch (error) {
-    logger.error('Error in ai.chat.POST handler', error);
+
+    if (['AIAnalyst', 'AIAssistant'].includes(source)) {
+      try {
+        const interaction = raindrop?.begin({
+          userId: userEmail,
+          model,
+          convoId: chat.chatId,
+          event: userMessage.contextType,
+          eventId: `${chat.chatId}-${messageIndex}`,
+          input:
+            userMessage.contextType === 'toolResult'
+              ? userMessage.content
+                  .map(({ content }) =>
+                    content
+                      .filter(isContentText)
+                      .map((content) => content.text)
+                      .join('\n')
+                  )
+                  .join('\n\n')
+              : userMessage.content
+                  .filter(isContentText)
+                  .map((content) => content.text)
+                  .join('\n'),
+          properties: {
+            tool_results: userMessage.contextType === 'toolResult' ? userMessage.content : [],
+          },
+        });
+
+        interaction?.finish({
+          output:
+            parsedResponse?.responseMessage.content
+              .filter(isContentText)
+              .map((content) => content.text)
+              .join('\n') ?? '',
+          properties: {
+            tool_calls: parsedResponse?.responseMessage.toolCalls ?? [],
+          },
+        });
+      } catch (error) {
+        logger.error('Error in ai.chat.POST handler', error);
+      }
+    }
   }
 }
