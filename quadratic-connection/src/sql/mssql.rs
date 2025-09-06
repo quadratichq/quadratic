@@ -49,7 +49,7 @@ async fn get_connection(
     team_id: &Uuid,
 ) -> Result<ApiConnection<MsSqlConnection>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id).await?
     } else {
         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
         ApiConnection {

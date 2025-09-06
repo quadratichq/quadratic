@@ -1,9 +1,8 @@
-import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsers, getUsersByEmail } from '../../auth/providers/auth';
+import { getUsers } from '../../auth/providers/auth';
 import dbClient from '../../dbClient';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';
@@ -94,64 +93,44 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     return dbInvite;
   };
 
-  // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
-  const auth0Users = await getUsersByEmail(email);
+  // Look up the invited user by email in our database and then 1 of 2 things will happen:
+  const invitedUser = await dbClient.user.findUnique({
+    where: {
+      email,
+    },
+    include: {
+      UserFileRole: {
+        where: {
+          fileId,
+        },
+      },
+    },
+  });
 
   // 1.
-  // If there are 0 users, somebody who doesn't have a Quadratic account is
+  // If user doesn't exist, somebody who doesn't have a Quadratic account is
   // being invited. So we create an invite and send an email.
-  if (auth0Users.length === 0) {
+  if (!invitedUser) {
     const dbInvite = await createInviteAndSendEmail();
     return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
   }
-
   // 2.
-  // If there is 1 user, they are an existing user of Quadratic. So we
+  // If there is a user, they are an existing user of Quadratic. So we
   // associate them with the file and send them an email.
-  if (auth0Users.length === 1) {
-    const { user_id: auth0Id } = auth0Users[0];
-
-    // Auth0 says this could be undefined. If that's the case — even though,
-    // we found user(s) — we'll throw an error
-    if (!auth0Id) {
-      throw new ApiError(500, 'User found in auth0 but expected `user_id` is not present');
-    }
-
-    // Lookup the user in our database
-    const dbUser = await dbClient.user.findUnique({
-      where: {
-        auth0Id,
-      },
-      include: {
-        UserFileRole: {
-          where: {
-            fileId,
-          },
-        },
-      },
-    });
-
-    // If they exist in auth0 but aren't yet in our database that's a bit unexpected.
-    // They need to go through the flow of coming into the app for the first time
-    // So we create an invite (it'll turn into a user when they login for the 1st time)
-    if (!dbUser) {
-      const dbInvite = await createInviteAndSendEmail();
-      return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
-    }
-
+  else {
     // Are they already a file user? That's a conflict.
-    if (dbUser.UserFileRole.length) {
+    if (invitedUser.UserFileRole.length) {
       throw new ApiError(409, 'This user already belongs to this file.');
     }
     // Are they the owner? No go.
-    if (dbUser.id === ownerUserId) {
+    if (invitedUser.id === ownerUserId) {
       throw new ApiError(400, 'This user is the owner of this file.');
     }
 
     // Otherwise associate them as a user of the file and send them an email
     const userFileRole = await dbClient.userFileRole.create({
       data: {
-        userId: dbUser.id,
+        userId: invitedUser.id,
         fileId,
         role,
       },
@@ -159,16 +138,4 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
     return res.status(200).json({ id: userFileRole.id, role, userId: userFileRole.userId });
   }
-
-  // 3.
-  // There are 2 or more users in auth0 with that email. This is unexpected
-  // so we throw and log the error.
-  throw new ApiError(500, 'Internal server error: user lookup error.');
-  Sentry.captureEvent({
-    message: 'User has 3 or more accounts in auth0 with the same email.',
-    level: 'error',
-    extra: {
-      auth0Users,
-    },
-  });
 }

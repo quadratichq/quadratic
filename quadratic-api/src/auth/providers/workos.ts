@@ -5,7 +5,7 @@ import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
 import { JWKS_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID } from '../../env-vars';
 import logger from '../../utils/logger';
-import type { ByEmailUser, User, UsersRequest } from './auth';
+import type { User, UsersRequest } from './auth';
 
 const WORKOS_REFRESH_TOKEN_COOKIE_NAME = 'refresh-token';
 const WORKOS_HAS_SESSION_COOKIE_NAME = 'workos-has-session';
@@ -43,10 +43,7 @@ export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<
       };
     } catch (error) {
       // if user is not found, log the error
-      logger.error('Error in getUsersFromWorkos', error, {
-        email,
-        auth0Id,
-      });
+      logger.error('Error in getUsersFromWorkos', error, { email, auth0Id });
       Sentry.captureException({
         message: 'Failed to retrieve users from Workos',
         level: 'error',
@@ -65,19 +62,6 @@ export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<
   await Promise.all(promises);
 
   return usersById;
-};
-
-export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailUser[]> => {
-  let identities;
-
-  try {
-    identities = (await getWorkos().userManagement.listUsers({ email })).data;
-  } catch (error) {
-    logger.error('Error in getUsersFromWorkosByEmail', error);
-    return [];
-  }
-
-  return identities.map(({ id }) => ({ user_id: id }));
 };
 
 export const jwtConfigWorkos = {

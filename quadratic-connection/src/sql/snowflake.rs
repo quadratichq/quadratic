@@ -47,7 +47,7 @@ async fn get_connection(
     team_id: &Uuid,
 ) -> Result<ApiConnection<SnowflakeConnection>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id).await?
     } else {
         let config = new_snowflake_connection();
         ApiConnection {
