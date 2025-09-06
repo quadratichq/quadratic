@@ -136,7 +136,28 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
 Executed set code cell value tool successfully.
 ${
   tableCodeCell.w === 1 && tableCodeCell.h === 1
-    ? `Output is ${codeCell.evaluation_result}`
+    ? (() => {
+        // Parse the JSON string evaluation result
+        let parsedResult: any = null;
+        try {
+          parsedResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : null;
+        } catch (e) {
+          // If parsing fails, use the raw result
+          parsedResult = codeCell.evaluation_result;
+        }
+
+        // Check if the evaluation result is empty
+        const isEmpty =
+          !parsedResult ||
+          (typeof parsedResult === 'object' && parsedResult.value === '') ||
+          parsedResult === '' ||
+          parsedResult === null ||
+          parsedResult === undefined;
+
+        return isEmpty
+          ? 'You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.'
+          : `Output is: ${typeof parsedResult === 'object' && parsedResult.value !== undefined ? parsedResult.value : parsedResult}`;
+      })()
     : `Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`
 }
 `),
