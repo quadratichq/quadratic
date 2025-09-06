@@ -13,6 +13,7 @@ import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { OnboardingVideo } from '@/app/ui/components/OnboardingVideo';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
@@ -38,12 +39,13 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigation, useParams } from 'react-router';
+import { useNavigation, useParams, useSearchParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const navigation = useNavigation();
+  const [searchParams] = useSearchParams();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
@@ -53,6 +55,7 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+  const [showOnboardingVideo, setShowOnboardingVideo] = useState(searchParams.get('show-onboarding-video') !== null);
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -82,6 +85,15 @@ export default function QuadraticUI() {
     }
   }, []);
 
+  // Remove the `show-onboarding-video` param from the URL if it's present
+  useEffect(() => {
+    if (showOnboardingVideo === true) {
+      const url = new URLSearchParams(window.location.search);
+      url.delete('show-onboarding-video');
+      window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
+    }
+  }, [showOnboardingVideo]);
+
   useRemoveInitialLoadingUI();
 
   if (error) {
@@ -95,6 +107,10 @@ export default function QuadraticUI() {
         source={error.from}
       />
     );
+  }
+
+  if (showOnboardingVideo) {
+    return <OnboardingVideo onClose={() => setShowOnboardingVideo(false)} />;
   }
 
   return (
