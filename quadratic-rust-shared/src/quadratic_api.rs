@@ -187,9 +187,7 @@ pub struct Team {
 
 /// Retrieve user's team from the quadratic API server.
 pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) -> Result<Team> {
-    println!("email: {}", email);
     let encoded_email = encode(email);
-    println!("encoded_email: {}", encoded_email);
     let url = format!("{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
