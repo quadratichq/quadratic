@@ -106,6 +106,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const source = args.source;
   let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
   const userMessage = getLastUserMessage(args.messages);
+  if (!userMessage) {
+    throw new ApiError(400, 'User message not found');
+  }
 
   if (args.useToolsPrompt) {
     const toolUseContext = getToolUseContext(source, modelKey);
