@@ -163,7 +163,7 @@ impl Sheet {
                 transaction
                     .reverse_operations
                     .push(Operation::DeleteDataTable {
-                        sheet_pos: new_pos.to_sheet_pos(self.id),
+                        sheet_pos: pos.to_sheet_pos(self.id),
                     });
             }
         }
@@ -411,6 +411,8 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1], None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
+
+        dbg!(&gc.undo_stack());
 
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);
@@ -679,6 +681,8 @@ mod tests {
 
         gc.delete_columns(sheet_id, vec![2, 3, 4], None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
+
+        dbg!(&gc.undo_stack());
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);

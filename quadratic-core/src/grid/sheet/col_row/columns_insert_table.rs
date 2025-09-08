@@ -42,8 +42,8 @@ impl Sheet {
     /// Returns true if the column is left of the table.
     fn is_column_before_table(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
         match copy_formats {
-            CopyFormats::After | CopyFormats::None => column < pos.x,
-            CopyFormats::Before => column - 1 < pos.x,
+            CopyFormats::After => column < pos.x,
+            CopyFormats::Before | CopyFormats::None => column - 1 < pos.x,
         }
     }
 
