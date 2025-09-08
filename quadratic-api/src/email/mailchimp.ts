@@ -4,6 +4,11 @@ import type dbClient from '../dbClient';
 import { MAILCHIMP_API_KEY } from '../env-vars';
 import logger from '../utils/logger';
 
+// These correspond to specific setups in our Mailchimp production instance
+const MAILCHIMP_AUDIENCE_ID = 'e4959f7aa7';
+const MAILCHIMP_JOURNEY_ID = 3921;
+const MAILCHIMP_STEP_ID = 32287;
+
 if (MAILCHIMP_API_KEY) {
   client.setConfig({
     apiKey: MAILCHIMP_API_KEY,
@@ -23,7 +28,7 @@ export const triggerJourney = async (user: Awaited<ReturnType<typeof dbClient.us
     }
 
     const { email, firstName, lastName } = authUser;
-    await client.lists.addListMember('e4959f7aa7', {
+    await client.lists.addListMember(MAILCHIMP_AUDIENCE_ID, {
       email_address: email,
       status: 'subscribed',
       ...(!!firstName &&
@@ -31,7 +36,7 @@ export const triggerJourney = async (user: Awaited<ReturnType<typeof dbClient.us
           merge_fields: { FNAME: firstName, LNAME: lastName },
         }),
     });
-    await client.customerJourneys.trigger(3921, 32287, { email_address: email });
+    await client.customerJourneys.trigger(MAILCHIMP_JOURNEY_ID, MAILCHIMP_STEP_ID, { email_address: email });
   } catch (error) {
     logger.error('Error triggering journey', error);
   }
