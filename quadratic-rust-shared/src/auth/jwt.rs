@@ -96,15 +96,6 @@ pub mod tests {
         let result = authorize::<Claims>(&jwks, TOKEN, false, false);
         assert!(result.is_ok());
 
-        // no audience in workos claims
-        //
-        // //invalid audience causes error
-        // let result = authorize::<Claims>(&jwks, TOKEN, true, false);
-        // assert_eq!(
-        //     result.unwrap_err(),
-        //     SharedError::Auth(Auth::Jwt("InvalidAudience".into()))
-        // );
-
         // past expiration causes error
         let result = authorize::<Claims>(&jwks, TOKEN, false, true);
         assert_eq!(
