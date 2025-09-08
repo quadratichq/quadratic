@@ -19,7 +19,7 @@ export const triggerJourney = async (user: Awaited<ReturnType<typeof dbClient.us
 
     const authUser = (await getUsers([{ id: user.id, auth0Id: user.auth0Id, email: user.email }]))[user.id];
     if (!authUser) {
-      throw new Error('User not found in triggerJourney');
+      throw new Error('[mailchimp.triggerJourney] User not found in auth');
     }
 
     const { email, firstName, lastName } = authUser;
