@@ -1,8 +1,10 @@
 import { authClient } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
+import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useMemo, useState } from 'react';
@@ -11,6 +13,14 @@ import { redirect, useLoaderData, useNavigate, type LoaderFunctionArgs } from 'r
 import type z from 'zod';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const redirectTo = getRedirectTo() || '/';
+
+  const isAuthenticated = await authClient.isAuthenticated();
+  if (isAuthenticated) {
+    window.location.assign(redirectTo);
+    await waitForAuthClientToRedirect();
+  }
+
   const url = new URL(request.url);
   const email = url.searchParams.get('email');
   if (!email) {
@@ -56,7 +66,9 @@ export const Component = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Magic code</h1>
+      <h1 className="text-2xl font-medium">Enter magic code</h1>
+
+      <p className="text-sm text-muted-foreground">Please enter the one-time code sent to your email.</p>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
