@@ -14,7 +14,7 @@ import {
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
-export const initSentry = async () => {
+export const initSentry = () => {
   try {
     if (SENTRY_DSN && SENTRY_DSN !== 'none') {
       init({
@@ -47,7 +47,7 @@ interface ReplayCanvasIntegration {
   name: string;
   snapshot: (canvas: HTMLCanvasElement) => void;
 }
-export const captureSnapshotSentry = async (canvas: HTMLCanvasElement) => {
+export const captureSnapshotSentry = (canvas: HTMLCanvasElement) => {
   try {
     if (SENTRY_DSN && SENTRY_DSN !== 'none') {
       getClient()?.getIntegrationByName<ReplayCanvasIntegration>('ReplayCanvas')?.snapshot?.(canvas);
