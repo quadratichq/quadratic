@@ -28,6 +28,8 @@ export type User = {
   auth0Id: string;
   email: string;
   name?: string | undefined;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
   picture?: string | undefined;
 };
 
