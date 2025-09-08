@@ -19,11 +19,11 @@ use crate::{
     state::State,
 };
 
-/// The claims from the Quadratic/Auth0 JWT token.
+/// The claims from the Quadratic/Auth JWT token.
 /// We need our own implementation of this because we need to impl on it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub email: String,
     pub exp: usize,
 }
 

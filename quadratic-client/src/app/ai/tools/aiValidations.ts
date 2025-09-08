@@ -184,7 +184,7 @@ const convertValidationToText = (validation: Validation, sheetId: string): strin
   return response + '\n';
 };
 
-export const getValidationsToolCall = (sheetName: string | undefined): string => {
+export const getValidationsToolCall = (sheetName: string | null | undefined): string => {
   const sheet = sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
   const validations = sheet.validations;
 
@@ -208,7 +208,7 @@ const getSelectionFromString = (selection: string, sheetId: string): A1Selection
   }
 };
 
-const getSheetFromSheetName = (sheetName: string | undefined): Sheet => {
+const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet => {
   return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
 };
 
