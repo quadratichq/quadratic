@@ -43,7 +43,7 @@
     "@ory/kratos-client": "^1.2.1",
     "@prisma/client": "^4.12.0",
     "@sendgrid/mail": "^8.1.0",
-    "@sentry/node": "^9.6.1",
+    "@sentry/node": "^10.10.0",
     "@workos-inc/node": "7.69.2",
     "axios": "^1.8.2",
     "cookie-parser": "^1.4.7",

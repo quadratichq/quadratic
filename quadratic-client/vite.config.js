@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => {
         authToken: env.SENTRY_AUTH_TOKEN,
         org: 'quadratic',
         project: 'quadratic',
+        url: 'https://sentry.quadratichq.com',
+        release: env.VITE_VERSION,
       })
     );
   }
