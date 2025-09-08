@@ -46,11 +46,7 @@ export const workosClient: AuthClient = {
       return true;
     }
 
-    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
-    await disposeClient();
-    const client = await getClient();
-    await client.initialize();
-    const user = client.getUser();
+    const user = await this.user();
     return !!user;
   },
 
@@ -58,8 +54,10 @@ export const workosClient: AuthClient = {
    * Get the current authenticated user from Workos.
    */
   async user(): Promise<User | undefined> {
+    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     await disposeClient();
     const client = await getClient();
+    await client.initialize();
     const workosUser = client.getUser();
     if (!workosUser) {
       return undefined;

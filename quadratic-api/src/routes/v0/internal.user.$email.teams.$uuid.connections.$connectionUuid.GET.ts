@@ -11,22 +11,22 @@ import { decryptFromEnv } from '../../utils/crypto';
 export default [validateM2MAuth(), handler];
 
 const schema = z.object({
-  params: z.object({ auth0Id: z.string(), uuid: z.string().uuid(), connectionUuid: z.string().uuid() }),
+  params: z.object({ email: z.string(), uuid: z.string().uuid(), connectionUuid: z.string().uuid() }),
 });
 
 async function handler(req: Request, res: Response) {
   const {
-    params: { auth0Id, uuid: teamUuid, connectionUuid },
+    params: { email, uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
 
   // Get the user
   const user = await dbClient.user.findUnique({
     where: {
-      auth0Id,
+      email,
     },
   });
   if (!user) {
-    throw new ApiError(400, 'The user with that auth0 ID could not be found.');
+    throw new ApiError(400, 'The user with that email could not be found.');
   }
 
   // If it's our hard-coded connection, return that
