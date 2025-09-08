@@ -24,7 +24,7 @@ sudo chown ubuntu /quadratic-sentry
 cd /quadratic-sentry
 
 # clone sentry-selfhost
-sudo git clone https://github.com/getsentry/self-hosted.git
+git clone https://github.com/getsentry/self-hosted.git
 cd self-hosted
 
 # install sentry
