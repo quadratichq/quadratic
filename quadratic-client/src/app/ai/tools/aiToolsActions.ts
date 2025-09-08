@@ -1315,4 +1315,20 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing get code cell value tool: ${e}`)];
     }
   },
+  [AITool.Undo]: async () => {
+    try {
+      const text = await quadraticCore.undo();
+      return [createTextContent(text ?? 'Undo tool executed successfully.')];
+    } catch (e) {
+      return [createTextContent(`Error executing undo tool: ${e}`)];
+    }
+  },
+  [AITool.Redo]: async () => {
+    try {
+      const text = await quadraticCore.redo();
+      return [createTextContent(text ?? 'Redo tool executed successfully.')];
+    } catch (e) {
+      return [createTextContent(`Error executing redo tool: ${e}`)];
+    }
+  },
 } as const;

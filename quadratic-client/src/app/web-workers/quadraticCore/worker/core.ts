@@ -604,19 +604,19 @@ class Core {
     }
   }
 
-  undo(cursor: string) {
+  undo(cursor: string): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.undo(cursor);
+      return this.gridController.undo(cursor);
     } catch (e) {
       this.handleCoreError('undo', e);
     }
   }
 
-  redo(cursor: string) {
+  redo(cursor: string): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.redo(cursor);
+      return this.gridController.redo(cursor);
     } catch (e) {
       this.handleCoreError('redo', e);
     }

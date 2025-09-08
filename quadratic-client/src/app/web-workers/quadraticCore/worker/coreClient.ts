@@ -297,11 +297,11 @@ class CoreClient {
         return;
 
       case 'clientCoreUndo':
-        core.undo(e.data.cursor);
+        this.send({ type: 'coreClientUndoResponse', id: e.data.id, response: core.undo(e.data.cursor) ?? '' });
         return;
 
       case 'clientCoreRedo':
-        core.redo(e.data.cursor);
+        this.send({ type: 'coreClientRedoResponse', id: e.data.id, response: core.redo(e.data.cursor) ?? '' });
         return;
 
       case 'clientCoreExport':

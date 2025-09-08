@@ -747,12 +747,26 @@ export interface CoreClientSheetCodeCellRender {
 
 export interface ClientCoreUndo {
   type: 'clientCoreUndo';
+  id: number;
   cursor: string;
 }
 
 export interface ClientCoreRedo {
   type: 'clientCoreRedo';
+  id: number;
   cursor: string;
+}
+
+export interface CoreClientUndoResponse {
+  type: 'coreClientUndoResponse';
+  id: number;
+  response: string | undefined;
+}
+
+export interface CoreClientRedoResponse {
+  type: 'coreClientRedoResponse';
+  id: number;
+  response: string | undefined;
 }
 
 //#endregion
@@ -1553,7 +1567,9 @@ export type ClientCoreMessage =
   | ClientCoreHasCellData
   | ClientCoreRemoveValidationSelection
   | ClientCoreGetAICodeErrors
-  | ClientCoreGetAITransactions;
+  | ClientCoreGetAITransactions
+  | ClientCoreUndo
+  | ClientCoreRedo;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1648,4 +1664,6 @@ export type CoreClientMessage =
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
   | CoreClientGetAICodeErrors
-  | CoreClientGetAITransactions;
+  | CoreClientGetAITransactions
+  | CoreClientUndoResponse
+  | CoreClientRedoResponse;

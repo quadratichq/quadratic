@@ -98,6 +98,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRedoResponse,
   CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
   CoreClientResizeColumns,
@@ -110,6 +111,7 @@ import type {
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
+  CoreClientUndoResponse,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -959,12 +961,24 @@ class QuadraticCore {
 
   //#region Undo/redo
 
-  undo() {
-    this.send({ type: 'clientCoreUndo', cursor: sheets.getCursorPosition() });
+  undo(): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientUndoResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreUndo', id, cursor: sheets.getCursorPosition() });
+    });
   }
 
-  redo() {
-    this.send({ type: 'clientCoreRedo', cursor: sheets.getCursorPosition() });
+  redo(): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientRedoResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreRedo', id, cursor: sheets.getCursorPosition() });
+    });
   }
 
   //#endregion

@@ -58,6 +58,8 @@ export enum AITool {
   AddNumberValidation = 'add_number_validation',
   AddDateTimeValidation = 'add_date_time_validation',
   RemoveValidations = 'remove_validation',
+  Undo = 'undo',
+  Redo = 'redo',
 }
 
 export const AIToolSchema = z.enum([
@@ -108,6 +110,8 @@ export const AIToolSchema = z.enum([
   AITool.AddNumberValidation,
   AITool.AddDateTimeValidation,
   AITool.RemoveValidations,
+  AITool.Undo,
+  AITool.Redo,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -510,6 +514,8 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
+  [AITool.Undo]: z.object({}),
+  [AITool.Redo]: z.object({}),
 } as const;
 
 export type AIToolsArgs = {
@@ -951,7 +957,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -1014,7 +1020,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -1574,7 +1580,7 @@ It requires the query to search for.\n
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
-This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
 `,
     parameters: {
       type: 'object',
@@ -1597,7 +1603,7 @@ This tool should not be used to list the sheets in the file. The names of all sh
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
-This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -2613,5 +2619,35 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
+  },
+  [AITool.Undo]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.Undo],
+    prompt: `
+This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+  },
+  [AITool.Redo]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool redoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.Redo],
+    prompt: `
+This tool redoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
   },
 } as const;

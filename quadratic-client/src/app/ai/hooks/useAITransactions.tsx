@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { TrackedTransaction } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -102,7 +103,7 @@ export const useAITransactions = () => {
     const transactions = await quadraticCore.getAITransactions();
     return [
       {
-        role: 'assistant',
+        role: 'user',
         content: [
           {
             type: 'text',
@@ -111,9 +112,19 @@ The following is a list of transactions that have occurred since the file was op
 The transactions are ordered from oldest to newest.
 Transactions that are marked undoable may be called with the undo tool call. Transactions that are marked redoable may be called with the redo tool call.
 Undo and redo work on the latest available transaction, and follow the normal undo/redo logic.
+Undo and redo works across the file. That is, each sheet does not have its own undo or redo stack.
 
 ${transactions?.map((transaction) => `${convertTransactionToChatMessage(transaction)}`).join('\n')}`,
           },
+        ],
+        contextType: 'aiUpdates',
+      },
+      {
+        role: 'assistant',
+        content: [
+          createTextContent(
+            `I understand the latest transaction updates, I will reference it to answer questions about undo, redo, or what the user or other players have done on the sheet.`
+          ),
         ],
         contextType: 'aiUpdates',
       },
