@@ -39,6 +39,8 @@ export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<
         auth0Id,
         email: workosUser.email,
         name: `${workosUser.firstName ?? ''} ${workosUser.lastName ?? ''}`.trim(),
+        firstName: workosUser.firstName ?? undefined,
+        lastName: workosUser.lastName ?? undefined,
         picture: workosUser.profilePictureUrl ?? undefined,
       };
     } catch (error) {
