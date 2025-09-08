@@ -40,10 +40,12 @@ RUN cargo build --release
 ###########################################################################################
 FROM ubuntu:24.04 AS runtime
 
-COPY --from=builder /quadratic/quadratic-connection/target/release/quadratic-connection .
-
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \  
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /quadratic/quadratic-connection/target/release/quadratic-connection .
 
 CMD ["./quadratic-connection"]

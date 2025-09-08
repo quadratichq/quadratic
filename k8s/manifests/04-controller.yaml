@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quadratic-cloud-controller
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Prevent duplicate controllers
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-controller
+      app.kubernetes.io/component: controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quadratic-cloud-controller
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/part-of: quadratic-cloud
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3004"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: quadratic-cloud-controller
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: quadratic-cloud-controller
+          image: localhost:5001/quadratic-cloud-controller:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3004
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: RUST_LOG
+              value: "info,quadratic_cloud_controller=debug"
+            - name: RUST_BACKTRACE
+              value: "1"
+            - name: ENVIRONMENT
+              value: "production"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "3004"
+            - name: HEARTBEAT_CHECK_S
+              value: "60"
+            - name: QUADRATIC_API_URI
+              value: "http://quadratic-localhost-tunnel.quadratic-cloud.svc.cluster.local:8000"
+            - name: M2M_AUTH_TOKEN
+              value: "M2M_AUTH_TOKEN"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PUBSUB_HOST
+              value: "quadratic-cloud-redis"
+            - name: PUBSUB_PORT
+              value: "6379"
+            - name: PUBSUB_PASSWORD
+              value: ""
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "8Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+            successThreshold: 1
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/cache
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: cache
+          emptyDir:
+            sizeLimit: 1Gi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - quadratic-cloud-controller
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quadratic-cloud-controller
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+  ports:
+    - name: http
+      port: 3004
+      targetPort: 3004
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP

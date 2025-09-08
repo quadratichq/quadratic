@@ -7,6 +7,8 @@ members = [
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
+  "quadratic-cloud-controller",
+  "quadratic-cloud-worker",
 ]
 exclude = ["poc/number_type"]
 
@@ -22,9 +24,3 @@ version = "0.17.0"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
-
-
-
-
-
-

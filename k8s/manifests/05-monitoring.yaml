@@ -1,0 +1,47 @@
+# PodDisruptionBudget for controller
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quadratic-cloud-controller-pdb
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-controller
+      app.kubernetes.io/component: controller
+---
+# Optional: HorizontalPodAutoscaler for production
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: quadratic-cloud-controller-hpa
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: quadratic-cloud-controller
+  minReplicas: 1
+  maxReplicas: 1 # Keep at 1 to prevent duplicate job creation
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

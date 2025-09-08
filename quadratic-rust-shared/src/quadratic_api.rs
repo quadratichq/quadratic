@@ -1,5 +1,6 @@
 //! Interacting with the Quadratic API
 
+use chrono::{DateTime, Utc};
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
@@ -234,6 +235,52 @@ pub fn can_view(role: &[FilePermRole]) -> bool {
 /// Validate that role allows editing a file
 pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
+}
+
+pub async fn get_last_checkpoint_data_url(
+    base_url: &str,
+    jwt: &str,
+    file_id: Uuid,
+) -> Result<String> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/last-checkpoint-data-url");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    let last_checkpoint_data_url = response.text().await?;
+
+    Ok(last_checkpoint_data_url)
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Task {
+    pub file_id: Uuid,
+    pub task_id: Uuid,
+    pub next_run_time: Option<DateTime<Utc>>,
+    pub operations: Vec<u8>,
+}
+impl Task {
+    pub fn as_bytes(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        serde_json::from_slice(bytes).map_err(|e| SharedError::Serialization(e.to_string()))
+    }
+}
+
+pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>> {
+    let url = format!("{base_url}/v0/internal/scheduled_task");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    let tasks = response.json::<Vec<Task>>().await?;
+
+    Ok(tasks)
 }
 
 #[cfg(test)]

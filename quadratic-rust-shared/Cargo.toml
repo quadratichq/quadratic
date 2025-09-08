@@ -26,7 +26,7 @@ base64 = { version = "0.22.1", optional = true }
 bigdecimal = "0.4.5" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 cbc = { version = "0.1.2", features = ["alloc"] }
-chrono = "=0.4.39"
+chrono = { version = "=0.4.39", features = ["serde"] }
 criterion = { version = "0.5", optional = true }
 dotenv = { version = "0.15.0", optional = true }
 futures = { version = "0.3.29", optional = true }
@@ -68,7 +68,7 @@ sqlx = { version = "0.7.4", default-features = false, features = [
   "postgres",
   "rust_decimal",
   "json",
-  "runtime-tokio-native-tls"
+  "runtime-tokio-native-tls",
 ], optional = true }
 strum = "0.27.1"
 strum_macros = "0.27.1"
@@ -136,6 +136,7 @@ sql = [
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]
 test = ["httpmock", "criterion", "tabled"]
+quadratic-cloud = ["quadratic-api"]
 
 [dev-dependencies]
 arrow = { version = "=54.2.1", features = ["prettyprint"] }

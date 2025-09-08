@@ -22,18 +22,15 @@ router.get('/scheduled_task', validateM2MAuth(), async (req: Request, res: Respo
         lte: currentTime,
       },
     },
-    select: {
-      id: true,
-      nextRunTime: true,
-      operations: true,
-    },
+    select: { file: true, uuid: true, nextRunTime: true, operations: true },
   });
 
   // Transform operations from Buffer to parsed JSON for consistency with other endpoints
   const transformedTasks = scheduledTasks.map((task) => ({
-    id: task.id,
+    fileId: task.file.uuid,
+    taskId: task.uuid,
     nextRunTime: task.nextRunTime,
-    operations: task.operations ? JSON.parse(task.operations.toString()) : null,
+    operations: Array.from(new Uint8Array(task.operations)),
   }));
 
   return res.status(200).json(transformedTasks);

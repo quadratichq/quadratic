@@ -42,10 +42,12 @@ RUN cargo build --release
 ###########################################################################################
 FROM ubuntu:24.04 AS runtime
 
-COPY --from=builder /quadratic/quadratic-files/target/release/quadratic-files .
-
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \  
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /quadratic/quadratic-files/target/release/quadratic-files .
 
 CMD ["./quadratic-files"]
