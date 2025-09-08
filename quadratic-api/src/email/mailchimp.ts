@@ -5,6 +5,7 @@ import { MAILCHIMP_API_KEY } from '../env-vars';
 import logger from '../utils/logger';
 
 // These correspond to specific setups in our Mailchimp production instance
+const MAILCHIMP_SERVER_PREFIX = 'us18';
 const MAILCHIMP_AUDIENCE_ID = 'e4959f7aa7';
 const MAILCHIMP_JOURNEY_ID = 3921;
 const MAILCHIMP_STEP_ID = 32287;
@@ -12,7 +13,7 @@ const MAILCHIMP_STEP_ID = 32287;
 if (MAILCHIMP_API_KEY) {
   client.setConfig({
     apiKey: MAILCHIMP_API_KEY,
-    server: 'us18',
+    server: MAILCHIMP_SERVER_PREFIX,
   });
 }
 
