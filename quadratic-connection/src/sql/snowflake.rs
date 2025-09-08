@@ -45,9 +45,10 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<SnowflakeConnection>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.sub, connection_id, team_id, headers).await?
     } else {
         let config = new_snowflake_connection();
         ApiConnection {
@@ -71,7 +72,14 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let connection = get_connection(
+        &state,
+        &claims,
+        &sql_query.connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
     query_generic::<SnowflakeConnection>(connection.type_details, state, sql_query).await
 }
 
@@ -84,7 +92,7 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     schema_generic(api_connection, state, params).await
 }

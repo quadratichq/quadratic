@@ -1,10 +1,12 @@
 use deno_core::ModuleSpecifier;
 use deno_core::PollEventLoopOptions;
 use deno_core::{JsRuntime, RuntimeOptions, error::JsError, serde_v8, v8};
+use quadratic_core::controller::GridController;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeResult};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, OnceLock};
+use tokio::sync::Mutex as TokioMutex;
 
 use crate::error::{CoreCloudError, Result};
 use crate::javascript::imports::{QuadraticModuleLoader, extract_imports};
@@ -26,6 +28,20 @@ pub fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
         success: false,
         ..Default::default()
     }
+}
+
+pub(crate) async fn run_javascript(
+    grid: Arc<TokioMutex<GridController>>,
+    code: &str,
+    transaction_id: &str,
+    get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+) -> Result<()> {
+    let js_code_result = execute(code, transaction_id, get_cells).await?;
+
+    grid.lock()
+        .await
+        .calculation_complete(js_code_result)
+        .map_err(|e| CoreCloudError::Core(e.to_string()))
 }
 
 pub(crate) async fn execute(

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 
-use crate::auth::jwt::authorize;
+use crate::auth::jwt::{authorize, extract_m2m_token};
 use crate::net::websocket_server::error::{Result, WebsocketServerError};
 use crate::net::websocket_server::pre_connection::PreConnection;
 
@@ -78,13 +78,7 @@ impl WebsocketServer {
 
         // check if the connection is m2m service connection
         // strip "Bearer " from the token
-        let m2m_token = headers.get("authorization").map_or(None, |authorization| {
-            authorization
-                .to_str()
-                .ok()
-                .map(|s| s.to_string().replace("Bearer ", ""))
-        });
-
+        let m2m_token = extract_m2m_token(&headers);
         let pre_connection = PreConnection::new(jwt, m2m_token);
 
         tracing::info!(

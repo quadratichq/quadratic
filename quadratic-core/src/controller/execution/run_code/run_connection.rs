@@ -74,19 +74,12 @@ impl GridController {
         kind: ConnectionKind,
         id: String,
     ) {
-        // send the request to get the sql data via the connector to the host
+        let mut replaced_code = None;
+
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             match self.replace_handlebars(transaction, sheet_pos, &code, sheet_pos.sheet_id) {
-                Ok(replaced_code) => {
-                    crate::wasm_bindings::js::jsConnection(
-                        transaction.id.to_string(),
-                        sheet_pos.x as i32,
-                        sheet_pos.y as i32,
-                        sheet_pos.sheet_id.to_string(),
-                        replaced_code,
-                        kind,
-                        id.to_owned(),
-                    );
+                Ok(replaced) => {
+                    replaced_code = Some(replaced);
                 }
                 Err(msg) => {
                     let error = RunError {
@@ -106,11 +99,29 @@ impl GridController {
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
         let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Connection { kind, id },
+            language: CodeCellLanguage::Connection {
+                kind,
+                id: id.to_owned(),
+            },
             code,
         };
         transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
+
+        if !transaction.is_server()
+            && let Some(f) = self.run_connection_callback.as_mut()
+            && let Some(replaced_code) = replaced_code
+        {
+            f(
+                transaction.id.to_string(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                replaced_code,
+                kind,
+                id,
+            );
+        }
     }
 }
 

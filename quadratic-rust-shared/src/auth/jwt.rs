@@ -2,8 +2,11 @@
 //!
 //! Functions to interact with JWT tokens
 
+use http::HeaderMap;
 use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
-use jsonwebtoken::{Algorithm, DecodingKey, TokenData, Validation, decode, decode_header, jwk};
+use jsonwebtoken::{
+    Algorithm, DecodingKey, Header, TokenData, Validation, decode, decode_header, jwk,
+};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -16,8 +19,8 @@ pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    exp: usize,
+    pub sub: String,
+    pub exp: usize,
 }
 
 /// Get the constant JWKS for use throughout the application
@@ -79,6 +82,34 @@ where
     }
 
     Ok(decoded_token)
+}
+
+/// Check if the connection is m2m service connection is valid
+pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenData<Claims>> {
+    let token = extract_m2m_token(headers)
+        .ok_or_else(|| SharedError::Auth(Auth::Jwt("No m2m token found".into())))?;
+
+    if token != expected_token {
+        return Err(SharedError::Auth(Auth::Jwt("Invalid m2m token".into())));
+    }
+
+    Ok(TokenData {
+        header: Header::default(),
+        claims: Claims {
+            sub: "m2m".into(),
+            exp: 0,
+        },
+    })
+}
+
+/// Extract the authorization token from the headers, removing the "Bearer " prefix.
+pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
+    headers.get("authorization").map_or(None, |authorization| {
+        authorization
+            .to_str()
+            .ok()
+            .map(|s| s.to_string().replace("Bearer ", ""))
+    })
 }
 
 pub mod tests {

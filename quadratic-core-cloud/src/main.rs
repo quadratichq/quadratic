@@ -1,10 +1,10 @@
-//! Quadratic File Service
+//! Quadratic Core Cloud Service
 //!
-//! A file servic for that consumes transactions from a queue, applies them to
-//! a grid and writes them to S3.
+//! A core cloud service
 
 mod auth;
 mod config;
+mod connection;
 mod core;
 mod error;
 mod file;

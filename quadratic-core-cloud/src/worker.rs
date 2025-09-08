@@ -147,6 +147,8 @@ impl Worker {
             vec![operation],
             None,
             TransactionName::Unknown,
+            "test_team_id".to_string(),
+            "M2M_AUTH_TOKEN".to_string(),
         )
         .await?;
 
