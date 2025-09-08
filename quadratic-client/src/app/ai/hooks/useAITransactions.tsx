@@ -5,6 +5,8 @@ import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
+const MAX_TRANSACTIONS = 20;
+
 const sheetIdToName = (sheetId: string): string => {
   const sheet = sheets.getById(sheetId);
   if (sheet) {
@@ -14,7 +16,12 @@ const sheetIdToName = (sheetId: string): string => {
 };
 
 const convertTransactionToChatMessage = (transaction: TrackedTransaction): string => {
-  const undoable = transaction.source === 'User' ? 'undoable' : transaction.source === 'Undo' ? 'redoable' : '';
+  const undoable =
+    transaction.source === 'User' || transaction.source === 'AI' || transaction.source === 'Redo'
+      ? 'undoable'
+      : transaction.source === 'Undo'
+        ? 'redoable'
+        : '';
   return `- ${transaction.source} transaction${undoable ? ` marked as ${undoable}` : ''}. The following was executed:
   ${transaction.operations
     .map((operation) => {
@@ -114,7 +121,12 @@ Transactions that are marked undoable may be called with the undo tool call. Tra
 Undo and redo work on the latest available transaction, and follow the normal undo/redo logic.
 Undo and redo works across the file. That is, each sheet does not have its own undo or redo stack.
 
-${transactions?.map((transaction) => `${convertTransactionToChatMessage(transaction)}`).join('\n')}`,
+${transactions
+  ?.slice(-MAX_TRANSACTIONS)
+  .map((transaction) => `${convertTransactionToChatMessage(transaction)}`)
+  .join('\n')}
+
+${transactions?.length > MAX_TRANSACTIONS ? `The list of transactions has been truncated to the latest ${MAX_TRANSACTIONS} transactions.` : ''}`,
           },
         ],
         contextType: 'aiUpdates',
