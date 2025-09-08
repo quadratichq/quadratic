@@ -141,6 +141,7 @@ export const workosClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.signOut({ navigate: false });
+    await disposeClient();
   },
 
   /**
@@ -153,6 +154,7 @@ export const workosClient: AuthClient = {
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
+      await disposeClient();
       if (!skipRedirect) {
         const { pathname, search } = new URL(window.location.href);
         await this.login({ redirectTo: pathname + search, href: window.location.href });
@@ -228,7 +230,7 @@ export const workosClient: AuthClient = {
 
   async resetPassword(args) {
     await apiClient.auth.resetPassword(args);
-    await handleRedirectTo();
+    await disposeClient();
   },
 
   async sendMagicAuthCode(args) {
@@ -262,6 +264,7 @@ const handlePendingAuthenticationToken = async (pendingAuthenticationToken?: str
 };
 
 const handleRedirectTo = async () => {
+  await disposeClient();
   let redirectTo = getRedirectTo();
   if (redirectTo) {
     window.location.assign(redirectTo);

@@ -56,7 +56,9 @@ export const Component = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Magic code</h1>
+      <h1 className="text-2xl font-medium">Enter magic code</h1>
+
+      <p className="text-sm text-muted-foreground">Please enter the one-time code sent to your email.</p>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
