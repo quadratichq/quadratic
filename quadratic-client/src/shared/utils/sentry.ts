@@ -12,14 +12,17 @@ import {
   zodErrorsIntegration,
 } from '@sentry/react';
 
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+const dsn = import.meta.env.VITE_SENTRY_DSN;
+const environment = import.meta.env.VITE_ENVIRONMENT ?? 'development';
+const version = import.meta.env.VITE_VERSION;
 
 export const initSentry = () => {
   try {
-    if (SENTRY_DSN && SENTRY_DSN !== 'none') {
+    if (dsn && dsn !== 'none') {
       init({
-        dsn: SENTRY_DSN,
-        environment: import.meta.env.VITE_ENVIRONMENT ?? 'development',
+        dsn,
+        environment,
+        release: `quadratic@${version}`,
         sendDefaultPii: true,
         integrations: [
           browserProfilingIntegration(),
@@ -49,7 +52,7 @@ interface ReplayCanvasIntegration {
 }
 export const captureSnapshotSentry = (canvas: HTMLCanvasElement) => {
   try {
-    if (SENTRY_DSN && SENTRY_DSN !== 'none') {
+    if (dsn && dsn !== 'none') {
       getClient()?.getIntegrationByName<ReplayCanvasIntegration>('ReplayCanvas')?.snapshot?.(canvas);
     }
   } catch (error) {

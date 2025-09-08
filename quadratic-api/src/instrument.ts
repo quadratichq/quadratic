@@ -6,12 +6,13 @@ import {
   prismaIntegration,
   zodErrorsIntegration,
 } from '@sentry/node';
-import { SENTRY_DSN } from './env-vars';
+import { SENTRY_DSN, VERSION } from './env-vars';
 
 // Configure Sentry
 if (SENTRY_DSN) {
   init({
     dsn: SENTRY_DSN,
+    release: `quadratic@${VERSION}`,
     sendDefaultPii: true,
     integrations: [
       consoleIntegration({ levels: ['error', 'warn'] }),
