@@ -1779,6 +1779,10 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientGetAITransactions) => {
         resolve(message.transactions);
       };
+      this.send({
+        type: 'clientCoreGetAITransactions',
+        id,
+      });
     });
   }
 }

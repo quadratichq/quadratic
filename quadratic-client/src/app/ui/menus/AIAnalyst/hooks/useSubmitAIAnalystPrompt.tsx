@@ -105,10 +105,10 @@ export function useSubmitAIAnalystPrompt() {
           ...sqlContext,
           ...filesContext,
           ...getCurrentDateTimeContext(),
+          ...aiTransactions,
           ...visibleContext,
           ...summaryContext,
           ...codeErrorContext,
-          ...aiTransactions,
           ...getPromptAndInternalMessages(chatMessages),
         ];
 
