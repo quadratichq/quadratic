@@ -114,28 +114,28 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     const dbInvite = await createInviteAndSendEmail();
     return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
   }
+
   // 2.
   // If there is a user, they are an existing user of Quadratic. So we
   // associate them with the file and send them an email.
-  else {
-    // Are they already a file user? That's a conflict.
-    if (invitedUser.UserFileRole.length) {
-      throw new ApiError(409, 'This user already belongs to this file.');
-    }
-    // Are they the owner? No go.
-    if (invitedUser.id === ownerUserId) {
-      throw new ApiError(400, 'This user is the owner of this file.');
-    }
 
-    // Otherwise associate them as a user of the file and send them an email
-    const userFileRole = await dbClient.userFileRole.create({
-      data: {
-        userId: invitedUser.id,
-        fileId,
-        role,
-      },
-    });
-    await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
-    return res.status(200).json({ id: userFileRole.id, role, userId: userFileRole.userId });
+  // Are they already a file user? That's a conflict.
+  if (invitedUser.UserFileRole.length) {
+    throw new ApiError(409, 'This user already belongs to this file.');
   }
+  // Are they the owner? No go.
+  if (invitedUser.id === ownerUserId) {
+    throw new ApiError(400, 'This user is the owner of this file.');
+  }
+
+  // Otherwise associate them as a user of the file and send them an email
+  const userFileRole = await dbClient.userFileRole.create({
+    data: {
+      userId: invitedUser.id,
+      fileId,
+      role,
+    },
+  });
+  await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
+  return res.status(200).json({ id: userFileRole.id, role, userId: userFileRole.userId });
 }

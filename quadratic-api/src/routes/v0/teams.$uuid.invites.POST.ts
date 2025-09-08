@@ -114,19 +114,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   if (!invitedUser) {
     const dbInvite = await createInviteAndSendEmail();
     return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
-  } else {
-    // 2.
-    // If there is a user, they are an existing user of Quadratic. So we
-    // associate them with the team and send them an email.
-
-    // Are they already a team user? That's a conflict.
-    if (invitedUser.UserTeamRole.length) {
-      throw new ApiError(409, 'This user already belongs to this team.');
-    }
-
-    // Otherwise associate them as a user of the team and send them an email
-    const userTeamRole = await addUserToTeam({ userId: invitedUser.id, teamId, role });
-    await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
-    return res.status(200).json({ id: userTeamRole.id, role: userTeamRole.role, userId: userTeamRole.userId });
   }
+
+  // 2.
+  // If there is a user, they are an existing user of Quadratic. So we
+  // associate them with the team and send them an email.
+
+  // Are they already a team user? That's a conflict.
+  if (invitedUser.UserTeamRole.length) {
+    throw new ApiError(409, 'This user already belongs to this team.');
+  }
+
+  // Otherwise associate them as a user of the team and send them an email
+  const userTeamRole = await addUserToTeam({ userId: invitedUser.id, teamId, role });
+  await sendEmail(email, templates.inviteToTeam(emailTemplateArgs));
+  return res.status(200).json({ id: userTeamRole.id, role: userTeamRole.role, userId: userTeamRole.userId });
 }
