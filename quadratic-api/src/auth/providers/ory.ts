@@ -65,6 +65,8 @@ export const getUsersFromOry = async (users: UsersRequest[]): Promise<Record<num
         auth0Id,
         email,
         name: `${name.first} ${name.last}`.trim(),
+        firstName: name.first ?? undefined,
+        lastName: name.last ?? undefined,
         picture: undefined,
       },
     };
