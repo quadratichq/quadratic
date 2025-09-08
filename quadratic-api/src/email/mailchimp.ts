@@ -20,6 +20,7 @@ if (MAILCHIMP_API_KEY) {
 export const triggerJourney = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
   try {
     if (!MAILCHIMP_API_KEY) {
+      logger.info('[mailchimp.triggerJourney] MAILCHIMP_API_KEY is not set, skipping journey');
       return;
     }
 
