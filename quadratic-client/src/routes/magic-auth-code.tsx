@@ -1,8 +1,10 @@
 import { authClient } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
+import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useMemo, useState } from 'react';
@@ -11,6 +13,14 @@ import { redirect, useLoaderData, useNavigate, type LoaderFunctionArgs } from 'r
 import type z from 'zod';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const redirectTo = getRedirectTo() || '/';
+
+  const isAuthenticated = await authClient.isAuthenticated();
+  if (isAuthenticated) {
+    window.location.assign(redirectTo);
+    await waitForAuthClientToRedirect();
+  }
+
   const url = new URL(request.url);
   const email = url.searchParams.get('email');
   if (!email) {
