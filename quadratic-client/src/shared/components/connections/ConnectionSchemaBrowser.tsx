@@ -21,12 +21,14 @@ export const ConnectionSchemaBrowser = ({
   teamUuid,
   type,
   uuid,
+  onTableQueryAction,
 }: {
   TableQueryAction: React.FC<{ query: string }>;
   teamUuid: string;
   selfContained?: boolean;
   type?: ConnectionType;
   uuid?: string;
+  onTableQueryAction?: (query: string) => void;
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
@@ -59,7 +61,7 @@ export const ConnectionSchemaBrowser = ({
       className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
-        <div className="flex items-center justify-between">
+        <div className="flex hidden items-center justify-between">
           <div className="flex items-center gap-1 truncate">
             {data && data.type ? (
               <>
@@ -127,6 +129,7 @@ export const ConnectionSchemaBrowser = ({
           onValueChange={(newIndexStr) => {
             const newIndex = Number(newIndexStr);
             setSelectedTableIndex(newIndex);
+            onTableQueryAction?.(getTableQuery({ table: filteredTables[newIndex], connectionKind: data.type }));
           }}
           className="block"
         >

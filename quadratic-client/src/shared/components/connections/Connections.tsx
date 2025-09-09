@@ -5,10 +5,10 @@ import {
   type ToggleShowConnectionDemoAction,
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import {
-  connectionsByType,
   potentialConnectionsByType,
   type PotentialConnectionType,
 } from '@/shared/components/connections/connectionsByType';
@@ -16,6 +16,9 @@ import { ConnectionsList } from '@/shared/components/connections/ConnectionsList
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
 import { ConnectionsPotential } from '@/shared/components/connections/ConnectionsPotential';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { ArrowUpwardIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import {
   Breadcrumb,
@@ -25,11 +28,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/shadcn/ui/breadcrumb';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Fragment, memo, useCallback, useMemo, useState } from 'react';
-import { useFetchers, useSearchParams, useSubmit } from 'react-router';
+import { Link, useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
@@ -53,7 +60,8 @@ type ConnectionState =
   | { view: 'new' }
   | { view: 'create'; type: ConnectionType }
   | { view: 'create-potential'; type: PotentialConnectionType }
-  | { view: 'list' };
+  | { view: 'list' }
+  | { view: 'chat'; type: ConnectionType; uuid: string };
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, sshPublicKey }: Props) => {
   const submit = useSubmit();
@@ -149,6 +157,9 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     },
     [submit, teamUuid]
   );
+  const handleNavigateToChatView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ view: 'chat', type: connectionType, uuid: connectionUuid });
+  }, []);
   const handleNavigateToListView: NavigateToListView = useCallback(() => {
     setActiveConnectionState({ view: 'list' });
   }, []);
@@ -178,74 +189,24 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     [handleNavigateToNewView]
   );
 
+  const [data, setData] = useState<any>(generateData());
+  const newFileTo = newNewFileFromStateConnection({
+    query: '',
+    isPrivate: false,
+    teamUuid,
+    // @ts-expect-error
+    connectionType: activeConnectionState.type,
+    // @ts-expect-error
+    connectionUuid: activeConnectionState.uuid,
+  });
+
   return (
-    <div className={'grid-cols-12 gap-12 md:grid'}>
-      <div className="col-span-8">
-        {activeConnectionState.view === 'edit' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: `Edit`,
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionFormEdit
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
-              handleNavigateToListView={handleNavigateToListView}
-              teamUuid={teamUuid}
-            />
-          </>
-        ) : activeConnectionState.view === 'details' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: 'Browse',
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionDetails
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
-              teamUuid={teamUuid}
-            />
-          </>
-        ) : activeConnectionState.view === 'new' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[connectionsBreadcrumb, { label: `New`, onClick: handleNavigateToListView }]}
-            />
-            <ConnectionsNew
-              handleNavigateToCreateView={handleNavigateToCreateView}
-              handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
-            />
-          </>
-        ) : activeConnectionState.view === 'create' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                connectionsNewBreadcrumb,
-                { label: connectionsByType[activeConnectionState.type].name },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionFormCreate
-              teamUuid={teamUuid}
-              type={activeConnectionState.type}
-              handleNavigateToListView={handleNavigateToListView}
-              handleNavigateToNewView={handleNavigateToNewView}
-            />
-          </>
-        ) : activeConnectionState.view === 'create-potential' ? (
+    <div className={'h-full grid-cols-12 overflow-hidden md:grid'}>
+      <div className="col-span-3 overflow-auto border-r border-border px-3 pt-2">
+        <div className="flex h-10 items-center gap-2 text-sm">
+          <span className={cn('flex-shrink-0 font-medium')}>Connections</span>
+        </div>
+        {activeConnectionState.view === 'create-potential' ? (
           <>
             <ConnectionBreadcrumbs
               breadcrumbs={[
@@ -262,6 +223,14 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           </>
         ) : (
           <ConnectionsList
+            handleNavigateToListView={handleNavigateToListView}
+            activeConnection={
+              activeConnectionState.view === 'edit' || activeConnectionState.view === 'details'
+                ? activeConnectionState.uuid
+                : activeConnectionState.view === 'new' || activeConnectionState.view === 'create'
+                  ? 'new'
+                  : ''
+            }
             connections={connections}
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToNewView={handleNavigateToNewView}
@@ -272,9 +241,149 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           />
         )}
       </div>
-      <div className="col-span-4 mt-12 md:mt-0">
-        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
-      </div>
+      {(activeConnectionState.view === 'edit' ||
+        activeConnectionState.view === 'details' ||
+        activeConnectionState.view === 'chat') && (
+        <div className="col-span-9 h-full overflow-hidden">
+          <Tabs
+            className="h-full"
+            value={activeConnectionState.view}
+            onValueChange={(value) => {
+              if (value === 'chat') {
+                handleNavigateToChatView({
+                  connectionType: activeConnectionState.type,
+                  connectionUuid: activeConnectionState.uuid,
+                });
+              } else if (value === 'details') {
+                handleNavigateToDetailsView({
+                  connectionType: activeConnectionState.type,
+                  connectionUuid: activeConnectionState.uuid,
+                });
+              } else if (value === 'edit') {
+                handleNavigateToEditView({
+                  connectionType: activeConnectionState.type,
+                  connectionUuid: activeConnectionState.uuid,
+                });
+              }
+            }}
+          >
+            <div className="flex flex-row justify-between border-b border-border px-3 pt-2">
+              <TabsList>
+                <TabsTrigger value="details">Schema</TabsTrigger>
+                <TabsTrigger value="edit">Edit</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+              </TabsList>
+
+              <Button className="-mt-1" asChild>
+                <Link to={newFileTo}>New file from connection</Link>
+              </Button>
+            </div>
+
+            <TabsContent
+              value="details"
+              className={cn('mt-0 flex flex-row', activeConnectionState.view === 'details' && 'h-full')}
+            >
+              <div className="w-1/3 border-r border-border">
+                <ConnectionDetails
+                  connectionUuid={activeConnectionState.uuid}
+                  connectionType={activeConnectionState.type}
+                  teamUuid={teamUuid}
+                  onTableQueryAction={(query) => {
+                    const jsonData = generateData();
+                    setData(jsonData);
+
+                    connectionClient
+                      .query(query, { type: activeConnectionState.type, uuid: activeConnectionState.uuid, teamUuid })
+                      .then((json) => {
+                        console.log(json);
+                      });
+                    console.log(jsonData);
+                  }}
+                />
+              </div>
+
+              <div className="w-2/3 overflow-auto">
+                <table className="table table-auto text-sm">
+                  <thead>
+                    <tr className="sticky top-0 border-b border-border bg-white">
+                      {Object.keys(data[0]).map((key) => (
+                        <th className="sticky top-0 border-b border-border bg-white px-2 text-left">{key}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((row: any) => (
+                      <tr>
+                        {Object.keys(row).map((key) => (
+                          <td className="whitespace-nowrap px-2">{row[key]}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+            <TabsContent value="edit">
+              <div className="grid grid-cols-12 gap-8">
+                <div className="col-span-9 px-3">
+                  <ConnectionFormEdit
+                    connectionUuid={activeConnectionState.uuid}
+                    connectionType={activeConnectionState.type}
+                    handleNavigateToListView={handleNavigateToListView}
+                    teamUuid={teamUuid}
+                  />
+                </div>
+                <div className="col-span-3 pr-3 pt-3">
+                  <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent
+              value="chat"
+              className={cn(
+                'mt-0 flex flex-col items-center justify-center',
+                activeConnectionState.view === 'chat' && 'h-full'
+              )}
+            >
+              <div className="relative w-full max-w-lg">
+                <div className="absolute left-3 top-2 flex items-center gap-1 rounded-md border border-border px-1 py-0.5 text-xs">
+                  <LanguageIcon language={activeConnectionState.type} className="h-4 w-4" />{' '}
+                  {activeConnectionState.type}
+                </div>
+                <Textarea
+                  className="h-40 w-full max-w-lg bg-accent pt-10 shadow-sm"
+                  autoFocus
+                  placeholder="Ask a question about your data..."
+                />
+                <Button size="icon" className="absolute bottom-4 right-2 rounded-full">
+                  <ArrowUpwardIcon />
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
+
+      {activeConnectionState.view === 'new' || activeConnectionState.view === 'create' ? (
+        <div className="col-span-3 h-full overflow-auto border-r border-border px-3 pt-2">
+          <ConnectionsNew
+            activeConnectionType={activeConnectionState.view === 'create' ? activeConnectionState.type : undefined}
+            handleNavigateToCreateView={handleNavigateToCreateView}
+            handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
+          />
+        </div>
+      ) : null}
+
+      {activeConnectionState.view === 'create' && (
+        <div className="col-span-6 px-3 pt-2">
+          <ConnectionFormCreate
+            teamUuid={teamUuid}
+            type={activeConnectionState.type}
+            handleNavigateToListView={handleNavigateToListView}
+            handleNavigateToNewView={handleNavigateToNewView}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -334,4 +443,52 @@ function getInitialConnectionState(searchParams: URLSearchParams): ConnectionSta
   }
 
   return { view: 'list' };
+}
+
+const firstNames = ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace'];
+const lastNames = ['Smith', 'Johnson', 'Lee', 'Patel', 'Garcia', 'Müller', 'Brown'];
+const cities = ['New York', 'London', 'Berlin', 'Tokyo', 'Sydney', 'Toronto', 'Paris'];
+const statuses = ['active', 'inactive', 'pending'];
+const countries = ['United States', 'Canada', 'United Kingdom', 'Australia', 'France', 'Germany', 'Italy'];
+
+function randomItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function randomDate(start: Date, end: Date) {
+  const ts = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+  return new Date(ts).toISOString().split('T')[0];
+}
+function shuffle<T>(a: T[]): T[] {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateData(rows = 100) {
+  const baseKeys = ['id', 'name', 'email', 'age', 'city', 'signupDate', 'status', 'address'] as const;
+  const orderedKeys = shuffle([...baseKeys]); // new column order each run
+
+  const data: Record<(typeof baseKeys)[number], unknown>[] = [];
+  for (let i = 0; i < rows; i++) {
+    const first = randomItem(firstNames);
+    const last = randomItem(lastNames);
+    const base = {
+      id: i + 1,
+      name: `${first} ${last}`,
+      email: `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com`,
+      age: Math.floor(Math.random() * 40) + 20,
+      city: randomItem(cities),
+      signupDate: randomDate(new Date(2020, 0, 1), new Date()),
+      status: randomItem(statuses),
+      address: `${randomItem(cities)}, ${randomItem(countries)}`,
+    };
+
+    // Insert properties in the same shuffled order for every row
+    const row: any = {};
+    for (const k of orderedKeys) row[k] = base[k];
+    data.push(row);
+  }
+  return data;
 }

@@ -1,4 +1,3 @@
-import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
@@ -30,10 +29,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Team connections" />
-      <div className="max-w-4xl">
-        <Connections connections={connections} teamUuid={teamUuid} staticIps={staticIps} sshPublicKey={sshPublicKey} />
-      </div>
+      <Connections connections={connections} teamUuid={teamUuid} staticIps={staticIps} sshPublicKey={sshPublicKey} />
     </>
   );
 };

@@ -6,10 +6,12 @@ export const ConnectionDetails = ({
   connectionType,
   connectionUuid,
   teamUuid,
+  onTableQueryAction,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string;
   teamUuid: string;
+  onTableQueryAction?: (query: string) => void;
 }) => {
   const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile({
     connectionType,
@@ -21,8 +23,9 @@ export const ConnectionDetails = ({
   return (
     <ConnectionSchemaBrowser
       teamUuid={teamUuid}
-      selfContained={true}
+      selfContained={false}
       TableQueryAction={TableQueryAction}
+      onTableQueryAction={onTableQueryAction}
       uuid={connectionUuid}
       type={connectionType}
     />

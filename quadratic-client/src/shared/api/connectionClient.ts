@@ -90,6 +90,20 @@ export const connectionClient = {
       return SqlSchema.parse(data);
     },
   },
+  query: async (sql: string, { type, uuid, teamUuid }: { type: string; uuid: string; teamUuid: string }) => {
+    const headers = new Headers(await jwtHeader());
+    headers.set('X-Team-Id', teamUuid);
+
+    const res = await fetch(`${API_URL}/${type.toLowerCase()}/query`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ query: sql, connection_id: uuid }),
+    });
+
+    const data = await res.json();
+    console.log(data);
+    return data;
+  },
   test: {
     run: async ({
       type,
