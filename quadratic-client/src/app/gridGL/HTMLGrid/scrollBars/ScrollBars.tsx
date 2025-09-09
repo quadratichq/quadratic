@@ -100,10 +100,8 @@ export const ScrollBars = (props: ScrollBarsProps) => {
     (e: PointerEvent) => {
       if (state === 'horizontal' && down !== undefined && start !== undefined) {
         const delta = e.clientX - down.x;
-        let actualDelta: number;
-        if (delta === 0) {
-          actualDelta = 0;
-        } else {
+        let actualDelta = delta;
+        if (delta !== 0) {
           const viewport = pixiApp.viewport;
           const last = viewport.x;
           let x = Math.min(content.headings.headingSize.width, viewport.x - delta * lastViewport.scrollbarScaleX);
@@ -140,10 +138,8 @@ export const ScrollBars = (props: ScrollBarsProps) => {
     (e: PointerEvent) => {
       if (state === 'vertical' && down !== undefined && start !== undefined) {
         const delta = e.clientY - down.y;
-        let actualDelta: number;
-        if (delta === 0) {
-          actualDelta = 0;
-        } else {
+        let actualDelta = delta;
+        if (delta !== 0) {
           const viewport = pixiApp.viewport;
           const last = viewport.y;
           let y = Math.min(content.headings.headingSize.height, viewport.y - delta * lastViewport.scrollbarScaleY);
