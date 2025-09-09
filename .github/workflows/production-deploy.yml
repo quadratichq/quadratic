@@ -220,6 +220,9 @@ jobs:
 
           # Long cache for everything else (1 year + immutable)
           aws s3 sync /tmp/quadratic-client-production/ $S3_DIR \
+            --exclude "*.html" \
+            --exclude "manifest.json" \
+            --exclude "version.json" \
             --cache-control "public, max-age=31536000, immutable" \
             --delete --force
         env:
