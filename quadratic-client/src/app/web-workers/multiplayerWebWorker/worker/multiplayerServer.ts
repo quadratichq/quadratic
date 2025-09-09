@@ -179,7 +179,7 @@ export class MultiplayerServer {
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       email: user.email ?? '',
-      image: user.picture ?? '',
+      image: import.meta.env.DEV ? '' : (user.picture ?? ''),
       cell_edit: this.userData.cellEdit,
       x: this.userData.x,
       y: this.userData.y,
