@@ -297,7 +297,11 @@ class CoreClient {
         return;
 
       case 'clientCoreUndo':
-        this.send({ type: 'coreClientUndoResponse', id: e.data.id, response: core.undo(e.data.cursor) ?? '' });
+        this.send({
+          type: 'coreClientUndoResponse',
+          id: e.data.id,
+          response: core.undo(e.data.count, e.data.cursor) ?? '',
+        });
         return;
 
       case 'clientCoreRedo':

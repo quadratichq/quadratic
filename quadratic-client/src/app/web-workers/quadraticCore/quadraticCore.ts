@@ -961,13 +961,13 @@ class QuadraticCore {
 
   //#region Undo/redo
 
-  undo(): Promise<string | undefined> {
+  undo(count?: number): Promise<string | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientUndoResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreUndo', id, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreUndo', id, count, cursor: sheets.getCursorPosition() });
     });
   }
 

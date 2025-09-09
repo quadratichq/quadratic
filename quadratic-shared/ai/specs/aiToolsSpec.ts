@@ -514,7 +514,9 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
-  [AITool.Undo]: z.object({}),
+  [AITool.Undo]: z.object({
+    count: numberSchema.nullable().optional(),
+  }),
   [AITool.Redo]: z.object({}),
 } as const;
 
@@ -1262,8 +1264,9 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
         },
         selection: {
           type: 'string',
-          description:
-            'The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.',
+          description: `
+The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.\n
+When you are formatting multiple, non-contiguous cells, or cells not in a rectangle, you may use a list of ranges in A1 notation separated by commas. For example, "A1,B2:D5,E20".`,
         },
         bold: {
           type: ['boolean', 'null'],
@@ -2627,8 +2630,14 @@ This tool removes all validations in a sheet from a range.\n`,
 This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
     parameters: {
       type: 'object',
-      properties: {},
-      required: [],
+      properties: {
+        count: {
+          type: 'number',
+          description:
+            'The number of transactions to undo. Should be a number and at least 1 (which only performs an undo on the last transaction)',
+        },
+      },
+      required: ['count'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.Undo],

@@ -92,9 +92,10 @@ impl GridController {
                     });
 
                     if !html.is_empty()
-                        && let Ok(html) = serde_json::to_vec(&html) {
-                            crate::wasm_bindings::js::jsHtmlOutput(html);
-                        }
+                        && let Ok(html) = serde_json::to_vec(&html)
+                    {
+                        crate::wasm_bindings::js::jsHtmlOutput(html);
+                    }
                     drop(html);
                 }
                 Ok(grid)
@@ -150,8 +151,18 @@ impl GridController {
     /// Undoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to undo.
     #[wasm_bindgen(js_name = "undo")]
-    pub fn js_undo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.undo(cursor))?)
+    pub fn js_undo(
+        &mut self,
+        count: Option<usize>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        if let Some(count) = count {
+            Ok(serde_wasm_bindgen::to_value(
+                &self.undo_count(count, cursor),
+            )?)
+        } else {
+            Ok(serde_wasm_bindgen::to_value(&self.undo(cursor))?)
+        }
     }
     /// Redoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to redo.

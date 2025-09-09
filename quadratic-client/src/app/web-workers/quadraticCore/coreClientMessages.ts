@@ -748,6 +748,7 @@ export interface CoreClientSheetCodeCellRender {
 export interface ClientCoreUndo {
   type: 'clientCoreUndo';
   id: number;
+  count: number | undefined;
   cursor: string;
 }
 

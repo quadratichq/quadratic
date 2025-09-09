@@ -604,10 +604,10 @@ class Core {
     }
   }
 
-  undo(cursor: string): string | undefined {
+  undo(count: number | undefined, cursor: string): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.undo(cursor);
+      return this.gridController.undo(count, cursor);
     } catch (e) {
       this.handleCoreError('undo', e);
     }

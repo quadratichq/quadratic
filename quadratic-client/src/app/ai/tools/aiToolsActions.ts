@@ -1315,9 +1315,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing get code cell value tool: ${e}`)];
     }
   },
-  [AITool.Undo]: async () => {
+  [AITool.Undo]: async (args) => {
     try {
-      const text = await quadraticCore.undo();
+      const text = await quadraticCore.undo(args.count ?? undefined);
       return [createTextContent(text ?? 'Undo tool executed successfully.')];
     } catch (e) {
       return [createTextContent(`Error executing undo tool: ${e}`)];
