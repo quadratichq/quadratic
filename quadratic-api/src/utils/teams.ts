@@ -2,6 +2,7 @@ import type { Prisma, Team } from '@prisma/client';
 import { TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 import { isRunningInTest } from '../env-vars';
+import { getIsMonthlySubscription } from '../stripe/stripe';
 import { ApiError } from './ApiError';
 import { decryptFromEnv, encryptFromEnv, generateSshKeys } from './crypto';
 
@@ -97,4 +98,30 @@ export function parseAndValidateClientDataKv(clientDataKv: unknown) {
     throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
   }
   return parseResult.data;
+}
+
+/**
+ * Determines if a team is eligible for a retention discount, and returns the
+ * subscription ID if they are
+ */
+export async function getTeamRetentionDiscountEligibility(
+  team: Team
+): Promise<{ isEligible: true; stripeSubscriptionId: string } | { isEligible: false }> {
+  // Don't have an active subscription? No discount for you
+  if (!team.stripeSubscriptionId || team.stripeSubscriptionStatus !== 'ACTIVE') {
+    return { isEligible: false };
+  }
+
+  // Already used it? No discount for you
+  if (team.stripeSubscriptionRetentionCouponId) {
+    return { isEligible: false };
+  }
+
+  // Not a monthly subscription? No discount for you
+  const isMonthly = await getIsMonthlySubscription(team.stripeSubscriptionId);
+  if (!isMonthly) {
+    return { isEligible: false };
+  }
+
+  return { isEligible: true, stripeSubscriptionId: team.stripeSubscriptionId };
 }

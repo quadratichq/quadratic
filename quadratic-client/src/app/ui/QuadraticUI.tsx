@@ -63,8 +63,6 @@ export default function QuadraticUI() {
     };
   }, []);
 
-  useRemoveInitialLoadingUI();
-
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
   useEffect(() => {
@@ -83,6 +81,8 @@ export default function QuadraticUI() {
       window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
     }
   }, []);
+
+  useRemoveInitialLoadingUI();
 
   if (error) {
     return (
