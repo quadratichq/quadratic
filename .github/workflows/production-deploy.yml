@@ -209,9 +209,18 @@ jobs:
 
       - name: Upload to S3
         run: |
-          # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR  \
-            --cache-control "public, max-age=30, must-revalidate" \
+          # Short cache for entry points that must be fresh (5 minutes)
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR \
+            --exclude "*" \
+            --include "*.html" \
+            --include "manifest.json" \
+            --include "version.json" \
+            --cache-control "public, max-age=300, must-revalidate" \
+            --delete
+
+          # Long cache for everything else (1 year + immutable)
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR \
+            --cache-control "public, max-age=31536000, immutable" \
             --delete --force
         env:
           S3_DIR: s3://app.quadratichq.com/
