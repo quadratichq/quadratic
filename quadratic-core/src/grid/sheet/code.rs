@@ -110,7 +110,6 @@ impl Sheet {
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
-    /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         data_table.cell_value_at(
