@@ -6,11 +6,11 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Form } from 'react-router';
 
-export const Component = () => {
-  const { loggedInUser: user } = useRootRouteLoaderData();
+export const Component = memo(() => {
+  const { loggedInUser } = useRootRouteLoaderData();
 
   return (
     <>
@@ -21,13 +21,13 @@ export const Component = () => {
           <Type variant="body2" className="font-bold">
             Name
           </Type>
-          <Type variant="body2">{user?.name}</Type>
+          <Type variant="body2">{loggedInUser?.name}</Type>
         </Row>
         <Row>
           <Type variant="body2" className="font-bold">
             Email
           </Type>
-          <Type variant="body2">{user?.email}</Type>
+          <Type variant="body2">{loggedInUser?.email}</Type>
         </Row>
         <Row>
           <Type variant="body2" className="font-bold">
@@ -55,7 +55,7 @@ export const Component = () => {
       </div>
     </>
   );
-};
+});
 
 function Row(props: { children: ReactNode; className?: string }) {
   return (

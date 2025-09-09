@@ -58,7 +58,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     } catch (error: any) {
       const isLoggedIn = await authClient.isAuthenticated();
       if (error.status === 403 && !isLoggedIn) {
-        return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
+        return redirect(ROUTES.LOGIN_WITH_REDIRECT(request.url));
       }
       if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
       throw new Response('Failed to load file from server.', { status: error.status });

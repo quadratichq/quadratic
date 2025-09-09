@@ -906,7 +906,7 @@ function ListItemUser({
   error?: string;
   isYou: boolean;
 }) {
-  let label = name ? name : email;
+  const label = name ? name : email;
   const secondary = error ? error : name ? email : '';
   return (
     <ListItem>

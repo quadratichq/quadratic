@@ -55,9 +55,9 @@ export async function fetchFromApi<T>(
   if (!response.ok) {
     // TODO: ensure API only ever returns uniform error response, e.g. `json.errors` or `json.error.message`
     let details = 'No detailed error message provided';
-    if (json.error.message) {
+    if (json?.error?.message) {
       details = json.error.message;
-    } else if (json.errors) {
+    } else if (json?.errors) {
       details = JSON.stringify(json.errors);
     }
     throw new ApiError(`Failed to fetch ${url}`, response.status, init.method, details);

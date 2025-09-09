@@ -1160,8 +1160,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   await userPage2.bringToFront();
-  const userPage2_user1_icon = userPage2.locator(`[alt="${user1Email}"]`);
-  const userPage2_user3_icon = userPage2.locator(`[alt="${user3Email}"]`);
+  const userPage2_user1_icon = userPage2.locator(`[data-testid="top-bar-user-avatar-${user1Email}"]`);
+  const userPage2_user3_icon = userPage2.locator(`[data-testid="top-bar-user-avatar-${user3Email}"]`);
 
   await expect(userPage2_user1_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage2_user3_icon).toBeVisible({ timeout: 60 * 1000 });
@@ -1194,8 +1194,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
 
   // User1 can also see this
   await userPage1.bringToFront();
-  const userPage1_user2_icon = userPage1.locator(`[alt="${user2Email}"]`);
-  const userPage1_user3_icon = userPage1.locator(`[alt="${user3Email}"]`);
+  const userPage1_user2_icon = userPage1.locator(`[data-testid="top-bar-user-avatar-${user2Email}"]`);
+  const userPage1_user3_icon = userPage1.locator(`[data-testid="top-bar-user-avatar-${user3Email}"]`);
 
   await expect(userPage1_user2_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage1_user3_icon).toBeVisible({ timeout: 60 * 1000 });
@@ -1228,8 +1228,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
 
   // User3 can also see this
   await userPage3.bringToFront();
-  const userPage3_user1_icon = userPage3.locator(`[alt="${user1Email}"]`);
-  const userPage3_user2_icon = userPage3.locator(`[alt="${user2Email}"]`);
+  const userPage3_user1_icon = userPage3.locator(`[data-testid="top-bar-user-avatar-${user1Email}"]`);
+  const userPage3_user2_icon = userPage3.locator(`[data-testid="top-bar-user-avatar-${user2Email}"]`);
 
   await expect(userPage3_user1_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage3_user2_icon).toBeVisible({ timeout: 60 * 1000 });
