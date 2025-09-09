@@ -214,7 +214,9 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR \
+            --cache-control "public, max-age=30, must-revalidate" \
+            --delete --force
         env:
           S3_DIR: s3://qa.quadratic-preview.com/
 
@@ -298,8 +300,6 @@ jobs:
         service:
           - name: client
             url: "https://qa.quadratic-preview.com/version.json"
-          # - name: api-heroku
-          #   url: "https://quadratic-staging.herokuapp.com/health"
           - name: api-aws
             url: "https://api-pr-qa.quadratic-preview.com/health"
           - name: multiplayer
