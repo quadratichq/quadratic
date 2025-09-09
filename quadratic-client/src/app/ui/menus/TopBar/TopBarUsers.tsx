@@ -107,7 +107,7 @@ export const TopBarUsers = () => {
             <You
               displayName={displayName(loggedInUser ?? anonymous, true)}
               initial={displayInitials(loggedInUser ?? anonymous)}
-              picture={loggedInUser?.picture ?? ''}
+              picture={import.meta.env.DEV ? '' : (loggedInUser?.picture ?? '')}
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="text-sm">

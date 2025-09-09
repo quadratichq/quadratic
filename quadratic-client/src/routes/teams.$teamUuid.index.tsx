@@ -47,7 +47,12 @@ export const Component = () => {
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="flex items-center">
                 {users.slice(0, 6).map((user, key) => (
-                  <Avatar key={key} alt={user.name} src={user.picture} className={sharedAvatarClasses}>
+                  <Avatar
+                    key={key}
+                    alt={user.name}
+                    src={import.meta.env.DEV ? '' : user.picture}
+                    className={sharedAvatarClasses}
+                  >
                     {user.name ? user.name : user.email}
                   </Avatar>
                 ))}
