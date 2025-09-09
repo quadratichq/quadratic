@@ -61,7 +61,7 @@ import {
  */
 export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser } = useRootRouteLoaderData();
   const submit = useSubmit();
   const {
     userMakingRequest: { id: ownerUserId },
@@ -230,15 +230,15 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
-              <Avatar src={import.meta.env.DEV ? '' : user?.picture} alt={user?.name} size="xs">
-                {user?.name}
+              <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name} size="xs">
+                {loggedInUser?.name ? loggedInUser?.name : loggedInUser?.email}
               </Avatar>
-              <p className={`truncate text-xs`}>{user?.email}</p>
+              <p className={`truncate text-xs`}>{loggedInUser?.email}</p>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-60" side="top" align="start">
               <DropdownMenuItem disabled className="flex-col items-start">
-                {user?.name || 'You'}
-                <span className="text-xs">{user?.email}</span>
+                {loggedInUser?.name || 'You'}
+                <span className="text-xs">{loggedInUser?.email}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -8,12 +8,6 @@ import { sendAnalyticsError } from '@/shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
-type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
-  showLoggedInUser?: boolean;
-  error?: unknown;
-  source?: string;
-};
-
 const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, description?: string) => {
   sendAnalyticsError('Empty', from, error, description);
 };
@@ -22,14 +16,15 @@ const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, descr
  * For use in routes when errors occur or when there is no data to display.
  * Will displays context on the logged in user (if applicable/available)
  */
+type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
+  showLoggedInUser?: boolean;
+  error?: unknown;
+  source?: string;
+};
 export function EmptyPage(props: EmptyPageProps) {
   const { error, title, description, source, Icon, actions, showLoggedInUser } = props;
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
-
-  // Remove the initial loading UI, as these empty pages are alternative rendering
-  // paths to the primary routes
-  useRemoveInitialLoadingUI();
 
   // Get the logged in user from the auth client for display
   useEffect(() => {
@@ -47,6 +42,10 @@ export function EmptyPage(props: EmptyPageProps) {
     }
   }, [error, title, description, source]);
 
+  // Remove the initial loading UI, as these empty pages are alternative rendering
+  // paths to the primary routes
+  useRemoveInitialLoadingUI();
+
   // Content is centered on the page (should always be rendered in the root layout)
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
@@ -54,12 +53,8 @@ export function EmptyPage(props: EmptyPageProps) {
       {loggedInUser && showLoggedInUser && (
         <div className="mx-auto mt-12 max-w-96 border-t border-border pt-2">
           <div className="mx-auto flex items-center gap-2 rounded-md pt-2 text-left text-sm">
-            <Avatar
-              src={import.meta.env.DEV ? '' : loggedInUser.picture}
-              alt={`Avatar for ${loggedInUser.name}`}
-              className="flex-shrink-0"
-            >
-              {loggedInUser.name}
+            <Avatar src={loggedInUser.picture} alt={`Avatar for ${loggedInUser.name}`} className="flex-shrink-0">
+              {loggedInUser.name ? loggedInUser.name : loggedInUser.email}
             </Avatar>
             <div className="flex flex-col justify-start truncate">{loggedInUser.email}</div>
             <Button
