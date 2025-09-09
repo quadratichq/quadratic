@@ -6,6 +6,7 @@ export const VERSION = process.env.VERSION;
 export const RATE_LIMIT_AI_WINDOW_MS = process.env.RATE_LIMIT_AI_WINDOW_MS;
 export const RATE_LIMIT_AI_REQUESTS_MAX = process.env.RATE_LIMIT_AI_REQUESTS_MAX;
 export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+export const MAILCHIMP_API_KEY = process.env.MAILCHIMP_API_KEY;
 export const CORS = process.env.CORS || '*';
 export const AUTH_CORS = process.env.AUTH_CORS || 'http://localhost:3000';
 export const RATE_LIMIT_AUTH_WINDOW_MS = process.env.RATE_LIMIT_AUTH_WINDOW_MS;
