@@ -53,9 +53,6 @@ export async function loadAssets() {
   };
   Assets.addBundle('iconBundle', iconBundle);
 
-  // Add bundles to Assets
-  await Assets.loadBundle('bundle');
-
   // Load HTML fonts for Input
   const openSansPromise = loadFont('OpenSans');
   const openSansBoldPromise = loadFont('OpenSans-Bold');
