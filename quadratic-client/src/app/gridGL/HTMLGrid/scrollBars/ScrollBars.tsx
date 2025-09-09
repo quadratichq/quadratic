@@ -252,7 +252,6 @@ export const ScrollBars = (props: ScrollBarsProps) => {
       }
       const horizontalY = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
       newLastViewport.horizontalBarWidth = horizontalWidth;
-      if (isNaN(horizontalX)) debugger;
       setHorizontalRectangle(new Rectangle(horizontalX, horizontalY, horizontalWidth, SCROLLBAR_SIZE));
     } else {
       setHorizontalRectangle(undefined);
