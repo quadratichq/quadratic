@@ -39,8 +39,6 @@ export const NewSheet = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}" created`} className={className} />
-    );
+    return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} />;
   }
 );

@@ -1,34 +1,11 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'userOwner',
-      email: 'userowner@test.com',
-    },
-    {
-      user_id: 'userEditor',
-      email: 'usereditor@test.com',
-    },
-    {
-      user_id: 'userViewer',
-      email: 'userviewer@test.com',
-    },
-    {
-      user_id: 'userNoRole',
-      email: 'usernorole@test.com',
-    },
-    {
-      user_id: 'duplicate_emails_user_1',
-      email: 'duplicate_emails_user@test.com',
-    },
-    {
-      user_id: 'duplicate_emails_user_2',
-      email: 'duplicate_emails_user@test.com',
-    },
-    {
-      user_id: 'userNotYetInDb',
-      email: 'usernotyetindb@test.com',
-    },
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
+    { id: 'userOwner' },
+    { id: 'userEditor' },
+    { id: 'userViewer' },
+    { id: 'userNoRole' },
+    { id: 'userNotYetInDb' },
   ])
 );
 
@@ -128,11 +105,6 @@ describe('POST /v0/teams/:uuid/invites', () => {
     });
     it('rejects inviting an email associated with an existing invite', async () => {
       await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
-    });
-    it('rejects inviting an email associated with multiple accounts', async () => {
-      await invite({ email: 'duplicate_emails_user@test.com', role: 'VIEWER' }, 'userOwner')
-        .expect(500)
-        .expect(expectError);
     });
   });
 

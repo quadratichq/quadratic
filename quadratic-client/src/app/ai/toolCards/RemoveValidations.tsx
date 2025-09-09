@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type RemoveValidationsResponse = z.infer<(typeof aiToolsSpec)[AITool.RemoveValidations]['responseSchema']>;
@@ -30,11 +30,6 @@ export const RemoveValidations = memo(
     const icon = <GridActionIcon />;
     const label = 'Remove validation';
 
-    const description = useMemo(
-      () => `Removing validation from "${toolArgs?.data?.selection}"`,
-      [toolArgs?.data?.selection]
-    );
-
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
@@ -45,6 +40,6 @@ export const RemoveValidations = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return <ToolCard icon={icon} label={label} description={description} className={className} />;
+    return <ToolCard icon={icon} label={label} description={toolArgs.data.selection} className={className} />;
   }
 );

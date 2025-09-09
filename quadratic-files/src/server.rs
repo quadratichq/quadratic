@@ -114,7 +114,7 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let jwks = get_jwks(&config.jwks_uri).await?;
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
     let active_channels = config.pubsub_active_channels.to_owned();

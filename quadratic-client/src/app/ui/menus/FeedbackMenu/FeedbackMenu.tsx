@@ -23,7 +23,7 @@ export const FeedbackMenu = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const [hasValidationError, setHasValidationError] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser } = useRootRouteLoaderData();
 
   const closeMenu = useCallback(() => {
     setShowFeedbackMenu(false);
@@ -33,7 +33,7 @@ export const FeedbackMenu = () => {
     const formData = new FormData(formRef.current as HTMLFormElement);
     const name = String(formData.get('name'));
     const feedback = String(formData.get('feedback'));
-    const userEmail = user?.email;
+    const userEmail = loggedInUser?.email;
 
     if (feedback.length === 0) {
       setHasValidationError(true);
@@ -55,7 +55,7 @@ export const FeedbackMenu = () => {
     } catch (error) {
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
     }
-  }, [addGlobalSnackbar, closeMenu, setValue, user?.email]);
+  }, [addGlobalSnackbar, closeMenu, setValue, loggedInUser?.email]);
 
   if (!showFeedbackMenu) {
     return null;

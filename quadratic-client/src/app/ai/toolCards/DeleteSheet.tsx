@@ -39,8 +39,6 @@ export const DeleteSheet = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    return (
-      <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}" deleted`} className={className} />
-    );
+    return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}"`} className={className} />;
   }
 );

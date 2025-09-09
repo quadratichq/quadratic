@@ -39,17 +39,15 @@ export const AddMessage = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    const { selection } = toolArgs.data;
-    const description = `Added a message to ${selection}`;
     return (
       <ToolCard
         icon={icon}
         label={
           <span>
-            {label} <span className="ml-1 font-normal text-muted-foreground">{selection}</span>
+            {label} <span className="ml-1 font-normal text-muted-foreground">{toolArgs.data.selection}</span>
           </span>
         }
-        description={description}
+        description={toolArgs.data.selection}
         className={className}
       />
     );
