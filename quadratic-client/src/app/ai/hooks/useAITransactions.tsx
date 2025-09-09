@@ -118,7 +118,7 @@ export const useAITransactions = () => {
 The following is a list of transactions that have occurred since the file was opened. This list may be truncated, but the latest transactions are always included.
 The transactions are ordered from oldest to newest.
 Transactions that are marked undoable may be called with the undo tool call. Transactions that are marked redoable may be called with the redo tool call.
-Undo and redo work on the latest available transaction, and follow the normal undo/redo logic.
+Undo and redo work on the latest available transaction first, and follow the normal undo/redo logic.
 Undo and redo works across the file. That is, each sheet does not have its own undo or redo stack.
 
 ${transactions

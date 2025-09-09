@@ -2627,7 +2627,8 @@ This tool removes all validations in a sheet from a range.\n`,
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+This tool undoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to undo.\n
+Always pass in the count of actions to undo when using the undo tool. You may need to undo multiple times to fulfill the user's request.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -2642,7 +2643,8 @@ This tool undoes the last action. You MUST use the aiUpdates context to understa
     },
     responseSchema: AIToolsArgsSchema[AITool.Undo],
     prompt: `
-This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable.\n
+Always pass in the count of actions to undo when using the undo tool. You may need to undo multiple times to fulfill the user's request.\n`,
   },
   [AITool.Redo]: {
     sources: ['AIAnalyst'],
