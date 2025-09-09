@@ -1,9 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
 import dbClient from '../dbClient';
+import { triggerJourney } from '../email/mailchimp';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { Auth, RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
 const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
+  triggerJourney(user);
+
   const { id: userId, email } = user;
 
   // See if they've been invited to any teams and make them team members

@@ -85,7 +85,6 @@ export class PixiApp {
   firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
       // perform a render to warm up the GPU
-      content.cellsSheets.showAll(sheets.current);
       this.renderer.render(this.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;

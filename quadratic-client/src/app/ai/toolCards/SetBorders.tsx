@@ -29,15 +29,19 @@ export const SetBorders = memo(
     const icon = <GridActionIcon />;
     const label = 'Set borders';
 
-    const description = useMemo(
-      () =>
-        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Borders in sheet "${toolArgs.data.sheet_name}" within selection "${toolArgs.data.selection}" have been set.`
-          : toolArgs?.data?.sheet_name && !toolArgs?.data?.selection
-            ? `Borders in sheet "${toolArgs.data.sheet_name}" have been set.`
-            : 'Borders in all sheets have been set.',
-      [toolArgs?.data?.selection, toolArgs?.data?.sheet_name]
-    );
+    const description = useMemo(() => {
+      if (toolArgs?.success) {
+        return `${toolArgs.data.sheet_name ? `"${toolArgs.data.sheet_name}"!` : ''}${toolArgs.data.selection} ${toolArgs.data.color} ${toolArgs.data.line} ${toolArgs.data.border_selection}`;
+      }
+      return '';
+    }, [
+      toolArgs?.data?.border_selection,
+      toolArgs?.data?.color,
+      toolArgs?.data?.line,
+      toolArgs?.data?.selection,
+      toolArgs?.data?.sheet_name,
+      toolArgs?.success,
+    ]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;

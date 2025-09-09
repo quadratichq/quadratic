@@ -62,7 +62,8 @@ export const connectionClient = {
         | 'NEON',
       connectionId: string,
       teamUuid: string,
-      forceCacheRefresh: boolean = false
+      forceCacheRefresh: boolean = false,
+      timeout: number = 60000
     ): Promise<SqlSchemaResponse | null> => {
       // This might get called on a public file (where the user might not be
       // logged in but can still access the file). If they're not logged in,
@@ -80,6 +81,7 @@ export const connectionClient = {
       const res = await fetch(url, {
         method: 'GET',
         headers,
+        signal: AbortSignal.timeout(timeout),
       });
       if (!res.ok) {
         throw new Error('Failed to get the schema from the connection service');

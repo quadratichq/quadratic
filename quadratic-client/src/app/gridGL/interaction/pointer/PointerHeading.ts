@@ -132,6 +132,7 @@ export class PointerHeading {
       };
       this.active = true;
     } else if (
+      !intersects.corner &&
       !isRightClick &&
       !cursor.isMultiRange() &&
       !cursor.isAllSelected() &&
@@ -154,42 +155,40 @@ export class PointerHeading {
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       events.emit('setDirty', { cellMoving: true });
       this.cursor = 'grabbing';
-    } else {
-      if (intersects.corner) {
-        if (this.downTimeout) {
-          this.downTimeout = undefined;
-          zoomToFit();
-        } else {
-          cursor.selectAll(e.shiftKey);
-          this.downTimeout = window.setTimeout(() => {
-            if (this.downTimeout) {
-              this.downTimeout = undefined;
-            }
-          }, DOUBLE_CLICK_TIME);
-        }
+    } else if (intersects.corner) {
+      if (this.downTimeout) {
+        this.downTimeout = undefined;
+        zoomToFit();
+      } else {
+        cursor.selectAll(e.shiftKey);
+        this.downTimeout = window.setTimeout(() => {
+          if (this.downTimeout) {
+            this.downTimeout = undefined;
+          }
+        }, DOUBLE_CLICK_TIME);
       }
+    }
 
-      // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
-      // then it add or removes the clicked column or row. If shift is pressed,
-      // then it selects all columns or rows between the last clicked column or
-      // row and the current one.
-      const bounds = pixiApp.viewport.getVisibleBounds();
-      const headingSize = content.headings.headingSize;
-      if (intersects.column !== null) {
-        const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
-        cursor.selectColumn(intersects.column, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, top);
-      } else if (intersects.row !== null) {
-        const left = sheets.sheet.getColumnFromScreen(bounds.left);
-        cursor.selectRow(intersects.row, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, left);
-      }
-      if (isRightClick) {
-        events.emit('contextMenu', {
-          world,
-          column: intersects.column ?? undefined,
-          row: intersects.row ?? undefined,
-          type: ContextMenuType.Grid,
-        });
-      }
+    // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
+    // then it add or removes the clicked column or row. If shift is pressed,
+    // then it selects all columns or rows between the last clicked column or
+    // row and the current one.
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const headingSize = content.headings.headingSize;
+    if (intersects.column !== null) {
+      const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
+      cursor.selectColumn(intersects.column, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, top);
+    } else if (intersects.row !== null) {
+      const left = sheets.sheet.getColumnFromScreen(bounds.left);
+      cursor.selectRow(intersects.row, e.ctrlKey || e.metaKey, e.shiftKey, isRightClick, left);
+    }
+    if (isRightClick) {
+      events.emit('contextMenu', {
+        world,
+        column: intersects.column ?? undefined,
+        row: intersects.row ?? undefined,
+        type: ContextMenuType.Grid,
+      });
     }
 
     return true;

@@ -216,7 +216,7 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Assert that the 'Manage billing' button is visible
     // This indicates that the user has an active subscription to manage
-    await expect(page.getByRole(`button`, { name: `Manage billing` })).toBeVisible({ timeout: 60 * 1000 });
+    await expect(page.getByRole(`button`, { name: `Manage subscription` })).toBeVisible({ timeout: 60 * 1000 });
 
     await page.goto(buildUrl(), { waitUntil: 'networkidle' });
   } catch (error: any) {
@@ -312,7 +312,7 @@ export const deleteMemberFromProPlan = async (
       expect(afterCleanupMemberCount).toBe(1);
 
       // Navigate to billing management page
-      await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+      await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
       // Assert the account email address is displayed on the billing page
       await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
@@ -418,7 +418,7 @@ export const cancelProPlan = async (page: Page) => {
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Click 'Manage billing' to reach the billing management page
-    await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
+    await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('domcontentloaded');

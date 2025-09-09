@@ -15,8 +15,6 @@ import type { Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
-  current?: CellsSheet;
-
   constructor() {
     super();
     events.on('addSheet', this.addSheet);
@@ -29,16 +27,20 @@ export class CellsSheets extends Container<CellsSheet> {
     super.destroy();
   }
 
+  get current(): CellsSheet | undefined {
+    return this.children.find((child) => child.sheetId === sheets.current);
+  }
+
   async create() {
     this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
-      const child = this.addChild(new CellsSheet(sheet.id));
-      if (sheet.id === sheets.current) {
-        this.current = child;
-        content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-      }
+      this.addChild(new CellsSheet(sheet.id));
     }
+    if (this.current) {
+      content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+    }
+
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
@@ -57,26 +59,10 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll(id: string) {
-    this.children.forEach((child) => {
-      if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
-          child.show(pixiApp.viewport.getVisibleBounds());
-          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
-      } else {
-        child.hide();
-      }
-    });
-  }
-
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
+        if (this.current && this.current?.sheetId !== child.sheetId) {
           child.show(pixiApp.viewport.getVisibleBounds());
           content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
