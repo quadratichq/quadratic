@@ -295,7 +295,7 @@ API Requests in Python must use the Requests library.
 
 Plotly is the ONLY charting library supported in Quadratic. 
 
-You cannot return multiple charts from the same cell. You must return each chart in a seperate code cell or use Plotly subplots to show multiple charts in the same cell.
+You cannot return multiple charts from the same cell. You must return each chart in a separate code cell or use Plotly subplots to show multiple charts in the same cell.
 
 ### Trendlines 
 
