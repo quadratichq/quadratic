@@ -75,7 +75,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   // When the file name changes, update document title and sync to server
   useEffect(() => {
     document.title = `${name} - Quadratic`;
-  }, [name, syncChanges, uuid]);
+  }, [name]);
 
   // Set the permission in recoil based on the initial state
   // TODO figure out a way to set this in RecoilRoot (if possible)

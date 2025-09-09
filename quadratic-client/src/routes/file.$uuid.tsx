@@ -19,6 +19,7 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
@@ -41,8 +42,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     startupTimer.start('file.loader.loadPixi');
     try {
       await loadAssets();
-    } catch (e) {
-      console.error('Error loading pixi assets', e);
+    } catch (error) {
+      sendAnalyticsError('file.loader', 'loadPixi', error, 'Error loading pixi assets');
     }
     startupTimer.end('file.loader.loadPixi');
   };
@@ -160,9 +161,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
 
-  registerEventAnalyticsData({
-    isOnPaidPlan: data.team.isOnPaidPlan,
-  });
+  registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
 
   startupTimer.end('file.loader');
   return data;

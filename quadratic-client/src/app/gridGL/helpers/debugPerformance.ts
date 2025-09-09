@@ -24,25 +24,3 @@ export function debugRendererLight(on: boolean): void {
     span.style.backgroundColor = on ? '#aa0000' : '#00aa00';
   }
 }
-
-// let count = 0;
-// let visibleCount = 0;
-// function countChildren(parent: Container): void {
-//   count++;
-//   if (parent.visible) {
-//     visibleCount++;
-//   }
-//   parent.children.forEach((child) => {
-//     if (child instanceof Container) {
-//       countChildren(child);
-//     }
-//   });
-// }
-
-// export function debugShowChildren(parent: Container, name?: string): void {
-//   if (!debugFlag('debugShowCountRenderedObjects')) return;
-//   count = 0;
-//   visibleCount = 0;
-//   countChildren(parent);
-//   console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
-// }
