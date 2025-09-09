@@ -10,22 +10,22 @@ import { getDecryptedTeam } from '../../utils/teams';
 export default [validateM2MAuth(), handler];
 
 const schema = z.object({
-  params: z.object({ auth0Id: z.string(), uuid: z.string().uuid() }),
+  params: z.object({ email: z.string(), uuid: z.string().uuid() }),
 });
 
 async function handler(req: Request, res: Response) {
   const {
-    params: { auth0Id, uuid },
+    params: { email, uuid },
   } = parseRequest(req, schema);
 
   // Get the user
   const user = await dbClient.user.findUnique({
     where: {
-      auth0Id,
+      email,
     },
   });
   if (!user) {
-    throw new ApiError(400, 'The user with that auth0 ID could not be found.');
+    throw new ApiError(400, 'The user with that email could not be found.');
   }
 
   // Get the team

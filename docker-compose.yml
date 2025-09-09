@@ -16,7 +16,6 @@ services:
     profiles:
       - redis
       - base
-      - dev
       - all
 
   postgres:
@@ -41,7 +40,6 @@ services:
     profiles:
       - postgres
       - base
-      - dev
       - all
 
   # files service - local aws alternative, use this or file-storage
@@ -77,7 +75,7 @@ services:
 
   quadratic-client:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-client
     container_name: client
     environment:
@@ -86,11 +84,8 @@ services:
       VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
       VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
       VITE_AUTH_TYPE: ${AUTH_TYPE}
-      VITE_AUTH0_ISSUER: ${AUTH0_ISSUER}
-      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
-      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
-      VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
+      VITE_WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID}
       VITE_SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
     ports:
       - 3000:80
@@ -122,11 +117,12 @@ services:
 
   quadratic-api:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-api
     container_name: api
     environment:
       CORS: ${QUADRATIC_API_CORS}
+      AUTH_CORS: ${QUADRATIC_API_AUTH_CORS}
       DATABASE_URL: ${DATABASE_DSN}
       ENVIRONMENT: ${ENVIRONMENT}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
@@ -153,14 +149,10 @@ services:
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       AUTH_TYPE: ${AUTH_TYPE}
-      AUTH0_JWKS_URI: ${JWKS_URI}
-      AUTH0_ISSUER: ${AUTH0_ISSUER}
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
-      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
-      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
-      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-      ORY_JWKS_URI: ${JWKS_URI}
       ORY_ADMIN_HOST: ${ORY_ADMIN_HOST}
+      WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID}
+      WORKOS_API_KEY: ${WORKOS_API_KEY}
+      JWKS_URI: ${JWKS_URI}
       STORAGE_TYPE: ${STORAGE_TYPE}
       QUADRATIC_FILE_URI: ${QUADRATIC_FILES_URL_INTERNAL}
       QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
@@ -183,7 +175,7 @@ services:
 
   quadratic-multiplayer:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-multiplayer
     container_name: multiplayer
     environment:
@@ -199,7 +191,7 @@ services:
       MULTIPLAYER__PUBSUB_PORT: ${PUBSUB_PORT}
       MULTIPLAYER__PUBSUB_PASSWORD: ${PUBSUB_PASSWORD}
       MULTIPLAYER__PUBSUB_ACTIVE_CHANNELS: ${PUBSUB_ACTIVE_CHANNELS}
-      MULTIPLAYER__AUTH0_JWKS_URI: ${JWKS_URI}
+      MULTIPLAYER__JWKS_URI: ${JWKS_URI}
       MULTIPLAYER__AUTHENTICATE_JWT: true
     restart: "always"
     ports:
@@ -222,7 +214,7 @@ services:
 
   quadratic-files:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
     environment:
@@ -234,7 +226,7 @@ services:
       FILES__TRUNCATE_FILE_CHECK_S: ${QUADRATIC_FILES_TRUNCATE_FILE_CHECK_S}
       FILES__TRUNCATE_TRANSACTION_AGE_DAYS: ${QUADRATIC_FILES_TRUNCATE_TRANSACTION_AGE_DAYS}
       FILES__ENVIRONMENT: ${ENVIRONMENT}
-      FILES__AUTH0_JWKS_URI: ${JWKS_URI}
+      FILES__JWKS_URI: ${JWKS_URI}
       FILES__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
       FILES__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       FILES__PUBSUB_HOST: ${PUBSUB_HOST}
@@ -272,7 +264,7 @@ services:
 
   quadratic-connection:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-connection
     container_name: connection
     environment:
@@ -280,7 +272,7 @@ services:
       CONNECTION__HOST: ${QUADRATIC_CONNECTION_HOST}
       CONNECTION__PORT: ${QUADRATIC_CONNECTION_PORT}
       CONNECTION__ENVIRONMENT: ${ENVIRONMENT}
-      CONNECTION__AUTH0_JWKS_URI: ${JWKS_URI}
+      CONNECTION__JWKS_URI: ${JWKS_URI}
       CONNECTION__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
       CONNECTION__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       CONNECTION__MAX_RESPONSE_BYTES: ${QUADRATIC_CONNECTION_MAX_RESPONSE_BYTES}
@@ -322,7 +314,6 @@ services:
       - ory-auth-migrate
     profiles:
       - ory
-      - dev
       - all
     networks:
       - host
@@ -342,7 +333,6 @@ services:
       - postgres
     profiles:
       - ory
-      - dev
       - all
     networks:
       - host
@@ -366,7 +356,6 @@ services:
       - ory-auth
     profiles:
       - ory
-      - dev
       - all
     networks:
       - host
@@ -383,7 +372,6 @@ services:
       - "8080:8080"
     profiles:
       - ory
-      - dev
       - all
     networks:
       - host
