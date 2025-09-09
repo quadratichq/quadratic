@@ -23,6 +23,10 @@ export async function loadAssets() {
   if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
+  // used to ensure we can get resources with 304 instead of 200. TODO: it would
+  // be better to have add { cache: "force-cache" } to the loader instead
+  Assets.preferWorkers = false;
+
   // Load PixiJS fonts for canvas
   const fontBundle = {
     OpenSans: '/fonts/opensans/OpenSans.fnt',
@@ -48,6 +52,9 @@ export async function loadAssets() {
     'sort-descending': '/images/sort-descending.svg',
   };
   Assets.addBundle('iconBundle', iconBundle);
+
+  // Add bundles to Assets
+  await Assets.loadBundle('bundle');
 
   // Load HTML fonts for Input
   const openSansPromise = loadFont('OpenSans');
