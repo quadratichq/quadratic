@@ -5,7 +5,6 @@ import { FPS } from '@/app/gridGL/helpers/Fps';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
-import { captureSnapshotSentry } from '@/shared/utils/sentry';
 
 export class Update {
   private raf?: number;
@@ -148,7 +147,6 @@ export class Update {
       debugRendererLight(true);
       thumbnail.rendererBusy();
       events.emit('viewportReadyAfterUpdate');
-      captureSnapshotSentry(pixiApp.canvas);
     } else {
       debugRendererLight(false);
       thumbnail.check();

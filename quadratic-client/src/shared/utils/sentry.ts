@@ -4,11 +4,8 @@ import {
   browserTracingIntegration,
   captureConsoleIntegration,
   extraErrorDataIntegration,
-  getClient,
   httpClientIntegration,
   init,
-  replayCanvasIntegration,
-  replayIntegration,
   zodErrorsIntegration,
 } from '@sentry/react';
 
@@ -31,31 +28,13 @@ export const initSentry = () => {
           captureConsoleIntegration({ levels: ['error', 'warn'] }),
           extraErrorDataIntegration(),
           httpClientIntegration(),
-          replayIntegration({ maskAllText: false, blockAllMedia: false }),
-          replayCanvasIntegration({ enableManualSnapshot: true, quality: 'high' }),
           zodErrorsIntegration(),
         ],
         profilesSampleRate: 1.0,
-        replaysSessionSampleRate: 1.0,
-        replaysOnErrorSampleRate: 1.0,
         tracesSampleRate: 1.0,
       });
     }
   } catch (error) {
     console.error('Error initializing Sentry', error);
-  }
-};
-
-interface ReplayCanvasIntegration {
-  name: string;
-  snapshot: (canvas: HTMLCanvasElement) => void;
-}
-export const captureSnapshotSentry = (canvas: HTMLCanvasElement) => {
-  try {
-    if (dsn && dsn !== 'none') {
-      getClient()?.getIntegrationByName<ReplayCanvasIntegration>('ReplayCanvas')?.snapshot?.(canvas);
-    }
-  } catch (error) {
-    console.error('Error capturing snapshot Sentry', error);
   }
 };
