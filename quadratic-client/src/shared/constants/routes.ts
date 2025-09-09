@@ -6,11 +6,12 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
-  LOGIN_WITH_REDIRECT: () => `/login?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
+  LOGIN_WITH_REDIRECT: (href?: string) =>
+    `/login?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(href ?? window.location.pathname)}`,
   LOGIN_RESULT: '/login-result',
   SIGNUP: '/signup',
-  SIGNUP_WITH_REDIRECT: () =>
-    `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
+  SIGNUP_WITH_REDIRECT: (href?: string) =>
+    `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(href ?? window.location.pathname)}`,
   VERIFY_EMAIL: '/verify-email',
   SEND_MAGIC_AUTH_CODE: '/send-magic-auth-code',
   MAGIC_AUTH_CODE: '/magic-auth-code',
