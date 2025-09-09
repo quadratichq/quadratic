@@ -1,11 +1,6 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
-import {
-  debugRendererLight,
-  debugShowChildren,
-  debugTimeCheck,
-  debugTimeReset,
-} from '@/app/gridGL/helpers/debugPerformance';
+import { debugRendererLight, debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
 import { FPS } from '@/app/gridGL/helpers/Fps';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -151,7 +146,6 @@ export class Update {
       pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
-      debugShowChildren(pixiApp.stage, 'stage');
       thumbnail.rendererBusy();
       events.emit('viewportReadyAfterUpdate');
       captureSnapshotSentry(pixiApp.canvas);

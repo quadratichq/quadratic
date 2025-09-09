@@ -39,14 +39,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const syncState = latestSync.state;
   const canEdit = hasPermissionToEditFile(initialFileData.userMakingRequest.filePermissions);
 
-  const renameFile: FileContextType['renameFile'] = useCallback(
-    (newName) => {
-      trackEvent('[Files].renameCurrentFile', { newFilename: newName });
-      setName(newName);
-    },
-    [setName]
-  );
-
   // Create and save the fn used by the sheetController to save the file
 
   const syncChanges = useCallback(
@@ -70,13 +62,20 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     [setLatestSync, canEdit]
   );
 
+  const renameFile: FileContextType['renameFile'] = useCallback(
+    (newName) => {
+      trackEvent('[Files].renameCurrentFile', { newFilename: newName });
+      setName(newName);
+      updateRecentFiles(uuid, newName, true);
+      syncChanges(() => apiClient.files.update(uuid, { name: newName }));
+    },
+    [syncChanges, uuid]
+  );
+
   // When the file name changes, update document title and sync to server
   useEffect(() => {
-    // todo: this isn't captured via the api.files.$uuid.ts endpoint
-    updateRecentFiles(uuid, name, true);
     document.title = `${name} - Quadratic`;
-    syncChanges(() => apiClient.files.update(uuid, { name }));
-  }, [name, syncChanges, uuid]);
+  }, [name]);
 
   // Set the permission in recoil based on the initial state
   // TODO figure out a way to set this in RecoilRoot (if possible)

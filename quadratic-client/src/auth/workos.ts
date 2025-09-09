@@ -46,11 +46,7 @@ export const workosClient: AuthClient = {
       return true;
     }
 
-    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
-    await disposeClient();
-    const client = await getClient();
-    await client.initialize();
-    const user = client.getUser();
+    const user = await this.user();
     return !!user;
   },
 
@@ -58,8 +54,10 @@ export const workosClient: AuthClient = {
    * Get the current authenticated user from Workos.
    */
   async user(): Promise<User | undefined> {
+    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     await disposeClient();
     const client = await getClient();
+    await client.initialize();
     const workosUser = client.getUser();
     if (!workosUser) {
       return undefined;
@@ -143,6 +141,7 @@ export const workosClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.signOut({ navigate: false });
+    await disposeClient();
   },
 
   /**
@@ -155,6 +154,7 @@ export const workosClient: AuthClient = {
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
+      await disposeClient();
       if (!skipRedirect) {
         const { pathname, search } = new URL(window.location.href);
         await this.login({ redirectTo: pathname + search, href: window.location.href });
@@ -230,7 +230,7 @@ export const workosClient: AuthClient = {
 
   async resetPassword(args) {
     await apiClient.auth.resetPassword(args);
-    await handleRedirectTo();
+    await disposeClient();
   },
 
   async sendMagicAuthCode(args) {
@@ -264,6 +264,7 @@ const handlePendingAuthenticationToken = async (pendingAuthenticationToken?: str
 };
 
 const handleRedirectTo = async () => {
+  await disposeClient();
   let redirectTo = getRedirectTo();
   if (redirectTo) {
     window.location.assign(redirectTo);
