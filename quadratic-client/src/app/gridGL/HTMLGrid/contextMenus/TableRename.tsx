@@ -48,7 +48,7 @@ export const TableRename = () => {
     (value: string) => {
       if (content.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
         renameTable({
-          sheetId: content.cellsSheets.current.sheetId,
+          sheetId: content.cellsSheets.current?.sheetId,
           x: contextMenu.table.x,
           y: contextMenu.table.y,
           oldName: contextMenu.table.name,

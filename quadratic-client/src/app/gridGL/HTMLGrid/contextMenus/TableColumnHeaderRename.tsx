@@ -83,7 +83,7 @@ export const TableColumnHeaderRename = () => {
             column.name = value;
 
             renameTableColumnHeader({
-              sheetId: content.cellsSheets.current.sheetId,
+              sheetId: content.cellsSheets.current?.sheetId,
               x: contextMenu.table.x,
               y: contextMenu.table.y,
               tableName: contextMenu.table.name,

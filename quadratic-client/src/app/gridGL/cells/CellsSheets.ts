@@ -31,7 +31,7 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.children.find((child) => child.sheetId === sheets.current);
   }
 
-  async create() {
+  create = async () => {
     this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
@@ -40,9 +40,8 @@ export class CellsSheets extends Container<CellsSheet> {
     if (this.current) {
       content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
     }
-
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
-  }
+  };
 
   isReady(): boolean {
     return !!this.current;

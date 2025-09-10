@@ -83,7 +83,7 @@ export class Update {
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
 
-    const contentDirty = content.update(pixiApp.viewport.position, pixiApp.viewport.scaled);
+    const contentDirty = content.update(viewportChanged);
 
     if (pixiApp.viewport.dirty || contentDirty) {
       debugTimeReset();

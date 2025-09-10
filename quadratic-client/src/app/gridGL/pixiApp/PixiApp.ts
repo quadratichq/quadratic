@@ -259,8 +259,8 @@ export class PixiApp {
   }
 
   getVisibleRect = (): Rect => {
-    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
+    const { left, top, right, bottom } = this.viewport.getVisibleBounds();
+    const scale = this.viewport.scale.x;
     let { width: leftHeadingWidth, height: topHeadingHeight } = content.headings.headingSize;
     leftHeadingWidth /= scale;
     topHeadingHeight /= scale;

@@ -24,7 +24,7 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Point, type Rectangle } from 'pixi.js';
+import { Container, Graphics, type Rectangle } from 'pixi.js';
 
 export class Content extends Container {
   cellsSheets = new CellsSheets();
@@ -56,11 +56,6 @@ export class Content extends Container {
 
   copying = false;
   accentColor = colors.cursorCell;
-
-  // keeps track of the last viewport position and scale that was used to update
-  // the content (some elements update differently based on the viewport)
-  private lastViewportPosition = new Point(-1, -1);
-  private lastViewportScale = 0;
 
   constructor() {
     super();
@@ -175,14 +170,7 @@ export class Content extends Container {
     }
   }
 
-  update(viewportPosition: Point, scale: number): boolean {
-    const viewportChanged =
-      this.lastViewportScale !== scale ||
-      viewportPosition.x !== this.lastViewportPosition.x ||
-      viewportPosition.y !== this.lastViewportPosition.y;
-    this.lastViewportScale = scale;
-    this.lastViewportPosition = viewportPosition.clone();
-
+  update(viewportChanged: boolean): boolean {
     const contentDirty =
       this.gridLines.dirty ||
       this.headings.dirty ||
