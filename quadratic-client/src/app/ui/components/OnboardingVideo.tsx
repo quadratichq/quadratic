@@ -1,11 +1,38 @@
 import { YOUTUBE_CHANNEL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useEffect, useRef, useState } from 'react';
+import Hls from 'hls.js';
+import { memo, useEffect, useRef, useState } from 'react';
 
-export function OnboardingVideo({ onClose }: { onClose: () => void }) {
+const ONBOARDING_VIDEO_MANIFEST_URL =
+  'https://customer-ia5m0yvds0jb4gxr.cloudflarestream.com/6ca8c5bde0049926eb96ae6db577bf7c/manifest/video.m3u8';
+
+interface OnboardingVideoProps {
+  onClose: () => void;
+}
+export const OnboardingVideo = memo(({ onClose }: OnboardingVideoProps) => {
   const [startedPlaying, setStartedPlaying] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls>(null);
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+      videoRef.current.src = ONBOARDING_VIDEO_MANIFEST_URL;
+    } else if (Hls.isSupported()) {
+      hlsRef.current = new Hls({
+        lowLatencyMode: true,
+        capLevelToPlayerSize: true,
+        startLevel: -1,
+      });
+      hlsRef.current.attachMedia(videoRef.current);
+      hlsRef.current.loadSource(ONBOARDING_VIDEO_MANIFEST_URL);
+    }
+    return () => {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+  }, []);
 
   // Fire event if this component mounts
   useEffect(() => {
@@ -17,8 +44,10 @@ export function OnboardingVideo({ onClose }: { onClose: () => void }) {
       <div className="flex w-full max-w-7xl flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-1">
           <h1 className="text-3xl font-bold">Getting started in 90 seconds</h1>
+
           <p className="text-center text-lg text-muted-foreground">
-            You can always find more instructional videos on{' '}
+            {'You can always find more instructional videos on '}
+
             <a
               href={YOUTUBE_CHANNEL}
               target="_blank"
@@ -30,29 +59,24 @@ export function OnboardingVideo({ onClose }: { onClose: () => void }) {
             </a>
           </p>
         </div>
+
         <video
           ref={videoRef}
+          onPlay={() => {
+            if (startedPlaying) return;
+            trackEvent('[OnboardingVideo].startedPlaying');
+            setStartedPlaying(true);
+          }}
           onEnded={() => {
             trackEvent('[OnboardingVideo].completedPlaying');
           }}
-          onPlay={() => {
-            if (!startedPlaying) {
-              setStartedPlaying(true);
-              trackEvent('[OnboardingVideo].startedPlaying');
-              console.log('startedPlaying');
-            }
-          }}
           controls
-          width="800"
-          height="450"
-          // TODO: do we want the poster from youtube?
-          // and where do we want to host the video?
-          poster="https://img.youtube.com/vi/tyS9H0exaj8/maxresdefault.jpg"
+          width={800}
+          height={450}
+          style={{ width: '100%', height: 'auto' }}
           className="w-full max-w-5xl rounded-lg border border-border shadow-xl"
-        >
-          <source src="https://cdn.jim-nielsen.com/shared/onboarding-video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        />
+
         <div className="flex justify-center gap-2">
           <Button
             variant="outline"
@@ -64,6 +88,7 @@ export function OnboardingVideo({ onClose }: { onClose: () => void }) {
           >
             Skip
           </Button>
+
           <Button
             onClick={() => {
               if (!startedPlaying) {
@@ -80,4 +105,4 @@ export function OnboardingVideo({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
-}
+});
