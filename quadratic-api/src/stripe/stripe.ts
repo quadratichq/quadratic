@@ -78,7 +78,7 @@ export const createBillingPortalSession = async (teamUuid: string, returnUrlBase
 
   return stripe.billingPortal.sessions.create({
     customer: team?.stripeCustomerId,
-    return_url: `${returnUrlBase}/teams/${teamUuid}`,
+    return_url: `${returnUrlBase}/teams/${teamUuid}/settings`,
   });
 };
 
@@ -106,7 +106,7 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: `${returnUrlBase}/teams/${teamUuid}?subscription=created&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${returnUrlBase}/teams/${teamUuid}/settings?subscription=created&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${returnUrlBase}`,
   });
 };
@@ -242,6 +242,12 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
   }
 
   updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
+};
+
+export const getIsMonthlySubscription = async (stripeSubscriptionId: string): Promise<boolean> => {
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const isMonthly = subscription.items.data[0]?.price?.recurring?.interval === 'month';
+  return isMonthly;
 };
 
 export const updateBilling = async (team: Team | DecryptedTeam) => {

@@ -6,7 +6,7 @@ use axum::{
 };
 use quadratic_rust_shared::{
     crypto::aes_cbc::decrypt_from_api,
-    storage::{Storage, StorageConfig},
+    storage::{Storage, StorageConfig, StorageContainer},
 };
 use serde::Serialize;
 use std::sync::Arc;
@@ -38,16 +38,11 @@ pub(crate) async fn get_presigned_storage(
 ) -> Result<impl IntoResponse> {
     tracing::trace!("Get presigned file {}", encrypted_file_name);
 
-    match state.settings.storage.config() {
-        StorageConfig::FileSystem(config) => {
-            // For now, we only support one encryption key.
-            // In the future, implement key traversal on decryption failures.
-            let key = config
-                .encryption_keys
-                .first()
-                .ok_or(FilesError::Storage("No encryption keys found".to_string()))?;
-            let file_name = decrypt_from_api(key, &encrypted_file_name)?;
-            let file = state.settings.storage.read(&file_name).await?;
+    match &state.settings.storage {
+        StorageContainer::FileSystem(fs) => {
+            let key = fs.first_key()?;
+            let file_name = decrypt_from_api(&key, &encrypted_file_name)?;
+            let file = fs.read(&file_name).await?;
 
             Ok(file.into_response())
         }

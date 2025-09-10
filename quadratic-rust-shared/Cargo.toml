@@ -1,12 +1,13 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 aes = { version = "0.8.3", optional = true }
+rand_core = { version = "0.6", features = ["getrandom"], optional = true }
 arrow = { version = "=54.2.1", optional = true }
 arrow-array = { version = "=54.2.1", optional = true }
 async-trait = "0.1.80"
@@ -35,6 +36,7 @@ futures-util = "0.3.30"
 google-cloud-bigquery = { version = "0.5.0", optional = true }
 headers = { version = "0.4.0", optional = true }
 hex = "0.4.3"
+http = { version = "1.1.0", optional = true }
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
   "https",
   "proxy",
@@ -88,14 +90,15 @@ tokio-tungstenite = { version = "0.26", optional = true }
 tracing = { version = "0.1.40" }
 url = { version = "2", optional = true }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
+urlencoding = { version = "2.1.3", optional = true }
 
 [features]
 default = []
 arrow = ["dep:arrow", "arrow-array", "parquet"]
-auth = ["jsonwebtoken", "tokio", "reqwest"]
+auth = ["http", "jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 cache = ["memory", "tokio"]
-crypto = ["aes"]
+crypto = ["aes", "rand_core"]
 environment = []
 memory = []
 multiplayer = ["base64"]
@@ -116,7 +119,7 @@ net = [
 ]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
-quadratic-api = ["reqwest"]
+quadratic-api = ["reqwest", "urlencoding"]
 record-request-mock = []
 sql = [
   "arrow",

@@ -48,8 +48,10 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<PostgresConnection>> {
-    let connection = get_api_connection(state, "", &claims.sub, connection_id, team_id).await?;
+    let connection =
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?;
 
     Ok(connection)
 }
@@ -62,7 +64,14 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let connection = get_connection(
+        &state,
+        &claims,
+        &sql_query.connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
 
     query_with_connection(state, sql_query, connection.type_details).await
 }
@@ -93,7 +102,7 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     schema_generic_with_ssh(api_connection, Extension(state), params).await
 }

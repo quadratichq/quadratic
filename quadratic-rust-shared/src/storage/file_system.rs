@@ -10,6 +10,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::Storage;
 use crate::SharedError;
+use crate::crypto::aes_cbc::{encrypt_from_api, str_to_key};
 use crate::error::Result;
 use crate::storage::error::Storage as StorageError;
 
@@ -58,6 +59,14 @@ impl Storage for FileSystem {
         Ok(())
     }
 
+    /// Generate a presigned URL
+    async fn presigned_url(&self, data: &str) -> Result<String> {
+        let str_key = self.first_key()?;
+        let encoded_key = str_to_key(&str_key)?;
+
+        encrypt_from_api(&encoded_key, data)
+    }
+
     /// Return the path to the file system.
     fn path(&self) -> &str {
         &self.config.path
@@ -103,6 +112,17 @@ impl FileSystem {
 
         Ok((full_path, dir))
     }
+
+    /// Return the first encryption key.
+    /// For now, we only support one encryption key.
+    /// In the future, implement key traversal on decryption failures.
+    pub fn first_key(&self) -> Result<String> {
+        self.config
+            .encryption_keys
+            .first()
+            .cloned()
+            .ok_or(StorageError::FileSystemKey("No encryption keys found".into()).into())
+    }
 }
 
 #[cfg(test)]
@@ -110,13 +130,17 @@ mod tests {
     use tokio::fs::{remove_dir, remove_file};
     use uuid::Uuid;
 
+    use crate::crypto::aes_cbc::decrypt_from_api;
+
     use super::*;
     use std::env;
 
     fn config() -> FileSystemConfig {
         FileSystemConfig {
             path: env::temp_dir().to_str().unwrap().to_string(),
-            encryption_keys: vec![],
+            encryption_keys: vec![
+                "4242424242424242424242424242424242424242424242424242424242424242".to_string(),
+            ],
         }
     }
 
@@ -138,5 +162,20 @@ mod tests {
         remove_dir(dir).await.unwrap();
 
         assert_eq!(data, &read_data);
+    }
+
+    #[tokio::test]
+    async fn file_system_presigned_url() {
+        let config = config();
+        let encrypted_key = config.encryption_keys[0].to_owned();
+        let _path = config.path.to_owned();
+        let storage = FileSystem { config };
+        let data = Uuid::new_v4().to_string();
+        let presigned_url = storage.presigned_url(&data).await.unwrap();
+        println!("presigned_url: {}", presigned_url);
+
+        let decrypted = decrypt_from_api(&encrypted_key, &presigned_url).unwrap();
+
+        assert_eq!(data, decrypted);
     }
 }

@@ -92,9 +92,10 @@ impl GridController {
                     });
 
                     if !html.is_empty()
-                        && let Ok(html) = serde_json::to_vec(&html) {
-                            crate::wasm_bindings::js::jsHtmlOutput(html);
-                        }
+                        && let Ok(html) = serde_json::to_vec(&html)
+                    {
+                        crate::wasm_bindings::js::jsHtmlOutput(html);
+                    }
                     drop(html);
                 }
                 grid
@@ -102,13 +103,7 @@ impl GridController {
             Err(e) => return Err(JsValue::from_str(&format!("Failed to import grid: {e}"))),
         };
 
-        grid.with_run_python_callback(|transaction_id, x, y, sheet_id, code| {
-            crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
-        });
-
-        grid.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
-            crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);
-        });
+        grid = grid.apply_callbacks();
 
         Ok(grid)
     }

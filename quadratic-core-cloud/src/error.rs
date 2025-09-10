@@ -3,15 +3,9 @@
 //! Create a generic Result type to reduce boilerplate.
 //! Define errors used in the application.
 //! Convert third party crate errors to application errors.
-//! Convert errors to responses.
 
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
 use quadratic_rust_shared::{
-    ErrorLevel, SharedError, clean_errors, net::websocket_server::error::WebsocketServerError,
-    storage::error::Storage as StorageError,
+    ErrorLevel, SharedError, net::websocket_server::error::WebsocketServerError,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -50,23 +44,11 @@ pub enum CoreCloudError {
     #[error("Unable to import file {0}: {1}")]
     ImportFile(String, String),
 
-    #[error("Internal server error: {0}")]
-    InternalServer(String),
-
     #[error("Unable to load file {0}: {1}")]
     LoadFile(String, String),
 
     #[error("Multiplayer error: {0}")]
     Multiplayer(String),
-
-    #[error("Not Found: {0}")]
-    NotFound(String),
-
-    #[error("PubSub error: {0}")]
-    PubSub(String),
-
-    #[error("QuadraticApi error: {0}")]
-    QuadraticApi(String),
 
     #[error("Python error: {0}")]
     Python(String),
@@ -80,8 +62,8 @@ pub enum CoreCloudError {
     #[error("Error requesting data: {0}")]
     Request(String),
 
-    #[error("Error in S3: {0}")]
-    S3(String),
+    #[error("Error sending message: {0}")]
+    SendingMessage(String),
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
@@ -91,43 +73,12 @@ pub enum CoreCloudError {
 
     #[error("unknown error: {0}")]
     Unknown(String),
-
-    #[error("Worker not found: {0}")]
-    WorkerNotFound(String),
-}
-
-// Convert CoreCloudErrors into readable responses with appropriate status codes.
-// These are the errors that are returned to the client.
-impl IntoResponse for CoreCloudError {
-    fn into_response(self) -> Response {
-        let (status, error) = match &self {
-            CoreCloudError::Authentication(error) => {
-                (StatusCode::UNAUTHORIZED, clean_errors(error))
-            }
-            CoreCloudError::InternalServer(error) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
-            }
-            CoreCloudError::NotFound(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
-        };
-
-        tracing::warn!("{:?}", self);
-
-        (status, error).into_response()
-    }
 }
 
 impl From<SharedError> for CoreCloudError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::Auth(error) => CoreCloudError::Authentication(error.to_string()),
-            SharedError::Aws(error) => CoreCloudError::S3(error.to_string()),
-            SharedError::PubSub(error) => CoreCloudError::PubSub(error),
-            SharedError::QuadraticApi(error) => CoreCloudError::QuadraticApi(error),
             SharedError::Storage(error) => match error {
-                StorageError::Read(key, _) => {
-                    CoreCloudError::NotFound(format!("File {key} not found"))
-                }
                 _ => CoreCloudError::Storage(error.to_string()),
             },
             _ => CoreCloudError::Unknown(format!("Unknown SharedError: {error}")),
@@ -150,12 +101,6 @@ impl From<uuid::Error> for CoreCloudError {
 impl From<reqwest::Error> for CoreCloudError {
     fn from(error: reqwest::Error) -> Self {
         CoreCloudError::Request(error.to_string())
-    }
-}
-
-impl From<jsonwebtoken::errors::Error> for CoreCloudError {
-    fn from(error: jsonwebtoken::errors::Error) -> Self {
-        CoreCloudError::Authentication(error.to_string())
     }
 }
 
@@ -196,8 +141,8 @@ impl From<WebsocketServerError> for CoreCloudError {
     fn from(error: WebsocketServerError) -> Self {
         match error {
             WebsocketServerError::Authentication(msg) => CoreCloudError::Authentication(msg),
-            WebsocketServerError::SendingMessage(msg) => CoreCloudError::InternalServer(msg),
-            _ => CoreCloudError::InternalServer(error.to_string()),
+            WebsocketServerError::SendingMessage(msg) => CoreCloudError::SendingMessage(msg),
+            _ => CoreCloudError::Unknown(error.to_string()),
         }
     }
 }

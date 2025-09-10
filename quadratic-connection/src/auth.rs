@@ -11,7 +11,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use quadratic_rust_shared::auth::jwt::authorize;
+use quadratic_rust_shared::auth::jwt::{authorize, authorize_m2m};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -19,11 +19,11 @@ use crate::{
     state::State,
 };
 
-/// The claims from the Quadratic/Auth0 JWT token.
+/// The claims from the Quadratic/Auth JWT token.
 /// We need our own implementation of this because we need to impl on it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub email: String,
     pub exp: usize,
 }
 
@@ -64,15 +64,27 @@ where
                 "JWKS not found in state".to_string(),
             ))?;
 
-        // Extract the token from the authorization header
-        let TypedHeader(Authorization(bearer)) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
-            .map_err(|e| ConnectionError::InvalidToken(e.to_string()))?;
+        let m2m_token = state.settings.m2m_auth_token.clone();
 
-        let token_data = authorize(jwks, bearer.token(), false, true)?;
+        match authorize_m2m(&parts.headers, &m2m_token) {
+            Ok(token_data) => {
+                return Ok(Claims {
+                    email: token_data.claims.email,
+                    exp: token_data.claims.exp,
+                });
+            }
+            Err(_e) => {
+                // Extract the token from the authorization header
+                let TypedHeader(Authorization(bearer)) = parts
+                    .extract::<TypedHeader<Authorization<Bearer>>>()
+                    .await
+                    .map_err(|e| ConnectionError::InvalidToken(e.to_string()))?;
 
-        Ok(token_data.claims)
+                let token_data = authorize(jwks, bearer.token(), false, true)?;
+
+                Ok(token_data.claims)
+            }
+        }
     }
 }
 

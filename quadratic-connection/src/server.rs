@@ -212,7 +212,7 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let jwks = get_jwks(&config.jwks_uri).await?;
     let state = State::new(&config, Some(jwks.clone()))?;
     let app = app(state.clone())?;
 
@@ -227,7 +227,6 @@ pub(crate) async fn serve() -> Result<()> {
     // start the cache executor
     let cache = Arc::clone(&state.cache.schema);
     let executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
-    println!("started cache executor: {executor:?}");
 
     // log stats in a separate thread
     tokio::spawn({

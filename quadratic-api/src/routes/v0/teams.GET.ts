@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 import { getTeamPermissions } from '../../utils/permissions';
 
 export default [validateAccessToken, userMiddleware, handler];

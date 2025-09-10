@@ -1,3 +1,4 @@
+use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
 use std::sync::Arc;
 use tokio::{
     runtime::Handle,
@@ -15,17 +16,25 @@ use quadratic_core::{
 use uuid::Uuid;
 
 use crate::{
+    connection::run_connection,
     error::{CoreCloudError, Result},
-    javascript::execute::execute as execute_javascript,
-    python::execute::execute as execute_python,
+    javascript::execute::run_javascript,
+    python::execute::run_python,
 };
+
+pub async fn load_file(presigned_url: &str) -> Result<Vec<u8>> {
+    let res = reqwest::get(presigned_url).await?;
+    let body = res.bytes().await?;
+
+    Ok(body.to_vec())
+}
 
 // from main
 // receive the transaction
 // get file from S3
 // enter the multiplayer room
 // receive catchup transactions if any (receive transansactions)
-// process python code
+// process transactions
 // send forward transactions to multiplayer
 
 /// Process a transaction.
@@ -37,6 +46,8 @@ pub(crate) async fn process_transaction(
     operations: Vec<Operation>,
     cursor: Option<String>,
     transaction_name: TransactionName,
+    team_id: String,
+    token: String,
 ) -> Result<()> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
@@ -101,38 +112,42 @@ pub(crate) async fn process_transaction(
 
     if let Ok(async_transaction) = async_transaction {
         if let Some(waiting_for_async) = async_transaction.waiting_for_async {
-            // run python
-            let execute_result = match waiting_for_async.language {
-                CodeCellLanguage::Python => execute_python(
-                    &waiting_for_async.code,
-                    &transaction_id,
-                    Box::new(get_cells),
-                ),
-                CodeCellLanguage::Javascript => {
-                    execute_javascript(
+            // run code
+            let _result = match waiting_for_async.language {
+                CodeCellLanguage::Python => {
+                    run_python(
+                        grid.clone(),
                         &waiting_for_async.code,
                         &transaction_id,
                         Box::new(get_cells),
                     )
                     .await
                 }
+                CodeCellLanguage::Javascript => {
+                    run_javascript(
+                        grid.clone(),
+                        &waiting_for_async.code,
+                        &transaction_id,
+                        Box::new(get_cells),
+                    )
+                    .await
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    run_connection(
+                        grid.clone(),
+                        &waiting_for_async.code,
+                        kind,
+                        &id,
+                        &transaction_id,
+                        &team_id,
+                        &token,
+                    )
+                    .await
+                }
                 // maybe skip these below?
                 CodeCellLanguage::Formula => todo!(),
-                CodeCellLanguage::Connection { .. } => todo!(),
                 CodeCellLanguage::Import { .. } => todo!(),
-            };
-            let js_code_result = match execute_result {
-                Ok(js_code_result) => js_code_result,
-                Err(e) => {
-                    return Err(CoreCloudError::Python(e.to_string()));
-                }
-            };
-
-            // complete the transaction
-            grid.lock()
-                .await
-                .calculation_complete(js_code_result)
-                .map_err(|e| CoreCloudError::Core(e.to_string()))?;
+            }?;
 
             // Abort the task
             task_handle.abort();
@@ -178,6 +193,8 @@ mod tests {
         let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
         let to_number = |s: &str| CellValue::Number(decimal_from_str(s).unwrap());
         let to_code = |s: &str| CellValue::Code(CodeCellValue::new(language, s.to_string()));
+        let team_id = "test_team_id".to_string();
+        let token = "M2M_AUTH_TOKEN".to_string();
 
         // set A1 to 1
         sheet.set_cell_values(pos![A1].into(), to_number("1").into());
@@ -199,6 +216,8 @@ mod tests {
             vec![operation],
             None,
             TransactionName::Unknown,
+            team_id,
+            token,
         )
         .await
         .unwrap();

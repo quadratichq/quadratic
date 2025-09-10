@@ -1,6 +1,10 @@
+use std::sync::Arc;
+
 use pyo3::prelude::*;
+use quadratic_core::controller::GridController;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeResult};
+use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
 use crate::python::quadratic::{create_get_cells_function, pos};
@@ -15,6 +19,20 @@ pub(crate) fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
         success: false,
         ..Default::default()
     }
+}
+
+pub(crate) async fn run_python(
+    grid: Arc<Mutex<GridController>>,
+    code: &str,
+    transaction_id: &str,
+    get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+) -> Result<()> {
+    let js_code_result = execute(code, transaction_id, get_cells)?;
+
+    grid.lock()
+        .await
+        .calculation_complete(js_code_result)
+        .map_err(|e| CoreCloudError::Core(e.to_string()))
 }
 
 pub(crate) fn execute(
@@ -37,8 +55,6 @@ pub(crate) fn execute(
 
         // use AST to determine if the last statement is an expression
         let (setup_code, expr_code, has_expression) = analyze_code(&py, code)?;
-
-        println!("has_expression: {:?}", has_expression);
 
         // create a globals dict to capture q.cells("A1") call early
         let globals = pyo3::types::PyDict::new(py);
