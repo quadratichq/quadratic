@@ -104,12 +104,6 @@ impl From<reqwest::Error> for CoreCloudError {
     }
 }
 
-impl From<jsonwebtoken::errors::Error> for CoreCloudError {
-    fn from(error: jsonwebtoken::errors::Error) -> Self {
-        CoreCloudError::Authentication(error.to_string())
-    }
-}
-
 impl From<prost::DecodeError> for CoreCloudError {
     fn from(error: prost::DecodeError) -> Self {
         CoreCloudError::Serialization(error.to_string())
