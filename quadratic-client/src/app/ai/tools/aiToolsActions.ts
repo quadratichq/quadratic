@@ -1323,9 +1323,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing undo tool: ${e}`)];
     }
   },
-  [AITool.Redo]: async () => {
+  [AITool.Redo]: async (args) => {
     try {
-      const text = await quadraticCore.redo();
+      const text = await quadraticCore.redo(args.count ?? undefined);
       return [createTextContent(text ?? 'Redo tool executed successfully.')];
     } catch (e) {
       return [createTextContent(`Error executing redo tool: ${e}`)];

@@ -201,6 +201,7 @@
     "transferables",
     "TRUNC",
     "undoable",
+    "undos",
     "Unspan",
     "Unspanned",
     "unspill",

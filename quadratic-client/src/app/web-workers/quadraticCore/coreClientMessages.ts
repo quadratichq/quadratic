@@ -755,6 +755,7 @@ export interface ClientCoreUndo {
 export interface ClientCoreRedo {
   type: 'clientCoreRedo';
   id: number;
+  count: number | undefined;
   cursor: string;
 }
 

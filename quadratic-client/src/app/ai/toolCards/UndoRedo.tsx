@@ -31,10 +31,10 @@ export const Undo = memo(
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
-        return `Undo`;
+        return `${toolArgs.data.count} transactions undone`;
       }
       return '';
-    }, [toolArgs?.success]);
+    }, [toolArgs?.data?.count, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
@@ -61,6 +61,13 @@ export const Redo = memo(
         setToolArgs(undefined);
         return;
       }
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.Redo].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[Redo] Failed to parse args: ', error);
+      }
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
@@ -68,10 +75,10 @@ export const Redo = memo(
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
-        return `Redo`;
+        return `${toolArgs.data.count} transactions redone`;
       }
       return '';
-    }, [toolArgs?.success]);
+    }, [toolArgs?.data?.count, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;

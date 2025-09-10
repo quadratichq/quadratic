@@ -167,7 +167,17 @@ impl GridController {
     /// Redoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to redo.
     #[wasm_bindgen(js_name = "redo")]
-    pub fn js_redo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
+    pub fn js_redo(
+        &mut self,
+        count: Option<usize>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        if let Some(count) = count {
+            Ok(serde_wasm_bindgen::to_value(
+                &self.redo_count(count, cursor),
+            )?)
+        } else {
+            Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
+        }
     }
 }

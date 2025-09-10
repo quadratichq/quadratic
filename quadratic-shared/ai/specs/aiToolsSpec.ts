@@ -517,7 +517,9 @@ export const AIToolsArgsSchema = {
   [AITool.Undo]: z.object({
     count: numberSchema.nullable().optional(),
   }),
-  [AITool.Redo]: z.object({}),
+  [AITool.Redo]: z.object({
+    count: numberSchema.nullable().optional(),
+  }),
 } as const;
 
 export type AIToolsArgs = {
@@ -2653,8 +2655,14 @@ Always pass in the count of actions to undo when using the undo tool. You may ne
 This tool redoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
     parameters: {
       type: 'object',
-      properties: {},
-      required: [],
+      properties: {
+        count: {
+          type: 'number',
+          description:
+            'The number of transactions to redo. Should be a number and at least 1 (which only performs an redo on the last transaction). Can only redo after the same number of undos have been performed.',
+        },
+      },
+      required: ['count'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.Redo],

@@ -305,7 +305,11 @@ class CoreClient {
         return;
 
       case 'clientCoreRedo':
-        this.send({ type: 'coreClientRedoResponse', id: e.data.id, response: core.redo(e.data.cursor) ?? '' });
+        this.send({
+          type: 'coreClientRedoResponse',
+          id: e.data.id,
+          response: core.redo(e.data.count, e.data.cursor) ?? '',
+        });
         return;
 
       case 'clientCoreExport':

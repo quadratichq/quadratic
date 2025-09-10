@@ -971,13 +971,13 @@ class QuadraticCore {
     });
   }
 
-  redo(): Promise<string | undefined> {
+  redo(count?: number): Promise<string | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientRedoResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreRedo', id, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreRedo', id, count, cursor: sheets.getCursorPosition() });
     });
   }
 

@@ -613,10 +613,10 @@ class Core {
     }
   }
 
-  redo(cursor: string): string | undefined {
+  redo(count: number | undefined, cursor: string): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.redo(cursor);
+      return this.gridController.redo(count, cursor);
     } catch (e) {
       this.handleCoreError('redo', e);
     }
