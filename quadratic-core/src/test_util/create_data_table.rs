@@ -51,6 +51,7 @@ pub fn test_create_data_table_no_ui(
         Some(Some(false)),
         Some(Some(false)),
         None,
+        false,
     );
     dt
 }
@@ -86,6 +87,7 @@ pub fn test_create_data_table_with_values(
         v,
         false,
         None,
+        false,
     );
 
     // return a clone of the created data table

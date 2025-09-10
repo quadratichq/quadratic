@@ -281,6 +281,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -312,6 +313,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -418,6 +420,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -462,6 +465,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("F10,G12:J12", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -531,6 +535,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -590,6 +595,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 

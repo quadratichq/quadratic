@@ -15,12 +15,13 @@ impl GridController {
         sheet_id: SheetId,
         column_widths: Vec<JsColumnWidth>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = vec![Operation::ResizeColumns {
             sheet_id,
             column_widths,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ResizeColumns);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeColumns, is_ai);
     }
 
     pub fn resize_rows(
@@ -28,21 +29,34 @@ impl GridController {
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = vec![Operation::ResizeRows {
             sheet_id,
             row_heights,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeRows, is_ai);
     }
 
-    pub fn resize_all_columns(&mut self, sheet_id: SheetId, size: f64, cursor: Option<String>) {
+    pub fn resize_all_columns(
+        &mut self,
+        sheet_id: SheetId,
+        size: f64,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = vec![Operation::DefaultColumnSize { sheet_id, size }];
-        self.start_user_transaction(ops, cursor, TransactionName::ResizeColumns);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeColumns, is_ai);
     }
 
-    pub fn resize_all_rows(&mut self, sheet_id: SheetId, size: f64, cursor: Option<String>) {
+    pub fn resize_all_rows(
+        &mut self,
+        sheet_id: SheetId,
+        size: f64,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = vec![Operation::DefaultRowSize { sheet_id, size }];
-        self.start_user_transaction(ops, cursor, TransactionName::ResizeRows);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeRows, is_ai);
     }
 }

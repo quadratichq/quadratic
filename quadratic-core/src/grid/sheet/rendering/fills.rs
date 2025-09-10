@@ -164,10 +164,20 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.get_all_sheet_fills(), vec![]);
 
-        gc.set_fill_color(&A1Selection::test_a1("B:D"), Some("red".to_string()), None)
-            .unwrap();
-        gc.set_fill_color(&A1Selection::test_a1("2"), Some("blue".to_string()), None)
-            .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1("B:D"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1("2"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -190,8 +200,13 @@ mod tests {
             ]
         );
 
-        gc.set_fill_color(&A1Selection::test_a1("*"), Some("green".to_string()), None)
-            .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1("*"),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_all_sheet_fills(),
@@ -223,12 +238,14 @@ mod tests {
             &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
         gc.set_fill_color(
             &A1Selection::test_a1_context("Table1[Column 3]", gc.a1_context()),
             Some("blue".to_string()),
             None,
+            false,
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
@@ -263,6 +280,7 @@ mod tests {
             &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
         let sheet = gc.sheet(sheet_id);
@@ -287,12 +305,14 @@ mod tests {
             &A1Selection::test_a1_sheet_id("E5:I5", sheet_id),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
         gc.set_fill_color(
             &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("blue".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -385,12 +405,14 @@ mod tests {
             &A1Selection::test_a1_sheet_id("E4:I4", sheet_id),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
         gc.set_fill_color(
             &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
             Some("blue".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -439,12 +461,14 @@ mod tests {
             &A1Selection::test_a1_sheet_id("E4:I4", sheet_id),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
         gc.set_fill_color(
             &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
             Some("blue".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -485,6 +509,7 @@ mod tests {
             &A1Selection::test_a1_sheet_id("E10:I10", sheet_id),
             Some("green".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -492,6 +517,7 @@ mod tests {
             &A1Selection::test_a1_context(&format!("{file_name}[country]"), gc.a1_context()),
             Some("yellow".to_string()),
             None,
+            false,
         )
         .unwrap();
 

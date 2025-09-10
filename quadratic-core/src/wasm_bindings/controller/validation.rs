@@ -36,11 +36,12 @@ impl GridController {
         &mut self,
         validation: String, // Validation
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let validation = serde_json::from_str::<ValidationUpdate>(&validation)
                 .map_err(|e| format!("Error parsing validation: {e}"))?;
-            self.update_validation(validation, cursor);
+            self.update_validation(validation, cursor, is_ai);
             Ok(None)
         })
     }
@@ -52,19 +53,20 @@ impl GridController {
         sheet_id: String,
         validation_id: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         if let (Ok(sheet_id), Ok(validation_id)) =
             (SheetId::from_str(&sheet_id), Uuid::from_str(&validation_id))
         {
-            self.remove_validation(sheet_id, validation_id, cursor);
+            self.remove_validation(sheet_id, validation_id, cursor, is_ai);
         }
     }
 
     /// Removes all validations in a sheet
     #[wasm_bindgen(js_name = "removeValidations")]
-    pub fn js_remove_validations(&mut self, sheet_id: String, cursor: Option<String>) {
+    pub fn js_remove_validations(&mut self, sheet_id: String, cursor: Option<String>, is_ai: bool) {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.remove_validations(sheet_id, cursor);
+            self.remove_validations(sheet_id, cursor, is_ai);
         }
     }
 
@@ -74,13 +76,14 @@ impl GridController {
         sheet_id: String,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let selection = A1Selection::parse(&selection, sheet_id, self.a1_context(), None)
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
-            self.remove_validation_selection(sheet_id, selection, cursor);
+            self.remove_validation_selection(sheet_id, selection, cursor, is_ai);
             Ok(None)
         })
     }

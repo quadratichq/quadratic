@@ -36,7 +36,7 @@ export function useRenameTableColumnName() {
       }
 
       sheets.updateColumnName(tableName, oldColumnName, newColumnName);
-      quadraticCore.dataTableMeta(sheetId, x, y, { columns });
+      quadraticCore.dataTableMeta(sheetId, x, y, { columns }, false);
     },
     [addGlobalSnackbar]
   );

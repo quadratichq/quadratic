@@ -102,6 +102,7 @@ export const SetSQLCodeCellValue = memo(
               id: toolArgs.connection_id,
             },
           },
+          isAi: true,
         });
       },
       [codeCellPos]

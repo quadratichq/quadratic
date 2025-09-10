@@ -13,6 +13,8 @@ use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
+use crate::controller::execution::TransactionSource;
+use crate::controller::operations::tracked_operation::TrackedOperation;
 use crate::{CellValue, Pos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -592,4 +594,10 @@ pub struct JsGetAICellResult {
     pub total_pages: i32,
 
     pub values: Vec<JsCellValueRanges>,
+}
+
+#[derive(Debug, Serialize, TS, PartialEq)]
+pub struct JsAITransactions {
+    pub ops: Vec<TrackedOperation>,
+    pub source: TransactionSource,
 }
