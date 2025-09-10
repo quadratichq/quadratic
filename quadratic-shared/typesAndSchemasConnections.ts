@@ -1,7 +1,7 @@
 import * as z from 'zod';
 
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
-const transformEmptyStringToUndefined = (val: string | undefined) => (val === '' ? undefined : val);
+const transformEmptyStringToUndefined = (val: any) => (!!val ? val : undefined);
 
 /**
  * =============================================================================
@@ -21,7 +21,7 @@ export const ConnectionTypeSchema = z.enum([
   'SUPABASE',
   'NEON',
 ]);
-export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
+export const ConnectionSemanticDescriptionSchema = z.preprocess(transformEmptyStringToUndefined, z.string().optional());
 
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
@@ -57,7 +57,7 @@ const ConnectionSchema = z.object({
   name: ConnectionNameSchema,
   uuid: z.string().uuid(),
   isDemo: z.boolean().optional(),
-  semanticDescription: z.string().optional(),
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
 });
