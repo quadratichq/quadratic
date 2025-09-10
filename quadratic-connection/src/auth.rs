@@ -19,11 +19,11 @@ use crate::{
     state::State,
 };
 
-/// The claims from the Quadratic/Auth0 JWT token.
+/// The claims from the Quadratic/Auth JWT token.
 /// We need our own implementation of this because we need to impl on it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub email: String,
     pub exp: usize,
 }
 
@@ -69,7 +69,7 @@ where
         match authorize_m2m(&parts.headers, &m2m_token) {
             Ok(token_data) => {
                 return Ok(Claims {
-                    sub: token_data.claims.sub,
+                    email: token_data.claims.email,
                     exp: token_data.claims.exp,
                 });
             }

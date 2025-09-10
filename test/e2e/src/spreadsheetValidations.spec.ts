@@ -159,7 +159,7 @@ test('Validation Rendering', async ({ page }) => {
   const fileType = 'grid';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_validations_rendering`, createAccount: true });
+  await logIn(page, { emailPrefix: `e2e_validations_rendering` });
 
   // Create a new team
   // const teamName = `Validations Rendering - ${Date.now()}`;

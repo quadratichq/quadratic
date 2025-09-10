@@ -49,7 +49,7 @@ async fn get_connection(
     headers: &HeaderMap,
 ) -> Result<ApiConnection<MySqlConnection>> {
     let connection =
-        get_api_connection(state, "", &claims.sub, connection_id, team_id, headers).await?;
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?;
 
     Ok(connection)
 }

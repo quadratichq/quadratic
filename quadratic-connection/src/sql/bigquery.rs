@@ -58,7 +58,7 @@ async fn get_connection(
     headers: &HeaderMap,
 ) -> Result<ApiConnection<BigqueryConfig>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.sub, connection_id, team_id, headers).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
     } else {
         let config = new_config().await;
         ApiConnection {

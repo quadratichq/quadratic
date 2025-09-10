@@ -12,7 +12,7 @@ use crate::{auth::Claims, error::Result, header::get_team_id_header, state::Stat
 pub(crate) async fn get_api_connection<T: DeserializeOwned>(
     state: &State,
     jwt: &str,
-    user_id: &str,
+    email: &str,
     connection_id: &Uuid,
     team_id: &Uuid,
     headers: &HeaderMap,
@@ -26,7 +26,7 @@ pub(crate) async fn get_api_connection<T: DeserializeOwned>(
     let connection = get_connection(
         &base_url,
         &token,
-        user_id,
+        email,
         connection_id,
         team_id,
         is_internal,
@@ -40,11 +40,11 @@ pub(crate) async fn get_api_connection<T: DeserializeOwned>(
 pub(crate) async fn get_api_team(
     state: &State,
     jwt: &str,
-    user_id: &str,
+    email: &str,
     team_id: &Uuid,
 ) -> Result<Team> {
     let base_url = state.settings.quadratic_api_uri.to_owned();
-    let team = get_team(&base_url, jwt, user_id, team_id).await?;
+    let team = get_team(&base_url, jwt, email, team_id).await?;
 
     Ok(team)
 }
@@ -57,7 +57,7 @@ pub(crate) async fn add_key_to_connection<T: DeserializeOwned + UsesSsh>(
 ) -> Result<()> {
     if connection.use_ssh() {
         let team_id = get_team_id_header(headers)?;
-        let team = get_api_team(state, "", &claims.sub, &team_id).await?;
+        let team = get_api_team(state, "", &claims.email, &team_id).await?;
         connection.set_ssh_key(Some(team.ssh_private_key));
     }
 

@@ -247,6 +247,11 @@ test('Keyboard Editing', async ({ page }) => {
   await assertCellValue(page, { a1: 'A2', value: '14%' });
   await assertCellValue(page, { a1: 'A3', value: '5s' });
 
+  // TODO: this should be removed once we finish workOS migration (duplicated from spreadsheetMouse.spec.ts)
+  // click on the top-left corner to select all
+  await page.mouse.click(60, 92);
+  await assertSelection(page, { a1: '*' });
+
   // All done
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });

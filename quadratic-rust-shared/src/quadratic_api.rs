@@ -3,6 +3,7 @@
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
+use urlencoding::encode;
 use uuid::Uuid;
 
 use crate::error::{Result, SharedError};
@@ -175,7 +176,7 @@ pub struct Connection<T> {
 pub async fn get_connection<T: DeserializeOwned>(
     base_url: &str,
     jwt: &str,
-    user_id: &str,
+    email: &str,
     connection_id: &Uuid,
     team_id: &Uuid,
     is_internal: bool,
@@ -183,7 +184,10 @@ pub async fn get_connection<T: DeserializeOwned>(
     let url = if is_internal {
         format!("{base_url}/v0/internal/connection/{connection_id}")
     } else {
-        format!("{base_url}/v0/internal/user/{user_id}/teams/{team_id}/connections/{connection_id}")
+        let encoded_email = encode(email);
+        format!(
+            "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
+        )
     };
 
     let client = get_client(&url, jwt);
@@ -208,8 +212,9 @@ pub struct Team {
 }
 
 /// Retrieve user's team from the quadratic API server.
-pub async fn get_team(base_url: &str, jwt: &str, user_id: &str, team_id: &Uuid) -> Result<Team> {
-    let url = format!("{base_url}/v0/internal/user/{user_id}/teams/{team_id}");
+pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) -> Result<Team> {
+    let encoded_email = encode(email);
+    let url = format!("{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 

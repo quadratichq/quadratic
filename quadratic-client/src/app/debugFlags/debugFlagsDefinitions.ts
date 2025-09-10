@@ -1,7 +1,7 @@
 //! Definitions and display settings for all debug flags. These are accessible
 //! in the app via the Cmd+Option+Shift+I (Ctrl+Alt+Shift+I in windows) menu.
 
-export const debugFlagGroups = ['Rendering', 'Transactions', 'Misc.', 'UI', 'WebWorkers', 'AI', 'Playwright'];
+export const debugFlagGroups = ['Rendering', 'Transactions', 'Times', 'Misc.', 'UI', 'WebWorkers', 'AI', 'Playwright'];
 
 export type DebugFlagGroup = (typeof debugFlagGroups)[number];
 
@@ -13,7 +13,41 @@ export interface DebugFlagDescription {
   restart?: boolean;
 }
 
-export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
+export type DebugFlagKeys =
+  | 'debug'
+  | 'debugShowFPS'
+  | 'debugShowWhyRendering'
+  | 'debugShowTime'
+  | 'debugShowCellsSheetCulling'
+  | 'debugShowCellsHashBoxes'
+  | 'debugShowHashUpdates'
+  | 'debugShowCellHashesInfo'
+  | 'debugShowLoadingHashes'
+  | 'debugShowRunComputation'
+  | 'debugShowOfflineTransactions'
+  | 'debugStartupTime'
+  | 'debugShowFileIO'
+  | 'debugShowAnalytics'
+  | 'debugOffline'
+  | 'debugGridSettings'
+  | 'debugShowMultiplayer'
+  | 'debugShowVersionCheck'
+  | 'debugSaveURLState'
+  | 'debugShowUILogs'
+  | 'debugShowFocus'
+  | 'debugWebWorkers'
+  | 'debugWebWorkersMessages'
+  | 'debugShowAIModelMenu'
+  | 'debugShowAIInternalContext'
+  | 'debugLogJsonAIInternalContext'
+  | 'debugLogReadableAIInternalContext'
+  | 'debugAIAnalystChatStringInput'
+  | 'debugAIAnalystChatEditing'
+  | 'debugShowTopLeftPosition'
+  | 'debugShowCoordinates'
+  | 'debugShowAPITimes';
+
+export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> = {
   debug: {
     initial: false,
     title: 'Debug Flag',
@@ -30,12 +64,6 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     initial: false,
     title: 'Show cause of rendering',
     description: 'Shows why rendering is happening. This is useful for debugging rendering issues.',
-    group: 'Rendering',
-  },
-  debugShowTime: {
-    initial: true,
-    title: 'Show rendering time',
-    description: 'Shows unexpectedly high rendering time in console',
     group: 'Rendering',
   },
   debugShowCellsSheetCulling: {
@@ -63,6 +91,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Show loading hashes',
     group: 'Rendering',
   },
+  debugShowHashUpdates: {
+    initial: false,
+    title: 'Show hash updates',
+    description: 'Show hash updates in console',
+    group: 'Rendering',
+  },
 
   debugShowRunComputation: {
     initial: false,
@@ -77,17 +111,37 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     group: 'Transactions',
   },
 
-  // Misc. group
+  // Times group
   debugStartupTime: {
     initial: false,
     title: 'Show Startup Time',
     description: 'Show startup time information',
-    group: 'Misc.',
+    group: 'Times',
   },
+  debugShowTime: {
+    initial: true,
+    title: 'Show rendering time',
+    description: 'Shows unexpectedly high rendering time in console',
+    group: 'Times',
+  },
+  debugShowAPITimes: {
+    initial: false,
+    title: 'Show API Times',
+    description: 'Show API times in console',
+    group: 'Times',
+  },
+
+  // Misc. group
   debugShowFileIO: {
     initial: false,
     title: 'Show File I/O',
     description: 'Show file input/output operations',
+    group: 'Misc.',
+  },
+  debugShowAnalytics: {
+    initial: false,
+    title: 'Show Analytics',
+    description: 'Show analytics information',
     group: 'Misc.',
   },
   debugOffline: {
