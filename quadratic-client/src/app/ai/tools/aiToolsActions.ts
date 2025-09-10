@@ -323,6 +323,7 @@ export const aiToolsActions: AIToolActionsRecord = {
                 connectionId: connection.uuid,
                 connectionName: connection.name,
                 connectionType: connection.type,
+                semanticDescription: connection.semanticDescription,
                 error: 'No schema data returned from connection service',
               };
             }
@@ -331,6 +332,7 @@ export const aiToolsActions: AIToolActionsRecord = {
               connectionId: connection.uuid,
               connectionName: connection.name,
               connectionType: connection.type,
+              semanticDescription: connection.semanticDescription,
               schema: schema,
             };
           } catch (error) {
@@ -339,6 +341,7 @@ export const aiToolsActions: AIToolActionsRecord = {
               connectionId: connection.uuid,
               connectionName: connection.name,
               connectionType: connection.type,
+              semanticDescription: connection.semanticDescription,
               error: `Failed to retrieve schema: ${error instanceof Error ? error.message : String(error)}`,
             };
           }
