@@ -31,7 +31,7 @@ export const Undo = memo(
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
-        return `${toolArgs.data.count} transactions undone`;
+        return `${toolArgs.data.count ?? 1} transactions undone`;
       }
       return '';
     }, [toolArgs?.data?.count, toolArgs?.success]);
@@ -75,7 +75,7 @@ export const Redo = memo(
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
-        return `${toolArgs.data.count} transactions redone`;
+        return `${toolArgs.data.count ?? 1} transactions redone`;
       }
       return '';
     }, [toolArgs?.data?.count, toolArgs?.success]);
