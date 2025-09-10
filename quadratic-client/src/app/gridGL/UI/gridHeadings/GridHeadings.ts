@@ -54,8 +54,6 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
-  // this needs to be a child of viewportContents so it it is placed over the
-  // grid lines
   gridHeadingsRows: GridHeadingRows;
 
   dirty = true;

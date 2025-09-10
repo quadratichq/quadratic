@@ -29,30 +29,29 @@ import { Container, Graphics, type Rectangle } from 'pixi.js';
 export class Content extends Container {
   cellsSheets = new CellsSheets();
   gridLines = new GridLines();
-  background = new Background();
+  private background = new Background();
   uiCursor = new Cursor();
-  multiplayerCursor = new UIMultiPlayerCursor();
+  private multiplayerCursor = new UIMultiPlayerCursor();
   cellHighlights = new CellHighlights();
 
   // this is used to display content over the headings (table name and columns
   // when off the screen)
-  hoverTableHeaders = new Container();
+  private hoverTableHeaders = new Container();
 
   // used to draw selection (via Cursor.ts) for hoverTableHeaders content
   hoverTableColumnsSelection = new Graphics();
 
-  cellMoving = new UICellMoving();
+  private cellMoving = new UICellMoving();
   headings = new GridHeadings();
   boxCells = new BoxCells();
-  viewportContents = new Container();
-  htmlPlaceholders = new HtmlPlaceholders();
-  imagePlaceholders = new Container();
+  private htmlPlaceholders = new HtmlPlaceholders();
+  private imagePlaceholders = new Container();
   cellImages = new UICellImages();
   validations = new UIValidations();
   copy = new UICopy();
-  singleCellOutlines = new UISingleCellOutlines();
+  private singleCellOutlines = new UISingleCellOutlines();
 
-  debug = new Graphics();
+  private debug = new Graphics();
 
   copying = false;
   accentColor = colors.cursorCell;
