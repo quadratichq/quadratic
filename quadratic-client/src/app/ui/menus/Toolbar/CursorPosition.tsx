@@ -27,7 +27,7 @@ export const CursorPosition = memo(() => {
 
         <PopoverContent
           alignOffset={-120}
-          className="w-80 p-0"
+          className="w-96 p-0"
           align="start"
           onCloseAutoFocus={(e) => e.preventDefault()}
         >

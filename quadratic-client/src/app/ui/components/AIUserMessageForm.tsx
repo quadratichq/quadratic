@@ -6,6 +6,7 @@ import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { AIUserMessageFormSheetButton } from '@/app/ui/components/AIUserMessageFormSheetButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
@@ -471,6 +472,7 @@ const AIUserMessageFormFooter = memo(
               setSelectedConnectionUuid={setSelectedConnectionUuid}
               textareaRef={textareaRef}
             />
+            <AIUserMessageFormSheetButton disabled={disabled} textareaRef={textareaRef} />
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">
