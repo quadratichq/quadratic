@@ -11,10 +11,6 @@ test('Table floating headers', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: `e2e_viewport` });
 
-  // // Create a new team
-  // const teamName = `Table floating headers in different sheets - ${Date.now()}`;
-  // await createNewTeamByURL(page, { teamName });
-
   // Import file
   await uploadFile(page, { fileName, fileType });
 
@@ -22,13 +18,13 @@ test('Table floating headers', async ({ page }) => {
   await page.mouse.wheel(0, 200); // scroll down so table header hovers
   await page.waitForTimeout(5 * 1000);
 
-  // await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('viewport_headers_1.png', {
-  //   maxDiffPixelRatio: 0.001,
-  // });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('viewport_headers_1.png', {
+    maxDiffPixelRatio: 0.001,
+  });
 
   await changeSheet(page, 'Sheet 2');
   await page.mouse.move(330, 249); // move mouse over viewport
-  await page.mouse.wheel(0, 200); // scroll down so table header hovers
+  await page.mouse.wheel(0, 50); // scroll down so table header hovers
   await page.waitForTimeout(5 * 1000);
 
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('viewport_headers_2.png', {
