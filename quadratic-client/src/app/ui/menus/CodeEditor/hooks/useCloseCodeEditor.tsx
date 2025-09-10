@@ -3,7 +3,7 @@ import {
   codeEditorShowSaveChangesAlertAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type * as monaco from 'monaco-editor';
 import { useRecoilCallback } from 'recoil';
@@ -17,7 +17,7 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
           set(codeEditorShowSaveChangesAlertAtom, true);
         } else {
           set(codeEditorShowCodeEditorAtom, false);
-          pixiApp.cellHighlights.clear();
+          content.cellHighlights.clear();
           multiplayer.sendEndCellEdit();
           editorInst?.dispose();
         }

@@ -4,7 +4,6 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureVisible, moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import type { Pos } from '@/app/quadratic-core/quadratic_core';
 import { Direction, jumpCursor, moveCursor } from '@/app/quadratic-core/quadratic_core';
@@ -34,7 +33,7 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   }
 
   let newPos: Pos;
-  const dataTablesCache = pixiApp.cellsSheet().tables.dataTablesCache;
+  const dataTablesCache = sheets.sheet.dataTablesCache;
   if (!dataTablesCache) {
     console.error('Failed to jump cursor: dataTablesCache is undefined');
     return;

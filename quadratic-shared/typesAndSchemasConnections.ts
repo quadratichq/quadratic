@@ -1,7 +1,8 @@
 import * as z from 'zod';
 
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
-const transformEmptyStringToUndefined = (val: string | undefined) => (val === '' ? undefined : val);
+const transformEmptyStringToUndefined = (val: any): string | undefined =>
+  typeof val === 'string' && !!val ? val : undefined;
 
 /**
  * =============================================================================
@@ -21,6 +22,7 @@ export const ConnectionTypeSchema = z.enum([
   'SUPABASE',
   'NEON',
 ]);
+export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
@@ -56,7 +58,7 @@ const ConnectionSchema = z.object({
   name: ConnectionNameSchema,
   uuid: z.string().uuid(),
   isDemo: z.boolean().optional(),
-
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
 });
@@ -123,7 +125,14 @@ export const ConnectionTypeDetailsBigquerySchema = z.object({
  */
 
 export const ConnectionListSchema = z.array(
-  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true, isDemo: true })
+  ConnectionSchema.pick({
+    uuid: true,
+    name: true,
+    createdDate: true,
+    type: true,
+    semanticDescription: true,
+    isDemo: true,
+  })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
@@ -134,6 +143,7 @@ export const ApiSchemasConnections = {
   // Create connection
   '/v0/teams/:uuid/connections.POST.request': ConnectionSchema.pick({
     name: true,
+    semanticDescription: true,
     type: true,
     typeDetails: true,
   }),
@@ -143,7 +153,11 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/connections/:connectionUuid.GET.response': ConnectionSchema,
 
   // Update connection
-  '/v0/teams/:uuid/connections/:connectionUuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
+  '/v0/teams/:uuid/connections/:connectionUuid.PUT.request': ConnectionSchema.pick({
+    name: true,
+    semanticDescription: true,
+    typeDetails: true,
+  }),
   '/v0/teams/:uuid/connections/:connectionUuid.PUT.response': ConnectionSchema,
 
   // Delete connection

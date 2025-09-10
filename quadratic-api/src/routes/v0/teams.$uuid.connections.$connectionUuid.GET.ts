@@ -43,6 +43,7 @@ async function handler(
     uuid: connection.uuid,
     name: connection.name,
     type: connection.type,
+    semanticDescription: connection.semanticDescription || undefined,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
     typeDetails,

@@ -38,7 +38,7 @@ interface SheetBarTabProps {
 }
 
 export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
-  const { sheet, id, calculatedOrder, order, active, onPointerDown, forceRename, clearRename } = props;
+  const { sheet, name, id, calculatedOrder, order, active, onPointerDown, forceRename, clearRename } = props;
 
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -71,6 +71,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
       }}
       data-id={id}
       data-order={order}
+      data-test-sheet-name={name}
       data-actual-order={calculatedOrder}
       onPointerDown={(event) => {
         if (isRenaming) return;

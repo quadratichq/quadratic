@@ -5,7 +5,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
 import { checkFormula, parseFormula, toggleReferenceTypes } from '@/app/quadratic-core/quadratic_core';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -29,7 +29,7 @@ class InlineEditorFormula {
       this.clearDecorations();
       return;
     }
-    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed, false);
+    content.cellHighlights.fromCellsAccessed(parseResult.cells_accessed, false);
 
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
     const cellColorReferences = new Map<string, number>();
@@ -62,7 +62,7 @@ class InlineEditorFormula {
       const editorCursorPosition = inlineEditorMonaco.getPosition();
 
       if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-        pixiApp.cellHighlights.setSelectedCell(index);
+        content.cellHighlights.setSelectedCell(index);
       }
     });
 
@@ -77,7 +77,7 @@ class InlineEditorFormula {
 
   clearDecorations() {
     this.decorations?.clear();
-    pixiApp.cellHighlights.clear();
+    content.cellHighlights.clear();
   }
 
   removeInsertingCells() {

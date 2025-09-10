@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp, type PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
@@ -53,7 +54,7 @@ export class Viewport extends PixiViewport {
         keyToPress: isMobile ? undefined : ['Space'],
       })
     );
-    this.turnOnDecelerate();
+    this.plugins.add('decelerate', new Decelerate(this));
     this.pinch().clampZoom({
       minScale: MINIMUM_VIEWPORT_SCALE,
       maxScale: MAXIMUM_VIEWPORT_SCALE,
@@ -92,14 +93,6 @@ export class Viewport extends PixiViewport {
     this.on('mouse-edge-move', this.handleMouseEdgeMove);
   }
 
-  private turnOffDecelerate = () => {
-    this.plugins.remove('decelerate');
-  };
-
-  private turnOnDecelerate = () => {
-    this.plugins.add('decelerate', new Decelerate(this));
-  };
-
   private viewportChanged = () => {
     events.emit('viewportChanged');
   };
@@ -113,6 +106,7 @@ export class Viewport extends PixiViewport {
     this.off('pinch-start', this.handleWaitForZoomEnd);
     this.off('pinch-end', this.handleZoomEnd);
     this.off('snap-end', this.handleSnapEnd);
+    this.off('mouse-edge-move', this.handleMouseEdgeMove);
   }
 
   loadViewport() {
@@ -152,7 +146,7 @@ export class Viewport extends PixiViewport {
 
   // resets the viewport to start
   reset = () => {
-    const headings = this.pixiApp.headings.headingSize;
+    const headings = content.headings.headingSize;
     this.position.set(headings.width, headings.height);
     this.dirty = true;
   };
@@ -186,7 +180,7 @@ export class Viewport extends PixiViewport {
   }
 
   private startSnap = () => {
-    const headings = this.pixiApp.headings.headingSize;
+    const headings = content.headings.headingSize;
     let x: number;
     let y: number;
     let snap = false;
@@ -221,7 +215,7 @@ export class Viewport extends PixiViewport {
     if (event.type === 'mouse-edges') {
       if (this.pixiApp.pointer.pointerHeading.movingColRows) return;
 
-      const headings = this.pixiApp.headings.headingSize;
+      const headings = content.headings.headingSize;
       if (this.x > headings.width || this.y > headings.height) {
         this.disableMouseEdges();
 
@@ -271,7 +265,7 @@ export class Viewport extends PixiViewport {
       this.snapState = undefined;
     } else if (!this.waitForZoomEnd) {
       if (!this.snapState) {
-        const headings = this.pixiApp.headings.headingSize;
+        const headings = content.headings.headingSize;
         if (this.x > headings.width || this.y > headings.height) {
           if (this.pixiApp.momentumDetector.hasMomentumScroll()) {
             if (!this.plugins.get('drag')?.active) {
@@ -314,4 +308,16 @@ export class Viewport extends PixiViewport {
       pixiApp.pointer.pointerMove(this.pixiApp.renderer.events.pointer);
     }
   };
+
+  changeX(x: number) {
+    if (this.x === x) return;
+    this.x = x;
+    this.dirty = true;
+  }
+
+  changeY(y: number) {
+    if (this.y === y) return;
+    this.y = y;
+    this.dirty = true;
+  }
 }

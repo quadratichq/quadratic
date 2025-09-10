@@ -4,7 +4,7 @@ import {
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-core/quadratic_core';
@@ -65,7 +65,7 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed, codeCell.language === 'Python');
+        content.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed, codeCell.language === 'Python');
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
@@ -75,7 +75,7 @@ export const useEditorCellHighlights = (
           return;
         }
 
-        pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed, false);
+        content.cellHighlights.fromCellsAccessed(parsed.cells_accessed, false);
 
         parsed.spans.forEach((span, index) => {
           const cellRef = parsed.cells_accessed[index];
@@ -105,7 +105,7 @@ export const useEditorCellHighlights = (
           const editorCursorPosition = editorInst.getPosition();
 
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-            pixiApp.cellHighlights.setSelectedCell(index);
+            content.cellHighlights.setSelectedCell(index);
           }
         });
 

@@ -57,11 +57,11 @@ export class TableName extends Container {
 
   destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.drawBackground);
-    super.destroy();
     if (this.modifiedTimeout) {
       clearTimeout(this.modifiedTimeout);
       this.modifiedTimeout = undefined;
     }
+    super.destroy();
   };
 
   private drawBackground = () => {

@@ -2,6 +2,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetInfo } from '@/app/quadratic-core-types';
 import type {
@@ -14,8 +15,6 @@ import type { Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
-  current?: CellsSheet;
-
   constructor() {
     super();
     events.on('addSheet', this.addSheet);
@@ -28,18 +27,21 @@ export class CellsSheets extends Container<CellsSheet> {
     super.destroy();
   }
 
-  async create() {
+  get current(): CellsSheet | undefined {
+    return this.children.find((child) => child.sheetId === sheets.current);
+  }
+
+  create = async () => {
     this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
-      const child = this.addChild(new CellsSheet(sheet.id));
-      if (sheet.id === sheets.current) {
-        this.current = child;
-        pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-      }
+      this.addChild(new CellsSheet(sheet.id));
+    }
+    if (this.current) {
+      content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
     }
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
-  }
+  };
 
   isReady(): boolean {
     return !!this.current;
@@ -56,29 +58,11 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll(id: string) {
-    this.children.forEach((child) => {
-      if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
-          child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
-      } else {
-        child.hide();
-      }
-    });
-  }
-
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
-          child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
+        child.show(pixiApp.viewport.getVisibleBounds());
+        content.changeHoverTableHeaders(child.tables.hoverTableHeaders);
       } else {
         child.hide();
       }
@@ -140,20 +124,20 @@ export class CellsSheets extends Container<CellsSheet> {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
-      pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.headings.dirty = true;
+      events.emit('setDirty', { gridLines: true, cursor: true, headings: true });
     }
   }
 
   getCellsContentMaxWidth(column: number): Promise<number> {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
-    return this.current.cellsLabels.getCellsContentMaxWidth(column);
+    const current = this.current;
+    if (!current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
+    return current.cellsLabels.getCellsContentMaxWidth(column);
   }
 
   getCellsContentMaxHeight(row: number): Promise<number> {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
-    return this.current.cellsLabels.getCellsContentMaxHeight(row);
+    const current = this.current;
+    if (!current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
+    return current.cellsLabels.getCellsContentMaxHeight(row);
   }
 
   adjustOffsetsBorders(sheetId: string): void {

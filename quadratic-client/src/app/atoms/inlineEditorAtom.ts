@@ -1,6 +1,6 @@
+import { events } from '@/app/events/events';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { atom } from 'recoil';
 
@@ -32,7 +32,7 @@ export const inlineEditorAtom = atom({
           inlineEditorMonaco.focus();
         }
         inlineEditorKeyboard.cursorMode = newValue.editMode ? CursorMode.Edit : CursorMode.Enter;
-        pixiApp.cursor.dirty = true;
+        events.emit('setDirty', { cursor: true });
       });
     },
   ],

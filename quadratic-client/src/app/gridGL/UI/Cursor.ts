@@ -1,8 +1,10 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
 import { hasPermissionToEditFile } from '@/app/actions';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
@@ -44,11 +46,24 @@ export class Cursor extends Container {
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
     this.cursorRectangle = new Rectangle();
+
+    events.on('setDirty', this.setDirty);
   }
+
+  destroy() {
+    events.off('setDirty', this.setDirty);
+    super.destroy();
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.cursor) {
+      this.dirty = true;
+    }
+  };
 
   // redraws corners if there is an error
   private drawError(cell: JsCoordinate) {
-    const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
+    const error = content.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {
         const triangle = this.addChild(new Sprite(error.triangle.texture));
@@ -77,10 +92,10 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(sheets.current, cell)) {
+    if (cursor.isSingleSelection() && content.cellsSheet.tables.isHtmlOrImage(sheets.current, cell)) {
       return;
     }
-    const tables = pixiApp.cellsSheet().tables;
+    const tables = content.cellsSheet.tables;
     let table = tables.getTableIntersects(cell);
     let tableName =
       table && table.codeCell.show_name && table.codeCell.y === cell.y ? table.getTableNameBounds() : undefined;
@@ -89,16 +104,16 @@ export class Cursor extends Container {
     }
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
-    const color = pixiApp.accentColor;
+    const color = content.accentColor;
     const codeCell = codeEditorState.codeCell;
 
-    pixiApp.hoverTableColumnsSelection.clear();
+    content.hoverTableColumnsSelection.clear();
 
     // it so we can autocomplete within tables, then we should change this logic.
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      !pixiApp.cellsSheet().tables.isInTableHeader(cell) &&
+      !content.cellsSheet.tables.isInTableHeader(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -129,7 +144,7 @@ export class Cursor extends Container {
     if (!tableName) {
       let g = this.graphics;
       if (tableColumn) {
-        g = pixiApp.hoverTableColumnsSelection;
+        g = content.hoverTableColumnsSelection;
       }
       g.lineStyle({
         width: CURSOR_THICKNESS,
@@ -161,7 +176,7 @@ export class Cursor extends Container {
   private drawTableCornerIndicator() {
     const tableName = sheets.sheet.cursor.getSingleFullTableSelectionName();
     if (!tableName) return;
-    const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
+    const table = content.cellsSheet.tables.getTableFromName(tableName);
     if (
       !table ||
       table.codeCell.is_html_image ||
@@ -192,7 +207,7 @@ export class Cursor extends Container {
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
 
     if (!sheets.sheet.cursor.isSingleSelection()) {
-      drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_SELECTION_ALPHA, ranges);
+      drawFiniteSelection(this.graphics, content.accentColor, FILL_SELECTION_ALPHA, ranges);
     }
   }
 
@@ -212,7 +227,7 @@ export class Cursor extends Container {
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
 
-      const color = pixiApp.accentColor;
+      const color = content.accentColor;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -271,7 +286,7 @@ export class Cursor extends Container {
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
 
-    const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
+    const color = formula ? getCSSVariableTint('primary') : content.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [
@@ -291,7 +306,7 @@ export class Cursor extends Container {
   private drawUnselectDown() {
     const { unselectDown } = pixiApp.pointer.pointerDown;
     if (!unselectDown) return;
-    const foreground = pixiApp.accentColor;
+    const foreground = content.accentColor;
     this.graphics.lineStyle({ color: foreground, width: 1 });
     const background = getCSSVariableTint('background');
     this.graphics.beginFill(background, 0.5);
@@ -307,7 +322,7 @@ export class Cursor extends Container {
 
   private cursorIsOnSpill() {
     const pos = sheets.sheet.cursor.position;
-    const table = pixiApp.cellsSheet().tables.getTable(pos.x, pos.y);
+    const table = content.cellsSheet.tables.getTable(pos.x, pos.y);
     return table?.codeCell.spill_error;
   }
 
@@ -364,7 +379,7 @@ export class Cursor extends Container {
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
       const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
-        color: pixiApp.accentColor,
+        color: content.accentColor,
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });

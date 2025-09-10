@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -9,7 +10,7 @@ import { useCallback } from 'react';
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetName = sheets.sheet.name;
-    const visibleRect = sheets.getVisibleRect();
+    const visibleRect = pixiApp.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
     const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
     jsSelection.free();

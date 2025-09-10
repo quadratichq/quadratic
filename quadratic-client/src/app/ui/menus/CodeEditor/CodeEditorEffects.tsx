@@ -11,7 +11,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsUpdateCodeCell } from '@/app/quadratic-core-types';
@@ -86,7 +86,7 @@ export const CodeEditorEffects = memo(() => {
             waitingForEditorClose: undefined,
             showCodeEditor: false,
           }));
-          pixiApp.cellHighlights.clear();
+          content.cellHighlights.clear();
         } else {
           setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
           setCodeEditorState((prev) => ({
@@ -96,7 +96,7 @@ export const CodeEditorEffects = memo(() => {
             initialCode: waitingForEditorClose.initialCode,
             waitingForEditorClose: undefined,
           }));
-          pixiApp.cellHighlights.clear();
+          content.cellHighlights.clear();
         }
       }
     }

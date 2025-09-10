@@ -14,6 +14,7 @@ export function getTeamConnectionsList({
     name: connection.name,
     createdDate: connection.createdDate.toISOString(),
     type: connection.type,
+    semanticDescription: connection.semanticDescription || undefined,
     isDemo: false,
   }));
 
@@ -23,6 +24,7 @@ export function getTeamConnectionsList({
       name: connectionDemo.name,
       createdDate: connectionDemo.createdDate,
       type: connectionDemo.type,
+      semanticDescription: connectionDemo.semanticDescription || undefined,
       isDemo: true,
     });
   }

@@ -25,6 +25,7 @@ afterAll(clearDb);
 
 const validPayload = {
   name: 'Updated connection',
+  semanticDescription: 'description here',
   typeDetails: {
     foo: 'bar',
   },
@@ -47,6 +48,7 @@ describe('PUT /v0/teams/:uuid/connections/:connectionUuid', () => {
           expect(res.body.name).toBeDefined();
           expect(res.body.createdDate).toBeDefined();
           expect(res.body.updatedDate).toBeDefined();
+          expect(res.body.semanticDescription).toBeDefined();
           expect(res.body.type).toBeDefined();
           expect(res.body.typeDetails).toEqual(validPayload.typeDetails);
           expect(res.body.updatedDate).not.toBe(connectionBefore?.updatedDate.toISOString());
