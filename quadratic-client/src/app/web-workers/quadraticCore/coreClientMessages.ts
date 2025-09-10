@@ -1,3 +1,4 @@
+import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
@@ -1470,6 +1471,13 @@ export interface CoreClientGetAITransactions {
   transactions: TrackedTransaction[];
 }
 
+export interface CoreClientStartupTimer {
+  type: 'coreClientStartupTimer';
+  name: TimerNames;
+  start?: number;
+  end?: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1668,4 +1676,5 @@ export type CoreClientMessage =
   | CoreClientGetAICodeErrors
   | CoreClientGetAITransactions
   | CoreClientUndoResponse
-  | CoreClientRedoResponse;
+  | CoreClientRedoResponse
+  | CoreClientStartupTimer;

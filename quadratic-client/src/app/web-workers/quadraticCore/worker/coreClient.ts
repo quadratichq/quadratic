@@ -6,6 +6,7 @@
  */
 
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -111,6 +112,7 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'clientCoreLoad':
+        this.sendStartupTimer('offlineSync', { start: performance.now() });
         await offline.init(e.data.fileId);
 
         this.send({
@@ -980,6 +982,10 @@ class CoreClient {
 
   sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
     this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
+  };
+
+  sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {
+    this.send({ type: 'coreClientStartupTimer', name, ...data });
   };
 }
 
