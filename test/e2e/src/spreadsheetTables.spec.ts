@@ -763,7 +763,7 @@ test('Go To Menu Cell Selection', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Go To Menu Navigation', async ({ page }) => {
+test('Go To Menu Navigation', async ({ page }) => {
   // Constants
   const fileName = 'Go_To';
   const fileType = 'grid';
