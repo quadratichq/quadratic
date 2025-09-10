@@ -7,6 +7,7 @@ edition = "2024"
 
 [dependencies]
 aes = { version = "0.8.3", optional = true }
+rand_core = { version = "0.6", features = ["getrandom"], optional = true }
 arrow = { version = "=54.2.1", optional = true }
 arrow-array = { version = "=54.2.1", optional = true }
 async-trait = "0.1.80"
@@ -96,7 +97,7 @@ arrow = ["dep:arrow", "arrow-array", "parquet"]
 auth = ["http", "jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 cache = ["memory", "tokio"]
-crypto = ["aes"]
+crypto = ["aes", "rand_core"]
 environment = []
 memory = []
 multiplayer = ["base64"]

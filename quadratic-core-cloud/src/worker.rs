@@ -3,8 +3,8 @@ use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::operations::operation::Operation;
+use quadratic_core::grid::file::import;
 use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
-use quadratic_rust_shared::storage::StorageContainer;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -12,9 +12,7 @@ use uuid::Uuid;
 
 use crate::core::process_transaction;
 use crate::error::{CoreCloudError, Result};
-use crate::file::{file_key, get_and_load_object};
 use crate::multiplayer::{connect, enter_room, send_transaction};
-use crate::state::State;
 
 // messages to care about (see multiplayerServer.ts)
 // 2. BinaryTransaction (receive and apply)
@@ -22,26 +20,13 @@ use crate::state::State;
 // 4. CurrentTransaction
 // 5. Error
 
-#[derive(Debug, Clone)]
-pub(crate) enum WorkerMessages {
-    RunPython(String),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum WorkerState {
-    Starting,
-    Running,
-    Stopping,
-    Stopped,
-}
-
 #[derive(Clone)]
-pub(crate) struct Worker {
+pub struct Worker {
     pub(crate) file_id: Uuid,
-    pub(crate) state: WorkerState,
     pub(crate) sequence_num: u64,
     pub(crate) session_id: Uuid,
     pub(crate) file: Arc<Mutex<GridController>>,
+    pub(crate) m2m_auth_token: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
 }
@@ -50,9 +35,8 @@ impl Debug for Worker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Worker {{ file_id: {:?}, state: {:?}, sequence_num: {}, websocket_connected: {} }}",
+            "Worker {{ file_id: {:?}, sequence_num: {}, websocket_connected: {} }}",
             self.file_id,
-            self.state,
             self.sequence_num,
             self.is_connected()
         )
@@ -60,55 +44,45 @@ impl Debug for Worker {
 }
 
 impl Worker {
-    pub(crate) async fn new(
+    pub async fn new(
         file_id: Uuid,
         sequence_num: u64,
-        storage: &StorageContainer,
+        presigned_url: &str,
+        m2m_auth_token: String,
     ) -> Result<Self> {
-        let key = file_key(file_id, sequence_num);
-        let file = get_and_load_object(storage, &key, sequence_num).await?;
+        let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
 
         Ok(Worker {
             file_id,
-            state: WorkerState::Running,
             sequence_num,
             session_id: Uuid::new_v4(),
             file: Arc::new(Mutex::new(file)),
+            m2m_auth_token,
             websocket_sender: None,
             websocket_receiver: None,
         })
     }
 
-    /// Start a new worker for a given file.
-    /// This currently just creates a worker in state, but will spin up a
-    /// docker container in the future.
-    /// Returns true if the worker is new, false if it already exists.
-    pub(crate) async fn startup(file_id: Uuid, state: Arc<State>) -> Result<bool> {
-        let is_new_worker = state.create_worker(file_id, 0).await?;
+    /// Load a file from a presigned URL.
+    pub async fn load_file(
+        file_id: Uuid,
+        sequence_num: u64,
+        presigned_url: &str,
+    ) -> Result<GridController> {
+        let res = reqwest::get(presigned_url).await?;
+        let file = res.bytes().await?;
+        let grid = import(file.to_vec())
+            .map_err(|e| CoreCloudError::ImportFile(file_id.into(), e.to_string()))?;
 
-        Ok(is_new_worker)
-    }
-
-    /// Shutdown a worker for a given file.
-    /// This currently just removes the worker from state, but will stop the
-    /// docker container in the future.
-    /// Returns the number of workers left.
-    pub(crate) async fn shutdown(&mut self, state: Arc<State>) -> Result<usize> {
-        let num_workers = state.destroy_worker(self.file_id).await?;
-
-        Ok(num_workers)
-    }
-
-    pub(crate) fn is_connected(&self) -> bool {
-        self.websocket_sender.is_some() && self.websocket_receiver.is_some()
+        Ok(GridController::from_grid(grid, sequence_num))
     }
 
     /// Connect to the multiplayer server.
     /// This will connect to the multiplayer server and create a new websocket
     /// sender and receiver.
-    pub(crate) async fn connect(&mut self, state: Arc<State>) -> Result<()> {
+    pub async fn connect(&mut self) -> Result<()> {
         if !self.is_connected() {
-            let (websocket, _response) = connect(&state).await?;
+            let (websocket, _response) = connect(&self.m2m_auth_token).await?;
             let (sender, receiver) = websocket.split();
 
             self.websocket_sender = Some(Arc::new(Mutex::new(sender)));
@@ -116,6 +90,11 @@ impl Worker {
         }
 
         Ok(())
+    }
+
+    /// Check if the worker is connected to the multiplayer websocket.
+    pub fn is_connected(&self) -> bool {
+        self.websocket_sender.is_some() && self.websocket_receiver.is_some()
     }
 
     /// Enter the room for a given file.
@@ -135,7 +114,7 @@ impl Worker {
 
     /// Process an operation.
     /// This will create a pending transaction and apply it to the file.
-    pub(crate) async fn process_operation(&mut self, operation: Operation) -> Result<()> {
+    pub async fn process_operation(&mut self, operation: Operation) -> Result<()> {
         // // Take ownership of the GridController, process it, then put it back
         // let file_for_transaction = {
         //     let mut file_guard = self.file.lock().await;
@@ -188,11 +167,6 @@ impl Worker {
         self.sequence_num += 1;
         self.sequence_num
     }
-
-    /// Update the worker's state.
-    pub(crate) fn update_state(&mut self, state: WorkerState) {
-        self.state = state;
-    }
 }
 
 #[cfg(test)]
@@ -202,35 +176,29 @@ mod tests {
     use quadratic_core::{CellValue, grid::SheetId};
     use std::{str::FromStr, time::Duration};
 
-    use crate::{get_mut_worker, test_util::setup};
-
     #[tokio::test(flavor = "multi_thread")]
     async fn test_worker_startup() {
-        let (_, state, _) = setup().await;
         let file_id = Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap();
-        let get_state = async || state.get_worker(&file_id).await.unwrap().state;
         let sheet_id = SheetId::from_str("b8718a71-e4b1-49bb-8f32-f0d931850cfd").unwrap();
+        let presigned_url = "https://www.google.com";
+        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
 
-        // first, start a worker
-        let is_new_worker = Worker::startup(file_id, state.clone()).await.unwrap();
-        assert!(is_new_worker);
-        assert_eq!(state.num_workers().await.unwrap(), 1);
-        assert_eq!(get_state().await, WorkerState::Running);
-
-        // then, connect to the multiplayer server
-        get_mut_worker!(state, file_id)
-            .unwrap()
-            .connect(state.clone())
+        let worker = Worker::new(file_id, 0, presigned_url, m2m_auth_token)
             .await
             .unwrap();
+        let worker = Arc::new(Mutex::new(worker));
+
+        // connect to the multiplayer server
+        worker.lock().await.connect().await.unwrap();
 
         // get the multiplayer receiver
-        let receiver = state
-            .get_worker(&file_id)
+        let receiver = worker
+            .lock()
             .await
-            .unwrap()
             .websocket_receiver
-            .unwrap();
+            .as_ref()
+            .unwrap()
+            .clone();
 
         // listen for messages in a separate thread
         // TODO(ddimaria): ensure that we receive ACKs for all transactions
@@ -245,15 +213,12 @@ mod tests {
         });
 
         // then, enter the room
-        get_mut_worker!(state, file_id)
-            .unwrap()
-            .enter_room(file_id)
-            .await
-            .unwrap();
+        worker.lock().await.enter_room(file_id).await.unwrap();
 
         // then, set cell value of A2 to 5
-        get_mut_worker!(state, file_id)
-            .unwrap()
+        worker
+            .lock()
+            .await
             .set_cell_values(
                 SheetPos::new(sheet_id, 1, 2),
                 CellValues::from(vec![vec![CellValue::Number(5.into())]]),
@@ -262,14 +227,12 @@ mod tests {
             .unwrap();
 
         // then, compute code at A4
-        get_mut_worker!(state, file_id)
-            .unwrap()
+        worker
+            .lock()
+            .await
             .compute_code(SheetPos::new(sheet_id, 1, 4))
             .await
             .unwrap();
-
-        state.destroy_worker(file_id).await.unwrap();
-        assert_eq!(state.num_workers().await.unwrap(), 0);
 
         // wait 1 minute to show presence in the demo
         tokio::time::sleep(Duration::from_secs(60)).await;

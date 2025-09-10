@@ -7,18 +7,15 @@ use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::protobuf::quadratic::transaction::{
     ShutdownCoreCloudAck, StartupCoreCloudAck, TransactionAck,
 };
-use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::error::Result;
 use crate::message::{request::MessageRequest, response::MessageResponse};
-use crate::state::State;
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn handle_message(
     request: MessageRequest,
-    state: Arc<State>,
     pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
     println!("request: {:?}", request);
@@ -26,8 +23,6 @@ pub(crate) async fn handle_message(
     match request {
         MessageRequest::StartupCoreCloud(request) => {
             let file_id = Uuid::parse_str(&request.file_id)?;
-
-            // state.create_worker(file_id, 0);
 
             let response = StartupCoreCloudAck {
                 r#type: "StartupCoreCloudAck".to_string(),
@@ -58,9 +53,6 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use quadratic_core::controller::operations::operation::Operation;
-    use quadratic_core::controller::transaction::Transaction as CoreTransaction;
-    use quadratic_core::grid::SheetId;
     use quadratic_rust_shared::{
         net::websocket_server::pre_connection::PreConnection,
         protobuf::quadratic::transaction::{
@@ -68,19 +60,13 @@ pub(crate) mod tests {
             StartupCoreCloudAck, TransactionAck,
         },
     };
-    use tokio::net::TcpStream;
-    use tokio::sync::Mutex;
-    use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
-
-    use crate::test_util::new_arc_state;
 
     use super::*;
 
     #[tokio::test]
     async fn test_handle() {
         let file_id = Uuid::new_v4();
-        let state = new_arc_state().await;
         let request = StartupCoreCloud {
             r#type: "StartupCoreCloud".to_string(),
             file_id: file_id.to_string(),
@@ -88,7 +74,7 @@ pub(crate) mod tests {
         let pre_connection = PreConnection::new(None, None);
 
         let request = MessageRequest::StartupCoreCloud(request);
-        let response = handle_message(request, state.into(), pre_connection)
+        let response = handle_message(request, pre_connection)
             .await
             .unwrap()
             .unwrap();

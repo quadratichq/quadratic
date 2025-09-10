@@ -109,3 +109,10 @@ impl From<uuid::Error> for SharedError {
         SharedError::Uuid(error.to_string())
     }
 }
+
+#[cfg(feature = "storage")]
+impl From<crate::storage::error::Storage> for SharedError {
+    fn from(error: crate::storage::error::Storage) -> Self {
+        SharedError::Storage(error)
+    }
+}

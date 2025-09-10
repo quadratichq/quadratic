@@ -11,6 +11,12 @@ pub enum Storage {
     #[error("Error creating directory {0}: {1}")]
     CreateDirectory(String, String),
 
+    #[error("FileSystem key: {0}")]
+    FileSystemKey(String),
+
+    #[error("Error generating presigned URL for key {0}: {1}")]
+    GeneratePresignedUrl(String, String),
+
     #[error("Invalid key: {0}")]
     InvalidKey(String),
 

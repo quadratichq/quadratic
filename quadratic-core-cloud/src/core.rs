@@ -1,3 +1,4 @@
+use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
 use std::sync::Arc;
 use tokio::{
     runtime::Handle,
@@ -21,12 +22,19 @@ use crate::{
     python::execute::run_python,
 };
 
+pub async fn load_file(presigned_url: &str) -> Result<Vec<u8>> {
+    let res = reqwest::get(presigned_url).await?;
+    let body = res.bytes().await?;
+
+    Ok(body.to_vec())
+}
+
 // from main
 // receive the transaction
 // get file from S3
 // enter the multiplayer room
 // receive catchup transactions if any (receive transansactions)
-// process python code
+// process transactions
 // send forward transactions to multiplayer
 
 /// Process a transaction.

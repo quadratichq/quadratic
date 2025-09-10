@@ -71,16 +71,13 @@ pub(crate) async fn execute(
 #[cfg(test)]
 
 mod tests {
-    use crate::test_util::new_arc_state;
 
     use super::*;
     use std::time::Instant;
-    use uuid::Uuid;
 
     async fn test_execute(query: &str) -> (JsConnectionResult, Option<String>) {
         let start = Instant::now();
-        let state = new_arc_state().await;
-        let token = state.settings.m2m_auth_token.clone();
+        let token = "M2M_AUTH_TOKEN".to_string();
         let connection_kind = ConnectionKind::Postgres;
         let connection_id = "2f153e3a-aa1f-40e9-960e-759f3047bf85".to_string();
         let team_id = "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string();

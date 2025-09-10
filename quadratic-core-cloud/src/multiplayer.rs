@@ -1,6 +1,5 @@
 use axum::http::Response;
 use prost::Message;
-use std::sync::Arc;
 use uuid::Uuid;
 
 use quadratic_core::controller::{operations::operation::Operation, transaction::Transaction};
@@ -9,14 +8,13 @@ use quadratic_rust_shared::{
     protobuf::quadratic::transaction::BinaryTransaction as BinaryTransactionProto,
 };
 
-use crate::{error::Result, state::State};
+use crate::error::Result;
 
 /// Connect to the Multiplayer server
 pub(crate) async fn connect(
-    state: &Arc<State>,
+    m2m_auth_token: &str,
 ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
-    let token = state.settings.m2m_auth_token.to_owned();
-    let headers = vec![("authorization".into(), format!("Bearer {}", token))];
+    let headers = vec![("authorization".into(), format!("Bearer {}", m2m_auth_token))];
     let websocket =
         WebsocketClient::connect_with_headers("ws://localhost:3001/ws", headers).await?;
 
@@ -69,16 +67,14 @@ mod tests {
     use std::str::FromStr;
     use std::time::Duration;
 
-    use crate::test_util::new_arc_state;
-
     #[tokio::test]
     async fn test_multiplayer() {
-        let state = new_arc_state().await;
         let user_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let session_id = Uuid::new_v4();
+        let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
 
-        let (websocket, response) = connect(&state).await.unwrap();
+        let (websocket, response) = connect(&m2m_auth_token).await.unwrap();
         let (mut sender, mut receiver) = websocket.split();
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
 
