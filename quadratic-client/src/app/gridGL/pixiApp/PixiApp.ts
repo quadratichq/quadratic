@@ -8,6 +8,7 @@ import {
   pasteFromClipboardEvent,
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
@@ -61,6 +62,7 @@ export class PixiApp {
   }
 
   init = (): Promise<void> => {
+    startupTimer.start('pixiApp');
     return new Promise((resolve) => {
       // we cannot initialize pixi until the bitmap fonts are loaded
       if (!isBitmapFontLoaded()) {
@@ -91,6 +93,7 @@ export class PixiApp {
     } else {
       this.alreadyRendered = true;
     }
+    startupTimer.end('pixiApp');
   };
 
   private initCanvas = () => {
