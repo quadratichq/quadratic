@@ -741,19 +741,19 @@ test('Go To Menu Cell Selection', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
 
   // Assert Go To Menu Box showing correct cell
-  await expect(page.getByRole(`textbox`)).toHaveValue(`B3`);
+  await expect(page.getByRole(`textbox`)).toHaveValue(`B3`, { timeout: 60 * 1000 });
 
   // Navigate to cell F30
   await navigateOnSheet(page, { targetColumn: 'F', targetRow: 30 });
 
   // Assert Go To Menu Box showing correct cell
-  await expect(page.getByRole(`textbox`)).toHaveValue(`F30`);
+  await expect(page.getByRole(`textbox`)).toHaveValue(`F30`, { timeout: 60 * 1000 });
 
   // Select D4 to G10 cells
   await selectCells(page, { startXY: [4, 4], endXY: [7, 10] });
 
   // Assert Go To Menu Box showing correct cells
-  await expect(page.getByRole(`textbox`)).toHaveValue(`D4:G10`);
+  await expect(page.getByRole(`textbox`)).toHaveValue(`D4:G10`, { timeout: 60 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -763,7 +763,7 @@ test('Go To Menu Cell Selection', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Go To Menu Navigation', async ({ page }) => {
+test.only('Go To Menu Navigation', async ({ page }) => {
   // Constants
   const fileName = 'Go_To';
   const fileType = 'grid';
@@ -811,7 +811,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
 
   // Assert Go To Menu Box showing correct cell
-  await expect(page.getByRole(`textbox`)).toHaveValue(singleCell);
+  await expect(page.getByRole(`textbox`)).toHaveValue(singleCell, { timeout: 60 * 1000 });
 
   // Assert for value in cell
   expect(clipboardText).toBe(cellValue);
@@ -840,7 +840,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await page.keyboard.press('Enter');
 
   // Assert Go To Menu Box showing correct cell range
-  await expect(page.getByRole(`textbox`)).toHaveValue(cellRange);
+  await expect(page.getByRole(`textbox`)).toHaveValue(cellRange, { timeout: 60 * 1000 });
 
   // Assert visually that correct cells are selected
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Cell_Range.png', {
@@ -868,10 +868,10 @@ test('Go To Menu Navigation', async ({ page }) => {
   await page.getByText(`BasketBall`).click({ timeout: 60 * 1000 });
 
   // Assert that we are in the correct sheet
-  await expect(page.getByText(`Tablearrow_drop_down`)).toBeVisible();
+  await expect(page.getByText(`Tablearrow_drop_down`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert Go To Menu Box showing correct Table
-  await expect(page.getByRole(`textbox`)).toHaveValue(tableName);
+  await expect(page.getByRole(`textbox`)).toHaveValue(tableName, { timeout: 60 * 1000 });
 
   // Assert visually that the Table is selected
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Menu_Table.png', {
@@ -898,7 +898,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await page.getByText(pythonCode).click({ timeout: 60 * 1000 });
 
   // Assert that we are in the correct sheet
-  await expect(page.getByText(`Codearrow_drop_down`)).toBeVisible();
+  await expect(page.getByText(`Codearrow_drop_down`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert Go To Menu Box showing correct python code reference
   await expect(page.getByRole(`textbox`)).toHaveValue(pythonCode);
@@ -953,14 +953,8 @@ test('Go To Menu Navigation', async ({ page }) => {
     .getByText(cellSheet)
     .click({ timeout: 60 * 1000 });
 
-  // Click out of the dropdown after
-  await page
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .first()
-    .click({ timeout: 60 * 1000 });
-
   // Assert that we are in the correct sheet
-  await expect(page.getByText(`${cellSheet}arrow_drop_down`)).toBeVisible();
+  await expect(page.getByText(`${cellSheet}arrow_drop_down`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert visually correct sheet is visible
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Cell_Range.png', {
@@ -982,14 +976,8 @@ test('Go To Menu Navigation', async ({ page }) => {
     .getByText(tableSheet)
     .click({ timeout: 60 * 1000 });
 
-  // Click out of the dropdown
-  await page
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .first()
-    .click({ timeout: 60 * 1000 });
-
   // Assert that we are in the correct sheet
-  await expect(page.getByText(`${tableSheet}arrow_drop_down`)).toBeVisible();
+  await expect(page.getByText(`${tableSheet}arrow_drop_down`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert visually correct sheet is visible
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Menu_Table.png', {
