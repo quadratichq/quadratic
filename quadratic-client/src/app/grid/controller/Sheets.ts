@@ -167,6 +167,7 @@ export class Sheets {
   // updates the SheetBar UI
   private updateSheetBar = () => {
     this.sort();
+
     // this avoids React complaints about rendering one component while another one is rendering
     setTimeout(() => events.emit('changeSheet', this.current), 0);
   };
@@ -217,7 +218,6 @@ export class Sheets {
         multiplayerCursor: true,
         boxCells: true,
       });
-
       content.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();

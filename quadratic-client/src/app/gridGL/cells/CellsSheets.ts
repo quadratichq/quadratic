@@ -59,13 +59,10 @@ export class CellsSheets extends Container<CellsSheet> {
   };
 
   show(id: string): void {
-    const current = this.current;
     this.children.forEach((child) => {
       if (child.sheetId === id) {
-        if (!current || current.sheetId !== child.sheetId) {
-          child.show(pixiApp.viewport.getVisibleBounds());
-          content.changeHoverTableHeaders(child.tables.hoverTableHeaders);
-        }
+        child.show(pixiApp.viewport.getVisibleBounds());
+        content.changeHoverTableHeaders(child.tables.hoverTableHeaders);
       } else {
         child.hide();
       }
