@@ -298,8 +298,6 @@ jobs:
         service:
           - name: client
             url: "https://qa.quadratic-preview.com/version.json"
-          # - name: api-heroku
-          #   url: "https://quadratic-staging.herokuapp.com/health"
           - name: api-aws
             url: "https://api-pr-qa.quadratic-preview.com/health"
           - name: multiplayer

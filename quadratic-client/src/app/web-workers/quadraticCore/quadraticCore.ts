@@ -249,6 +249,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientDataTablesCache') {
       events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
+    } else if (e.data.type === 'coreClientStartupTimer') {
+      events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
+      return;
     }
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core

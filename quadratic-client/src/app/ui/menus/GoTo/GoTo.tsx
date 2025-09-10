@@ -97,6 +97,14 @@ export const GoTo = memo(() => {
     [closeMenu]
   );
 
+  const selectSheet = useCallback(
+    (sheetId: string) => {
+      setCurrentSheet(sheetId);
+      closeMenu();
+    },
+    [closeMenu]
+  );
+
   const tablesFiltered = useMemo(
     () =>
       tableInfo
@@ -205,7 +213,7 @@ export const GoTo = memo(() => {
               <CommandItemGoto
                 key={sheet.id}
                 value={sheet.id}
-                onSelect={() => setCurrentSheet(sheet.id)}
+                onSelect={() => selectSheet(sheet.id)}
                 name={sheet.name}
               />
             ))}
