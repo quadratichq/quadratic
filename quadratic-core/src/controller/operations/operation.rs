@@ -45,6 +45,16 @@ pub enum Operation {
         data_table: Option<DataTable>,
         index: usize,
     },
+    AddDataTableWithoutCellValue {
+        sheet_pos: SheetPos,
+        data_table: DataTable,
+
+        // Used to insert a data table at a specific index (usually after an
+        // undo action)
+        #[serde(default)]
+        index: Option<usize>,
+    },
+    /// **Deprecated** (Sept 2025) and replaced with AddDataTableWithoutCellValue
     /// Adds or replaces a data table at a specific SheetPos.
     AddDataTable {
         sheet_pos: SheetPos,

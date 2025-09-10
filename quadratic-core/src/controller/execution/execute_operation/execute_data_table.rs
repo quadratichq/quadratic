@@ -135,7 +135,6 @@ impl GridController {
         }
     }
 
-    /// Adds or replaces a data table at a specific position.
     pub(super) fn execute_add_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -143,8 +142,34 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::AddDataTable {
             sheet_pos,
+            data_table,
+            index,
+            // we ignore the cell_value because we no longer need it
+            ..
+        } = op
+        {
+            self.execute_add_data_table_without_cell_value(
+                transaction,
+                Operation::AddDataTableWithoutCellValue {
+                    sheet_pos,
+                    data_table,
+                    index,
+                },
+            )
+        } else {
+            bail!("Expected Operation::AddDataTable in execute_add_data_table");
+        }
+    }
+
+    /// Adds or replaces a data table at a specific position.
+    pub(super) fn execute_add_data_table_without_cell_value(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::AddDataTableWithoutCellValue {
+            sheet_pos,
             mut data_table,
-            cell_value,
             index,
         } = op
         {
@@ -164,11 +189,6 @@ impl GridController {
 
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
-
-            // update the CellValue
-            let old_value = sheet
-                .columns
-                .set_value(&data_table_pos, cell_value.to_owned());
 
             // insert the data table into the sheet
             let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
@@ -190,23 +210,16 @@ impl GridController {
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
 
-            let forward_operations = vec![Operation::AddDataTable {
+            let forward_operations = vec![Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value,
                 index,
             }];
-            let reverse_operations = vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
-                },
-                Operation::SetDataTable {
-                    sheet_pos,
-                    data_table: old_data_table,
-                    index: old_index,
-                },
-            ];
+            let reverse_operations = vec![Operation::SetDataTable {
+                sheet_pos,
+                data_table: old_data_table,
+                index: old_index,
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -218,7 +231,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::AddDataTable in execute_add_data_table");
+        bail!("Expected Operation::AddDataTable in execute_add_data_table_without_cell_value");
     }
 
     pub(super) fn execute_delete_data_table(
@@ -785,28 +798,29 @@ impl GridController {
             let mut old_show_columns = None;
 
             if let Some(name) = name.as_mut()
-                && old_name != *name {
-                    // sanitize table name
-                    let table_name = sanitize_table_name(name.to_string());
+                && old_name != *name
+            {
+                // sanitize table name
+                let table_name = sanitize_table_name(name.to_string());
 
-                    *name = unique_data_table_name(
-                        &table_name,
-                        false,
-                        Some(data_table_sheet_pos),
-                        &self.a1_context,
-                    );
+                *name = unique_data_table_name(
+                    &table_name,
+                    false,
+                    Some(data_table_sheet_pos),
+                    &self.a1_context,
+                );
 
-                    self.grid.update_data_table_name(
-                        data_table_sheet_pos,
-                        &old_name,
-                        name,
-                        &self.a1_context,
-                        false,
-                    )?;
+                self.grid.update_data_table_name(
+                    data_table_sheet_pos,
+                    &old_name,
+                    name,
+                    &self.a1_context,
+                    false,
+                )?;
 
-                    // mark code cells dirty to update meta data
-                    transaction.add_code_cell(sheet_id, data_table_pos);
-                }
+                // mark code cells dirty to update meta data
+                transaction.add_code_cell(sheet_id, data_table_pos);
+            }
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.as_mut(), old_columns.as_ref()) {
@@ -870,11 +884,12 @@ impl GridController {
 
                     // if the header is first row, update the column names in the data table value
                     if dt.header_is_first_row
-                        && let Some(columns) = columns.as_ref() {
-                            for (index, column) in columns.iter().enumerate() {
-                                dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
-                            }
+                        && let Some(columns) = columns.as_ref()
+                    {
+                        for (index, column) in columns.iter().enumerate() {
+                            dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
                         }
+                    }
 
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
@@ -1144,13 +1159,15 @@ impl GridController {
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    if dt.header_is_first_row && column_header.is_none()
-                        && let Some(values) = &values {
-                            let first_value = values[0].to_owned();
-                            if !matches!(first_value, CellValue::Blank) {
-                                column_header = Some(first_value.to_string());
-                            }
+                    if dt.header_is_first_row
+                        && column_header.is_none()
+                        && let Some(values) = &values
+                    {
+                        let first_value = values[0].to_owned();
+                        if !matches!(first_value, CellValue::Blank) {
+                            column_header = Some(first_value.to_string());
                         }
+                    }
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
@@ -1301,15 +1318,11 @@ impl GridController {
 
                     if show_columns
                         && let Some(column_header) = &old_column_header
-                            && let (Ok(value_x), Ok(value_y)) =
-                                (u32::try_from(display_index - 1), u32::try_from(0))
-                            {
-                                sheet_cell_values.set(
-                                    value_x,
-                                    value_y,
-                                    column_header.to_owned().into(),
-                                );
-                            }
+                        && let (Ok(value_x), Ok(value_y)) =
+                            (u32::try_from(display_index - 1), u32::try_from(0))
+                    {
+                        sheet_cell_values.set(value_x, value_y, column_header.to_owned().into());
+                    }
 
                     // collect formats to flatten
                     let formats_rect = Rect::from_numbers(

@@ -69,7 +69,11 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
-
+                Operation::AddDataTableWithoutCellValue { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_add_data_table_without_cell_value(transaction, op),
+                    )
+                }
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),

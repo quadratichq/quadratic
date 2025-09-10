@@ -1,13 +1,17 @@
 use std::collections::HashSet;
 
+use chrono::DateTime;
+
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, SheetPos, Value,
     a1::A1Selection,
-    cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    grid::{
+        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
+        unique_data_table_name,
+    },
 };
 
 impl GridController {
@@ -25,26 +29,67 @@ impl GridController {
             _ => code,
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
+        let existing_data_table = self.data_table_at(sheet_pos);
+
+        let name = if let Some(dt) = existing_data_table {
+            dt.name.clone()
+        } else {
+            let language_str = match language {
+                CodeCellLanguage::Formula => "Formula".to_string(),
+                CodeCellLanguage::Python => "Python".to_string(),
+                CodeCellLanguage::Javascript => "Javascript".to_string(),
+                CodeCellLanguage::Import => "Table".to_string(),
+                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
+            };
+            unique_data_table_name(
+                &code_cell_name.unwrap_or(language_str),
+                false,
+                Some(sheet_pos),
+                &self.a1_context,
+            )
+            .into()
+        };
+
+        let ops = vec![
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
+                data_table: DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        std_out: None,
+                        std_err: None,
+                        cells_accessed: CellsAccessed::default(),
+                        error: None,
+                        return_type: None,
+                        line_number: None,
+                        output_type: None,
+                    }),
+                    name,
+                    header_is_first_row: false,
+                    show_name: None,
+                    show_columns: None,
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single(CellValue::Blank),
+                    spill_value: false,
+                    spill_data_table: false,
+
+                    // todo!!!
+                    last_modified: DateTime::from_timestamp(0, 0).unwrap(),
+
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                },
+                index: None,
             },
             Operation::ComputeCode { sheet_pos },
         ];
-
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableOptionMeta {
-                    sheet_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
-                    show_name: None,
-                    show_columns: None,
-                });
-            }
 
         ops
     }
@@ -168,7 +213,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Pos, constants::SHEET_NAME};
+    use crate::{Pos, cell_values::CellValues, constants::SHEET_NAME, grid::CodeCellValue};
 
     #[test]
     fn test_set_code_cell_operations() {

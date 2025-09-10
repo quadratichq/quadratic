@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -162,12 +162,16 @@ impl GridController {
             };
             let pos: Pos = sheet_pos.into();
 
-            // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.cell_value(pos) {
-                Some(CellValue::Code(value)) => (value.language, value.code),
-
-                // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
-                _ => return,
+            let (language, code) = if let Some(dt) = sheet.data_table_at(&pos) {
+                if let Some(code) = dt.code_run().map(|cr| cr.code.clone()) {
+                    (dt.get_language(), code)
+                } else {
+                    // there is no code in the code run
+                    return;
+                }
+            } else {
+                // code no longer exists at that position
+                return;
             };
 
             match language {
