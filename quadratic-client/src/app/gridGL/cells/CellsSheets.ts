@@ -59,11 +59,12 @@ export class CellsSheets extends Container<CellsSheet> {
   };
 
   show(id: string): void {
+    const current = this.current;
     this.children.forEach((child) => {
       if (child.sheetId === id) {
-        if (this.current && this.current?.sheetId !== child.sheetId) {
+        if (!current || current.sheetId !== child.sheetId) {
           child.show(pixiApp.viewport.getVisibleBounds());
-          content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+          content.changeHoverTableHeaders(child.tables.hoverTableHeaders);
         }
       } else {
         child.hide();
@@ -131,13 +132,15 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   getCellsContentMaxWidth(column: number): Promise<number> {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
-    return this.current.cellsLabels.getCellsContentMaxWidth(column);
+    const current = this.current;
+    if (!current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
+    return current.cellsLabels.getCellsContentMaxWidth(column);
   }
 
   getCellsContentMaxHeight(row: number): Promise<number> {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
-    return this.current.cellsLabels.getCellsContentMaxHeight(row);
+    const current = this.current;
+    if (!current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
+    return current.cellsLabels.getCellsContentMaxHeight(row);
   }
 
   adjustOffsetsBorders(sheetId: string): void {

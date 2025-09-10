@@ -28,8 +28,6 @@ export class CellsImage extends Container {
 
   dataUrl: string | undefined;
 
-  dirty = false;
-
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
@@ -147,10 +145,6 @@ export class CellsImage extends Container {
       IMAGE_BORDER_WIDTH
     );
 
-    if (this.cellsSheet.sheetId === sheets.current) {
-      this.dirty = true;
-    }
-
     const end = sheets.sheet.getColumnRowFromScreen(tableBounds.right, tableBounds.bottom);
     this.sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, end.column - this.pos.x, end.row - this.pos.y);
     this.fitImage();
@@ -173,9 +167,5 @@ export class CellsImage extends Container {
   isImageCell(x: number, y: number): boolean {
     const bounds = this.table.tableBounds;
     return x >= bounds.left && x < bounds.right && y >= bounds.top && y < bounds.bottom;
-  }
-
-  update() {
-    this.dirty = false;
   }
 }

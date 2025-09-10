@@ -86,10 +86,10 @@ export class Content extends Container {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
   }
 
-  destroy() {
+  destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     super.destroy();
-  }
+  };
 
   private setAccentColor = () => {
     // Pull the value from the current value as defined in CSS
@@ -149,12 +149,12 @@ export class Content extends Container {
     this.copying = false;
   };
 
-  changeHoverTableHeaders(hoverTableHeaders: Container) {
+  changeHoverTableHeaders = (hoverTableHeaders: Container) => {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
-  }
+  };
 
-  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
+  adjustHeadings = (options: { sheetId: string; delta: number; row: number | null; column: number | null }): void => {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     this.cellsSheets.adjustCellsImages(options.sheetId);
@@ -168,9 +168,9 @@ export class Content extends Container {
         multiplayerCursor: true,
       });
     }
-  }
+  };
 
-  update(viewportChanged: boolean): boolean {
+  update = (viewportChanged: boolean): boolean => {
     const contentDirty =
       this.gridLines.dirty ||
       this.headings.dirty ||
@@ -237,7 +237,7 @@ export class Content extends Container {
     debugTimeCheck('[Update] cellImages');
 
     return contentDirty;
-  }
+  };
 }
 
 export const content = new Content();

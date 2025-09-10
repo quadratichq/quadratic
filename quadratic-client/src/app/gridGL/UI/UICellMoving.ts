@@ -21,8 +21,8 @@ export class UICellMoving extends Container {
   }
 
   destroy() {
-    super.destroy();
     events.off('setDirty', this.setDirty);
+    super.destroy();
   }
 
   private setDirty = (dirty: DirtyObject) => {

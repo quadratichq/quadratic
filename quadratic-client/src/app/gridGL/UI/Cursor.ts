@@ -50,6 +50,11 @@ export class Cursor extends Container {
     events.on('setDirty', this.setDirty);
   }
 
+  destroy() {
+    events.off('setDirty', this.setDirty);
+    super.destroy();
+  }
+
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.cursor) {
       this.dirty = true;
