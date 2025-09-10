@@ -24,43 +24,37 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Point, type Rectangle } from 'pixi.js';
+import { Container, Graphics, type Rectangle } from 'pixi.js';
 
 export class Content extends Container {
   cellsSheets = new CellsSheets();
   gridLines = new GridLines();
-  background = new Background();
+  private background = new Background();
   uiCursor = new Cursor();
-  multiplayerCursor = new UIMultiPlayerCursor();
+  private multiplayerCursor = new UIMultiPlayerCursor();
   cellHighlights = new CellHighlights();
 
   // this is used to display content over the headings (table name and columns
   // when off the screen)
-  hoverTableHeaders = new Container();
+  private hoverTableHeaders = new Container();
 
   // used to draw selection (via Cursor.ts) for hoverTableHeaders content
   hoverTableColumnsSelection = new Graphics();
 
-  cellMoving = new UICellMoving();
+  private cellMoving = new UICellMoving();
   headings = new GridHeadings();
   boxCells = new BoxCells();
-  viewportContents = new Container();
-  htmlPlaceholders = new HtmlPlaceholders();
-  imagePlaceholders = new Container();
+  private htmlPlaceholders = new HtmlPlaceholders();
+  private imagePlaceholders = new Container();
   cellImages = new UICellImages();
   validations = new UIValidations();
   copy = new UICopy();
-  singleCellOutlines = new UISingleCellOutlines();
+  private singleCellOutlines = new UISingleCellOutlines();
 
-  debug = new Graphics();
+  private debug = new Graphics();
 
   copying = false;
   accentColor = colors.cursorCell;
-
-  // keeps track of the last viewport position and scale that was used to update
-  // the content (some elements update differently based on the viewport)
-  private lastViewportPosition = new Point(-1, -1);
-  private lastViewportScale = 0;
 
   constructor() {
     super();
@@ -91,10 +85,10 @@ export class Content extends Container {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
   }
 
-  destroy() {
+  destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     super.destroy();
-  }
+  };
 
   private setAccentColor = () => {
     // Pull the value from the current value as defined in CSS
@@ -154,12 +148,12 @@ export class Content extends Container {
     this.copying = false;
   };
 
-  changeHoverTableHeaders(hoverTableHeaders: Container) {
+  changeHoverTableHeaders = (hoverTableHeaders: Container) => {
     this.hoverTableHeaders.removeChildren();
     this.hoverTableHeaders.addChild(hoverTableHeaders);
-  }
+  };
 
-  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
+  adjustHeadings = (options: { sheetId: string; delta: number; row: number | null; column: number | null }): void => {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     this.cellsSheets.adjustCellsImages(options.sheetId);
@@ -173,16 +167,9 @@ export class Content extends Container {
         multiplayerCursor: true,
       });
     }
-  }
+  };
 
-  update(viewportPosition: Point, scale: number): boolean {
-    const viewportChanged =
-      this.lastViewportScale !== scale ||
-      viewportPosition.x !== this.lastViewportPosition.x ||
-      viewportPosition.y !== this.lastViewportPosition.y;
-    this.lastViewportScale = scale;
-    this.lastViewportPosition = viewportPosition.clone();
-
+  update = (viewportChanged: boolean): boolean => {
     const contentDirty =
       this.gridLines.dirty ||
       this.headings.dirty ||
@@ -249,7 +236,7 @@ export class Content extends Container {
     debugTimeCheck('[Update] cellImages');
 
     return contentDirty;
-  }
+  };
 }
 
 export const content = new Content();

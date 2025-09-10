@@ -28,7 +28,6 @@ export class UISingleCellOutlines extends Graphics {
     events.off('resizeHeadingColumn', this.setDirty);
     events.off('resizeHeadingRow', this.setDirty);
     events.off('dataTablesCache', this.setDirty);
-
     super.destroy();
   }
 

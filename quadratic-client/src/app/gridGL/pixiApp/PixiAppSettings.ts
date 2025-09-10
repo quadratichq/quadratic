@@ -273,7 +273,6 @@ export class PixiAppSettings {
   }
 
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'], closeGlobalSnackbar: () => void) {
-    debugger;
     this.addGlobalSnackbar = addGlobalSnackbar;
     this.closeCurrentSnackbar = closeGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {

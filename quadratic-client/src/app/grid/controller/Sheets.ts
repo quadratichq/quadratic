@@ -131,7 +131,7 @@ export class Sheets {
     if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
-    events.emit('setDirty', { headings: true, gridLines: true, cursor: true, multiplayerCursor: true });
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -142,7 +142,7 @@ export class Sheets {
     offsets.forEach(({ column, row, size }) => {
       sheet.updateSheetOffsets(column, row, size);
     });
-    events.emit('setDirty', { headings: true, gridLines: true, cursor: true, multiplayerCursor: true });
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
     events.emit('sheetOffsetsUpdated', sheetId);
   };
 
@@ -165,11 +165,11 @@ export class Sheets {
   };
 
   // updates the SheetBar UI
-  private updateSheetBar() {
+  private updateSheetBar = () => {
     this.sort();
     // this avoids React complaints about rendering one component while another one is rendering
     setTimeout(() => events.emit('changeSheet', this.current), 0);
-  }
+  };
 
   private sort(): void {
     this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
@@ -211,8 +211,8 @@ export class Sheets {
       this._current = value;
       pixiApp.viewport.dirty = true;
       events.emit('setDirty', {
-        headings: true,
         gridLines: true,
+        headings: true,
         cursor: true,
         multiplayerCursor: true,
         boxCells: true,

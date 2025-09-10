@@ -1,11 +1,6 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
-import {
-  debugRendererLight,
-  debugShowChildren,
-  debugTimeCheck,
-  debugTimeReset,
-} from '@/app/gridGL/helpers/debugPerformance';
+import { debugRendererLight, debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
 import { FPS } from '@/app/gridGL/helpers/Fps';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -77,7 +72,7 @@ export class Update {
 
     debugTimeCheck('[Update] scrollbars');
 
-    const contentDirty = content.update(pixiApp.viewport.position, pixiApp.viewport.scaled);
+    const contentDirty = content.update(viewportChanged);
 
     if (pixiApp.viewport.dirty || contentDirty) {
       debugTimeReset();
@@ -85,7 +80,6 @@ export class Update {
       pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
-      debugShowChildren(pixiApp.stage, 'stage');
       thumbnail.rendererBusy();
       events.emit('viewportReadyAfterUpdate');
     } else {

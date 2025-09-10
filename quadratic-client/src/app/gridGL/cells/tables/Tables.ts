@@ -561,11 +561,9 @@ export class Tables extends Container<Table> {
 
   /// Returns the table that the cell intersects (excludes single cell tables).
   getTableIntersects = (cell: JsCoordinate): Table | undefined => {
-    if (this.sheet.dataTablesCache) {
-      const tablePos = this.sheet.dataTablesCache.getTableInPos(cell.x, cell.y);
-      if (tablePos) {
-        return this.getTable(tablePos.x, tablePos.y);
-      }
+    const tablePos = this.sheet.dataTablesCache.getTableInPos(cell.x, cell.y);
+    if (tablePos) {
+      return this.getTable(tablePos.x, tablePos.y);
     }
   };
 

@@ -106,6 +106,7 @@ export class Viewport extends PixiViewport {
     this.off('pinch-start', this.handleWaitForZoomEnd);
     this.off('pinch-end', this.handleZoomEnd);
     this.off('snap-end', this.handleSnapEnd);
+    this.off('mouse-edge-move', this.handleMouseEdgeMove);
   }
 
   loadViewport() {

@@ -54,8 +54,6 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
-  // this needs to be a child of viewportContents so it it is placed over the
-  // grid lines
   gridHeadingsRows: GridHeadingRows;
 
   dirty = true;
@@ -71,8 +69,8 @@ export class GridHeadings extends Container {
   }
 
   destroy() {
-    super.destroy();
     events.off('setDirty', this.setDirty);
+    super.destroy();
   }
 
   private setDirty = (dirty: DirtyObject) => {
