@@ -37,7 +37,7 @@ export const generateCodeCellSummary = async (
         content: [
           createTextContent(`Analyze this ${language} code and provide a response in this exact format:
 
-[One concise sentence describing what the code does${cellLocationText}]
+[One concise sentence describing what the code does${cellLocationText} - LIMIT THIS FIRST LINE TO EXACTLY 12 WORDS OR FEWER]
 
 1. [First key step or operation]
 2. [Second key step or operation]
@@ -48,7 +48,7 @@ Code to analyze:
 ${codeString}
 \`\`\`
 
-Start with the summary sentence${cellLocationText ? ` (include the cell location ${cellRef} in the sentence)` : ''}, then provide numbered steps. Be concise but informative.`),
+Start with the summary sentence${cellLocationText ? ` (include the cell location ${cellRef} in the sentence)` : ''}, then provide numbered steps. Be concise but informative. IMPORTANT: The first line summary sentence must be 12 words or fewer.`),
         ],
         contextType: 'userPrompt' as const,
       },

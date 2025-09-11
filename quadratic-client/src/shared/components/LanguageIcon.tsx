@@ -1,5 +1,5 @@
 import type { CodeCellIds } from '@/app/helpers/codeCellLanguage';
-import { GenericLanguageIcon } from '@/shared/components/Icons';
+import { GenericLanguageIcon, TableIcon } from '@/shared/components/Icons';
 
 // Language icons originally designed at 20x20 — Figma file:
 // https://www.figma.com/file/HdhrQ6vUZH4quMl7WFX6Vd/Custom-Icons?node-id=0%3A1&t=t5GeoagkcP0W7hK2-1
@@ -23,6 +23,8 @@ export function LanguageIcon({
     <Formula className={className} />
   ) : language && 'javascript'.startsWith(language) ? (
     <JavaScript className={className} />
+  ) : language && 'import'.startsWith(language) ? (
+    <TableIcon className={className} />
   ) : language && 'postgres'.startsWith(language) ? (
     <Postgres />
   ) : language && 'mysql'.startsWith(language) ? (

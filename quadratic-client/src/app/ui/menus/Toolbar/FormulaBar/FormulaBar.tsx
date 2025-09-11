@@ -2,9 +2,11 @@ import { aiCodeCellSummaryStore } from '@/app/ai/utils/aiCodeCellSummaryStore';
 import { formulaBarExpandedAtom } from '@/app/atoms/formulaBarAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -21,6 +23,11 @@ export const FormulaBar = memo(() => {
     explanation: string;
     fullText: string;
   } | null>(null);
+  const [cellInfo, setCellInfo] = useState<{
+    language?: string;
+    cellRef: string;
+    showIcon: boolean;
+  }>({ cellRef: '', showIcon: false });
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const adjustHeight = useCallback(() => {
@@ -52,6 +59,10 @@ export const FormulaBar = memo(() => {
   }, [isExpanded, isEditing]);
 
   const toggleExpanded = () => {
+    // Don't allow collapsing while in edit mode
+    if (isEditing && isExpanded) {
+      return;
+    }
     setIsExpanded(!isExpanded);
   };
 
@@ -74,10 +85,8 @@ export const FormulaBar = memo(() => {
   const cancelEditing = () => {
     setEditValue('');
     setIsEditing(false);
-    // Optionally collapse if it was expanded only for editing (not for AI summary)
-    if (!aiSummaryData) {
-      setIsExpanded(false);
-    }
+    // Always collapse when cancelling edit mode
+    setIsExpanded(false);
   };
 
   const submitEdit = async () => {
@@ -148,6 +157,7 @@ ${editValue}`;
           if (parsedSummary.summary && parsedSummary.explanation) {
             setAiSummaryData(parsedSummary);
             setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
+            setCellInfo({ cellRef: xyToA1(x, y), showIcon: false });
             return;
           }
         } catch (e) {
@@ -157,6 +167,7 @@ ${editValue}`;
         // Legacy format - just display as is
         setAiSummaryData(null);
         setDisplayValue(aiSummary);
+        setCellInfo({ cellRef: xyToA1(x, y), showIcon: false });
         return;
       }
 
@@ -171,15 +182,25 @@ ${editValue}`;
       const codeCell = await quadraticCore.getCodeCell(sheets.current, x, y);
 
       if (codeCell) {
+        const language = getConnectionKind(codeCell.language);
+
         if (codeCell.language === 'Formula') {
           // Show formula with = prefix
           setDisplayValue(`=${codeCell.code_string}`);
-        } else if (codeCell.language === 'Python') {
-          // Show Python code cell name/reference
-          setDisplayValue(`Python: ${cellRef}`);
+          setCellInfo({
+            language: 'Formula',
+            cellRef,
+            showIcon: true,
+          });
         } else {
-          // Show other code cell types
-          setDisplayValue(`${codeCell.language}: ${cellRef}`);
+          // For code cells, show just the cell reference in the textarea
+          // The language and icon will be shown separately
+          setDisplayValue(cellRef);
+          setCellInfo({
+            language: language || (typeof codeCell.language === 'string' ? codeCell.language : 'Connection'),
+            cellRef,
+            showIcon: true,
+          });
         }
       } else {
         // Check if cell has a value
@@ -200,15 +221,19 @@ ${editValue}`;
           }
 
           setDisplayValue(displayVal);
+          setCellInfo({ cellRef, showIcon: false });
         } else {
           // Empty cell - show just the cell reference
           setDisplayValue(cellRef);
+          setCellInfo({ cellRef, showIcon: false });
         }
       }
     } catch (error) {
       console.error('Error updating formula bar:', error);
       // Fallback to just showing cell reference
-      setDisplayValue(sheets.sheet.cursor.toA1String());
+      const fallbackRef = sheets.sheet.cursor.toA1String();
+      setDisplayValue(fallbackRef);
+      setCellInfo({ cellRef: fallbackRef, showIcon: false });
     }
   }, [isExpanded]);
 
@@ -253,11 +278,23 @@ ${editValue}`;
   return (
     <div className="relative flex w-full flex-grow">
       <div className="flex w-full items-start justify-center px-4 py-1">
+        {/* Language icon and cell name - shown on the left for code cells */}
+        {cellInfo.showIcon && (
+          <div className="flex flex-shrink-0 items-center gap-2 px-2 py-2">
+            <LanguageIcon language={cellInfo.language} className="h-4 w-4" />
+            <span className="text-sm font-medium text-muted-foreground">
+              {cellInfo.language === 'Formula'
+                ? 'Formula'
+                : cellInfo.language === 'Import'
+                  ? 'Table'
+                  : cellInfo.language}
+            </span>
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
-          className={`min-h-8 w-full resize-none border-none bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 ${
-            isEditing ? 'pr-32' : aiSummaryData ? 'pr-20' : 'pr-16'
-          }`}
+          className="min-h-8 w-full resize-none border-none bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0"
           value={isEditing ? editValue : displayValue}
           rows={1}
           readOnly={!isEditing}
@@ -284,55 +321,56 @@ ${editValue}`;
           }}
         />
 
-        {/* Action buttons */}
-        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-          {/* Edit/Submit/Cancel buttons - only show for AI summary cells */}
-          {aiSummaryData && (
-            <>
-              {!isEditing ? (
+        {/* Action buttons - positioned in their own container to prevent text overlap */}
+        {aiSummaryData && (
+          <div className="flex flex-shrink-0 items-center gap-1 border-l border-border px-2 py-1">
+            {/* Edit/Submit/Cancel buttons - only show for AI summary cells */}
+            {!isEditing ? (
+              <button
+                onClick={startEditing}
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                title="Edit"
+              >
+                <span>Edit</span>
+                <Pencil1Icon className="h-3 w-3" />
+              </button>
+            ) : (
+              <>
                 <button
-                  onClick={startEditing}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-700"
-                  title="Edit"
+                  onClick={submitEdit}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
+                  title="Submit"
                 >
-                  <span>Edit</span>
-                  <Pencil1Icon className="h-3 w-3" />
+                  <span>Submit</span>
+                  <CheckIcon className="h-3 w-3" />
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={submitEdit}
-                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
-                    title="Submit"
-                  >
-                    <span>Submit</span>
-                    <CheckIcon className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={cancelEditing}
-                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
-                    title="Cancel"
-                  >
-                    <span>Cancel</span>
-                    <Cross2Icon className="h-3 w-3" />
-                  </button>
-                </>
-              )}
-            </>
-          )}
+                <button
+                  onClick={cancelEditing}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                  title="Cancel"
+                >
+                  <span>Cancel</span>
+                  <Cross2Icon className="h-3 w-3" />
+                </button>
+              </>
+            )}
 
-          {/* Expand/Collapse button for AI summaries */}
-          {aiSummaryData && (
+            {/* Expand/Collapse button for AI summaries */}
             <button
               onClick={toggleExpanded}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
-              title={isExpanded ? 'Collapse' : 'Explain'}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+                isEditing && isExpanded
+                  ? 'cursor-not-allowed text-gray-400'
+                  : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+              title={isEditing && isExpanded ? 'Cannot collapse while editing' : isExpanded ? 'Collapse' : 'Explain'}
+              disabled={isEditing && isExpanded}
             >
               <span>{isExpanded ? 'Collapse' : 'Explain'}</span>
               {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
