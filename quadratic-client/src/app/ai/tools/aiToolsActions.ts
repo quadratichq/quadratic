@@ -9,8 +9,10 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { aiCodeCellSummaryStore } from '@/app/ai/utils/aiCodeCellSummaryStore';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
+import { generateCodeCellSummary } from '@/app/ai/utils/generateCodeCellSummary';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -247,6 +249,24 @@ export const aiToolsActions: AIToolActionsRecord = {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
+
+        // Generate and store AI summary for the code cell
+        try {
+          console.log(
+            '[aiToolsActions] Generating AI summary for code cell at:',
+            x,
+            y,
+            'language:',
+            code_cell_language
+          );
+          const summary = await generateCodeCellSummary(code_string, code_cell_language);
+          console.log('[aiToolsActions] Generated summary:', summary);
+          aiCodeCellSummaryStore.setSummary(sheetId, x, y, summary, code_string);
+          console.log('[aiToolsActions] Stored summary in store');
+        } catch (error) {
+          console.warn('[aiToolsActions] Failed to generate AI summary for code cell:', error);
+          // Don't fail the entire operation if summary generation fails
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
