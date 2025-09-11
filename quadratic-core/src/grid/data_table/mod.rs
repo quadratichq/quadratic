@@ -5,6 +5,7 @@
 //! performed yet).
 use crate::util::is_false;
 
+pub mod code_run;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
@@ -13,12 +14,11 @@ pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
-
 use std::num::NonZeroU32;
 
 use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
-use crate::grid::CodeRun;
+use crate::grid::code_run::CodeRun;
 use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
@@ -33,7 +33,7 @@ use sort::DataTableSort;
 use strum_macros::Display;
 
 use super::sheet::borders::Borders;
-use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
+use super::{Grid, SheetFormatting, SheetId};
 
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).

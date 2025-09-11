@@ -217,48 +217,47 @@ impl From<Clipboard> for JsClipboard {
                     }
 
                     if let Some(format) = format
-                        && !format.is_default() {
-                            if let Some(align) = format.align {
-                                style.push_str(align.as_css_string());
-                            }
-                            if let Some(vertical_align) = format.vertical_align {
-                                style.push_str(vertical_align.as_css_string());
-                            }
-                            if let Some(wrap) = format.wrap {
-                                style.push_str(wrap.as_css_string());
-                            }
-                            if format.bold == Some(true) {
-                                style.push_str("font-weight:bold;");
-                            }
-                            if format.italic == Some(true) {
-                                style.push_str("font-style:italic;");
-                            }
-                            if let Some(text_color) = format.text_color
-                                && let Ok(text_color) = Rgba::try_from(text_color.as_str()) {
-                                    style.push_str(
-                                        format!("color:{};", text_color.as_rgb_hex()).as_str(),
-                                    );
-                                }
-                            if let Some(fill_color) = format.fill_color
-                                && let Ok(fill_color) = Rgba::try_from(fill_color.as_str()) {
-                                    style.push_str(
-                                        format!("background-color:{};", fill_color.as_rgb_hex())
-                                            .as_str(),
-                                    );
-                                }
-                            if format.underline == Some(true) && format.strike_through != Some(true)
-                            {
-                                style.push_str("text-decoration:underline;");
-                            } else if format.underline != Some(true)
-                                && format.strike_through == Some(true)
-                            {
-                                style.push_str("text-decoration:line-through;");
-                            } else if format.underline == Some(true)
-                                && format.strike_through == Some(true)
-                            {
-                                style.push_str("text-decoration:underline line-through;");
-                            }
+                        && !format.is_default()
+                    {
+                        if let Some(align) = format.align {
+                            style.push_str(align.as_css_string());
                         }
+                        if let Some(vertical_align) = format.vertical_align {
+                            style.push_str(vertical_align.as_css_string());
+                        }
+                        if let Some(wrap) = format.wrap {
+                            style.push_str(wrap.as_css_string());
+                        }
+                        if format.bold == Some(true) {
+                            style.push_str("font-weight:bold;");
+                        }
+                        if format.italic == Some(true) {
+                            style.push_str("font-style:italic;");
+                        }
+                        if let Some(text_color) = format.text_color
+                            && let Ok(text_color) = Rgba::try_from(text_color.as_str())
+                        {
+                            style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
+                        }
+                        if let Some(fill_color) = format.fill_color
+                            && let Ok(fill_color) = Rgba::try_from(fill_color.as_str())
+                        {
+                            style.push_str(
+                                format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
+                            );
+                        }
+                        if format.underline == Some(true) && format.strike_through != Some(true) {
+                            style.push_str("text-decoration:underline;");
+                        } else if format.underline != Some(true)
+                            && format.strike_through == Some(true)
+                        {
+                            style.push_str("text-decoration:line-through;");
+                        } else if format.underline == Some(true)
+                            && format.strike_through == Some(true)
+                        {
+                            style.push_str("text-decoration:underline line-through;");
+                        }
+                    }
 
                     if !border.is_empty() {
                         if border.left.is_some() {
@@ -569,12 +568,13 @@ impl GridController {
                 );
 
                 if let Some(table_format_updates) = table_format_updates
-                    && !table_format_updates.is_default() {
-                        ops.push(Operation::DataTableFormats {
-                            sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                            formats: table_format_updates,
-                        });
-                    }
+                    && !table_format_updates.is_default()
+                {
+                    ops.push(Operation::DataTableFormats {
+                        sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                        formats: table_format_updates,
+                    });
+                }
             }
         }
 
@@ -779,7 +779,7 @@ impl GridController {
         // collect the plain text clipboard cells
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
-                let (cell_value, format_update) = self.string_to_cell_value(value, true);
+                let (cell_value, format_update, is_code) = self.string_to_cell_value(value, true);
                 let is_code = matches!(cell_value, CellValue::Code(_));
 
                 if cell_value != CellValue::Blank {
@@ -959,28 +959,27 @@ impl GridController {
                                 );
                             }
                             // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
-                            else if should_expand_data_table
-                                && let Some(sheet) = sheet {
-                                    let new_x = tile_start_x + cols_x as i64;
-                                    let new_y = tile_start_y + cols_y as i64;
-                                    let current_pos = Pos::new(new_x, new_y);
-                                    let within_data_table =
-                                        sheet.data_table_pos_that_contains(current_pos).is_some();
+                            else if should_expand_data_table && let Some(sheet) = sheet {
+                                let new_x = tile_start_x + cols_x as i64;
+                                let new_y = tile_start_y + cols_y as i64;
+                                let current_pos = Pos::new(new_x, new_y);
+                                let within_data_table =
+                                    sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                                    // we're not within a data table
-                                    // expand the data table to the right or bottom if the
-                                    // cell value is touching the right or bottom edge
-                                    if !within_data_table {
-                                        GridController::grow_data_table(
-                                            sheet,
-                                            &mut data_tables_rects,
-                                            &mut data_table_columns,
-                                            &mut data_table_rows,
-                                            SheetPos::new(sheet_id, new_x, new_y),
-                                            cell.to_display().is_empty(),
-                                        );
-                                    }
+                                // we're not within a data table
+                                // expand the data table to the right or bottom if the
+                                // cell value is touching the right or bottom edge
+                                if !within_data_table {
+                                    GridController::grow_data_table(
+                                        sheet,
+                                        &mut data_tables_rects,
+                                        &mut data_table_columns,
+                                        &mut data_table_rows,
+                                        SheetPos::new(sheet_id, new_x, new_y),
+                                        cell.to_display().is_empty(),
+                                    );
                                 }
+                            }
                         }
                     }
                 }

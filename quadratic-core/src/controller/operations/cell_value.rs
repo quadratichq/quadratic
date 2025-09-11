@@ -17,7 +17,7 @@ impl GridController {
         &self,
         value: &str,
         allow_code: bool,
-    ) -> (CellValue, FormatUpdate) {
+    ) -> (CellValue, FormatUpdate, bool) {
         CellValue::string_to_cell_value(value, allow_code, false)
     }
 

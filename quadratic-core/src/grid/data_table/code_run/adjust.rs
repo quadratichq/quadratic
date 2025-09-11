@@ -2,13 +2,13 @@ use std::ops::RangeInclusive;
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 
 use crate::a1::{A1Context, SheetCellRefRange};
-use crate::grid::CodeCellLanguage;
+use crate::grid::SheetId;
+use crate::grid::code_run::CodeCellLanguage;
 use crate::{RefError, SheetPos};
 
-use super::SheetId;
+use super::CodeRun;
 
 const Q_CELLS_A1_REGEX: &str = r#"\bq\.cells\s*\(\s*(['"`])(.*?)\1"#;
 
@@ -19,16 +19,20 @@ lazy_static! {
         Regex::new(r#"\{\{(.*?)\}\}"#).expect("Failed to compile HANDLEBARS_REGEX");
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellValue {
-    pub language: CodeCellLanguage,
-    pub code: String,
-}
-
-impl CodeCellValue {
+impl CodeRun {
     /// Constructs a code cell.
     pub fn new(language: CodeCellLanguage, code: String) -> Self {
-        Self { language, code }
+        Self {
+            language,
+            code,
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        }
     }
 
     /// Constructs a new Python code cell.
@@ -37,12 +41,19 @@ impl CodeCellValue {
         Self {
             language: CodeCellLanguage::Python,
             code,
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
         }
     }
 
     #[cfg(test)]
     pub fn new_connection(code: String) -> Self {
-        use crate::grid::ConnectionKind;
+        use super::ConnectionKind;
 
         Self {
             language: CodeCellLanguage::Connection {
@@ -50,6 +61,13 @@ impl CodeCellValue {
                 id: "123".to_string(),
             },
             code,
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
         }
     }
 

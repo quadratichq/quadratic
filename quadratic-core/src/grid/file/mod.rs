@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_11 as current;
+pub use v1_12 as current;
 
 mod migrate_code_cell_references;
 mod migrate_data_table_spills;
@@ -21,7 +21,8 @@ pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
 mod v1_10;
-pub mod v1_11;
+mod v1_11;
+pub mod v1_12;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -32,7 +33,7 @@ mod v1_8;
 mod v1_9;
 
 // Default values serialization and compression formats (current version)
-pub static CURRENT_VERSION: &str = "1.11";
+pub static CURRENT_VERSION: &str = "1.12";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
 
@@ -47,6 +48,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.12")]
+    V1_12 {
+        #[serde(flatten)]
+        grid: v1_12::GridSchema,
+    },
     #[serde(rename = "1.11")]
     V1_11 {
         #[serde(flatten)]
@@ -103,7 +109,10 @@ impl GridFile {
     // Upgrade to the next version
     fn upgrade_next(self) -> Result<GridFile> {
         let next = match self {
-            GridFile::V1_11 { grid } => GridFile::V1_11 { grid },
+            GridFile::V1_12 { grid } => GridFile::V1_12 { grid },
+            GridFile::V1_11 { grid } => GridFile::V1_12 {
+                grid: v1_11::upgrade(grid)?,
+            },
             GridFile::V1_10 { grid } => GridFile::V1_11 {
                 grid: v1_10::upgrade(grid)?,
             },
@@ -141,7 +150,7 @@ impl GridFile {
         let mut file = self;
 
         loop {
-            if let GridFile::V1_11 { grid } = file {
+            if let GridFile::V1_12 { grid } = file {
                 // Sanity check to ensure that the above GridFile is the current version.
                 // This is to break tests the the current version isn't updated.
                 if grid.version != Some(CURRENT_VERSION.into()) {
@@ -249,6 +258,15 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
 
             GridFile::V1_11 { grid: schema }.into_latest()
         }
+        "1.12" => {
+            let schema = decompress_and_deserialize::<v1_12::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+
+            GridFile::V1_12 { grid: schema }.into_latest()
+        }
         _ => Err(anyhow::anyhow!(
             "Unsupported file version: {}",
             file_version.version
@@ -309,6 +327,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_8 { .. }
             | GridFile::V1_9 { .. }
             | GridFile::V1_10 { .. }
+            | GridFile::V1_11 { .. }
     );
 
     let file = json.into_latest()?;

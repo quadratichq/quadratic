@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
 
-use super::cells_accessed::CellsAccessed;
+mod adjust;
+
+pub use adjust::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct CodeRun {

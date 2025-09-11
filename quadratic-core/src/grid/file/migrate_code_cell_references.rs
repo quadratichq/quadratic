@@ -4,10 +4,9 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    CellValue, Pos, Rect,
+    Pos, Rect,
     a1::CellRefRange,
-    formulas::convert_a1_to_rc,
-    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
+    grid::{CodeCellLanguage, CodeCellValue, Grid},
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -49,87 +48,88 @@ lazy_static! {
         Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
 }
 
-pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
-    let a1_context = grid.expensive_make_a1_context();
-    for (sheet_id, sheet) in grid.sheets.iter_mut() {
-        sheet.migration_recalculate_bounds(&a1_context);
-        sheet.columns.migration_regenerate_has_cell_value();
+pub fn replace_formula_a1_references_to_r1c1(_grid: &mut Grid) {
+    // let a1_context = grid.expensive_make_a1_context();
+    // for (sheet_id, sheet) in grid.sheets.iter_mut() {
+    //     sheet.migration_recalculate_bounds(&a1_context);
+    //     sheet.columns.migration_regenerate_has_cell_value();
 
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-            for x in bounds.x_range() {
-                if sheet.get_column(x).is_none() {
-                    continue;
-                }
-                for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
-                        && code_cell.language == CodeCellLanguage::Formula {
-                            code_cell.code = convert_a1_to_rc(
-                                &code_cell.code,
-                                &a1_context,
-                                crate::SheetPos::new(*sheet_id, x + 1, y),
-                            );
-                        }
-                }
-            }
-        }
-    }
+    //     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+    //         for x in bounds.x_range() {
+    //             if sheet.get_column(x).is_none() {
+    //                 continue;
+    //             }
+    //             for y in bounds.y_range() {
+    //                 if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
+    //                     && code_cell.language == CodeCellLanguage::Formula
+    //                 {
+    //                     code_cell.code = convert_a1_to_rc(
+    //                         &code_cell.code,
+    //                         &a1_context,
+    //                         crate::SheetPos::new(*sheet_id, x + 1, y),
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 pub fn migrate_code_cell_references(
-    grid: &mut Grid,
-    shifted_offsets: &HashMap<String, (i64, i64)>,
+    _grid: &mut Grid,
+    _shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    let a1_context = grid.expensive_make_a1_context();
-    for sheet in grid.sheets.values_mut() {
-        sheet.migration_recalculate_bounds(&a1_context);
-        sheet.columns.migration_regenerate_has_cell_value();
+    // let a1_context = grid.expensive_make_a1_context();
+    // for sheet in grid.sheets.values_mut() {
+    //     sheet.migration_recalculate_bounds(&a1_context);
+    //     sheet.columns.migration_regenerate_has_cell_value();
 
-        let sheet_name = sheet.name.clone();
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-            for x in bounds.x_range() {
-                if sheet.get_column(x).is_none() {
-                    continue;
-                }
-                for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
-                        match code_cell.language {
-                            CodeCellLanguage::Python => {
-                                migrate_python_c_cell_getcell(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_python_cells_getcells(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_python_rc_relcell(code_cell, (x, y).into());
-                                migrate_python_relcells(code_cell, (x, y).into());
-                                migrate_python_javascript_pos(code_cell);
-                            }
-                            CodeCellLanguage::Javascript => {
-                                migrate_javascript_c_cell_getcell(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_javascript_cells_getcells(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_javascript_rc_relcell(code_cell, (x, y).into());
-                                migrate_javascript_relcells(code_cell, (x, y).into());
-                                migrate_python_javascript_pos(code_cell);
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //     let sheet_name = sheet.name.clone();
+    //     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+    //         for x in bounds.x_range() {
+    //             if sheet.get_column(x).is_none() {
+    //                 continue;
+    //             }
+    //             for y in bounds.y_range() {
+    //                 if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
+    //                     match code_cell.language {
+    //                         CodeCellLanguage::Python => {
+    //                             migrate_python_c_cell_getcell(
+    //                                 code_cell,
+    //                                 &sheet_name,
+    //                                 shifted_offsets,
+    //                             );
+    //                             migrate_python_cells_getcells(
+    //                                 code_cell,
+    //                                 &sheet_name,
+    //                                 shifted_offsets,
+    //                             );
+    //                             migrate_python_rc_relcell(code_cell, (x, y).into());
+    //                             migrate_python_relcells(code_cell, (x, y).into());
+    //                             migrate_python_javascript_pos(code_cell);
+    //                         }
+    //                         CodeCellLanguage::Javascript => {
+    //                             migrate_javascript_c_cell_getcell(
+    //                                 code_cell,
+    //                                 &sheet_name,
+    //                                 shifted_offsets,
+    //                             );
+    //                             migrate_javascript_cells_getcells(
+    //                                 code_cell,
+    //                                 &sheet_name,
+    //                                 shifted_offsets,
+    //                             );
+    //                             migrate_javascript_rc_relcell(code_cell, (x, y).into());
+    //                             migrate_javascript_relcells(code_cell, (x, y).into());
+    //                             migrate_python_javascript_pos(code_cell);
+    //                         }
+    //                         _ => {}
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 fn migrate_python_c_cell_getcell(
