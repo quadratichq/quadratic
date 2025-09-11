@@ -61,14 +61,6 @@ export const FormulaBar = memo(() => {
     }
   }, [isExpanded, isEditing]);
 
-  const toggleExpanded = () => {
-    // Don't allow collapsing while in edit mode
-    if (isEditing && isExpanded) {
-      return;
-    }
-    setIsExpanded(!isExpanded);
-  };
-
   const startEditing = () => {
     console.log('[FormulaBar] Starting edit mode, displayValue:', displayValue);
 
@@ -269,7 +261,7 @@ ${editValue}`;
       setDisplayValue(fallbackRef);
       setCellInfo({ cellRef: fallbackRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
     }
-  }, [isExpanded]);
+  }, [isExpanded, setIsExpanded]);
 
   useEffect(() => {
     updateDisplayValue();
