@@ -16,9 +16,18 @@ class AICodeCellSummaryStore {
   private summaries = new Map<string, CodeCellSummary>();
   private readonly STORAGE_KEY = 'quadratic_ai_code_cell_summaries';
   private readonly MAX_SUMMARIES = 1000; // Limit to prevent memory issues
+  private saveTimeoutId: NodeJS.Timeout | null = null;
+  private readonly SAVE_DEBOUNCE_MS = 500; // Debounce localStorage writes by 500ms
 
   constructor() {
     this.loadFromStorage();
+
+    // Ensure data is saved before page unload
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        this.flushToStorage();
+      });
+    }
   }
 
   private getKey(sheetId: string, x: number, y: number): string {
@@ -46,7 +55,7 @@ class AICodeCellSummaryStore {
       this.cleanupOldSummaries();
     }
 
-    this.saveToStorage();
+    this.debouncedSaveToStorage();
     console.log('[aiCodeCellSummaryStore] Total summaries stored:', this.summaries.size);
   }
 
@@ -68,7 +77,7 @@ class AICodeCellSummaryStore {
     if (currentCodeString && summary.codeString !== currentCodeString) {
       console.log('[aiCodeCellSummaryStore] Code changed, removing outdated summary for key:', key);
       this.summaries.delete(key);
-      this.saveToStorage();
+      this.debouncedSaveToStorage();
       return null;
     }
 
@@ -90,7 +99,7 @@ class AICodeCellSummaryStore {
   removeSummary(sheetId: string, x: number, y: number): void {
     const key = this.getKey(sheetId, x, y);
     this.summaries.delete(key);
-    this.saveToStorage();
+    this.debouncedSaveToStorage();
   }
 
   /**
@@ -102,7 +111,7 @@ class AICodeCellSummaryStore {
         this.summaries.delete(key);
       }
     }
-    this.saveToStorage();
+    this.debouncedSaveToStorage();
   }
 
   /**
@@ -120,14 +129,60 @@ class AICodeCellSummaryStore {
   }
 
   /**
-   * Save summaries to localStorage
+   * Debounced save to localStorage to prevent excessive writes
+   */
+  private debouncedSaveToStorage(): void {
+    // Clear existing timeout
+    if (this.saveTimeoutId) {
+      clearTimeout(this.saveTimeoutId);
+    }
+
+    // Set new timeout
+    this.saveTimeoutId = setTimeout(() => {
+      this.saveToStorage();
+      this.saveTimeoutId = null;
+    }, this.SAVE_DEBOUNCE_MS);
+  }
+
+  /**
+   * Force immediate save to localStorage (used for critical operations)
    */
   private saveToStorage(): void {
     try {
       const data = Array.from(this.summaries.entries());
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      console.log('[aiCodeCellSummaryStore] Saved summaries to localStorage');
     } catch (error) {
       console.warn('Failed to save AI code cell summaries to localStorage:', error);
+      // If localStorage is full, try to clear some space
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        this.handleStorageQuotaExceeded();
+      }
+    }
+  }
+
+  /**
+   * Handle localStorage quota exceeded by cleaning up old summaries
+   */
+  private handleStorageQuotaExceeded(): void {
+    console.warn('[aiCodeCellSummaryStore] localStorage quota exceeded, cleaning up old summaries');
+
+    // Remove 50% of summaries to free up space
+    const entries = Array.from(this.summaries.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    const toRemove = Math.floor(entries.length * 0.5);
+    for (let i = 0; i < toRemove; i++) {
+      this.summaries.delete(entries[i][0]);
+    }
+
+    // Try saving again
+    try {
+      const data = Array.from(this.summaries.entries());
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      console.log('[aiCodeCellSummaryStore] Successfully saved after cleanup');
+    } catch (retryError) {
+      console.error('[aiCodeCellSummaryStore] Failed to save even after cleanup:', retryError);
     }
   }
 
@@ -145,6 +200,29 @@ class AICodeCellSummaryStore {
       console.warn('Failed to load AI code cell summaries from localStorage:', error);
       this.summaries.clear();
     }
+  }
+
+  /**
+   * Force immediate save (useful for critical operations or before page unload)
+   */
+  public flushToStorage(): void {
+    if (this.saveTimeoutId) {
+      clearTimeout(this.saveTimeoutId);
+      this.saveTimeoutId = null;
+    }
+    this.saveToStorage();
+  }
+
+  /**
+   * Cleanup method to clear pending timeouts
+   */
+  public destroy(): void {
+    if (this.saveTimeoutId) {
+      clearTimeout(this.saveTimeoutId);
+      this.saveTimeoutId = null;
+    }
+    // Force final save before destruction
+    this.saveToStorage();
   }
 }
 
