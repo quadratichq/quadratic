@@ -504,6 +504,18 @@ export const aiToolsActions: AIToolActionsRecord = {
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
         }
 
+        // Generate and store AI summary for the formula cell
+        try {
+          console.log('[aiToolsActions] Generating AI summary for formula cell at:', x, y, 'formula:', formula_string);
+          const summary = await generateCodeCellSummary(formula_string, 'Formula', x, y);
+          console.log('[aiToolsActions] Generated formula summary:', summary);
+          aiCodeCellSummaryStore.setSummary(sheetId, x, y, summary, formula_string);
+          console.log('[aiToolsActions] Stored formula summary in store');
+        } catch (error) {
+          console.warn('[aiToolsActions] Failed to generate AI summary for formula cell:', error);
+          // Don't fail the entire operation if summary generation fails
+        }
+
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
         return result;
       } else {

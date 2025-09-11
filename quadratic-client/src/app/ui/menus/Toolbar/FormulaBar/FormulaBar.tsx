@@ -29,6 +29,7 @@ export const FormulaBar = memo(() => {
     cellRef: string;
     showIcon: boolean;
     isAIGenerated: boolean;
+    isAIFormula?: boolean;
   }>({ cellRef: '', showIcon: false, isAIGenerated: false });
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
@@ -159,7 +160,7 @@ ${editValue}`;
           if (parsedSummary.summary && parsedSummary.explanation) {
             setAiSummaryData(parsedSummary);
             setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
-            setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true });
+            setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true, isAIFormula: false });
             return;
           }
         } catch (e) {
@@ -169,7 +170,7 @@ ${editValue}`;
         // Legacy format - just display as is
         setAiSummaryData(null);
         setDisplayValue(aiSummary);
-        setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true });
+        setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true, isAIFormula: false });
         return;
       }
 
@@ -187,14 +188,42 @@ ${editValue}`;
         const language = getConnectionKind(codeCell.language);
 
         if (codeCell.language === 'Formula') {
-          // Show formula with = prefix
-          setDisplayValue(`=${codeCell.code_string}`);
-          setCellInfo({
-            language: 'Formula',
-            cellRef,
-            showIcon: true,
-            isAIGenerated: false,
-          });
+          // Check if this formula cell has an AI summary
+          const formulaAiSummary = aiCodeCellSummaryStore.getSummary(sheets.current, x, y, codeCell.code_string);
+
+          if (formulaAiSummary) {
+            // This is an AI-generated formula, treat it like other AI summaries
+            console.log('[FormulaBar] Found AI summary for formula cell:', formulaAiSummary);
+
+            // Try to parse as JSON (new format with summary/explanation)
+            try {
+              const parsedSummary = JSON.parse(formulaAiSummary);
+              if (parsedSummary.summary && parsedSummary.explanation) {
+                setAiSummaryData(parsedSummary);
+                setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
+                setCellInfo({ cellRef, showIcon: true, isAIGenerated: true, isAIFormula: true });
+                return;
+              }
+            } catch (e) {
+              // Not JSON, treat as legacy format
+            }
+
+            // Legacy format - just display as is
+            setAiSummaryData(null);
+            setDisplayValue(formulaAiSummary);
+            setCellInfo({ cellRef, showIcon: true, isAIGenerated: true, isAIFormula: true });
+            return;
+          } else {
+            // Regular formula without AI summary - show formula with = prefix
+            setDisplayValue(`=${codeCell.code_string}`);
+            setCellInfo({
+              language: 'Formula',
+              cellRef,
+              showIcon: true,
+              isAIGenerated: false,
+              isAIFormula: false,
+            });
+          }
         } else {
           // For code cells, show just the cell reference in the textarea
           // The language and icon will be shown separately
@@ -204,6 +233,7 @@ ${editValue}`;
             cellRef,
             showIcon: true,
             isAIGenerated: false,
+            isAIFormula: false,
           });
         }
       } else {
@@ -225,11 +255,11 @@ ${editValue}`;
           }
 
           setDisplayValue(displayVal);
-          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
         } else {
           // Empty cell - show just the cell reference
           setDisplayValue(cellRef);
-          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
         }
       }
     } catch (error) {
@@ -237,7 +267,7 @@ ${editValue}`;
       // Fallback to just showing cell reference
       const fallbackRef = sheets.sheet.cursor.toA1String();
       setDisplayValue(fallbackRef);
-      setCellInfo({ cellRef: fallbackRef, showIcon: false, isAIGenerated: false });
+      setCellInfo({ cellRef: fallbackRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
     }
   }, [isExpanded]);
 
@@ -320,7 +350,9 @@ ${editValue}`;
             )}
             <span className="text-sm font-medium text-muted-foreground">
               {cellInfo.isAIGenerated
-                ? 'AI code'
+                ? cellInfo.isAIFormula
+                  ? 'AI formula'
+                  : 'AI code'
                 : cellInfo.language === 'Formula'
                   ? 'Formula'
                   : cellInfo.language === 'Import'
