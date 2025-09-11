@@ -77,7 +77,7 @@ export class Update {
     if (pixiApp.viewport.dirty || contentDirty) {
       debugTimeReset();
       pixiApp.viewport.dirty = false;
-      pixiApp.renderer.render(pixiApp.viewport);
+      pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
       thumbnail.rendererBusy();
