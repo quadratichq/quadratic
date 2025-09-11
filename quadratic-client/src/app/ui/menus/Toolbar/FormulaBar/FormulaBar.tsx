@@ -8,7 +8,7 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { LightbulbIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
+import { CheckIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -366,10 +366,10 @@ ${editValue}`;
             {!isEditing ? (
               <button
                 onClick={startEditing}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 border-2 border-transparent hover:border-blue-200 shadow-sm hover:shadow-md bg-gradient-to-r from-blue-50/50 to-indigo-50/50 hover:from-blue-100/70 hover:to-indigo-100/70"
-                title="AI edit"
+                className="flex items-center gap-1 rounded border-2 border-blue-300/60 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 px-2 py-1 text-xs font-semibold text-blue-700 shadow-lg shadow-blue-200/50 ring-1 ring-blue-200/30 transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:from-blue-200 hover:via-indigo-200 hover:to-purple-200 hover:text-blue-800 hover:shadow-xl hover:shadow-blue-300/60"
+                title={isExpanded ? 'Edit AI summary' : 'Explain and edit AI summary'}
               >
-                <span>AI edit</span>
+                <span>AI edit / explain</span>
                 <Pencil1Icon className="h-3 w-3" />
               </button>
             ) : (
@@ -392,21 +392,6 @@ ${editValue}`;
                 </button>
               </>
             )}
-
-            {/* Expand/Collapse button for AI summaries */}
-            <button
-              onClick={toggleExpanded}
-              className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
-                isEditing && isExpanded
-                  ? 'cursor-not-allowed text-gray-400'
-                  : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-              }`}
-              title={isEditing && isExpanded ? 'Cannot collapse while editing' : isExpanded ? 'Collapse' : 'Explain'}
-              disabled={isEditing && isExpanded}
-            >
-              <span>{isExpanded ? 'Collapse' : 'Explain'}</span>
-              {isExpanded ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" />}
-            </button>
           </div>
         )}
       </div>
