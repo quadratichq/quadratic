@@ -2,8 +2,8 @@ import { aiCodeCellSummaryStore } from '@/app/ai/utils/aiCodeCellSummaryStore';
 import { formulaBarExpandedAtom } from '@/app/atoms/formulaBarAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
@@ -21,6 +21,7 @@ export const FormulaBar = memo(() => {
     explanation: string;
     fullText: string;
   } | null>(null);
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -79,9 +80,50 @@ export const FormulaBar = memo(() => {
     }
   };
 
-  const submitEdit = () => {
-    // TODO: Implement submit functionality
+  const submitEdit = async () => {
     console.log('Submit edit:', editValue);
+    
+    // Get current cursor position for cell location
+    const cursor = sheets.sheet.cursor.position;
+    const { x, y } = cursor;
+    const cellLocation = xyToA1(x, y);
+    
+    // Get the current code cell to understand what we're editing
+    const codeCell = await quadraticCore.getCodeCell(sheets.current, x, y);
+    
+    if (codeCell && aiSummaryData) {
+      // Get old summary information
+      const oldSummary = aiSummaryData.summary;
+      const oldExplanation = aiSummaryData.explanation;
+      
+      // Format the message for AI analyst
+      const message = `The user has requested an edit to the code cell at ${cellLocation}.
+
+Currently the code does:
+${oldSummary}
+
+${oldExplanation}
+
+New change:
+${editValue}`;
+
+      // Submit to AI analyst
+      try {
+        await submitPrompt({
+          content: [createTextContent(message)],
+          messageSource: 'FormulaBarEdit',
+          context: {
+            sheets: [sheets.sheet.name],
+            currentSheet: sheets.sheet.name,
+            selection: cellLocation,
+          },
+          messageIndex: 0,
+        });
+      } catch (error) {
+        console.warn('Failed to submit edit to AI analyst:', error);
+      }
+    }
+    
     setIsEditing(false);
     // Optionally collapse if it was expanded only for editing (not for AI summary)
     if (!aiSummaryData) {
@@ -244,34 +286,38 @@ export const FormulaBar = memo(() => {
 
         {/* Action buttons */}
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-          {/* Edit/Submit/Cancel buttons */}
-          {!isEditing ? (
-            <button
-              onClick={startEditing}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-700"
-              title="Edit"
-            >
-              <span>Edit</span>
-              <Pencil1Icon className="h-3 w-3" />
-            </button>
-          ) : (
+          {/* Edit/Submit/Cancel buttons - only show for AI summary cells */}
+          {aiSummaryData && (
             <>
-              <button
-                onClick={submitEdit}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
-                title="Submit"
-              >
-                <span>Submit</span>
-                <CheckIcon className="h-3 w-3" />
-              </button>
-              <button
-                onClick={cancelEditing}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
-                title="Cancel"
-              >
-                <span>Cancel</span>
-                <Cross2Icon className="h-3 w-3" />
-              </button>
+              {!isEditing ? (
+                <button
+                  onClick={startEditing}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-700"
+                  title="Edit"
+                >
+                  <span>Edit</span>
+                  <Pencil1Icon className="h-3 w-3" />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={submitEdit}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
+                    title="Submit"
+                  >
+                    <span>Submit</span>
+                    <CheckIcon className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                    title="Cancel"
+                  >
+                    <span>Cancel</span>
+                    <Cross2Icon className="h-3 w-3" />
+                  </button>
+                </>
+              )}
             </>
           )}
 
