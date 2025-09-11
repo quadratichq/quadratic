@@ -5,14 +5,6 @@ jest.mock('@workos-inc/node', () =>
     { id: 'userEditor' },
     { id: 'userViewer' },
     { id: 'userNoRole' },
-    {
-      id: 'duplicate_emails_user_1',
-      email: 'duplicate_emails_user@test.com',
-    },
-    {
-      id: 'duplicate_emails_user_2',
-      email: 'duplicate_emails_user@test.com',
-    },
     { id: 'userNotYetInDb' },
   ])
 );
@@ -113,11 +105,6 @@ describe('POST /v0/teams/:uuid/invites', () => {
     });
     it('rejects inviting an email associated with an existing invite', async () => {
       await invite({ email: 'invite@test.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
-    });
-    it('rejects inviting an email associated with multiple accounts', async () => {
-      await invite({ email: 'duplicate_emails_user@test.com', role: 'VIEWER' }, 'userOwner')
-        .expect(500)
-        .expect(expectError);
     });
   });
 

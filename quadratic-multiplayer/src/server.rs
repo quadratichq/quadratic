@@ -43,7 +43,7 @@ const STATS_INTERVAL_S: u64 = 60;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
+    email: String,
     exp: usize,
 }
 

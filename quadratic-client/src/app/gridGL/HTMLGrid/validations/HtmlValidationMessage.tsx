@@ -1,6 +1,7 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { translateValidationError } from '@/app/gridGL/HTMLGrid/validations/translateValidationError';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { Validation } from '@/app/quadratic-core-types';
@@ -34,7 +35,7 @@ export const HtmlValidationMessage = memo((props: Props) => {
   useEffect(() => {
     if (column === undefined || row === undefined) {
       setShowError(false);
-    } else if (hoverError !== undefined || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+    } else if (hoverError !== undefined || content.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
       setShowError(true);
     } else {
       setShowError(false);

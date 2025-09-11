@@ -1,4 +1,4 @@
-export const PythonDocs = `# Python Docs
+export const PythonDocs = `# Python Documentation for Quadratic
 
 You can reference cells in the spreadsheet to use in code, and you can return results from your Python code back to the spreadsheet. The last line of code is returned to the spreadsheet.
 Python does not support conditional returns in Quadratic. Only the last line of code is returned to the sheet. There can be only one variable returned to the sheet per code cell.
@@ -239,7 +239,7 @@ When returning DataFrames, default to returning the entire DataFrame. Do not use
 
 ### Return single item per code cell 
 
-You can only return a single item per code cell. For example, you  can only return one table or one chart etc. You can not return both a table and a chart to the sheet from the same cell. Use individual code cells for each subsequent step you want to return to the sheet.
+You can only return a single item per code cell. For example, you can only return one table or one chart etc. You cannot return both a table and a chart to the sheet from the same cell. You cannot return multiple tables nor multiple charts from the same cell. Use individual code cells for each subsequent step you want to return to the sheet.
 
 ## Packages
 
@@ -294,6 +294,8 @@ API Requests in Python must use the Requests library.
 ## Charts/visualizations
 
 Plotly is the ONLY charting library supported in Quadratic. 
+
+You cannot return multiple charts from the same cell. You must return each chart in a separate code cell or use Plotly subplots to show multiple charts in the same cell.
 
 ### Trendlines 
 

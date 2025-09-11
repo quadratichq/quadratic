@@ -2,7 +2,7 @@ import { getColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { useRenameTableColumnName } from '@/app/ui/hooks/useRenameTableColumnName';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -14,7 +14,7 @@ export const TableColumnHeaderRename = () => {
   const inputElement = useRef<HTMLInputElement | null>(null);
 
   const width = useMemo(() => {
-    const tables = pixiApp.cellsSheets.current?.tables;
+    const tables = content.cellsSheets.current?.tables;
     if (!tables) {
       throw new Error('Tables not found in TableColumnHeaderRename');
     }
@@ -36,7 +36,7 @@ export const TableColumnHeaderRename = () => {
     ) {
       return;
     } else {
-      const tables = pixiApp.cellsSheets.current?.tables;
+      const tables = content.cellsSheets.current?.tables;
       if (!tables) {
         throw new Error('Tables not found in TableColumnHeaderRename');
       }
@@ -72,7 +72,7 @@ export const TableColumnHeaderRename = () => {
 
   const handleSave = useCallback(
     (value: string) => {
-      if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
+      if (contextMenu.table && contextMenu.selectedColumn !== undefined && content.cellsSheets.current) {
         const columns = getColumns();
         if (columns) {
           value = value.trim();
@@ -83,7 +83,7 @@ export const TableColumnHeaderRename = () => {
             column.name = value;
 
             renameTableColumnHeader({
-              sheetId: pixiApp.cellsSheets.current?.sheetId,
+              sheetId: content.cellsSheets.current?.sheetId,
               x: contextMenu.table.x,
               y: contextMenu.table.y,
               tableName: contextMenu.table.name,
