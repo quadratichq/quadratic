@@ -402,15 +402,15 @@ ${editValue}`;
               <>
                 <button
                   onClick={submitEdit}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-600 transition-colors hover:bg-green-50 hover:text-green-700"
+                  className="flex items-center gap-1 rounded border border-green-300 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 hover:text-green-800"
                   title="Submit"
                 >
-                  <span>Submit</span>
+                  <span>Submit prompt</span>
                   <CheckIcon className="h-3 w-3" />
                 </button>
                 <button
                   onClick={cancelEditing}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                  className="flex items-center gap-1 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 hover:text-red-800"
                   title="Cancel"
                 >
                   <span>Cancel</span>
