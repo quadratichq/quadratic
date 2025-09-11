@@ -6,6 +6,7 @@ import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { LightbulbIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -27,7 +28,8 @@ export const FormulaBar = memo(() => {
     language?: string;
     cellRef: string;
     showIcon: boolean;
-  }>({ cellRef: '', showIcon: false });
+    isAIGenerated: boolean;
+  }>({ cellRef: '', showIcon: false, isAIGenerated: false });
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const adjustHeight = useCallback(() => {
@@ -72,7 +74,7 @@ export const FormulaBar = memo(() => {
     // For AI summary cells, we want to edit the full summary text (summary + explanation)
     let valueToEdit = displayValue;
     if (aiSummaryData) {
-      // Use the full text (summary + explanation) for editing
+      // Use the full text (summary + explanation) for editing, not the formatted task list
       valueToEdit = aiSummaryData.fullText;
     }
 
@@ -157,7 +159,7 @@ ${editValue}`;
           if (parsedSummary.summary && parsedSummary.explanation) {
             setAiSummaryData(parsedSummary);
             setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
-            setCellInfo({ cellRef: xyToA1(x, y), showIcon: false });
+            setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true });
             return;
           }
         } catch (e) {
@@ -167,7 +169,7 @@ ${editValue}`;
         // Legacy format - just display as is
         setAiSummaryData(null);
         setDisplayValue(aiSummary);
-        setCellInfo({ cellRef: xyToA1(x, y), showIcon: false });
+        setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true });
         return;
       }
 
@@ -191,6 +193,7 @@ ${editValue}`;
             language: 'Formula',
             cellRef,
             showIcon: true,
+            isAIGenerated: false,
           });
         } else {
           // For code cells, show just the cell reference in the textarea
@@ -200,6 +203,7 @@ ${editValue}`;
             language: language || (typeof codeCell.language === 'string' ? codeCell.language : 'Connection'),
             cellRef,
             showIcon: true,
+            isAIGenerated: false,
           });
         }
       } else {
@@ -221,11 +225,11 @@ ${editValue}`;
           }
 
           setDisplayValue(displayVal);
-          setCellInfo({ cellRef, showIcon: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false });
         } else {
           // Empty cell - show just the cell reference
           setDisplayValue(cellRef);
-          setCellInfo({ cellRef, showIcon: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false });
         }
       }
     } catch (error) {
@@ -233,7 +237,7 @@ ${editValue}`;
       // Fallback to just showing cell reference
       const fallbackRef = sheets.sheet.cursor.toA1String();
       setDisplayValue(fallbackRef);
-      setCellInfo({ cellRef: fallbackRef, showIcon: false });
+      setCellInfo({ cellRef: fallbackRef, showIcon: false, isAIGenerated: false });
     }
   }, [isExpanded]);
 
@@ -271,9 +275,37 @@ ${editValue}`;
   // Update display value when expansion state changes
   useEffect(() => {
     if (aiSummaryData) {
-      setDisplayValue(isExpanded ? aiSummaryData.fullText : aiSummaryData.summary);
+      if (isExpanded) {
+        // Format as task list with subtitle
+        const formattedTaskList = formatAsTaskList(aiSummaryData.explanation);
+        setDisplayValue(formattedTaskList);
+      } else {
+        setDisplayValue(aiSummaryData.summary);
+      }
     }
   }, [isExpanded, aiSummaryData]);
+
+  // Helper function to format the explanation as a task list
+  const formatAsTaskList = (explanation: string): string => {
+    const lines = explanation.split('\n').filter((line) => line.trim());
+    const subtitle = 'What code does, step by step';
+
+    let formattedList = `${subtitle}\n\n`;
+
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.match(/^\d+\./)) {
+        // Convert numbered list to task list format
+        const taskText = trimmedLine.replace(/^\d+\.\s*/, '');
+        formattedList += `• ${taskText}\n`;
+      } else if (trimmedLine) {
+        // Handle any other non-empty lines
+        formattedList += `• ${trimmedLine}\n`;
+      }
+    });
+
+    return formattedList.trim();
+  };
 
   return (
     <div className="relative flex w-full flex-grow">
@@ -281,13 +313,19 @@ ${editValue}`;
         {/* Language icon and cell name - shown on the left for code cells */}
         {cellInfo.showIcon && (
           <div className="flex flex-shrink-0 items-center gap-2 px-2 py-2">
-            <LanguageIcon language={cellInfo.language} className="h-4 w-4" />
+            {cellInfo.isAIGenerated ? (
+              <LightbulbIcon className="h-4 w-4" />
+            ) : (
+              <LanguageIcon language={cellInfo.language} className="h-4 w-4" />
+            )}
             <span className="text-sm font-medium text-muted-foreground">
-              {cellInfo.language === 'Formula'
-                ? 'Formula'
-                : cellInfo.language === 'Import'
-                  ? 'Table'
-                  : cellInfo.language}
+              {cellInfo.isAIGenerated
+                ? 'AI code'
+                : cellInfo.language === 'Formula'
+                  ? 'Formula'
+                  : cellInfo.language === 'Import'
+                    ? 'Table'
+                    : cellInfo.language}
             </span>
           </div>
         )}
@@ -328,10 +366,10 @@ ${editValue}`;
             {!isEditing ? (
               <button
                 onClick={startEditing}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
-                title="Edit"
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 border-2 border-transparent hover:border-blue-200 shadow-sm hover:shadow-md bg-gradient-to-r from-blue-50/50 to-indigo-50/50 hover:from-blue-100/70 hover:to-indigo-100/70"
+                title="AI edit"
               >
-                <span>Edit</span>
+                <span>AI edit</span>
                 <Pencil1Icon className="h-3 w-3" />
               </button>
             ) : (
