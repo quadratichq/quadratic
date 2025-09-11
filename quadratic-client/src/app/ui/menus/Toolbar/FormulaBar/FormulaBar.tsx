@@ -5,8 +5,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -82,20 +82,20 @@ export const FormulaBar = memo(() => {
 
   const submitEdit = async () => {
     console.log('Submit edit:', editValue);
-    
+
     // Get current cursor position for cell location
     const cursor = sheets.sheet.cursor.position;
     const { x, y } = cursor;
     const cellLocation = xyToA1(x, y);
-    
+
     // Get the current code cell to understand what we're editing
     const codeCell = await quadraticCore.getCodeCell(sheets.current, x, y);
-    
+
     if (codeCell && aiSummaryData) {
       // Get old summary information
       const oldSummary = aiSummaryData.summary;
       const oldExplanation = aiSummaryData.explanation;
-      
+
       // Format the message for AI analyst
       const message = `The user has requested an edit to the code cell at ${cellLocation}.
 
@@ -123,7 +123,7 @@ ${editValue}`;
         console.warn('Failed to submit edit to AI analyst:', error);
       }
     }
-    
+
     setIsEditing(false);
     // Optionally collapse if it was expanded only for editing (not for AI summary)
     if (!aiSummaryData) {
@@ -255,7 +255,7 @@ ${editValue}`;
       <div className="flex w-full items-start justify-center px-4 py-1">
         <textarea
           ref={textareaRef}
-          className={`min-h-8 w-full resize-none border-none bg-transparent px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 ${
+          className={`min-h-8 w-full resize-none border-none bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 ${
             isEditing ? 'pr-32' : aiSummaryData ? 'pr-20' : 'pr-16'
           }`}
           value={isEditing ? editValue : displayValue}
