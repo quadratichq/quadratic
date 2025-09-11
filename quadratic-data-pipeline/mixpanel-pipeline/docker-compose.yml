@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  meltano:
+    build: .
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./output:/project/output
+      - ./logs:/project/logs
+      - ./.meltano:/project/.meltano
+    env_file:
+      - .env
+    environment:
+      - MELTANO_ENVIRONMENT=${MELTANO_ENVIRONMENT:-dev}
+      - MELTANO_DATABASE_URI=${MELTANO_DATABASE_URI:-sqlite:///meltano.db}
+    working_dir: /project
+    entrypoint: ["/bin/bash"]
+    command: ["-c", "tail -f /dev/null"] # Keep container running for development
+
+  # Optional: Add a PostgreSQL database for Meltano system database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: meltano
+      POSTGRES_USER: meltano
+      POSTGRES_PASSWORD: meltano
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+volumes:
+  postgres_data:

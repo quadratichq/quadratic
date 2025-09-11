@@ -43,6 +43,7 @@ pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
         DataType::Boolean => Ok(arrow_bool_to_cell_values(array)),
         DataType::Binary => Ok(arrow_binary_to_cell_values(array)),
         DataType::Utf8 => Ok(arrow_utf8_to_cell_values(array)),
+        DataType::Utf8View => Ok(arrow_utf8view_to_cell_values(array)),
         DataType::Date32 => Ok(arrow_date_to_cell_values::<i32>(
             array_data,
             &i32_naive_date,
@@ -149,6 +150,18 @@ fn arrow_utf8_to_cell_values(col: &ArrayRef) -> Vec<CellValue> {
     values.extend(
         (0..col.len())
             .map(|index| CellValue::Text(col.as_string::<i32>().value(index).into()))
+            .collect::<Vec<CellValue>>(),
+    );
+
+    values
+}
+
+fn arrow_utf8view_to_cell_values(col: &ArrayRef) -> Vec<CellValue> {
+    let mut values = vec![];
+
+    values.extend(
+        (0..col.len())
+            .map(|index| CellValue::Text(col.as_string_view().value(index).into()))
             .collect::<Vec<CellValue>>(),
     );
 
