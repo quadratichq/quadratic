@@ -1,4 +1,5 @@
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -10,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 export const generateCodeCellSummary = async (
   codeString: string,
   language: string,
+  x?: number,
+  y?: number,
   signal?: AbortSignal
 ): Promise<string> => {
   try {
@@ -22,20 +25,30 @@ export const generateCodeCellSummary = async (
       return getFallbackSummary(codeString, language);
     }
 
+    // Generate cell reference if coordinates are provided
+    const cellRef = x !== undefined && y !== undefined ? xyToA1(x, y) : null;
+    const cellLocationText = cellRef ? ` at ${cellRef}` : '';
+
     // Prepare AI request following the same pattern as useAIRequestToAPI
     const chatId = uuidv4();
     const messages = [
       {
         role: 'user' as const,
         content: [
-          createTextContent(`Please provide a concise summary of what this ${language} code does. Output a concise one-line sentence summary followed by a numbered list that includes: any existing data referenced, steps taken in the code, and what is returned.
+          createTextContent(`Analyze this ${language} code and provide a response in this exact format:
 
-Code:
+[One concise sentence describing what the code does${cellLocationText}]
+
+1. [First key step or operation]
+2. [Second key step or operation]
+3. [Continue with additional steps as needed]
+
+Code to analyze:
 \`\`\`${language.toLowerCase()}
 ${codeString}
 \`\`\`
 
-Respond with just the summary sentence and numbered list, nothing else.`),
+Start with the summary sentence${cellLocationText ? ` (include the cell location ${cellRef} in the sentence)` : ''}, then provide numbered steps. Be concise but informative.`),
         ],
         contextType: 'userPrompt' as const,
       },
@@ -80,9 +93,26 @@ Respond with just the summary sentence and numbered list, nothing else.`),
     if (aiResponse.content && aiResponse.content.length > 0) {
       const textContent = aiResponse.content.find((c: any) => c.type === 'text');
       if (textContent && textContent.text) {
-        const summary = textContent.text.trim();
-        console.log('[generateCodeCellSummary] AI generated summary:', summary);
-        return summary;
+        const fullResponse = textContent.text.trim();
+        console.log('[generateCodeCellSummary] AI generated response:', fullResponse);
+
+        // Parse the response to extract summary and explanation
+        const lines = fullResponse.split('\n');
+        const summaryLine = lines[0]?.trim();
+
+        // If we have a multi-line response, store both parts
+        if (lines.length > 1) {
+          const explanation = lines.slice(1).join('\n').trim();
+          // Store the full response for the expanded view
+          return JSON.stringify({
+            summary: summaryLine,
+            explanation: explanation,
+            fullText: fullResponse,
+          });
+        }
+
+        // Fallback to just the summary if no explanation
+        return summaryLine || fullResponse;
       }
     }
 

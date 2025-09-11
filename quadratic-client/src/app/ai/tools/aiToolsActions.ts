@@ -260,7 +260,7 @@ export const aiToolsActions: AIToolActionsRecord = {
             'language:',
             code_cell_language
           );
-          const summary = await generateCodeCellSummary(code_string, code_cell_language);
+          const summary = await generateCodeCellSummary(code_string, code_cell_language, x, y);
           console.log('[aiToolsActions] Generated summary:', summary);
           aiCodeCellSummaryStore.setSummary(sheetId, x, y, summary, code_string);
           console.log('[aiToolsActions] Stored summary in store');
