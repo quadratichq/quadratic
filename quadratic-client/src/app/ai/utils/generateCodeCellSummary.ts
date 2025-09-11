@@ -43,6 +43,12 @@ export const generateCodeCellSummary = async (
 2. [Second key step or operation]
 3. [Continue with additional steps as needed]
 
+Explain as if explaining to someone who understands basic data analysis but doesn't know how to code. E.g. don't explain imports, libraries, etc. But do include details into exactly what steps are being taken to arrive at the answer, just not code-level details. 
+
+q.cells() is what gets used to reference data. If you see that keyword, then you know there's a reference to data in the code. Sometimes the names in these references are weird, like .csv. This just means the data that was imported to the sheet was a .csv, not that the reference is reading a csv. 
+
+Whatever the very last line of code is, that is what gets returned to the sheet. 
+
 Code to analyze:
 \`\`\`${language.toLowerCase()}
 ${codeString}
