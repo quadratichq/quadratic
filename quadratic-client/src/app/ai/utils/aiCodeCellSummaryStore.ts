@@ -3,6 +3,9 @@
  * This stores summaries in memory and optionally persists them to localStorage
  */
 
+import { events } from '@/app/events/events';
+import type { JsUpdateCodeCell } from '@/app/quadratic-core-types';
+
 interface CodeCellSummary {
   sheetId: string;
   x: number;
@@ -22,6 +25,9 @@ class AICodeCellSummaryStore {
   constructor() {
     this.loadFromStorage();
 
+    // Listen for code cell updates to clean up deleted cells
+    events.on('updateCodeCells', this.handleCodeCellUpdates);
+
     // Ensure data is saved before page unload
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => {
@@ -33,6 +39,34 @@ class AICodeCellSummaryStore {
   private getKey(sheetId: string, x: number, y: number): string {
     return `${sheetId}:${x}:${y}`;
   }
+
+  /**
+   * Handle code cell updates to clean up AI summaries for deleted cells
+   */
+  private handleCodeCellUpdates = (updateCodeCells: JsUpdateCodeCell[]): void => {
+    let hasChanges = false;
+
+    for (const update of updateCodeCells) {
+      // If render_code_cell is null, the code cell was deleted
+      if (!update.render_code_cell) {
+        const sheetId = update.sheet_id.id;
+        const x = Number(update.pos.x);
+        const y = Number(update.pos.y);
+        const key = this.getKey(sheetId, x, y);
+
+        if (this.summaries.has(key)) {
+          console.log('[aiCodeCellSummaryStore] Cleaning up AI summary for deleted code cell:', key);
+          this.summaries.delete(key);
+          hasChanges = true;
+        }
+      }
+    }
+
+    // Only trigger save if we actually removed summaries
+    if (hasChanges) {
+      this.debouncedSaveToStorage();
+    }
+  };
 
   /**
    * Store a summary for an AI-generated code cell
@@ -214,13 +248,18 @@ class AICodeCellSummaryStore {
   }
 
   /**
-   * Cleanup method to clear pending timeouts
+   * Cleanup method to clear pending timeouts and event listeners
    */
   public destroy(): void {
+    // Clean up event listener
+    events.off('updateCodeCells', this.handleCodeCellUpdates);
+
+    // Clear pending timeout
     if (this.saveTimeoutId) {
       clearTimeout(this.saveTimeoutId);
       this.saveTimeoutId = null;
     }
+
     // Force final save before destruction
     this.saveToStorage();
   }

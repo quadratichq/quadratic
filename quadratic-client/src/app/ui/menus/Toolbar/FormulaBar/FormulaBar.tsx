@@ -269,6 +269,7 @@ ${editValue}`;
 
     events.on('cursorPosition', updateDisplayValue);
     events.on('changeSheet', updateDisplayValue);
+    events.on('updateCodeCells', updateDisplayValue); // Update when code cells change (including deletions)
 
     // Handle window resize to recalculate height if needed
     const handleResize = () => {
@@ -279,6 +280,7 @@ ${editValue}`;
     return () => {
       events.off('cursorPosition', updateDisplayValue);
       events.off('changeSheet', updateDisplayValue);
+      events.off('updateCodeCells', updateDisplayValue);
       window.removeEventListener('resize', handleResize);
     };
   }, [updateDisplayValue, adjustHeight]);
