@@ -1,7 +1,7 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
-import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureEvent } from '@sentry/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
@@ -67,26 +67,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
-
-    // Pass along a few of the search params
-    let searchParamsToPass = new URLSearchParams();
-    const state = searchParams.get('state');
     if (state) {
-      searchParamsToPass.set('state', state);
-    }
-    const prompt = searchParams.get('prompt');
-    if (prompt) {
-      searchParamsToPass.set('prompt', prompt);
-    }
-    const chatId = searchParams.get('chat-id');
-    if (chatId) {
-      searchParamsToPass.set('chat-id', chatId);
-    }
-    if (searchParams.get(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY) !== null) {
-      searchParamsToPass.set('show-onboarding-video', '');
-    }
-
-    return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
+    return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
