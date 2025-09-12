@@ -3,7 +3,7 @@
 //! overflow (and in the future, merged cells). Grid lines also respect the
 //! sheet.clamp value.
 
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -31,23 +31,24 @@ export class GridLines extends Graphics {
 
   constructor() {
     super();
-    events.on('gridLinesDirty', this.setDirty);
+    events.on('setDirty', this.setDirty);
   }
 
   destroy() {
-    events.off('gridLinesDirty', this.setDirty);
+    events.off('setDirty', this.setDirty);
     super.destroy();
   }
 
-  setDirty = () => {
-    this.dirty = true;
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.gridLines) {
+      this.dirty = true;
+    }
   };
 
   update = (bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) => {
     if (!this.dirty && !forceRefresh) {
       return;
     }
-
     this.dirty = false;
     this.clear();
 

@@ -3,7 +3,6 @@ import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
   JsBordersSheet,
   JsHashValidationWarnings,
@@ -34,6 +33,18 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
+
+export interface DirtyObject {
+  gridLines?: boolean;
+  headings?: boolean;
+  cursor?: boolean;
+  cellHighlights?: boolean;
+  multiplayerCursor?: boolean;
+  boxCells?: boolean;
+  singleCellOutlines?: boolean;
+  cellMoving?: boolean;
+  cellImages?: boolean;
+}
 
 interface EventTypes {
   needRefresh: (state: RefreshType) => void;
@@ -148,21 +159,20 @@ interface EventTypes {
   pixiAppSettingsInitialized: () => void;
   filesFromIframeInitialized: () => void;
 
-  gridLinesDirty: () => void;
-
   coreError: (from: string, error: Error | unknown) => void;
-
-  scrollBarsHandler: (scrollBarsHandler: ScrollBarsHandler) => void;
-  scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
 
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
+  resizeAIAnalystPanel: () => void;
+
   debugFlags: () => void;
 
   startupTimer: (name: TimerNames, data: { start?: number; end?: number }) => void;
+
+  setDirty: (dirty: DirtyObject) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

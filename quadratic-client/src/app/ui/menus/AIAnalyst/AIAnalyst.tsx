@@ -4,9 +4,11 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
@@ -24,6 +26,7 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const isEmptyState = messagesCount === 0 && !showChatHistory;
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -45,8 +48,20 @@ export const AIAnalyst = memo(() => {
       const containerRect = panel.getBoundingClientRect();
       const newPanelWidth = event.x - (containerRect.left - 2);
       setPanelWidth(newPanelWidth);
+
+      events.emit('resizeAIAnalystPanel');
     },
     [setPanelWidth]
+  );
+
+  const promptUI = (
+    <AIAnalystUserMessageForm
+      ref={textareaRef}
+      autoFocusRef={autoFocusRef}
+      textareaRef={textareaRef}
+      messageIndex={messagesCount}
+      showPromptSuggestions={true}
+    />
   );
 
   if (!showAIAnalyst || presentationMode) {
@@ -65,7 +80,7 @@ export const AIAnalyst = memo(() => {
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
       >
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
+        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
         <div
           className={cn(
@@ -79,15 +94,17 @@ export const AIAnalyst = memo(() => {
             <AIAnalystChatHistory />
           ) : (
             <>
-              <AIAnalystMessages textareaRef={textareaRef} />
+              {isEmptyState ? (
+                <div className="flex h-full flex-col justify-center gap-2 px-2 py-0.5">
+                  {promptUI}
+                  <AIAnalystEmptyStateWaypoint />
+                </div>
+              ) : (
+                <AIAnalystMessages textareaRef={textareaRef} />
+              )}
 
               <div className="px-2 py-0.5">
-                <AIAnalystUserMessageForm
-                  ref={textareaRef}
-                  autoFocusRef={autoFocusRef}
-                  textareaRef={textareaRef}
-                  messageIndex={messagesCount}
-                />
+                {!isEmptyState && promptUI}
                 <AIUserMessageFormDisclaimer />
               </div>
             </>

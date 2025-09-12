@@ -16,17 +16,6 @@ export const AIUserMessageFormAttachFileButton = memo(({ disabled, handleFiles, 
     handleFiles(files);
   }, [handleFiles, fileTypes]);
 
-  const label = useMemo(() => {
-    const types = [];
-    if (fileTypes.includes('.pdf')) {
-      types.push('PDF');
-    }
-    if (fileTypes.includes('image/*')) {
-      types.push('Image');
-    }
-    return types.join(', ');
-  }, [fileTypes]);
-
   const tooltipLabel = useMemo(
     () =>
       fileTypes.includes('.pdf') && fileTypes.includes('image/*')
@@ -46,18 +35,14 @@ export const AIUserMessageFormAttachFileButton = memo(({ disabled, handleFiles, 
   return (
     <div className="cursor-pointer" onClick={handleUploadFiles}>
       <TooltipPopover label={tooltipLabel}>
-        <div className="flex items-center">
-          <Button
-            size="icon-sm"
-            className="-ml-1 h-7 w-7 rounded-full px-0 shadow-none"
-            variant="ghost"
-            disabled={disabled}
-          >
-            <AttachFileIcon className="" />
-          </Button>
-
-          <span className="text-xs text-muted-foreground">{label}</span>
-        </div>
+        <Button
+          size="icon-sm"
+          className="-ml-1 h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+          variant="ghost"
+          disabled={disabled}
+        >
+          <AttachFileIcon className="" />
+        </Button>
       </TooltipPopover>
     </div>
   );
