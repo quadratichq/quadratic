@@ -1,4 +1,5 @@
 import { aiCodeCellSummaryStore } from '@/app/ai/utils/aiCodeCellSummaryStore';
+import { generateCodeCellSummary } from '@/app/ai/utils/generateCodeCellSummary';
 import { formulaBarExpandedAtom } from '@/app/atoms/formulaBarAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -30,7 +31,10 @@ export const FormulaBar = memo(() => {
     showIcon: boolean;
     isAIGenerated: boolean;
     isAIFormula?: boolean;
-  }>({ cellRef: '', showIcon: false, isAIGenerated: false });
+    canHaveAISummary: boolean;
+    codeString?: string;
+  }>({ cellRef: '', showIcon: false, isAIGenerated: false, canHaveAISummary: false });
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const adjustHeight = useCallback(() => {
@@ -60,6 +64,45 @@ export const FormulaBar = memo(() => {
       textarea.scrollTop = 0;
     }
   }, [isExpanded, isEditing]);
+
+  const handleExplainEdit = async () => {
+    // If this cell already has an AI summary, start editing
+    if (aiSummaryData) {
+      startEditing();
+      return;
+    }
+
+    // If this cell doesn't have an AI summary but can have one, generate it
+    if (cellInfo.canHaveAISummary && cellInfo.codeString) {
+      await generateSummaryForCell();
+      return;
+    }
+  };
+
+  const generateSummaryForCell = async () => {
+    if (!cellInfo.codeString || !cellInfo.language) return;
+
+    setIsGeneratingSummary(true);
+    try {
+      const cursor = sheets.sheet.cursor.position;
+      const { x, y } = cursor;
+
+      console.log('[FormulaBar] Generating AI summary for cell:', cellInfo.cellRef);
+      const summary = await generateCodeCellSummary(cellInfo.codeString, cellInfo.language, x, y);
+
+      // Store the summary
+      aiCodeCellSummaryStore.setSummary(sheets.current, x, y, summary, cellInfo.codeString);
+
+      // Update the display to show the new summary
+      await updateDisplayValue();
+
+      console.log('[FormulaBar] Successfully generated and stored AI summary');
+    } catch (error) {
+      console.error('[FormulaBar] Failed to generate AI summary:', error);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   const startEditing = () => {
     console.log('[FormulaBar] Starting edit mode, displayValue:', displayValue);
@@ -152,7 +195,15 @@ ${editValue}`;
           if (parsedSummary.summary && parsedSummary.explanation) {
             setAiSummaryData(parsedSummary);
             setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
-            setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true, isAIFormula: false });
+            setCellInfo({
+              cellRef: xyToA1(x, y),
+              showIcon: true,
+              isAIGenerated: true,
+              isAIFormula: false,
+              canHaveAISummary: true,
+              codeString: '',
+              language: '',
+            });
             return;
           }
         } catch (e) {
@@ -162,7 +213,15 @@ ${editValue}`;
         // Legacy format - just display as is
         setAiSummaryData(null);
         setDisplayValue(aiSummary);
-        setCellInfo({ cellRef: xyToA1(x, y), showIcon: true, isAIGenerated: true, isAIFormula: false });
+        setCellInfo({
+          cellRef: xyToA1(x, y),
+          showIcon: true,
+          isAIGenerated: true,
+          isAIFormula: false,
+          canHaveAISummary: true,
+          codeString: '',
+          language: '',
+        });
         return;
       }
 
@@ -193,7 +252,15 @@ ${editValue}`;
               if (parsedSummary.summary && parsedSummary.explanation) {
                 setAiSummaryData(parsedSummary);
                 setDisplayValue(isExpanded ? parsedSummary.fullText : parsedSummary.summary);
-                setCellInfo({ cellRef, showIcon: true, isAIGenerated: true, isAIFormula: true });
+                setCellInfo({
+                  cellRef,
+                  showIcon: true,
+                  isAIGenerated: true,
+                  isAIFormula: true,
+                  canHaveAISummary: true,
+                  codeString: codeCell.code_string,
+                  language: 'Formula',
+                });
                 return;
               }
             } catch (e) {
@@ -203,7 +270,15 @@ ${editValue}`;
             // Legacy format - just display as is
             setAiSummaryData(null);
             setDisplayValue(formulaAiSummary);
-            setCellInfo({ cellRef, showIcon: true, isAIGenerated: true, isAIFormula: true });
+            setCellInfo({
+              cellRef,
+              showIcon: true,
+              isAIGenerated: true,
+              isAIFormula: true,
+              canHaveAISummary: true,
+              codeString: codeCell.code_string,
+              language: 'Formula',
+            });
             return;
           } else {
             // Regular formula without AI summary - show formula with = prefix
@@ -214,18 +289,23 @@ ${editValue}`;
               showIcon: true,
               isAIGenerated: false,
               isAIFormula: false,
+              canHaveAISummary: true,
+              codeString: codeCell.code_string,
             });
           }
         } else {
           // For code cells, show just the cell reference in the textarea
           // The language and icon will be shown separately
           setDisplayValue(cellRef);
+          const cellLanguage = language || (typeof codeCell.language === 'string' ? codeCell.language : 'Connection');
           setCellInfo({
-            language: language || (typeof codeCell.language === 'string' ? codeCell.language : 'Connection'),
+            language: cellLanguage,
             cellRef,
             showIcon: true,
             isAIGenerated: false,
             isAIFormula: false,
+            canHaveAISummary: cellLanguage !== 'Import', // Don't show AI explain for data tables
+            codeString: codeCell.code_string,
           });
         }
       } else {
@@ -247,11 +327,11 @@ ${editValue}`;
           }
 
           setDisplayValue(displayVal);
-          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false, canHaveAISummary: false });
         } else {
           // Empty cell - show just the cell reference
           setDisplayValue(cellRef);
-          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
+          setCellInfo({ cellRef, showIcon: false, isAIGenerated: false, isAIFormula: false, canHaveAISummary: false });
         }
       }
     } catch (error) {
@@ -259,7 +339,13 @@ ${editValue}`;
       // Fallback to just showing cell reference
       const fallbackRef = sheets.sheet.cursor.toA1String();
       setDisplayValue(fallbackRef);
-      setCellInfo({ cellRef: fallbackRef, showIcon: false, isAIGenerated: false, isAIFormula: false });
+      setCellInfo({
+        cellRef: fallbackRef,
+        showIcon: false,
+        isAIGenerated: false,
+        isAIFormula: false,
+        canHaveAISummary: false,
+      });
     }
   }, [isExpanded, setIsExpanded]);
 
@@ -386,16 +472,25 @@ ${editValue}`;
         />
 
         {/* Action buttons - positioned in their own container to prevent text overlap */}
-        {aiSummaryData && (
+        {cellInfo.canHaveAISummary && (
           <div className="flex flex-shrink-0 items-center gap-1 border-l border-border px-2 py-1">
-            {/* Edit/Submit/Cancel buttons - only show for AI summary cells */}
+            {/* Edit/Submit/Cancel buttons - show for all code/formula cells */}
             {!isEditing ? (
               <button
-                onClick={startEditing}
-                className="flex items-center gap-1 rounded border-2 border-blue-300/60 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 px-2 py-1 text-xs font-semibold text-blue-700 shadow-lg shadow-blue-200/50 ring-1 ring-blue-200/30 transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:from-blue-200 hover:via-indigo-200 hover:to-purple-200 hover:text-blue-800 hover:shadow-xl hover:shadow-blue-300/60"
-                title={isExpanded ? 'Edit AI summary' : 'Explain and edit AI summary'}
+                onClick={handleExplainEdit}
+                disabled={isGeneratingSummary}
+                className="flex items-center gap-1 rounded border-2 border-blue-300/60 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 px-2 py-1 text-xs font-semibold text-blue-700 shadow-lg shadow-blue-200/50 ring-1 ring-blue-200/30 transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:from-blue-200 hover:via-indigo-200 hover:to-purple-200 hover:text-blue-800 hover:shadow-xl hover:shadow-blue-300/60 disabled:cursor-not-allowed disabled:opacity-50"
+                title={
+                  aiSummaryData
+                    ? isExpanded
+                      ? 'Edit AI summary'
+                      : 'Explain and edit AI summary'
+                    : 'Generate AI explanation'
+                }
               >
-                <span>AI edit / explain</span>
+                <span>
+                  {isGeneratingSummary ? 'Generating...' : aiSummaryData ? 'AI edit / explain' : 'AI explain'}
+                </span>
                 <Pencil1Icon className="h-3 w-3" />
               </button>
             ) : (
