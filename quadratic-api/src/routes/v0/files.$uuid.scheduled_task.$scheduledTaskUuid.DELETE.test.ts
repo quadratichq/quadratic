@@ -1,13 +1,13 @@
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
+
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
-import { genericAuth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
-
-jest.mock('auth0', () => genericAuth0Mock());
 
 describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   let testUser: any;
@@ -179,14 +179,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: { action: 'task1' },
+        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: { action: 'task2' },
+        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
       });
 
       // Verify all tasks exist
@@ -224,14 +224,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: { action: 'task1' },
+        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: { action: 'task2' },
+        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
       });
 
       // Delete first task
@@ -288,7 +288,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: complexOperations,
+        operations: Buffer.from(JSON.stringify(complexOperations)),
       });
 
       const response = await request(app)
@@ -310,7 +310,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: specialOperations,
+        operations: Buffer.from(JSON.stringify(specialOperations)),
       });
 
       const response = await request(app)
@@ -360,7 +360,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: otherFile.id,
         cronExpression: '0 1 * * *',
-        operations: { action: 'other_file_task' },
+        operations: Buffer.from(JSON.stringify({ action: 'other_file_task' })),
       });
 
       // Delete task from first file
@@ -409,14 +409,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: { action: 'concurrent_task1' },
+        operations: Buffer.from(JSON.stringify({ action: 'concurrent_task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: { action: 'concurrent_task2' },
+        operations: Buffer.from(JSON.stringify({ action: 'concurrent_task2' })),
       });
 
       // Perform concurrent operations

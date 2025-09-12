@@ -2,6 +2,7 @@ import type { ScheduledTask, ScheduledTaskLog } from '@prisma/client';
 import { CronExpressionParser } from 'cron-parser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
+import { ApiError } from './ApiError';
 
 /*
  ===============================
@@ -16,8 +17,8 @@ export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledT
   return {
     ...result,
     nextRunTime: result.nextRunTime.toISOString(),
-    lastRunTime: result.lastRunTime?.toISOString() ?? null,
-    operations: Array.from(new Uint8Array(result.operations)),
+    lastRunTime: result.lastRunTime?.toISOString() ?? '',
+    operations: result.operations as any,
     createdDate: result.createdDate.toISOString(),
     updatedDate: result.updatedDate.toISOString(),
   };
@@ -28,7 +29,7 @@ export async function createScheduledTask(data: {
   userId: number;
   fileId: number;
   cronExpression: string;
-  operations: number[];
+  operations: Buffer;
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.create({
     data: {
@@ -47,7 +48,7 @@ export async function createScheduledTask(data: {
 export async function updateScheduledTask(data: {
   scheduledTaskId: number;
   cronExpression: string;
-  operations?: number[];
+  operations?: Buffer;
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.update({
     where: { id: data.scheduledTaskId },
@@ -85,7 +86,7 @@ export async function getScheduledTask(scheduledTaskUuid: string): Promise<Sched
   });
 
   if (!result) {
-    throw new Error(`Scheduled task ${scheduledTaskUuid} not found`);
+    throw new ApiError(500, `Scheduled task ${scheduledTaskUuid} not found`);
   }
 
   return resultToScheduledTaskResponse(result);
@@ -144,7 +145,7 @@ export async function getScheduledTaskLog(scheduledTaskLogId: number): Promise<S
   const result = await dbClient.scheduledTaskLog.findUnique({ where: { id: scheduledTaskLogId } });
 
   if (!result) {
-    throw new Error(`Scheduled task log ${scheduledTaskLogId} not found`);
+    throw new ApiError(500, `Scheduled task log ${scheduledTaskLogId} not found`);
   }
 
   return resultToScheduledTaskLogResponse(result);

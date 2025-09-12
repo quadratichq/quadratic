@@ -1,14 +1,14 @@
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
+
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
-import { genericAuth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTaskLog } from '../../utils/scheduledTasks';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 type ScheduledTaskLogResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response'];
-
-jest.mock('auth0', () => genericAuth0Mock());
 
 describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
   let testUser: any;
