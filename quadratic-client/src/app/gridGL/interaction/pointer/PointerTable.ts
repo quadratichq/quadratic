@@ -8,6 +8,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -162,7 +163,7 @@ export class PointerTable {
   };
 
   pointerDown = (world: Point, event: FederatedPointerEvent): boolean => {
-    let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
+    let tableDown = content.cellsSheet.tables.pointerDown(world);
     if (!tableDown) return false;
 
     if (tableDown.type === 'chart') {
@@ -234,8 +235,8 @@ export class PointerTable {
       this.tableNameDown = undefined;
       return true;
     }
-    const result = pixiApp.cellsSheet().tables.pointerMove(world);
-    this.cursor = pixiApp.cellsSheet().tables.tableCursor;
+    const result = content.cellsSheet.tables.pointerMove(world);
+    this.cursor = content.cellsSheet.tables.tableCursor;
     return result;
   };
 

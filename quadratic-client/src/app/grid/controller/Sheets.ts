@@ -1,13 +1,13 @@
 import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type {
   A1Selection,
   CellRefRange,
   JsOffset,
   JsTableInfo,
-  Rect,
   RefRangeBounds,
   SheetInfo,
   SheetRect,
@@ -26,9 +26,7 @@ import {
   xyxyToA1,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { Rectangle } from 'pixi.js';
 
 export class Sheets {
   initialized: boolean;
@@ -82,7 +80,7 @@ export class Sheets {
       this._current = this.sheets[0].id;
     }
 
-    pixiApp.cellsSheetsCreate();
+    content.cellsSheets.create();
     this.initialized = true;
   };
 
@@ -133,10 +131,7 @@ export class Sheets {
     if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -147,10 +142,7 @@ export class Sheets {
     offsets.forEach(({ column, row, size }) => {
       sheet.updateSheetOffsets(column, row, size);
     });
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
     events.emit('sheetOffsetsUpdated', sheetId);
   };
 
@@ -173,11 +165,12 @@ export class Sheets {
   };
 
   // updates the SheetBar UI
-  private updateSheetBar() {
+  private updateSheetBar = () => {
     this.sort();
+
     // this avoids React complaints about rendering one component while another one is rendering
     setTimeout(() => events.emit('changeSheet', this.current), 0);
-  }
+  };
 
   private sort(): void {
     this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
@@ -218,12 +211,14 @@ export class Sheets {
     if (value !== this._current && this.sheets.find((sheet) => sheet.id === value)) {
       this._current = value;
       pixiApp.viewport.dirty = true;
-      pixiApp.gridLines.dirty = true;
-      pixiApp.headings.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.multiplayerCursor.dirty = true;
-      pixiApp.boxCells.reset();
-      pixiApp.cellsSheets.show(value);
+      events.emit('setDirty', {
+        gridLines: true,
+        headings: true,
+        cursor: true,
+        multiplayerCursor: true,
+        boxCells: true,
+      });
+      content.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
     }
@@ -390,25 +385,6 @@ export class Sheets {
 
   getRustSelection = (): string => {
     return this.sheet.cursor.save();
-  };
-
-  getVisibleRect = (): Rect => {
-    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
-    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
-    leftHeadingWidth /= scale;
-    topHeadingHeight /= scale;
-    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
-    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
-    return {
-      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
-      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
-    };
-  };
-
-  getVisibleRectangle = (): Rectangle => {
-    const visibleRect = this.getVisibleRect();
-    return rectToRectangle(visibleRect);
   };
 
   updateTableName = (oldName: string, newName: string) => {
