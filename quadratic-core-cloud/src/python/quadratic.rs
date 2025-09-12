@@ -24,10 +24,7 @@ fn convert_cells_response(
     first_row_header: bool,
 ) -> PyResult<PyObject> {
     if let Some(error) = &result.error {
-        return Err(PyErr::new::<PyException, _>(format!(
-            "{}",
-            error.core_error
-        )));
+        return Err(PyErr::new::<PyException, _>(error.core_error.to_string()));
     }
 
     // handle the None case
@@ -116,7 +113,6 @@ pub(crate) fn create_get_cells_function(
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use quadratic_core::controller::execution::run_code::get_cells::{
@@ -124,13 +120,6 @@ mod tests {
     };
 
     use super::*;
-
-    fn test_get_cells(_a1: String) -> Result<JsCellsA1Response> {
-        Ok(JsCellsA1Response {
-            values: None,
-            error: None,
-        })
-    }
 
     #[test]
     fn test_convert_cells_response() {

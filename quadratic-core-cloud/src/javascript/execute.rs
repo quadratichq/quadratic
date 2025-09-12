@@ -1,6 +1,6 @@
 use deno_core::ModuleSpecifier;
 use deno_core::PollEventLoopOptions;
-use deno_core::{JsRuntime, RuntimeOptions, error::JsError, serde_v8, v8};
+use deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeResult};
@@ -11,10 +11,10 @@ use tokio::sync::Mutex as TokioMutex;
 use crate::error::{CoreCloudError, Result};
 use crate::javascript::imports::{QuadraticModuleLoader, extract_imports};
 
+type GetCellsFunction = Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>;
+
 // Global state for get_cells function and current position
-static GET_CELLS_FUNCTION: OnceLock<
-    Arc<Mutex<Option<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>>>,
-> = OnceLock::new();
+static GET_CELLS_FUNCTION: OnceLock<Arc<Mutex<Option<GetCellsFunction>>>> = OnceLock::new();
 static CURRENT_POSITION: OnceLock<Arc<Mutex<(i32, i32)>>> = OnceLock::new();
 
 // JS code
@@ -51,7 +51,7 @@ pub(crate) async fn execute(
 ) -> Result<JsCodeResult> {
     // Check if code is empty
     if code.trim().is_empty() {
-        return Ok(empty_js_code_result(&transaction_id));
+        return Ok(empty_js_code_result(transaction_id));
     }
 
     // Store the get_cells function in global state
@@ -78,7 +78,7 @@ pub(crate) async fn execute(
 
         // Create the get_cells callback function
         let get_cells_name = v8::String::new(scope, "__get_cells__").ok_or_else(|| {
-            CoreCloudError::Javascript(format!("Failed to create get_cells name"))
+            CoreCloudError::Javascript("Failed to create get_cells name".to_string())
         })?;
         let get_cells_func = v8::Function::new(
             scope,
@@ -129,7 +129,7 @@ pub(crate) async fn execute(
 
         // Create the current_pos callback function
         let pos_name = v8::String::new(scope, "__current_pos__").ok_or_else(|| {
-            CoreCloudError::Javascript(format!("Failed to create current_pos name"))
+            CoreCloudError::Javascript("Failed to create current_pos name".to_string())
         })?;
         let pos_func = v8::Function::new(
             scope,
@@ -246,7 +246,7 @@ pub(crate) async fn execute(
         }
     };
 
-    execute_module(&mut runtime, &code, &transaction_id, setup_code, expr_code).await
+    execute_module(&mut runtime, code, transaction_id, setup_code, expr_code).await
 }
 
 async fn wrap_module(code: &str, setup_code: Option<String>, expr_code: Option<String>) -> String {
@@ -673,29 +673,29 @@ fn extract_line_number_from_error(error_string: &str) -> Option<u32> {
     None
 }
 
-/// Extracts structured error information from V8 errors
-fn extract_v8_error_info(_runtime: &mut JsRuntime, error: &JsError) -> (String, Option<u32>) {
-    let error_string = error.to_string();
+// /// Extracts structured error information from V8 errors
+// fn extract_v8_error_info(_runtime: &mut JsRuntime, error: &JsError) -> (String, Option<u32>) {
+//     let error_string = error.to_string();
 
-    // get line number from V8 error frames
-    for frame in &error.frames {
-        if let Some(line_number) = frame.line_number {
-            // adjust line number for our async wrapper function
-            let adjusted_line = if line_number > 13 {
-                Some(line_number as u32 - 13)
-            } else {
-                Some(1)
-            };
+//     // get line number from V8 error frames
+//     for frame in &error.frames {
+//         if let Some(line_number) = frame.line_number {
+//             // adjust line number for our async wrapper function
+//             let adjusted_line = if line_number > 13 {
+//                 Some(line_number as u32 - 13)
+//             } else {
+//                 Some(1)
+//             };
 
-            return (error_string, adjusted_line);
-        }
-    }
+//             return (error_string, adjusted_line);
+//         }
+//     }
 
-    // fallback: try to extract from error string
-    let line_number = extract_line_number_from_error(&error_string);
+//     // fallback: try to extract from error string
+//     let line_number = extract_line_number_from_error(&error_string);
 
-    (error_string, line_number)
-}
+//     (error_string, line_number)
+// }
 
 #[cfg(test)]
 pub(crate) mod tests {
@@ -895,7 +895,7 @@ export default result;
             .expect("Should load module");
 
         // evaluate the module
-        let _result = runtime
+        runtime
             .mod_evaluate(module_id)
             .await
             .expect("Should evaluate module");

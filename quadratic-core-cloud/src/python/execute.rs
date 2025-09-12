@@ -54,7 +54,7 @@ pub(crate) fn execute(
         process_imports(&py, code)?;
 
         // use AST to determine if the last statement is an expression
-        let (setup_code, expr_code, has_expression) = analyze_code(&py, code)?;
+        let (setup_code, expr_code, _has_expression) = analyze_code(&py, code)?;
 
         // create a globals dict to capture q.cells("A1") call early
         let globals = pyo3::types::PyDict::new(py);
@@ -236,7 +236,7 @@ with redirect_stdout(__quadratic_std_out__):
                     success: false,
                     std_out: None,
                     std_err: error_message,
-                    line_number: line_number,
+                    line_number,
                     output_value: None,
                     output_array: None,
                     output_display_type: None,
@@ -251,7 +251,6 @@ with redirect_stdout(__quadratic_std_out__):
 }
 
 #[cfg(test)]
-
 mod tests {
     use std::time::Instant;
 

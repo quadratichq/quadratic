@@ -1,13 +1,8 @@
-use quadratic_core::controller::GridController;
 use quadratic_rust_shared::storage::{
     StorageContainer,
     file_system::{FileSystem, FileSystemConfig},
 };
-use std::{env, sync::Arc};
-use tokio::sync::Mutex;
-use uuid::Uuid;
 
-use crate::worker::{Worker, WorkerStatus};
 
 pub fn get_file_config() -> (String, String, String, String) {
     dotenv::from_filename("../quadratic-files/.env").ok();
@@ -29,20 +24,20 @@ pub(crate) fn new_storage() -> StorageContainer {
     }))
 }
 
-pub(crate) async fn setup() -> Arc<Mutex<Worker>> {
-    let worker = Worker {
-        file_id: Uuid::new_v4(),
-        sequence_num: 0,
-        session_id: Uuid::new_v4(),
-        file: Arc::new(Mutex::new(GridController::test())),
-        m2m_auth_token: "M2M_AUTH_TOKEN".to_string(),
-        transaction_id: Arc::new(Mutex::new(None)),
-        websocket_sender: None,
-        websocket_receiver: None,
-        websocket_receiver_handle: None,
-        status: Arc::new(Mutex::new(WorkerStatus::new())),
-    };
-    let worker = Arc::new(Mutex::new(worker));
+// pub(crate) async fn setup() -> Arc<Mutex<Worker>> {
+//     let worker = Worker {
+//         file_id: Uuid::new_v4(),
+//         sequence_num: 0,
+//         session_id: Uuid::new_v4(),
+//         file: Arc::new(Mutex::new(GridController::test())),
+//         m2m_auth_token: "M2M_AUTH_TOKEN".to_string(),
+//         transaction_id: Arc::new(Mutex::new(None)),
+//         websocket_sender: None,
+//         websocket_receiver: None,
+//         websocket_receiver_handle: None,
+//         status: Arc::new(Mutex::new(WorkerStatus::new())),
+//     };
+//     let worker = Arc::new(Mutex::new(worker));
 
-    worker
-}
+//     worker
+// }

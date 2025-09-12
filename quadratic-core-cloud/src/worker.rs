@@ -42,6 +42,12 @@ pub struct WorkerStatus {
     received_transaction_ack: bool,
 }
 
+impl Default for WorkerStatus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkerStatus {
     pub fn new() -> Self {
         Self {
@@ -221,6 +227,8 @@ impl Worker {
                                             status.lock().await.received_transaction_ack = true;
                                         }
                                     }
+                                    // TODO(ddimaria): keep a count of users in the room
+                                    MessageResponse::UsersInRoom { .. } => {}
                                     // we don't care about other messages
                                     _ => {}
                                 },
