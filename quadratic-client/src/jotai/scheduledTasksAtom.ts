@@ -105,7 +105,7 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
         });
         setScheduledTasks((prev) => ({
           ...prev,
-          tasks: [...prev.tasks, created],
+          tasks: [created, ...prev.tasks],
         }));
       } else {
         const updated = await scheduledTasksAPI.update(fileUuid, task.uuid, {
