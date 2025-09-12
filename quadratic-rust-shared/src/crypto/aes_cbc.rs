@@ -32,7 +32,7 @@ pub fn encrypt_from_api(key: &[u8; 32], data: &str) -> Result<String> {
     let mut iv = [0u8; 16];
     OsRng.fill_bytes(&mut iv);
 
-    let encrypted = encrypt(&key, &iv, data)?;
+    let encrypted = encrypt(key, &iv, data)?;
     let encrypted_string = format!("{}:{}", hex::encode(iv), hex::encode(encrypted));
 
     Ok(encrypted_string)

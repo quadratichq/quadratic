@@ -87,10 +87,10 @@ pub async fn get_file_perms(
 ) -> Result<(Vec<FilePermRole>, u64)> {
     let (permissions, sequence_num) = match m2m_token {
         Some(token) => {
-            let checkpoint = get_file_checkpoint(&base_url, token, &file_id).await?;
+            let checkpoint = get_file_checkpoint(base_url, token, &file_id).await?;
             (ADMIN_PERMS.to_vec(), checkpoint.sequence_number)
         }
-        None => get_user_file_perms(&base_url, jwt, file_id).await?,
+        None => get_user_file_perms(base_url, jwt, file_id).await?,
     };
 
     Ok((permissions, sequence_num))

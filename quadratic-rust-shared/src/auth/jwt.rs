@@ -104,7 +104,7 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
 
 /// Extract the authorization token from the headers, removing the "Bearer " prefix.
 pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
-    headers.get("authorization").map_or(None, |authorization| {
+    headers.get("authorization").and_then(|authorization| {
         authorization
             .to_str()
             .ok()
