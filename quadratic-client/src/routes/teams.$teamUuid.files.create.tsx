@@ -1,7 +1,7 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureEvent } from '@sentry/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
@@ -81,6 +81,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     const chatId = searchParams.get('chat-id');
     if (chatId) {
       searchParamsToPass.set('chat-id', chatId);
+    }
+    if (searchParams.get(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY) !== null) {
+      searchParamsToPass.set('show-onboarding-video', '');
     }
 
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));

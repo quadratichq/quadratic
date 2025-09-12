@@ -1,5 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { isMobile } from 'react-device-detect';
@@ -51,7 +52,9 @@ export const loader = async ({ request }: { request: Request }) => {
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return redirect(SHOW_ONBOARDING_QUESTIONNAIRE ? '/onboarding' : '/files/create');
+        return redirect(
+          SHOW_ONBOARDING_QUESTIONNAIRE ? '/onboarding' : `/files/create?${SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY}`
+        );
       }
       return redirect(redirectTo);
     }

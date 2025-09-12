@@ -34,6 +34,7 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -55,7 +56,9 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
-  const [showOnboardingVideo, setShowOnboardingVideo] = useState(searchParams.get('show-onboarding-video') !== null);
+  const [showOnboardingVideo, setShowOnboardingVideo] = useState(
+    searchParams.get(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY) !== null
+  );
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -85,14 +88,14 @@ export default function QuadraticUI() {
     }
   }, []);
 
-  // Remove the `show-onboarding-video` param from the URL if it's present
+  // Remove the onboarding video param from the URL if it's present
   useEffect(() => {
-    if (showOnboardingVideo === true) {
-      const url = new URLSearchParams(window.location.search);
-      url.delete('show-onboarding-video');
+    const url = new URLSearchParams(window.location.search);
+    if (url.has(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY)) {
+      url.delete(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY);
       window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
     }
-  }, [showOnboardingVideo]);
+  }, []);
 
   useRemoveInitialLoadingUI();
 
