@@ -87,7 +87,7 @@ pub(crate) fn _new_postgres_connection() -> PostgresConnection {
 
 pub(crate) fn get_claims() -> Claims {
     Claims {
-        sub: "test".to_string(),
+        email: "test@test.com".to_string(),
         exp: 0,
     }
 }

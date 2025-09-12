@@ -3,7 +3,7 @@
 
 <head>
   <script>
-    document.documentElement.dataset.loadingStart = Date.now();
+    document.documentElement.dataset.loadingStart = performance.now();
   </script>
   <meta charset="utf-8" />
   <link rel="icon" href="/favicon.ico" />
@@ -41,6 +41,15 @@
   <!-- Preload our loading images -->
   <link rel="preload" as="image" href="/images/logo_etching.png" />
   <link rel="preload" as="image" href="/images/logo_loading.gif" />
+
+  <script>
+    // disables the React DevTools message
+    const oldConsoleInfo = console.info;
+    console.info = (...args) => {
+      if (args[0]?.includes('Download the React DevTools')) return;
+      oldConsoleInfo(...args);
+    };
+  </script>
 
   <!-- Google Tag Manager -->
   <script>

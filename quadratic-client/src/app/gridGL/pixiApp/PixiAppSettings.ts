@@ -16,6 +16,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -112,15 +113,14 @@ export class PixiAppSettings {
     } else {
       this.settings = defaultGridSettings;
     }
-    pixiApp.gridLines.dirty = true;
-    pixiApp.headings.dirty = true;
+    events.emit('setDirty', { gridLines: true, headings: true });
 
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
       pixiApp.setViewportDirty();
-      pixiApp.singleCellOutlines.setDirty();
+      events.emit('setDirty', { singleCellOutlines: true });
     }
     this.lastSettings = this.settings;
   };
@@ -216,18 +216,6 @@ export class PixiAppSettings {
     return !this.settings.presentationMode && this.settings.showCodePeek;
   }
 
-  setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
-    if (dirty.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
-    if (dirty.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (dirty.gridLines) {
-      pixiApp.gridLines.dirty = true;
-    }
-  }
-
   changeInput(input: boolean, initialValue?: string, cursorMode?: CursorMode) {
     if (input === false) {
       multiplayer.sendEndCellEdit();
@@ -238,7 +226,7 @@ export class PixiAppSettings {
       this._input.y !== undefined &&
       this._input.sheetId !== undefined
     ) {
-      pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
+      content.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
       const x = sheets.sheet.cursor.position.x;
@@ -247,12 +235,12 @@ export class PixiAppSettings {
         this._input = { show: false };
       } else {
         this._input = { show: input, initialValue, x, y, sheetId: sheets.current };
-        pixiApp.cellsSheets.showLabel(x, y, sheets.current, false);
+        content.cellsSheets.showLabel(x, y, sheets.current, false);
       }
     } else {
       this._input = { show: false };
     }
-    this.setDirty({ cursor: true });
+    events.emit('setDirty', { cursor: true });
 
     // this is used by CellInput to control visibility
     events.emit('changeInput', input, initialValue, cursorMode);
@@ -285,7 +273,6 @@ export class PixiAppSettings {
   }
 
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'], closeGlobalSnackbar: () => void) {
-    debugger;
     this.addGlobalSnackbar = addGlobalSnackbar;
     this.closeCurrentSnackbar = closeGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {

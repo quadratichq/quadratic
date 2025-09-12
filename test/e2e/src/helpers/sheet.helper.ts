@@ -84,3 +84,9 @@ export const assertValidationMessage = async (page: Page, { a1, title, message }
     });
   }
 };
+
+export const changeSheet = async (page: Page, sheetName: string) => {
+  const button = page.locator(`[data-test-sheet-name="${sheetName}"]`);
+  await button.click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+};
