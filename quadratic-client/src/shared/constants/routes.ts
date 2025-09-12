@@ -46,8 +46,8 @@ export const ROUTES = {
     if (searchParams.chatId) {
       url.searchParams.set('chat-id', searchParams.chatId);
     }
-    if (searchParams['show-onboarding-video']) {
-      url.searchParams.set('show-onboarding-video', 'true');
+    if (searchParams[SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY]) {
+      url.searchParams.set(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY, '');
     }
 
     return url.toString();
