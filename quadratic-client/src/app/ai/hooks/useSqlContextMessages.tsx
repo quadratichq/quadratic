@@ -48,6 +48,7 @@ export function useSqlContextMessages() {
                   connectionId: connection.uuid,
                   connectionName: connection.name,
                   connectionType: connection.type,
+                  semanticDescription: connection.semanticDescription,
                   database: schema?.database || 'Unknown',
                   tableNames: tableNames,
                 };
@@ -57,6 +58,7 @@ export function useSqlContextMessages() {
                   connectionId: connection.uuid,
                   connectionName: connection.name,
                   connectionType: connection.type,
+                  semanticDescription: connection.semanticDescription,
                   database: 'Unknown',
                   tableNames: [],
                   error: `Failed to retrieve table names: ${error}`,
@@ -91,6 +93,7 @@ ${conn.connectionName}
 ### Information
 type: ${conn.connectionType}
 id: ${conn.connectionId}
+semanticDescription: ${conn.semanticDescription}
 
 ### Database
 ${conn.database}

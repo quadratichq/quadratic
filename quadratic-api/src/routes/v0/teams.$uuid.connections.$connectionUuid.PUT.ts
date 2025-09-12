@@ -43,12 +43,13 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to update this connection');
   }
 
-  const { name, typeDetails } = newConnection;
+  const { name, typeDetails, semanticDescription } = newConnection;
   const updatedConnection = await dbClient.connection.update({
     where: { uuid: connectionUuid },
     data: {
       name,
       updatedDate: new Date(),
+      semanticDescription,
       typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
     },
   });
@@ -59,6 +60,7 @@ async function handler(
     createdDate: updatedConnection.createdDate.toISOString(),
     updatedDate: updatedConnection.updatedDate.toISOString(),
     type: updatedConnection.type,
+    semanticDescription: updatedConnection.semanticDescription || undefined,
     typeDetails,
   });
 }

@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Matrix, Renderer } from 'pixi.js';
@@ -49,14 +50,15 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await pixiApp.prepareForCopying({ sheetId, cull: screenRect });
+  await content.prepareForCopying({ sheetId, cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
   const scale = imageWidth / (screenRect.width * resolution);
   transform.scale(scale, scale);
-  renderer.render(pixiApp.viewportContents, { transform });
-  pixiApp.cleanUpAfterCopying();
+  renderer.render(content, { transform });
+  const viewportBounds = pixiApp.viewport.getVisibleBounds();
+  content.cleanUpAfterCopying(viewportBounds);
 
   // force a pixiApp rerender to clean up interactions (I think)
   pixiApp.setViewportDirty();

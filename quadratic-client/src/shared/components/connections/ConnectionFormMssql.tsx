@@ -1,4 +1,5 @@
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
+import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
@@ -7,6 +8,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
   ConnectionTypeDetailsMssqlSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections.js';
@@ -15,6 +17,7 @@ import { z } from 'zod';
 
 const ConnectionFormMssqlSchema = z.object({
   name: ConnectionNameSchema,
+  semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.MSSQL),
   ...ConnectionTypeDetailsMssqlSchema.shape,
 });
@@ -40,6 +43,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     sshHost: String(connection?.typeDetails?.sshHost || ''),
     sshPort: String(connection?.typeDetails?.sshPort || DEFAULTS.SSH_PORT),
     sshUsername: String(connection?.typeDetails?.sshUsername || ''),
+    semanticDescription: String(connection?.semanticDescription || ''),
   };
 
   const form = useForm<FormValues>({
@@ -139,6 +143,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           />
         </div>
         <ConnectionFormSsh form={form} />
+
+        <ConnectionFormSemantic form={form} />
 
         {children}
       </form>

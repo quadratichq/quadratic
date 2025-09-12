@@ -76,9 +76,15 @@ where
             }
         }
     } else {
-        return Err(SharedError::Auth(Auth::Jwt(
-            "No matching JWK found for the given kid".into(),
-        )));
+        let jwks_kids = jwks
+            .keys
+            .iter()
+            .filter_map(|jwk| jwk.common.key_id.as_deref())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(SharedError::Auth(Auth::Jwt(format!(
+            "No matching JWK found for the given kid. JWT kid: {kid}, JWKS kids: {jwks_kids}",
+        ))));
     }
 
     Ok(decoded_token)
