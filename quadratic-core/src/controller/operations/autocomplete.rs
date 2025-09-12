@@ -4,7 +4,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        SheetId,
+        CodeRun, DataTable, DataTableKind, SheetId,
         formats::SheetFormatUpdates,
         series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,
@@ -662,9 +662,10 @@ impl GridController {
         for (i, Pos { x, y }) in final_range.iter().enumerate() {
             let final_sheet_pos = SheetPos::new(sheet_id, x, y);
 
-            if let Some((CellValue::Code(code_cell), original_pos)) = new_series.get_mut(i) {
-                if let Some(original_pos) = original_pos {
-                    code_cell.adjust_references(
+            if let Some((_, Some(original_pos))) = new_series.get_mut(i) {
+                if let Some(code_run) = sheet.code_run_at(original_pos) {
+                    let mut code_run = code_run.clone();
+                    code_run.adjust_references(
                         sheet_id,
                         context,
                         original_pos.to_sheet_pos(sheet_id),
@@ -677,6 +678,24 @@ impl GridController {
                             y_start: 0,
                         },
                     );
+
+                    // TODO: once we're compiling again, this needs to be fixed
+                    // and moved below, as the code_run needs to be added to the
+                    // data_tables_in_rect instead of separately set here
+
+                    // data_table_ops.push(Operation::AddDataTableWithoutCellValue {
+                    //     sheet_pos: final_sheet_pos,
+                    //     data_table: Some(DataTable::new(
+                    //         DataTableKind::CodeRun(code_run),
+                    //         "CodeRun",
+                    //         "".into(),
+                    //         false,
+                    //         None,
+                    //         None,
+                    //         None,
+                    //     )),
+                    //     index: None,
+                    // });
 
                     let source_pos = original_pos.to_owned();
                     original_pos.x = x;

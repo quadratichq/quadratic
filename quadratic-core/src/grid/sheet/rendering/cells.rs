@@ -220,25 +220,22 @@ impl Sheet {
             .for_each(|(x, column)| {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_) | CellValue::Import(_)) {
-                        let special = self
-                            .validations
-                            .render_special_pos(Pos { x, y }, a1_context)
-                            .or({
-                                if matches!(value, CellValue::Logical(_)) {
-                                    Some(JsRenderCellSpecial::Logical)
-                                } else {
-                                    None
-                                }
-                            });
+                    let special = self
+                        .validations
+                        .render_special_pos(Pos { x, y }, a1_context)
+                        .or({
+                            if matches!(value, CellValue::Logical(_)) {
+                                Some(JsRenderCellSpecial::Logical)
+                            } else {
+                                None
+                            }
+                        });
 
-                        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                    let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
 
-                        Self::ensure_lists_are_clipped(&mut format, &special);
+                    Self::ensure_lists_are_clipped(&mut format, &special);
 
-                        render_cells
-                            .push(Self::get_render_cell(x, y, value, format, None, special));
-                    }
+                    render_cells.push(Self::get_render_cell(x, y, value, format, None, special));
                 });
             });
 
@@ -306,7 +303,7 @@ mod tests {
         SheetPos, Value,
         a1::A1Selection,
         controller::GridController,
-        grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
+        grid::{CellVerticalAlign, CellWrap, CodeRun, DataTableKind},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
@@ -332,13 +329,6 @@ mod tests {
             .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_cell_value(
-            Pos { x: 2, y: 3 },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "1 + 1".to_string(),
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),

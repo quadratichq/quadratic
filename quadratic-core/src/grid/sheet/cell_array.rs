@@ -4,6 +4,7 @@ use anyhow::{Result, anyhow};
 
 use crate::{
     Array, CellValue, Pos, Rect, controller::execution::run_code::get_cells::JsCellsA1Value,
+    grid::CodeRun,
 };
 
 use super::Sheet;
@@ -78,13 +79,9 @@ impl Sheet {
                         let cell_value = self.cell_value_ref(pos).unwrap_or(&CellValue::Blank);
 
                         match (include_code, cell_value) {
-                            (
-                                true,
-                                CellValue::Code(_)
-                                | CellValue::Import(_)
-                                | CellValue::Image(_)
-                                | CellValue::Html(_),
-                            ) => cell_value.to_owned(),
+                            (true, CellValue::Image(_) | CellValue::Html(_)) => {
+                                cell_value.to_owned()
+                            }
                             (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })
@@ -114,11 +111,10 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        let cell_value = self.cell_value_ref(pos).unwrap_or(&CellValue::Blank);
-
-                        match (include_code, &cell_value) {
-                            (true, CellValue::Code(_)) => (cell_value.to_owned(), Some(pos)),
-                            (_, _) => (self.display_value(pos).unwrap_or(CellValue::Blank), None),
+                        if let Some(code_run) = self.code_run_at(&pos) {
+                            (CellValue::Blank, Some(pos))
+                        } else {
+                            (self.display_value(pos).unwrap_or(CellValue::Blank), None)
                         }
                     })
                     .collect::<Vec<(CellValue, Option<Pos>)>>()

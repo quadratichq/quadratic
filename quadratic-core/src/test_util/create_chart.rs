@@ -109,7 +109,11 @@ mod tests {
             CodeCellLanguage::Javascript,
             "code".to_string(),
         );
-        assert!(sheet.data_table_at(&pos).unwrap().is_image());
+        assert!(
+            gc.data_table_at(pos.to_sheet_pos(sheet_id))
+                .unwrap()
+                .is_image()
+        );
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 

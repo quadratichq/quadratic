@@ -103,7 +103,7 @@ mod test {
             operations::operation::Operation,
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         number::decimal_from_str,
         test_util::pretty_print_data_table,
     };

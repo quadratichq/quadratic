@@ -4,10 +4,7 @@ use crate::{
     RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{
-        SheetId,
-        code_run::{ConnectionKind, HANDLEBARS_REGEX_COMPILED},
-    },
+    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
 };
 
 impl GridController {
@@ -115,17 +112,14 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::{
         Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        grid::{
-            SheetId,
-            code_run::{CodeCellLanguage, ConnectionKind},
-        },
+        grid::{CodeCellLanguage, SheetId},
     };
 
     #[test]

@@ -1380,7 +1380,7 @@ mod test {
 
     #[test]
     fn test_percentage_14() {
-        let (value, format) = CellValue::string_to_cell_value("14%", false, true);
+        let (value, format) = CellValue::string_to_cell_value("14%", false);
         assert_eq!(value, CellValue::Number(decimal_from_str("0.14").unwrap()));
         assert_eq!(
             format,

@@ -208,7 +208,7 @@ mod tests {
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
+        grid::{CodeRun, DataTableKind, js_types::JsNumber},
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
@@ -284,10 +284,6 @@ mod tests {
     #[test]
     fn test_get_render_code_cells() {
         let sheet = Sheet::test();
-        let code_cell = CellValue::Code(CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code: "".to_string(),
-        });
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
@@ -315,7 +311,6 @@ mod tests {
 
         // render rect is larger than code rect
         let code_cells = sheet.get_render_code_cells(
-            &code_cell,
             &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
@@ -330,7 +325,6 @@ mod tests {
 
         // code rect overlaps render rect to the top-left
         let code_cells = sheet.get_render_code_cells(
-            &code_cell,
             &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
@@ -342,7 +336,6 @@ mod tests {
 
         // code rect overlaps render rect to the bottom-right
         let code_cells = sheet.get_render_code_cells(
-            &code_cell,
             &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
@@ -374,7 +367,6 @@ mod tests {
             None,
         );
         let code_cells = sheet.get_render_code_cells(
-            &code_cell,
             &code_run,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 1, 1),
@@ -398,10 +390,6 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let pos = (0, 0).into();
-        let code = CellValue::Code(CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code: "1 + 1".to_string(),
-        });
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),
@@ -424,7 +412,6 @@ mod tests {
         );
 
         sheet.set_data_table(pos, Some(data_table));
-        sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
         let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(

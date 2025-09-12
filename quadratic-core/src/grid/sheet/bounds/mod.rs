@@ -369,19 +369,10 @@ impl Sheet {
 
         let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
             Some(value) => {
-                if value.is_blank_or_empty_string()
-                    || value.is_image()
-                    || value.is_html()
-                    || value.is_import()
-                {
+                if value.is_blank_or_empty_string() || value.is_image() || value.is_html() {
                     true
-                } else if matches!(value, CellValue::Code(_)) {
-                    // include code cells that are single values in data rects
-                    if let Some(output) = self.data_table_at(&pos) {
-                        !output.is_single_value()
-                    } else {
-                        true
-                    }
+                } else if let Some(dt) = self.data_table_at(&pos) {
+                    dt.is_single_value()
                 } else {
                     false
                 }

@@ -548,9 +548,7 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::js_types::{CellFormatSummary, CellType, JsCellValueKind};
-    use crate::grid::{
-        CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
-    };
+    use crate::grid::{CodeRun, DataTable, DataTableKind, NumericFormat};
     use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{Array, SheetPos, SheetRect, Value};
@@ -815,19 +813,13 @@ mod test {
     #[test]
     fn delete_cell_values_code() {
         let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 1, 1);
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(
-            Pos { x: 0, y: 0 },
-            CellValue::Code(CodeCellValue {
-                code: "test".to_string(),
-                language: CodeCellLanguage::Formula,
-            }),
-        );
-        gc.delete_cells(&A1Selection::from_xy(0, 0, sheet_id), None);
 
-        let sheet = gc.sheet(sheet_id);
-        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
+        gc.delete_cells(&A1Selection::from_xy(1, 1, sheet_id), None);
+
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "");
     }
 
     #[test]
