@@ -67,7 +67,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
-    if (state) {
     return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
