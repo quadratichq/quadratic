@@ -21,6 +21,7 @@ class AICodeCellSummaryStore {
   private readonly MAX_SUMMARIES = 1000; // Limit to prevent memory issues
   private saveTimeoutId: NodeJS.Timeout | null = null;
   private readonly SAVE_DEBOUNCE_MS = 500; // Debounce localStorage writes by 500ms
+  private beforeUnloadHandler: (() => void) | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -30,9 +31,10 @@ class AICodeCellSummaryStore {
 
     // Ensure data is saved before page unload
     if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', () => {
+      this.beforeUnloadHandler = () => {
         this.flushToStorage();
-      });
+      };
+      window.addEventListener('beforeunload', this.beforeUnloadHandler);
     }
   }
 
@@ -253,6 +255,12 @@ class AICodeCellSummaryStore {
   public destroy(): void {
     // Clean up event listener
     events.off('updateCodeCells', this.handleCodeCellUpdates);
+
+    // Remove beforeunload event listener
+    if (typeof window !== 'undefined' && this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
+    }
 
     // Clear pending timeout
     if (this.saveTimeoutId) {
