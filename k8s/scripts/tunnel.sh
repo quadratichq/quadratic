@@ -7,7 +7,7 @@ set -u
 # Config (override via flags or env)
 NAMESPACE="${NAMESPACE:-quadratic-cloud}"
 TUNNEL_NAME="${TUNNEL_NAME:-quadratic-localhost-tunnel}"
-PORTS="${PORTS:-8000:8000,3001:3001,3003:3003}"  # comma-separated local:remote pairs
+PORTS="${PORTS:-8000:8000,3001:3001,3002:3002,3003:3003}"  # comma-separated local:remote pairs
 
 # Colors
 RED='\033[0;31m'

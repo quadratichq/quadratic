@@ -6,7 +6,10 @@ use axum::{
 use chrono::Timelike;
 use quadratic_rust_shared::{
     quadratic_api::get_scheduled_tasks,
-    quadratic_cloud::{ACK_TASKS_ROUTE, GET_LAST_CHECKPOINT_DATA_URL_ROUTE, GET_TASKS_ROUTE},
+    quadratic_cloud::{
+        WORKER_ACK_TASKS_ROUTE, WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE, WORKER_GET_TASKS_ROUTE,
+        WORKER_SHUTDOWN_ROUTE,
+    },
 };
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
@@ -20,7 +23,9 @@ use crate::{
     error::ControllerError,
     health::{full_healthcheck, healthcheck},
     state::State,
-    worker::{ack_tasks_for_worker, get_last_checkpoint_data_url, get_tasks_for_worker},
+    worker::{
+        ack_tasks_for_worker, get_last_file_checkpoint, get_tasks_for_worker, worker_shutdown,
+    },
 };
 
 async fn start_pubsub_listener(state: Arc<State>) -> Result<()> {
@@ -110,19 +115,19 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
     info!("Building app");
 
     let app = Router::new()
-        // .route("/worker/heartbeat", post(worker_heartbeat))
-        // .route("/worker/status", get(worker_status))
+        // Shutdown a worker
+        .route(WORKER_SHUTDOWN_ROUTE, get(worker_shutdown))
         //
         // Acknowledge tasks after they have been processed by the worker
-        .route(ACK_TASKS_ROUTE, post(ack_tasks_for_worker))
+        .route(WORKER_ACK_TASKS_ROUTE, post(ack_tasks_for_worker))
         //
         // Get tasks for a file by worker
-        .route(GET_TASKS_ROUTE, get(get_tasks_for_worker))
+        .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
         //
         // Get a last checkpoint data URL for a file
         .route(
-            GET_LAST_CHECKPOINT_DATA_URL_ROUTE,
-            get(get_last_checkpoint_data_url),
+            WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE,
+            get(get_last_file_checkpoint),
         )
         // Worker API routes
         //

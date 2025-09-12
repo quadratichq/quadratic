@@ -6,7 +6,7 @@ use futures::future::join_all;
 use k8s_openapi::api::batch::v1::Job;
 use kube::{
     ResourceExt,
-    api::{Api, ListParams, PostParams},
+    api::{Api, DeleteParams, ListParams, PostParams},
 };
 use tracing::{error, info};
 use uuid::Uuid;
@@ -132,7 +132,9 @@ impl Controller {
     }
 
     async fn ensure_worker_exists_if_needed_for_file(&self, file_id: &Uuid) -> Result<()> {
-        info!("Ensuring worker exists for file {file_id}");
+        info!(
+            "[ensure_worker_exists_if_needed_for_file] Ensuring worker exists for file {file_id}"
+        );
 
         if self.file_has_active_worker(file_id).await? {
             info!("Active file worker found for file {file_id}");
@@ -174,8 +176,7 @@ impl Controller {
     }
 
     async fn file_has_active_worker(&self, file_id: &Uuid) -> Result<bool> {
-        info!("Checking if file {file_id} has an active worker");
-
+        info!("[file_has_active_worker] Checking if file {file_id} has an active worker");
         let jobs = Self::get_namespaced_jobs(&self.state);
         let list_params = Self::get_list_params_for_worker_with_file_id(file_id);
         let job_list = jobs.list(&list_params).await?;
@@ -185,18 +186,18 @@ impl Controller {
             .any(|job| job.metadata.deletion_timestamp.is_none())
         {
             true => {
-                info!("Found file worker for file {file_id}");
+                info!("[file_has_active_worker] Found file worker for file {file_id}");
                 return Ok(true);
             }
             false => {
-                info!("No active worker found for file {file_id}");
+                info!("[file_has_active_worker] No active worker found for file {file_id}");
                 return Ok(false);
             }
         }
     }
 
     async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
-        info!("Creating worker for file {file_id}");
+        info!("[create_worker] Creating worker for file {file_id}");
 
         // Check if the file has an active worker
         if self.file_has_active_worker(file_id).await? {
@@ -256,7 +257,7 @@ metadata:
     file-id: "{file_id}"
     managed-by: quadratic-cloud-controller
 spec:
-  ttlSecondsAfterFinished: 300
+  ttlSecondsAfterFinished: 30
   backoffLimit: 0
   activeDeadlineSeconds: 3600
   template:
@@ -301,6 +302,29 @@ spec:
         );
         let job: Job = serde_yaml::from_str(&job_yaml)?;
         Ok(job)
+    }
+
+    pub(crate) async fn shutdown_worker(state: &Arc<State>, file_id: &Uuid) -> Result<()> {
+        info!("[shutdown_worker] Shutting down worker for file {file_id}");
+        let jobs = Self::get_namespaced_jobs(&state);
+        let list_params = Self::get_list_params_for_worker_with_file_id(file_id);
+        let job_list = jobs.list(&list_params).await?;
+        for job in job_list.items {
+            if job.metadata.deletion_timestamp.is_none() {
+                if let Some(name) = job.metadata.name {
+                    info!("[shutdown_worker] Deleting worker job: {}", name);
+                    let delete_params = DeleteParams::default();
+                    match jobs.delete(&name, &delete_params).await {
+                        Ok(_) => info!("[shutdown_worker] Successfully deleted worker job: {name}"),
+                        Err(e) => {
+                            error!("[shutdown_worker] Failed to delete worker job {name}: {e}");
+                            return Err(anyhow::anyhow!(e));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     pub(crate) async fn count_active_workers(&self) -> Result<usize> {

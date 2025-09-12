@@ -82,7 +82,11 @@ log_step() {
 }
 
 log_build() {
-    echo -e "${CYAN}🔨 $1${NC}"
+    echo -e "${CYAN}🏗️  $1${NC}"
+}
+
+log_kind() {
+    echo -e "${CYAN}🔄 $1${NC}"
 }
 
 #------------------------------------------------------------------------------
@@ -105,10 +109,10 @@ OPTIONS:
     --help            Show this help message
 
 EXAMPLES:
-    $0                          # Build all images with cache
-    $0 --no-cache               # Build without cache
-    $0 --tag v1.0.0             # Build with custom tag
-    $0 --push-only              # Only push existing images
+    $0                          # Build all images and update in kind
+    $0 --no-cache               # Build without cache and update in kind
+    $0 --tag v1.0.0             # Build with custom tag and update in kind
+    $0 --push-only              # Only push existing images and update in kind
 
 COMPONENTS:
     controller    Quadratic Cloud Controller (orchestrator)
@@ -305,14 +309,21 @@ build_all_parallel() {
         log_error "One or more builds failed"
         return 1
     fi
+    
+    log_success "All components built in parallel"
 }
 
 build_all_sequential() {
     log_step "Building all components sequentially..."
     
     for component in "${COMPONENTS[@]}"; do
-        build_image "$component"
+        if ! build_image "$component"; then
+            log_error "Build failed for ${component}"
+            return 1
+        fi
     done
+    
+    log_success "All components built sequentially"
 }
 
 #------------------------------------------------------------------------------
@@ -340,20 +351,33 @@ verify_images() {
         log_warning "Could not verify images in registry"
     fi
     
-    # Test image pull from cluster perspective
+    # Load images into kind cluster
     if command -v kind &> /dev/null && kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
-        log_info "Testing image accessibility from cluster..."
+        log_step "Loading images into kind cluster..."
         for component in "${COMPONENTS[@]}"; do
             local image_name="quadratic-cloud-${component}"
             local full_image_name="${REGISTRY}/${image_name}:${VERSION}"
             
-            if docker exec "${CLUSTER_NAME}-control-plane" crictl images | grep -q "$image_name"; then
-                log_success "${image_name} accessible from cluster"
+            log_kind "Loading ${image_name} into kind cluster..."
+            if kind load docker-image "${full_image_name}" --name "${CLUSTER_NAME}"; then
+                log_success "${image_name} loaded into kind cluster"
             else
-                log_info "Pre-loading ${image_name} into cluster..."
-                kind load docker-image "${full_image_name}" --name "${CLUSTER_NAME}"
+                log_error "Failed to load ${image_name} into kind cluster"
             fi
         done
+        
+        # Verify images are now available in cluster
+        log_info "Verifying images in kind cluster:"
+        for component in "${COMPONENTS[@]}"; do
+            local image_name="quadratic-cloud-${component}"
+            if docker exec "${CLUSTER_NAME}-control-plane" crictl images | grep -q "$image_name"; then
+                log_success "${image_name} available in kind cluster"
+            else
+                log_warning "${image_name} may not be available in kind cluster"
+            fi
+        done
+    else
+        log_warning "Kind cluster '${CLUSTER_NAME}' not found - skipping kind image loading"
     fi
 }
 
@@ -367,19 +391,30 @@ show_build_info() {
     log_info "📋 Build Information:"
     echo "  • Registry: ${REGISTRY}"
     echo "  • Version/Tag: ${VERSION}"
-    echo "  • Cache Used: ${USE_CACHE}"
+    echo "  • Cache: $([ "$USE_CACHE" = true ] && echo "enabled" || echo "disabled")"
     echo "  • Build Mode: $([ "$BUILD_PARALLEL" = true ] && echo "Parallel" || echo "Sequential")"
     echo
     log_info "🐳 Built Images:"
     for component in "${COMPONENTS[@]}"; do
-        echo "  • quadratic-cloud-${component}:${VERSION}"
-        echo "    └─ ${REGISTRY}/quadratic-cloud-${component}:${VERSION}"
+        local image_name="quadratic-cloud-${component}"
+        echo "  • ${REGISTRY}/${image_name}:${VERSION}"
     done
+    echo
+    log_info "🔗 Registry Commands:"
+    echo "  • List images: curl http://${REGISTRY}/v2/_catalog | jq ."
+    echo "  • Inspect image: docker inspect ${REGISTRY}/quadratic-cloud-controller:${VERSION}"
+    echo
+    log_info "☸️  Kind Cluster:"
+    echo "  • Images loaded into: ${CLUSTER_NAME}"
+    echo "  • Check cluster images: docker exec ${CLUSTER_NAME}-control-plane crictl images"
     echo
     log_info "📁 Next Steps:"
     echo "  • Deploy to cluster: ./k8s/scripts/deploy.sh"
+    echo "  • Set up tunnel: ./k8s/scripts/tunnel.sh"
     echo "  • View images: docker images | grep quadratic-cloud"
     echo "  • Check registry: curl http://${REGISTRY}/v2/_catalog"
+    echo "  • Watch deployment: kubectl get pods -n quadratic-cloud -w"
+    echo "  • Force pod restart: kubectl rollout restart deployment/quadratic-cloud-controller -n quadratic-cloud"
     echo
 }
 

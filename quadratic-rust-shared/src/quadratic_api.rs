@@ -246,20 +246,31 @@ pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
 }
 
-pub async fn get_last_checkpoint_data_url(
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetLastFileCheckpointResponse {
+    pub presigned_url: String,
+    pub sequence_number: u32,
+}
+pub async fn get_last_file_checkpoint(
     base_url: &str,
     jwt: &str,
     file_id: Uuid,
-) -> Result<String> {
-    let url = format!("{base_url}/v0/internal/file/{file_id}/last-checkpoint-data-url");
+) -> Result<GetLastFileCheckpointResponse> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/last-file-checkpoint");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;
 
-    let last_checkpoint_data_url = response.text().await?;
+    let last_file_checkpoint = response
+        .json::<GetLastFileCheckpointResponse>()
+        .await
+        .map_err(|e| {
+            SharedError::QuadraticApi(format!("Error getting last file checkpoint: {e}"))
+        })?;
 
-    Ok(last_checkpoint_data_url)
+    Ok(last_file_checkpoint)
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]

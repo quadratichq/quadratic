@@ -11,7 +11,7 @@ export const validateUUID = () => param('uuid').isUUID(4);
 const router = express.Router();
 
 router.get(
-  '/file/:uuid/last-checkpoint-data-url',
+  '/file/:uuid/last-file-checkpoint',
   validateM2MAuth(),
   validateUUID(),
   async (req: Request, res: Response) => {
@@ -21,7 +21,9 @@ router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const fileUuid = req.params.uuid;
+    const {
+      params: { uuid: fileUuid },
+    } = req;
 
     // Get the most recent checkpoint for the file
     const result = await dbClient.file.findUniqueOrThrow({
@@ -38,11 +40,11 @@ router.get(
       },
     });
 
-    const checkpoint = result.FileCheckpoint[0];
+    const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
 
-    const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
+    const presignedUrl = await getFileUrl(s3Key);
 
-    return res.status(200).send(lastCheckpointDataUrl);
+    return res.status(200).json({ presignedUrl, sequenceNumber });
   }
 );
 

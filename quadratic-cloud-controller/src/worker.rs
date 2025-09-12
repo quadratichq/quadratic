@@ -1,69 +1,109 @@
 use anyhow::Result;
-use axum::{Extension, http::StatusCode, response::Json};
+use axum::{
+    Extension,
+    http::{HeaderMap, StatusCode},
+    response::Json,
+};
 use quadratic_rust_shared::{
-    quadratic_api::get_last_checkpoint_data_url as get_last_checkpoint_data_url_from_api,
+    quadratic_api::{
+        GetLastFileCheckpointResponse,
+        get_last_file_checkpoint as get_last_file_checkpoint_from_api,
+    },
     quadratic_cloud::{
-        AckTasksRequest, AckTasksResponse, GetLastCheckpointDataUrlRequest, GetTasksRequest,
-        GetTasksResponse,
+        AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse, ShutdownResponse,
+        WORKER_TOKEN_HEADER,
     },
 };
 use std::sync::Arc;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::state::State;
+use crate::{controller::Controller, state::State};
 
-async fn handle_worker_token(
-    state: &State,
-    file_id: Uuid,
-    worker_token: Uuid,
-) -> Result<Uuid, StatusCode> {
+/// Extract the UUID from the header
+fn get_uuid_from_header(headers: &HeaderMap, header_name: &str) -> Result<Uuid, StatusCode> {
+    let header_value = match headers.get(header_name) {
+        Some(header_value) => header_value,
+        None => {
+            error!("Missing header: {header_name}");
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
+    let header_string_value = match header_value.to_str() {
+        Ok(header_string_value) => header_string_value,
+        Err(e) => {
+            error!("Error converting header value to string: {header_name}, error: {e}");
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
+    match Uuid::parse_str(header_string_value) {
+        Ok(header_value) => Ok(header_value),
+        Err(e) => {
+            error!(
+                "Error parsing UUID from header: {header_name}: {header_string_value}, error: {e}"
+            );
+            Err(StatusCode::BAD_REQUEST)
+        }
+    }
+}
+
+/// Extract the file id and worker token from the headers and verify the worker token
+///
+/// Returns the file id if the worker token is valid
+async fn handle_worker_token(state: &State, headers: &HeaderMap) -> Result<Uuid, StatusCode> {
+    let file_id = get_uuid_from_header(headers, FILE_ID_HEADER)?;
+    let worker_token = match get_uuid_from_header(headers, WORKER_TOKEN_HEADER) {
+        Ok(worker_token) => worker_token,
+        Err(e) => {
+            error!("Error getting worker token: {e}");
+            state.remove_worker_token(&file_id).await;
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    };
+
     match state.verify_worker_token(file_id, worker_token).await {
         Ok(file_id) => Ok(file_id),
         Err(e) => {
             error!("Error verifying worker token: {e}");
+            state.remove_worker_token(&file_id).await;
             Err(StatusCode::UNAUTHORIZED)
         }
     }
 }
 
-/// Get a presigned URL for a file
-pub(crate) async fn get_last_checkpoint_data_url(
+/// Get a last file checkpoint
+pub(crate) async fn get_last_file_checkpoint(
     Extension(state): Extension<Arc<State>>,
-    Json(request): Json<GetLastCheckpointDataUrlRequest>,
-) -> Result<String, StatusCode> {
-    info!(
-        "[get_last_checkpoint_data_url] Getting last checkpoint data url for file {}",
-        request.file_id
-    );
+    headers: HeaderMap,
+) -> Result<Json<GetLastFileCheckpointResponse>, StatusCode> {
+    let file_id = handle_worker_token(&state, &headers).await?;
 
-    let file_id = handle_worker_token(&state, request.file_id, request.worker_token).await?;
+    info!("[get_last_file_checkpoint] Getting last file checkpoint for file id {file_id}",);
 
-    let last_checkpoint_data_url = get_last_checkpoint_data_url_from_api(
+    let last_file_checkpoint = get_last_file_checkpoint_from_api(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
         file_id,
     )
     .await
     .map_err(|e| {
-        info!("Error getting last checkpoint data url: {e}");
+        error!("Error getting last file checkpoint: {e}");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(last_checkpoint_data_url)
+    Ok(Json(last_file_checkpoint))
 }
 
 /// Get the next tasks for this worker
 pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
-    Json(request): Json<GetTasksRequest>,
+    headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>, StatusCode> {
-    info!(
-        "[get_tasks_for_worker] Getting tasks for worker for file {}",
-        request.file_id
-    );
+    let file_id = handle_worker_token(&state, &headers).await?;
 
-    let file_id = handle_worker_token(&state, request.file_id, request.worker_token).await?;
+    info!("[get_tasks_for_worker] Getting tasks for worker for file {file_id}",);
 
     match state.get_tasks_for_file(file_id).await {
         Ok(tasks) => Ok(Json(tasks)),
@@ -77,15 +117,12 @@ pub(crate) async fn get_tasks_for_worker(
 /// Acknowledge tasks completion
 pub(crate) async fn ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>, StatusCode> {
-    info!(
-        "[ack_tasks_for_worker] Acknowledging tasks for worker for file {}",
-        ack_request.file_id
-    );
+    let file_id = handle_worker_token(&state, &headers).await?;
 
-    let file_id =
-        handle_worker_token(&state, ack_request.file_id, ack_request.worker_token).await?;
+    info!("[ack_tasks_for_worker] Acknowledging tasks for worker for file {file_id}",);
 
     match state.ack_tasks(file_id, ack_request.task_ids).await {
         Ok(_) => Ok(Json(AckTasksResponse { success: true })),
@@ -96,60 +133,22 @@ pub(crate) async fn ack_tasks_for_worker(
     }
 }
 
-// #[derive(Serialize, Deserialize)]
-// pub struct HeartbeatRequest {
-//     pub current_task: Option<String>,
-//     pub status: String,
-// }
+/// Shutdown the worker
+pub(crate) async fn worker_shutdown(
+    Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
+) -> Result<Json<ShutdownResponse>, StatusCode> {
+    let file_id = handle_worker_token(&state, &headers).await?;
 
-// #[derive(Serialize, Deserialize)]
-// pub struct WorkerStatusResponse {
-//     pub should_shutdown: bool,
-//     pub pending_tasks: u32,
-// }
+    info!("[shutdown_worker] Shutting down worker for file {file_id}",);
 
-// /// Worker heartbeat
-// async fn worker_heartbeat(
-//     Extension(state): Extension<Arc<State>>,
-//     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-//     Json(heartbeat): Json<HeartbeatRequest>,
-// ) -> Result<StatusCode, StatusCode> {
-//     let worker_info = extract_worker_info_by_ip(addr.ip(), &state).await?;
+    state.remove_worker_token(&file_id).await;
 
-//     match state
-//         .update_worker_heartbeat(&worker_info.file_id, &worker_info.pod_name, &heartbeat)
-//         .await
-//     {
-//         Ok(_) => {
-//             info!(
-//                 "Heartbeat from pod {} for file {}",
-//                 worker_info.pod_name, worker_info.file_id
-//             );
-//             Ok(StatusCode::OK)
-//         }
-//         Err(e) => {
-//             warn!("Error updating heartbeat: {}", e);
-//             Ok(StatusCode::OK) // Don't fail heartbeats
-//         }
-//     }
-// }
-
-// /// Worker status check
-// async fn worker_status(
-//     Extension(state): Extension<Arc<State>>,
-//     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-// ) -> Result<Json<WorkerStatusResponse>, StatusCode> {
-//     let worker_info = extract_worker_info_by_ip(addr.ip(), &state).await?;
-
-//     let pending_tasks = state
-//         .get_pending_file_tasks_count(&worker_info.file_id)
-//         .await
-//         .unwrap_or(0) as u32;
-
-//     let should_shutdown = pending_tasks == 0;
-
-//     Ok(Json(WorkerStatusResponse {
-//         should_shutdown,
-//         pending_tasks,
-//     }))
-// }
+    match Controller::shutdown_worker(&state, &file_id).await {
+        Ok(_) => Ok(Json(ShutdownResponse { success: true })),
+        Err(e) => {
+            error!("Error shutting down worker for file {file_id}, error: {e}");
+            Ok(Json(ShutdownResponse { success: false }))
+        }
+    }
+}

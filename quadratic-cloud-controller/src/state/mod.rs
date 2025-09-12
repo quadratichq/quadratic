@@ -75,6 +75,10 @@ impl State {
         }
     }
 
+    pub(crate) async fn remove_worker_token(&self, file_id: &Uuid) {
+        self.worker_tokens.lock().await.remove(file_id);
+    }
+
     pub(crate) async fn acquire_worker_create_lock(&self, file_id: &Uuid) -> bool {
         self.creating_workers.lock().await.insert(file_id.clone())
     }

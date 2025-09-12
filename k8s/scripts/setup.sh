@@ -411,8 +411,9 @@ show_setup_info() {
     log_info "📁 Next Steps:"
     echo "  1. Build images: ./k8s/scripts/build.sh"
     echo "  2. Deploy system: ./k8s/scripts/deploy.sh"
-    echo "  3. Test system: ./k8s/scripts/test.sh"
-    echo "  4. Watch logs: ./k8s/scripts/logs.sh"
+    echo "  3. Set up tunnel: ./k8s/scripts/tunnel.sh"
+    echo "  4. Test system: ./k8s/scripts/test.sh"
+    echo "  5. Watch logs: ./k8s/scripts/logs.sh"
     echo
 }
 

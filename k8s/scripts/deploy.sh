@@ -419,7 +419,7 @@ show_access_info() {
     echo "  • Redis Direct Access:"
     echo "    kubectl port-forward svc/quadratic-cloud-redis 6379:6379 -n $NAMESPACE"
     echo "  • Start local tunnels:"
-    echo "    ./k8s/scripts/tunnel.sh start --namespace $NAMESPACE --name quadratic-localhost-tunnel --ports \"8000:8000,3001:3001,3003:3003\""
+    echo "    ./k8s/scripts/tunnel.sh start --namespace $NAMESPACE --name quadratic-localhost-tunnel --ports \"8000:8000,3001:3001,3002:3002,3003:3003\""
     echo
     log_info "📊 Monitoring Commands:"
     echo "  • Watch all resources:"

@@ -305,12 +305,14 @@ show_restart_info() {
         "namespace")
             log_info "📁 To restart the application:"
             echo "  ./k8s/scripts/deploy.sh"
+            echo "  ./k8s/scripts/tunnel.sh"
             ;;
         "cluster")
             log_info "📁 To restart the environment:"
             echo "  ./k8s/scripts/setup.sh"
             echo "  ./k8s/scripts/build.sh"
             echo "  ./k8s/scripts/deploy.sh"
+            echo "  ./k8s/scripts/tunnel.sh"
             ;;
         "registry")
             log_info "📁 To restart with registry:"
@@ -326,6 +328,7 @@ show_restart_info() {
             echo "  ./k8s/scripts/setup.sh"
             echo "  ./k8s/scripts/build.sh"
             echo "  ./k8s/scripts/deploy.sh"
+            echo "  ./k8s/scripts/tunnel.sh"
             ;;
     esac
 }
