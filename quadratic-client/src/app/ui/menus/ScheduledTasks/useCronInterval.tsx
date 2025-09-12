@@ -1,9 +1,8 @@
 //! Stores data for the ScheduledTaskInterval component.
 
-import { JoinListWith } from '@/shared/components/JointListWith';
-import { cn } from '@/shared/shadcn/utils';
+import { joinListWith } from '@/shared/components/JointListWith';
 import CronExpressionParser, { CronFieldCollection, type DayOfWeekRange } from 'cron-parser';
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // local time constants
 export const MIDNIGHT_LOCAL_HOUR = new Date(0, 0, 0, 0, 0, 0).getUTCHours();
@@ -247,58 +246,46 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
   };
 };
 
-const DAYS_STRING = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_STRING = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
 
 // Displays a cron expression in a list entry format in ScheduledTasksList
-export const CronToListEntry = ({ className, cron }: { className: string; cron: string }): JSX.Element => {
+export const getCronToListEntry = (cron: string): string => {
   const fields = CronExpressionParser.parse(cron).fields;
 
   // custom
   if (isCustomCron(fields)) {
-    return <div className={cn('text-muted-foreground', className)}>{cron}</div>;
+    return cron;
   }
 
   // days
   if (!fields.hour.isWildcard && !fields.minute.isWildcard) {
-    let days: JSX.Element;
+    let days: string;
     if (fields.dayOfWeek.isWildcard || fields.dayOfWeek.values.length >= 7) {
-      days = <span>Every day</span>;
+      days = 'Every day';
     } else if (
       fields.dayOfWeek.values.length === 5 &&
       fields.dayOfWeek.values.every((day) => !isNaN(Number(day)) && Number(day) > 0 && Number(day) < 6)
     ) {
-      days = <span>Every weekday</span>;
+      days = 'Every weekday';
     } else if (fields.dayOfWeek.values.length === 2 && fields.dayOfWeek.values.every((day) => day === 0 || day === 6)) {
-      days = <span>Every weekend</span>;
+      days = 'Every weekend';
     } else {
-      days = (
-        <JoinListWith
-          arr={fields.dayOfWeek.values.flatMap((day) => (!isNaN(Number(day)) ? [DAYS_STRING[Number(day)]] : []))}
-          conjunction="and"
-        />
-      );
+      days = joinListWith({
+        arr: fields.dayOfWeek.values.flatMap((day) => (!isNaN(Number(day)) ? [DAYS_STRING[Number(day)]] : [])),
+        conjunction: 'and',
+      });
     }
     const localTime = new Date(Date.UTC(0, 0, 0, fields.hour.values[0], fields.minute.values[0], 0));
     const localTimeString = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    return (
-      <div className={cn('block text-left text-muted-foreground', className)}>
-        <div>
-          {days} at {localTimeString} {getLocalTimeZoneAbbreviation()}
-        </div>
-      </div>
-    );
+    return `${days} at ${localTimeString} ${getLocalTimeZoneAbbreviation()}`;
   }
 
   // hourly
   if (!fields.minute.isWildcard && fields.hour.isWildcard) {
     const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
-    return (
-      <div className={cn('block text-left text-muted-foreground', className)}>
-        Hourly at :{minute < 10 ? `0${minute}` : minute} {getLocalTimeZoneAbbreviation()}
-      </div>
-    );
+    return `Every hour at :${minute < 10 ? `0${minute}` : minute} ${getLocalTimeZoneAbbreviation()}`;
   }
 
   // minute
-  return <div className={cn('block text-left text-muted-foreground', className)}>Every minute</div>;
+  return 'Every minute';
 };
