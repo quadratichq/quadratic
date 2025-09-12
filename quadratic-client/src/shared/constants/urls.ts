@@ -24,3 +24,4 @@ export const COMMUNITY_A1_FILE_UPDATE_URL =
   'https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/';
 export const PRICING_URL = 'https://www.quadratichq.com/pricing';
 export const COMMUNITY_FORUMS = 'https://community.quadratichq.com';
+export const YOUTUBE_CHANNEL = 'https://www.youtube.com/@quadraticai';

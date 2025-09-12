@@ -4,7 +4,7 @@ import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
 import { ExternalLinkIcon, FeedbackIcon } from '@/shared/components/Icons';
-import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL, YOUTUBE_CHANNEL } from '@/shared/constants/urls';
 
 type HelpActionSpec = Pick<
   ActionSpecRecord,
@@ -14,6 +14,7 @@ type HelpActionSpec = Pick<
   | Action.HelpQuadratic101
   | Action.HelpCommunity
   | Action.HelpChangelog
+  | Action.HelpYouTube
 >;
 
 export const helpActionsSpec: HelpActionSpec = {
@@ -64,6 +65,14 @@ export const helpActionsSpec: HelpActionSpec = {
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }));
+    },
+  },
+  [Action.HelpYouTube]: {
+    label: () => 'YouTube',
+    labelVerbose: 'Visit our YouTube channel',
+    Icon: ExternalLinkIcon,
+    run: () => {
+      openLink(YOUTUBE_CHANNEL);
     },
   },
 };

@@ -67,23 +67,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
-
-    // Pass along a few of the search params
-    let searchParamsToPass = new URLSearchParams();
-    const state = searchParams.get('state');
-    if (state) {
-      searchParamsToPass.set('state', state);
-    }
-    const prompt = searchParams.get('prompt');
-    if (prompt) {
-      searchParamsToPass.set('prompt', prompt);
-    }
-    const chatId = searchParams.get('chat-id');
-    if (chatId) {
-      searchParamsToPass.set('chat-id', chatId);
-    }
-
-    return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
+    return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
