@@ -48,7 +48,7 @@ pub(crate) async fn process_transaction(
     transaction_name: TransactionName,
     team_id: String,
     token: String,
-) -> Result<()> {
+) -> Result<Uuid> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
     let tx_get_cells_request = Arc::new(Mutex::new(tx_get_cells_request));
@@ -171,7 +171,7 @@ pub(crate) async fn process_transaction(
     //     ))),
     // };
 
-    Ok(())
+    Ok(transaction_uuid)
 }
 
 #[cfg(test)]

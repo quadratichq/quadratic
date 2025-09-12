@@ -19,6 +19,7 @@ use crate::storage::error::Storage as StorageError;
 pub struct FileSystemConfig {
     pub path: String,
     pub encryption_keys: Vec<String>,
+    pub presigned_url_base: String,
 }
 
 /// File System
@@ -63,8 +64,12 @@ impl Storage for FileSystem {
     async fn presigned_url(&self, data: &str) -> Result<String> {
         let str_key = self.first_key()?;
         let encoded_key = str_to_key(&str_key)?;
+        let encrypted_key = encrypt_from_api(&encoded_key, data)?;
 
-        encrypt_from_api(&encoded_key, data)
+        Ok(format!(
+            "{}/{}",
+            self.config.presigned_url_base, encrypted_key
+        ))
     }
 
     /// Return the path to the file system.
@@ -141,6 +146,7 @@ mod tests {
             encryption_keys: vec![
                 "4242424242424242424242424242424242424242424242424242424242424242".to_string(),
             ],
+            presigned_url_base: "http://0.0.0.0:3002/storage/presigned".to_string(),
         }
     }
 

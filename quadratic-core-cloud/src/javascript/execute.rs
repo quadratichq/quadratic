@@ -906,4 +906,13 @@ export default result;
             .await
             .expect("Event loop should complete");
     }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_execute_date() {
+        let code = r#"
+        return Date();
+"#;
+        let result = test_execute(code).await;
+        assert!(result.success);
+    }
 }

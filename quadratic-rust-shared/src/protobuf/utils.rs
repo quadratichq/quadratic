@@ -1,3 +1,4 @@
+use prost::encoding::{WireType, decode_key, decode_varint};
 use prost_reflect::{DescriptorPool, DynamicMessage};
 
 use crate::{Result, error::SharedError};
@@ -5,9 +6,9 @@ use crate::{Result, error::SharedError};
 /// Efficiently peek at the type field (tag 1) in protobuf without full decode
 ///
 /// This relies on the fact that the type field is always the first field in the message.
+///
+/// This is orders of magnitude faster than type_from_descriptor.
 pub fn type_name_from_peek(data: &[u8]) -> Result<String> {
-    use prost::encoding::{WireType, decode_key, decode_varint};
-
     let mut buf = data;
 
     // Read fields until we find tag 1 (type field)

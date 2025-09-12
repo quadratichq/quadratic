@@ -6,19 +6,19 @@ use futures_util::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
+pub use tokio_tungstenite::tungstenite::protocol::Message;
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream, connect_async,
     tungstenite::{
         client::IntoClientRequest,
         http::{HeaderName, Response},
-        protocol::Message,
     },
 };
 use uuid::Uuid;
 
-use crate::SharedError;
-use crate::error::Result;
 use crate::net::error::Net;
+use crate::{SharedError, multiplayer::message::request::MessageRequest};
+use crate::{error::Result, multiplayer::message::CellEdit};
 
 pub type WebSocketTcpStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -32,7 +32,7 @@ pub struct WebSocketSender {
 }
 
 pub struct WebSocketReceiver {
-    stream: SplitStream<WebSocketTcpStream>,
+    pub stream: SplitStream<WebSocketTcpStream>,
 }
 
 impl WebsocketClient {
@@ -156,8 +156,8 @@ impl WebSocketSender {
 }
 
 impl WebSocketReceiver {
-    /// Receive a message from the websocket server
-    pub async fn receive(&mut self) -> Result<Option<String>> {
+    /// Receive a text message from the websocket server
+    pub async fn receive_text(&mut self) -> Result<Option<String>> {
         match self.stream.next().await {
             Some(Ok(Message::Text(text))) => Ok(Some(text.to_string())),
             Some(Ok(Message::Close(_))) => Ok(None),
@@ -168,33 +168,33 @@ impl WebSocketReceiver {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-pub struct EnterRoom {
-    r#type: String,
-    pub session_id: Uuid,
-    pub user_id: String,
-    pub file_id: Uuid,
-    first_name: String,
-    last_name: String,
-    email: String,
-    image: String,
-    pub sheet_id: Uuid,
-    selection: String,
-    cell_edit: CellEdit,
-    viewport: String,
-    follow: Option<String>,
-}
+// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+// pub struct EnterRoom {
+//     r#type: String,
+//     pub session_id: Uuid,
+//     pub user_id: String,
+//     pub file_id: Uuid,
+//     first_name: String,
+//     last_name: String,
+//     email: String,
+//     image: String,
+//     pub sheet_id: Uuid,
+//     selection: String,
+//     cell_edit: CellEdit,
+//     viewport: String,
+//     follow: Option<String>,
+// }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-pub struct CellEdit {
-    pub active: bool,
-    pub text: String,
-    pub cursor: u32,
-    pub code_editor: bool,
-    pub inline_code_editor: bool,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-}
+// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+// pub struct CellEdit {
+//     pub active: bool,
+//     pub text: String,
+//     pub cursor: u32,
+//     pub code_editor: bool,
+//     pub inline_code_editor: bool,
+//     pub bold: Option<bool>,
+//     pub italic: Option<bool>,
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct BinaryTransaction {
@@ -210,9 +210,8 @@ pub fn get_authorization_header() -> String {
     format!("Bearer {}", token)
 }
 
-pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) -> EnterRoom {
-    EnterRoom {
-        r#type: "EnterRoom".to_string(),
+pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) -> MessageRequest {
+    MessageRequest::EnterRoom {
         session_id,
         user_id: user_id.to_string(),
         file_id,
@@ -225,6 +224,25 @@ pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) ->
         cell_edit: CellEdit::default(),
         viewport: "".to_string(),
         follow: None,
+    }
+}
+
+pub fn get_leave_room_message(session_id: Uuid, file_id: Uuid) -> MessageRequest {
+    MessageRequest::LeaveRoom {
+        session_id,
+        file_id,
+    }
+}
+
+pub fn get_transactions_message(
+    file_id: Uuid,
+    session_id: Uuid,
+    min_sequence_num: u64,
+) -> MessageRequest {
+    MessageRequest::GetTransactions {
+        file_id,
+        session_id,
+        min_sequence_num,
     }
 }
 

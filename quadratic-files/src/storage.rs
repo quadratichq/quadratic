@@ -6,7 +6,7 @@ use axum::{
 };
 use quadratic_rust_shared::{
     crypto::aes_cbc::decrypt_from_api,
-    storage::{Storage, StorageConfig, StorageContainer},
+    storage::{Storage, StorageContainer},
 };
 use serde::Serialize;
 use std::sync::Arc;
