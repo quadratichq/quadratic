@@ -1,29 +1,31 @@
 //! This is the interval component for the scheduled task.
 
+import { ScheduledTaskInputGroup } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInputGroup';
 import {
   getLocalTimeZoneAbbreviation,
   type CronInterval,
   type ScheduledTaskIntervalType,
 } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
-import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { DOCUMENTATION_CRON } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
+import { cn } from '@/shared/shadcn/utils';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ['days', 'Once per day'],
-  ['hour', 'Hourly'],
   ['minute', 'Every minute'],
-  ['custom', 'Custom CRON'],
+  ['hour', 'Every hour'],
+  ['days', 'Every day'],
+  ['custom', 'Custom cron'],
 ];
 const EVERY: { value: ScheduledTaskIntervalType; label: string }[] = EVERY_ENTRY.map(([value, label]) => ({
   value,
   label,
 }));
 
-const DAYS_STRING = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS_STRING = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
 const DAYS: { value: string; label: string }[] = DAYS_STRING.map((day, index) => ({
   value: String(index === 6 ? 0 : index + 1),
   label: day,
@@ -53,94 +55,87 @@ export const ScheduledTaskInterval = (props: Props) => {
   } = props.cronInterval;
 
   return (
-    <div className="mt-5 flex flex-col gap-4 px-1 pb-1">
-      <ValidationDropdown
-        className="flex flex-col gap-1"
-        label="Run interval"
-        labelClassName="text-xs text-gray-500"
-        value={cronType}
-        onChange={changeInterval}
-        options={EVERY}
-      />
+    <div className="mt-2 flex flex-col gap-4">
+      <ScheduledTaskInputGroup>
+        <Label htmlFor="run-interval" className="mt-3">
+          Interval
+        </Label>
+        <div className="flex flex-col gap-2">
+          <Select value={cronType} onValueChange={changeInterval}>
+            <SelectTrigger id="run-interval" className="select-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {EVERY.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {cronType === 'days' && (
+            <>
+              <div className="flex flex-col gap-1 rounded-md border border-border p-0.5 shadow-sm">
+                <div className="align-center grid grid-cols-7 flex-row gap-0.5 rounded p-0.5">
+                  {DAYS.map((day) => (
+                    <Toggle
+                      key={day.value}
+                      variant="outline"
+                      className="border-none text-xs shadow-none data-[state=on]:bg-accent data-[state=off]:text-muted-foreground"
+                      pressed={days?.includes(Number(day.value)) ?? false}
+                      onPressedChange={() => changeDaysDay(day.value)}
+                    >
+                      {day.label}
+                    </Toggle>
+                  ))}
+                </div>
 
-      {cronType === 'days' && (
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-row justify-between align-bottom text-xs text-gray-500">
-            <div>Day{days && days.length === 1 ? '' : 's'}</div>
-            <div>
-              <Button
-                className="h-fit py-0 text-gray-500"
-                size="sm"
-                variant="link"
-                disabled={days.length >= 7}
-                onClick={() => changeDaysAll()}
-              >
-                all
-              </Button>
-              <Button
-                className="h-fit py-0 text-gray-500"
-                size="sm"
-                variant="link"
-                disabled={days.length === 1}
-                onClick={() => changeDaysWeekdays()}
-              >
-                weekdays
-              </Button>
-              <Button
-                className="h-fit py-0 text-gray-500"
-                size="sm"
-                variant="link"
-                disabled={days.length === 1}
-                onClick={() => changeDaysClear()}
-              >
-                clear
-              </Button>
-            </div>
-          </div>
-          <div className="align-center flex w-full flex-row justify-between gap-1 border p-2">
-            {DAYS.map((day) => (
-              <Toggle
-                key={day.value}
-                variant="outline"
-                className="w-8 text-xs hover:bg-transparent"
-                pressed={days?.includes(Number(day.value)) ?? false}
-                onPressedChange={() => changeDaysDay(day.value)}
-              >
-                {day.label}
-              </Toggle>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {cronType === 'days' && (
-        <div className="flex flex-row justify-between align-bottom text-xs text-gray-500">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="time-picker" className="text-xs text-gray-500">
-              Time
-            </Label>
-            <div className="align-center flex items-center gap-1">
-              <Input
-                type="time"
-                id="time-picker"
-                step="60"
-                value={localTimeString}
-                onChange={(e) => changeDaysTime(e.target.value)}
-                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-              />
-              <div className="text-sm text-gray-500">{getLocalTimeZoneAbbreviation()}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {cronType === 'hour' && (
-        <div className="flex flex-row justify-between align-bottom text-xs text-gray-500">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="minute-picker" className="text-xs text-gray-500">
-              Run at minute
-            </Label>
-            <div className="align-center flex flex-row items-center gap-1">
+                <div className="mb-1 flex flex-row justify-start align-bottom text-xs">
+                  <Button
+                    className="h-fit py-0 text-muted-foreground"
+                    size="sm"
+                    variant="link"
+                    disabled={days.length >= 7}
+                    onClick={() => changeDaysAll()}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    className="h-fit py-0 text-muted-foreground"
+                    size="sm"
+                    variant="link"
+                    onClick={() => changeDaysWeekdays()}
+                  >
+                    Weekdays
+                  </Button>
+                  <Button
+                    className="ml-auto h-fit py-0 text-muted-foreground"
+                    size="sm"
+                    variant="link"
+                    disabled={days.length === 1}
+                    onClick={() => changeDaysClear()}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              <div className="align-center flex items-center gap-3">
+                at
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="60"
+                  value={localTimeString}
+                  onChange={(e) => changeDaysTime(e.target.value)}
+                  className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                />
+                <div className="text-sm">{getLocalTimeZoneAbbreviation()}</div>
+              </div>
+            </>
+          )}
+          {cronType === 'hour' && (
+            <div className="align-center flex flex-row items-center gap-3">
+              at
               <Input
                 type="number"
                 min={0}
@@ -148,35 +143,37 @@ export const ScheduledTaskInterval = (props: Props) => {
                 id="minute-picker"
                 defaultValue={localMinute ?? ''}
                 onBlur={(e) => changeHoursMinute(e.target.value)}
-                className="w-16"
+                className=""
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     changeHoursMinute(e.currentTarget.value);
                   }
                 }}
               />
-              <div className="text-sm text-gray-500">{getLocalTimeZoneAbbreviation()}</div>
+              minutes
             </div>
-          </div>
+          )}
+          {cronType === 'custom' && (
+            <div className="align-center flex flex-col gap-1">
+              <Input
+                type="text"
+                id="custom-cron"
+                value={customCron}
+                onChange={(e) => changeCustomCron(e.target.value)}
+                className={cn(cronError && 'border-destructive')}
+              />
+              {cronError && <p className="text-xs text-destructive">{cronError}</p>}
+              <p className="mt-1 text-xs text-muted-foreground">
+                See the{' '}
+                <a href={DOCUMENTATION_CRON} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                  documentation
+                </a>{' '}
+                for more information about cron expressions.
+              </p>
+            </div>
+          )}
         </div>
-      )}
-
-      {cronType === 'custom' && (
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="custom-cron" className="text-xs text-gray-500">
-            Custom cron
-          </Label>
-          <Input type="text" id="custom-cron" value={customCron} onChange={(e) => changeCustomCron(e.target.value)} />
-          {cronError && <div className="mb-2 text-xs text-red-500">{cronError}</div>}
-          <div className="text-xs text-gray-500">
-            See the{' '}
-            <a href={DOCUMENTATION_CRON} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              documentation
-            </a>{' '}
-            for more information about cron expressions.
-          </div>
-        </div>
-      )}
+      </ScheduledTaskInputGroup>
     </div>
   );
 };
