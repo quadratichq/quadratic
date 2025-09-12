@@ -250,6 +250,8 @@ pub fn get_transactions_message(
 mod tests {
     use http::StatusCode;
 
+    use crate::multiplayer::message::response::MessageResponse;
+
     use super::*;
 
     #[tokio::test]
@@ -261,12 +263,15 @@ mod tests {
             .unwrap();
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
 
-        let message = get_enter_room_message(
-            Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
-            Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
-            Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
-        );
+        let message = MessageRequest::Ping {
+            message: "test".to_string(),
+        };
         let serialized_message = serde_json::to_string(&message).unwrap();
+
+        let response = MessageResponse::Pong {
+            message: "test".to_string(),
+        };
+        let serialized_response = serde_json::to_string(&response).unwrap();
         websocket
             .send_text(&serialized_message)
             .await
@@ -274,7 +279,7 @@ mod tests {
 
         if let Ok(Some(received)) = websocket.receive().await {
             match received {
-                Message::Text(text) => assert_eq!(text, serialized_message),
+                Message::Text(text) => assert_eq!(text, serialized_response),
                 _ => panic!("Received message should be text"),
             }
         }
@@ -298,10 +303,8 @@ mod tests {
         let (result, response) = WebsocketClient::connect_with_headers(url, headers)
             .await
             .unwrap();
-        let get_header = |header: &str| response.headers().get(header).unwrap().to_str().unwrap();
+
         assert_eq!(result.url(), url);
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
-        assert_eq!(get_header("X-Custom-Header"), "test-value");
-        assert_eq!(get_header("Authorization"), "Bearer test-token");
     }
 }

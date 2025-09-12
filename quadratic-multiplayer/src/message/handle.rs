@@ -416,6 +416,9 @@ pub(crate) async fn handle_message(
             state.update_user_heartbeat(file_id, &session_id).await?;
             Ok(None)
         }
+
+        // User sends a ping
+        MessageRequest::Ping { message } => Ok(Some(MessageResponse::Pong { message })),
     }
 }
 

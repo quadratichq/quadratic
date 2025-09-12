@@ -180,7 +180,8 @@ mod tests {
         let presigned_url = storage.presigned_url(&data).await.unwrap();
         println!("presigned_url: {}", presigned_url);
 
-        let decrypted = decrypt_from_api(&encrypted_key, &presigned_url).unwrap();
+        let encrypted = presigned_url.split("/").last().unwrap();
+        let decrypted = decrypt_from_api(&encrypted_key, &encrypted).unwrap();
 
         assert_eq!(data, decrypted);
     }
