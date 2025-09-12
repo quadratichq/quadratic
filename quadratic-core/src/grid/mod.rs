@@ -1,7 +1,5 @@
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
-pub use code_cell::*;
-pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
 pub use data_table::*;

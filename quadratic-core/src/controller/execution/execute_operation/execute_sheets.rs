@@ -62,17 +62,17 @@ impl GridController {
             // update table names references in code cells in the new sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             for pos in data_tables_pos.iter() {
-                if let Some(code_cell_value) = sheet
-                    .cell_value_mut(*pos)
-                    .and_then(|cv| cv.code_cell_value_mut())
-                {
-                    code_cell_value.replace_table_name_in_cell_references(
-                        &context,
-                        pos.to_sheet_pos(sheet_id),
-                        &old_name,
-                        &unique_name,
-                    );
-                }
+                sheet.modify_data_table_at(pos, |dt| {
+                    if let Some(code) = dt.code_run_mut() {
+                        code.replace_table_name_in_cell_references(
+                            &context,
+                            pos.to_sheet_pos(sheet_id),
+                            &old_name,
+                            &unique_name,
+                        );
+                    }
+                    Ok(())
+                })?;
             }
         }
 
@@ -366,7 +366,8 @@ mod tests {
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
         },
-        grid::{CodeCellLanguage, CodeCellValue, SheetId, js_types::JsUpdateCodeCell},
+        grid::{CodeCellLanguage, SheetId, js_types::JsUpdateCodeCell},
+        test_util::*,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -717,21 +718,21 @@ mod tests {
         let duplicated_sheet_id = gc.sheet_ids()[1];
         let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.name().to_string(), format!("{file_name}1"));
-        assert_eq!(
-            gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: format!("q.cells(\"{file_name}1\")"),
-            })
+        assert_code_language(
+            data_table,
+            CodeCellLanguage::Python,
+            format!("q.cells(\"{file_name}1\")"),
         );
 
         let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
-        assert_eq!(
-            gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
-            })
+        let data_table = gc
+            .sheet(duplicated_sheet_id)
+            .data_table_at(&pos![T20])
+            .unwrap();
+        assert_code_language(
+            data_table,
+            CodeCellLanguage::Python,
+            format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
         );
 
         assert_eq!(

@@ -4,8 +4,7 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 
 use crate::a1::{A1Context, SheetCellRefRange};
-use crate::grid::SheetId;
-use crate::grid::code_run::CodeCellLanguage;
+use crate::grid::{CodeCellLanguage, SheetId};
 use crate::{RefError, SheetPos};
 
 use super::CodeRun;
@@ -20,57 +19,6 @@ lazy_static! {
 }
 
 impl CodeRun {
-    /// Constructs a code cell.
-    pub fn new(language: CodeCellLanguage, code: String) -> Self {
-        Self {
-            language,
-            code,
-            std_out: None,
-            std_err: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: None,
-            line_number: None,
-            output_type: None,
-        }
-    }
-
-    /// Constructs a new Python code cell.
-    #[cfg(test)]
-    pub fn new_python(code: String) -> Self {
-        Self {
-            language: CodeCellLanguage::Python,
-            code,
-            std_out: None,
-            std_err: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: None,
-            line_number: None,
-            output_type: None,
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new_connection(code: String) -> Self {
-        use super::ConnectionKind;
-
-        Self {
-            language: CodeCellLanguage::Connection {
-                kind: ConnectionKind::Postgres,
-                id: "123".to_string(),
-            },
-            code,
-            std_out: None,
-            std_err: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: None,
-            line_number: None,
-            output_type: None,
-        }
-    }
-
     /// Replaces `q.cells()` calls in Python and Javascript.
     ///
     /// Do not call this function unless `self.language.has_q_cells()`.
@@ -400,12 +348,12 @@ mod tests {
         let translate = |x, y| RefAdjust::new_translate(x, y);
 
         // Basic single reference
-        let mut code = CodeCellValue::new_python("q.cells('A1:B2')".to_string());
+        let mut code = CodeRun::new_python("q.cells('A1:B2')".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Basic reference failed");
 
         // Absolute single reference
-        let mut code = CodeCellValue::new_python("q.cells('$A$1:$B$2')".to_string());
+        let mut code = CodeRun::new_python("q.cells('$A$1:$B$2')".to_string());
         let mut ref_adjust = RefAdjust::new_translate(1, 1);
         ref_adjust.relative_only = true;
         code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
@@ -415,7 +363,7 @@ mod tests {
         );
 
         // Absolute columns reference
-        let mut code = CodeCellValue::new_python("q.cells('$A:$B')".to_string());
+        let mut code = CodeRun::new_python("q.cells('$A:$B')".to_string());
         let mut ref_adjust = RefAdjust::new_translate(1, 1);
         ref_adjust.relative_only = true;
         code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
@@ -425,7 +373,7 @@ mod tests {
         );
 
         // Absolute rows reference
-        let mut code = CodeCellValue::new_python("q.cells('$1:$2')".to_string());
+        let mut code = CodeRun::new_python("q.cells('$1:$2')".to_string());
         let mut ref_adjust = RefAdjust::new_translate(1, 1);
         ref_adjust.relative_only = true;
         code.adjust_references(sheet_id, &a1_context, pos, ref_adjust);
@@ -435,8 +383,7 @@ mod tests {
         );
 
         // Multiple references in one line
-        let mut code =
-            CodeCellValue::new_python("x = q.cells('A1:B2') + q.cells('C3:D4')".to_string());
+        let mut code = CodeRun::new_python("x = q.cells('A1:B2') + q.cells('C3:D4')".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("D4:E5")"#,
@@ -444,7 +391,7 @@ mod tests {
         );
 
         // Sheet names
-        let mut code = CodeCellValue::new_python(
+        let mut code = CodeRun::new_python(
             "x = q.cells('This!A1:C2') + q.cells('Other!B3:E4') + q.cells('Nonexistent!E5:G6')"
                 .to_string(),
         );
@@ -457,7 +404,7 @@ mod tests {
         );
 
         // Different quote types
-        let mut code = CodeCellValue::new_python(
+        let mut code = CodeRun::new_python(
             r#"q.cells("A1:B2"); q.cells("C3:D4"); q.cells("E5:F6");"#.to_string(),
         );
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
@@ -467,8 +414,7 @@ mod tests {
         );
 
         // Mismatched quotes should remain unchanged
-        let mut code =
-            CodeCellValue::new_python(r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("A1:B2'); q.cells('C3:D4")"#,
@@ -476,17 +422,17 @@ mod tests {
         );
 
         // Zero delta should not change anything
-        let mut code = CodeCellValue::new_python("q.cells('A1:B2')".to_string());
+        let mut code = CodeRun::new_python("q.cells('A1:B2')".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(0, 0));
         assert_eq!(code.code, r#"q.cells('A1:B2')"#, "Zero delta failed");
 
         // Negative delta
-        let mut code = CodeCellValue::new_python("q.cells('C3:D4')".to_string());
+        let mut code = CodeRun::new_python("q.cells('C3:D4')".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(-1, -1));
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Negative delta failed");
 
         // Whitespace variations
-        let mut code = CodeCellValue::new_python("q.cells  (  'A1:B2'  )".to_string());
+        let mut code = CodeRun::new_python("q.cells  (  'A1:B2'  )".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3"  )"#,
@@ -494,16 +440,13 @@ mod tests {
         );
 
         // Formulas should get translated too
-        let mut code = CodeCellValue {
-            language: CodeCellLanguage::Formula,
-            code: "A1".to_string(),
-        };
+        let mut code = CodeRun::new_formula("A1".to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(code.code, "B2", "Formula failed");
 
         // Python first_row_header=True
         let mut code =
-            CodeCellValue::new_python(r#"q.cells("A1:B2", first_row_header=True)"#.to_string());
+            CodeRun::new_python(r#"q.cells("A1:B2", first_row_header=True)"#.to_string());
         code.adjust_references(sheet_id, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3", first_row_header=True)"#,
@@ -527,7 +470,7 @@ mod tests {
         let translate = |x, y| RefAdjust::new_translate(x, y);
 
         // Basic single reference
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
@@ -535,7 +478,7 @@ mod tests {
         );
 
         let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ 'Sheet1 (1)'!A1:B2 }}"#.to_string());
+            CodeRun::new_connection(r#"SELECT * FROM {{ 'Sheet1 (1)'!A1:B2 }}"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"SELECT * FROM {{ 'Sheet1 (1)'!B2:C3 }}"#,
@@ -543,7 +486,7 @@ mod tests {
         );
 
         // Multiple references in one line
-        let mut code = CodeCellValue::new_python(
+        let mut code = CodeRun::new_python(
             r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         );
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
@@ -552,7 +495,7 @@ mod tests {
             "Multiple references failed"
         );
 
-        let mut code = CodeCellValue::new_connection(
+        let mut code = CodeRun::new_connection(
             r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }} FILTER(city = {{ 'Sheet1 (1)'!C3:D4 }})"#
                 .to_string(),
         );
@@ -564,7 +507,7 @@ mod tests {
         );
 
         // Different quote types
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1'!A1:B2"); q.cells("'Sheet1 (1)'!C3:D4"); q.cells("'Sheet1'!E5:F6");"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("'Sheet1'!A1:B2"); q.cells("'Sheet1 (1)'!C3:D4"); q.cells("'Sheet1'!E5:F6");"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code,
@@ -573,7 +516,7 @@ mod tests {
         );
 
         // Mismatched quotes should remain unchanged
-        let mut code = CodeCellValue::new_python(
+        let mut code = CodeRun::new_python(
             r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#.to_string(),
         );
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
@@ -583,15 +526,14 @@ mod tests {
         );
 
         // Zero delta should not change anything
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(0, 0));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!A1:B2")"#,
             "Zero delta failed"
         );
 
-        let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }}"#.to_string());
+        let mut code = CodeRun::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }}"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(0, 0));
         assert_eq!(
             code.code, r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }}"#,
@@ -599,7 +541,7 @@ mod tests {
         );
 
         // Negative delta
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1 (1)'!C3:D4")"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("'Sheet1 (1)'!C3:D4")"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(-1, -1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
@@ -607,7 +549,7 @@ mod tests {
         );
 
         let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ 'Sheet1 (1)'!C3:D4 }}"#.to_string());
+            CodeRun::new_connection(r#"SELECT * FROM {{ 'Sheet1 (1)'!C3:D4 }}"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(-1, -1));
         assert_eq!(
             code.code, r#"SELECT * FROM {{ 'Sheet1 (1)'!B2:C3 }}"#,
@@ -615,8 +557,7 @@ mod tests {
         );
 
         // Whitespace variations
-        let mut code =
-            CodeCellValue::new_python(r#"q.cells  (  "'Sheet1 (1)'!A1:B2"  )"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells  (  "'Sheet1 (1)'!A1:B2"  )"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3"  )"#,
@@ -624,7 +565,7 @@ mod tests {
         );
 
         let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2    }} "#.to_string());
+            CodeRun::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2    }} "#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"SELECT * FROM {{ Sheet1!B2:C3 }} "#,
@@ -632,15 +573,12 @@ mod tests {
         );
 
         // Formulas should get translated too
-        let mut code = CodeCellValue {
-            language: CodeCellLanguage::Formula,
-            code: r#"A1 + 'Sheet1 (1)'!A1"#.to_string(),
-        };
+        let mut code = CodeRun::new_formula(r#"A1 + 'Sheet1 (1)'!A1"#.to_string());
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
         assert_eq!(code.code, r#"B2 + 'Sheet1 (1)'!B2"#, "Formula failed");
 
         // Python first_row_header=True
-        let mut code = CodeCellValue::new_python(
+        let mut code = CodeRun::new_python(
             r#"q.cells("'Sheet1 (1)'!A1:B2", first_row_header=True)"#.to_string(),
         );
         code.adjust_references(sheet_id_init, &a1_context, pos, translate(1, 1));
@@ -657,10 +595,8 @@ mod tests {
         let id3 = SheetId::new();
         let a1_context = A1Context::test(&[("Sheet1", id1), ("Sheet2", id2), ("Sheet3", id3)], &[]);
 
-        let mut code = CodeCellValue {
-            language: CodeCellLanguage::Formula,
-            code: r#"A1 + Sheet1!A1 + Sheet2!A1 + Sheet3!A1"#.to_string(),
-        };
+        let mut code =
+            CodeRun::new_formula(r#"A1 + Sheet1!A1 + Sheet2!A1 + Sheet3!A1"#.to_string());
 
         let pos = SheetPos {
             x: 2,
@@ -708,12 +644,11 @@ mod tests {
             sheet_id: SheetId::new(),
         };
 
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1'!A1:B2")"#.to_string());
+        let mut code = CodeRun::new_python(r#"q.cells("'Sheet1'!A1:B2")"#.to_string());
         code.replace_sheet_name_in_cell_references(&old_a1_context, &new_a1_context, pos);
         assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
 
-        let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }}"#.to_string());
+        let mut code = CodeRun::new_connection(r#"SELECT * FROM {{ 'Sheet1'!A1:B2 }}"#.to_string());
         code.replace_sheet_name_in_cell_references(&old_a1_context, &new_a1_context, pos);
         assert_eq!(code.code, r#"SELECT * FROM {{ 'Sheet1_new'!A1:B2 }}"#);
     }
@@ -731,12 +666,11 @@ mod tests {
             sheet_id,
         };
 
-        let mut code = CodeCellValue::new_python("q.cells('simple[city]')".to_string());
+        let mut code = CodeRun::new_python("q.cells('simple[city]')".to_string());
         code.replace_table_name_in_cell_references(&a1_context, pos, "simple", "test_new.csv");
         assert_eq!(code.code, r#"q.cells("test_new.csv[city]")"#);
 
-        let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ simple[city] }}"#.to_string());
+        let mut code = CodeRun::new_connection(r#"SELECT * FROM {{ simple[city] }}"#.to_string());
         code.replace_table_name_in_cell_references(&a1_context, pos, "simple", "test_new.csv");
         assert_eq!(code.code, r#"SELECT * FROM {{ test_new.csv[city] }}"#);
     }
@@ -755,7 +689,7 @@ mod tests {
         };
 
         // ColRange::Col
-        let mut code = CodeCellValue::new_python("q.cells('test.csv[city]')".to_string());
+        let mut code = CodeRun::new_python("q.cells('test.csv[city]')".to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,
@@ -765,8 +699,7 @@ mod tests {
         );
         assert_eq!(code.code, r#"q.cells("test.csv[city_new]")"#);
 
-        let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ test.csv[city] }}"#.to_string());
+        let mut code = CodeRun::new_connection(r#"SELECT * FROM {{ test.csv[city] }}"#.to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,
@@ -777,7 +710,7 @@ mod tests {
         assert_eq!(code.code, r#"SELECT * FROM {{ test.csv[city_new] }}"#);
 
         // ColRange::ColRange
-        let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:[state]]')".to_string());
+        let mut code = CodeRun::new_python("q.cells('test.csv[[city]:[state]]')".to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,
@@ -787,9 +720,8 @@ mod tests {
         );
         assert_eq!(code.code, r#"q.cells("test.csv[[city]:[state_new]]")"#);
 
-        let mut code = CodeCellValue::new_connection(
-            r#"SELECT * FROM {{ test.csv[[city]:[state]] }}"#.to_string(),
-        );
+        let mut code =
+            CodeRun::new_connection(r#"SELECT * FROM {{ test.csv[[city]:[state]] }}"#.to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,
@@ -803,7 +735,7 @@ mod tests {
         );
 
         // ColRange::ColToEnd
-        let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:]')".to_string());
+        let mut code = CodeRun::new_python("q.cells('test.csv[[city]:]')".to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,
@@ -814,7 +746,7 @@ mod tests {
         assert_eq!(code.code, r#"q.cells("test.csv[[city_new]:]")"#);
 
         let mut code =
-            CodeCellValue::new_connection(r#"SELECT * FROM {{ test.csv[[city]:] }}"#.to_string());
+            CodeRun::new_connection(r#"SELECT * FROM {{ test.csv[[city]:] }}"#.to_string());
         code.replace_column_name_in_cell_references(
             &a1_context,
             pos,

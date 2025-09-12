@@ -5,7 +5,7 @@
 //! performed yet).
 use crate::util::is_false;
 
-pub mod code_run;
+mod code_run;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
@@ -18,7 +18,6 @@ use std::num::NonZeroU32;
 
 use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
-use crate::grid::code_run::CodeRun;
 use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
@@ -31,6 +30,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
+
+pub use code_run::*;
 
 use super::sheet::borders::Borders;
 use super::{Grid, SheetFormatting, SheetId};

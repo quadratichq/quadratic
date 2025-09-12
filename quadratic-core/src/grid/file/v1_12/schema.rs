@@ -1,9 +1,9 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::grid::file::{v1_7_1, v1_11};
+use crate::util::is_false;
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::grid::file::v1_11;
-
-pub type A1SelectionSchema = v1_11::A1SelectionSchema;
+pub type A1SelectionSchema = v1_7_1::A1SelectionSchema;
 pub type AxisSchema = v1_11::AxisSchema;
 pub type BlockSchema<T> = v1_11::BlockSchema<T>;
 pub type BordersSchema = v1_11::BordersSchema;
@@ -27,7 +27,6 @@ pub type ColRangeSchema = v1_11::ColRangeSchema;
 pub type ColumnRepeatSchema<T> = v1_11::ColumnRepeatSchema<T>;
 pub type ConnectionKindSchema = v1_11::ConnectionKindSchema;
 pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
-pub type DataTableColumnSchema = v1_11::DataTableColumnSchema;
 pub type DataTableKindSchema = v1_11::DataTableKindSchema;
 pub type DataTableSortOrderSchema = v1_11::DataTableSortOrderSchema;
 pub type DateTimeRangeSchema = v1_11::DateTimeRangeSchema;
@@ -38,9 +37,7 @@ pub type NumberRangeSchema = v1_11::NumberRangeSchema;
 pub type NumericFormatKindSchema = v1_11::NumericFormatKindSchema;
 pub type NumericFormatSchema = v1_11::NumericFormatSchema;
 pub type OffsetsSchema = v1_11::OffsetsSchema;
-pub type OutputArraySchema = v1_11::OutputArraySchema;
 pub type OutputSizeSchema = v1_11::OutputSizeSchema;
-pub type OutputValueSchema = v1_11::OutputValueSchema;
 pub type PosSchema = v1_11::PosSchema;
 pub type RectSchema = v1_11::RectSchema;
 pub type RefRangeBoundsSchema = v1_11::RefRangeBoundsSchema;
@@ -71,8 +68,6 @@ pub type ValidationSchema = v1_11::ValidationSchema;
 pub type ValidationStyleSchema = v1_11::ValidationStyleSchema;
 pub type ValidationTextSchema = v1_11::ValidationTextSchema;
 pub type ValidationsSchema = v1_11::ValidationsSchema;
-pub type DataTableSchema = v1_11::DataTableSchema;
-pub type DataTablesSchema = v1_11::DataTablesSchema;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValueSchema {
@@ -112,4 +107,79 @@ pub struct SheetSchema {
 pub struct GridSchema {
     pub sheets: Vec<SheetSchema>,
     pub version: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableColumnSchema {
+    pub name: CellValueSchema,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableSchema {
+    pub kind: DataTableKindSchema,
+
+    pub name: String,
+
+    pub value: OutputValueSchema,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub last_modified: Option<DateTime<Utc>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub header_is_first_row: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub show_name: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub show_columns: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub columns: Option<Vec<DataTableColumnSchema>>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub sort: Option<Vec<DataTableSortOrderSchema>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub sort_dirty: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub display_buffer: Option<Vec<u64>>,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub spill_value: bool,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub spill_data_table: bool,
+
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub alternating_colors: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub formats: Option<SheetFormattingSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub borders: Option<BordersSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_pixel_output: Option<(f32, f32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_output: Option<(u32, u32)>,
+}
+
+pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum OutputValueSchema {
+    Single(CellValueSchema),
+    Array(OutputArraySchema),
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputArraySchema {
+    pub size: OutputSizeSchema,
+    pub values: Vec<CellValueSchema>,
 }

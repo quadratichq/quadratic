@@ -1,5 +1,9 @@
 #[cfg(test)]
-use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::DataTable, grid::SheetId};
+use crate::{
+    Pos, SheetPos,
+    controller::GridController,
+    grid::{CodeCellLanguage, DataTable, SheetId},
+};
 
 /// Runs an assertion that a cell value is equal to the given value. The col/row
 /// are 0-indexed to the table and ignore all ui elements (ie, table name and
@@ -57,15 +61,6 @@ pub fn assert_chart_size(
 #[track_caller]
 pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
     let sheet = gc.sheet(sheet_pos.sheet_id);
-    assert!(
-        matches!(
-            sheet.cell_value(sheet_pos.into()),
-            Some(CellValue::Import(_) | CellValue::Code(_))
-        ),
-        "Cell Value at {:?} is not an import cell or code cell, it's {:?}",
-        sheet_pos,
-        sheet.cell_value(sheet_pos.into())
-    );
     let data_table = sheet.data_table_at(&sheet_pos.into()).unwrap();
     assert_eq!(
         data_table, dt,
@@ -85,20 +80,10 @@ pub fn assert_data_table_size(
     height: usize,
     include_ui: bool,
 ) {
-    use crate::CellValue;
-
     let sheet = gc.sheet(sheet_id);
     let Some(data_table) = sheet.data_table_at(&pos) else {
         panic!("Data table at {pos} not found");
     };
-    let Some(cell_value) = sheet.cell_value(pos) else {
-        panic!("Anchor for data table at {pos} not found");
-    };
-    match cell_value {
-        CellValue::Import(_) | CellValue::Code(_) => (),
-        _ => panic!("Anchor for data table at {pos} is not a code or import cell"),
-    }
-
     if data_table.is_html_or_image() {
         assert_eq!(
             data_table.chart_output,
@@ -164,6 +149,27 @@ pub fn assert_data_table_sort_dirty(
         "Sort data table at {pos} is not {sort_dirty}"
     );
 }
+
+#[cfg(test)]
+#[track_caller]
+pub fn assert_code_language(
+    gc: &GridController,
+    sheet_pos: SheetPos,
+    language: CodeCellLanguage,
+    code: String,
+) {
+    let dt = gc
+        .sheet(sheet_pos.sheet_id)
+        .data_table_at(&sheet_pos.into())
+        .unwrap_or_else(|| panic!("Data table at {sheet_pos} not found"));
+    if let Some(code_run) = dt.code_run() {
+        assert_eq!(code_run.language, language);
+        assert_eq!(code_run.code, code);
+    } else {
+        panic!("Data table at {sheet_pos} does not have a code run");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{test_create_data_table, test_util::test_create_data_table_with_values};
