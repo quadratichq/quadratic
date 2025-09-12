@@ -153,7 +153,7 @@ export const SheetRange = (props: Props) => {
       )}
 
       <div className="flex w-full items-center space-x-2">
-        <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
+        <div className={'w-full'}>
           <Input
             ref={inputRef}
             id={props.label}
@@ -166,6 +166,7 @@ export const SheetRange = (props: Props) => {
             onBlur={onBlur}
             onFocus={onFocus}
             readOnly={readOnly}
+            className={cn((rangeError || isError) && 'border-destructive')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && props.onEnter) {
                 updateValue(e.currentTarget.value);
@@ -180,7 +181,7 @@ export const SheetRange = (props: Props) => {
             label={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
             side="bottom"
           >
-            <Button size="sm" onClick={onInsert} disabled={disableButton}>
+            <Button variant="outline" size="icon" onClick={onInsert} disabled={disableButton} className="flex-shrink-0">
               <InsertCellRefIcon />
             </Button>
           </TooltipPopover>
