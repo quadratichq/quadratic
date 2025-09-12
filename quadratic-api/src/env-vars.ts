@@ -35,6 +35,7 @@ export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAI
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
 export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
 export const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || undefined;
+export const RAINDROP_API_KEY = process.env.RAINDROP_API_KEY || undefined;
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
