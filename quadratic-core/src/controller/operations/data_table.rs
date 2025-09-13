@@ -26,12 +26,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
-        let cell_value = CellValue::Import(import);
 
-        Ok(vec![Operation::SwitchDataTableKind {
+        Ok(vec![Operation::SwitchDataTableKindWithoutCellValue {
             sheet_pos,
             kind,
-            value: cell_value,
         }])
     }
 
@@ -152,51 +150,55 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(columns_to_add) = columns_to_add
-            && !columns_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_add
-                        .into_iter()
-                        .map(|index| (index, None, None))
-                        .collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !columns_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableColumns {
+                sheet_pos,
+                columns: columns_to_add
+                    .into_iter()
+                    .map(|index| (index, None, None))
+                    .collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(columns_to_remove) = columns_to_remove
-            && !columns_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !columns_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableColumns {
+                sheet_pos,
+                columns: columns_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         if let Some(rows_to_add) = rows_to_add
-            && !rows_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !rows_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableRows {
+                sheet_pos,
+                rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(rows_to_remove) = rows_to_remove
-            && !rows_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !rows_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableRows {
+                sheet_pos,
+                rows: rows_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         ops
     }
@@ -303,10 +305,9 @@ impl GridController {
             .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
-        ops.push(Operation::AddDataTable {
+        ops.push(Operation::AddDataTableWithoutCellValue {
             sheet_pos,
             data_table,
-            cell_value: CellValue::Import(import),
             index: None,
         });
 
@@ -417,13 +418,12 @@ impl GridController {
 mod test {
     use crate::{
         CellValue, Rect, SheetPos, SheetRect,
-        cellvalue::Import,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, print_table_in_rect},
+        test_util::*,
     };
 
     #[test]
@@ -440,14 +440,10 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTable {
-                data_table,
-                cell_value,
-                ..
-            } => {
+            Operation::AddDataTableWithoutCellValue { data_table, .. } => {
                 assert!(data_table.header_is_first_row);
                 assert_eq!(data_table.name, name.as_str().into());
-                assert_eq!(cell_value, &CellValue::Import(Import::new(name.to_owned())));
+                assert_import(&gc, sheet_pos, &name, 2, 2);
                 assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 2);
                 assert_eq!(
                     data_table.column_headers.as_ref().unwrap()[0].name,
@@ -521,13 +517,8 @@ mod test {
             .unwrap();
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
 
-        let import = Import::new("Table1".into());
-        let cell_value = CellValue::Import(import.to_owned());
-
-        print_table_in_rect(&gc, sheet_id, data_table_rect);
-
         // check that the data table is in the sheet
-        assert_cell_value(&gc, sheet_id, 1, 1, cell_value.clone());
+        assert_import(&gc, sheet_pos, "Table1", 2, 2);
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         // undo the operation
@@ -544,14 +535,10 @@ mod test {
         );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
-
         let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
         assert!(ops.is_err());
 
         // there should still be just 1 data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
-
-        print_table_in_rect(&gc, sheet_id, data_table_rect);
     }
 }

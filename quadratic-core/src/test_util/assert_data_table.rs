@@ -152,6 +152,37 @@ pub fn assert_data_table_sort_dirty(
 
 #[cfg(test)]
 #[track_caller]
+pub fn assert_import(gc: &GridController, sheet_pos: SheetPos, name: &str, w: usize, h: usize) {
+    use std::num::NonZero;
+
+    use crate::CellValue;
+
+    let dt = gc
+        .sheet(sheet_pos.sheet_id)
+        .data_table_at(&sheet_pos.into())
+        .unwrap_or_else(|| panic!("Data table at {sheet_pos} not found"));
+    if dt.is_code() {
+        panic!("Data table at {sheet_pos} is not an import");
+    }
+    let size = dt.output_size();
+    assert_eq!(
+        size.w,
+        NonZero::<u32>::new(w as u32).unwrap(),
+        "Width of data table at {sheet_pos} is not {w}"
+    );
+    assert_eq!(
+        size.h,
+        NonZero::<u32>::new(h as u32).unwrap(),
+        "Height of data table at {sheet_pos} is not {h}"
+    );
+    assert_eq!(
+        dt.name,
+        CellValue::Text(name.to_string()),
+        "Name of data table at {sheet_pos} is not {name}"
+    );
+}
+#[cfg(test)]
+#[track_caller]
 pub fn assert_code_language(
     gc: &GridController,
     sheet_pos: SheetPos,

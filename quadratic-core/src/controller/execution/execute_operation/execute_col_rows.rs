@@ -298,10 +298,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
-        Value,
+        Array, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect, Value,
         a1::A1Selection,
-        cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
             sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
@@ -357,22 +355,24 @@ mod tests {
             "3".to_string()
         );
 
-        let single_formula = |formula_str: &str| {
-            CellValues::from(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: formula_str.to_string(),
-            }))
-        };
-
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(
             &transaction.operations,
             &[
                 // first formula, y += 1 for y >= 2
-                Operation::SetCellValues {
+                Operation::AddDataTableWithoutCellValue {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B$17 + $B18"),
+                    data_table: DataTable::new(
+                        DataTableKind::CodeRun(CodeRun::new_formula("B$17 + $B18".to_string())),
+                        "Formula1",
+                        Value::Array(Array::from(vec![vec!["3"]])),
+                        false,
+                        None,
+                        None,
+                        None,
+                    ),
+                    index: None,
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
@@ -394,9 +394,20 @@ mod tests {
                 // so no operations needed
                 //
                 // second formula, x += 1 for x >= 5
-                Operation::SetCellValues {
+                Operation::AddDataTableWithoutCellValue {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
+                    data_table: DataTable::new(
+                        DataTableKind::CodeRun(CodeRun::new_formula(
+                            "'Sheet 1'!G1+Other!F1 - Nonexistent!F1".to_string()
+                        )),
+                        "Formula2",
+                        Value::Array(Array::from(vec![vec!["3"]])),
+                        false,
+                        None,
+                        None,
+                        None,
+                    ),
+                    index: None,
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2)
@@ -478,13 +489,18 @@ mod tests {
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
-            Operation::SetCellValues {
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: r#"q.cells("B1:B3")"#.to_string()
-                })
-                .into(),
+                data_table: DataTable::new(
+                    DataTableKind::CodeRun(CodeRun::new_python("q.cells('B1:B3')".to_string())),
+                    "Python1",
+                    Value::Array(Array::from(vec![vec!["3"]])),
+                    false,
+                    None,
+                    None,
+                    None,
+                ),
+                index: None,
             }
         );
     }
@@ -563,13 +579,20 @@ mod tests {
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
-            Operation::SetCellValues {
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Javascript,
-                    code: r#"return q.cells("B1:B3");"#.to_string()
-                })
-                .into(),
+                data_table: DataTable::new(
+                    DataTableKind::CodeRun(CodeRun::new_javascript(
+                        r#"return q.cells("B1:B3");"#.to_string()
+                    )),
+                    "JavaScript1",
+                    Value::Array(Array::from(vec![vec!["3"]])),
+                    false,
+                    None,
+                    None,
+                    None,
+                ),
+                index: None,
             }
         );
     }
@@ -756,12 +779,11 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1, 3, 4, 5], None);
         gc.delete_rows(sheet_id, vec![2, 7, 8], None);
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos![F7]).unwrap(), // 6,10
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "$B5".to_owned(),
-            })
+        assert_code_language(
+            &gc,
+            pos![sheet_id!F7],
+            CodeCellLanguage::Formula,
+            "$B5".to_string(),
         );
     }
 

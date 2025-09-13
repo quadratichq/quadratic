@@ -60,7 +60,6 @@ impl CodeRun {
         }
     }
 
-    #[cfg(test)]
     pub fn new_formula(code: String) -> Self {
         Self {
             language: CodeCellLanguage::Formula,

@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use chrono::DateTime;
-
 use super::operation::Operation;
 use crate::{
     CellValue, SheetPos, Value,
@@ -12,6 +10,7 @@ use crate::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
         unique_data_table_name,
     },
+    util::now,
 };
 
 impl GridController {
@@ -76,10 +75,7 @@ impl GridController {
                     value: Value::Single(CellValue::Blank),
                     spill_value: false,
                     spill_data_table: false,
-
-                    // todo!!!
-                    last_modified: DateTime::from_timestamp(0, 0).unwrap(),
-
+                    last_modified: now(),
                     alternating_colors: true,
                     formats: None,
                     borders: None,
@@ -213,7 +209,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Pos, cell_values::CellValues, constants::SHEET_NAME, grid::CodeCellValue};
+    use crate::{Pos, constants::SHEET_NAME};
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -232,12 +228,22 @@ mod test {
         assert_eq!(operations.len(), 2);
         assert_eq!(
             operations[0],
-            Operation::SetCellValues {
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos: pos.to_sheet_pos(sheet_id),
-                values: CellValues::from(CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: "print('hello world')".to_string(),
-                })),
+                data_table: DataTable::new(
+                    DataTableKind::CodeRun(CodeRun {
+                        language: CodeCellLanguage::Python,
+                        code: "print('hello world')".to_string(),
+                        ..Default::default()
+                    }),
+                    "Python1",
+                    Value::Single(CellValue::Blank),
+                    false,
+                    Some(true),
+                    Some(true),
+                    None,
+                ),
+                index: None,
             }
         );
         assert_eq!(

@@ -87,6 +87,10 @@ pub enum Operation {
     FlattenDataTable {
         sheet_pos: SheetPos,
     },
+    SwitchDataTableKindWithoutCellValue {
+        sheet_pos: SheetPos,
+        kind: DataTableKind,
+    },
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,

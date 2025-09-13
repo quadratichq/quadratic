@@ -83,6 +83,11 @@ impl GridController {
                 Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_flatten_data_table(transaction, op),
                 ),
+                Operation::SwitchDataTableKindWithoutCellValue { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_code_data_table_to_data_table(transaction, op),
+                    )
+                }
                 Operation::SwitchDataTableKind { .. } => Self::handle_execution_operation_result(
                     self.execute_code_data_table_to_data_table(transaction, op),
                 ),

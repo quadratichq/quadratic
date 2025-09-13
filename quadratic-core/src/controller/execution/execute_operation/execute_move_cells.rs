@@ -53,13 +53,12 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, Rect, SheetPos,
-        cellvalue::Import,
+        Rect, SheetPos,
         controller::{
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
-        test_util::print_table_in_rect,
+        test_util::*,
     };
 
     use super::*;
@@ -90,10 +89,7 @@ mod tests {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos),
-            Some(CellValue::Import(Import::new(file_name.to_string())))
-        );
+        assert_import(&gc, sheet_pos, &file_name, 4, 11);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
 
@@ -112,10 +108,6 @@ mod tests {
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
         assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(dest_pos),
-            Some(CellValue::Import(Import::new(file_name.to_string())))
-        );
-        assert!(gc.sheet(sheet_id).data_table_at(&dest_pos).is_some());
+        assert_import(&gc, sheet_dest_pos, &file_name, 4, 11);
     }
 }

@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{CellValue, Pos, controller::GridController, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::SheetId};
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
@@ -30,6 +30,13 @@ pub fn assert_display_cell_value_first_sheet(
     value: &str,
 ) {
     assert_display_cell_value(grid_controller, grid_controller.sheet_ids()[0], x, y, value);
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display_cell_value_sheet_pos(gc: &GridController, sheet_pos: SheetPos, value: &str) {
+    assert_display_cell_value(gc, sheet_pos.sheet_id, sheet_pos.x, sheet_pos.y, value);
 }
 
 /// Run an assertion that a cell value is equal to the given value

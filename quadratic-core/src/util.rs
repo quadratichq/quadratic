@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::Range;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -397,6 +397,18 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
     match b {
         Some(b) if b < a => (b, Some(a)),
         _ => (a, b),
+    }
+}
+
+// Returns the current UTC time.
+pub fn now() -> DateTime<Utc> {
+    #[cfg(target_family = "wasm")]
+    {
+        DateTime::from_timestamp_millis(crate::wasm_bindings::js::jsTimestamp() as i64).unwrap()
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+        Utc::now()
     }
 }
 
