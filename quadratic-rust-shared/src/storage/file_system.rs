@@ -181,7 +181,7 @@ mod tests {
         println!("presigned_url: {}", presigned_url);
 
         let encrypted = presigned_url.split("/").last().unwrap();
-        let decrypted = decrypt_from_api(&encrypted_key, &encrypted).unwrap();
+        let decrypted = decrypt_from_api(&encrypted_key, encrypted).unwrap();
 
         assert_eq!(data, decrypted);
     }
