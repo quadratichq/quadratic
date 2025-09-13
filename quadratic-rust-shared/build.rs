@@ -3,16 +3,14 @@ use std::fs;
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if cfg!(feature = "test") {
-        let fixtures_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("fixtures");
-        let data_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("data");
-        let output = format!(
-            "pub const FIXTURES_PATH: &str = \"{}\";\npub const DATA_PATH: &str = \"{}\";",
-            fixtures_path.display(),
-            data_path.display()
-        );
-        fs::write("src/auto_gen_path.rs", output).expect("Failed to write src/auto_gen_path.rs");
-    }
+    let fixtures_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("fixtures");
+    let data_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("data");
+    let output = format!(
+        "pub const FIXTURES_PATH: &str = \"{}\";\npub const DATA_PATH: &str = \"{}\";",
+        fixtures_path.display(),
+        data_path.display()
+    );
+    fs::write("src/auto_gen_path.rs", output).expect("Failed to write src/auto_gen_path.rs");
 
     if cfg!(feature = "protobuf") {
         // Configure prost_reflect_build
