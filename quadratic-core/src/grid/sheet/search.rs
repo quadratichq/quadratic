@@ -86,20 +86,6 @@ impl Sheet {
                     None
                 }
             }
-            CellValue::Code(code) => {
-                if search_code {
-                    let code = &code.code;
-                    if (case_sensitive && code.contains(query))
-                        || (!case_sensitive && code.to_lowercase().contains(query))
-                    {
-                        Some(code.to_string())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
             _ => None,
         }
     }
@@ -309,7 +295,7 @@ mod test {
     use crate::{
         Array, SheetPos,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
     };
 
     #[test]
@@ -729,13 +715,6 @@ mod test {
     #[test]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 1, y: 2 },
-            CellValue::Code(CodeCellValue {
-                code: "hello".into(),
-                language: CodeCellLanguage::Python,
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "hello".into(),

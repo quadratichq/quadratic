@@ -138,6 +138,7 @@ macro_rules! pos {
             .resolve_from($crate::Pos::ORIGIN);
         pos
     }};
+    [$sheet_id:ident!$x:literal,$y:literal] => { pos![$x, $y].to_sheet_pos($sheet_id) };
 }
 
 /// Parses a cell rectangle in A1 notation.

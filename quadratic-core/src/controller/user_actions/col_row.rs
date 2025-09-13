@@ -133,7 +133,7 @@ mod tests {
     use crate::{
         CellValue, Pos, SheetPos,
         a1::A1Selection,
-        grid::{CodeCellLanguage, CodeCellValue, formats::Format},
+        grid::{CodeCellLanguage, formats::Format},
         test_util::*,
     };
 
@@ -152,13 +152,11 @@ mod tests {
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(1, 1)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "1".to_string(),
         );
 
         gc.delete_rows(sheet_id, vec![1], None);
@@ -168,13 +166,11 @@ mod tests {
 
         gc.undo(None);
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(1, 1)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "1".to_string(),
         );
     }
 
@@ -197,13 +193,11 @@ mod tests {
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(2, 2)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "5".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 2, 2),
+            CodeCellLanguage::Formula,
+            "5".to_string(),
         );
 
         gc.delete_rows(sheet_id, vec![2], None);
@@ -221,12 +215,12 @@ mod tests {
             sheet.display_value(Pos::new(1, 2)),
             Some(CellValue::Number(2.into()))
         );
-        assert_eq!(
-            sheet.cell_value(Pos::new(2, 2)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "5".to_string()
-            }))
+
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 2, 2),
+            CodeCellLanguage::Formula,
+            "5".to_string(),
         );
     }
 

@@ -225,7 +225,7 @@ mod test {
     use crate::{
         Array, SheetPos, Value,
         controller::GridController,
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
+        grid::{CodeCellLanguage, CodeRun, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 
@@ -234,13 +234,6 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(
-            Pos { x: 1, y: 1 },
-            CellValue::Code(CodeCellValue {
-                code: "=".to_string(),
-                language: CodeCellLanguage::Formula,
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=".to_string(),
@@ -435,13 +428,6 @@ mod test {
         dt.chart_output = Some((2, 2));
 
         let pos = Pos { x: 1, y: 1 };
-        sheet.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                code: "".to_string(),
-                language: CodeCellLanguage::Javascript,
-            }),
-        );
         sheet.set_data_table(pos, Some(dt.clone()));
 
         assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));

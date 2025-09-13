@@ -16,8 +16,8 @@ use crate::{
     },
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeCellValue, DataTable,
-        NumericFormat, NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
+        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, DataTable, NumericFormat,
+        NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
         formats::SheetFormatUpdates, unique_data_table_name,
     },
     parquet::parquet_to_array,
@@ -598,29 +598,30 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 // for general format, excel displays significant decimal places.
                 // excel shows full precision up to about 15 significant digits.
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        // check if this is not a whole number
-                        if f64_val.fract() != 0.0 {
-                            // use high precision formatting to capture all significant digits
-                            let num_str = format!("{f64_val:.15}");
-                            if let Some(decimal_pos) = num_str.find('.') {
-                                let after_decimal = &num_str[decimal_pos + 1..];
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    // check if this is not a whole number
+                    if f64_val.fract() != 0.0 {
+                        // use high precision formatting to capture all significant digits
+                        let num_str = format!("{f64_val:.15}");
+                        if let Some(decimal_pos) = num_str.find('.') {
+                            let after_decimal = &num_str[decimal_pos + 1..];
 
-                                // for general format, excel typically preserves trailing zeros when they
-                                // represent the actual precision of the stored number. we'll use the full
-                                // precision available in the f64 representation.
-                                let decimal_places = after_decimal.len();
+                            // for general format, excel typically preserves trailing zeros when they
+                            // represent the actual precision of the stored number. we'll use the full
+                            // precision available in the f64 representation.
+                            let decimal_places = after_decimal.len();
 
-                                // excel's general format shows meaningful precision up to 15 digits
-                                if decimal_places > 0 {
-                                    sheet
-                                        .formats
-                                        .numeric_decimals
-                                        .set(pos, Some(decimal_places as i16));
-                                }
+                            // excel's general format shows meaningful precision up to 15 digits
+                            if decimal_places > 0 {
+                                sheet
+                                    .formats
+                                    .numeric_decimals
+                                    .set(pos, Some(decimal_places as i16));
                             }
                         }
                     }
+                }
             }
 
             // number formats (1-4, 37-40)
@@ -726,17 +727,18 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                 // convert numeric value to date/time if needed
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        let is_datetime = format_id == 22; // m/d/yy h:mm
-                        let converted_value = if is_datetime {
-                            excel_serial_to_date_time(f64_val, true, true, true)
-                        } else {
-                            excel_serial_to_date_time(f64_val, true, false, false)
-                        };
-                        if let Some(new_value) = converted_value {
-                            sheet.columns.set_value(&pos, new_value);
-                        }
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    let is_datetime = format_id == 22; // m/d/yy h:mm
+                    let converted_value = if is_datetime {
+                        excel_serial_to_date_time(f64_val, true, true, true)
+                    } else {
+                        excel_serial_to_date_time(f64_val, true, false, false)
+                    };
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
                     }
+                }
             }
 
             // time formats
@@ -760,13 +762,13 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                 // convert numeric value to time if needed
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        let converted_value =
-                            excel_serial_to_date_time(f64_val, false, true, false);
-                        if let Some(new_value) = converted_value {
-                            sheet.columns.set_value(&pos, new_value);
-                        }
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
                     }
+                }
             }
 
             // text format, noop
@@ -782,39 +784,42 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                         // convert numeric value to datetime if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, true, true, true);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, true, true, true);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else if is_excel_date_format(active_format) {
                         let chrono_format = excel_to_chrono_format(active_format);
                         sheet.formats.date_time.set(pos, Some(chrono_format));
 
                         // convert numeric value to date if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, true, false, false);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, true, false, false);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else if is_excel_time_format(active_format) {
                         let chrono_format = excel_to_chrono_format(active_format);
                         sheet.formats.date_time.set(pos, Some(chrono_format));
 
                         // convert numeric value to time if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, false, true, false);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, false, true, false);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else {
                         import_excel_number_format_string(sheet, pos, active_format);
                     }
@@ -850,36 +855,39 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
 
         // convert numeric value to datetime if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else if is_excel_date_format(format_string) {
         let chrono_format = excel_to_chrono_format(format_string);
         sheet.formats.date_time.set(pos, Some(chrono_format));
 
         // convert numeric value to date if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else if is_excel_time_format(format_string) {
         let chrono_format = excel_to_chrono_format(format_string);
         sheet.formats.date_time.set(pos, Some(chrono_format));
 
         // convert numeric value to time if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else {
         // handle numeric formats
         if format_string.contains('%') {
@@ -1202,18 +1210,19 @@ fn excel_serial_to_date_time(
         let time_fraction = adjusted_serial.fract();
 
         if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30)
-            && let Some(date) = base_date.checked_add_days(chrono::Days::new(days as u64)) {
-                let total_seconds = (time_fraction * 86400.0) as i64;
-                let hours = total_seconds / 3600;
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+            && let Some(date) = base_date.checked_add_days(chrono::Days::new(days as u64))
+        {
+            let total_seconds = (time_fraction * 86400.0) as i64;
+            let hours = total_seconds / 3600;
+            let minutes = (total_seconds % 3600) / 60;
+            let seconds = total_seconds % 60;
 
-                if let Some(time) =
-                    NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32)
-                {
-                    return Some(CellValue::DateTime(date.and_time(time)));
-                }
+            if let Some(time) =
+                NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32)
+            {
+                return Some(CellValue::DateTime(date.and_time(time)));
             }
+        }
     } else if is_time && !is_date {
         // Pure time format - fractional part represents time
         let total_seconds = (serial.fract() * 86400.0) as i64;
@@ -1233,9 +1242,9 @@ fn excel_serial_to_date_time(
         if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30)
             && let Some(date) =
                 base_date.checked_add_days(chrono::Days::new(adjusted_serial as u64))
-            {
-                return Some(CellValue::Date(date));
-            }
+        {
+            return Some(CellValue::Date(date));
+        }
     }
 
     None

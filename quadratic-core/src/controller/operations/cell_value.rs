@@ -17,8 +17,8 @@ impl GridController {
         &self,
         value: &str,
         allow_code: bool,
-    ) -> (CellValue, FormatUpdate, bool) {
-        CellValue::string_to_cell_value(value, allow_code, false)
+    ) -> (CellValue, FormatUpdate) {
+        CellValue::string_to_cell_value(value, allow_code)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -82,11 +82,12 @@ impl GridController {
                             .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
 
                     let (cell_value, format_update) =
-                        CellValue::string_to_cell_value(&value, true, user_enter_percent);
+                        CellValue::string_to_cell_value(&value, user_enter_percent);
 
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
-                    let is_code = matches!(cell_value, CellValue::Code(_));
+                    // todo: this needs to be updated...probably adding to datatables
+                    let is_code = false;
                     let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
 
                     // (x,y) is within a data table (import / editable)
@@ -387,8 +388,6 @@ impl GridController {
 
         let handle_paste_table_in_import = |paste_table_in_import: &CellValue| {
             let cell_type = match paste_table_in_import {
-                CellValue::Code(_) => "code",
-                CellValue::Import(_) => "table",
                 CellValue::Image(_) => "chart",
                 CellValue::Html(_) => "chart",
                 _ => "unknown",
@@ -460,9 +459,9 @@ impl GridController {
                         .iter()
                         .flatten()
                         .find_map(|cell_value| {
-                            cell_value.as_ref().filter(|cv| {
-                                cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
-                            })
+                            cell_value
+                                .as_ref()
+                                .filter(|cv| cv.is_image() || cv.is_html())
                         });
 
                 if let Some(paste_table_in_import) = paste_table_in_import {
@@ -489,11 +488,7 @@ impl GridController {
                             let cell_value =
                                 values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
 
-                            if cell_value.is_code()
-                                || cell_value.is_import()
-                                || cell_value.is_image()
-                                || cell_value.is_html()
-                            {
+                            if cell_value.is_image() || cell_value.is_html() {
                                 return Err(Error::msg(handle_paste_table_in_import(&cell_value)));
                             }
 
@@ -537,7 +532,7 @@ mod test {
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind, SheetId};
     use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
@@ -779,35 +774,37 @@ mod test {
     fn formula_to_cell_value() {
         let gc = GridController::test();
 
-        let (value, _) = gc.string_to_cell_value("=1+1", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1+1".to_string(),
-            })
-        );
+        todo!();
 
-        let (value, _) = gc.string_to_cell_value("=1/0", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1/0".to_string(),
-            })
-        );
+        // let (value, _) = gc.string_to_cell_value("=1+1", true);
+        // assert_eq!(
+        //     value,
+        //     CellValue::Code(CodeCellValue {
+        //         language: CodeCellLanguage::Formula,
+        //         code: "1+1".to_string(),
+        //     })
+        // );
 
-        let (value, _) = gc.string_to_cell_value("=A1+A2", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "A1+A2".to_string(),
-            })
-        );
+        // let (value, _) = gc.string_to_cell_value("=1/0", true);
+        // assert_eq!(
+        //     value,
+        //     CellValue::Code(CodeCellValue {
+        //         language: CodeCellLanguage::Formula,
+        //         code: "1/0".to_string(),
+        //     })
+        // );
 
-        let (value, _) = gc.string_to_cell_value("=A1+A2", false);
-        assert_eq!(value, CellValue::Text("A1+A2".to_string()));
+        // let (value, _) = gc.string_to_cell_value("=A1+A2", true);
+        // assert_eq!(
+        //     value,
+        //     CellValue::Code(CodeCellValue {
+        //         language: CodeCellLanguage::Formula,
+        //         code: "A1+A2".to_string(),
+        //     })
+        // );
+
+        // let (value, _) = gc.string_to_cell_value("=A1+A2", false);
+        // assert_eq!(value, CellValue::Text("A1+A2".to_string()));
     }
 
     #[test]

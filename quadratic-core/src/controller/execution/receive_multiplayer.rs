@@ -285,7 +285,8 @@ mod tests {
     use crate::controller::GridController;
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
-    use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
+    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, Pos, SheetPos};
 
@@ -730,11 +731,13 @@ mod tests {
         );
 
         // ensure code_cell exists
-        let code_cell = client
-            .try_sheet(sheet_id)
-            .unwrap()
-            .cell_value(Pos { x: 1, y: 1 });
-        assert!(matches!(code_cell, Some(CellValue::Code(_))));
+        assert!(
+            client
+                .try_sheet(sheet_id)
+                .unwrap()
+                .code_run_at(&pos![A1])
+                .is_some()
+        );
 
         let transaction_id = client.async_transactions()[0].id;
 
@@ -755,11 +758,13 @@ mod tests {
         );
 
         // ensure code_cell still exists
-        let code_cell = client
-            .try_sheet(sheet_id)
-            .unwrap()
-            .cell_value(Pos { x: 1, y: 1 });
-        assert!(matches!(code_cell, Some(CellValue::Code(_))));
+        assert!(
+            client
+                .try_sheet(sheet_id)
+                .unwrap()
+                .code_run_at(&pos![A1])
+                .is_some()
+        );
 
         // mock the python calculation returning the result
         let result = client.calculation_complete(JsCodeResult {
@@ -808,13 +813,11 @@ mod tests {
         );
 
         // ensure code_cell exists
-        let code_cell = client.try_sheet(sheet_id).unwrap().cell_value(pos![A1]);
-        assert_eq!(
-            code_cell,
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "start this before receiving multiplayer".to_string()
-            }))
+        assert_code_language(
+            &client,
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "start this before receiving multiplayer".to_string(),
         );
 
         let transaction_id = client.async_transactions()[0].id;
@@ -834,8 +837,7 @@ mod tests {
         );
 
         // ensure code_cell still exists
-        let code_cell = client.try_sheet(sheet_id).unwrap().cell_value(pos![A1]);
-        assert!(matches!(code_cell, Some(CellValue::Code(_))));
+        assert!(client.sheet(sheet_id).code_run_at(&pos![A1]).is_some());
 
         // mock the python calculation returning the result
         let result = client.calculation_complete(JsCodeResult {
@@ -847,7 +849,7 @@ mod tests {
         assert!(result.is_ok());
 
         assert_eq!(
-            client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
+            client.sheet(sheet_id).display_value(pos![A1]),
             Some(CellValue::Text("async output".to_string()))
         );
     }

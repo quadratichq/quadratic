@@ -112,12 +112,11 @@ impl Sheet {
                 } else {
                     JsCellValueKind::Blank
                 };
-                let language =
-                    if let Some(CellValue::Code(code)) = self.cell_value_ref(Pos { x, y }) {
-                        Some(code.language.clone())
-                    } else {
-                        None
-                    };
+                let language = if let Some(code) = self.code_run_at(&Pos { x, y }) {
+                    Some(code.language.clone())
+                } else {
+                    None
+                };
                 row.push(JsCellValueCode {
                     value,
                     kind,
