@@ -6,7 +6,7 @@ use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        CodeCellLanguage, CodeRun, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
     },
@@ -19,6 +19,16 @@ impl Sheet {
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
+    }
+
+    pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
+        self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
+    }
+
+    pub fn code_run_at_mut(&mut self, pos: &Pos) -> Option<&mut CodeRun> {
+        self.data_tables
+            .get_at_mut(pos)
+            .and_then(|dt| dt.code_run_mut())
     }
 
     /// Gets the index of the data table
@@ -266,7 +276,7 @@ impl Sheet {
     }
 
     /// Calls a function to mutate all code cells.
-    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeRun, SheetPos)) {
         let positions = self
             .data_tables
             .expensive_iter()
@@ -274,10 +284,8 @@ impl Sheet {
             .collect::<Vec<_>>();
         let sheet_id = self.id;
         for pos in positions.into_iter() {
-            if let Some(cell_value) = self.cell_value_mut(pos)
-                && let Some(code_cell_value) = cell_value.code_cell_value_mut()
-            {
-                func(code_cell_value, pos.to_sheet_pos(sheet_id));
+            if let Some(code_run) = self.code_run_at_mut(&pos) {
+                func(code_run, pos.to_sheet_pos(sheet_id));
             }
         }
     }
@@ -644,13 +652,6 @@ mod test {
         );
 
         let old = sheet.set_data_table(pos, Some(data_table.clone()));
-        sheet.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "=1".to_string(),
-            }),
-        );
 
         (data_table, old)
     }

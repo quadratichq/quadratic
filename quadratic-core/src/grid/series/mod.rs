@@ -5,7 +5,7 @@ use number_series::find_number_series;
 use string_series::find_string_series;
 use time_series::find_time_series;
 
-use crate::{CellValue, Pos};
+use crate::{CellValue, Pos, grid::CodeRun};
 
 pub mod date_series;
 pub mod date_time_series;

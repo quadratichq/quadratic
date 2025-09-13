@@ -150,43 +150,40 @@ impl GridController {
 
                         // data table output
                         if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos)
-                            && let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
-                                let is_formula =
-                                    code_cell_value.language == CodeCellLanguage::Formula;
+                            && let Some(code_cell_value) = data_table.code_run()
+                        {
+                            let is_formula = code_cell_value.language == CodeCellLanguage::Formula;
 
-                                is_formula_output =
-                                    data_table.get_language() == CodeCellLanguage::Formula;
+                            is_formula_output =
+                                data_table.get_language() == CodeCellLanguage::Formula;
 
-                                // we currently only care about formulas
-                                // skip spill and error formulas
-                                if is_formula && !data_table.has_spill() && !data_table.has_error()
-                                {
-                                    let code = code_cell_value.code.as_str();
-                                    let display_value = data_table.display_value(false)?;
+                            // we currently only care about formulas
+                            // skip spill and error formulas
+                            if is_formula && !data_table.has_spill() && !data_table.has_error() {
+                                let code = code_cell_value.code.as_str();
+                                let display_value = data_table.display_value(false)?;
 
-                                    match display_value {
-                                        Value::Single(value) => {
-                                            worksheet
-                                                .write_formula(row, col, code)
-                                                .map_err(error)?
-                                                .set_formula_result(row, col, value.to_string());
-                                        }
-                                        Value::Array(array) => {
-                                            let size = array.size();
-                                            let last_row = row + size.h.get() - 1;
-                                            let last_col = col + size.w.get() as u16 - 1;
-
-                                            worksheet
-                                                .write_array_formula(
-                                                    row, col, last_row, last_col, code,
-                                                )
-                                                .map_err(error)?;
-                                        }
-                                        // we don't expect tuples
-                                        _ => bail!("Unexpected value type"),
+                                match display_value {
+                                    Value::Single(value) => {
+                                        worksheet
+                                            .write_formula(row, col, code)
+                                            .map_err(error)?
+                                            .set_formula_result(row, col, value.to_string());
                                     }
+                                    Value::Array(array) => {
+                                        let size = array.size();
+                                        let last_row = row + size.h.get() - 1;
+                                        let last_col = col + size.w.get() as u16 - 1;
+
+                                        worksheet
+                                            .write_array_formula(row, col, last_row, last_col, code)
+                                            .map_err(error)?;
+                                    }
+                                    // we don't expect tuples
+                                    _ => bail!("Unexpected value type"),
                                 }
                             }
+                        }
 
                         // flatten all non-formula data
                         if !is_formula_output {
@@ -269,15 +266,17 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     if let Some(text_color) = cell_format.text_color
-        && let Ok(color) = Rgba::try_from(text_color.as_str()) {
-            format = format.set_font_color(color.as_rgb_hex().as_str());
-        }
+        && let Ok(color) = Rgba::try_from(text_color.as_str())
+    {
+        format = format.set_font_color(color.as_rgb_hex().as_str());
+    }
 
     if let Some(fill_color) = cell_format.fill_color
-        && let Ok(color) = Rgba::try_from(fill_color.as_str()) {
-            format = format.set_pattern(FormatPattern::Solid);
-            format = format.set_background_color(color.as_rgb_hex().as_str());
-        }
+        && let Ok(color) = Rgba::try_from(fill_color.as_str())
+    {
+        format = format.set_pattern(FormatPattern::Solid);
+        format = format.set_background_color(color.as_rgb_hex().as_str());
+    }
 
     if let Some(align) = cell_format.align {
         let align = match align {
@@ -314,9 +313,10 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
 
     // this needs to be before the numeric decimals
     if let Some(numeric_commas) = cell_format.numeric_commas
-        && numeric_commas {
-            num_format = "#,##0".to_string();
-        }
+        && numeric_commas
+    {
+        num_format = "#,##0".to_string();
+    }
 
     if let Some(numeric_decimals) = cell_format.numeric_decimals {
         num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
@@ -396,11 +396,12 @@ fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
 
     if let Some(numeric_format) = cell_format.numeric_format
         && numeric_format.kind == NumericFormatKind::Percentage
-            && let CellValue::Number(n) = &mut v {
-                *n = n
-                    .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
-                    .unwrap_or(Decimal::ZERO);
-            }
+        && let CellValue::Number(n) = &mut v
+    {
+        *n = n
+            .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
+            .unwrap_or(Decimal::ZERO);
+    }
 }
 
 /// Converts a chrono format to an excel format.

@@ -13,10 +13,11 @@ use rules::SyntaxRule;
 
 use super::*;
 use crate::{
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
+    CodeResult, CoerceInto, RefAdjust, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
+    TableRef,
     a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
     controller::GridController,
-    grid::{RefAdjust, SheetId},
+    grid::SheetId,
 };
 
 /// Parses a formula.

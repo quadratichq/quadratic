@@ -114,6 +114,8 @@ extern "C" {
 
     pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
     pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
+
+    pub fn jsTimestamp() -> i32;
 }
 
 #[cfg(test)]

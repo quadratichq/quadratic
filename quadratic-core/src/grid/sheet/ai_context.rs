@@ -4,7 +4,7 @@ use crate::{
     CellValue,
     a1::{A1Context, A1Selection},
     grid::{
-        CodeCellLanguage,
+        CodeCellLanguage, DataTableKind,
         js_types::{
             JsCellValueSummary, JsChartContext, JsCodeCell, JsCodeErrorContext, JsCodeTableContext,
             JsDataTableContext, JsSummaryContext,
@@ -126,14 +126,14 @@ impl Sheet {
             }
 
             if table.is_html_or_image() {
-                if let CellValue::Code(code_cell_value) = cell_value {
+                if let Some(code_run) = table.code_run() {
                     tables_context.charts.push(JsChartContext {
                         sheet_name: self.name.clone(),
                         chart_name: table.name().to_string(),
                         bounds: bounds.a1_string(),
                         intended_bounds: intended_bounds.a1_string(),
-                        language: code_cell_value.language.to_owned(),
-                        code_string: code_cell_value.code.to_owned(),
+                        language: code_run.language.to_owned(),
+                        code_string: code_run.code.to_owned(),
                         spill: table.has_spill(),
                     });
                 }
@@ -143,45 +143,44 @@ impl Sheet {
             let values = sample_rows
                 .map(|sample_rows| self.js_cell_value_description(bounds, Some(sample_rows)));
 
-            if let CellValue::Code(code_cell_value) = cell_value {
-                let Some(code_run) = table.code_run() else {
-                    continue;
-                };
-
-                let table_context = JsCodeTableContext {
-                    sheet_name: self.name.clone(),
-                    code_table_name: table.name().to_string(),
-                    all_columns: table.columns_map(true),
-                    visible_columns: table.columns_map(false),
-                    values,
-                    bounds: bounds.a1_string(),
-                    intended_bounds: intended_bounds.a1_string(),
-                    show_name: table.get_show_name(),
-                    show_columns: table.get_show_columns(),
-                    language: code_cell_value.language.to_owned(),
-                    code_string: code_cell_value.code.to_owned(),
-                    std_err: code_run.std_err.to_owned(),
-                    error: code_run.error.is_some(),
-                    spill: table.has_spill(),
-                };
-                if let CodeCellLanguage::Connection { .. } = &code_cell_value.language {
-                    tables_context.connections.push(table_context);
-                } else {
-                    tables_context.code_tables.push(table_context);
+            match &table.kind {
+                DataTableKind::CodeRun(code_run) => {
+                    let table_context = JsCodeTableContext {
+                        sheet_name: self.name.clone(),
+                        code_table_name: table.name().to_string(),
+                        all_columns: table.columns_map(true),
+                        visible_columns: table.columns_map(false),
+                        values,
+                        bounds: bounds.a1_string(),
+                        intended_bounds: intended_bounds.a1_string(),
+                        show_name: table.get_show_name(),
+                        show_columns: table.get_show_columns(),
+                        language: code_run.language.to_owned(),
+                        code_string: code_run.code.to_owned(),
+                        std_err: code_run.std_err.to_owned(),
+                        error: code_run.error.is_some(),
+                        spill: table.has_spill(),
+                    };
+                    if let CodeCellLanguage::Connection { .. } = &code_run.language {
+                        tables_context.connections.push(table_context);
+                    } else {
+                        tables_context.code_tables.push(table_context);
+                    }
                 }
-            } else if cell_value.is_import() {
-                tables_context.data_tables.push(JsDataTableContext {
-                    sheet_name: self.name.clone(),
-                    data_table_name: table.name().to_string(),
-                    all_columns: table.columns_map(true),
-                    visible_columns: table.columns_map(false),
-                    values,
-                    bounds: bounds.a1_string(),
-                    intended_bounds: intended_bounds.a1_string(),
-                    show_name: table.get_show_name(),
-                    show_columns: table.get_show_columns(),
-                    spill: table.has_spill(),
-                });
+                DataTableKind::Import(_) => {
+                    tables_context.data_tables.push(JsDataTableContext {
+                        sheet_name: self.name.clone(),
+                        data_table_name: table.name().to_string(),
+                        all_columns: table.columns_map(true),
+                        visible_columns: table.columns_map(false),
+                        values,
+                        bounds: bounds.a1_string(),
+                        intended_bounds: intended_bounds.a1_string(),
+                        show_name: table.get_show_name(),
+                        show_columns: table.get_show_columns(),
+                        spill: table.has_spill(),
+                    });
+                }
             }
         }
 
@@ -247,7 +246,7 @@ mod tests {
         Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
         a1::A1Selection,
         grid::{
-            CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
+            CodeCellLanguage, CodeRun, DataTable, DataTableKind,
             js_types::{JsCodeCell, JsReturnInfo},
         },
         test_util::*,
@@ -388,13 +387,6 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_cell_value(
-            Pos { x: 1, y: 1 },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "abcd".to_string(),
-            }),
-        );
         sheet.set_data_table(
             Pos { x: 1, y: 1 },
             Some(DataTable::new(
@@ -422,13 +414,6 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_cell_value(
-            Pos { x: 9, y: 31 },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "abcd".to_string(),
-            }),
-        );
         sheet.set_data_table(
             Pos { x: 9, y: 31 },
             Some(DataTable::new(
@@ -457,13 +442,6 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_cell_value(
-            Pos { x: 19, y: 15 },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "[[1, 2], [3, 4]]".to_string(),
-            }),
-        );
         sheet.set_data_table(
             Pos { x: 19, y: 15 },
             Some(DataTable::new(

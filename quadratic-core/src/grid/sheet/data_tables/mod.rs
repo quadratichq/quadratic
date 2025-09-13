@@ -96,6 +96,11 @@ impl SheetDataTables {
         self.data_tables.get(pos)
     }
 
+    /// Returns a mutable reference to the data table at the given position, if it exists.
+    pub fn get_at_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
     /// Returns the data table at the given position, if it exists, along with its index and position.
     pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
         self.data_tables.get_full(pos)

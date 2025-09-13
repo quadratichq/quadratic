@@ -4,7 +4,7 @@ use crate::{
     RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
+    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
 };
 
 impl GridController {
@@ -105,25 +105,21 @@ impl GridController {
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Connection { kind, id },
-            code,
-        };
-        transaction.waiting_for_async = Some(code_cell);
+        transaction.waiting_for_async = true;
         self.transactions.add_async_transaction(transaction);
     }
 }
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::{
         Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        grid::{CodeCellLanguage, ConnectionKind, SheetId},
+        grid::{CodeCellLanguage, SheetId},
     };
 
     #[test]

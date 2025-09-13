@@ -41,19 +41,19 @@ impl GridController {
         if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html)
             && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
-            {
-                self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
+        {
+            self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
 
-                if !data_table_ops.is_empty() {
-                    self.start_user_transaction(
-                        data_table_ops,
-                        cursor,
-                        TransactionName::PasteClipboard,
-                    );
-                }
-
-                return;
+            if !data_table_ops.is_empty() {
+                self.start_user_transaction(
+                    data_table_ops,
+                    cursor,
+                    TransactionName::PasteClipboard,
+                );
             }
+
+            return;
+        }
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
@@ -180,12 +180,13 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
+    use crate::test_util::*;
     use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
     use crate::{Array, assert_cell_value, print_table_in_rect};
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,
-        grid::{CodeCellLanguage, CodeCellValue, SheetId, js_types::CellFormatSummary},
+        grid::{CodeCellLanguage, SheetId, js_types::CellFormatSummary},
     };
 
     #[track_caller]
@@ -684,13 +685,6 @@ mod test {
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
 
-        let get_value = |gc: &GridController, x, y| {
-            let sheet = gc.sheet(sheet_id);
-            let cell_value = sheet.cell_value(Pos { x, y });
-            let display_value = sheet.display_value(Pos { x, y });
-            (cell_value, display_value)
-        };
-
         let assert_code_cell =
             |gc: &mut GridController, dest_pos: SheetPos, code: &str, value: i32| {
                 gc.paste_from_clipboard(
@@ -700,14 +694,8 @@ mod test {
                     None,
                 );
 
-                let cell_value = get_value(gc, dest_pos.x, dest_pos.y);
-                let expected_cell_value = Some(CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: code.into(),
-                }));
-                let expected_display_value = Some(CellValue::Number(value.into()));
-
-                assert_eq!(cell_value, (expected_cell_value, expected_display_value));
+                assert_code_language(gc, dest_pos, CodeCellLanguage::Formula, code.into());
+                assert_display_cell_value_sheet_pos(gc, dest_pos, &value.to_string());
             };
 
         // paste code cell (2,1) from the clipboard to (2,2)
