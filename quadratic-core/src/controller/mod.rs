@@ -3,11 +3,12 @@ use crate::{
     SheetPos,
     a1::A1Context,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::{DataTable, Grid, RegionMap, SheetId},
+    grid::{ConnectionKind, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
+pub mod callbacks;
 pub mod dependencies;
 pub mod execution;
 pub mod export;
@@ -22,7 +23,9 @@ pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
 
-#[derive(Debug, Clone, PartialEq)]
+#[allow(clippy::type_complexity)]
+pub type Callback = Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>;
+
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {
     grid: Grid,
@@ -40,6 +43,17 @@ pub struct GridController {
     // the viewport buffer is a shared array buffer that is accessed by the render web worker and the controller
     // contains current viewport position and sheet id, updated by render web worker on viewport change
     viewport_buffer: Option<ViewportBuffer>,
+
+    // callbacks for running python and javascript code
+    #[allow(clippy::type_complexity)]
+    run_python_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
+
+    #[allow(clippy::type_complexity)]
+    run_javascript_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
+
+    #[allow(clippy::type_complexity)]
+    run_connection_callback:
+        Option<Box<dyn FnMut(String, i32, i32, String, String, ConnectionKind, String) + Send>>,
 }
 
 impl Default for GridController {
@@ -55,7 +69,24 @@ impl Default for GridController {
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
             viewport_buffer: None,
+            run_python_callback: None,
+            run_javascript_callback: None,
+            run_connection_callback: None,
         }
+    }
+}
+
+impl std::fmt::Debug for GridController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GridController")
+            .field("grid", &self.grid)
+            .field("a1_context", &self.a1_context)
+            .field("cells_accessed_cache", &self.cells_accessed_cache)
+            .field("undo_stack", &self.undo_stack)
+            .field("redo_stack", &self.redo_stack)
+            .field("transactions", &self.transactions)
+            .field("viewport_buffer", &self.viewport_buffer)
+            .finish()
     }
 }
 
@@ -165,11 +196,28 @@ impl GridController {
 
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::test(), 0)
+        Self::from_grid(Grid::test(), 0).apply_callbacks()
     }
 
     pub fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
+    }
+
+    // apply the wasm callbacks to the grid controller
+    pub fn apply_callbacks(mut self) -> Self {
+        self.with_run_python_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
+        });
+
+        self.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
+            crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);
+        });
+
+        self.with_run_connection_callback(|transaction_id, x, y, sheet_id, code, kind, id| {
+            crate::wasm_bindings::js::jsConnection(transaction_id, x, y, sheet_id, code, kind, id);
+        });
+
+        self
     }
 }
 

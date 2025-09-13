@@ -91,5 +91,8 @@
   },
   "engines": {
     "node": "24.x"
+  },
+  "dependencies": {
+    "jotai": "^2.13.1"
   }
 }

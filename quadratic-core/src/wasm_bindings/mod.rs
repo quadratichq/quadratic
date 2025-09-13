@@ -7,6 +7,7 @@ pub mod input;
 pub mod js;
 pub mod js_a1_context;
 pub mod js_selection;
+pub mod scheduled_task;
 pub mod sheet_content_cache;
 pub mod sheet_data_tables_cache;
 use crate::controller::GridController;

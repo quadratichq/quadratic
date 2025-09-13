@@ -7,6 +7,7 @@ FROM ubuntu:24.04 AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   protobuf-compiler \
+  libprotobuf-dev \
   curl \
   ca-certificates \
   pkg-config \
