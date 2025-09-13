@@ -19,7 +19,7 @@ pub(crate) async fn get_api_connection<T: DeserializeOwned>(
 ) -> Result<ApiConnection<T>> {
     let base_url = state.settings.quadratic_api_uri.to_owned();
     let m2m_token = state.settings.m2m_auth_token.clone();
-    let (is_internal, token) = match authorize_m2m(&headers, &m2m_token) {
+    let (is_internal, token) = match authorize_m2m(headers, &m2m_token) {
         Ok(_token) => (true, m2m_token),
         Err(_) => (false, jwt.to_string()),
     };

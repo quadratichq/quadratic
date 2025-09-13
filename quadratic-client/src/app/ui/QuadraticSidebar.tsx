@@ -104,7 +104,7 @@ export const QuadraticSidebar = () => {
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
         {canEditFile && (
-          <SidebarTooltip label="Scheduled Tasks">
+          <SidebarTooltip label="Scheduled tasks">
             <SidebarToggle
               pressed={showScheduledTasks.show}
               onPressedChange={() => {

@@ -4,7 +4,10 @@ use uuid::Uuid;
 
 use quadratic_core::controller::{operations::operation::Operation, transaction::Transaction};
 use quadratic_rust_shared::{
-    net::websocket_client::{WebSocketSender, WebsocketClient, get_enter_room_message},
+    multiplayer::message::request::MessageRequest,
+    net::websocket_client::{
+        WebSocketSender, WebsocketClient, get_enter_room_message, get_leave_room_message,
+    },
     protobuf::quadratic::transaction::BinaryTransaction as BinaryTransactionProto,
 };
 
@@ -21,6 +24,16 @@ pub(crate) async fn connect(
     Ok(websocket)
 }
 
+pub(crate) async fn send_message(
+    websocket: &mut WebSocketSender,
+    message: MessageRequest,
+) -> Result<()> {
+    let serialized_message = serde_json::to_string(&message)?;
+    websocket.send_text(&serialized_message).await?;
+
+    Ok(())
+}
+
 /// Enter the room
 pub(crate) async fn enter_room(
     websocket: &mut WebSocketSender,
@@ -29,21 +42,33 @@ pub(crate) async fn enter_room(
     session_id: Uuid,
 ) -> Result<()> {
     let enter_room_message = get_enter_room_message(user_id, file_id, session_id);
-    let serialized_message = serde_json::to_string(&enter_room_message)?;
-    websocket.send_text(&serialized_message).await?;
+    send_message(websocket, enter_room_message).await
+}
 
-    Ok(())
+pub(crate) async fn get_transactions(
+    websocket: &mut WebSocketSender,
+    file_id: Uuid,
+    session_id: Uuid,
+    min_sequence_num: u64,
+) -> Result<()> {
+    let get_transactions_message = MessageRequest::GetBinaryTransactions {
+        file_id,
+        session_id,
+        min_sequence_num,
+    };
+
+    send_message(websocket, get_transactions_message).await
 }
 
 /// Send a transaction to the Multiplayer server.
 /// Returns the id of the transaction.
 pub(crate) async fn send_transaction(
     websocket: &mut WebSocketSender,
+    id: Uuid,
     file_id: Uuid,
     session_id: Uuid,
     operations: Vec<Operation>,
 ) -> Result<Uuid> {
-    let id = Uuid::new_v4();
     let compressed_ops = Transaction::serialize_and_compress(&operations).unwrap();
     let request = BinaryTransactionProto {
         r#type: "BinaryTransaction".to_string(),
@@ -56,6 +81,16 @@ pub(crate) async fn send_transaction(
     websocket.send_binary(&protobuf_message).await?;
 
     Ok(id)
+}
+
+/// Leave the room
+pub(crate) async fn leave_room(
+    websocket: &mut WebSocketSender,
+    session_id: Uuid,
+    file_id: Uuid,
+) -> Result<()> {
+    let leave_room_message = get_leave_room_message(session_id, file_id);
+    send_message(websocket, leave_room_message).await
 }
 
 #[cfg(test)]
@@ -80,7 +115,7 @@ mod tests {
 
         // listen for messages in a separate thread
         tokio::spawn(async move {
-            while let Ok(message) = receiver.receive().await {
+            while let Ok(message) = receiver.receive_text().await {
                 println!("message: {:?}", message);
             }
         });
@@ -96,7 +131,8 @@ mod tests {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
             values: CellValues::from(vec![vec![CellValue::Text("hello world".to_string())]]),
         }];
-        let id = send_transaction(&mut sender, file_id, session_id, operations)
+        let transaction_id = Uuid::new_v4();
+        let id = send_transaction(&mut sender, transaction_id, file_id, session_id, operations)
             .await
             .unwrap();
 

@@ -1,34 +1,110 @@
-use quadratic_core::SheetPos;
-use quadratic_core::cell_values::CellValues;
+use futures_util::StreamExt;
+use prost::Message;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::operations::operation::Operation;
+use quadratic_core::controller::transaction::TransactionServer;
 use quadratic_core::grid::file::import;
-use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
+use quadratic_rust_shared::multiplayer::message::response::MessageResponse;
+use quadratic_rust_shared::net::websocket_client::{
+    Message as WebsocketMessage, WebSocketReceiver, WebSocketSender,
+};
+use quadratic_rust_shared::protobuf::quadratic::transaction::{
+    ReceiveTransaction, ReceiveTransactions,
+};
+use quadratic_rust_shared::protobuf::utils::type_name_from_peek;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 use uuid::Uuid;
 
 use crate::core::process_transaction;
 use crate::error::{CoreCloudError, Result};
-use crate::multiplayer::{connect, enter_room, send_transaction};
+use crate::multiplayer::{connect, enter_room, get_transactions, leave_room, send_transaction};
 
-// messages to care about (see multiplayerServer.ts)
-// 2. BinaryTransaction (receive and apply)
-// 3. TransactionAck (recieve and close CRON)
-// 4. CurrentTransaction
-// 5. Error
+fn to_transaction_server(transaction: ReceiveTransaction) -> TransactionServer {
+    TransactionServer {
+        id: Uuid::parse_str(&transaction.id).unwrap(),
+        file_id: Uuid::parse_str(&transaction.file_id).unwrap(),
+        operations: transaction.operations,
+        sequence_num: transaction.sequence_num,
+    }
+}
 
-#[derive(Clone)]
+/// Status of the worker.
+///
+/// It is used to track if the worker has received the catchup transactions
+/// and the transaction ack.
+#[derive(Debug)]
+pub struct WorkerStatus {
+    received_catchup_transactions: bool,
+    received_transaction_ack: bool,
+}
+
+impl Default for WorkerStatus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WorkerStatus {
+    pub fn new() -> Self {
+        Self {
+            received_catchup_transactions: false,
+            received_transaction_ack: false,
+        }
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.received_catchup_transactions && self.received_transaction_ack
+    }
+}
+
+/// Cloud Worker
+///
+/// Usage:
+///
+/// ```rust
+/// // create worker
+/// // load file
+/// // establish ws connection
+/// // send EnterRoom message
+/// let worker = Worker::new(file_id, sequence_num, presigned_url, m2m_auth_token).await?;
+///
+/// // receive catchup transactions
+/// // receive room transactions
+///
+/// // process operations
+/// worker.process_operations(operations).await?;
+///
+/// // wait for TransactionAck of sent transaction
+/// while !worker.status.is_complete() {
+///     tokio::time::sleep(Duration::from_secs(1)).await;
+/// }
+/// ```
+///
+/// * `file_id` - The ID of the file to process.
+/// * `sequence_num` - The sequence number of the file to process.
+/// * `session_id` - The session ID of the worker.
+/// * `file` - The file to process.
+/// * `transaction_id` - The ID of the transaction to process.
+/// * `m2m_auth_token` - The M2M auth token to use for the worker.
+/// * `websocket_sender` - The websocket sender to use for the worker.
+/// * `websocket_receiver` - The websocket receiver to use for the worker.
+/// * `websocket_receiver_handle` - The websocket receiver handle to use for the worker.
+/// * `status` - The status of the worker.
 pub struct Worker {
     pub(crate) file_id: Uuid,
     pub(crate) sequence_num: u64,
     pub(crate) session_id: Uuid,
     pub(crate) file: Arc<Mutex<GridController>>,
+    pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
     pub(crate) m2m_auth_token: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
+    pub(crate) websocket_receiver_handle: Option<JoinHandle<()>>,
+    pub status: Arc<Mutex<WorkerStatus>>,
 }
 
 impl Debug for Worker {
@@ -44,6 +120,17 @@ impl Debug for Worker {
 }
 
 impl Worker {
+    /// Create a new worker.
+    ///
+    /// This will create a new worker and connect to the multiplayer server.
+    /// It will then enter the room and get the catchup transactions.
+    ///
+    /// * `file_id` - The ID of the file to process.
+    /// * `sequence_num` - The sequence number of the file to process.
+    /// * `presigned_url` - The presigned URL of the file to process.
+    /// * `m2m_auth_token` - The M2M auth token to use for the worker.
+    ///
+    /// Returns a new worker.
     pub async fn new(
         file_id: Uuid,
         sequence_num: u64,
@@ -51,16 +138,31 @@ impl Worker {
         m2m_auth_token: String,
     ) -> Result<Self> {
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
-
-        Ok(Worker {
+        let mut worker = Worker {
             file_id,
             sequence_num,
             session_id: Uuid::new_v4(),
             file: Arc::new(Mutex::new(file)),
             m2m_auth_token,
+            transaction_id: Arc::new(Mutex::new(None)),
             websocket_sender: None,
             websocket_receiver: None,
-        })
+            websocket_receiver_handle: None,
+            status: Arc::new(Mutex::new(WorkerStatus::new())),
+        };
+
+        // first, connect to the multiplayer server
+        worker.connect().await?;
+
+        // then, enter the room
+        worker.enter_room(file_id).await?;
+
+        // finally, get the catchup transactions
+        worker
+            .get_transactions(file_id, worker.session_id, worker.sequence_num)
+            .await?;
+
+        Ok(worker)
     }
 
     /// Load a file from a presigned URL.
@@ -78,6 +180,7 @@ impl Worker {
     }
 
     /// Connect to the multiplayer server.
+    ///
     /// This will connect to the multiplayer server and create a new websocket
     /// sender and receiver.
     pub async fn connect(&mut self) -> Result<()> {
@@ -87,6 +190,104 @@ impl Worker {
 
             self.websocket_sender = Some(Arc::new(Mutex::new(sender)));
             self.websocket_receiver = Some(Arc::new(Mutex::new(receiver)));
+
+            self.listen_for_messages().await?;
+        }
+
+        Ok(())
+    }
+
+    /// Listen for messages from the multiplayer server.
+    ///
+    /// This will listen for messages from the multiplayer server and process them.
+    /// Important messages are:
+    /// - TransactionAck (text)
+    /// - BinaryTransactions (binary)
+    /// - BinaryTransaction (binary)
+    /// - Close
+    /// - Error
+    ///
+    /// Returns Ok(()) if the messages are processed successfully.
+    pub async fn listen_for_messages(&mut self) -> Result<()> {
+        // listen for messages in a separate thread
+        if let Some(receiver) = self.websocket_receiver.as_ref().cloned() {
+            let file = self.file.clone();
+            let status = self.status.clone();
+            let transaction_id = self.transaction_id.clone();
+            let print_error = |e| println!("Error parsing message from multiplayer: {e}");
+
+            self.websocket_receiver_handle = Some(tokio::spawn(async move {
+                while let Some(message) = receiver.lock().await.stream.next().await {
+                    match message {
+                        Ok(WebsocketMessage::Text(text)) => {
+                            match serde_json::from_str(&text) {
+                                Ok(message) => match message {
+                                    MessageResponse::TransactionAck { id, .. } => {
+                                        if Some(id) == *transaction_id.lock().await {
+                                            status.lock().await.received_transaction_ack = true;
+                                        }
+                                    }
+                                    // TODO(ddimaria): keep a count of users in the room
+                                    MessageResponse::UsersInRoom { .. } => {}
+                                    // we don't care about other messages
+                                    _ => {}
+                                },
+                                Err(e) => print_error(e.to_string()),
+                            }
+                        }
+                        Ok(WebsocketMessage::Binary(binary)) => {
+                            if let Ok(type_name) = type_name_from_peek(&binary) {
+                                match type_name.as_str() {
+                                    "BinaryTransactions" => {
+                                        match ReceiveTransactions::decode(binary) {
+                                            Ok(receive_transactions) => {
+                                                // convert ReceiveTransactions to TransactionServer
+                                                let transactions = receive_transactions
+                                                    .transactions
+                                                    .into_iter()
+                                                    .map(to_transaction_server)
+                                                    .collect::<Vec<TransactionServer>>();
+
+                                                // apply transactions to the file
+                                                file.lock()
+                                                    .await
+                                                    .received_transactions(transactions);
+
+                                                // update status
+                                                status.lock().await.received_catchup_transactions =
+                                                    true;
+                                            }
+                                            Err(e) => print_error(e.to_string()),
+                                        };
+                                    }
+                                    "BinaryTransaction" => {
+                                        match ReceiveTransaction::decode(binary) {
+                                            Ok(transaction) => {
+                                                // convert ReceiveTransactions to TransactionServer
+                                                let transaction_server =
+                                                    to_transaction_server(transaction);
+
+                                                file.lock().await.received_transactions(vec![
+                                                    transaction_server,
+                                                ]);
+                                            }
+                                            Err(e) => print_error(e.to_string()),
+                                        };
+                                    }
+                                    // we don't care about other messages
+                                    _ => {}
+                                }
+                            }
+                        }
+                        Ok(WebsocketMessage::Close(_)) => break,
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("WebSocket error: {:?}", e);
+                            break;
+                        }
+                    }
+                }
+            }));
         }
 
         Ok(())
@@ -98,10 +299,11 @@ impl Worker {
     }
 
     /// Enter the room for a given file.
+    ///
     /// This will connect to the multiplayer server and enter the room for the
     /// given file.
     /// Returns true if the worker is new, false if it already exists.
-    pub(crate) async fn enter_room(&mut self, file_id: Uuid) -> Result<()> {
+    pub async fn enter_room(&mut self, file_id: Uuid) -> Result<()> {
         if let Some(sender) = self.websocket_sender.as_mut() {
             let user_id = Uuid::new_v4();
             enter_room(&mut *sender.lock().await, user_id, file_id, self.session_id).await?;
@@ -112,18 +314,32 @@ impl Worker {
         Ok(())
     }
 
+    /// Get transactions from the multiplayer server.
+    pub async fn get_transactions(
+        &mut self,
+        file_id: Uuid,
+        session_id: Uuid,
+        min_sequence_num: u64,
+    ) -> Result<()> {
+        if let Some(sender) = self.websocket_sender.as_mut() {
+            get_transactions(
+                &mut *sender.lock().await,
+                file_id,
+                session_id,
+                min_sequence_num + 1,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
     /// Process an operation.
     /// This will create a pending transaction and apply it to the file.
-    pub async fn process_operation(&mut self, operation: Operation) -> Result<()> {
-        // // Take ownership of the GridController, process it, then put it back
-        // let file_for_transaction = {
-        //     let mut file_guard = self.file.lock().await;
-        //     std::mem::replace(&mut *file_guard, GridController::default())
-        // };
-
-        process_transaction(
+    pub async fn process_operations(&mut self, operations: Vec<Operation>) -> Result<()> {
+        let transaction_id = process_transaction(
             self.file.clone(),
-            vec![operation],
+            operations,
             None,
             TransactionName::Unknown,
             "test_team_id".to_string(),
@@ -131,12 +347,15 @@ impl Worker {
         )
         .await?;
 
+        *self.transaction_id.lock().await = Some(transaction_id);
+
         let file_lock = self.file.lock().await;
         let forward_transaction = file_lock.last_transaction().unwrap();
 
         if let Some(sender) = self.websocket_sender.as_mut() {
             send_transaction(
                 &mut *sender.lock().await,
+                transaction_id,
                 self.file_id,
                 self.session_id,
                 forward_transaction.operations.to_owned(),
@@ -147,94 +366,67 @@ impl Worker {
         Ok(())
     }
 
-    /// Compute code for a given sheet position.
-    pub(crate) async fn compute_code(&mut self, sheet_pos: SheetPos) -> Result<()> {
-        let operation = Operation::ComputeCode { sheet_pos };
-        self.process_operation(operation).await
-    }
+    /// Leave the room for a given file.
+    pub async fn leave_room(&mut self) -> Result<()> {
+        if let Some(sender) = self.websocket_sender.as_mut() {
+            leave_room(&mut *sender.lock().await, self.session_id, self.file_id).await?;
+        }
 
-    pub(crate) async fn set_cell_values(
-        &mut self,
-        sheet_pos: SheetPos,
-        values: CellValues,
-    ) -> Result<()> {
-        let operation = Operation::SetCellValues { sheet_pos, values };
-        self.process_operation(operation).await
-    }
-
-    /// Increment the sequence number.
-    pub(crate) fn increment_sequence_num(&mut self) -> u64 {
-        self.sequence_num += 1;
-        self.sequence_num
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::new_storage;
+
     use super::*;
 
-    use quadratic_core::{CellValue, grid::SheetId};
+    use quadratic_core::{SheetPos, grid::SheetId};
+    use quadratic_rust_shared::storage::Storage;
     use std::{str::FromStr, time::Duration};
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_worker_startup() {
-        let file_id = Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap();
+        let file_id = Uuid::parse_str("d87f4037-fb48-4b6e-abf0-178c725e464d").unwrap();
         let sheet_id = SheetId::from_str("b8718a71-e4b1-49bb-8f32-f0d931850cfd").unwrap();
-        let presigned_url = "https://www.google.com";
+        let storage = new_storage();
+        let sequence_num = 77;
+        let full_file_url = format!("{file_id}-{sequence_num}.grid");
+        let presigned_url = storage.presigned_url(&full_file_url).await.unwrap();
         let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
 
-        let worker = Worker::new(file_id, 0, presigned_url, m2m_auth_token)
-            .await
-            .unwrap();
-        let worker = Arc::new(Mutex::new(worker));
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
+        let operations = vec![Operation::ComputeCode { sheet_pos }];
 
-        // connect to the multiplayer server
-        worker.lock().await.connect().await.unwrap();
+        // emulate a browser worker
+        let mut browser_worker = Worker::new(
+            file_id,
+            sequence_num,
+            &presigned_url,
+            m2m_auth_token.clone(),
+        )
+        .await
+        .unwrap();
 
-        // get the multiplayer receiver
-        let receiver = worker
-            .lock()
-            .await
-            .websocket_receiver
-            .as_ref()
-            .unwrap()
-            .clone();
-
-        // listen for messages in a separate thread
-        // TODO(ddimaria): ensure that we receive ACKs for all transactions
-        tokio::spawn(async move {
-            while let Ok(message) = receiver.lock().await.receive().await {
-                // ignore if the string containts "UserUpdate"
-                let message = message.unwrap();
-                if message.contains("TransactionAck") {
-                    println!("message: {:?}", message);
-                }
-            }
-        });
-
-        // then, enter the room
-        worker.lock().await.enter_room(file_id).await.unwrap();
-
-        // then, set cell value of A2 to 5
-        worker
-            .lock()
-            .await
-            .set_cell_values(
-                SheetPos::new(sheet_id, 1, 2),
-                CellValues::from(vec![vec![CellValue::Number(5.into())]]),
-            )
+        // send a transaction to the server so that worker_1 gets a catchup transaction message
+        browser_worker
+            .process_operations(operations.clone())
             .await
             .unwrap();
 
-        // then, compute code at A4
-        worker
-            .lock()
-            .await
-            .compute_code(SheetPos::new(sheet_id, 1, 4))
+        // wait 2 seconds so that there is a catchup transaction message
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // cloud worker
+        let mut cloud_worker = Worker::new(file_id, sequence_num, &presigned_url, m2m_auth_token)
             .await
             .unwrap();
 
-        // wait 1 minute to show presence in the demo
-        tokio::time::sleep(Duration::from_secs(60)).await;
+        cloud_worker.process_operations(operations).await.unwrap();
+
+        while !cloud_worker.status.lock().await.is_complete() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
     }
 }

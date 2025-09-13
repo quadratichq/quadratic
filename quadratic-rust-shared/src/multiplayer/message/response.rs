@@ -99,6 +99,9 @@ pub enum MessageResponse {
         error: ResponseError,
         error_level: ErrorLevel,
     },
+    Pong {
+        message: String,
+    },
 }
 
 impl MessageResponse {

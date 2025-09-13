@@ -46,9 +46,8 @@ pub(crate) fn analyze_code(
     let c_result = c_string("result")?;
     let result_tuple = py.eval(&c_result, None, None)?;
 
-    Ok(result_tuple.extract()?)
+    result_tuple.extract()
 }
 
 #[cfg(test)]
-
 mod tests {}

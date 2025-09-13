@@ -7,6 +7,7 @@ FROM ubuntu:24.04 AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   protobuf-compiler \
+  libprotobuf-dev \
   curl \
   ca-certificates \
   pkg-config \
@@ -16,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /quadratic
 
 # Copy rust-toolchain file first so rustup can read it
-COPY --link rust-toolchain.toml .
+COPY rust-toolchain.toml .
 
 # Install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

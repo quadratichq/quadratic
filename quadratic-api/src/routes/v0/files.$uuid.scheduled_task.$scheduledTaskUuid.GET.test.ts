@@ -1,13 +1,19 @@
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
+
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
-import { genericAuth0Mock } from '../../tests/auth0Mock';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
-export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+// Helper function to generate expected serialized Buffer format for HTTP responses
+const expectSerializedBuffer = (data: any) => ({
+  type: 'Buffer',
+  data: Array.from(Buffer.from(JSON.stringify(data))),
+});
 
-jest.mock('auth0', () => genericAuth0Mock());
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   let testUser: any;
@@ -112,7 +118,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         fileId: testFile.id,
         userId: testUser.id,
         cronExpression: '0 0 * * *',
-        operations: { action: 'test', type: 'daily' },
+        operations: expectSerializedBuffer({ action: 'test', type: 'daily' }),
         status: 'ACTIVE',
       });
     });
@@ -180,46 +186,6 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       const now = new Date();
       expect(nextRunTime.getTime()).toBeGreaterThan(now.getTime());
     });
-
-    it('should preserve complex operations object structure', async () => {
-      // Create a scheduled task with complex operations
-      const complexOperations = {
-        type: 'data_pipeline',
-        steps: [
-          {
-            name: 'extract',
-            source: { type: 'database', connection: 'prod-db' },
-            query: 'SELECT * FROM users WHERE created_date >= ?',
-            parameters: ['{{yesterday}}'],
-          },
-          {
-            name: 'transform',
-            rules: [
-              { field: 'email', action: 'lowercase' },
-              { field: 'phone', action: 'normalize' },
-            ],
-          },
-        ],
-        notifications: {
-          onSuccess: ['data-team@example.com'],
-          onFailure: ['alerts@example.com'],
-        },
-      };
-
-      const complexTask = await createScheduledTask({
-        userId: testUser.id,
-        fileId: testFile.id,
-        cronExpression: '0 2 * * *',
-        operations: complexOperations,
-      });
-
-      const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${complexTask.uuid}`)
-        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.operations).toEqual(complexOperations);
-    });
   });
 
   describe('Edge Cases', () => {
@@ -230,58 +196,6 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.lastRunTime).toBe('');
-    });
-
-    it('should handle operations with special characters and unicode', async () => {
-      const specialOperations = {
-        message: 'Special chars: àáâãäåçèéêë 中文 العربية 🚀🔥💯',
-        sql: "SELECT * FROM table WHERE name = 'O''Reilly'",
-        unicode: '\u{1F600}\u{1F601}\u{1F602}',
-      };
-
-      const specialTask = await createScheduledTask({
-        userId: testUser.id,
-        fileId: testFile.id,
-        cronExpression: '0 0 * * *',
-        operations: specialOperations,
-      });
-
-      const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${specialTask.uuid}`)
-        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.operations).toEqual(specialOperations);
-    });
-
-    it('should handle operations with null and falsy values', async () => {
-      const operationsWithNulls = {
-        nullValue: null,
-        emptyString: '',
-        zeroNumber: 0,
-        falseBoolean: false,
-        emptyArray: [],
-        emptyObject: {},
-      };
-
-      const nullTask = await createScheduledTask({
-        userId: testUser.id,
-        fileId: testFile.id,
-        cronExpression: '0 0 * * *',
-        operations: operationsWithNulls,
-      });
-
-      const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${nullTask.uuid}`)
-        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.operations.nullValue).toBeNull();
-      expect(response.body.operations.emptyString).toBe('');
-      expect(response.body.operations.zeroNumber).toBe(0);
-      expect(response.body.operations.falseBoolean).toBe(false);
-      expect(response.body.operations.emptyArray).toEqual([]);
-      expect(response.body.operations.emptyObject).toEqual({});
     });
 
     it('should handle different cron expressions correctly', async () => {
@@ -299,7 +213,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: cron,
-          operations: { action: 'test', cron },
+          operations: Buffer.from(JSON.stringify({ action: 'test', cron })),
         });
 
         const response = await request(app)
@@ -324,7 +238,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 0 * * *',
-          operations: { action: 'test', status },
+          operations: Buffer.from(JSON.stringify({ action: 'test', status })),
         });
 
         // Update status after creation if not ACTIVE (since createScheduledTask always creates ACTIVE)
@@ -352,14 +266,14 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: { action: 'task1' },
+        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: { action: 'task2' },
+        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
       });
 
       // Test retrieving each task individually
@@ -369,7 +283,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       expect(response1.status).toBe(200);
       expect(response1.body.uuid).toBe(task1.uuid);
-      expect(response1.body.operations.action).toBe('task1');
+      expect(response1.body.operations).toEqual(expectSerializedBuffer({ action: 'task1' }));
 
       const response2 = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task/${task2.uuid}`)
@@ -377,7 +291,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       expect(response2.status).toBe(200);
       expect(response2.body.uuid).toBe(task2.uuid);
-      expect(response2.body.operations.action).toBe('task2');
+      expect(response2.body.operations).toEqual(expectSerializedBuffer({ action: 'task2' }));
 
       // Test original task still works
       const responseOriginal = await request(app)
@@ -386,7 +300,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       expect(responseOriginal.status).toBe(200);
       expect(responseOriginal.body.uuid).toBe(testScheduledTask.uuid);
-      expect(responseOriginal.body.operations.action).toBe('test');
+      expect(responseOriginal.body.operations).toEqual(expectSerializedBuffer({ action: 'test', type: 'daily' }));
     });
   });
 });

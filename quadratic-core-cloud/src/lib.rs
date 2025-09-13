@@ -6,7 +6,6 @@ mod connection;
 mod core;
 mod error;
 mod javascript;
-mod message;
 mod multiplayer;
 mod python;
 #[cfg(test)]

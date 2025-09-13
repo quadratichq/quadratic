@@ -10,6 +10,7 @@ deno_core = "0.355.0"
 deno_error = "0.7.0"
 # deno_timers = "0.34.0"  # Version conflict with deno_core - using built-in timer ops instead
 # deno_runtime = "0.221.0"  # Using deno_core only to avoid SQLite conflicts
+futures-util = "0.3.30"
 http = "1.1.0"
 # openssl = { version = "0.10.72", features = ["vendored"] }
 prost = "0.13.5"
@@ -23,6 +24,7 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "auth",
     "environment",
+    "multiplayer",
     "net",
     "protobuf",
     "pubsub",
@@ -38,3 +40,6 @@ tokio = { version = "1.44.2", features = ["full"] }
 tracing = "0.1.40"
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 urlencoding = "2.1.3"
+
+[dev-dependencies]
+dotenv = "0.15.0"

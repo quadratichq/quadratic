@@ -1,4 +1,3 @@
-use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
 use std::sync::Arc;
 use tokio::{
     runtime::Handle,
@@ -22,13 +21,6 @@ use crate::{
     python::execute::run_python,
 };
 
-pub async fn load_file(presigned_url: &str) -> Result<Vec<u8>> {
-    let res = reqwest::get(presigned_url).await?;
-    let body = res.bytes().await?;
-
-    Ok(body.to_vec())
-}
-
 // from main
 // receive the transaction
 // get file from S3
@@ -48,7 +40,7 @@ pub(crate) async fn process_transaction(
     transaction_name: TransactionName,
     team_id: String,
     token: String,
-) -> Result<()> {
+) -> Result<Uuid> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
     let tx_get_cells_request = Arc::new(Mutex::new(tx_get_cells_request));
@@ -80,7 +72,7 @@ pub(crate) async fn process_transaction(
             tx_get_cells_response.send(cells).await?;
         }
 
-        return Ok(());
+        Ok(())
     });
 
     // get_cells function, blocking is required here
@@ -97,7 +89,7 @@ pub(crate) async fn process_transaction(
                     .recv()
                     .await
                     .ok_or_else(|| {
-                        CoreCloudError::Python(format!("Error receiving get_cells response"))
+                        CoreCloudError::Python("Error receiving get_cells response".to_string())
                     })
             })
         })
@@ -110,10 +102,10 @@ pub(crate) async fn process_transaction(
         .active_transactions()
         .get_async_transaction(transaction_uuid);
 
-    if let Ok(async_transaction) = async_transaction {
-        if let Some(waiting_for_async) = async_transaction.waiting_for_async {
+    if let Ok(async_transaction) = async_transaction
+        && let Some(waiting_for_async) = async_transaction.waiting_for_async {
             // run code
-            let _result = match waiting_for_async.language {
+            match waiting_for_async.language {
                 CodeCellLanguage::Python => {
                     run_python(
                         grid.clone(),
@@ -146,20 +138,18 @@ pub(crate) async fn process_transaction(
                 }
                 // maybe skip these below?
                 CodeCellLanguage::Formula => todo!(),
-                CodeCellLanguage::Import { .. } => todo!(),
+                CodeCellLanguage::Import => todo!(),
             }?;
 
             // Abort the task
             task_handle.abort();
 
             // wait for the task to finish
-            if let Err(e) = task_handle.await {
-                if !e.is_cancelled() {
+            if let Err(e) = task_handle.await
+                && !e.is_cancelled() {
                     return Err(CoreCloudError::Core(e.to_string()));
                 }
-            }
         }
-    }
 
     // // Return the grid
     // let strong_count = Arc::strong_count(&grid_shared);
@@ -171,7 +161,7 @@ pub(crate) async fn process_transaction(
     //     ))),
     // };
 
-    Ok(())
+    Ok(transaction_uuid)
 }
 
 #[cfg(test)]
@@ -200,7 +190,7 @@ mod tests {
         sheet.set_cell_values(pos![A1].into(), to_number("1").into());
 
         // set B2 to a Python cell
-        sheet.set_cell_values(pos![A2].into(), to_code(&code).into());
+        sheet.set_cell_values(pos![A2].into(), to_code(code).into());
 
         // generate the operation
         let operation = Operation::ComputeCode {

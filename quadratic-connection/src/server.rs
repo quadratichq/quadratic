@@ -226,7 +226,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     // start the cache executor
     let cache = Arc::clone(&state.cache.schema);
-    let executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
+    let _executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
 
     // log stats in a separate thread
     tokio::spawn({

@@ -4,6 +4,7 @@ import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
@@ -69,8 +70,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   // Close overlay
   if (matchShortcut(Action.CloseOverlay, event)) {
     // clear copy range if it is showing
-    if (pixiApp.copy.isShowing()) {
-      pixiApp.copy.clearCopyRanges();
+    if (content.copy.isShowing()) {
+      content.copy.clearCopyRanges();
       return true;
     }
 

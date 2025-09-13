@@ -29,7 +29,31 @@ const schema = z.object({
           return false;
         }
       }, 'Invalid cron expression'),
-    operations: z.number().array(),
+    operations: z
+      .any()
+      .refine((val) => {
+        // Accept actual Buffer instances
+        if (Buffer.isBuffer(val)) {
+          return true;
+        }
+        // Accept serialized Buffer objects from HTTP requests
+        if (val && typeof val === 'object' && val.type === 'Buffer' && Array.isArray(val.data)) {
+          return true;
+        }
+        return false;
+      }, 'Operations must be a Buffer')
+      .transform((val) => {
+        // Return Buffer instances as-is
+        if (Buffer.isBuffer(val)) {
+          return val;
+        }
+        // Convert serialized Buffer objects back to Buffer
+        if (val && typeof val === 'object' && val.type === 'Buffer' && Array.isArray(val.data)) {
+          return Buffer.from(val.data);
+        }
+        // This should never happen due to refine check above
+        throw new Error('Invalid operations format');
+      }),
   }),
 });
 

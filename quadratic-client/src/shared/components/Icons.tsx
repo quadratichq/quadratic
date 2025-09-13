@@ -163,6 +163,10 @@ export const CheckBoxEmptyIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
+export const CheckBoxIndeterminateIcon: IconComponent = (props) => {
+  return <Icon {...props}>indeterminate_check_box</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
@@ -752,5 +756,5 @@ export const WebBrowserIcon: IconComponent = (props) => {
 };
 
 export const ScheduledTasksIcon: IconComponent = (props) => {
-  return <Icon {...props}>alarm</Icon>;
+  return <Icon {...props}>timer_play</Icon>;
 };

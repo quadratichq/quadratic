@@ -76,9 +76,15 @@ where
             }
         }
     } else {
-        return Err(SharedError::Auth(Auth::Jwt(
-            "No matching JWK found for the given kid".into(),
-        )));
+        let jwks_kids = jwks
+            .keys
+            .iter()
+            .filter_map(|jwk| jwk.common.key_id.as_deref())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(SharedError::Auth(Auth::Jwt(format!(
+            "No matching JWK found for the given kid. JWT kid: {kid}, JWKS kids: {jwks_kids}",
+        ))));
     }
 
     Ok(decoded_token)
@@ -104,7 +110,7 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
 
 /// Extract the authorization token from the headers, removing the "Bearer " prefix.
 pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
-    headers.get("authorization").map_or(None, |authorization| {
+    headers.get("authorization").and_then(|authorization| {
         authorization
             .to_str()
             .ok()

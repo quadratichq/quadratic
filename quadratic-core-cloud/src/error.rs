@@ -78,9 +78,7 @@ pub enum CoreCloudError {
 impl From<SharedError> for CoreCloudError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::Storage(error) => match error {
-                _ => CoreCloudError::Storage(error.to_string()),
-            },
+            SharedError::Storage(error) => CoreCloudError::Storage(error.to_string()),
             _ => CoreCloudError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }

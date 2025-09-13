@@ -7,6 +7,7 @@ pub(crate) struct QuadraticModuleLoader;
 
 /// Hook up into the resolve function to handle ES imports.
 impl ModuleLoader for QuadraticModuleLoader {
+    #[allow(clippy::if_same_then_else)]
     fn resolve(
         &self,
         specifier: &str,
@@ -136,13 +137,11 @@ impl ModuleLoader for QuadraticModuleLoader {
                                 None,
                             ))
                         }
-                        Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::other(
                             format!("Failed to read response: {}", e),
                         )))),
                     },
-                    Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
+                    Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::other(
                         e.to_string(),
                     )))),
                 }
@@ -156,8 +155,7 @@ impl ModuleLoader for QuadraticModuleLoader {
                             &module_specifier,
                             None,
                         )),
-                        Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        Err(e) => Err(JsErrorBox::from_err(Box::new(std::io::Error::other(
                             e.to_string(),
                         )))),
                     },
@@ -201,8 +199,7 @@ impl ModuleLoader for QuadraticModuleLoader {
                     ))))
                 }
             } else {
-                Err(JsErrorBox::from_err(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                Err(JsErrorBox::from_err(Box::new(std::io::Error::other(
                     format!("Unsupported module specifier: {}", module_specifier),
                 ))))
             }

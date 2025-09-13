@@ -262,7 +262,7 @@ export const scheduledTask = async (userId: number, fileId: number) =>
     userId,
     fileId,
     cronExpression: '0 0 * * *',
-    operations: { action: 'test', type: 'daily' },
+    operations: Buffer.from(JSON.stringify({ action: 'test', type: 'daily' })),
   });
 
 /**

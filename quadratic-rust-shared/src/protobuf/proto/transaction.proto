@@ -73,6 +73,16 @@ message BinaryTransaction {
   bytes operations = 5;
 }
 
+message BinaryTransactions {
+  string type = 1;
+  repeated BinaryTransaction transactions = 2;
+}
+
+message ReceiveBinaryTransaction {
+  string type = 1;
+  BinaryTransaction transaction = 2;
+}
+
 message SendGetTransactions {
   string type = 1;
   string session_id = 2;

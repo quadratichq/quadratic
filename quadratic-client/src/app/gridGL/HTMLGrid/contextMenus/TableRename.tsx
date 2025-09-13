@@ -2,7 +2,7 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -26,7 +26,7 @@ export const TableRename = () => {
       ) {
         return;
       } else {
-        const bounds = pixiApp.cellsSheet().tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
+        const bounds = content.cellsSheet.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
         if (bounds && inputRef.current) {
           setWidth(bounds.width);
           inputRef.current.style.top = `${bounds.y}px`;
@@ -46,9 +46,9 @@ export const TableRename = () => {
 
   const handleSave = useCallback(
     (value: string) => {
-      if (pixiApp.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
+      if (content.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
         renameTable({
-          sheetId: pixiApp.cellsSheets.current.sheetId,
+          sheetId: content.cellsSheets.current?.sheetId,
           x: contextMenu.table.x,
           y: contextMenu.table.y,
           oldName: contextMenu.table.name,

@@ -60,4 +60,7 @@ pub enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
+    Ping {
+        message: String,
+    },
 }

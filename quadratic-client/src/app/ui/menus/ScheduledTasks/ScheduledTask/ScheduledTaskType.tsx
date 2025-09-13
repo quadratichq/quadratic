@@ -2,21 +2,23 @@
 //! run-all-code) and related parameters.
 
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { ScheduledTaskInputGroup } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInputGroup';
 import type { CronRange, TaskType } from '@/app/ui/menus/ScheduledTasks/useCronRange';
-import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
+import { Label } from '@/shared/shadcn/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 
 const TASKS: { value: TaskType; label: string }[] = [
   {
     value: 'run-all-code',
-    label: 'Run entire file',
+    label: 'Run file',
   },
   {
     value: 'run-sheet-cells',
-    label: 'Run entire sheet',
+    label: 'Run sheet',
   },
   {
     value: 'run-selected-cells',
-    label: 'Run selected cells',
+    label: 'Run selection',
   },
 ];
 
@@ -29,40 +31,52 @@ export const ScheduledTaskType = (props: Props) => {
     props.cronRange;
 
   return (
-    <div className="flex flex-col gap-4 px-1">
-      <ValidationDropdown
-        label="Task"
-        labelClassName="text-xs text-gray-500"
-        className="flex flex-col gap-1"
-        options={TASKS}
-        value={task}
-        onChange={setTaskCallback}
-      />
-
-      {task === 'run-sheet-cells' && (
-        <ValidationDropdown
-          className="flex flex-col gap-1"
-          label="Sheet"
-          labelClassName="text-xs text-gray-500"
-          onChange={setSheet}
-          value={sheetId}
-          options={sheetList}
-        />
-      )}
-
-      {task === 'run-selected-cells' && (
-        <SheetRange
-          label="Run code in range"
-          labelClassName="text-xs text-gray-500"
-          initial={range?.selection()}
-          onChangeSelection={changeSelection}
-          onError={setRangeError}
-          triggerError={!!rangeError}
-          changeCursor={true}
-          readOnly={false}
-          onlyCurrentSheet={sheetId}
-        />
-      )}
-    </div>
+    <>
+      <ScheduledTaskInputGroup>
+        <Label htmlFor="scheduled-run-type" className="mt-1.5">
+          Task
+        </Label>
+        <div className="flex flex-col gap-2">
+          <Select value={task} onValueChange={setTaskCallback}>
+            <SelectTrigger id="scheduled-run-type" className="select-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TASKS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {task === 'run-sheet-cells' && (
+            <Select value={sheetId} onValueChange={setSheet}>
+              <SelectTrigger className="select-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-64 overflow-y-auto">
+                {sheetList.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {task === 'run-selected-cells' && (
+            <SheetRange
+              labelClassName="text-xs text-gray-500"
+              initial={range?.selection()}
+              onChangeSelection={changeSelection}
+              onError={setRangeError}
+              triggerError={!!rangeError}
+              changeCursor={true}
+              readOnly={false}
+              onlyCurrentSheet={sheetId}
+            />
+          )}
+        </div>
+      </ScheduledTaskInputGroup>
+    </>
   );
 };
