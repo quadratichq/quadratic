@@ -3,7 +3,7 @@ import checkpointRead from './checkpoint.$fileUuid.GET';
 import checkpointPut from './checkpoint.$fileUuid.PUT';
 import connectionGet from './connection.$connectionUuid.GET';
 import lastCheckpointDataUrlGet from './file.$fileUuid.last-checkpoint-data-url.GET';
-import scheduledTaskGet from './scheduled_task.GET';
+import scheduledTaskGet from './scheduled-tasks.GET';
 
 const router = express.Router();
 

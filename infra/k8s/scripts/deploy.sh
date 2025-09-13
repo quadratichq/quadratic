@@ -13,7 +13,7 @@
 # - Performs health checks and verification
 # - Provides access information and next steps
 #
-# Usage: ./k8s/scripts/deploy.sh [OPTIONS]
+# Usage: ./infra/k8s/scripts/deploy.sh [OPTIONS]
 # Options:
 #   --force         Force redeploy (delete and recreate resources)
 #   --wait          Wait for all resources to be ready (default)
@@ -29,7 +29,7 @@ set -u  # Exit on undefined variables
 # Configuration Constants
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Default configuration
 NAMESPACE="quadratic-cloud"
@@ -194,7 +194,7 @@ check_deployment_environment() {
     
     # Check manifest files
     for manifest in "${MANIFESTS[@]}"; do
-        local manifest_path="k8s/manifests/${manifest}"
+        local manifest_path="infra/k8s/manifests/${manifest}"
         if [ ! -f "$manifest_path" ]; then
             log_error "Manifest not found: $manifest_path"
             exit 1
@@ -225,7 +225,7 @@ force_cleanup_namespace() {
 
 deploy_manifest() {
     local manifest=$1
-    local manifest_path="k8s/manifests/${manifest}"
+    local manifest_path="infra/k8s/manifests/${manifest}"
     
     log_deploy "Deploying $manifest..."
     
@@ -419,7 +419,7 @@ show_access_info() {
     echo "  • Redis Direct Access:"
     echo "    kubectl port-forward svc/quadratic-cloud-redis 6379:6379 -n $NAMESPACE"
     echo "  • Start local tunnels:"
-    echo "    ./k8s/scripts/tunnel.sh start --namespace $NAMESPACE --name quadratic-localhost-tunnel --ports \"8000:8000,3001:3001,3002:3002,3003:3003\""
+    echo "    ./infra/k8s/scripts/tunnel.sh start --namespace $NAMESPACE --name quadratic-localhost-tunnel --ports \"8000:8000,3001:3001,3002:3002,3003:3003\""
     echo
     log_info "📊 Monitoring Commands:"
     echo "  • Watch all resources:"
@@ -427,11 +427,11 @@ show_access_info() {
     echo "  • Watch worker jobs:"
     echo "    kubectl get jobs -l app.kubernetes.io/component=worker -n $NAMESPACE -w"
     echo "  • View logs:"
-    echo "    ./k8s/scripts/logs.sh"
+    echo "    ./infra/k8s/scripts/logs.sh"
     echo
     log_info "📁 Next Steps:"
-    echo "  • Test the system: ./k8s/scripts/test.sh"
-    echo "  • View logs: ./k8s/scripts/logs.sh"
+    echo "  • Test the system: ./infra/k8s/scripts/test.sh"
+    echo "  • View logs: ./infra/k8s/scripts/logs.sh"
     echo "  • Port forward: kubectl port-forward svc/quadratic-cloud-controller 3004:3004 -n $NAMESPACE"
     echo
 }

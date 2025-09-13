@@ -13,7 +13,7 @@
 # - Configures the cluster to use the local registry
 # - Sets up port mappings for local access
 #
-# Usage: ./k8s/scripts/setup.sh [OPTIONS]
+# Usage: ./infra/k8s/scripts/setup.sh [OPTIONS]
 # Options:
 #   --cluster-name NAME    Custom cluster name (default: quadratic-cloud)
 #   --registry-port PORT   Custom registry port (default: 5001)
@@ -28,7 +28,7 @@ set -u  # Exit on undefined variables
 # Configuration Constants
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Default configuration (can be overridden by command line)
 CLUSTER_NAME="quadratic-cloud"
@@ -409,11 +409,11 @@ show_setup_info() {
     echo "  • Delete cluster: kind delete cluster --name ${CLUSTER_NAME}"
     echo
     log_info "📁 Next Steps:"
-    echo "  1. Build images: ./k8s/scripts/build.sh"
-    echo "  2. Deploy system: ./k8s/scripts/deploy.sh"
-    echo "  3. Set up tunnel: ./k8s/scripts/tunnel.sh"
-    echo "  4. Test system: ./k8s/scripts/test.sh"
-    echo "  5. Watch logs: ./k8s/scripts/logs.sh"
+    echo "  1. Build images: ./infra/k8s/scripts/build.sh"
+    echo "  2. Deploy system: ./infra/k8s/scripts/deploy.sh"
+    echo "  3. Set up tunnel: ./infra/k8s/scripts/tunnel.sh"
+    echo "  4. Test system: ./infra/k8s/scripts/test.sh"
+    echo "  5. Watch logs: ./infra/k8s/scripts/logs.sh"
     echo
 }
 

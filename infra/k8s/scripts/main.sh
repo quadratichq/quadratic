@@ -6,7 +6,7 @@
 # This is the main entry point for all Quadratic Cloud operations.
 # It provides a menu-driven interface for all available scripts.
 #
-# Usage: ./k8s/scripts/main.sh [COMMAND]
+# Usage: ./infra/k8s/scripts/main.sh [COMMAND]
 # Commands: setup, build, deploy, test, logs, status, cleanup, dev
 #==============================================================================
 
@@ -17,7 +17,7 @@ set -u
 # Configuration
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 #------------------------------------------------------------------------------
 # Colors
@@ -191,10 +191,10 @@ show_detailed_help() {
     echo "   ./main.sh 2 && ./main.sh 3"
     echo
     echo "3. Quick restart:"
-    echo "   ./main.sh 11"
+    echo "   ./main.sh 12"
     echo
     echo "4. Debug issues:"
-    echo "   ./main.sh 5 && ./main.sh 7"
+    echo "   ./main.sh 6 && ./main.sh 8"
     echo
 }
 

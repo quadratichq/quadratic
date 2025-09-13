@@ -13,7 +13,7 @@
 # - Pushes images to local registry
 # - Verifies image availability in cluster
 #
-# Usage: ./k8s/scripts/build.sh [OPTIONS]
+# Usage: ./infra/k8s/scripts/build.sh [OPTIONS]
 # Options:
 #   --no-cache      Build without using Docker cache
 #   --push-only     Only push existing images (skip build)
@@ -30,7 +30,7 @@ set -u  # Exit on undefined variables
 # Configuration Constants
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Default configuration
 REGISTRY="localhost:5001"
@@ -190,7 +190,7 @@ check_build_environment() {
         local port="${REGISTRY#localhost:}"
         if ! curl -s "http://localhost:${port}/v2/_catalog" &> /dev/null; then
             log_error "Local registry is not running on ${REGISTRY}"
-            log_info "Run setup first: ./k8s/scripts/setup.sh"
+            log_info "Run setup first: ./infra/k8s/scripts/setup.sh"
             exit 1
         fi
     fi
@@ -409,8 +409,8 @@ show_build_info() {
     echo "  • Check cluster images: docker exec ${CLUSTER_NAME}-control-plane crictl images"
     echo
     log_info "📁 Next Steps:"
-    echo "  • Deploy to cluster: ./k8s/scripts/deploy.sh"
-    echo "  • Set up tunnel: ./k8s/scripts/tunnel.sh"
+    echo "  • Deploy to cluster: ./infra/k8s/scripts/deploy.sh"
+    echo "  • Set up tunnel: ./infra/k8s/scripts/tunnel.sh"
     echo "  • View images: docker images | grep quadratic-cloud"
     echo "  • Check registry: curl http://${REGISTRY}/v2/_catalog"
     echo "  • Watch deployment: kubectl get pods -n quadratic-cloud -w"

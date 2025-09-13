@@ -292,7 +292,7 @@ impl Task {
 }
 
 pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>> {
-    let url = format!("{base_url}/v0/internal/scheduled_task");
+    let url = format!("{base_url}/v0/internal/scheduled-tasks");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 

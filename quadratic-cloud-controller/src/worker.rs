@@ -82,18 +82,19 @@ pub(crate) async fn get_last_file_checkpoint(
 
     info!("[get_last_file_checkpoint] Getting last file checkpoint for file id {file_id}",);
 
-    let last_file_checkpoint = get_last_file_checkpoint_from_api(
+    match get_last_file_checkpoint_from_api(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
         file_id,
     )
     .await
-    .map_err(|e| {
-        error!("Error getting last file checkpoint: {e}");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    Ok(Json(last_file_checkpoint))
+    {
+        Ok(last_file_checkpoint) => Ok(Json(last_file_checkpoint)),
+        Err(e) => {
+            error!("Error getting last file checkpoint: {e}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
 /// Get the next tasks for this worker

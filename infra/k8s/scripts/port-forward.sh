@@ -6,7 +6,7 @@
 # This script provides easy port forwarding to Quadratic Cloud services
 # for local development and testing.
 #
-# Usage: ./k8s/scripts/port-forward.sh [SERVICE] [OPTIONS]
+# Usage: ./infra/k8s/scripts/port-forward.sh [SERVICE] [OPTIONS]
 # Services: controller, redis, metrics, all
 #==============================================================================
 

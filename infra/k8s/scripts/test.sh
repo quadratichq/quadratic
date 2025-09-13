@@ -13,7 +13,7 @@
 # - System resource usage and limits
 # - Network connectivity between components
 #
-# Usage: ./k8s/scripts/test.sh [OPTIONS]
+# Usage: ./infra/k8s/scripts/test.sh [OPTIONS]
 # Options:
 #   --namespace NS    Custom namespace (default: quadratic-cloud)
 #   --timeout SEC     Test timeout in seconds (default: 300)
@@ -28,7 +28,7 @@ set -u  # Exit on undefined variables
 # Configuration Constants
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Default configuration
 NAMESPACE="quadratic-cloud"

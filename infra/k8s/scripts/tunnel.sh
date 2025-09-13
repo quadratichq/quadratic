@@ -1,5 +1,5 @@
 #!/bin/bash
-# File: k8s/scripts/tunnel.sh
+# File: infra/k8s/scripts/tunnel.sh
 
 set -e
 set -u

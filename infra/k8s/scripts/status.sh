@@ -6,7 +6,7 @@
 # This script provides a comprehensive overview of the Quadratic Cloud
 # system status, including all components, resources, and health metrics.
 #
-# Usage: ./k8s/scripts/status.sh [OPTIONS]
+# Usage: ./infra/k8s/scripts/status.sh [OPTIONS]
 # Options:
 #   --watch       Continuously monitor status (refresh every 5 seconds)
 #   --detailed    Show detailed resource information
@@ -320,7 +320,7 @@ show_access_info() {
     echo "  • Controller Logs:"
     echo "    kubectl logs -f deployment/quadratic-cloud-controller -n $NAMESPACE"
     echo "  • All Logs:"
-    echo "    ./k8s/scripts/logs.sh"
+    echo "    ./infra/k8s/scripts/logs.sh"
     echo
 }
 

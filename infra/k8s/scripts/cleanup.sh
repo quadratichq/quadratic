@@ -7,7 +7,7 @@
 # development environment, from simple namespace cleanup to complete
 # environment teardown.
 #
-# Usage: ./k8s/scripts/cleanup.sh [TYPE] [OPTIONS]
+# Usage: ./infra/k8s/scripts/cleanup.sh [TYPE] [OPTIONS]
 # Types: namespace, cluster, registry, images, all
 # Options:
 #   --force       Skip confirmation prompts
@@ -21,7 +21,7 @@ set -u
 # Configuration
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 CLEANUP_TYPE="namespace"
 NAMESPACE="quadratic-cloud"
@@ -304,31 +304,31 @@ show_restart_info() {
     case "$CLEANUP_TYPE" in
         "namespace")
             log_info "📁 To restart the application:"
-            echo "  ./k8s/scripts/deploy.sh"
-            echo "  ./k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/deploy.sh"
+            echo "  ./infra/k8s/scripts/tunnel.sh"
             ;;
         "cluster")
             log_info "📁 To restart the environment:"
-            echo "  ./k8s/scripts/setup.sh"
-            echo "  ./k8s/scripts/build.sh"
-            echo "  ./k8s/scripts/deploy.sh"
-            echo "  ./k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/setup.sh"
+            echo "  ./infra/k8s/scripts/build.sh"
+            echo "  ./infra/k8s/scripts/deploy.sh"
+            echo "  ./infra/k8s/scripts/tunnel.sh"
             ;;
         "registry")
             log_info "📁 To restart with registry:"
-            echo "  ./k8s/scripts/setup.sh"
-            echo "  ./k8s/scripts/build.sh"
+            echo "  ./infra/k8s/scripts/setup.sh"
+            echo "  ./infra/k8s/scripts/build.sh"
             ;;
         "images")
             log_info "📁 To rebuild images:"
-            echo "  ./k8s/scripts/build.sh"
+            echo "  ./infra/k8s/scripts/build.sh"
             ;;
         "all")
             log_info "📁 To restart from scratch:"
-            echo "  ./k8s/scripts/setup.sh"
-            echo "  ./k8s/scripts/build.sh"
-            echo "  ./k8s/scripts/deploy.sh"
-            echo "  ./k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/setup.sh"
+            echo "  ./infra/k8s/scripts/build.sh"
+            echo "  ./infra/k8s/scripts/deploy.sh"
+            echo "  ./infra/k8s/scripts/tunnel.sh"
             ;;
     esac
 }

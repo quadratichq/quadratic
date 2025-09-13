@@ -7,7 +7,7 @@ import type { Request } from '../../types/Request';
 
 const router = express.Router();
 
-router.get('/scheduled_task', validateM2MAuth(), async (req: Request, res: Response) => {
+router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Response) => {
   // Validate request parameters
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

@@ -11,7 +11,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate # Prevent duplicate controllers
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: quadratic-cloud-controller
@@ -51,7 +51,7 @@ spec:
             - name: RUST_BACKTRACE
               value: "1"
             - name: ENVIRONMENT
-              value: "production"
+              value: "local"
             - name: HOST
               value: "0.0.0.0"
             - name: PORT

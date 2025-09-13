@@ -6,7 +6,7 @@
 # This script provides convenient access to logs from all Quadratic Cloud
 # components with filtering, following, and aggregation options.
 #
-# Usage: ./k8s/scripts/logs.sh [COMPONENT] [OPTIONS]
+# Usage: ./infra/k8s/scripts/logs.sh [COMPONENT] [OPTIONS]
 # Components: controller, redis, worker, all
 # Options:
 #   -f, --follow        Follow log output

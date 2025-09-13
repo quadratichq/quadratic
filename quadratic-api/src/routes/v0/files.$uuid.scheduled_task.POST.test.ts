@@ -5,7 +5,7 @@ import { clearDb, createUserTeamAndFile } from '../../tests/testDataGenerator';
 
 jest.mock('auth0', () => genericAuth0Mock());
 
-describe('POST /v0/files/:uuid/scheduled_task', () => {
+describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   let uniqueId: string;
   let testUser: any;
   let testTeam: any;
@@ -22,7 +22,7 @@ describe('POST /v0/files/:uuid/scheduled_task', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid UUID parameter format', async () => {
       const response = await request(app)
-        .post('/v0/files/invalid-uuid/scheduled_task')
+        .post('/v0/files/invalid-uuid/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -179,7 +179,7 @@ describe('POST /v0/files/:uuid/scheduled_task', () => {
   describe('Error Handling', () => {
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .post('/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task')
+        .post('/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',

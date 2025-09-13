@@ -5,7 +5,7 @@
 #==============================================================================
 # This script provides common development workflows for rapid iteration.
 #
-# Usage: ./k8s/scripts/dev.sh [COMMAND] [OPTIONS]
+# Usage: ./infra/k8s/scripts/dev.sh [COMMAND] [OPTIONS]
 # Commands: rebuild, restart, reset, shell
 #==============================================================================
 
