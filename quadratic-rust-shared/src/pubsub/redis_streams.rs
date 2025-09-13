@@ -5,7 +5,7 @@
 use chrono::prelude::*;
 use futures_util::StreamExt;
 use redis::{
-    AsyncCommands, Client, Value,
+    AsyncCommands, Client, Script, Value,
     aio::{Monitor, MultiplexedConnection, PubSub},
     cmd,
     streams::{StreamId, StreamKey, StreamRangeReply, StreamReadOptions, StreamReadReply},
@@ -42,7 +42,7 @@ impl Debug for RedisConnection {
 }
 
 /// A message consists of a key (String) and a value (Bytes).
-type Message = (String, Vec<u8>);
+pub type Message = (String, Vec<u8>);
 
 /// Create a Redis client
 fn client(config: Config) -> Result<Client> {
@@ -269,6 +269,81 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
+    // Insert only once per dedupe key; returns true if added, false if already exists
+    async fn publish_once(
+        &mut self,
+        dedupe_key_prefix: &str,
+        channel: &str,
+        key: &str,
+        value: &[u8],
+        active_channel: Option<&str>,
+    ) -> Result<bool> {
+        let dedupe_key = format!("{dedupe_key_prefix}:{channel}");
+
+        let script = Script::new(
+            r#"
+            local id = redis.call('HGET', KEYS[1], ARGV[1])
+            if id then
+              return {0, id}
+            end
+            local new_id = redis.call('XADD', KEYS[2], '*', 'data', ARGV[2], 'dedupe_key', ARGV[1])
+            redis.call('HSET', KEYS[1], ARGV[1], new_id)
+            return {1, new_id}
+        "#,
+        );
+
+        let res: (i32, Option<String>) = script
+            .key(&dedupe_key)
+            .key(channel)
+            .arg(key)
+            .arg(value)
+            .invoke_async(&mut self.multiplex)
+            .await?;
+
+        let is_added = res.0 == 1;
+
+        // add the channel to the active channels set
+        if is_added && let Some(active_channel) = active_channel {
+            self.upsert_active_channel(active_channel, channel).await?
+        }
+
+        Ok(is_added)
+    }
+
+    // Ack by dedupe key using the mapping; returns true if acked
+    async fn ack_once(
+        &mut self,
+        dedupe_key_prefix: &str,
+        channel: &str,
+        group: &str,
+        key: &str,
+        active_channel: Option<&str>,
+    ) -> Result<()> {
+        let dedupe_key = format!("{dedupe_key_prefix}:{channel}");
+
+        // Fetch stream id for this dedupe key
+        let id: Option<String> = self.multiplex.hget(&dedupe_key, key).await?;
+        if let Some(stream_id) = id {
+            // XACK
+            self.multiplex
+                .xack::<&str, &str, String, i64>(channel, group, &[stream_id])
+                .await?;
+
+            // Remove mapping
+            let () = self.multiplex.hdel(&dedupe_key, key).await?;
+
+            // remove the channel from the active channels set
+            if let Some(active_channel) = active_channel {
+                let len: usize = self.multiplex.xlen(channel).await?;
+                if len == 0 {
+                    let () = self.multiplex.zrem(active_channel, channel).await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Trim messages from a channel
     async fn trim(&mut self, channel: &str, key: &str) -> Result<i64> {
         let xtrim = cmd("XTRIM").arg(channel).arg("MINID").arg(key).to_owned();
@@ -297,13 +372,19 @@ impl super::PubSub for RedisConnection {
         maybe_id: Option<&str>,
         max_messages: usize,
         preserve_sequence: bool,
+        block_ms: Option<usize>,
     ) -> Result<Vec<Message>> {
         // convert id, default to all new messages (">") if None
         let id = maybe_id.map_or_else(|| ">".into(), |id| to_key(id, preserve_sequence));
 
-        let opts = StreamReadOptions::default()
+        let mut opts = StreamReadOptions::default()
             .count(max_messages)
             .group(group, consumer);
+
+        // if block_ms is provided, set the block time for blocking read
+        if let Some(block_ms) = block_ms {
+            opts = opts.block(block_ms);
+        }
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
@@ -358,6 +439,12 @@ impl super::PubSub for RedisConnection {
         })?;
 
         Ok(parse_message(id, preserve_sequence))
+    }
+
+    /// Get the length of a channel
+    async fn length(&mut self, channel: &str) -> Result<usize> {
+        let length = self.multiplex.xlen(channel).await?;
+        Ok(length)
     }
 }
 
@@ -422,7 +509,7 @@ pub mod tests {
 
         // get all new messages
         let results = connection
-            .messages(&channel, group, consumer, None, 10, false)
+            .messages(&channel, group, consumer, None, 10, false, None)
             .await
             .unwrap();
 
@@ -459,7 +546,7 @@ pub mod tests {
 
         let max_id = ids.into_iter().max().unwrap();
         let results = connection
-            .messages(&channel, group, consumer, Some(max_id), 10, false)
+            .messages(&channel, group, consumer, Some(max_id), 10, false, None)
             .await
             .unwrap();
 

@@ -15,7 +15,7 @@ const expectSerializedBuffer = (data: any) => ({
 
 type ScheduledTasksResponse = ApiTypes['/v0/files/:uuid/scheduled_task.GET.response'];
 
-describe('GET /v0/files/:uuid/scheduled_task', () => {
+describe('GET /v0/files/:uuid/scheduled-tasks', () => {
   let testUser: any;
   let otherUser: any;
   let testFile: any;
@@ -35,7 +35,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .get('/v0/files/invalid-uuid/scheduled_task')
+        .get('/v0/files/invalid-uuid/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -73,7 +73,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   describe('Scheduled Tasks Retrieval', () => {
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .get('/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task')
+        .get('/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(404);

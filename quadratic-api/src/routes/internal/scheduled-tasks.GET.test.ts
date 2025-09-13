@@ -4,7 +4,7 @@ import dbClient from '../../dbClient';
 import { M2M_AUTH_TOKEN } from '../../env-vars';
 import { clearDb, createUserTeamAndFile } from '../../tests/testDataGenerator';
 
-describe('GET /v0/internal/scheduled_task', () => {
+describe('GET /v0/internal/scheduled-tasks', () => {
   let testUser: any;
   let testFile: any;
   let testTeam: any;
@@ -21,7 +21,7 @@ describe('GET /v0/internal/scheduled_task', () => {
 
   describe('Authentication', () => {
     it('should return 400 when M2M auth token is missing', async () => {
-      const response = await request(app).get('/v0/internal/scheduled_task');
+      const response = await request(app).get('/v0/internal/scheduled-tasks');
 
       expect(response.status).toBe(400);
       expect(response.body.errors).toBeDefined();
@@ -30,7 +30,7 @@ describe('GET /v0/internal/scheduled_task', () => {
 
     it('should return 400 when M2M auth token is invalid', async () => {
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', 'Bearer invalid-token');
 
       expect(response.status).toBe(400);
@@ -40,7 +40,7 @@ describe('GET /v0/internal/scheduled_task', () => {
 
     it('should allow access with valid M2M auth token', async () => {
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -51,7 +51,7 @@ describe('GET /v0/internal/scheduled_task', () => {
   describe('Scheduled Task Retrieval', () => {
     it('should return empty array when no scheduled tasks exist', async () => {
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -98,7 +98,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -120,7 +120,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -154,7 +154,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -183,7 +183,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -237,7 +237,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -264,7 +264,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -287,7 +287,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);
@@ -322,7 +322,7 @@ describe('GET /v0/internal/scheduled_task', () => {
       });
 
       const response = await request(app)
-        .get('/v0/internal/scheduled_task')
+        .get('/v0/internal/scheduled-tasks')
         .set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`);
 
       expect(response.status).toBe(200);

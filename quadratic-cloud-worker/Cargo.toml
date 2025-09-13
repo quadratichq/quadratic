@@ -1,0 +1,16 @@
+[package]
+name = "quadratic-cloud-worker"
+version = "0.17.0"
+edition = "2024"
+authors = ["Quadratic"]
+description = "File processing worker for Quadratic Cloud"
+
+[dependencies]
+anyhow = "1.0"
+tokio = { version = "1.44.2", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+  "quadratic-cloud",
+] }
+uuid = { version = "1.6.1", features = ["serde", "v4"] }
