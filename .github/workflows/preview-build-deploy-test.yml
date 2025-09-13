@@ -122,9 +122,9 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
             runner: blacksmith-4vcpu-ubuntu-2404
-          - service: quadratic-cloud-controller
+          - service: cloud-controller
             runner: blacksmith-4vcpu-ubuntu-2404
-          - service: quadratic-cloud-worker
+          - service: cloud-worker
             runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
