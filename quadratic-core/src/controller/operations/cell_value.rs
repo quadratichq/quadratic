@@ -772,9 +772,8 @@ mod test {
 
     #[test]
     fn formula_to_cell_value() {
-        let gc = GridController::test();
-
         todo!();
+        // let gc = GridController::test();
 
         // let (value, _) = gc.string_to_cell_value("=1+1", true);
         // assert_eq!(

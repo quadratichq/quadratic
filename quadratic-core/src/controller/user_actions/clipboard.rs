@@ -695,7 +695,7 @@ mod test {
                 );
 
                 assert_code_language(gc, dest_pos, CodeCellLanguage::Formula, code.into());
-                assert_display_cell_value_sheet_pos(gc, dest_pos, &value.to_string());
+                assert_display(gc, dest_pos, &value.to_string());
             };
 
         // paste code cell (2,1) from the clipboard to (2,2)

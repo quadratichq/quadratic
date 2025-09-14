@@ -24,7 +24,7 @@ pub fn print_first_sheet(gc: &GridController) {
 pub fn print_sheet(sheet: &Sheet) {
     let bounds = sheet.bounds(true);
     if let GridBounds::NonEmpty(rect) = bounds {
-        print_table_sheet(sheet, rect, true);
+        print_table_sheet(sheet, rect);
     } else {
         println!("\n{}\nSheet is empty", sheet.name);
     }
@@ -34,12 +34,12 @@ pub fn print_sheet(sheet: &Sheet) {
 #[track_caller]
 pub fn print_table_from_grid(grid: &GridController, sheet_id: SheetId, rect: Rect) {
     let sheet = grid.grid().try_sheet(sheet_id).unwrap();
-    print_table_sheet(sheet, rect, true);
+    print_table_sheet(sheet, rect);
 }
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
-pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
+pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
     let mut vals = vec![];
     let mut builder = Builder::default();
     let columns = (rect.x_range()).map(column_name).collect::<Vec<String>>();
@@ -69,23 +69,18 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
-            let cell_value = match display_cell_values {
-                true => sheet.cell_value(pos),
-                false => {
-                    if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
-                        if dt.is_html_or_image() {
-                            Some(CellValue::Text("chart".to_string()))
-                        } else {
-                            Some(
-                                dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                    .unwrap_or(CellValue::Blank),
-                            )
-                        }
+            let cell_value = sheet.cell_value(pos).unwrap_or_else(|| {
+                if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
+                    if dt.is_html_or_image() {
+                        CellValue::Text("chart".to_string())
                     } else {
-                        Some(sheet.cell_value(pos).unwrap_or(CellValue::Blank))
+                        dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
+                            .unwrap_or(CellValue::Blank)
                     }
+                } else {
+                    CellValue::Blank
                 }
-            };
+            });
 
             // todo: don't think we need this anymore. but keeping here in case
             // we need to revisit once we're compiling
@@ -128,7 +123,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             //     .to_string(),
             // };
 
-            vals.push(cell_value.unwrap_or(CellValue::Blank).to_string());
+            vals.push(cell_value.to_string());
             count_x += 1;
         });
         builder.push_record(vals.clone());

@@ -4,7 +4,6 @@ use anyhow::{Result, anyhow};
 
 use crate::{
     Array, CellValue, Pos, Rect, controller::execution::run_code::get_cells::JsCellsA1Value,
-    grid::CodeRun,
 };
 
 use super::Sheet;
@@ -111,7 +110,7 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        if let Some(code_run) = self.code_run_at(&pos) {
+                        if include_code && self.code_run_at(&pos).is_some() {
                             (CellValue::Blank, Some(pos))
                         } else {
                             (self.display_value(pos).unwrap_or(CellValue::Blank), None)

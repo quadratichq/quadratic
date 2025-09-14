@@ -129,7 +129,7 @@ macro_rules! row {
 macro_rules! pos {
     [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
     [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
-    [$sheet_id:ident ! $x:expr, $y:expr] => { pos![$x, $y].to_sheet_pos($sheet_id) };
+    [$sheet_id:ident ! $col:expr, $row:expr] => { pos![$col, $row].to_sheet_pos($sheet_id) };
     [$col:expr, $row:expr] => { $crate::Pos::new($col, $row) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
@@ -138,7 +138,6 @@ macro_rules! pos {
             .resolve_from($crate::Pos::ORIGIN);
         pos
     }};
-    [$sheet_id:ident!$x:literal,$y:literal] => { pos![$x, $y].to_sheet_pos($sheet_id) };
 }
 
 /// Parses a cell rectangle in A1 notation.

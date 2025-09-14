@@ -376,9 +376,9 @@ impl GridController {
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
     fn cell_values_from_clipboard_cells(
-        cells: &CellValues,
-        values: &CellValues,
-        special: PasteSpecial,
+        _cells: &CellValues,
+        _values: &CellValues,
+        _special: PasteSpecial,
     ) -> (Option<CellValues>, Vec<(u32, u32)>) {
         todo!()
         // match special {
@@ -1733,7 +1733,7 @@ mod test {
 
         assert_code_language(
             &gc,
-            pos![G8],
+            pos![sheet_id!G8],
             CodeCellLanguage::Python,
             r#"q.cells("E6:F7", first_row_header=True)"#.to_string(),
         );
@@ -1834,7 +1834,7 @@ mod test {
 
         assert_code_language(
             &gc,
-            pos![G8],
+            pos![sheet_id!G8],
             CodeCellLanguage::Javascript,
             r#"return q.cells("E6:F7");"#.to_string(),
         );

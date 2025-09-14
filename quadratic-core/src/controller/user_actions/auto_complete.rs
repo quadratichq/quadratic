@@ -28,7 +28,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        CellValue, Pos, SheetPos, SheetRect,
+        Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
         controller::user_actions::import::tests::simple_csv,
@@ -740,7 +740,7 @@ mod tests {
         let expected = r#"q.cells("B1:C2", first_row_header=True)"#;
         assert_code_language(
             &gc,
-            pos![D3],
+            pos![sheet_id!D3],
             CodeCellLanguage::Python,
             expected.to_string(),
         );
@@ -753,7 +753,12 @@ mod tests {
         let base = r#"q.cells("$A:$B", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
-        assert_code_language(&gc, pos![D3], CodeCellLanguage::Python, base.to_string());
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D3],
+            CodeCellLanguage::Python,
+            base.to_string(),
+        );
 
         // start over
         gc.undo(None);
@@ -765,7 +770,12 @@ mod tests {
         let base = r#"q.cells("A:B", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
-        assert_code_language(&gc, pos![D3], CodeCellLanguage::Python, base.to_string());
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D3],
+            CodeCellLanguage::Python,
+            base.to_string(),
+        );
     }
 
     #[test]
@@ -774,7 +784,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C4].to_sheet_pos(sheet_id),
+            pos![sheet_id!C4],
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
@@ -787,7 +797,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_code_language(
             &gc,
-            pos![D4],
+            pos![sheet_id!D4],
             CodeCellLanguage::Javascript,
             r#"return q.cells("B1:C2");"#.to_string(),
         );

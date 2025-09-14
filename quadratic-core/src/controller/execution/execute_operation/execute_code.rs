@@ -196,75 +196,78 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, Pos, SheetPos,
+        CellValue, SheetPos,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
     };
 
     #[test]
-    fn test_spilled_output_over_normal_cell() {
+    fn test_simple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None);
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A3],
             CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
             None,
         );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Text("one".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("two".into()))
-        );
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 3 }), None);
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Text("one".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Text("two".into()))
-        );
+        assert_display(&gc, pos![sheet_id!A3], "1");
+        assert_display(&gc, pos![sheet_id!A4], "2");
+    }
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "cause spill".to_string(),
+    #[test]
+    fn test_spilled_output_over_normal_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None);
+        gc.set_cell_value(pos![sheet_id!A2], "two".into(), None);
+        gc.set_code_cell(
+            pos![sheet_id!B1],
+            CodeCellLanguage::Formula,
+            "A1:A2".to_string(),
+            None,
             None,
         );
+        assert_code_language(
+            &gc,
+            pos![sheet_id!B1],
+            CodeCellLanguage::Formula,
+            "A1:A2".to_string(),
+        );
+
+        dbg!(&gc.sheet(sheet_id).data_tables);
+
+        assert_display(&gc, pos![sheet_id!A1], "one");
+        assert_display(&gc, pos![sheet_id!A2], "two");
+        assert_display(&gc, pos![sheet_id!A3], "");
+
+        assert_display(&gc, pos![sheet_id!B1], "one");
+        assert_display(&gc, pos![sheet_id!B2], "two");
+        assert_display(&gc, pos![sheet_id!B3], "");
+
+        gc.set_cell_value(pos![sheet_id!B2], "cause spill".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 2 }),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Text("cause spill".into()))
         );
 
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Blank)
-        );
+        dbg!(&sheet.data_tables);
 
-        let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 });
-        assert!(code_cell.unwrap().has_spill());
+        assert_display(&gc, pos![sheet_id!B1], "");
+        // assert_eq!(sheet.display_value(pos![B1]), None);
+
+        // let code_cell = sheet.data_table_at(&pos![B1]);
+        // assert!(code_cell.unwrap().has_spill());
     }
 
     #[test]

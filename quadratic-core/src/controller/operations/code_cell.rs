@@ -42,7 +42,7 @@ impl GridController {
             };
             unique_data_table_name(
                 &code_cell_name.unwrap_or(language_str),
-                false,
+                true,
                 Some(sheet_pos),
                 &self.a1_context,
             )

@@ -178,7 +178,6 @@ mod tests {
     use crate::{
         Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
-        cellvalue::Import,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},

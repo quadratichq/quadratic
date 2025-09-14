@@ -4,7 +4,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        CodeRun, DataTable, DataTableKind, SheetId,
+        SheetId,
         formats::SheetFormatUpdates,
         series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,

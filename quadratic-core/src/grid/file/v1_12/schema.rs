@@ -1,9 +1,9 @@
-use crate::grid::file::{v1_7_1, v1_11};
+use crate::grid::file::v1_11;
 use crate::util::is_false;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 
-pub type A1SelectionSchema = v1_7_1::A1SelectionSchema;
+pub type A1SelectionSchema = v1_11::A1SelectionSchema;
 pub type AxisSchema = v1_11::AxisSchema;
 pub type BlockSchema<T> = v1_11::BlockSchema<T>;
 pub type BordersSchema = v1_11::BordersSchema;

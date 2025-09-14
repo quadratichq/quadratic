@@ -114,10 +114,6 @@ impl Sheet {
                 continue;
             }
 
-            let Some(cell_value) = self.cell_value_ref(pos.to_owned()) else {
-                continue;
-            };
-
             let intended_bounds = table.output_rect(pos.to_owned(), true);
             let bounds = table.output_rect(pos.to_owned(), false);
 
@@ -243,7 +239,7 @@ impl Sheet {
 mod tests {
 
     use crate::{
-        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
+        Array, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
         a1::A1Selection,
         grid::{
             CodeCellLanguage, CodeRun, DataTable, DataTableKind,

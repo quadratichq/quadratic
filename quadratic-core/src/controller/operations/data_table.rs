@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, CellValue, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
+    Array, ArraySize, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{

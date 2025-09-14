@@ -35,7 +35,7 @@ pub fn assert_display_cell_value_first_sheet(
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_display_cell_value_sheet_pos(gc: &GridController, sheet_pos: SheetPos, value: &str) {
+pub fn assert_display(gc: &GridController, sheet_pos: SheetPos, value: &str) {
     assert_display_cell_value(gc, sheet_pos.sheet_id, sheet_pos.x, sheet_pos.y, value);
 }
 
