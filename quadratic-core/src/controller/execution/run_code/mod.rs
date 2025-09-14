@@ -550,11 +550,11 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_1",
+            "Table1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
-            Some(true),
-            Some(true),
+            Some(false),
+            Some(false),
             None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
@@ -566,7 +566,7 @@ mod test {
             Some(&new_data_table)
         );
 
-        // todo: need a way to test the js functions as that replaced these
+        // todo: need a way to test the js functions that replaced these
         // let summary = transaction.send_transaction(true);
         // assert_eq!(summary.code_cells_modified.len(), 1);
         // assert!(summary.code_cells_modified.contains(&sheet_id));
