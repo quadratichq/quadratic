@@ -958,7 +958,7 @@ impl GridController {
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&cols_y, cell) in col {
-                            todo!();
+                            // todo: this needs to be replaced w/another part of the clipboard
                             // if let CellValue::Code(code_cell) = cell {
                             //     let original_pos = SheetPos {
                             //         x: clipboard.origin.x + cols_x as i64,
@@ -973,29 +973,30 @@ impl GridController {
                             //         adjust,
                             //     );
                             // }
-                            // // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
                             // else
-                            // if should_expand_data_table && let Some(sheet) = sheet {
-                            //     let new_x = tile_start_x + cols_x as i64;
-                            //     let new_y = tile_start_y + cols_y as i64;
-                            //     let current_pos = Pos::new(new_x, new_y);
-                            //     let within_data_table =
-                            //         sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                            //     // we're not within a data table
-                            //     // expand the data table to the right or bottom if the
-                            //     // cell value is touching the right or bottom edge
-                            //     if !within_data_table {
-                            //         GridController::grow_data_table(
-                            //             sheet,
-                            //             &mut data_tables_rects,
-                            //             &mut data_table_columns,
-                            //             &mut data_table_rows,
-                            //             SheetPos::new(sheet_id, new_x, new_y),
-                            //             cell.to_display().is_empty(),
-                            //         );
-                            //     }
-                            // }
+                            // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
+                            if should_expand_data_table && let Some(sheet) = sheet {
+                                let new_x = tile_start_x + cols_x as i64;
+                                let new_y = tile_start_y + cols_y as i64;
+                                let current_pos = Pos::new(new_x, new_y);
+                                let within_data_table =
+                                    sheet.data_table_pos_that_contains(current_pos).is_some();
+
+                                // we're not within a data table
+                                // expand the data table to the right or bottom if the
+                                // cell value is touching the right or bottom edge
+                                if !within_data_table {
+                                    GridController::grow_data_table(
+                                        sheet,
+                                        &mut data_tables_rects,
+                                        &mut data_table_columns,
+                                        &mut data_table_rows,
+                                        SheetPos::new(sheet_id, new_x, new_y),
+                                        cell.to_display().is_empty(),
+                                    );
+                                }
+                            }
                         }
                     }
                 }
