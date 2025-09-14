@@ -243,8 +243,6 @@ mod tests {
             "A1:A2".to_string(),
         );
 
-        dbg!(&gc.sheet(sheet_id).data_tables);
-
         assert_display(&gc, pos![sheet_id!A1], "one");
         assert_display(&gc, pos![sheet_id!A2], "two");
         assert_display(&gc, pos![sheet_id!A3], "");
