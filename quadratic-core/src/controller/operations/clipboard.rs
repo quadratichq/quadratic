@@ -800,7 +800,7 @@ impl GridController {
                     });
                     compute_code_ops.push(Operation::ComputeCode { sheet_pos });
                 } else {
-                    let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                    let (cell_value, format_update) = CellValue::string_to_cell_value(value, false);
                     if cell_value != CellValue::Blank {
                         values.set(x as u32, y as u32, cell_value);
                     }

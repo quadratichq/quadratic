@@ -142,7 +142,8 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                        let (cell_value, format_update) =
+                            CellValue::string_to_cell_value(value, false);
 
                         cell_values.set(x as u32, y, cell_value);
 
@@ -1406,7 +1407,7 @@ mod test {
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTable {
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
                 ..

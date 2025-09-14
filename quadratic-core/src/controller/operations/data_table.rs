@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
@@ -268,7 +268,7 @@ impl GridController {
             for (x, value) in row.iter().enumerate() {
                 let value = value.trim();
 
-                let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                let (cell_value, format_update) = CellValue::string_to_cell_value(value, false);
 
                 if let Err(e) = cell_values.set(x as u32, y as u32, cell_value, false) {
                     dbgjs!(format!(

@@ -1394,4 +1394,210 @@ mod test {
         );
         assert_eq!(value.to_edit(), "0.14");
     }
+
+    #[test]
+    fn boolean_to_cell_value() {
+        let (value, format_update) = CellValue::string_to_cell_value("true", true);
+        assert_eq!(value, true.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("false", true);
+        assert_eq!(value, false.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("TRUE", true);
+        assert_eq!(value, true.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("FALSE", true);
+        assert_eq!(value, false.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("tRue", true);
+        assert_eq!(value, true.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("FaLse", true);
+        assert_eq!(value, false.into());
+        assert!(format_update.is_default());
+    }
+
+    #[test]
+    fn number_to_cell_value() {
+        let (value, format_update) = CellValue::string_to_cell_value("123", true);
+        assert_eq!(value, 123.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("123.45", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123.45").unwrap())
+        );
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("123,456.78", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456.78").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        let (value, format_update) = CellValue::string_to_cell_value("123,456,789.01", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456789.01").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // currency with comma
+        let (value, format_update) = CellValue::string_to_cell_value("$123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with comma
+        let (value, format_update) = CellValue::string_to_cell_value("(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // parentheses with -ve
+        let (value, format_update) = CellValue::string_to_cell_value("(-123,456)", true);
+        assert_eq!(value, CellValue::Text("(-123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // currency with a space
+        let (value, format_update) = CellValue::string_to_cell_value("$ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve outside
+        let (value, format_update) = CellValue::string_to_cell_value("- $ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve inside
+        let (value, format_update) = CellValue::string_to_cell_value("$ -123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses outside
+        let (value, format_update) = CellValue::string_to_cell_value("($ 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses inside
+        let (value, format_update) = CellValue::string_to_cell_value("$(123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses and space
+        let (value, format_update) = CellValue::string_to_cell_value("$ ( 123,456)", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with -ve
+        let (value, format_update) = CellValue::string_to_cell_value("(-$123,456)", true);
+        assert_eq!(value, CellValue::Text("(-$123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // percent with a space
+        let (value, format_update) = CellValue::string_to_cell_value("123456 %", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+
+        // percent with a comma
+        let (value, format_update) = CellValue::string_to_cell_value("123,456%", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn test_problematic_number() {
+        let value = "980E92207901934";
+        let (cell_value, _) = CellValue::string_to_cell_value(value, true);
+        assert_eq!(cell_value.to_string(), value.to_string());
+    }
 }
