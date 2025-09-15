@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_spills() {
+    fn test_check_spill_single_value() {
         let mut gc = GridController::test();
 
         let sheet_id = gc.sheet_ids()[0];
@@ -80,6 +80,8 @@ mod tests {
             None,
         );
 
+        dbg!(gc.sheet(sheet_id).data_tables.un_spilled_output_rects());
+
         // manually set a cell value and see if spill is changed
         gc.set_cell_value(
             SheetPos {
@@ -91,8 +93,10 @@ mod tests {
             None,
         );
 
+        dbg!(gc.sheet(sheet_id).data_tables.un_spilled_output_rects());
+
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(sheet.data_tables.get_at_index(0).unwrap().1.has_spill());
+        assert!(sheet.data_table_at(&pos![B2]).unwrap().has_spill());
     }
 
     #[test]

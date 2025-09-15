@@ -104,8 +104,14 @@ impl GridController {
                 // only delete when there's not another code cell in the same position
                 // (this maintains the original output until a run completes)
                 sheet.cell_value_ref(*pos).is_none()
+                    && sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id))
             })
             .collect();
+
+        if data_tables_to_delete.len() > 0 {
+            dbg!(&sheet_rect);
+            dbg!(&data_tables_to_delete);
+        }
 
         // delete the data tables in reverse order, so that shift_remove is less expensive
         data_tables_to_delete.into_iter().rev().for_each(|pos| {

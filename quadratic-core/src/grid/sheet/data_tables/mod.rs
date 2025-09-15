@@ -539,4 +539,9 @@ impl SheetDataTables {
     pub fn has_content(&self, rect: Rect) -> bool {
         self.cache.has_content(rect)
     }
+
+    #[cfg(test)]
+    pub fn un_spilled_output_rects(&self) -> &SheetRegionMap {
+        &self.un_spilled_output_rects
+    }
 }
