@@ -6,21 +6,29 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { A1Error } from '@/app/quadratic-core-types';
-import { GoToIcon } from '@/shared/components/Icons';
+import { CloseIcon, GoToIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import { cn } from '@/shared/shadcn/utils';
 import { CommandSeparator } from 'cmdk';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const GoTo = memo(() => {
+type Props = {
+  reverse?: boolean;
+};
+
+export const GoTo = memo(({ reverse }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const setShowGoToMenu = useSetRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [value, setValue] = useState<string>();
   const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
   const tableInfo = useRecoilValue(tableInfoAtom);
+  const [activeFilter, setActiveFilter] = useState('All');
 
   const closeMenu = useCallback(() => {
+    console.log('closeMenu');
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
 
@@ -136,7 +144,9 @@ export const GoTo = memo(() => {
     () =>
       sheets
         .map((sheet) => sheet)
-        .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
+        .filter((sheet) => {
+          return value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true;
+        }),
     [value]
   );
 
@@ -148,8 +158,35 @@ export const GoTo = memo(() => {
 
   return (
     <Command shouldFilter={false} data-testid="goto-menu">
-      <div className="flex w-full items-center justify-between">
+      <div className={cn('flex w-full items-center justify-between', reverse && 'order-last border-t border-border')}>
         <div className="relative w-full flex-grow">
+          <div className="flex flex-wrap items-center gap-1 px-3 pt-1.5 text-xs text-muted-foreground">
+            {[
+              // ['All', 0],
+              ['Tables', tablesFiltered.length],
+              ['Code', codeTablesFiltered.length],
+              ['Sheets', sheetsFiltered.length],
+              ['In this sheet', 4],
+            ].map(([filter, count], i) => (
+              <Badge
+                variant={filter === activeFilter ? 'primary' : 'outline'}
+                className={cn(
+                  'cursor-pointer text-muted-foreground',
+                  filter === activeFilter && 'text-primary-foreground'
+                )}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveFilter(filter === activeFilter ? 'All' : (filter as string));
+                }}
+              >
+                {filter} {filter !== 'All' && <span className="font-normal">({count})</span>}
+                {filter === activeFilter && filter !== 'All' && (
+                  <CloseIcon size="sm" className="ml-1 !h-4 !w-4 -translate-y-0.5 !text-sm" />
+                )}
+              </Badge>
+            ))}
+          </div>
           <CommandInput
             ref={inputRef}
             value={value}
@@ -160,8 +197,8 @@ export const GoTo = memo(() => {
         </div>
       </div>
 
-      <CommandList className="">
-        <CommandGroup heading="Go to" className="border-b border-b-border">
+      <CommandList className={cn('', reverse && 'order-first')}>
+        <CommandGroup heading={reverse ? 'Cells / range' : 'Go to'} className="border-b border-b-border">
           <CommandItem
             onSelect={onSelect}
             className="flex cursor-pointer items-center justify-between"
@@ -171,11 +208,11 @@ export const GoTo = memo(() => {
             }}
           >
             {convertedInput ? <div>{convertedInput}</div> : null}
-            <GoToIcon className="text-muted-foreground" />
+            {!reverse && <GoToIcon className="text-muted-foreground" />}
           </CommandItem>
         </CommandGroup>
 
-        {tablesFiltered.length > 0 && (
+        {tablesFiltered.length > 0 && (activeFilter === 'Tables' || activeFilter === 'All') && (
           <>
             <CommandGroup heading="Tables">
               {tablesFiltered.map(({ name }, i) => (
@@ -192,7 +229,7 @@ export const GoTo = memo(() => {
           </>
         )}
 
-        {codeTablesFiltered.length > 0 && (
+        {codeTablesFiltered.length > 0 && (activeFilter === 'Code' || activeFilter === 'All') && (
           <CommandGroup heading="Code">
             {codeTablesFiltered.map(({ name, language }, i) => (
               <CommandItemGoto
@@ -207,13 +244,16 @@ export const GoTo = memo(() => {
           </CommandGroup>
         )}
 
-        {sheetsFiltered.length > 0 && (
+        {sheetsFiltered.length > 0 && (activeFilter === 'Sheets' || activeFilter === 'All') && (
           <CommandGroup heading="Sheets">
             {sheetsFiltered.map((sheet) => (
               <CommandItemGoto
                 key={sheet.id}
                 value={sheet.id}
-                onSelect={() => selectSheet(sheet.id)}
+                onSelect={() => {
+                  setCurrentSheet(sheet.id);
+                  closeMenu();
+                }}
                 name={sheet.name}
               />
             ))}
