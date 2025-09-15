@@ -76,6 +76,8 @@ export const ROUTES = {
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
+  ONBOARDING_QUESTIONNAIRE: '/onboarding',
+  ONBOARDING_VIDEO: '/onboarding-video',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
