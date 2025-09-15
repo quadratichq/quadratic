@@ -74,9 +74,11 @@ const setCodeCellResult = async (
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
   const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+  console.log(tableCodeCell);
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;
+  console.log(codeCell);
   if (!tableCodeCell || !codeCell) {
     return [createTextContent('Error executing set code cell value tool')];
   }
@@ -131,37 +133,21 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
     return [createTextContent('Executed set code cell value tool successfully to create a javascript chart.')];
   }
 
-  return [
-    createTextContent(`
-Executed set code cell value tool successfully.
-${
-  tableCodeCell.w === 1 && tableCodeCell.h === 1
-    ? (() => {
-        // Parse the JSON string evaluation result
-        let parsedResult: any = null;
-        try {
-          parsedResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : null;
-        } catch (e) {
-          // If parsing fails, use the raw result
-          parsedResult = codeCell.evaluation_result;
-        }
+  // single cell output
+  if (tableCodeCell.w === 1 && tableCodeCell.h === 1) {
+    const singleCell = await quadraticCore.getCellValue(sheetId, x, y);
+    if (singleCell === undefined || singleCell.value === '') {
+      return [
+        createTextContent(
+          'You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.'
+        ),
+      ];
+    }
+    return [createTextContent(`Output is: ${singleCell.value}`)];
+  }
 
-        // Check if the evaluation result is empty
-        const isEmpty =
-          !parsedResult ||
-          (typeof parsedResult === 'object' && parsedResult.value === '') ||
-          parsedResult === '' ||
-          parsedResult === null ||
-          parsedResult === undefined;
-
-        return isEmpty
-          ? 'You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.'
-          : `Output is: ${typeof parsedResult === 'object' && parsedResult.value !== undefined ? parsedResult.value : parsedResult}`;
-      })()
-    : `Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`
-}
-`),
-  ];
+  // multiple cell output
+  return [createTextContent(`Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`)];
 };
 
 type AIToolMessageMetaData = {
