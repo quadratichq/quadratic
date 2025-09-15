@@ -20,8 +20,8 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 type ViewState = 'default' | 'new' | 'create' | 'detail' | 'edit';
 
-const teamUuid = '50b9b4e5-e4a8-4723-9c91-e449a9c04ecb';
-const connectionUuid = '4109ab5d-7968-45b3-914a-2d375df3a9e4';
+const teamUuid = 'af3cbfe6-3891-4528-b613-71b294e875ec';
+const connectionUuid = '249c421a-b4e2-47c2-bb76-bffbbd7d23dc';
 
 export const ConnectionsSidebar = memo(() => {
   const [viewState, setViewState] = useState<ViewState>('default');
@@ -29,6 +29,7 @@ export const ConnectionsSidebar = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const { connections } = useConnectionsFetcher();
+  console.log('connections', connections);
 
   const aiPanelRef = useRef<HTMLDivElement>(null);
 
