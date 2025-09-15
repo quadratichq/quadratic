@@ -330,7 +330,7 @@ test('Code Editor Displays Return', async ({ page }) => {
     // Click run
     await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
-    // Check expected return test near the btotom of the code editor
+    // Check expected return test near the bottom of the code editor
     await expect(page.getByText(`Line ${i + 1} returned ${expectedOutputs[i]}`)).toBeVisible();
 
     // Click code editor
@@ -930,6 +930,10 @@ test('Resize Column width with Fill', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
   // Assert that color filled cell's width updates per expanded column 2 width
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('expanded_column_width_color_fill_cell.png', {
     maxDiffPixels: 1000,
@@ -941,6 +945,10 @@ test('Resize Column width with Fill', async ({ page }) => {
   await page.mouse.move(210, 91);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert that color filled cell's width updates per shrunken column 2 width
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('shrunken_column_width_color_fill_cell.png', {

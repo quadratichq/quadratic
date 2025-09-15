@@ -1,3 +1,4 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { captureException } from '@sentry/react';
@@ -22,6 +23,9 @@ export async function fetchFromApi<T>(
   init: RequestInit,
   schema: z.Schema<T>
 ): Promise<z.infer<typeof schema>> {
+  const debugTime = `API ${init.method} ${path}`;
+  if (debugFlag('debugShowAPITimes')) console.time(debugTime);
+
   // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
   const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
@@ -51,9 +55,9 @@ export async function fetchFromApi<T>(
   if (!response.ok) {
     // TODO: ensure API only ever returns uniform error response, e.g. `json.errors` or `json.error.message`
     let details = 'No detailed error message provided';
-    if (json.error.message) {
+    if (json?.error?.message) {
       details = json.error.message;
-    } else if (json.errors) {
+    } else if (json?.errors) {
       details = JSON.stringify(json.errors);
     }
     throw new ApiError(`Failed to fetch ${url}`, response.status, init.method, details);
@@ -69,5 +73,6 @@ export async function fetchFromApi<T>(
     throw new ApiError('Unexpected response schema', response.status, init.method, details);
   }
 
+  if (debugFlag('debugShowAPITimes')) console.timeEnd(debugTime);
   return result.data;
 }

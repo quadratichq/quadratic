@@ -1,35 +1,14 @@
-import { auth0Mock } from '../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'userOwner',
-      email: 'owner@example.com',
-    },
-    {
-      user_id: 'userNoTeam',
-      email: 'noteam@example.com',
-    },
-  ])
-);
+import { workosMock } from '../tests/workosMock';
+jest.mock('@workos-inc/node', () => workosMock([{ id: 'userOwner' }, { id: 'userNoTeam' }]));
 
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
 import { expectError } from '../tests/helpers';
-import { clearDb } from '../tests/testDataGenerator';
+import { clearDb, createUsers } from '../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoTeam',
-    },
-  });
-
+  const [userOwner] = await createUsers(['userOwner', 'userNoTeam']);
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',

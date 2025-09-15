@@ -55,11 +55,11 @@ beforeEach(async () => {
       FileInvite: {
         create: [
           {
-            email: 'fileEditor@example.com',
+            email: 'fileeditor@test.com',
             role: 'EDITOR',
           },
           {
-            email: 'fileViewer@example.com',
+            email: 'fileviewer@test.com',
             role: 'VIEWER',
           },
         ],
@@ -95,7 +95,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
   describe('deleting an invite', () => {
     describe('when the file is in a team you belong to', () => {
       it('responds with a 200 to delete an EDITOR invite', async () => {
-        const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+        const inviteId = await getInviteIdByEmail('fileeditor@test.com');
         await request(app)
           .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
           .set('Accept', 'application/json')
@@ -104,7 +104,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
           .expect(200);
       });
       it('responds with a 200 to delete a VIEWER invite', async () => {
-        const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+        const inviteId = await getInviteIdByEmail('fileviewer@test.com');
         await request(app)
           .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
           .set('Accept', 'application/json')
@@ -130,7 +130,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             });
           });
           it('responds with a 200 for you as an EDITOR to delete an EDITOR invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+            const inviteId = await getInviteIdByEmail('fileeditor@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -139,7 +139,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
               .expect(200);
           });
           it('responds with a 200 for an EDITOR to delete a VIEWER invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+            const inviteId = await getInviteIdByEmail('fileviewer@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -148,7 +148,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
               .expect(200);
           });
           it('responds with a 403 for a VIEWER to delete an EDITOR invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+            const inviteId = await getInviteIdByEmail('fileeditor@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -157,7 +157,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
               .expect(403);
           });
           it('responds with a 403 for a VIEWER to delete a VIEWER invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+            const inviteId = await getInviteIdByEmail('fileviewer@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -166,7 +166,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
               .expect(403);
           });
           it('responds with a 403 for a user without a file role to delete an EDITOR invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+            const inviteId = await getInviteIdByEmail('fileeditor@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -175,7 +175,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
               .expect(403);
           });
           it('responds with a 403 for a user without a file role to delete a VIEWER invite', async () => {
-            const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+            const inviteId = await getInviteIdByEmail('fileviewer@test.com');
             await request(app)
               .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
               .set('Accept', 'application/json')
@@ -198,7 +198,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
           });
         });
         it('responds with a 200 for you as an EDITOR to delete an EDITOR invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+          const inviteId = await getInviteIdByEmail('fileeditor@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')
@@ -207,7 +207,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             .expect(200);
         });
         it('responds with a 200 for an EDITOR to delete a VIEWER invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+          const inviteId = await getInviteIdByEmail('fileviewer@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')
@@ -216,7 +216,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             .expect(200);
         });
         it('responds with a 200 for a VIEWER to delete an EDITOR invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+          const inviteId = await getInviteIdByEmail('fileeditor@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')
@@ -225,7 +225,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             .expect(200);
         });
         it('responds with a 200 for a VIEWER to delete a VIEWER invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+          const inviteId = await getInviteIdByEmail('fileviewer@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')
@@ -234,7 +234,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             .expect(200);
         });
         it('responds with a 200 for a user without a file role to delete an EDITOR invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileEditor@example.com');
+          const inviteId = await getInviteIdByEmail('fileeditor@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')
@@ -243,7 +243,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
             .expect(200);
         });
         it('responds with a 200 for a user without a file role to delete a VIEWER invite', async () => {
-          const inviteId = await getInviteIdByEmail('fileViewer@example.com');
+          const inviteId = await getInviteIdByEmail('fileviewer@test.com');
           await request(app)
             .delete(`/v0/files/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
             .set('Accept', 'application/json')

@@ -2,7 +2,7 @@ import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -49,7 +49,7 @@ export class PointerTableResize {
       this.selectionBottom = undefined;
       this.dragDirection = undefined;
       this.active = false;
-      pixiApp.boxCells.reset();
+      content.boxCells.reset();
       sheets.sheet.cursor.changeBoxCells(false);
       this.setCursorDirection(undefined);
       this.tableBounds = undefined;
@@ -116,7 +116,7 @@ export class PointerTableResize {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
     if (!this.active) {
-      const table = pixiApp.cellsSheet().tables.getTableIntersectsWorld(new Point(world.x - 4, world.y - 4));
+      const table = content.cellsSheet.tables.getTableIntersectsWorld(new Point(world.x - 4, world.y - 4));
       if (!!table && table.checkHover(world) && !table.codeCell.is_code) {
         const cornerHandle = new Rectangle(
           table.tableBounds.x + table.tableBounds.width - 4,
@@ -268,7 +268,7 @@ export class PointerTableResize {
         y: boxCellsRectangle.y + boxCellsRectangle.height,
       };
 
-      pixiApp.boxCells.populate({
+      content.boxCells.populate({
         gridRectangle: boxCellsRectangle,
         horizontalDelete: this.stateHorizontal === 'shrink',
         verticalDelete: this.stateVertical === 'shrink',
@@ -334,7 +334,6 @@ export class PointerTableResize {
           rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - 1),
           flatten_on_delete: true,
           swallow_on_insert: true,
-          cursor: sheets.getCursorPosition(),
         });
       }
     }

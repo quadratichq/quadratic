@@ -8,7 +8,7 @@ interface Props extends ButtonProps {
   tooltip: string;
 }
 
-export const SheetBarButton = memo(({ children, buttonRef, tooltip, className, ...rest }: Props) => {
+export const SheetBarButton = memo(({ children, buttonRef, tooltip, className, name, ...rest }: Props) => {
   const buttonProps = {
     ...rest,
     ...(buttonRef ? { ref: buttonRef } : {}),
@@ -17,7 +17,7 @@ export const SheetBarButton = memo(({ children, buttonRef, tooltip, className, .
 
   return (
     <TooltipPopover label={tooltip ?? ''}>
-      <Button variant="ghost" size="icon-sm" {...buttonProps}>
+      <Button variant="ghost" size="icon-sm" data-testid="sheet-bar-button" {...buttonProps}>
         {children}
       </Button>
     </TooltipPopover>

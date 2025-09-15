@@ -1,5 +1,6 @@
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import 'fake-indexeddb/auto';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_BACKUP_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
@@ -8,7 +9,7 @@ import { aiAnalystOfflineChats } from './aiAnalystChats';
 
 describe('aiAnalystOfflineChats', () => {
   beforeAll(async () => {
-    await aiAnalystOfflineChats.init('test@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.init('test@test.com', 'test-fileId');
   });
 
   beforeEach(async () => {
@@ -17,7 +18,7 @@ describe('aiAnalystOfflineChats', () => {
 
   it('properly defines user email and fileId', () => {
     expect(aiAnalystOfflineChats).toBeDefined();
-    expect(aiAnalystOfflineChats.userEmail).toBe('test@example.com');
+    expect(aiAnalystOfflineChats.userEmail).toBe('test@test.com');
     expect(aiAnalystOfflineChats.fileId).toBe('test-fileId');
   });
 
@@ -32,10 +33,10 @@ describe('aiAnalystOfflineChats', () => {
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [
-          { role: 'user', content: [{ type: 'text', text: 'test1' }], contextType: 'quadraticDocs' },
+          { role: 'user', content: [createTextContent('test1')], contextType: 'quadraticDocs' },
           {
             role: 'assistant',
-            content: [{ type: 'text', text: 'response1' }],
+            content: [createTextContent('response1')],
             contextType: 'quadraticDocs',
           },
         ],
@@ -47,13 +48,13 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test2' }],
+            content: [createTextContent('test2')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
           {
             role: 'assistant',
-            content: [{ type: 'text', text: 'response2' }],
+            content: [createTextContent('response2')],
             contextType: 'userPrompt',
             toolCalls: [],
             modelKey: DEFAULT_BACKUP_MODEL,
@@ -73,8 +74,8 @@ describe('aiAnalystOfflineChats', () => {
     expect(testChat1?.name).toBe('Chat 1');
     expect(testChat1?.messages.length).toBe(0); // Only userPrompt messages are stored
     expect(testChat2?.name).toBe('Chat 2');
-    expect(testChat2?.messages[0].content).toEqual([{ type: 'text', text: 'test2' }]);
-    expect(testChat2?.messages[1].content).toEqual([{ type: 'text', text: 'response2' }]);
+    expect(testChat2?.messages[0].content).toEqual([createTextContent('test2')]);
+    expect(testChat2?.messages[1].content).toEqual([createTextContent('response2')]);
   });
 
   it('deletes chats', async () => {
@@ -86,7 +87,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test1' }],
+            content: [createTextContent('test1')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -99,7 +100,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test2' }],
+            content: [createTextContent('test2')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -112,7 +113,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test3' }],
+            content: [createTextContent('test3')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -144,7 +145,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test1' }],
+            content: [createTextContent('test1')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -157,7 +158,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test2' }],
+            content: [createTextContent('test2')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -170,7 +171,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test3' }],
+            content: [createTextContent('test3')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -180,7 +181,7 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(3);
 
-    await aiAnalystOfflineChats.deleteFile('test@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.deleteFile('test@test.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
@@ -194,7 +195,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test1' }],
+            content: [createTextContent('test1')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -205,7 +206,7 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
-    await aiAnalystOfflineChats.init('different@example.com', 'test-fileId');
+    await aiAnalystOfflineChats.init('different@test.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
@@ -219,7 +220,7 @@ describe('aiAnalystOfflineChats', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'test1' }],
+            content: [createTextContent('test1')],
             contextType: 'userPrompt',
             context: defaultAIAnalystContext,
           },
@@ -230,7 +231,7 @@ describe('aiAnalystOfflineChats', () => {
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
     // Init with different fileId
-    await aiAnalystOfflineChats.init('test@example.com', 'different-fileId');
+    await aiAnalystOfflineChats.init('test@test.com', 'different-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 });

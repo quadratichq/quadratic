@@ -8,7 +8,7 @@ import {
   convertTintToString,
 } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import type { ColorResult } from 'react-color';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -61,7 +61,7 @@ describe('Color Conversion Functions', () => {
     console.error = vi.fn();
     expect(convertColorStringToHex('invalid')).toBe('#808080');
     expect(console.error).toHaveBeenCalled();
-    expect(Sentry.captureException).toHaveBeenCalled();
+    expect(captureException).toHaveBeenCalled();
   });
 
   it('should convert RGBA to tint', () => {

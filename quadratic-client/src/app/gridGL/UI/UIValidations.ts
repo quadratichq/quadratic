@@ -7,7 +7,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { drawCheckbox, drawDropdown } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { drawCheckbox, drawDropdown, DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -73,7 +73,9 @@ export class UIValidations extends Container<SpecialSprite> {
 
   private drawInfiniteRange(range: RefRangeBounds, type: ValidationUIType) {
     const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
-    const visibleRectangle = sheets.getVisibleRectangle();
+
+    // todo...this needs to be generic for any renderer
+    const visibleRectangle = pixiApp.getVisibleRectangle();
     const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRectangle);
     if (!intersection) {
       return;
@@ -96,7 +98,9 @@ export class UIValidations extends Container<SpecialSprite> {
               drawCheckbox({ x: x + xPlacement.size / 2, y: y + yPlacement.size / 2, column, row, value: false })
             );
           } else if (type === 'dropdown') {
-            this.addChild(drawDropdown({ x: x + xPlacement.size, y: y, column, row }));
+            this.addChild(
+              drawDropdown({ x: x + xPlacement.size - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0], y: y, column, row })
+            );
           }
           this.occupied.add(key);
         }
@@ -138,13 +142,7 @@ export class UIValidations extends Container<SpecialSprite> {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
-          quadraticCore.setCellValue(
-            sheets.current,
-            column,
-            row,
-            special.checkbox ? 'false' : 'true',
-            sheets.getCursorPosition()
-          );
+          quadraticCore.setCellValue(sheets.current, column, row, special.checkbox ? 'false' : 'true');
         } else if (
           special.type === 'dropdown' &&
           (world === true || intersects.rectanglePoint(special.rectangle, world))

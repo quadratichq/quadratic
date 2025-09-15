@@ -2,7 +2,7 @@ import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorIn
 import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -35,7 +35,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
-    const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.cellsSheet().tables.hasCodeCellInCurrentSelection());
+    const checkRunCodeCell = () => setDisableRunCodeCell(!content.cellsSheet.tables.hasCodeCellInCurrentSelection());
     checkRunCodeCell();
 
     events.on('cursorPosition', checkRunCodeCell);
@@ -196,9 +196,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
         <DropdownMenuItem
           disabled={disableRunCodeCell}
-          onClick={() =>
-            quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.a1String(), sheets.getCursorPosition())
-          }
+          onClick={() => quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.a1String())}
         >
           Run selected code
           <DropdownMenuShortcut className="pl-4">
@@ -206,18 +204,14 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition())}
-        >
+        <DropdownMenuItem onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined)}>
           Run all code in sheet
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition())}
-        >
+        <DropdownMenuItem onClick={() => quadraticCore.rerunCodeCells(undefined, undefined)}>
           Run all code in file
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}

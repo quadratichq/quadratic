@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
@@ -17,7 +17,7 @@ export const openCodeEditor = async (language?: CodeCellLanguage) => {
   codeEditorState.aiAssistant.abortController?.abort();
 
   const { x, y } = sheets.sheet.cursor.position;
-  const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x, y });
+  const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x, y });
   if (codeCell) {
     const {
       codeCell: {

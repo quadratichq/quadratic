@@ -15,6 +15,7 @@ import type {
 import type { Stream } from 'openai/streaming';
 import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentOpenAIReasoning,
@@ -32,6 +33,7 @@ import type {
   AIUsage,
   Content,
   ImageContent,
+  ModelMode,
   OpenAIModelKey,
   ParsedAIResponse,
   TextContent,
@@ -72,6 +74,7 @@ function convertInputContent(content: Content | ToolResultContent, imageSupport:
 
 export function getOpenAIResponsesApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   strictParams: boolean,
   imageSupport: boolean
 ): {
@@ -181,14 +184,22 @@ export function getOpenAIResponsesApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
-function getOpenAITools(source: AISource, toolName: AITool | undefined, strictParams: boolean): Tool[] | undefined {
+function getOpenAITools(
+  source: AISource,
+  aiModelMode: ModelMode,
+  toolName: AITool | undefined,
+  strictParams: boolean
+): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
@@ -264,10 +275,7 @@ export async function parseOpenAIResponsesStream(
             for (const content of output.content) {
               switch (content.type) {
                 case 'output_text':
-                  responseMessage.content.push({
-                    type: 'text',
-                    text: content.text,
-                  });
+                  responseMessage.content.push(createTextContent(content.text));
               }
             }
             break;
@@ -325,10 +333,7 @@ export async function parseOpenAIResponsesStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -370,10 +375,7 @@ export function parseOpenAIResponsesResponse(
         output.content.forEach((content) => {
           switch (content.type) {
             case 'output_text':
-              responseMessage.content.push({
-                type: 'text',
-                text: content.text.trim(),
-              });
+              responseMessage.content.push(createTextContent(content.text.trim()));
               break;
           }
         });
@@ -390,10 +392,7 @@ export function parseOpenAIResponsesResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

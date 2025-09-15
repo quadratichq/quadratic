@@ -300,3 +300,21 @@ This is only required if the `quadratic-community` Auth0 account does not work.
    - Allowed Logout URLs: `http://localhost:3000`
    - Allowed Web Origins: `http://localhost:3000`
    - Allowed Origins (CORS): `http://localhost:3000`
+
+## How to Add AI Tools
+
+1. run `node dev -cas` - you need at least API and Shared to recompile (and probably need core, as there may need to be changes)
+
+2. update `quadraticShared/../aiToolsSpec.ts` for the new tool:
+   - AITool enum (the name of the tool)
+   - AIToolSchema (list of tools)
+   - AIToolsArgsSchema (the zod parameters)
+   - aiToolsSpec (the actual tool and prompt definition)
+
+3. create a ToolCard in `quadraticClient/../toolCards/`
+
+4. add new ToolCard to `quadraticClient/../AIToolCard.tsx`
+
+5. add the action to `quadraticClient/../aiToolsActions.ts`
+
+Note: you may need to restart node dev occasionally if it doesn't pick up your changes.

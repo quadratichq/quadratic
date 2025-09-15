@@ -12,16 +12,17 @@ export const ConvertToTable = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ConvertToTableResponse, ConvertToTableResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.ConvertToTable].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[ConvertToTable] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.ConvertToTable].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[ConvertToTable] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
@@ -38,16 +39,15 @@ export const ConvertToTable = memo(
       return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
 
-    const { table_name, selection } = toolArgs.data;
     return (
       <ToolCard
         icon={icon}
         label={
           <span>
-            {label} <span className="text-muted-foreground">| {table_name}</span>
+            {label} <span className="text-muted-foreground">| {toolArgs.data.table_name}</span>
           </span>
         }
-        description={`Converting ${selection} to data table`}
+        description={toolArgs.data.selection}
         className={className}
       />
     );

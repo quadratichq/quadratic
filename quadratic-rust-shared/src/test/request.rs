@@ -2,8 +2,7 @@
 //!
 //! Functions to interact with requests
 
-use httpmock::Recording;
-use httpmock::prelude::*;
+use httpmock::{MockServer, Recording};
 use std::path::PathBuf;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));

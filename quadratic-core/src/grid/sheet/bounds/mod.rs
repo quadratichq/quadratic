@@ -2,7 +2,6 @@
 //! this value and only recalculate when necessary.
 
 use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
-use std::cmp::Reverse;
 
 use super::Sheet;
 
@@ -30,10 +29,10 @@ impl Sheet {
             if validation.render_special().is_some()
                 && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+            {
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
+            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
@@ -298,15 +297,16 @@ impl Sheet {
                     let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
                     for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
-                            && (next_row_with_content - row) < rect.height() as i64 {
-                                rect_start_x = if !reverse {
-                                    x + 1
-                                } else {
-                                    x - rect.width() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_row_with_content - row) < rect.height() as i64
+                        {
+                            rect_start_x = if !reverse {
+                                x + 1
+                            } else {
+                                x - rect.width() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_x;
@@ -341,15 +341,16 @@ impl Sheet {
                     for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
-                            && (next_column_with_content - column) < rect.width() as i64 {
-                                rect_start_y = if !reverse {
-                                    y + 1
-                                } else {
-                                    y - rect.height() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_column_with_content - column) < rect.width() as i64
+                        {
+                            rect_start_y = if !reverse {
+                                y + 1
+                            } else {
+                                y - rect.height() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_y;
@@ -363,17 +364,27 @@ impl Sheet {
     pub fn find_tabular_data_rects_in_selection_rects(
         &self,
         selection_rects: Vec<Rect>,
-        max_rects: Option<usize>,
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
         let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
             Some(value) => {
-                value.is_blank_or_empty_string()
+                if value.is_blank_or_empty_string()
                     || value.is_image()
                     || value.is_html()
-                    || value.is_code()
                     || value.is_import()
+                {
+                    true
+                } else if matches!(value, CellValue::Code(_)) {
+                    // include code cells that are single values in data rects
+                    if let Some(output) = self.data_table_at(&pos) {
+                        !output.is_single_value()
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                }
             }
             None => true,
         };
@@ -390,8 +401,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
-                    if is_table_cell {
+                    if self.is_in_non_single_code_cell_code_table(pos) {
                         continue;
                     }
 
@@ -434,11 +444,6 @@ impl Sheet {
             }
         }
 
-        if let Some(max_rects) = max_rects {
-            tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
-            tabular_data_rects.truncate(max_rects);
-        }
-
         tabular_data_rects
     }
 }
@@ -455,14 +460,14 @@ mod test {
                 borders::{BorderSelection, BorderStyle},
                 validations::{
                     rules::{ValidationRule, validation_logical::ValidationLogical},
-                    validation::Validation,
+                    validation::ValidationUpdate,
                 },
             },
         },
+        test_util::*,
     };
     use proptest::proptest;
     use std::collections::HashMap;
-    use uuid::Uuid;
 
     #[test]
     fn test_is_empty() {
@@ -828,8 +833,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 rule: ValidationRule::Logical(ValidationLogical {
                     show_checkbox: true,
                     ignore_blank: true,
@@ -995,7 +1000,7 @@ mod test {
     }
 
     #[test]
-    fn find_tabular_data_rects_in_selection_rects() {
+    fn test_find_tabular_data_rects_in_selection_rects() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(pos![B2]);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1044,7 +1049,7 @@ mod test {
         );
 
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)]);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
@@ -1052,5 +1057,34 @@ mod test {
             Rect::from_numbers(31, 101, 5, 203),
         ];
         assert_eq!(tabular_data_rects, expected_rects);
+    }
+
+    #[test]
+    fn test_find_tabular_data_rects_with_single_cell_code_tables() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        for y in 1..=10 {
+            gc.set_code_cell(
+                SheetPos { x: 1, y, sheet_id },
+                CodeCellLanguage::Formula,
+                "15".to_string(),
+                None,
+                None,
+            );
+        }
+        gc.set_code_cell(
+            pos![sheet_id!A11],
+            CodeCellLanguage::Formula,
+            "{1,2,3}".to_string(),
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let tabular_data_rects =
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)]);
+        assert_eq!(tabular_data_rects.len(), 1);
+        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
     }
 }

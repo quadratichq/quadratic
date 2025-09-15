@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb } from '../../tests/testDataGenerator';
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 const getInviteIdByEmail = async (email: string) => {
   const invite = await dbClient.teamInvite.findFirst({
@@ -17,26 +17,13 @@ const getInviteIdByEmail = async (email: string) => {
 };
 
 beforeEach(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
-  });
-  const userEditor = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor',
-    },
-  });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoRole',
-    },
-  });
+  const [userOwner, userEditor, userViewer] = await createUsers([
+    'userOwner',
+    'userEditor',
+    'userViewer',
+    'userNoRole',
+  ]);
+
   await dbClient.team.create({
     data: {
       name: 'Team',
@@ -51,7 +38,7 @@ beforeEach(async () => {
       TeamInvite: {
         create: [
           {
-            email: 'editor@example.com',
+            email: 'editor@test.com',
             role: 'EDITOR',
           },
         ],
@@ -82,7 +69,7 @@ describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
 
   describe('deleting an invite', () => {
     it('responds with a 404 if you don’t belong to the team', async () => {
-      const inviteId = await getInviteIdByEmail('editor@example.com');
+      const inviteId = await getInviteIdByEmail('editor@test.com');
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
         .set('Authorization', `Bearer ValidToken userNoRole`)
@@ -90,7 +77,7 @@ describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
         .expect(expectError);
     });
     it('responds with a 403 if you belong to the team but don’t have permission to edit it', async () => {
-      const inviteId = await getInviteIdByEmail('editor@example.com');
+      const inviteId = await getInviteIdByEmail('editor@test.com');
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
         .set('Authorization', `Bearer ValidToken userViewer`)
@@ -98,7 +85,7 @@ describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
         .expect(expectError);
     });
     it('responds with a 200 if you belong to the team and have permission to edit', async () => {
-      const inviteId = await getInviteIdByEmail('editor@example.com');
+      const inviteId = await getInviteIdByEmail('editor@test.com');
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
         .set('Authorization', `Bearer ValidToken userEditor`)

@@ -6,7 +6,7 @@ import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
   CodeCellLanguage,
@@ -62,7 +62,7 @@ type DataTableSpec = Pick<
 
 export const getTable = (): JsRenderCodeCell | undefined => {
   const cursor = sheets.sheet.cursor.position;
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
+  return pixiAppSettings.contextMenu?.table ?? content.cellsSheet.tables.getCodeCellIntersects(cursor);
 };
 
 const getRow = (): number | undefined => {
@@ -189,12 +189,7 @@ export const gridToDataTable = () => {
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
-    quadraticCore.gridToDataTable(
-      JSON.stringify(sheetRect, bigIntReplacer),
-      undefined,
-      false,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), undefined, false);
   }
 };
 
@@ -203,7 +198,7 @@ export const flattenDataTable = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.flattenDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.flattenDataTable(sheets.current, table.x, table.y);
   }
 };
 
@@ -212,13 +207,7 @@ export const toggleFirstRowAsHeader = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableFirstRowAsHeader(
-      sheets.current,
-      table.x,
-      table.y,
-      !isFirstRowHeader(),
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableFirstRowAsHeader(sheets.current, table.x, table.y, !isFirstRowHeader());
   }
 };
 
@@ -243,7 +232,7 @@ export const deleteDataTable = () => {
       BigInt(table.x + table.w - 1),
       BigInt(table.y + table.h - 1)
     );
-    quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+    quadraticCore.deleteCellValues(selection);
   }
 };
 
@@ -252,7 +241,7 @@ export const codeToDataTable = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y);
   }
 };
 
@@ -267,13 +256,7 @@ export const toggleTableAlternatingColors = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.current,
-      table.x,
-      table.y,
-      { alternatingColors: !isAlternatingColorsShowing() },
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { alternatingColors: !isAlternatingColorsShowing() });
   }
 };
 
@@ -294,13 +277,7 @@ const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
   const column = getColumn();
 
   if (table && column !== undefined) {
-    quadraticCore.sortDataTable(
-      sheets.current,
-      table.x,
-      table.y,
-      [{ column_index: column, direction }],
-      sheets.getCursorPosition()
-    );
+    quadraticCore.sortDataTable(sheets.current, table.x, table.y, [{ column_index: column, direction }]);
   }
 };
 
@@ -330,7 +307,6 @@ export const insertTableColumn = (increment: number = 0, selectTable = false) =>
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
-      cursor: sheets.getCursorPosition(),
     });
   }
 };
@@ -353,7 +329,6 @@ export const removeTableColumn = (selectTable = false) => {
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
-      cursor: sheets.getCursorPosition(),
     });
   }
 };
@@ -367,7 +342,7 @@ export const hideTableColumn = () => {
 
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns });
   }
 };
 
@@ -379,7 +354,7 @@ export const showAllTableColumns = () => {
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns });
   }
 };
 
@@ -401,7 +376,6 @@ export const insertTableRow = (increment: number = 0, selectTable = false) => {
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
-      cursor: sheets.getCursorPosition(),
     });
   }
 };
@@ -423,7 +397,6 @@ export const removeTableRow = (selectTable = false) => {
       rows_to_remove: rows,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
-      cursor: sheets.getCursorPosition(),
     });
   }
 };
@@ -442,13 +415,7 @@ export const toggleTableColumns = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.current,
-      table.x,
-      table.y,
-      { showColumns: !table.show_columns },
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showColumns: !table.show_columns });
   }
 };
 
@@ -457,13 +424,7 @@ export const toggleTableName = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.current,
-      table.x,
-      table.y,
-      { showName: !table.show_name },
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showName: !table.show_name });
   }
 };
 

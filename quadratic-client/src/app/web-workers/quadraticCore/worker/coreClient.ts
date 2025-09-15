@@ -6,6 +6,7 @@
  */
 
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -111,6 +112,7 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'clientCoreLoad':
+        this.sendStartupTimer('offlineSync', { start: performance.now() });
         await offline.init(e.data.fileId);
 
         this.send({
@@ -240,27 +242,59 @@ class CoreClient {
         return;
 
       case 'clientCoreAddSheet':
-        core.addSheet(e.data.cursor);
-        return;
-
-      case 'clientCoreDeleteSheet':
-        core.deleteSheet(e.data.sheetId, e.data.cursor);
-        return;
-
-      case 'clientCoreMoveSheet':
-        core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor);
-        return;
-
-      case 'clientCoreSetSheetName':
-        core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor);
-        return;
-
-      case 'clientCoreSetSheetColor':
-        core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
+        this.send({
+          type: 'coreClientAddSheetResponse',
+          id: e.data.id,
+          response: core.addSheet(e.data.sheetName, e.data.insertBeforeSheetName, e.data.cursor),
+        });
         return;
 
       case 'clientCoreDuplicateSheet':
-        core.duplicateSheet(e.data.sheetId, e.data.cursor);
+        this.send({
+          type: 'coreClientDuplicateSheetResponse',
+          id: e.data.id,
+          response: core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreDeleteSheet':
+        this.send({
+          type: 'coreClientDeleteSheetResponse',
+          id: e.data.id,
+          response: core.deleteSheet(e.data.sheetId, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreMoveSheet':
+        this.send({
+          type: 'coreClientMoveSheetResponse',
+          id: e.data.id,
+          response: core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetName':
+        this.send({
+          type: 'coreClientSetSheetNameResponse',
+          id: e.data.id,
+          response: core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetColor':
+        this.send({
+          type: 'coreClientSetSheetColorResponse',
+          id: e.data.id,
+          response: core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetsColor':
+        this.send({
+          type: 'coreClientSetSheetsColorResponse',
+          id: e.data.id,
+          response: core.setSheetsColor(e.data.sheetNameToColor, e.data.cursor),
+        });
         return;
 
       case 'clientCoreUndo':
@@ -338,7 +372,11 @@ class CoreClient {
         return;
 
       case 'clientCoreSetBorders':
-        core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor);
+        this.send({
+          type: 'coreClientSetBorders',
+          id: e.data.id,
+          response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor),
+        });
         return;
 
       case 'clientCoreSetCellRenderResize':
@@ -402,7 +440,11 @@ class CoreClient {
         return;
 
       case 'clientCoreRerunCodeCells':
-        core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor);
+        this.send({
+          type: 'coreClientRerunCodeCells',
+          id: e.data.id,
+          response: core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor),
+        });
         return;
 
       case 'clientCoreCancelExecution':
@@ -463,7 +505,19 @@ class CoreClient {
         return;
 
       case 'clientCoreUpdateValidation':
-        core.updateValidation(e.data.validation, e.data.cursor);
+        this.send({
+          type: 'coreClientUpdateValidation',
+          id: e.data.id,
+          response: core.updateValidation(e.data.validation, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreRemoveValidationSelection':
+        this.send({
+          type: 'coreClientRemoveValidationSelection',
+          id: e.data.id,
+          response: core.removeValidationSelection(e.data.sheetId, e.data.selection, e.data.cursor),
+        });
         return;
 
       case 'clientCoreGetValidations':
@@ -526,32 +580,40 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAISelectionContexts',
           id: e.data.id,
-          selectionContexts: core.getAISelectionContexts(e.data),
-        });
-        return;
-
-      case 'clientCoreGetAITablesContext':
-        this.send({
-          type: 'coreClientGetAITablesContext',
-          id: e.data.id,
-          tablesContext: core.getAITablesContext(),
+          summaryContexts: core.getAISelectionContexts(e.data),
         });
         return;
 
       case 'clientCoreDeleteColumns':
-        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteColumns',
+          id: e.data.id,
+          response: core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+        });
         return;
 
       case 'clientCoreDeleteRows':
-        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteRows',
+          id: e.data.id,
+          response: core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor),
+        });
         return;
 
       case 'clientCoreInsertColumns':
-        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
+        this.send({
+          type: 'coreClientInsertColumns',
+          id: e.data.id,
+          response: core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor),
+        });
         return;
 
       case 'clientCoreInsertRows':
-        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
+        this.send({
+          type: 'coreClientInsertRows',
+          id: e.data.id,
+          response: core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor),
+        });
         return;
 
       case 'clientCoreFlattenDataTable':
@@ -571,36 +633,40 @@ class CoreClient {
         return;
 
       case 'clientCoreDataTableMeta':
-        core.dataTableMeta(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.name,
-          e.data.alternatingColors,
-          e.data.columns,
-          e.data.showName,
-          e.data.showColumns,
-          e.data.cursor
-        );
+        this.send({
+          type: 'coreClientDataTableMeta',
+          id: e.data.id,
+          response: core.dataTableMeta(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.name,
+            e.data.alternatingColors,
+            e.data.columns,
+            e.data.showName,
+            e.data.showColumns,
+            e.data.cursor
+          ),
+        });
         return;
 
       case 'clientCoreDataTableMutations':
-        core.dataTableMutations({
-          sheetId: e.data.sheetId,
-          x: e.data.x,
-          y: e.data.y,
-          select_table: e.data.select_table,
-          columns_to_add: e.data.columns_to_add,
-          columns_to_remove: e.data.columns_to_remove,
-          rows_to_add: e.data.rows_to_add,
-          rows_to_remove: e.data.rows_to_remove,
-          flatten_on_delete: e.data.flatten_on_delete,
-          swallow_on_insert: e.data.swallow_on_insert,
-          cursor: e.data.cursor,
-        });
         this.send({
           type: 'coreClientDataTableMutations',
           id: e.data.id,
+          response: core.dataTableMutations({
+            sheetId: e.data.sheetId,
+            x: e.data.x,
+            y: e.data.y,
+            select_table: e.data.select_table,
+            columns_to_add: e.data.columns_to_add,
+            columns_to_remove: e.data.columns_to_remove,
+            rows_to_add: e.data.rows_to_add,
+            rows_to_remove: e.data.rows_to_remove,
+            flatten_on_delete: e.data.flatten_on_delete,
+            swallow_on_insert: e.data.swallow_on_insert,
+            cursor: e.data.cursor,
+          }),
         });
         return;
 
@@ -609,7 +675,17 @@ class CoreClient {
         return;
 
       case 'clientCoreDataTableFirstRowAsHeader':
-        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        this.send({
+          type: 'coreClientDataTableFirstRowAsHeader',
+          id: e.data.id,
+          response: core.dataTableFirstRowAsHeader(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.firstRowAsHeader,
+            e.data.cursor
+          ),
+        });
         return;
 
       case 'clientCoreAddDataTable':
@@ -653,11 +729,19 @@ class CoreClient {
         return;
 
       case 'clientCoreResizeColumns':
-        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        this.send({
+          type: 'coreClientResizeColumns',
+          id: e.data.id,
+          response: core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+        });
         return;
 
       case 'clientCoreResizeRows':
-        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        this.send({
+          type: 'coreClientResizeRows',
+          id: e.data.id,
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor),
+        });
         return;
 
       case 'clientCoreResizeAllColumns':
@@ -673,6 +757,22 @@ class CoreClient {
           type: 'coreClientGetFormatSelection',
           id: e.data.id,
           format: core.getFormatSelection(e.data.selection),
+        });
+        return;
+
+      case 'clientCoreHasCellData':
+        this.send({
+          type: 'coreClientHasCellData',
+          id: e.data.id,
+          hasData: core.hasCellData(e.data.sheetId, e.data.selection),
+        });
+        return;
+
+      case 'clientCoreGetAICodeErrors':
+        this.send({
+          type: 'coreClientGetAICodeErrors',
+          id: e.data.id,
+          errors: core.getAICodeErrors(e.data.maxErrors),
         });
         return;
 
@@ -847,6 +947,10 @@ class CoreClient {
 
   sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
     this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
+  };
+
+  sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {
+    this.send({ type: 'coreClientStartupTimer', name, ...data });
   };
 }
 

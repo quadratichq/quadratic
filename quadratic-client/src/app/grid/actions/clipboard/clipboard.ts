@@ -1,6 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
@@ -36,7 +37,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
     e.preventDefault();
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    content.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboardEvent', error);
@@ -92,7 +93,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
         selection: sheets.sheet.cursor.save(),
         jsClipboard: jsClipboardUint8Array,
         special: 'None',
-        cursor: sheets.getCursorPosition(),
       });
     }
 
@@ -120,15 +120,12 @@ const toClipboardCut = async () => {
             .copyToClipboard(sheets.getRustSelection())
             .then(({ html }) => new Blob([html], { type: 'text/html' })),
           'text/plain': quadraticCore
-            .cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition())
+            .cutToClipboard(sheets.getRustSelection())
             .then(({ plainText }) => new Blob([plainText], { type: 'text/plain' })),
         }),
       ]);
     } else {
-      const { plainText, html } = await quadraticCore.cutToClipboard(
-        sheets.getRustSelection(),
-        sheets.getCursorPosition()
-      );
+      const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection());
       await navigator.clipboard.write([
         new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
@@ -140,10 +137,7 @@ const toClipboardCut = async () => {
 
   // fallback support for firefox
   else {
-    const { plainText, html } = await quadraticCore.cutToClipboard(
-      sheets.getRustSelection(),
-      sheets.getCursorPosition()
-    );
+    const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection());
     await Promise.all([navigator.clipboard.writeText(plainText), localforage.setItem(clipboardLocalStorageKey, html)]);
   }
 };
@@ -198,7 +192,7 @@ export const copyToClipboard = async () => {
   try {
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    content.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboard', error);
@@ -272,7 +266,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
           selection: sheets.sheet.cursor.save(),
           jsClipboard: jsClipboardUint8Array,
           special,
-          cursor: sheets.getCursorPosition(),
         });
       }
     }
@@ -292,7 +285,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
           selection: sheets.sheet.cursor.save(),
           jsClipboard: jsClipboardUint8Array,
           special,
-          cursor: sheets.getCursorPosition(),
         });
       }
     }

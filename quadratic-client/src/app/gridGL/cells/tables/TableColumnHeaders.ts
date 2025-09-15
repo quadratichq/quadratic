@@ -4,6 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -50,7 +51,7 @@ export class TableColumnHeaders extends Container {
     this.background.endFill();
 
     // draw borders on the top and bottom of the column headers (either active or inactive)
-    const active = pixiApp.cellsSheet().tables.isActive(this.table);
+    const active = content.cellsSheet.tables.isActive(this.table);
     if (this.table.inOverHeadings && active) {
       const width = active ? 1 : 0;
       this.background.lineStyle({
@@ -81,7 +82,7 @@ export class TableColumnHeaders extends Container {
         );
         const endX = end.position + end.size;
         this.background.lineStyle();
-        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+        this.background.beginFill(content.accentColor, FILL_SELECTION_ALPHA);
         this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
         this.background.endFill();
       }
@@ -127,7 +128,7 @@ export class TableColumnHeaders extends Container {
       sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
     }
 
-    quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
+    quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort);
   };
 
   private createColumnHeaders = () => {

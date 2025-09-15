@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.16.4"
+version = "0.18.1"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -76,22 +76,27 @@ tokio = { version = "1.44.2", features = ["full"], optional = true }
 tokio-util = { version = "0.7.11", features = ["compat"], optional = true }
 tracing = { version = "0.1.40", optional = true }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
+urlencoding = { version = "2.1.3", optional = true }
 
 [features]
 default = []
 arrow = ["dep:arrow", "arrow-array", "parquet"]
 auth = ["jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
+cache = ["memory", "tokio"]
 crypto = ["aes"]
 environment = []
+memory = []
 net = ["russh", "russh-config", "tokio", "tokio-util"]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
-quadratic-api = ["reqwest"]
+quadratic-api = ["reqwest", "urlencoding"]
 record-request-mock = []
 sql = [
   "arrow",
+  "cache",
   "dotenv",
+  "httpmock",
   "net",
   "quadratic-api",
   "google-cloud-bigquery",
@@ -114,11 +119,6 @@ aws-smithy-runtime = { version = "1.6.2", features = ["test-util"] }
 aws-smithy-runtime-api = "1.7.1"
 criterion = { version = "0.5" }
 http = "1.1.0"
-httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
-  "https",
-  "proxy",
-  "record",
-] }
 tabled = { version = "0.14.0", features = ["color"] }
 tracing-test = "0.2.4"
 

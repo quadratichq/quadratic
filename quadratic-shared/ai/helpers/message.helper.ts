@@ -21,6 +21,8 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { isQuadraticModel } from './model.helper';
 
+export const CLEAN_UP_TOOL_CALLS_AFTER = 3;
+
 const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
@@ -209,11 +211,17 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
   return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
 };
 
+export const createTextContent = (text: string): TextContent => {
+  return {
+    type: 'text' as const,
+    text,
+  };
+};
+
 // Cleans up old get_ tool messages to avoid expensive contexts.
 export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
   const CLEAN_UP_MESSAGE =
     'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST use Python.';
-  const CLEAN_UP_AFTER = 3;
 
   const getToolIds = new Set();
   messages.forEach((message) => {
@@ -234,15 +242,10 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
         ...message,
         content: message.content.map((toolResult) => {
           if (getToolIds.has(toolResult.id)) {
-            if (i < messages.length - CLEAN_UP_AFTER) {
+            if (i < messages.length - CLEAN_UP_TOOL_CALLS_AFTER) {
               return {
                 id: toolResult.id,
-                content: [
-                  {
-                    type: 'text' as const,
-                    text: CLEAN_UP_MESSAGE,
-                  },
-                ],
+                content: [createTextContent(CLEAN_UP_MESSAGE)],
               };
             } else {
               return toolResult;
@@ -255,12 +258,7 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
               content:
                 content.length > 0
                   ? content
-                  : [
-                      {
-                        type: 'text' as const,
-                        text: 'NOTE: the results from this tool call have been removed from the context.',
-                      },
-                    ],
+                  : [createTextContent('NOTE: the results from this tool call have been removed from the context.')],
             };
           }
         }),

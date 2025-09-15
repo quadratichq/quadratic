@@ -1,7 +1,7 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type GetCellDataResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCellData]['responseSchema']>;
@@ -11,27 +11,30 @@ export const GetCellData = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetCellDataResponse, GetCellDataResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.GetCellData].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[GetCellData] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.GetCellData].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[GetCellData] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
-    let label =
-      toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-        ? `Reading data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
-        : 'Reading data...';
-    if (toolArgs?.data?.page) {
-      label += ` in page ${toolArgs.data.page + 1}`;
-    }
-    label += '.';
+    let label = useMemo(
+      () =>
+        (toolArgs?.data?.sheet_name && toolArgs?.data?.selection
+          ? `Reading data in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
+          : 'Reading data...') +
+        (toolArgs?.data?.page ? ` in page ${toolArgs.data.page + 1}` : '') +
+        '.',
+      [toolArgs?.data?.sheet_name, toolArgs?.data?.selection, toolArgs?.data?.page]
+    );
+
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;
     }

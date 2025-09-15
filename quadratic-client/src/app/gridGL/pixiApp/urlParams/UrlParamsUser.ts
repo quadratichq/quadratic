@@ -2,6 +2,7 @@
 
 import { filesFromIframe, IMPORT_FILE_EXTENSIONS } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
 import type { DbFile } from '@/app/ai/iframeAiChatFiles/IframeMessages';
+import { aiAnalystInitialized } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -10,6 +11,7 @@ import { arrayBufferToBase64, getExtension, getFileTypeFromName } from '@/app/he
 import type { CodeCellLanguage, JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
 
 export class UrlParamsUser {
@@ -180,6 +182,8 @@ export class UrlParamsUser {
   private loadAIAnalystPrompt = async (params: URLSearchParams) => {
     if (this.aiAnalystPromptLoaded) return;
 
+    this.aiAnalystInitialized = aiAnalystInitialized;
+
     if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded || !this.aiAnalystInitialized) return;
 
     this.aiAnalystPromptLoaded = true;
@@ -228,9 +232,8 @@ export class UrlParamsUser {
 
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
-      chatId,
-      content: [...aiFiles, { type: 'text', text: prompt }],
-      messageSource: chatId ? 'MarketingSite' : 'UrlPrompt',
+      content: [...aiFiles, createTextContent(prompt)],
+      messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,

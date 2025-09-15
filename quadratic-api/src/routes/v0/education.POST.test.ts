@@ -1,16 +1,16 @@
-import { auth0Mock } from '../../tests/auth0Mock';
-jest.mock('auth0', () =>
-  auth0Mock([
+import { workosMock } from '../../tests/workosMock';
+jest.mock('@workos-inc/node', () =>
+  workosMock([
     {
-      user_id: 'userHarvard',
+      id: 'userHarvard',
       email: 'user@harvard.edu',
     },
     {
-      user_id: 'userEligible',
+      id: 'userEligible',
       email: 'user@eligible-domain.com',
     },
     {
-      user_id: 'userIneligible',
+      id: 'userIneligible',
       email: 'user@ineligible-domain.com',
     },
   ])
@@ -36,16 +36,19 @@ beforeAll(async () => {
   await dbClient.user.create({
     data: {
       auth0Id: 'userHarvard',
+      email: 'user@harvard.edu',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userEligible',
+      email: 'user@eligible-domain.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userIneligible',
+      email: 'user@ineligible-domain.com',
     },
   });
 });
@@ -63,7 +66,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userHarvard`)
+        .set('Authorization', `Bearer ValidToken userHarvard user@harvard.edu`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('ENROLLED');
@@ -79,7 +82,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userEligible`)
+        .set('Authorization', `Bearer ValidToken userEligible user@eligible-domain.com`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('ENROLLED');
@@ -95,7 +98,7 @@ describe('POST /v0/education', () => {
       expect(eduStatus).toBe(null);
       await request(app)
         .post('/v0/education')
-        .set('Authorization', `Bearer ValidToken userIneligible`)
+        .set('Authorization', `Bearer ValidToken userIneligible user@ineligible-domain.com`)
         .expect(200)
         .expect((res) => {
           expect(res.body.eduStatus).toBe('INELIGIBLE');

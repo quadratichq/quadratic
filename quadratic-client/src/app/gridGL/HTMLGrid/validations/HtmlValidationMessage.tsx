@@ -1,6 +1,7 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { translateValidationError } from '@/app/gridGL/HTMLGrid/validations/translateValidationError';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { Validation } from '@/app/quadratic-core-types';
@@ -14,7 +15,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton, Tooltip } from '@mui/material';
 import type { Rectangle } from 'pixi.js';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 interface Props {
@@ -25,17 +26,16 @@ interface Props {
   hoverError?: boolean;
 }
 
-export const HtmlValidationMessage = (props: Props) => {
-  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
+export const HtmlValidationMessage = memo((props: Props) => {
   const { offsets, validation, column, row, hoverError } = props;
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const [hide, setHide] = useState(true);
-
   const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     if (column === undefined || row === undefined) {
       setShowError(false);
-    } else if (hoverError !== undefined || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+    } else if (hoverError !== undefined || content.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
       setShowError(true);
     } else {
       setShowError(false);
@@ -61,6 +61,17 @@ export const HtmlValidationMessage = (props: Props) => {
 
   let title: JSX.Element | null = null;
   let message: JSX.Element | null = null;
+
+  const [translateValidation, setTranslateValidation] = useState<JSX.Element | null>(null);
+  useEffect(() => {
+    if (validation && column !== undefined && row !== undefined) {
+      translateValidationError(validation, column, row).then((translation) => {
+        setTranslateValidation(translation);
+      });
+    } else {
+      setTranslateValidation(null);
+    }
+  }, [validation, column, row]);
 
   if (showError) {
     let icon: JSX.Element | null = null;
@@ -97,13 +108,11 @@ export const HtmlValidationMessage = (props: Props) => {
 
     message = (
       <>
-        <div>{validation?.error?.message}</div>
-        {validation && translateValidationError(validation)}
         <div>
-          {validation && <div className="mt-2">{}</div>}
+          {validation && <div className="mt-2">{translateValidation}</div>}
           {validation && (
             <Tooltip title="Show validation">
-              <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+              <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
                 Rule: {validationText(validation)}
               </Button>
             </Tooltip>
@@ -111,16 +120,43 @@ export const HtmlValidationMessage = (props: Props) => {
         </div>
       </>
     );
-  } else if (validation?.message) {
+  } else if (validation?.message && validation.message.show) {
     if (validation?.message.title) {
       title = <span>{validation.message.title}</span>;
+      message = (
+        <Tooltip title="Show validation">
+          <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
+            Rule: {validationText(validation)}
+          </Button>
+        </Tooltip>
+      );
     }
     if (validation?.message.message) {
-      message = <span>{validation.message.message}</span>;
+      message = (
+        <>
+          <div>{validation.message.message}</div>
+          <Tooltip title="Show validation">
+            <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
+              Rule: {validationText(validation)}
+            </Button>
+          </Tooltip>
+        </>
+      );
+    } else {
+      message = (
+        <>
+          <div>{translateValidation}</div>
+          <Tooltip title="Show validation">
+            <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
+              Rule: {validationText(validation)}
+            </Button>
+          </Tooltip>
+        </>
+      );
     }
   }
 
-  if (hide || !offsets || (!title && !message)) return null;
+  if (hide || !offsets || (!title && !message) || !validation) return null;
 
   const wrapStyle = {
     overflowWrap: 'break-word',
@@ -142,16 +178,20 @@ export const HtmlValidationMessage = (props: Props) => {
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
+      className="pointer-events-auto absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
       style={{ top, left, transformOrigin: `0 0`, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
+      data-testid="validation-message"
     >
       <div className="leading-2 whitespace-normal" style={wrapStyle}>
         <div className="flex items-start justify-between gap-2">
-          {<div className="mb-2">{title}</div>}
+          {
+            <div className="mb-2" data-testid="validation-message-title">
+              {title}
+            </div>
+          }
           {
             <IconButton
               sx={{ padding: 0.5 }}
-              className="pointer-events-auto"
               onClick={() => {
                 setHide(true);
                 focusGrid();
@@ -161,8 +201,12 @@ export const HtmlValidationMessage = (props: Props) => {
             </IconButton>
           }
         </div>
-        {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
+        {message && (
+          <div className="pb-1 pt-2 text-xs" data-testid="validation-message-message">
+            {message}
+          </div>
+        )}
       </div>
     </div>
   );
-};
+});

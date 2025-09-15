@@ -11,7 +11,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -425,7 +425,7 @@ class InlineEditorKeyboard {
     if (!location) return;
 
     inlineEditorHandler.cursorIsMoving = false;
-    pixiApp.cellHighlights.clearSelectedCell();
+    content.cellHighlights.clearSelectedCell();
     const editingSheet = sheets.getById(location.sheetId);
     if (!editingSheet) {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');

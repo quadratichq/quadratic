@@ -1,15 +1,16 @@
 import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type {
   A1Selection,
   CellRefRange,
   JsOffset,
   JsTableInfo,
-  Rect,
   RefRangeBounds,
   SheetInfo,
+  SheetRect,
 } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import {
@@ -20,12 +21,12 @@ import {
   getTableInfo,
   JsA1Context,
   selectionToSheetRect,
+  selectionToSheetRectString,
   stringToSelection,
+  xyxyToA1,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { Rectangle } from 'pixi.js';
 
 export class Sheets {
   initialized: boolean;
@@ -79,7 +80,7 @@ export class Sheets {
       this._current = this.sheets[0].id;
     }
 
-    pixiApp.cellsSheetsCreate();
+    content.cellsSheets.create();
     this.initialized = true;
   };
 
@@ -106,7 +107,7 @@ export class Sheets {
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here
-    if (user) {
+    if (user && this.current === sheetId) {
       if (index - 1 >= 0 && index - 1 < this.sheets.length) {
         this.current = this.sheets[index - 1].id;
       } else {
@@ -130,10 +131,7 @@ export class Sheets {
     if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
   };
 
   private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -144,10 +142,7 @@ export class Sheets {
     offsets.forEach(({ column, row, size }) => {
       sheet.updateSheetOffsets(column, row, size);
     });
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, multiplayerCursor: true });
     events.emit('sheetOffsetsUpdated', sheetId);
   };
 
@@ -170,11 +165,12 @@ export class Sheets {
   };
 
   // updates the SheetBar UI
-  private updateSheetBar() {
+  private updateSheetBar = () => {
     this.sort();
+
     // this avoids React complaints about rendering one component while another one is rendering
     setTimeout(() => events.emit('changeSheet', this.current), 0);
-  }
+  };
 
   private sort(): void {
     this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
@@ -215,21 +211,25 @@ export class Sheets {
     if (value !== this._current && this.sheets.find((sheet) => sheet.id === value)) {
       this._current = value;
       pixiApp.viewport.dirty = true;
-      pixiApp.gridLines.dirty = true;
-      pixiApp.headings.dirty = true;
-      pixiApp.cursor.dirty = true;
-      pixiApp.multiplayerCursor.dirty = true;
-      pixiApp.boxCells.reset();
-      pixiApp.cellsSheets.show(value);
+      events.emit('setDirty', {
+        gridLines: true,
+        headings: true,
+        cursor: true,
+        multiplayerCursor: true,
+        boxCells: true,
+      });
+      content.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
     }
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetIdFromName(name: string): string {
-    return this.sheets.find((sheet) => sheet.name === name)?.id || '';
+    return this.sheets.find((sheet) => sheet.name.toLowerCase() === name.toLowerCase())?.id || '';
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
       if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
@@ -313,15 +313,15 @@ export class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(this.getCursorPosition());
+    quadraticCore.addSheet(undefined, undefined);
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, this.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, undefined);
   }
 
   userDeleteSheet(id: string) {
-    quadraticCore.deleteSheet(id, this.getCursorPosition());
+    quadraticCore.deleteSheet(id);
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {
@@ -337,7 +337,7 @@ export class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        quadraticCore.moveSheet(id, nextNext?.id, this.getCursorPosition());
+        quadraticCore.moveSheet(id, nextNext?.id);
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -345,12 +345,12 @@ export class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        quadraticCore.moveSheet(id, previous?.id, this.getCursorPosition());
+        quadraticCore.moveSheet(id, previous?.id);
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      quadraticCore.moveSheet(id, toBefore, this.getCursorPosition());
+      quadraticCore.moveSheet(id, toBefore);
     }
     this.sort();
   }
@@ -387,25 +387,6 @@ export class Sheets {
     return this.sheet.cursor.save();
   };
 
-  getVisibleRect = (): Rect => {
-    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
-    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
-    leftHeadingWidth /= scale;
-    topHeadingHeight /= scale;
-    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
-    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
-    return {
-      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
-      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
-    };
-  };
-
-  getVisibleRectangle = (): Rectangle => {
-    const visibleRect = this.getVisibleRect();
-    return rectToRectangle(visibleRect);
-  };
-
   updateTableName = (oldName: string, newName: string) => {
     this.sheets.forEach((sheet) => {
       sheet.cursor.updateTableName(oldName, newName);
@@ -429,6 +410,12 @@ export class Sheets {
     return A1SelectionStringToSelection(a1);
   };
 
+  /// Warning: this can throw an error. It must be handled.
+  A1SelectionToA1String = (a1Selection: A1Selection, sheetId: string): string => {
+    const selection = A1SelectionStringToSelection(JSON.stringify(a1Selection, bigIntReplacer));
+    return selection.toA1String(sheetId, this.jsA1Context);
+  };
+
   A1SelectionToJsSelection = (a1: A1Selection): JsSelection => {
     return A1SelectionToJsSelection(a1);
   };
@@ -437,7 +424,11 @@ export class Sheets {
     return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, this.jsA1Context);
   };
 
-  selectionToSheetRect = (sheetId: string, selection: string): string => {
+  selectionToSheetRectString = (sheetId: string, selection: string): string => {
+    return selectionToSheetRectString(sheetId, selection, this.jsA1Context);
+  };
+
+  selectionToSheetRect = (sheetId: string, selection: string): SheetRect => {
     return selectionToSheetRect(sheetId, selection, this.jsA1Context);
   };
 
@@ -447,6 +438,23 @@ export class Sheets {
 
   convertTableToRange = (tableName: string, currentSheetId: string): string => {
     return convertTableToRange(tableName, currentSheetId, this.jsA1Context);
+  };
+
+  getAISheetBounds = (sheetName: string): string => {
+    const sheet = this.getSheetByName(sheetName);
+    if (!sheet) {
+      return `is not a valid sheet name`;
+    }
+    const bounds = sheet.boundsWithoutFormatting;
+    if (bounds.type === 'empty') {
+      return `is empty`;
+    }
+    return `has bounds of ${xyxyToA1(
+      Number(bounds.min.x),
+      Number(bounds.min.y),
+      Number(bounds.max.x),
+      Number(bounds.max.y)
+    )}`;
   };
 }
 
