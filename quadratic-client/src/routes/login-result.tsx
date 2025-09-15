@@ -7,6 +7,7 @@ import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
 const SHOW_ONBOARDING_QUESTIONNAIRE = Math.random() < 0.5;
+const SHOW_ONBOARDING_VIDEO = Math.random() < 0.5;
 
 export const loader = async ({ request }: { request: Request }) => {
   // try/catch here handles case where this _could_ error out and we
@@ -53,7 +54,11 @@ export const loader = async ({ request }: { request: Request }) => {
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
         return redirect(
-          SHOW_ONBOARDING_QUESTIONNAIRE ? '/onboarding' : `/files/create?${SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY}`
+          SHOW_ONBOARDING_QUESTIONNAIRE
+            ? '/onboarding'
+            : SHOW_ONBOARDING_VIDEO
+              ? `/files/create?${SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY}`
+              : '/files/create'
         );
       }
       return redirect(redirectTo);

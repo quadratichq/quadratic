@@ -29,7 +29,6 @@ export const ROUTES = {
       prompt?: string | null;
       private?: boolean;
       chatId?: string | null;
-      [SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY]?: boolean;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -45,9 +44,6 @@ export const ROUTES = {
     }
     if (searchParams.chatId) {
       url.searchParams.set('chat-id', searchParams.chatId);
-    }
-    if (searchParams[SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY]) {
-      url.searchParams.set(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY, '');
     }
 
     return url.toString();
@@ -119,7 +115,6 @@ export const SEARCH_PARAMS = {
   CHECKPOINT: { KEY: 'checkpoint' },
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
-  SHOW_ONBOARDING_VIDEO: { KEY: 'show-onboarding-video' },
 } as const;
 
 function getWorkosOauthUrl(args: { provider: OAuthProvider; state: string }) {

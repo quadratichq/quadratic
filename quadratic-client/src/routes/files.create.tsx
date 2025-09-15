@@ -45,8 +45,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     private: url.searchParams.get('private') === 'false' ? false : true,
     // File to be fetched from iframe indexeddb for this chat-id from marketing site
     chatId: url.searchParams.get('chat-id') || null,
-    // Show the onboarding video
-    'show-onboarding-video': url.searchParams.get(SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY) !== null,
   });
   return redirect(redirectUrl);
 };
