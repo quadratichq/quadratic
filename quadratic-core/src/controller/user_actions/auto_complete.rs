@@ -794,7 +794,6 @@ mod tests {
         gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
             .unwrap();
 
-        let sheet = gc.sheet(sheet_id);
         assert_code_language(
             &gc,
             pos![sheet_id!D4],

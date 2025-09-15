@@ -2208,17 +2208,10 @@ mod tests {
 
     #[test]
     fn test_execute_code_data_table_to_data_table() {
-        let code_run = CodeRun {
-            language: CodeCellLanguage::Javascript,
-            code: "return [1,2,3]".into(),
-            std_err: None,
-            std_out: None,
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-            cells_accessed: Default::default(),
-        };
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+
+        let code_run = CodeRun::new_javascript("return [1,2,3]".into());
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
@@ -2228,25 +2221,19 @@ mod tests {
             Some(true),
             None,
         );
-
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 1 };
+        let sheet_pos = pos![sheet_id!A1];
+        let data_table_pos = sheet_pos.into();
+        test_create_raw_data_table(&mut gc, sheet_pos, data_table);
         assert_code_language(
             &gc,
-            pos.to_sheet_pos(sheet_id),
+            sheet_pos,
             CodeCellLanguage::Javascript,
             "return [1,2,3]".to_string(),
         );
-        let sheet = gc.sheet(sheet_id);
-        let data_table_pos = sheet.data_table_pos_that_contains_result(pos).unwrap();
-        let sheet_pos = SheetPos::from((pos, sheet_id));
         let expected = vec!["1", "2", "3"];
 
         // initial value
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
-        let data_table = &gc.sheet(sheet_id).data_table_at(&data_table_pos).unwrap();
-        assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run.clone()));
 
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());

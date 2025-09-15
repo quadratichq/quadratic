@@ -417,7 +417,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Rect, SheetPos, SheetRect,
+        CellValue, SheetPos, SheetRect,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation,
@@ -503,7 +503,6 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let sheet_rect = SheetRect::new(1, 1, 2, 2, sheet_id);
-        let data_table_rect = Rect::new(1, 1, 2, 4);
         let values = vec![
             vec!["header 1".into(), "header 2".into()],
             vec!["$123".into(), "123,456.00".into()],

@@ -523,12 +523,7 @@ mod test {
     fn test_finalize_data_table() {
         let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A1];
 
         // manually set the CellValue::Code
         test_create_code_table(&mut gc, sheet_id, sheet_pos.into(), 1, 1);
@@ -566,12 +561,6 @@ mod test {
             Some(&new_data_table)
         );
 
-        // todo: need a way to test the js functions that replaced these
-        // let summary = transaction.send_transaction(true);
-        // assert_eq!(summary.code_cells_modified.len(), 1);
-        // assert!(summary.code_cells_modified.contains(&sheet_id));
-        // assert!(summary.generate_thumbnail);
-
         // replace the code_run with another code_run
         // manually create the transaction
         let transaction = &mut PendingTransaction::default();
@@ -603,6 +592,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
+        dbg!(&sheet.data_table_at(&sheet_pos.into()));
         assert_eq!(
             sheet.data_table_at(&sheet_pos.into()),
             Some(&new_data_table)

@@ -68,16 +68,22 @@ pub fn test_create_code_table_with_values(
         None,
     );
 
+    test_create_raw_data_table(gc, pos.to_sheet_pos(sheet_id), data_table)
+}
+
+#[cfg(test)]
+pub fn test_create_raw_data_table(
+    gc: &mut GridController,
+    sheet_pos: SheetPos,
+    data_table: DataTable,
+) -> DataTable {
     let op = Operation::AddDataTableWithoutCellValue {
-        sheet_pos: pos.to_sheet_pos(sheet_id),
+        sheet_pos,
         data_table,
         index: None,
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
-
-    gc.data_table_at(pos.to_sheet_pos(sheet_id))
-        .unwrap()
-        .clone()
+    gc.data_table_at(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]

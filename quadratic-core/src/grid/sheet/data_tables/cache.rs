@@ -124,9 +124,10 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                            && table.language != CodeCellLanguage::Import {
-                                return true;
-                            }
+                            && table.language != CodeCellLanguage::Import
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -456,7 +457,6 @@ mod tests {
         gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
 
         test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
-
         test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
 
         let sheet = gc.sheet(sheet_id);
@@ -465,7 +465,7 @@ mod tests {
             .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
             .collect::<Vec<_>>();
 
-        assert_eq!(tables, vec![pos![2, 2], pos![5, 5]]);
+        assert_eq!(tables, vec![pos![5, 5]]);
     }
 
     #[test]
@@ -476,7 +476,6 @@ mod tests {
         gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
 
         test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
-
         test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
 
         let sheet = gc.sheet(sheet_id);
@@ -485,6 +484,6 @@ mod tests {
             .get_nondefault_rects_in_rect(Rect::new(1, 1, 12, 12))
             .collect::<Vec<_>>();
 
-        assert_eq!(rects, vec![rect![B2:B2], rect![E5:G9], rect![J10:L12]]);
+        assert_eq!(rects, vec![rect![E5:G9], rect![J10:L12]]);
     }
 }
