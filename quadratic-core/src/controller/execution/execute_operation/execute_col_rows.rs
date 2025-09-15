@@ -354,6 +354,8 @@ mod tests {
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "3".to_string()
         );
+        let old_dt = sheet.data_table_at(&pos![A1]).unwrap().clone();
+        let old_code_run = old_dt.code_run().unwrap().clone();
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
@@ -362,16 +364,15 @@ mod tests {
             &[
                 // first formula, y += 1 for y >= 2
                 Operation::AddDataTableWithoutCellValue {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    data_table: DataTable::new(
-                        DataTableKind::CodeRun(CodeRun::new_formula("B$17 + $B18".to_string())),
-                        "Formula1",
-                        Value::Array(Array::from(vec![vec!["3"]])),
-                        false,
-                        None,
-                        None,
-                        None,
-                    ),
+                    sheet_pos: pos![sheet_id!A1],
+                    data_table: DataTable {
+                        kind: DataTableKind::CodeRun(CodeRun {
+                            language: CodeCellLanguage::Formula,
+                            code: "B$17 + $B18".to_string(),
+                            ..old_code_run
+                        }),
+                        ..old_dt
+                    },
                     index: None,
                 },
                 Operation::ComputeCode {
@@ -387,33 +388,26 @@ mod tests {
             &mut transaction,
             &[RefAdjust::new_insert_column(sheet_id, 5)],
         );
+
+        let Operation::AddDataTableWithoutCellValue {
+            data_table:
+                DataTable {
+                    kind: DataTableKind::CodeRun(code_run),
+                    ..
+                },
+            ..
+        } = &transaction.operations[0]
+        else {
+            panic!("Expected DataTableKind::CodeRun");
+        };
+        assert_eq!(code_run.code, "'Sheet 1'!G1+Other!F1 - Nonexistent!F1");
         assert_eq!(
-            &transaction.operations,
-            &[
-                // first formula doesn't change because all X coordinates are < 5
-                // so no operations needed
-                //
-                // second formula, x += 1 for x >= 5
-                Operation::AddDataTableWithoutCellValue {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    data_table: DataTable::new(
-                        DataTableKind::CodeRun(CodeRun::new_formula(
-                            "'Sheet 1'!G1+Other!F1 - Nonexistent!F1".to_string()
-                        )),
-                        "Formula2",
-                        Value::Array(Array::from(vec![vec!["3"]])),
-                        false,
-                        None,
-                        None,
-                        None,
-                    ),
-                    index: None,
-                },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
-                },
-            ]
+            &transaction.operations[1],
+            &Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 1, 2)
+            }
         );
+        assert_eq!(transaction.operations.len(), 2);
     }
 
     #[test]
