@@ -53,8 +53,17 @@ jest.mock('./src/storage/storage', () => {
 
 jest.mock('./src/stripe/stripe', () => {
   return {
+    stripe: {
+      coupons: {
+        create: jest.fn().mockResolvedValue({ id: 'coupon_test123' }),
+      },
+      subscriptions: {
+        update: jest.fn().mockResolvedValue({}),
+      },
+    },
     updateBilling: jest.fn().mockImplementation(async () => {}),
     updateCustomer: jest.fn().mockImplementation(async () => {}),
     updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
+    getIsMonthlySubscription: jest.fn().mockResolvedValue(false),
   };
 });

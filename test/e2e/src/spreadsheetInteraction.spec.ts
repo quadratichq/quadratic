@@ -2652,7 +2652,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Click on your profile
-  await page.locator('button:has(img[alt*="You"])').click({ timeout: 60 * 1000 });
+  await page.locator('[data-testid="top-bar-users-dropdown-trigger"]').click({ timeout: 60 * 1000 });
 
   // Select Log Out
   await page.getByRole(`menuitem`, { name: `Log out` }).click({ timeout: 60 * 1000 });
@@ -2664,10 +2664,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Assert you are on the Login page via text assertions
-  await expect(page.getByText(`Welcome Login to Quadratic.`)).toBeVisible({ timeout: 2000 });
-  await expect(page.getByRole(`textbox`, { name: `Work email` })).toBeVisible();
-  await expect(page.getByRole(`textbox`, { name: `Password` })).toBeVisible();
-  await expect(page.getByRole(`button`, { name: `Continue with Google` })).toBeVisible();
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log back in to delete the file we created
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
@@ -4861,6 +4858,10 @@ test('Multiple Columns Resizing', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
 
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
   // Assert that color filled cell's width updates per expanded column 2 width
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_columns_resize_1.png', {
     maxDiffPixelRatio: 0.001,
@@ -4966,6 +4967,10 @@ test('Multiple Rows Resizing', async ({ page }) => {
   // Create new file
   await uploadFile(page, { fileName, fileType });
 
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
+
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_initial.png', {
     maxDiffPixelRatio: 0.001,
   });
@@ -4979,6 +4984,10 @@ test('Multiple Rows Resizing', async ({ page }) => {
   await page.mouse.move(60, 318);
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
+
+  // Set cursor at A1 for consistent screenshot
+  await page.mouse.click(110, 110);
+  await page.waitForTimeout(5 * 1000);
 
   // Assert that color filled cell's width height per expanded row 2 height
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('multiple_rows_resize_1.png', {

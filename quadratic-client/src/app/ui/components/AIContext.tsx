@@ -93,12 +93,9 @@ export const AIContext = memo(
       [files, setFiles]
     );
 
-    const handleOnClickConnection = useCallback(
-      (connectionUuid: string) => {
-        setSelectedConnectionUuid('');
-      },
-      [setSelectedConnectionUuid]
-    );
+    const handleOnClickConnection = useCallback(() => {
+      setSelectedConnectionUuid('');
+    }, [setSelectedConnectionUuid]);
 
     // const handleOnClickSelection = useCallback(() => {
     //   setContext?.((prev) => ({ ...prev, selection: undefined }));
@@ -122,10 +119,10 @@ export const AIContext = memo(
                 key={connection.uuid}
                 primary={connection.name}
                 primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
-                // TODO: fix types
-                // @ts-ignore
-                secondary={getCodeCell(connection.type)?.label ?? 'Connection'}
-                onClick={() => handleOnClickConnection(connection.uuid)}
+                secondary={
+                  getCodeCell({ Connection: { kind: connection.type, id: connection.uuid } })?.label ?? 'Connection'
+                }
+                onClick={handleOnClickConnection}
                 noClose={disabled}
               />
             ))}

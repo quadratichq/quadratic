@@ -8,7 +8,7 @@ import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMes
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
+import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -38,6 +38,7 @@ export type AIUserMessageFormWrapperProps = {
   initialContext?: Context;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
+  showPromptSuggestions?: boolean;
 };
 
 export type SubmitPromptArgs = {
@@ -77,6 +78,7 @@ export const AIUserMessageForm = memo(
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
+      showPromptSuggestions,
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
@@ -144,7 +146,6 @@ export const AIUserMessageForm = memo(
           }
         }
 
-        console.log('submitPrompt', [...files, createTextContent(trimmedPrompt), ...connectionContent]);
         submitPrompt({
           content: [...files, ...connectionContent, createTextContent(trimmedPrompt)],
         });
@@ -273,8 +274,8 @@ export const AIUserMessageForm = memo(
 
     return (
       <div className="relative">
-        {messagesCount === 0 && (
-          <AIAnalystExamplePrompts
+        {showPromptSuggestions && messagesCount === 0 && (
+          <AIAnalystPromptSuggestions
             exampleSet={files.length > 0 ? 'file-pdf' : selectedConnectionUuid ? 'connection' : 'empty'}
             prompt={prompt}
             submit={submit}

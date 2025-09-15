@@ -128,15 +128,11 @@ Resources:
           AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
 
-          # auth0
-          JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
-          AUTH0_ISSUER=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_ISSUER" --with-decryption --query "Parameter.Value" --output text)
-          AUTH0_AUDIENCE=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_AUDIENCE" --with-decryption --query "Parameter.Value" --output text)
-          VITE_AUTH0_DOMAIN=$(aws ssm get-parameter --name "/quadratic-development/VITE_AUTH0_DOMAIN" --with-decryption --query "Parameter.Value" --output text)
-          VITE_AUTH0_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/VITE_AUTH0_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
-          AUTH0_DOMAIN=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_DOMAIN" --with-decryption --query "Parameter.Value" --output text)
-          AUTH0_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
-          AUTH0_CLIENT_SECRET=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_SECRET" --with-decryption --query "Parameter.Value" --output text)
+          # auth
+          AUTH_TYPE=$(aws ssm get-parameter --name "/quadratic-development/AUTH_TYPE" --with-decryption --query "Parameter.Value" --output text)
+          WORKOS_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
+          WORKOS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
 
           # gcp
           GCP_REGION=$(aws ssm get-parameter --name "/quadratic-development/GCP_REGION" --with-decryption --query "Parameter.Value" --output text)

@@ -19,6 +19,7 @@ afterAll(clearDb);
 
 const validPayload = {
   name: 'My connection',
+  semanticDescription: 'description here',
   type: 'POSTGRES',
   typeDetails: {},
   // typeDetails: {

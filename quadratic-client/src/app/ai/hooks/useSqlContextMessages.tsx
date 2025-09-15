@@ -1,14 +1,17 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
+import { createTextContent, getConnectionFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSqlContextMessages() {
   const getSqlContext = useRecoilCallback(
     ({ snapshot }) =>
-      async (): Promise<ChatMessage[]> => {
+      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
+        const selectedConnection = getConnectionFromChatMessages(chatMessages);
+
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         if (!teamUuid) {
           console.warn('[SQL Context] No team UUID available');
@@ -34,13 +37,20 @@ export function useSqlContextMessages() {
           const connectionTableInfo = await Promise.all(
             connections.map(async (connection) => {
               try {
-                const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+                const schema = await connectionClient.schemas.get(
+                  connection.type,
+                  connection.uuid,
+                  teamUuid,
+                  false,
+                  GET_SCHEMA_TIMEOUT
+                );
                 const tableNames = schema?.tables?.map((table) => table.name) || [];
 
                 return {
                   connectionId: connection.uuid,
                   connectionName: connection.name,
                   connectionType: connection.type,
+                  semanticDescription: connection.semanticDescription,
                   database: schema?.database || 'Unknown',
                   tableNames: tableNames,
                 };
@@ -50,6 +60,7 @@ export function useSqlContextMessages() {
                   connectionId: connection.uuid,
                   connectionName: connection.name,
                   connectionType: connection.type,
+                  semanticDescription: connection.semanticDescription,
                   database: 'Unknown',
                   tableNames: [],
                   error: `Failed to retrieve table names: ${error}`,
@@ -74,16 +85,21 @@ Use the get_database_schemas tool to retrieve detailed column information, data 
 `;
 
           // format as lightweight context message
-          validConnections.forEach((conn) => {
-            const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
+          validConnections
+            // If there's a selected connection, only show the tables for that connection
+            // Otherwise put all connections in context
+            .filter((conn) => selectedConnection && conn.connectionId === selectedConnection.uuid)
+            .forEach((conn) => {
+              const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
-            contextText += `
+              contextText += `
 ## Connection
 ${conn.connectionName}
 
 ### Information
 type: ${conn.connectionType}
 id: ${conn.connectionId}
+semanticDescription: ${conn.semanticDescription}
 
 ### Database
 ${conn.database}
@@ -92,7 +108,7 @@ ${conn.database}
 ${tablesText}
 
 `;
-          });
+            });
 
           return [
             {

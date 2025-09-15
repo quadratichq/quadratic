@@ -90,7 +90,7 @@ export function useSubmitAIAnalystPrompt() {
     () =>
       async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
         const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
-          getSqlContext(),
+          getSqlContext({ chatMessages }),
           getFilesContext({ chatMessages }),
           getVisibleContext(),
           getSummaryContext(),

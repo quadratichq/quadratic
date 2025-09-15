@@ -3,6 +3,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
@@ -148,8 +149,8 @@ export class Multiplayer {
     }
   }
 
-  private async getJwt() {
-    this.jwt = await authClient.getTokenOrRedirect();
+  private async getJwt(skipRedirect?: boolean) {
+    this.jwt = await authClient.getTokenOrRedirect(skipRedirect);
   }
 
   private async addJwtCookie(force: boolean = false) {
@@ -158,7 +159,7 @@ export class Multiplayer {
 
       if (this.jwt) {
         let domain = parseDomain(window.location.host);
-        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
+        document.cookie = `jwt=${this.jwt}; SameSite=None; Secure; path=/; domain=${domain}`;
       }
     }
   }
@@ -293,7 +294,7 @@ export class Multiplayer {
   private clearAllUsers() {
     if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] Clearing all users.');
     this.users.clear();
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { multiplayerCursor: true });
     events.emit('multiplayerUpdate', this.getUsers());
     events.emit('multiplayerChangeSheet');
     events.emit('multiplayerCursor');
@@ -326,7 +327,7 @@ export class Multiplayer {
         player.sheet_id = update.sheet_id;
         events.emit('multiplayerChangeSheet');
         if (player.sheet_id === sheets.current) {
-          pixiApp.multiplayerCursor.dirty = true;
+          events.emit('setDirty', { multiplayerCursor: true });
           events.emit('multiplayerCursor');
         }
       }
@@ -339,7 +340,7 @@ export class Multiplayer {
         player.parsedSelection.load(player.selection);
       }
       if (player.sheet_id === sheets.current) {
-        pixiApp.multiplayerCursor.dirty = true;
+        events.emit('setDirty', { multiplayerCursor: true });
       }
     }
 
@@ -349,11 +350,11 @@ export class Multiplayer {
         if (player.parsedSelection) {
           // hide the label if the player is editing the cell
           const cursor = player.parsedSelection.getCursor();
-          pixiApp.cellsSheets.showLabel(cursor.x, cursor.y, player.sheet_id, !player.cell_edit.active);
+          content.cellsSheets.showLabel(cursor.x, cursor.y, player.sheet_id, !player.cell_edit.active);
         }
         events.emit('multiplayerCellEdit', update.cell_edit, player);
       }
-      pixiApp.multiplayerCursor.dirty = true;
+      events.emit('setDirty', { multiplayerCursor: true });
     }
 
     if (update.viewport) {
@@ -471,7 +472,7 @@ export class Multiplayer {
       this.users.delete(sessionId);
     });
     events.emit('multiplayerUpdate', this.getUsers());
-    pixiApp.multiplayerCursor.dirty = true;
+    events.emit('setDirty', { multiplayerCursor: true });
 
     await this.checkVersion(room.version);
   }

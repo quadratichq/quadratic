@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { USER_PASSWORD } from './constants/auth';
 import { logIn, signUp } from './helpers/auth.helpers';
-import { buildUrl } from './helpers/buildUrl.helpers';
 
 test('Log In', async ({ page }) => {
   //--------------------------------
@@ -41,42 +39,30 @@ test('Log Out', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert you're successfully logged out
-  await expect(page.locator(`:text("Login to Quadratic.")`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.locator(`#username`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page.locator(`#password`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page).toHaveURL(/login/);
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 });
 
-test.skip('Sign Up', async ({ page }) => {
+test('Sign Up', async ({ page }) => {
   //--------------------------------
   // Sign Up
   //--------------------------------
 
-  const email = `e2e_signup_${Date.now()}@quadratichq.com`;
-
-  // navigate to log in page
-  try {
-    await page.goto(buildUrl(), { waitUntil: 'domcontentloaded' }); // navigate to log in page
-  } catch (e) {
-    console.log(e);
-  }
+  const emailPrefix = `e2e_signup_${Date.now()}`;
 
   //--------------------------------
   // Act:
   //--------------------------------
-  await signUp(page, { email });
+  await signUp(page, { email: `${emailPrefix}_chromium@quadratichq.com` });
 
   // Log Out
   await page
     .locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_signup_"))')
     .click({ timeout: 60 * 1000 });
   await page.getByText('logout', { exact: true }).click({ timeout: 60 * 1000 });
-  await expect(page).toHaveURL(/login/);
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log In
-  await page.locator(`#username`).fill(email, { timeout: 60 * 1000 });
-  await page.locator(`#password`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
-  await page.locator(`button:text("Continue")`).click({ timeout: 60 * 1000 });
+  await logIn(page, { emailPrefix });
 
   // Assert we can successfully log in
   await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });

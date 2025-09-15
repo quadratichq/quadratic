@@ -123,11 +123,12 @@ model Team {
     Connection   Connection[]
 
     // Billing
-    stripeCustomerId              String?             @unique @map("stripe_customer_id")
-    stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")
-    stripeSubscriptionStatus      SubscriptionStatus? @map("stripe_subscription_status")
-    stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
-    stripeSubscriptionLastUpdated DateTime?           @map("stripe_subscription_last_updated")
+    stripeCustomerId                    String?             @unique @map("stripe_customer_id")
+    stripeSubscriptionId                String?             @unique @map("stripe_subscription_id")
+    stripeSubscriptionStatus            SubscriptionStatus? @map("stripe_subscription_status")
+    stripeCurrentPeriodEnd              DateTime?           @map("stripe_current_period_end")
+    stripeSubscriptionLastUpdated       DateTime?           @map("stripe_subscription_last_updated")
+    stripeSubscriptionRetentionCouponId String?             @map("stripe_subscription_retention_coupon_id")
 
     // Key/value storage used by Quadratic client on the Team.
     // It remembers things like closing the onboarding banner.
@@ -165,14 +166,15 @@ enum ConnectionType {
 
 model Connection {
     // Generic details
-    id          Int       @id @default(autoincrement())
-    uuid        String    @unique @default(uuid()) // used in URLs
-    createdDate DateTime  @default(now()) @map("created_date")
-    updatedDate DateTime  @default(now()) @map("updated_date")
-    archived    DateTime?
-    name        String
-    team        Team      @relation(fields: [teamId], references: [id])
-    teamId      Int       @map("team_id")
+    id                  Int       @id @default(autoincrement())
+    uuid                String    @unique @default(uuid()) // used in URLs
+    createdDate         DateTime  @default(now()) @map("created_date")
+    updatedDate         DateTime  @default(now()) @map("updated_date")
+    archived            DateTime?
+    name                String
+    team                Team      @relation(fields: [teamId], references: [id])
+    teamId              Int       @map("team_id")
+    semanticDescription String?   @map("semantic_description")
     // secretArn       String // AWS Secret Manager ARN
 
     // Type-specific details

@@ -2,7 +2,7 @@ import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorIn
 import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -35,7 +35,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
-    const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.cellsSheet().tables.hasCodeCellInCurrentSelection());
+    const checkRunCodeCell = () => setDisableRunCodeCell(!content.cellsSheet.tables.hasCodeCellInCurrentSelection());
     checkRunCodeCell();
 
     events.on('cursorPosition', checkRunCodeCell);

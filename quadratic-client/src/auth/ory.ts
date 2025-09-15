@@ -46,9 +46,7 @@ const getSession = async (): Promise<Session | false> => {
   }
 };
 
-type OryAuthClient = AuthClient;
-
-export const oryClient: OryAuthClient = {
+export const oryClient: AuthClient = {
   /**
    * Return whether the user is authenticated and the session is valid.
    */
@@ -80,10 +78,10 @@ export const oryClient: OryAuthClient = {
    * Login the user in Ory and create a new session.
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
-  async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const urlSegment = isSignupFlow ? 'registration' : 'login';
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
+    const urlSegment = args.isSignupFlow ? 'registration' : 'login';
     const url = new URL(`${ORY_HOST}/self-service/${urlSegment}/browser`);
-    url.searchParams.set('return_to', redirectTo);
+    url.searchParams.set('return_to', args.redirectTo);
 
     // redirect to the login/signup flow
     window.location.assign(url);
@@ -114,18 +112,48 @@ export const oryClient: OryAuthClient = {
   /**
    * Tries to get a token for the current user from the Ory client.
    * If the token is still valid, it'll pull it from a cache. If it’s expired,
-   * it will fail and we will manually redirect the user to auth0 to re-authenticate
+   * it will fail and we will manually redirect the user to ory to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect() {
-    const session = await getSession();
-
-    if (!session || !session.tokenized) {
-      const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
-      return '';
+  async getTokenOrRedirect(skipRedirect?: boolean) {
+    try {
+      const session = await getSession();
+      if (session && session.tokenized) {
+        return session.tokenized;
+      } else {
+        throw new Error('Session is not tokenized');
+      }
+    } catch (e) {
+      if (!skipRedirect) {
+        const { pathname, search } = new URL(window.location.href);
+        await this.login({ redirectTo: pathname + search, href: window.location.href });
+      }
     }
+    return '';
+  },
 
-    return session.tokenized;
+  async loginWithPassword(_) {
+    throw new Error('loginWithPassword called in Ory');
+  },
+  async loginWithOAuth(_) {
+    throw new Error('loginWithOAuth called in Ory');
+  },
+  async signupWithPassword(_) {
+    throw new Error('signupWithPassword called in Ory');
+  },
+  async verifyEmail(_) {
+    throw new Error('verifyEmail called in Ory');
+  },
+  async sendResetPassword(_) {
+    throw new Error('sendResetPassword called in Ory');
+  },
+  async resetPassword(_) {
+    throw new Error('resetPassword called in Ory');
+  },
+  async sendMagicAuthCode(_) {
+    throw new Error('sendMagicAuthCode called in Ory');
+  },
+  async authenticateWithMagicCode(_) {
+    throw new Error('authenticateWithMagicCode called in Ory');
   },
 };

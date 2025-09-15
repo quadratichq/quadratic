@@ -81,10 +81,12 @@ export const FormattingBar = memo(() => {
     };
 
     checkFit();
-    // TODO: resize AI
+
     window.addEventListener('resize', checkFit);
+    events.on('resizeAIAnalystPanel', checkFit);
     return () => {
       window.removeEventListener('resize', checkFit);
+      events.off('resizeAIAnalystPanel', checkFit);
     };
   }, []);
 
