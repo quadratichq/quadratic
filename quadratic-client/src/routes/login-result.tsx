@@ -1,6 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { isMobile } from 'react-device-detect';
@@ -55,9 +55,9 @@ export const loader = async ({ request }: { request: Request }) => {
       if (userCreated && !isMobile && redirectTo === '/') {
         return redirect(
           SHOW_ONBOARDING_QUESTIONNAIRE
-            ? '/onboarding'
+            ? ROUTES.ONBOARDING_QUESTIONNAIRE
             : SHOW_ONBOARDING_VIDEO
-              ? `/files/create?${SEARCH_PARAMS.SHOW_ONBOARDING_VIDEO.KEY}`
+              ? ROUTES.ONBOARDING_VIDEO
               : '/files/create'
         );
       }
