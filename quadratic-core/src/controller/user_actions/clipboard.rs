@@ -924,7 +924,7 @@ mod test {
     }
 
     #[test]
-    fn move_cells() {
+    fn test_move_cells() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 

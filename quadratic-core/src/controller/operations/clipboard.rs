@@ -374,56 +374,24 @@ impl GridController {
         Ok((clipboard, operations))
     }
 
-    /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
-    fn cell_values_from_clipboard_cells(
-        _cells: &CellValues,
-        _values: &CellValues,
-        _special: PasteSpecial,
-    ) -> (Option<CellValues>, Vec<(u32, u32)>) {
-        todo!()
-        // match special {
-        //     PasteSpecial::Values => (Some(values.to_owned()), vec![]),
-        //     PasteSpecial::None => {
-        //         let code = cells
-        //             .columns
-        //             .iter()
-        //             .enumerate()
-        //             .flat_map(|(x, col)| {
-        //                 col.iter()
-        //                     .filter_map(|(y, cell)| match cell {
-        //                         CellValue::Code(_) | CellValue::Import(_) => {
-        //                             Some((x as u32, *y as u32))
-        //                         }
-        //                         _ => None,
-        //                     })
-        //                     .collect::<Vec<_>>()
-        //             })
-        //             .collect::<Vec<_>>();
-        //         (Some(cells.to_owned()), code)
-        //     }
-        //     _ => (None, vec![]),
-        // }
-    }
-
     fn clipboard_code_operations(
         &self,
         start_pos: SheetPos,
-        tables: Vec<(u32, u32)>,
         clipboard: &Clipboard,
         cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
-            for (x, y) in tables.iter() {
+            for (pos, _) in clipboard.data_tables.iter() {
                 let source_pos = Pos {
-                    x: clipboard.origin.x + *x as i64,
-                    y: clipboard.origin.y + *y as i64,
+                    x: clipboard.origin.x + pos.x,
+                    y: clipboard.origin.y + pos.y,
                 };
 
                 let target_pos = Pos {
-                    x: start_pos.x + *x as i64,
-                    y: start_pos.y + *y as i64,
+                    x: start_pos.x + pos.x,
+                    y: start_pos.y + pos.y,
                 };
 
                 let paste_in_import = sheet
@@ -657,13 +625,9 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let (values, tables) = GridController::cell_values_from_clipboard_cells(
-                    &clipboard.cells,
-                    &clipboard.values,
-                    special,
-                );
+                let values = clipboard.values.to_owned();
 
-                if let Some(values) = values {
+                if !values.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
                         start_pos.to_sheet_pos(selection.sheet_id),
@@ -677,7 +641,6 @@ impl GridController {
 
                 code_ops.extend(self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
-                    tables,
                     clipboard,
                     &mut cursor,
                 )?);
@@ -689,13 +652,9 @@ impl GridController {
                 ops.extend(validations_ops);
             }
             PasteSpecial::Values => {
-                let (values, _) = GridController::cell_values_from_clipboard_cells(
-                    &clipboard.cells,
-                    &clipboard.values,
-                    special,
-                );
+                let values = clipboard.values.to_owned();
 
-                if let Some(values) = values {
+                if !values.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
                         start_pos.to_sheet_pos(selection.sheet_id),
