@@ -131,16 +131,21 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
     return [createTextContent('Executed set code cell value tool successfully to create a javascript chart.')];
   }
 
-  return [
-    createTextContent(`
-Executed set code cell value tool successfully.
-${
-  tableCodeCell.w === 1 && tableCodeCell.h === 1
-    ? `Output is ${codeCell.evaluation_result}`
-    : `Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`
-}
-`),
-  ];
+  // single cell output
+  if (tableCodeCell.w === 1 && tableCodeCell.h === 1) {
+    const singleCell = await quadraticCore.getCellValue(sheetId, x, y);
+    if (singleCell === undefined || singleCell.value === '') {
+      return [
+        createTextContent(
+          'You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.'
+        ),
+      ];
+    }
+    return [createTextContent(`Output is: ${singleCell.value}`)];
+  }
+
+  // multiple cell output
+  return [createTextContent(`Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`)];
 };
 
 type AIToolMessageMetaData = {
