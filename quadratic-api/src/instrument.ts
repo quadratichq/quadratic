@@ -13,7 +13,6 @@ if (SENTRY_DSN) {
   init({
     dsn: SENTRY_DSN,
     release: `quadratic@${VERSION}`,
-    sendDefaultPii: true,
     integrations: [
       consoleIntegration({ levels: ['error', 'warn'] }),
       extraErrorDataIntegration(),

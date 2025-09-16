@@ -20,7 +20,6 @@ export const initSentry = () => {
         dsn,
         environment,
         release: `quadratic@${version}`,
-        sendDefaultPii: true,
         integrations: [
           browserProfilingIntegration(),
           browserSessionIntegration(),
