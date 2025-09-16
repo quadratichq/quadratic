@@ -347,6 +347,13 @@ impl SheetOffsets {
     pub fn iter_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.row_heights.iter_sizes()
     }
+
+    /// Retains only the custom column widths (non-default widths).
+    #[cfg(test)]
+    pub fn retain_positive_non_default(&mut self) {
+        self.column_widths.retain_positive_non_default();
+        self.row_heights.retain_positive_non_default();
+    }
 }
 
 #[cfg(test)]

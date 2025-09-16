@@ -282,6 +282,13 @@ impl Offsets {
         self.sizes.clear();
         changed
     }
+
+    /// Retains only positive non-default sizes.
+    #[cfg(test)]
+    pub fn retain_positive_non_default(&mut self) {
+        self.sizes
+            .retain(|&index, size| index > 0 && size != &self.default);
+    }
 }
 
 #[cfg(test)]
