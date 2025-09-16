@@ -475,7 +475,7 @@ impl GridController {
             let index = sheet.data_table_index_result(pos)?;
             let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
             let table_name = data_table.name.to_display().clone();
-            let cell_value = sheet.cell_value_result(data_table_pos)?;
+
             let data_table_rect = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
@@ -556,10 +556,9 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            reverse_operations.push(Operation::AddDataTable {
+            reverse_operations.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value,
                 index: Some(index),
             });
             reverse_operations.push(Operation::SetCellValues {
@@ -2160,7 +2159,6 @@ mod tests {
     fn test_execute_flatten_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
         assert_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         flatten_data_table(&mut gc, sheet_id, pos, file_name);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
@@ -2168,12 +2166,10 @@ mod tests {
         // undo, the value should be a data table again
         gc.undo(None);
         assert_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // redo, the value should be on the grid
         gc.redo(None);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
     }
 
     #[test]
