@@ -1,3 +1,4 @@
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -15,7 +16,20 @@ export class UICellMoving extends Container {
     super();
     this.graphics = this.addChild(new Graphics());
     this.visible = false;
+
+    events.on('setDirty', this.setDirty);
   }
+
+  destroy() {
+    events.off('setDirty', this.setDirty);
+    super.destroy();
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.cellMoving) {
+      this.dirty = true;
+    }
+  };
 
   // determines whether the move is legal (not sure we want this feature)
   private borderColor() {
@@ -23,7 +37,7 @@ export class UICellMoving extends Container {
     // if (!moving) {
     //   throw new Error('Expected moving to be defined in drawMove');
     // }
-    // const cellsLabels = pixiApp.cellsSheet().cellsLabels;
+    // const cellsLabels = content.cellsSheet.cellsLabels;
     // const overlap = new Rectangle(moving.toColumn, moving.toRow, moving.width, moving.height);
     // if (cellsLabels.hasRectangle(overlap, moving.original ? [moving.original] : undefined)) {
     //   return getCSSVariableTint('warning');

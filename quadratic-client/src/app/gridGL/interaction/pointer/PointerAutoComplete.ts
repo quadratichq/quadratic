@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
@@ -36,7 +37,7 @@ export class PointerAutoComplete {
     if (!this.selection) return false;
 
     // handle dragging from the corner
-    if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
+    if (intersects.rectanglePoint(content.uiCursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
       this.screenSelection = sheet.getScreenRectangleFromRectangle(this.selection);
@@ -56,7 +57,7 @@ export class PointerAutoComplete {
       this.selection = undefined;
       this.screenSelection = undefined;
       this.active = false;
-      pixiApp.boxCells.reset();
+      content.boxCells.reset();
       sheets.sheet.cursor.changeBoxCells(false);
       pixiApp.viewport.disableMouseEdges();
       htmlCellsHandler.enable();
@@ -67,7 +68,7 @@ export class PointerAutoComplete {
     if (isMobile) return false;
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
-      if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
+      if (intersects.rectanglePoint(content.uiCursor.indicator, world)) {
         this.cursor = 'crosshair';
       } else {
         this.cursor = undefined;
@@ -151,7 +152,7 @@ export class PointerAutoComplete {
           boxCellsRectangle.width = column + 1 - selection.x;
         }
 
-        pixiApp.boxCells.populate({
+        content.boxCells.populate({
           gridRectangle: boxCellsRectangle,
           horizontalDelete: this.stateHorizontal === 'shrink',
           verticalDelete: this.stateVertical === 'shrink',

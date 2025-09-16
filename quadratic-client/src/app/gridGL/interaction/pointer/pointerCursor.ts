@@ -2,6 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -26,7 +27,7 @@ export class PointerCursor {
   };
 
   private checkHoverCell(world: Point) {
-    if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
+    if (!content.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
     const cell = sheets.sheet.getColumnRow(world.x, world.y);
     const editingCell = multiplayer.cellIsBeingEdited(cell.x, cell.y, sheets.current);
     if (editingCell) {
@@ -37,7 +38,7 @@ export class PointerCursor {
     }
 
     let foundCodeCell = false;
-    const codeCell = pixiApp.cellsSheets.current.tables.hoverCodeCell(world);
+    const codeCell = content.cellsSheets.current.tables.hoverCodeCell(world);
     if (codeCell && (codeCell.spill_error || codeCell.language !== 'Import')) {
       if (this.lastInfo?.x !== codeCell.x || this.lastInfo?.y !== codeCell.y) {
         events.emit('hoverCell', codeCell);
@@ -47,7 +48,7 @@ export class PointerCursor {
     }
 
     let foundValidation = false;
-    const validation = pixiApp.cellsSheets.current.cellsLabels.intersectsErrorMarkerValidation(world);
+    const validation = content.cellsSheets.current.cellsLabels.intersectsErrorMarkerValidation(world);
     // don't allow hover cell when it's already open b/c the cursor is in the cell
     const cursor = sheets.sheet.cursor.position;
     if (validation && (cell.x !== cursor.x || cell.y !== cursor.y)) {
