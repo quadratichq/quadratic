@@ -103,6 +103,7 @@ environment = []
 memory = []
 multiplayer = ["base64"]
 net = [
+  "auth",
   "axum",
   "axum-extra",
   "axum-macros",
@@ -110,6 +111,9 @@ net = [
   "futures",
   "futures-channel",
   "headers",
+  "jsonwebtoken",
+  "multiplayer",
+  "protobuf",
   "russh",
   "russh-config",
   "tokio",
