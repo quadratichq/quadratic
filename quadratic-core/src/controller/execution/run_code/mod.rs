@@ -579,11 +579,11 @@ mod test {
         };
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_1",
+            "Table1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
-            Some(true),
-            Some(true),
+            Some(false),
+            Some(false),
             None,
         );
         new_data_table.column_headers = None;
@@ -592,7 +592,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        dbg!(&sheet.data_table_at(&sheet_pos.into()));
+
         assert_eq!(
             sheet.data_table_at(&sheet_pos.into()),
             Some(&new_data_table)
