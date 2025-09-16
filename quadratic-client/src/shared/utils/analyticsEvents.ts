@@ -1,3 +1,4 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { User } from '@/auth/auth';
 import { getUtmDataFromCookie } from '@/shared/utils/getUtmDataFromCookie';
 import mixpanel from 'mixpanel-browser';
@@ -32,6 +33,7 @@ if (isMixpanelEnabled) {
     cross_subdomain_cookie: true,
     cookie_domain: '.quadratichq.com',
   });
+  if (debugFlag('debugShowAnalytics')) console.log('[Analytics] Mixpanel activated');
 }
 
 // if (isPosthogEnabled) {…}
@@ -72,6 +74,7 @@ export function resetEventAnalytics() {
 export function identifyEventAnalyticsUser(user: User) {
   if (isMixpanelEnabled) {
     startMixpanel(user);
+    if (debugFlag('debugShowAnalytics')) console.log('[Analytics] Mixpanel identified user');
   }
 
   // if (isPosthogEnabled) {

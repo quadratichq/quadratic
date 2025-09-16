@@ -2,7 +2,7 @@ import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
-import { trackEvent } from '../analytics';
+import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';

@@ -1,13 +1,12 @@
 import type { Request, Response } from 'express';
 import { AUTH_TYPE } from '../../env-vars';
-import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
+import { getUsersFromOry, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
   authenticateWithMagicCodeWorkos,
   authenticateWithRefreshTokenWorkos,
   clearCookiesWorkos,
   getUsersFromWorkos,
-  getUsersFromWorkosByEmail,
   jwtConfigWorkos,
   loginWithPasswordWorkos,
   logoutSessionWorkos,
@@ -29,6 +28,8 @@ export type User = {
   auth0Id: string;
   email: string;
   name?: string | undefined;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
   picture?: string | undefined;
 };
 
@@ -44,17 +45,6 @@ export const getUsers = async (users: UsersRequest[]): Promise<Record<number, Us
       return await getUsersFromWorkos(users);
     default:
       throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
-  }
-};
-
-export const getUsersByEmail = async (email: string): Promise<ByEmailUser[]> => {
-  switch (AUTH_TYPE) {
-    case 'ory':
-      return await getUsersFromOryByEmail(email);
-    case 'workos':
-      return await getUsersFromWorkosByEmail(email);
-    default:
-      throw new Error(`Unsupported auth type in getUsersByEmail(): ${AUTH_TYPE}`);
   }
 };
 
