@@ -609,7 +609,7 @@ This name should be from user's perspective, not the assistant's.\n
     prompt: '',
   },
   [AITool.GetCellData]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIAssistant'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
