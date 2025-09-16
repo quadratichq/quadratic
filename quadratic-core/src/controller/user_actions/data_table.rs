@@ -178,6 +178,7 @@ mod tests {
     use crate::{
         Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
+        cellvalue::Import,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -191,6 +192,10 @@ mod tests {
 
     #[test]
     fn test_code_data_table_to_data_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = pos![sheet_id!A1];
+
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),
@@ -212,26 +217,28 @@ mod tests {
             None,
         );
 
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 1 };
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos, data_table.clone());
-        let sheet_pos = SheetPos::from((pos, sheet_id));
-        let expected = vec!["1", "2", "3"];
+        test_create_raw_data_table(&mut gc, sheet_pos, data_table.clone());
 
         // initial value
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 2));
+        let expected = vec!["1", "2", "3"];
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.code_run_at(&pos![A1]).unwrap(), &code_run);
+        assert_code_language(
+            &gc,
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "return [1,2,3]".to_string(),
+        );
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 3));
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
-        assert_data_table_eq(&gc, sheet_pos, &data_table);
+
+        let data_table = gc.data_table_at(sheet_pos).unwrap();
+        assert_eq!(
+            data_table.kind,
+            DataTableKind::Import(Import::new("".into()))
+        );
 
         // undo, the value should be a code run data table again
         gc.undo(None);
@@ -244,7 +251,11 @@ mod tests {
 
         // redo, the value should be a data table
         gc.redo(None);
-        assert_data_table_eq(&gc, sheet_pos, &data_table);
+        let data_table = gc.data_table_at(sheet_pos).unwrap();
+        assert_eq!(
+            data_table.kind,
+            DataTableKind::Import(Import::new("".into()))
+        );
     }
 
     #[test]
