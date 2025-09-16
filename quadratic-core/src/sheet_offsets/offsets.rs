@@ -40,7 +40,10 @@ impl Offsets {
     pub fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
         Offsets {
             default,
-            sizes: iter.into_iter().collect(),
+            sizes: iter
+                .into_iter()
+                .filter(|(index, size)| *index > 0 && *size != default)
+                .collect(),
         }
     }
 
@@ -107,9 +110,9 @@ impl Offsets {
 
         // If we have no custom sizes then it's all default sizes
         if self.sizes.is_empty() {
-            let index = (pixel / self.default).floor() as i64 + 1;
-            let position = (index - 1) as f64 * self.default;
-            return (index, position);
+            let index = (pixel / self.default).floor() as i64;
+            let position = index as f64 * self.default;
+            return (index + 1, position);
         }
 
         // Iterate through custom sizes only to avoid checking every default value
@@ -159,7 +162,9 @@ impl Offsets {
 
     /// Iterates over the sizes of all columns/rows - owned.
     pub fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
-        self.sizes.into_iter()
+        self.sizes
+            .into_iter()
+            .filter(move |(index, size)| *index > 0 && *size != self.default)
     }
 
     /// Inserts an offset at the specified index and increments all later
