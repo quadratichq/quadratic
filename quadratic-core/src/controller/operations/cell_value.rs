@@ -557,42 +557,6 @@ mod test {
     }
 
     #[test]
-    fn formula_to_cell_value() {
-        todo!();
-        // let gc = GridController::test();
-
-        // let (value, _) = gc.string_to_cell_value("=1+1", true);
-        // assert_eq!(
-        //     value,
-        //     CellValue::Code(CodeCellValue {
-        //         language: CodeCellLanguage::Formula,
-        //         code: "1+1".to_string(),
-        //     })
-        // );
-
-        // let (value, _) = gc.string_to_cell_value("=1/0", true);
-        // assert_eq!(
-        //     value,
-        //     CellValue::Code(CodeCellValue {
-        //         language: CodeCellLanguage::Formula,
-        //         code: "1/0".to_string(),
-        //     })
-        // );
-
-        // let (value, _) = gc.string_to_cell_value("=A1+A2", true);
-        // assert_eq!(
-        //     value,
-        //     CellValue::Code(CodeCellValue {
-        //         language: CodeCellLanguage::Formula,
-        //         code: "A1+A2".to_string(),
-        //     })
-        // );
-
-        // let (value, _) = gc.string_to_cell_value("=A1+A2", false);
-        // assert_eq!(value, CellValue::Text("A1+A2".to_string()));
-    }
-
-    #[test]
     fn test_delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
