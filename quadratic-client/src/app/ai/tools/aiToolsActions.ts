@@ -74,11 +74,9 @@ const setCodeCellResult = async (
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
   const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
-  console.log(tableCodeCell);
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;
-  console.log(codeCell);
   if (!tableCodeCell || !codeCell) {
     return [createTextContent('Error executing set code cell value tool')];
   }
