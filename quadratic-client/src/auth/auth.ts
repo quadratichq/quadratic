@@ -1,9 +1,7 @@
-import { auth0Client } from '@/auth/auth0';
-import { oryClient } from '@/auth/ory';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
-const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
+const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
 
 export interface User {
   name?: string;
@@ -15,27 +13,102 @@ export interface User {
   sub?: string;
 }
 
+export type OAuthProvider = 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+
 export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
-  login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
-  handleSigninRedirect(): Promise<void>;
+  login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void>;
+  handleSigninRedirect(href: string): Promise<void>;
   logout(): Promise<void>;
-  getTokenOrRedirect(): Promise<string>;
+  getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
+  loginWithPassword(args: { email: string; password: string }): Promise<void>;
+  loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }): Promise<void>;
+  signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }): Promise<void>;
+  verifyEmail(args: { pendingAuthenticationToken: string; code: string }): Promise<void>;
+  sendResetPassword(args: { email: string }): Promise<void>;
+  resetPassword(args: { token: string; password: string }): Promise<void>;
+  sendMagicAuthCode(args: { email: string }): Promise<void>;
+  authenticateWithMagicCode(args: { email: string; code: string }): Promise<void>;
 }
 
-const getAuthClient = () => {
+let cachedAuthClient: Promise<AuthClient> | AuthClient | null = null;
+const getAuthClient = async (): Promise<AuthClient> => {
+  if (cachedAuthClient) {
+    return await cachedAuthClient;
+  }
+
   switch (AUTH_TYPE) {
-    case 'auth0':
-      return auth0Client;
     case 'ory':
-      return oryClient;
+      cachedAuthClient = (await import('@/auth/ory')).oryClient;
+      return cachedAuthClient;
+    case 'workos':
+      cachedAuthClient = (await import('@/auth/workos')).workosClient;
+      return cachedAuthClient;
     default:
       throw new Error(`Unsupported auth type in getAuthClient(): ${AUTH_TYPE}`);
   }
 };
 
-export const authClient: AuthClient = getAuthClient();
+// Create a proxy client that lazily loads the actual client
+export const authClient: AuthClient = {
+  async isAuthenticated() {
+    const client = await getAuthClient();
+    return client.isAuthenticated();
+  },
+  async user() {
+    const client = await getAuthClient();
+    return client.user();
+  },
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
+    const client = await getAuthClient();
+    return client.login(args);
+  },
+  async handleSigninRedirect(href: string) {
+    const client = await getAuthClient();
+    return client.handleSigninRedirect(href);
+  },
+  async logout() {
+    const client = await getAuthClient();
+    return client.logout();
+  },
+  async getTokenOrRedirect(skipRedirect?: boolean) {
+    const client = await getAuthClient();
+    return client.getTokenOrRedirect(skipRedirect);
+  },
+  async loginWithPassword(args: { email: string; password: string }) {
+    const client = await getAuthClient();
+    return client.loginWithPassword(args);
+  },
+  async loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }) {
+    const client = await getAuthClient();
+    return client.loginWithOAuth(args);
+  },
+  async signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }) {
+    const client = await getAuthClient();
+    return client.signupWithPassword(args);
+  },
+  async verifyEmail(args: { pendingAuthenticationToken: string; code: string }) {
+    const client = await getAuthClient();
+    return client.verifyEmail(args);
+  },
+  async sendResetPassword(args: { email: string }) {
+    const client = await getAuthClient();
+    return client.sendResetPassword(args);
+  },
+  async resetPassword(args: { token: string; password: string }) {
+    const client = await getAuthClient();
+    return client.resetPassword(args);
+  },
+  async sendMagicAuthCode(args: { email: string }) {
+    const client = await getAuthClient();
+    return client.sendMagicAuthCode(args);
+  },
+  async authenticateWithMagicCode(args: { email: string; code: string }) {
+    const client = await getAuthClient();
+    return client.authenticateWithMagicCode(args);
+  },
+};
 
 /**
  * Utility function for use in route loaders.

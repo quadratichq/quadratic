@@ -1,4 +1,5 @@
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { prepareBitmapFontInformation } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
@@ -39,22 +40,22 @@ class RenderWebWorker {
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[RenderWebWorker] message: ${e.data.type}`);
-    if (!pixiApp.cellsSheets) {
+    if (!content.cellsSheets) {
       this.preloadQueue.push(e);
       return;
     }
 
     switch (e.data.type) {
       case 'renderClientCellsTextHashClear':
-        pixiApp.cellsSheets.cellsTextHashClear(e.data);
+        content.cellsSheets.cellsTextHashClear(e.data);
         return;
 
       case 'renderClientLabelMeshEntry':
-        pixiApp.cellsSheets.labelMeshEntry(e.data);
+        content.cellsSheets.labelMeshEntry(e.data);
         return;
 
       case 'renderClientFinalizeCellsTextHash':
-        pixiApp.cellsSheets.finalizeCellsTextHash(e.data);
+        content.cellsSheets.finalizeCellsTextHash(e.data);
         return;
 
       case 'renderClientFirstRenderComplete':
@@ -62,7 +63,7 @@ class RenderWebWorker {
         return;
 
       case 'renderClientUnload':
-        pixiApp.cellsSheets.unload(e.data);
+        content.cellsSheets.unload(e.data);
         return;
     }
 

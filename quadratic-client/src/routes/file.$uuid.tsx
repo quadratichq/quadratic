@@ -1,5 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -18,6 +19,7 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
@@ -34,10 +36,47 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
   currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  // Start loading PIXI assets early and asynchronously
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
-  loadAssets().catch((e) => console.error('Error loading assets', e));
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  startupTimer.start('file.loader');
+
+  const loadPixi = async () => {
+    startupTimer.start('file.loader.loadPixi');
+    try {
+      await loadAssets();
+    } catch (error) {
+      sendAnalyticsError('file.loader', 'loadPixi', error, 'Error loading pixi assets');
+    }
+    startupTimer.end('file.loader.loadPixi');
+  };
+
+  // load file information from the api
+  const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
+    // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
+    let data: ApiTypes['/v0/files/:uuid.GET.response'];
+    try {
+      startupTimer.start('file.loader.files.get');
+      data = await apiClient.files.get(uuid);
+      startupTimer.end('file.loader.files.get');
+    } catch (error: any) {
+      const isLoggedIn = await authClient.isAuthenticated();
+      if (error.status === 403 && !isLoggedIn) {
+        return redirect(ROUTES.LOGIN_WITH_REDIRECT(request.url));
+      }
+      if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
+      throw new Response('Failed to load file from server.', { status: error.status });
+    }
+    if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO'))
+      console.log(
+        `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
+      );
+    return data;
+  };
+
+  // initialize the core module within client
+  const initializeCore = async () => {
+    startupTimer.start('file.loader.initCoreClient');
+    await initCoreClient();
+    startupTimer.end('file.loader.initCoreClient');
+  };
 
   const { uuid } = params as { uuid: string };
 
@@ -47,38 +86,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
   const isVersionHistoryPreview = checkpointId !== null;
 
-  // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
-  let data: ApiTypes['/v0/files/:uuid.GET.response'];
-  try {
-    data = await apiClient.files.get(uuid);
-  } catch (error: any) {
-    const isLoggedIn = await authClient.isAuthenticated();
-    if (error.status === 403 && !isLoggedIn) {
-      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
-    }
-    if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
-    throw new Response('Failed to load file from server.', { status: error.status });
-  }
-  if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO'))
-    console.log(
-      `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
-    );
+  const [data] = await Promise.all([
+    loadFileFromApi(uuid, isVersionHistoryPreview),
+    loadPixi(),
+    initWorkers(),
+    initializeCore(),
+  ]);
 
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing workers');
-  initWorkers();
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
-
-  if (debugFlag('debugStartupTime')) {
-    console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  }
-
-  if (debugFlag('debugStartupTime')) {
-    console.time('[file.$uuid.tsx] initialize core in the client');
-  }
-  await initCoreClient();
-  if (debugFlag('debugStartupTime')) {
-    console.timeEnd('[file.$uuid.tsx] initialize core in the client');
-  }
+  // we were redirected to login, so we don't need to do anything else
+  if (data instanceof Response) return data;
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -94,6 +110,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // initialize Core web worker
+  startupTimer.start('file.loader.quadraticCore.load');
   const result = await quadraticCore.load({
     fileId: uuid,
     teamUuid: data.team.uuid,
@@ -101,7 +118,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
   });
-
+  startupTimer.end('file.loader.quadraticCore.load');
   if (result.error) {
     if (!isVersionHistoryPreview) {
       captureEvent({
@@ -144,13 +161,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
 
-  if (debugFlag('debugStartupTime'))
-    console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
 
-  registerEventAnalyticsData({
-    isOnPaidPlan: data.team.isOnPaidPlan,
-  });
-
+  startupTimer.end('file.loader');
   return data;
 };
 

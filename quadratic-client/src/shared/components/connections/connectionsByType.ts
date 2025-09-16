@@ -33,6 +33,7 @@ import SupabaseLogo from './logo-supabase.svg?react';
 
 export type ConnectionFormValues = {
   name: string;
+  semanticDescription?: string;
   type: ConnectionType;
   // This represents the `typeDetails` and varies from one form to the next
   // depending on the connection type.
