@@ -312,8 +312,7 @@ mod tests {
 
     #[test]
     fn import_and_export_a_v1_5_file() {
-        let mut imported = import(V1_5_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_5_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);

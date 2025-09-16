@@ -77,6 +77,14 @@ impl Grid {
         ret
     }
 
+    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+        self.sheets.iter_mut().for_each(|(_, sheet)| {
+            sheet
+                .offsets
+                .migration_retain_positive_non_default_offsets();
+        });
+    }
+
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
@@ -92,12 +100,5 @@ impl Grid {
     #[cfg(test)]
     pub fn origin_in_first_sheet(&self) -> crate::SheetPos {
         crate::Pos::ORIGIN.to_sheet_pos(self.sheets()[0].id)
-    }
-
-    #[cfg(test)]
-    pub fn retain_positive_non_default_offsets(&mut self) {
-        self.sheets.iter_mut().for_each(|(_, sheet)| {
-            sheet.offsets.retain_positive_non_default();
-        });
     }
 }

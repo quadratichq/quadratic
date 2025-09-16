@@ -49,11 +49,8 @@ impl SheetOffsets {
     /// import offsets from a GridFile
     pub fn import(offsets: OffsetWidthHeight) -> Self {
         let mut offsets = SheetOffsets {
-            column_widths: Offsets::from_iter(
-                crate::DEFAULT_COLUMN_WIDTH,
-                offsets.0.iter().copied(),
-            ),
-            row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1.iter().copied()),
+            column_widths: Offsets::from_iter(crate::DEFAULT_COLUMN_WIDTH, offsets.0),
+            row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1),
             thumbnail: (0, 0),
             transient_resize: None,
         };
@@ -349,10 +346,11 @@ impl SheetOffsets {
     }
 
     /// Retains only the custom column widths (non-default widths).
-    #[cfg(test)]
-    pub fn retain_positive_non_default(&mut self) {
-        self.column_widths.retain_positive_non_default();
-        self.row_heights.retain_positive_non_default();
+    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+        self.column_widths
+            .migration_retain_positive_non_default_offsets();
+        self.row_heights
+            .migration_retain_positive_non_default_offsets();
     }
 }
 

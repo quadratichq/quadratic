@@ -42,7 +42,7 @@ impl Offsets {
             default,
             sizes: iter
                 .into_iter()
-                .filter(|(index, size)| *index > 0 && *size != default)
+                .filter(move |(index, size)| *index > 0 && *size != default)
                 .collect(),
         }
     }
@@ -117,6 +117,10 @@ impl Offsets {
 
         // Iterate through custom sizes only to avoid checking every default value
         for (&custom_index, &custom_size) in &self.sizes {
+            if custom_index <= 0 {
+                continue;
+            }
+
             // Calculate how many default-sized elements are between current_index and custom_index
             if custom_index > current_index {
                 let default_count = custom_index - current_index;
@@ -284,8 +288,7 @@ impl Offsets {
     }
 
     /// Retains only positive non-default sizes.
-    #[cfg(test)]
-    pub fn retain_positive_non_default(&mut self) {
+    pub fn migration_retain_positive_non_default_offsets(&mut self) {
         self.sizes
             .retain(|&index, size| index > 0 && size != &self.default);
     }

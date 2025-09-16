@@ -260,6 +260,10 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
 
+    if let Ok(grid) = &mut grid {
+        grid.migration_retain_positive_non_default_offsets();
+    }
+
     grid
 }
 
@@ -316,6 +320,10 @@ fn import_json(file_contents: String) -> Result<Grid> {
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
+
+    if let Ok(grid) = &mut grid {
+        grid.migration_retain_positive_non_default_offsets();
+    }
 
     grid
 }
@@ -390,8 +398,7 @@ mod tests {
 
     #[test]
     fn process_a_number_v1_3_file() {
-        let mut imported = import(V1_3_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_3_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let exported_test = import_binary(exported).unwrap();
         assert_eq!(imported, exported_test);
@@ -399,8 +406,7 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_file() {
-        let mut imported = import(V1_3_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_3_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let exported_test = import_binary(exported).unwrap();
         assert_eq!(imported, exported_test);
@@ -409,8 +415,7 @@ mod tests {
     #[test]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_3_PYTHON_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_3_PYTHON_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         assert_eq!(imported, import_binary(exported).unwrap());
     }
@@ -486,8 +491,7 @@ mod tests {
 
     #[test]
     fn process_a_v1_4_airports_distance_file() {
-        let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_4_AIRPORTS_DISTANCE_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported, imported_copy);
@@ -495,8 +499,7 @@ mod tests {
 
     #[test]
     fn imports_and_exports_v1_4_default() {
-        let mut imported = import(V1_4_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_4_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
@@ -504,8 +507,7 @@ mod tests {
 
     #[test]
     fn imports_and_exports_a_v1_5_grid() {
-        let mut imported = import(V1_5_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_5_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
@@ -523,8 +525,7 @@ mod tests {
 
     #[test]
     fn imports_and_exports_v1_5_update_code_runs_file() {
-        let mut imported = import(V1_5_UPGRADE_CODE_RUNS.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_5_UPGRADE_CODE_RUNS.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
@@ -581,8 +582,7 @@ mod tests {
 
     #[test]
     fn imports_and_exports_a_v1_6_grid() {
-        let mut imported = import(V1_6_FILE.to_vec()).unwrap();
-        imported.retain_positive_non_default_offsets();
+        let imported = import(V1_6_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
