@@ -367,6 +367,7 @@ mod tests {
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
         },
         grid::{CodeCellLanguage, SheetId, js_types::JsUpdateCodeCell},
+        test_util::*,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -717,15 +718,18 @@ mod tests {
         let duplicated_sheet_id = gc.sheet_ids()[1];
         let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.name().to_string(), format!("{file_name}1"));
-        let code_run = data_table.code_run().unwrap();
-        assert_eq!(code_run.language, CodeCellLanguage::Python);
-        assert_eq!(code_run.code, format!("q.cells(\"{file_name}1\")"));
+
+        print_first_sheet!(&gc);
+
+        assert_code_language(
+            &gc,
+            pos![duplicated_sheet_id!J10],
+            CodeCellLanguage::Python,
+            format!("q.cells(\"{file_name}1\")"),
+        );
 
         let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
-        let data_table = gc
-            .sheet(duplicated_sheet_id)
-            .data_table_at(&pos![T20])
-            .unwrap();
+        let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
         let code_run = data_table.code_run().unwrap();
         assert_eq!(code_run.language, CodeCellLanguage::Python);
         assert_eq!(
