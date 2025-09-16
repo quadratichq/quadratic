@@ -368,16 +368,10 @@ impl Sheet {
         let mut tabular_data_rects = Vec::new();
 
         let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
-            Some(value) => {
-                if value.is_blank_or_empty_string() || value.is_image() || value.is_html() {
-                    true
-                } else if let Some(dt) = self.data_table_at(&pos) {
-                    dt.is_single_value()
-                } else {
-                    false
-                }
-            }
-            None => true,
+            Some(value) => value.is_blank_or_empty_string() || value.is_image() || value.is_html(),
+            None => self
+                .data_table_at(&pos)
+                .map_or(false, |dt| !dt.is_single_value()),
         };
 
         for selection_rect in selection_rects {
@@ -1074,8 +1068,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)]);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![rect![A1:J10]]);
         assert_eq!(tabular_data_rects.len(), 1);
-        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
+        assert_eq!(tabular_data_rects[0], rect![A1:A10]);
     }
 }
