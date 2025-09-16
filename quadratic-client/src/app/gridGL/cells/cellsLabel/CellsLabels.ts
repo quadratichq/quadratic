@@ -13,6 +13,7 @@ import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
 import type { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsValidationWarning, Pos } from '@/app/quadratic-core-types';
 import type { Link } from '@/app/shared/types/links';
@@ -111,10 +112,7 @@ export class CellsLabels extends Container {
         const hashBounds = cellsTextHash.bounds.toRectangle();
         if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
           cellsTextHash.show();
-          if (pixiApp.gridLines) {
-            pixiApp.gridLines.dirty = true;
-          }
-          pixiApp.setViewportDirty();
+          events.emit('setDirty', { gridLines: true });
         } else {
           cellsTextHash.hide();
         }
@@ -200,7 +198,7 @@ export class CellsLabels extends Container {
     if (hash) {
       hash.special.clickedToCell(column, row, world);
     }
-    pixiApp.validations.clickedToCell(column, row, world);
+    content.validations.clickedToCell(column, row, world);
   };
 
   renderValidationUpdates(validationWarnings: JsValidationWarning[]) {

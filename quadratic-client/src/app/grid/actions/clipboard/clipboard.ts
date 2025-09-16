@@ -1,6 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
@@ -36,7 +37,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
     e.preventDefault();
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    content.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboardEvent', error);
@@ -192,7 +193,7 @@ export const copyToClipboard = async () => {
   try {
     debugTimeReset();
     await toClipboardCopy();
-    pixiApp.copy.changeCopyRanges();
+    content.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboard', error);

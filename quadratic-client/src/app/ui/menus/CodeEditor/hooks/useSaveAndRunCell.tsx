@@ -5,7 +5,7 @@ import {
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -38,7 +38,7 @@ export const useSaveAndRunCell = () => {
 
         // we need to add the unsaved codeCell to the client since it does not
         // yet exist in the grid
-        const tables = pixiApp.cellsSheets.getById(sheetId)?.tables;
+        const tables = content.cellsSheets.getById(sheetId)?.tables;
         if (tables) {
           if (!tables.isTableAnchor(pos.x, pos.y)) {
             events.emit('updateCodeCells', [
