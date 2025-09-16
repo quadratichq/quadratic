@@ -248,32 +248,31 @@ pub fn can_edit(role: &[FilePermRole]) -> bool {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetLastFileCheckpointResponse {
-    pub presigned_url: String,
+pub struct GetFileInitDataResponse {
+    pub team_id: Uuid,
     pub sequence_number: u32,
+    pub presigned_url: String,
 }
-pub async fn get_last_file_checkpoint(
+pub async fn get_file_init_data(
     base_url: &str,
     jwt: &str,
     file_id: Uuid,
-) -> Result<GetLastFileCheckpointResponse> {
-    let url = format!("{base_url}/v0/internal/file/{file_id}/last-file-checkpoint");
+) -> Result<GetFileInitDataResponse> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/init-data");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;
 
-    let last_file_checkpoint = response
-        .json::<GetLastFileCheckpointResponse>()
+    let file_init_data = response
+        .json::<GetFileInitDataResponse>()
         .await
-        .map_err(|e| {
-            SharedError::QuadraticApi(format!("Error getting last file checkpoint: {e}"))
-        })?;
+        .map_err(|e| SharedError::QuadraticApi(format!("Error getting file init data: {e}")))?;
 
-    Ok(last_file_checkpoint)
+    Ok(file_init_data)
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
     pub file_id: Uuid,

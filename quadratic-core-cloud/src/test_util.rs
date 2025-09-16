@@ -3,7 +3,6 @@ use quadratic_rust_shared::storage::{
     file_system::{FileSystem, FileSystemConfig},
 };
 
-
 pub fn get_file_config() -> (String, String, String, String) {
     dotenv::from_filename("../quadratic-files/.env").ok();
     let host = std::env::var("HOST").unwrap();

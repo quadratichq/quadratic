@@ -7,8 +7,8 @@ use chrono::Timelike;
 use quadratic_rust_shared::{
     quadratic_api::get_scheduled_tasks,
     quadratic_cloud::{
-        WORKER_ACK_TASKS_ROUTE, WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE, WORKER_GET_TASKS_ROUTE,
-        WORKER_SHUTDOWN_ROUTE,
+        WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
+        WORKER_GET_WORKER_INIT_DATA_ROUTE, WORKER_SHUTDOWN_ROUTE,
     },
 };
 use std::{sync::Arc, time::Duration};
@@ -22,55 +22,23 @@ use crate::{
     controller::Controller,
     error::ControllerError,
     health::{full_healthcheck, healthcheck},
-    state::State,
+    state::{State, jwt::handle_jwks},
     worker::{
-        ack_tasks_for_worker, get_last_file_checkpoint, get_tasks_for_worker, worker_shutdown,
+        handle_ack_tasks_for_worker, handle_get_file_init_data, handle_get_tasks_for_worker,
+        handle_get_worker_access_token, handle_worker_shutdown,
     },
 };
 
-async fn start_pubsub_listener(state: Arc<State>) -> Result<()> {
-    info!("Starting pubsub listener");
-
-    let controller = match Controller::new(state).await {
-        Ok(controller) => controller,
-        Err(e) => {
-            error!("Error creating controller: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
-
-    controller.listen_for_worker_task_events().await
-}
-
-async fn start_ensure_workers(state: Arc<State>) -> Result<()> {
-    info!("Starting ensure workers");
-
-    let heartbeat_check_s = state.settings.heartbeat_check_s;
-    let controller = match Controller::new(state).await {
-        Ok(controller) => controller,
-        Err(e) => {
-            error!("Error creating controller: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
-
-    let mut interval = interval(Duration::from_secs(heartbeat_check_s));
-    loop {
-        interval.tick().await;
-
-        // scan for files with pending tasks and ensure workers exist
-        if let Err(e) = controller.scan_and_ensure_all_workers().await {
-            error!("Error scanning and ensuring all file workers exist: {e}");
-        }
-
-        let active_count = controller.count_active_workers().await.unwrap_or(0);
-
-        info!("Worker Controller alive - {active_count} active file workers");
-    }
-}
-
 async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
+
+    let controller = match Controller::new(Arc::clone(&state)).await {
+        Ok(controller) => controller,
+        Err(e) => {
+            error!("Error creating controller: {e}");
+            return Err(ControllerError::InternalServer(e.to_string()).into());
+        }
+    };
 
     // Wait until the next minute
     let wait_seconds = 60 - chrono::Utc::now().second() as u64;
@@ -103,33 +71,69 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
         };
 
         match state.add_tasks(scheduled_tasks).await {
-            Ok(()) => (),
+            Ok(()) => {
+                info!("Added scheduled tasks to pubsub");
+            }
             Err(e) => {
                 error!("Error adding scheduled tasks to pubsub: {e}");
             }
         }
+
+        if let Err(e) = controller.scan_and_ensure_all_workers().await {
+            error!("Error scanning and ensuring all file workers exist: {e}");
+        }
+
+        let active_count = controller.count_active_workers().await.unwrap_or(0);
+
+        info!("Worker Controller alive - {active_count} active file workers");
     }
 }
 
-pub(crate) fn app(state: Arc<State>) -> Result<Router> {
-    info!("Building app");
+pub(crate) fn worker_only_app(state: Arc<State>) -> Result<Router> {
+    info!("Building worker-only app");
 
     let app = Router::new()
         // Shutdown a worker
-        .route(WORKER_SHUTDOWN_ROUTE, get(worker_shutdown))
+        .route(WORKER_SHUTDOWN_ROUTE, get(handle_worker_shutdown))
         //
         // Acknowledge tasks after they have been processed by the worker
-        .route(WORKER_ACK_TASKS_ROUTE, post(ack_tasks_for_worker))
+        .route(WORKER_ACK_TASKS_ROUTE, post(handle_ack_tasks_for_worker))
         //
         // Get tasks for a file by worker
-        .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
+        .route(WORKER_GET_TASKS_ROUTE, get(handle_get_tasks_for_worker))
         //
         // Get a last checkpoint data URL for a file
         .route(
-            WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE,
-            get(get_last_file_checkpoint),
+            WORKER_GET_WORKER_INIT_DATA_ROUTE,
+            get(handle_get_file_init_data),
         )
+        //
+        // Get a worker access token
+        .route(
+            WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
+            get(handle_get_worker_access_token),
+        )
+        //
         // Worker API routes
+        //
+        // state
+        .layer(Extension(state))
+        //
+        // logger
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+        );
+
+    Ok(app)
+}
+
+pub(crate) fn public_app(state: Arc<State>) -> Result<Router> {
+    info!("Building public app");
+
+    let app = Router::new()
+        // JWKS for worker jwt validation
+        .route("/.well-known/jwks.json", get(handle_jwks))
         //
         // healthcheck
         .route("/health", get(healthcheck))
@@ -149,21 +153,19 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
     Ok(app)
 }
 
-async fn start_server(state: Arc<State>) -> Result<()> {
-    let environment = state.settings.environment.clone();
+async fn start_server(
+    name: &str,
+    host: String,
+    port: String,
+    state: Arc<State>,
+    app: fn(Arc<State>) -> Result<Router>,
+) -> Result<()> {
+    let environment = state.settings.environment;
 
-    let listener = match tokio::net::TcpListener::bind(format!(
-        "{}:{}",
-        state.settings.host, state.settings.port
-    ))
-    .await
-    {
+    let listener = match tokio::net::TcpListener::bind(format!("{host}:{port}")).await {
         Ok(listener) => listener,
         Err(e) => {
-            error!(
-                "Error binding to {}: {}, error: {e}",
-                state.settings.host, state.settings.port
-            );
+            error!("Error binding to {host}:{port}, error: {e}",);
             return Err(ControllerError::InternalServer(e.to_string()).into());
         }
     };
@@ -180,7 +182,7 @@ async fn start_server(state: Arc<State>) -> Result<()> {
     let app = match app(state) {
         Ok(app) => app,
         Err(e) => {
-            error!("Error building app: {e}");
+            error!("Error building {name} app: {e}");
             return Err(ControllerError::InternalServer(e.to_string()).into());
         }
     };
@@ -188,10 +190,10 @@ async fn start_server(state: Arc<State>) -> Result<()> {
     tracing::info!("listening on {local_addr}, environment={environment}");
     match axum::serve(listener, app).await {
         Ok(_) => {
-            info!("Server stopped");
+            info!("{name} stopped");
         }
         Err(e) => {
-            error!("Error serving application: {e}");
+            error!("Error serving {name} application: {e}");
             return Err(ControllerError::InternalServer(e.to_string()).into());
         }
     }
@@ -261,20 +263,21 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_layer)
         .init();
 
-    // Start pubsub listener
-    let pubsub_state_clone = Arc::clone(&state);
-    tokio::spawn(async {
-        let _ =
-            start_with_backoff("Pubsub listener", pubsub_state_clone, start_pubsub_listener).await;
-    });
-
-    // Start ensure workers
-    let ensure_workers_state_clone = Arc::clone(&state);
+    // Start worker-only server
+    let worker_only_server_state_clone = Arc::clone(&state);
     tokio::spawn(async {
         let _ = start_with_backoff(
-            "Ensure workers",
-            ensure_workers_state_clone,
-            start_ensure_workers,
+            "worker-only server",
+            worker_only_server_state_clone,
+            |state| {
+                start_server(
+                    "worker-only",
+                    state.settings.worker_only_host.clone(),
+                    state.settings.worker_only_port.clone(),
+                    state,
+                    worker_only_app,
+                )
+            },
         )
         .await;
     });
@@ -290,7 +293,16 @@ pub(crate) async fn serve() -> Result<()> {
         .await;
     });
 
-    // Start server
-    let server_state_clone = Arc::clone(&state);
-    start_with_backoff("Server", server_state_clone, start_server).await
+    // Start public server
+    let public_server_state_clone = Arc::clone(&state);
+    start_with_backoff("public server", public_server_state_clone, |state| {
+        start_server(
+            "public",
+            state.settings.public_host.clone(),
+            state.settings.public_port.clone(),
+            state,
+            public_app,
+        )
+    })
+    .await
 }

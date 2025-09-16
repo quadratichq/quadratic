@@ -193,6 +193,35 @@ show_worker_logs() {
     get_logs "app.kubernetes.io/component=worker" "Workers"
 }
 
+show_local_service_logs() {
+    echo -e "${PURPLE}🔗 Local Service Logs:${NC}"
+    echo "=================================="
+    
+    # Show tunnel logs
+    echo -e "${CYAN}Tunnel Logs:${NC}"
+    local tunnel_log="/tmp/quadratic-localhost-tunnel.log"
+    if [ -f "$tunnel_log" ]; then
+        echo "Last 20 lines from $tunnel_log:"
+        tail -20 "$tunnel_log" || echo "Could not read tunnel log"
+    else
+        echo "No tunnel log file found"
+    fi
+    echo
+    
+    # Show port forwarding logs
+    echo -e "${CYAN}Port Forwarding Logs:${NC}"
+    for service in controller metrics redis; do
+        local pf_log="/tmp/quadratic-port-forward-${service}.log"
+        echo "--- $service port forward ---"
+        if [ -f "$pf_log" ]; then
+            tail -10 "$pf_log" || echo "Could not read $service port forward log"
+        else
+            echo "No $service port forward log found"
+        fi
+        echo
+    done
+}
+
 show_all_logs() {
     if [ "$FOLLOW" = true ]; then
         # For follow mode, show all components in parallel
@@ -216,6 +245,10 @@ show_all_logs() {
         echo -e "${PURPLE}🔧 Worker Logs:${NC}"
         echo "=================================="
         show_worker_logs || log_info "No worker pods found"
+        echo
+        
+        # Add local service logs
+        show_local_service_logs
     fi
 }
 

@@ -1,4 +1,19 @@
-import * as z from 'zod';
+import CronExpressionParser from 'cron-parser';
+import z from 'zod';
+
+export const ScheduledTaskCronExpressionSchema = z
+  .string()
+  .min(1, 'cronExpression is required')
+  .refine((val) => {
+    try {
+      CronExpressionParser.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Invalid cron expression');
+
+export const ScheduledTaskOperationsSchema = z.array(z.number());
 
 export const ScheduledTaskSchema = z.object({
   id: z.number(),
@@ -8,8 +23,8 @@ export const ScheduledTaskSchema = z.object({
   nextRunTime: z.string().datetime(),
   lastRunTime: z.string().datetime().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
-  cronExpression: z.string(),
-  operations: z.number().array(),
+  cronExpression: ScheduledTaskCronExpressionSchema,
+  operations: ScheduledTaskOperationsSchema,
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
 });
@@ -30,8 +45,8 @@ export const ApiSchemasScheduledTasks = {
 
   // Create a Scheduled Task
   '/v0/files/:uuid/scheduled_task.POST.request': z.object({
-    cronExpression: z.string(),
-    operations: z.number().array(),
+    cronExpression: ScheduledTaskCronExpressionSchema,
+    operations: ScheduledTaskOperationsSchema,
   }),
   '/v0/files/:uuid/scheduled_task.POST.response': ScheduledTaskSchema,
 
@@ -40,15 +55,13 @@ export const ApiSchemasScheduledTasks = {
 
   // Update a Scheduled Task
   '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.request': z.object({
-    cronExpression: z.string(),
-    operations: z.number().array(),
+    cronExpression: ScheduledTaskCronExpressionSchema,
+    operations: ScheduledTaskOperationsSchema,
   }),
   '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response': ScheduledTaskSchema,
 
   // Delete a Scheduled Task
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response': z.object({
-    message: z.string(),
-  }),
+  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response': z.object({ message: z.string() }),
 
   // List Scheduled Task Logs
   '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response': z.array(ScheduledTaskLogSchema),

@@ -8,6 +8,7 @@
 #
 # What it does:
 # - Validates the deployment environment
+# - Creates secrets from .env file
 # - Deploys manifests in dependency order
 # - Waits for services to become ready
 # - Performs health checks and verification
@@ -30,6 +31,7 @@ set -u  # Exit on undefined variables
 #------------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+readonly K8S_DIR="${PROJECT_ROOT}/infra/k8s"
 
 # Default configuration
 NAMESPACE="quadratic-cloud"
@@ -39,13 +41,18 @@ FORCE_DEPLOY=false
 WAIT_FOR_READY=true
 TIMEOUT=300
 
+# Controller scheduling requirements
+readonly CONTROLLER_NODE_LABEL_KEY="quadratic.io/node-role"
+readonly CONTROLLER_NODE_LABEL_VALUE="controller"
+
 # Manifest files in deployment order (dependencies first)
 readonly MANIFESTS=(
     "01-namespace.yaml"
-    "02-redis.yaml"
-    "03-rbac.yaml"
-    "04-controller.yaml"
-    "05-monitoring.yaml"
+    "02-rbac.yaml"
+    "03-network-policies.yaml"
+    "04-redis.yaml"
+    "05-controller.yaml"
+    "06-monitoring.yaml"
 )
 
 #------------------------------------------------------------------------------
@@ -113,10 +120,11 @@ EXAMPLES:
 
 DEPLOYMENT ORDER:
     1. Namespace and network policies
-    2. Redis database with persistence
-    3. RBAC (roles and service accounts)
-    4. Controller application
-    5. Monitoring resources
+    2. Secrets from .env file
+    3. Redis database with persistence
+    4. RBAC (roles and service accounts)
+    5. Controller application
+    6. Monitoring resources
 
 EOF
 }
@@ -192,9 +200,16 @@ check_deployment_environment() {
         exit 1
     fi
     
+    # Check .env file exists
+    if [ ! -f "${K8S_DIR}/.env" ]; then
+        log_error ".env file not found at ${K8S_DIR}/.env"
+        log_info "Create your .env file with all configuration variables"
+        exit 1
+    fi
+    
     # Check manifest files
     for manifest in "${MANIFESTS[@]}"; do
-        local manifest_path="infra/k8s/manifests/${manifest}"
+        local manifest_path="${K8S_DIR}/manifests/${manifest}"
         if [ ! -f "$manifest_path" ]; then
             log_error "Manifest not found: $manifest_path"
             exit 1
@@ -204,6 +219,121 @@ check_deployment_environment() {
     log_success "Deployment environment is ready"
     log_info "Target cluster: $CONTEXT"
     log_info "Target namespace: $NAMESPACE"
+    log_info "Config file: ${K8S_DIR}/.env"
+}
+
+#------------------------------------------------------------------------------
+# Cluster Preparation Functions
+#------------------------------------------------------------------------------
+is_kind_context() {
+    [[ "$CONTEXT" == kind-* ]]
+}
+
+is_kind_cluster() {
+    local provider
+    provider=$(kubectl get nodes --context "$CONTEXT" -o jsonpath='{range .items[0]}{.spec.providerID}{end}' 2>/dev/null || true)
+    [[ "$provider" == kind://* ]]
+}
+
+ensure_controller_node_label() {
+    log_step "Ensuring controller scheduling node is available..."
+
+    local label_selector="${CONTROLLER_NODE_LABEL_KEY}=${CONTROLLER_NODE_LABEL_VALUE}"
+
+    if kubectl get nodes --context "$CONTEXT" -l "$label_selector" -o name | grep -q .; then
+        log_success "Found node(s) with $label_selector"
+        return 0
+    fi
+
+    if is_kind_context || is_kind_cluster; then
+        log_info "No node labeled $label_selector; auto-labeling a Ready worker (kind cluster detected)"
+
+        # Prefer kind workers (have worker-id), fallback to non-control-plane nodes
+        mapfile -t candidates < <(kubectl get nodes --context "$CONTEXT" \
+            -l 'worker-id' \
+            -o jsonpath='{range .items}{.metadata.name}{"\n"}{end}')
+
+        if [ ${#candidates[@]} -eq 0 ]; then
+            mapfile -t candidates < <(kubectl get nodes --context "$CONTEXT" \
+                -l '!node-role.kubernetes.io/control-plane' \
+                -o jsonpath='{range .items}{.metadata.name}{"\n"}{end}')
+        fi
+
+        local chosen=""
+        for n in "${candidates[@]}"; do
+            [ -z "$n" ] && continue
+            local ready unsched
+            ready=$(kubectl get node "$n" --context "$CONTEXT" -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}')
+            unsched=$(kubectl get node "$n" --context "$CONTEXT" -o jsonpath='{.spec.unschedulable}')
+            if [ "$ready" = "True" ] && [ "${unsched:-false}" != "true" ]; then
+                chosen="$n"
+                break
+            fi
+        done
+
+        if [ -z "$chosen" ]; then
+            log_error "No Ready, schedulable worker nodes available to label for controller."
+            log_info "Add a worker node and label it manually:"
+            echo "  kubectl label node <node-name> ${CONTROLLER_NODE_LABEL_KEY}=${CONTROLLER_NODE_LABEL_VALUE} --context $CONTEXT"
+            exit 1
+        fi
+
+        kubectl label node "$chosen" "${CONTROLLER_NODE_LABEL_KEY}=${CONTROLLER_NODE_LABEL_VALUE}" --overwrite --context "$CONTEXT"
+        log_success "Labeled node '$chosen' with ${CONTROLLER_NODE_LABEL_KEY}=${CONTROLLER_NODE_LABEL_VALUE}"
+    else
+        log_error "No node labeled ${label_selector} found."
+        log_info "To proceed, label a node explicitly via your infra pipeline or:"
+        echo "  kubectl label node <node-name> ${CONTROLLER_NODE_LABEL_KEY}=${CONTROLLER_NODE_LABEL_VALUE} --context $CONTEXT"
+        exit 1
+    fi
+}
+
+#------------------------------------------------------------------------------
+# Secret Management Functions
+#------------------------------------------------------------------------------
+create_secrets_from_env() {
+    log_step "Creating secrets from .env file..."
+    
+    # Check if .env file exists
+    if [ ! -f "${K8S_DIR}/.env" ]; then
+        log_error ".env file not found at ${K8S_DIR}/.env"
+        exit 1
+    fi
+    
+    # Ensure namespace exists first (deploy namespace manifest if needed)
+    if ! kubectl get namespace "$NAMESPACE" --context "$CONTEXT" &> /dev/null; then
+        log_info "Namespace doesn't exist, creating it first..."
+        if [ -f "${K8S_DIR}/manifests/01-namespace.yaml" ]; then
+            kubectl apply -f "${K8S_DIR}/manifests/01-namespace.yaml" --context "$CONTEXT"
+        else
+            kubectl create namespace "$NAMESPACE" --context "$CONTEXT"
+        fi
+    fi
+    
+    log_deploy "Creating secret 'quadratic-cloud-controller-secrets' from .env file..."
+    
+    # Create or update secret from .env file
+    if ! kubectl create secret generic quadratic-cloud-controller-secrets \
+        --from-env-file="${K8S_DIR}/.env" \
+        --namespace="$NAMESPACE" \
+        --context="$CONTEXT" \
+        --dry-run=client -o yaml | kubectl apply -f - --context "$CONTEXT"; then
+        log_error "Failed to create secrets from .env file"
+        return 1
+    fi
+    
+    # Verify secret was created
+    if kubectl get secret quadratic-cloud-controller-secrets -n "$NAMESPACE" --context "$CONTEXT" &> /dev/null; then
+        log_success "Secret created successfully from .env file"
+        
+        # Show non-sensitive info about the secret
+        local secret_keys
+        secret_keys=$(kubectl get secret quadratic-cloud-controller-secrets -n "$NAMESPACE" --context "$CONTEXT" -o jsonpath='{.data}' | jq -r 'keys[]' 2>/dev/null | wc -l || echo "unknown")
+        log_info "Secret contains $secret_keys configuration keys"
+    else
+        log_error "Secret verification failed"
+        return 1
+    fi
 }
 
 #------------------------------------------------------------------------------
@@ -225,7 +355,7 @@ force_cleanup_namespace() {
 
 deploy_manifest() {
     local manifest=$1
-    local manifest_path="infra/k8s/manifests/${manifest}"
+    local manifest_path="${K8S_DIR}/manifests/${manifest}"
     
     log_deploy "Deploying $manifest..."
     
@@ -316,6 +446,16 @@ wait_for_controller() {
         if kubectl exec deployment/quadratic-cloud-controller -n "$NAMESPACE" --context "$CONTEXT" \
             -- curl -f -s http://localhost:3004/health &> /dev/null; then
             log_success "Controller health check passed"
+            
+            # Test JWKS endpoint
+            log_info "Testing JWKS endpoint..."
+            if kubectl exec deployment/quadratic-cloud-controller -n "$NAMESPACE" --context "$CONTEXT" \
+                -- curl -f -s http://localhost:3004/.well-known/jwks.json | grep -q "keys"; then
+                log_success "JWKS endpoint is working"
+            else
+                log_warning "JWKS endpoint test failed, but controller is healthy"
+            fi
+            
             return 0
         fi
         
@@ -359,6 +499,14 @@ verify_deployment() {
     # Check secrets and configmaps
     log_info "Checking configuration:"
     kubectl get configmaps,secrets -n "$NAMESPACE" --context "$CONTEXT"
+    
+    # Verify secret has expected keys
+    log_info "Verifying secret configuration:"
+    if kubectl get secret quadratic-cloud-controller-secrets -n "$NAMESPACE" --context "$CONTEXT" -o jsonpath='{.data}' | grep -q "JWT_ENCODING_KEY"; then
+        log_success "JWT encoding key found in secret"
+    else
+        log_warning "JWT encoding key not found in secret - check your .env file"
+    fi
     
     # Check recent events
     log_info "Recent events:"
@@ -410,16 +558,17 @@ show_access_info() {
     echo "  • Context: $CONTEXT"
     echo "  • Controller: quadratic-cloud-controller:3004"
     echo "  • Redis: quadratic-cloud-redis:6379"
+    echo "  • Config: .env file with secrets"
     echo
     log_info "🔗 Access Commands:"
     echo "  • Controller API:"
     echo "    kubectl port-forward svc/quadratic-cloud-controller 3004:3004 -n $NAMESPACE"
+    echo "  • Controller JWKS:"
+    echo "    curl http://localhost:3004/.well-known/jwks.json"
     echo "  • Controller Metrics:"
     echo "    kubectl port-forward svc/quadratic-cloud-controller 9090:9090 -n $NAMESPACE"
     echo "  • Redis Direct Access:"
     echo "    kubectl port-forward svc/quadratic-cloud-redis 6379:6379 -n $NAMESPACE"
-    echo "  • Start local tunnels:"
-    echo "    ./infra/k8s/scripts/tunnel.sh start --namespace $NAMESPACE --name quadratic-localhost-tunnel --ports \"8000:8000,3001:3001,3002:3002,3003:3003\""
     echo
     log_info "📊 Monitoring Commands:"
     echo "  • Watch all resources:"
@@ -427,12 +576,19 @@ show_access_info() {
     echo "  • Watch worker jobs:"
     echo "    kubectl get jobs -l app.kubernetes.io/component=worker -n $NAMESPACE -w"
     echo "  • View logs:"
-    echo "    ./infra/k8s/scripts/logs.sh"
+    echo "    kubectl logs -l app.kubernetes.io/name=quadratic-cloud-controller -n $NAMESPACE -f"
+    echo
+    log_info "🔧 Configuration Management:"
+    echo "  • Update secrets from .env:"
+    echo "    kubectl create secret generic quadratic-cloud-controller-secrets \\"
+    echo "      --from-env-file=.env --namespace=$NAMESPACE --dry-run=client -o yaml | kubectl apply -f -"
+    echo "  • Restart controller after secret update:"
+    echo "    kubectl rollout restart deployment/quadratic-cloud-controller -n $NAMESPACE"
     echo
     log_info "📁 Next Steps:"
-    echo "  • Test the system: ./infra/k8s/scripts/test.sh"
-    echo "  • View logs: ./infra/k8s/scripts/logs.sh"
-    echo "  • Port forward: kubectl port-forward svc/quadratic-cloud-controller 3004:3004 -n $NAMESPACE"
+    echo "  • Test the JWKS endpoint: curl http://localhost:3004/.well-known/jwks.json (after port-forward)"
+    echo "  • View controller logs: kubectl logs -l app.kubernetes.io/name=quadratic-cloud-controller -n $NAMESPACE -f"
+    echo "  • Update .env and redeploy: ./infra/k8s/scripts/deploy.sh --force"
     echo
 }
 
@@ -471,7 +627,9 @@ main() {
     
     # Execute deployment steps
     check_deployment_environment
+    ensure_controller_node_label
     force_cleanup_namespace
+    create_secrets_from_env
     deploy_all_manifests
     wait_for_all_services
     verify_deployment

@@ -193,6 +193,90 @@ show_resource_usage() {
     fi
 }
 
+show_local_services_status() {
+    if [ "$JSON_OUTPUT" = true ]; then
+        local tunnel_status="unknown"
+        local port_forward_status="unknown"
+        
+        # Check tunnel status
+        if [ -f "/tmp/quadratic-localhost-tunnel.pid" ]; then
+            local pid; pid="$(cat "/tmp/quadratic-localhost-tunnel.pid" 2>/dev/null || true)"
+            if [[ -n "${pid:-}" ]] && ps -p "$pid" >/dev/null 2>&1; then
+                tunnel_status="running"
+            else
+                tunnel_status="stopped"
+            fi
+        else
+            tunnel_status="stopped"
+        fi
+        
+        # Check port forwarding status
+        local pf_running=0
+        local pf_total=3  # controller, metrics, redis
+        for service in controller metrics redis; do
+            if [ -f "/tmp/quadratic-port-forward-${service}.pid" ]; then
+                local pid; pid="$(cat "/tmp/quadratic-port-forward-${service}.pid" 2>/dev/null || true)"
+                if [[ -n "${pid:-}" ]] && ps -p "$pid" >/dev/null 2>&1; then
+                    ((pf_running++))
+                fi
+            fi
+        done
+        
+        if [ $pf_running -eq $pf_total ]; then
+            port_forward_status="all_running"
+        elif [ $pf_running -gt 0 ]; then
+            port_forward_status="partial_running"
+        else
+            port_forward_status="stopped"
+        fi
+        
+        echo "{\"tunnel\": \"$tunnel_status\", \"port_forwarding\": \"$port_forward_status\", \"port_forwards_running\": $pf_running}"
+        return 0
+    fi
+    
+    echo -e "${PURPLE}🌐 Local Services Status:${NC}"
+    
+    # Check tunnel status
+    echo -n "  Tunnel: "
+    if [ -f "/tmp/quadratic-localhost-tunnel.pid" ]; then
+        local pid; pid="$(cat "/tmp/quadratic-localhost-tunnel.pid" 2>/dev/null || true)"
+        if [[ -n "${pid:-}" ]] && ps -p "$pid" >/dev/null 2>&1; then
+            echo -e "${GREEN}Running (PID: $pid)${NC}"
+        else
+            echo -e "${RED}Stopped (stale PID)${NC}"
+        fi
+    else
+        echo -e "${RED}Not running${NC}"
+    fi
+    
+    # Check port forwarding status
+    echo "  Port Forwarding:"
+    local any_pf_running=false
+    for service in controller metrics redis; do
+        echo -n "    $service: "
+        if [ -f "/tmp/quadratic-port-forward-${service}.pid" ]; then
+            local pid; pid="$(cat "/tmp/quadratic-port-forward-${service}.pid" 2>/dev/null || true)"
+            if [[ -n "${pid:-}" ]] && ps -p "$pid" >/dev/null 2>&1; then
+                echo -e "${GREEN}Running (PID: $pid)${NC}"
+                any_pf_running=true
+            else
+                echo -e "${RED}Stopped (stale PID)${NC}"
+            fi
+        else
+            echo -e "${RED}Not running${NC}"
+        fi
+    done
+    
+    if [[ "$any_pf_running" == true ]]; then
+        echo "    Access URLs:"
+        echo "      • Controller: http://localhost:3004"
+        echo "      • Metrics:    http://localhost:9090"
+        echo "      • Redis:      localhost:6379"
+    fi
+    
+    echo
+}
+
 show_health_status() {
     if [ "$JSON_OUTPUT" = true ]; then
         # Create JSON health summary
@@ -337,6 +421,7 @@ display_status() {
     show_health_status
     show_worker_jobs
     show_resource_usage
+    show_local_services_status
     show_recent_events
     show_detailed_status
     show_summary

@@ -1,13 +1,13 @@
 // Converts
 
 import type { JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import {
   javascriptConvertOutputArray,
   javascriptConvertOutputType,
 } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptOutput';
 import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {

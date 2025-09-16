@@ -3,6 +3,7 @@
 //! Store information about the state of the application in a send + sync
 //! struct.  All access and mutations to state should be performed here.
 
+pub mod jwt;
 mod pubsub;
 mod settings;
 
@@ -23,9 +24,8 @@ use self::settings::Settings;
 pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) pubsub: Mutex<PubSub>,
-    pub(crate) pubsub_blocking_listener: Mutex<PubSub>,
     pub(crate) kube_client: KubeClient,
-    pub(crate) worker_tokens: Mutex<HashMap<Uuid, Uuid>>,
+    pub(crate) worker_ephemeral_tokens: Mutex<HashMap<Uuid, Uuid>>,
     pub(crate) creating_workers: Mutex<HashSet<Uuid>>,
 }
 
@@ -44,43 +44,49 @@ impl State {
         let kube_client = KubeClient::try_from(kube_config)?;
 
         Ok(State {
-            settings: Settings::new(config).await,
-            pubsub: Mutex::new(PubSub::new(pubsub_config.clone()).await?),
-            pubsub_blocking_listener: Mutex::new(PubSub::new(pubsub_config).await?),
+            settings: Settings::new(config).await?,
+            pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             kube_client,
-            worker_tokens: Mutex::new(HashMap::new()),
+            worker_ephemeral_tokens: Mutex::new(HashMap::new()),
             creating_workers: Mutex::new(HashSet::new()),
         })
     }
 
-    pub(crate) async fn generate_worker_token(&self, file_id: &Uuid) -> Uuid {
+    pub(crate) async fn generate_worker_ephemeral_token(&self, file_id: &Uuid) -> Uuid {
         let token = Uuid::new_v4();
-        self.worker_tokens
+        self.worker_ephemeral_tokens
             .lock()
             .await
-            .insert(file_id.clone(), token.clone());
+            .insert(*file_id, token);
         token
     }
 
-    pub(crate) async fn verify_worker_token(
+    pub(crate) async fn verify_worker_ephemeral_token(
         &self,
         file_id: Uuid,
-        worker_token: Uuid,
+        worker_ephemeral_token: Uuid,
     ) -> Result<Uuid> {
-        let stored_worker_token = self.worker_tokens.lock().await.get(&file_id).cloned();
-        if stored_worker_token == Some(worker_token) {
+        let stored_worker_ephemeral_token = self
+            .worker_ephemeral_tokens
+            .lock()
+            .await
+            .get(&file_id)
+            .cloned();
+        if stored_worker_ephemeral_token == Some(worker_ephemeral_token) {
             Ok(file_id)
         } else {
-            Err(anyhow::anyhow!("Invalid worker token for file {file_id}"))
+            Err(anyhow::anyhow!(
+                "Invalid worker ephemeral token for file {file_id}"
+            ))
         }
     }
 
-    pub(crate) async fn remove_worker_token(&self, file_id: &Uuid) {
-        self.worker_tokens.lock().await.remove(file_id);
+    pub(crate) async fn remove_worker_ephemeral_token(&self, file_id: &Uuid) {
+        self.worker_ephemeral_tokens.lock().await.remove(file_id);
     }
 
     pub(crate) async fn acquire_worker_create_lock(&self, file_id: &Uuid) -> bool {
-        self.creating_workers.lock().await.insert(file_id.clone())
+        self.creating_workers.lock().await.insert(*file_id)
     }
 
     pub(crate) async fn release_worker_create_lock(&self, file_id: &Uuid) {

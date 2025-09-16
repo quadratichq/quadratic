@@ -410,7 +410,8 @@ show_build_info() {
     echo
     log_info "📁 Next Steps:"
     echo "  • Deploy to cluster: ./infra/k8s/scripts/deploy.sh"
-    echo "  • Set up tunnel: ./infra/k8s/scripts/tunnel.sh"
+    echo "  • Set up localhost tunnel: ./infra/k8s/scripts/tunnel.sh"
+    echo "  • Set up localhost port forwarding: ./infra/k8s/scripts/port-forward.sh"
     echo "  • View images: docker images | grep quadratic-cloud"
     echo "  • Check registry: curl http://${REGISTRY}/v2/_catalog"
     echo "  • Watch deployment: kubectl get pods -n quadratic-cloud -w"

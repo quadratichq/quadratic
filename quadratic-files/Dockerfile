@@ -28,10 +28,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
-COPY ./quadratic-files/. ./quadratic-files/
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-files/. ./quadratic-files/
 
 WORKDIR /quadratic/quadratic-files
 

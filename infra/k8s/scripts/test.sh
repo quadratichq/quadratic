@@ -343,7 +343,7 @@ test_networking() {
     
     # Test Controller to Redis connectivity
     if run_kubectl exec deployment/quadratic-cloud-controller -- \
-        nc -zv quadratic-cloud-redis 6379 &> /dev/null; then
+        timeout 5 bash -c 'exec 3<>/dev/tcp/quadratic-cloud-redis/6379; echo "PING" >&3; read -t 1 response <&3; [[ "$response" == *"PONG"* ]]' &> /dev/null; then
         record_test_result "controller_to_redis" "PASS" "Controller can reach Redis"
     else
         record_test_result "controller_to_redis" "FAIL" "Controller cannot reach Redis"
@@ -351,7 +351,7 @@ test_networking() {
     
     # Test DNS resolution
     if run_kubectl exec deployment/quadratic-cloud-controller -- \
-        nslookup quadratic-cloud-redis &> /dev/null; then
+        timeout 5 bash -c 'exec 3<>/dev/tcp/quadratic-cloud-redis/6379; echo "PING" >&3; read -t 1 response <&3; [[ "$response" == *"PONG"* ]]' &> /dev/null; then
         record_test_result "dns_resolution" "PASS" "DNS resolution working"
     else
         record_test_result "dns_resolution" "FAIL" "DNS resolution failed"

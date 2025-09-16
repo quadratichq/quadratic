@@ -7,12 +7,10 @@ import { clearDb, createUserTeamAndFile } from '../../tests/testDataGenerator';
 describe('GET /v0/internal/scheduled-tasks', () => {
   let testUser: any;
   let testFile: any;
-  let testTeam: any;
-  let uniqueId: string;
 
   beforeEach(async () => {
     await clearDb();
-    ({ uniqueId, testUser, testTeam, testFile } = await createUserTeamAndFile());
+    ({ testUser, testFile } = await createUserTeamAndFile());
   });
 
   afterEach(async () => {

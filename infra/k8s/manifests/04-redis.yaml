@@ -77,6 +77,13 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "6379"
     spec:
+      nodeSelector:
+        quadratic.io/node-role: redis
+      tolerations:
+        - key: "quadratic.io/dedicated"
+          operator: "Equal"
+          value: "redis"
+          effect: "NoSchedule"
       securityContext:
         runAsNonRoot: true
         runAsUser: 999

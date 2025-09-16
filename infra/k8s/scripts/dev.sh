@@ -68,6 +68,8 @@ dev_rebuild() {
     
     "${SCRIPT_DIR}/build.sh"
     "${SCRIPT_DIR}/deploy.sh"
+    "${SCRIPT_DIR}/tunnel.sh"
+    "${SCRIPT_DIR}/port-forward.sh"
     
     echo -e "${GREEN}✅ Rebuild complete!${NC}"
 }
@@ -92,6 +94,8 @@ dev_reset() {
     "${SCRIPT_DIR}/setup.sh"
     "${SCRIPT_DIR}/build.sh"
     "${SCRIPT_DIR}/deploy.sh"
+    "${SCRIPT_DIR}/tunnel.sh"
+    "${SCRIPT_DIR}/port-forward.sh"
     
     echo -e "${GREEN}✅ Reset complete!${NC}"
 }

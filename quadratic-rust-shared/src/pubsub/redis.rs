@@ -96,7 +96,7 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Subscribe to a channel.
-    async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
+    async fn subscribe(&mut self, channel: &str, _group: &str, _id: Option<&str>) -> Result<()> {
         self.pubsub.subscribe(channel).await?;
         Ok(())
     }
@@ -129,7 +129,7 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
-    async fn publish_once(
+    async fn publish_once_with_dedupe_key(
         &mut self,
         _dedupe_key: &str,
         _channel: &str,
@@ -159,7 +159,18 @@ impl super::PubSub for RedisConnection {
         _keys: Option<&str>,
         _max_messages: usize,
         _preserve_sequence: bool,
-        _block_ms: Option<usize>,
+    ) -> Result<Vec<(String, Vec<u8>)>> {
+        unimplemented!()
+    }
+
+    async fn messages_with_dedupe_key(
+        &mut self,
+        _channel: &str,
+        _group: &str,
+        _consumer: &str,
+        _keys: Option<&str>,
+        _max_messages: usize,
+        _preserve_sequence: bool,
     ) -> Result<Vec<(String, Vec<u8>)>> {
         unimplemented!()
     }
@@ -226,7 +237,10 @@ pub mod tests {
         let channel_clone = channel.clone();
         let handle = tokio::spawn(async move {
             let mut connection = RedisConnection::new(config_clone).await.unwrap();
-            connection.subscribe(&channel_clone, "").await.unwrap();
+            connection
+                .subscribe(&channel_clone, "", None)
+                .await
+                .unwrap();
             let mut received = vec![];
 
             while let Some(message) = connection.pubsub.on_message().next().await {

@@ -18,7 +18,7 @@ export function resultToScheduledTaskResponse(result: ScheduledTask): ScheduledT
     ...result,
     nextRunTime: result.nextRunTime.toISOString(),
     lastRunTime: result.lastRunTime?.toISOString() ?? '',
-    operations: result.operations as any,
+    operations: Array.from(result.operations),
     createdDate: result.createdDate.toISOString(),
     updatedDate: result.updatedDate.toISOString(),
   };
@@ -29,15 +29,16 @@ export async function createScheduledTask(data: {
   userId: number;
   fileId: number;
   cronExpression: string;
-  operations: Buffer;
+  operations: number[];
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.create({
     data: {
       ...data,
       nextRunTime: getNextRunTime(data.cronExpression),
       status: 'ACTIVE',
-      // Convert base64 string to Buffer for database storage
-      operations: Buffer.from(new Uint8Array(data.operations)),
+
+      // Convert number array to Buffer for database storage
+      operations: Buffer.from(data.operations),
     },
   });
 
@@ -48,7 +49,7 @@ export async function createScheduledTask(data: {
 export async function updateScheduledTask(data: {
   scheduledTaskId: number;
   cronExpression: string;
-  operations?: Buffer;
+  operations?: number[];
 }): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.update({
     where: { id: data.scheduledTaskId },
@@ -57,7 +58,7 @@ export async function updateScheduledTask(data: {
       nextRunTime: getNextRunTime(data.cronExpression),
 
       // Convert number array to Buffer for database storage
-      operations: Buffer.from(new Uint8Array(data.operations ?? [])),
+      operations: Buffer.from(data.operations ?? []),
       updatedDate: new Date(),
     },
   });

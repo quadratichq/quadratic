@@ -145,23 +145,54 @@ start_tunnel() {
   log "Starting ktunnel expose to '$TUNNEL_NAME' in namespace '$NAMESPACE' for ports: ${PORTS}"
   nohup ktunnel -n "$NAMESPACE" expose "$TUNNEL_NAME" "${PORT_LIST[@]}" >"$(log_file)" 2>&1 &
   echo $! >"$(pid_file)"
-  sleep 2
+  sleep 3
 
-  # Wait for service/deployment to appear (best-effort)
+  # Wait for deployment to be created, then add tolerations and node selector
   for i in {1..30}; do
-    if kubectl -n "$NAMESPACE" get svc "$TUNNEL_NAME" >/dev/null 2>&1 && \
-       kubectl -n "$NAMESPACE" get deploy "$TUNNEL_NAME" >/dev/null 2>&1; then
-      ok "Tunnel resources created: service/deployment '$TUNNEL_NAME'"
-      ok "PID $(cat "$(pid_file)") running; logs: $(log_file)"
-      echo
-      echo "Use in-cluster DNS:"
-      echo "  http://${TUNNEL_NAME}.${NAMESPACE}.svc.cluster.local:<port>"
-      return 0
+    if kubectl -n "$NAMESPACE" get deploy "$TUNNEL_NAME" >/dev/null 2>&1; then
+      log "Adding tolerations and node selector for localhost-tunnel node..."
+      kubectl -n "$NAMESPACE" patch deployment "$TUNNEL_NAME" -p '{
+        "spec": {
+          "template": {
+            "spec": {
+              "nodeSelector": {
+                "quadratic.io/node-role": "localhost-tunnel"
+              },
+              "tolerations": [
+                {
+                  "key": "quadratic.io/dedicated",
+                  "operator": "Equal", 
+                  "value": "localhost-tunnel",
+                  "effect": "NoSchedule"
+                }
+              ]
+            }
+          }
+        }
+      }' >/dev/null 2>&1
+      break
     fi
     sleep 1
   done
 
-  warn "Tunnel started, but resources not visible yet. Check: kubectl -n $NAMESPACE get svc,deploy $TUNNEL_NAME"
+  # Wait for service/deployment to appear and become ready
+  for i in {1..60}; do
+    if kubectl -n "$NAMESPACE" get svc "$TUNNEL_NAME" >/dev/null 2>&1 && \
+       kubectl -n "$NAMESPACE" get deploy "$TUNNEL_NAME" >/dev/null 2>&1; then
+      # Check if deployment is ready
+      if kubectl -n "$NAMESPACE" get deploy "$TUNNEL_NAME" -o jsonpath='{.status.readyReplicas}' 2>/dev/null | grep -q "1"; then
+        ok "Tunnel resources created and ready: service/deployment '$TUNNEL_NAME'"
+        ok "PID $(cat "$(pid_file)") running; logs: $(log_file)"
+        echo
+        echo "Use in-cluster DNS:"
+        echo "  http://${TUNNEL_NAME}.${NAMESPACE}.svc.cluster.local:<port>"
+        return 0
+      fi
+    fi
+    sleep 2
+  done
+
+  warn "Tunnel started, but resources not ready yet. Check: kubectl -n $NAMESPACE get svc,deploy,pods $TUNNEL_NAME"
   ok "Logs: $(log_file)"
 }
 

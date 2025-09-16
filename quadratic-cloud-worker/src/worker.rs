@@ -1,124 +1,160 @@
+use crate::{config::Config, state::State};
 use anyhow::Result;
+use quadratic_core_cloud::worker::Worker as Core;
 use quadratic_rust_shared::quadratic_cloud::{
-    GetTasksResponse, ack_tasks, get_last_file_checkpoint, get_tasks, worker_shutdown,
+    ack_tasks, get_tasks, get_worker_access_token, get_worker_init_data, worker_shutdown,
 };
 use tracing::{error, info};
-use uuid::Uuid;
 
-use crate::state::State;
-
-pub struct Worker {
+pub(crate) struct Worker {
     state: State,
+    core: Core,
 }
 
 impl Worker {
-    pub async fn new() -> Result<Self> {
-        match State::new() {
-            Ok(state) => Ok(Self { state }),
-            Err(e) => {
-                error!("Error creating state, error: {e}");
-                Err(e)
-            }
-        }
-    }
+    pub(crate) async fn new(config: Config) -> Result<Self> {
+        let file_id = config.file_id;
+        info!("File worker starting for file: {}", file_id);
 
-    pub async fn run(&self) -> Result<()> {
-        info!(
-            "File worker starting for file: {}",
-            self.state.settings.file_id
-        );
-
-        let last_file_checkpoint = match get_last_file_checkpoint(
-            &self.state.settings.controller_url,
-            self.state.settings.file_id,
-            self.state.settings.worker_token,
+        let worker_init_data = match get_worker_init_data(
+            &config.controller_url,
+            file_id,
+            config.worker_ephemeral_token,
         )
         .await
         {
-            Ok(last_file_checkpoint) => last_file_checkpoint,
+            Ok(worker_init_data) => worker_init_data,
             Err(e) => {
-                error!("Error getting last file checkpoint, error: {e}");
-                self.shutdown().await;
+                error!("Error getting worker init data for file: {file_id}, error: {e}");
                 return Err(anyhow::anyhow!(
-                    "Error getting last file checkpoint, error: {e}"
+                    "Error getting worker init data for file: {file_id}, error: {e}"
                 ));
             }
         };
+        info!("worker_init_data: {worker_init_data:?}",);
 
-        info!(
-            "last_file_checkpoint: {}, {}",
-            last_file_checkpoint.presigned_url, last_file_checkpoint.sequence_number
-        );
+        let state = match State::new(
+            config,
+            worker_init_data.worker_access_token.clone(),
+            worker_init_data.team_id,
+        ) {
+            Ok(state) => state,
+            Err(e) => {
+                error!("Error creating state for file: {file_id}, error: {e}");
+                return Err(e);
+            }
+        };
 
+        let core = match Core::new(
+            file_id,
+            worker_init_data.sequence_number as u64,
+            &worker_init_data.presigned_url,
+            // worker_init_data.worker_access_token,
+            "M2M_AUTH_TOKEN".to_string(),
+        )
+        .await
+        {
+            Ok(core) => core,
+            Err(e) => {
+                error!("Error creating core worker, error: {e}");
+                return Err(anyhow::anyhow!("Error creating core worker, error: {e}"));
+            }
+        };
+
+        Ok(Self { state, core })
+    }
+
+    pub(crate) async fn run(&mut self) -> Result<()> {
         loop {
-            match get_tasks(
+            let tasks = get_tasks(
                 &self.state.settings.controller_url,
                 self.state.settings.file_id,
-                self.state.settings.worker_token,
+                self.state.settings.worker_ephemeral_token,
+            )
+            .await?;
+
+            if tasks.is_empty() {
+                break;
+            }
+
+            let mut task_ids = Vec::new();
+            for task in tasks {
+                match self
+                    .core
+                    .process_operations(
+                        task.operations,
+                        // self.state.team_id,
+                        // self.state.worker_access_token.clone(),
+                        "test_team_id".to_string(),
+                        "M2M_AUTH_TOKEN".to_string(),
+                    )
+                    .await
+                {
+                    Ok(_) => task_ids.push(task.task_id),
+                    Err(e) => {
+                        error!("Error processing tasks, error: {e}");
+                    }
+                };
+            }
+
+            match ack_tasks(
+                &self.state.settings.controller_url,
+                self.state.settings.file_id,
+                self.state.settings.worker_ephemeral_token,
+                task_ids,
             )
             .await
             {
-                Ok(get_tasks_response) => {
-                    if get_tasks_response.is_empty() {
-                        info!(
-                            "No more tasks available for file: {}, shutting down",
-                            self.state.settings.file_id
-                        );
-                        break;
-                    }
-
-                    match self.process_tasks(get_tasks_response).await {
-                        Ok(task_ids) => {
-                            match ack_tasks(
-                                &self.state.settings.controller_url,
-                                self.state.settings.file_id,
-                                self.state.settings.worker_token,
-                                task_ids,
-                            )
-                            .await
-                            {
-                                Ok(_) => {
-                                    info!("Tasks acknowledged successfully");
-                                }
-                                Err(e) => {
-                                    error!("Error acknowledging tasks, error: {e}");
-                                    break;
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            error!("Error processing tasks, error: {e}");
-                            break;
-                        }
-                    }
+                Ok(_) => {
+                    info!("Tasks acknowledged successfully");
                 }
                 Err(e) => {
-                    error!("Error getting tasks, error: {e}");
+                    error!("Error acknowledging tasks, error: {e}");
                     break;
                 }
             }
         }
 
-        self.shutdown().await;
-
         Ok(())
     }
 
-    async fn process_tasks(&self, get_tasks_response: GetTasksResponse) -> Result<Vec<Uuid>> {
-        let task_ids = get_tasks_response.iter().map(|task| task.task_id).collect();
-
-        info!("Processing tasks: task_ids: {task_ids:?}");
-
-        Ok(task_ids)
+    pub(crate) async fn refresh_worker_access_token(&mut self) -> Result<()> {
+        match get_worker_access_token(
+            &self.state.settings.controller_url,
+            self.state.settings.file_id,
+            self.state.settings.worker_ephemeral_token,
+        )
+        .await
+        {
+            Ok(worker_access_token) => {
+                self.state.worker_access_token = worker_access_token.jwt.clone();
+                Ok(())
+            }
+            Err(e) => {
+                error!("Error getting worker access token, error: {e}");
+                return Err(anyhow::anyhow!(
+                    "Error getting worker access token, error: {e}"
+                ));
+            }
+        }
     }
 
-    async fn shutdown(&self) {
+    pub(crate) async fn shutdown(&mut self) {
         info!("Worker shutting down");
+
+        match self.core.leave_room().await {
+            Ok(_) => {
+                info!("Left room successfully");
+            }
+            Err(e) => {
+                error!("Error leaving room, error: {e}");
+            }
+        }
 
         match worker_shutdown(
             &self.state.settings.controller_url,
             self.state.settings.file_id,
-            self.state.settings.worker_token,
+            self.state.settings.worker_ephemeral_token,
         )
         .await
         {

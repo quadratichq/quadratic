@@ -6,11 +6,11 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
 import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import localforage from 'localforage';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import { isSafari } from 'react-device-detect';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';

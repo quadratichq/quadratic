@@ -4,14 +4,15 @@ use uuid::Uuid;
 
 use crate::SharedError;
 use crate::error::Result;
-use crate::quadratic_api::{GetLastFileCheckpointResponse, Task};
+use crate::quadratic_api::Task;
 
-pub const WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE: &str = "/worker/get-last-file-checkpoint";
+pub const WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE: &str = "/worker/get-worker-access-token";
+pub const WORKER_GET_WORKER_INIT_DATA_ROUTE: &str = "/worker/get-worker-init-data";
 pub const WORKER_GET_TASKS_ROUTE: &str = "/worker/get-tasks";
 pub const WORKER_ACK_TASKS_ROUTE: &str = "/worker/ack-tasks";
 pub const WORKER_SHUTDOWN_ROUTE: &str = "/worker/shutdown";
 pub const FILE_ID_HEADER: &str = "file-id";
-pub const WORKER_TOKEN_HEADER: &str = "worker-token";
+pub const WORKER_EPHEMERAL_TOKEN_HEADER: &str = "worker-ephemeral-token";
 
 fn handle_response(response: &Response) -> Result<()> {
     match response.status() {
@@ -27,26 +28,65 @@ fn handle_response(response: &Response) -> Result<()> {
     }
 }
 
-/// Get a last file checkpoint
-pub async fn get_last_file_checkpoint(
+#[derive(Serialize, Deserialize)]
+pub struct GetWorkerAccessTokenResponse {
+    pub jwt: String,
+}
+/// Get a worker access token
+pub async fn get_worker_access_token(
     base_url: &str,
     file_id: Uuid,
-    worker_token: Uuid,
-) -> Result<GetLastFileCheckpointResponse> {
-    let url = format!("{base_url}{WORKER_GET_LAST_FILE_CHECKPOINT_ROUTE}");
+    worker_ephemeral_token: Uuid,
+) -> Result<GetWorkerAccessTokenResponse> {
+    let url = format!("{base_url}{WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(WORKER_TOKEN_HEADER, worker_token.to_string())
+        .header(
+            WORKER_EPHEMERAL_TOKEN_HEADER,
+            worker_ephemeral_token.to_string(),
+        )
         .send()
         .await?;
 
     handle_response(&response)?;
 
-    let last_file_checkpoint = response.json::<GetLastFileCheckpointResponse>().await?;
+    let worker_access_token = response.json::<GetWorkerAccessTokenResponse>().await?;
 
-    Ok(last_file_checkpoint)
+    Ok(worker_access_token)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetWorkerInitDataResponse {
+    pub team_id: Uuid,
+    pub sequence_number: u32,
+    pub presigned_url: String,
+    pub worker_access_token: String,
+}
+/// Get a worker init data
+pub async fn get_worker_init_data(
+    base_url: &str,
+    file_id: Uuid,
+    worker_ephemeral_token: Uuid,
+) -> Result<GetWorkerInitDataResponse> {
+    let url = format!("{base_url}{WORKER_GET_WORKER_INIT_DATA_ROUTE}");
+
+    let response = reqwest::Client::new()
+        .get(url)
+        .header(FILE_ID_HEADER, file_id.to_string())
+        .header(
+            WORKER_EPHEMERAL_TOKEN_HEADER,
+            worker_ephemeral_token.to_string(),
+        )
+        .send()
+        .await?;
+
+    handle_response(&response)?;
+
+    let worker_init_data = response.json::<GetWorkerInitDataResponse>().await?;
+
+    Ok(worker_init_data)
 }
 
 pub type GetTasksResponse = Vec<Task>;
@@ -54,14 +94,17 @@ pub type GetTasksResponse = Vec<Task>;
 pub async fn get_tasks(
     base_url: &str,
     file_id: Uuid,
-    worker_token: Uuid,
+    worker_ephemeral_token: Uuid,
 ) -> Result<GetTasksResponse> {
     let url = format!("{base_url}{WORKER_GET_TASKS_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(WORKER_TOKEN_HEADER, worker_token.to_string())
+        .header(
+            WORKER_EPHEMERAL_TOKEN_HEADER,
+            worker_ephemeral_token.to_string(),
+        )
         .send()
         .await?;
 
@@ -83,7 +126,7 @@ pub struct AckTasksResponse {
 pub async fn ack_tasks(
     base_url: &str,
     file_id: Uuid,
-    worker_token: Uuid,
+    worker_ephemeral_token: Uuid,
     task_ids: Vec<Uuid>,
 ) -> Result<AckTasksResponse> {
     let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
@@ -93,7 +136,10 @@ pub async fn ack_tasks(
     let response = reqwest::Client::new()
         .post(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(WORKER_TOKEN_HEADER, worker_token.to_string())
+        .header(
+            WORKER_EPHEMERAL_TOKEN_HEADER,
+            worker_ephemeral_token.to_string(),
+        )
         .json(&request)
         .send()
         .await?;
@@ -112,14 +158,17 @@ pub struct ShutdownResponse {
 pub async fn worker_shutdown(
     base_url: &str,
     file_id: Uuid,
-    worker_token: Uuid,
+    worker_ephemeral_token: Uuid,
 ) -> Result<ShutdownResponse> {
     let url = format!("{base_url}{WORKER_SHUTDOWN_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(WORKER_TOKEN_HEADER, worker_token.to_string())
+        .header(
+            WORKER_EPHEMERAL_TOKEN_HEADER,
+            worker_ephemeral_token.to_string(),
+        )
         .send()
         .await?;
 

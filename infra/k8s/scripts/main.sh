@@ -7,7 +7,7 @@
 # It provides a menu-driven interface for all available scripts.
 #
 # Usage: ./infra/k8s/scripts/main.sh [COMMAND]
-# Commands: setup, build, deploy, test, logs, status, cleanup, dev
+# Commands: setup, build, deploy, tunnel, all, status, test, logs, port-forward, dev, shell, restart, jwt, cleanup, reset, help
 #==============================================================================
 
 set -e
@@ -61,29 +61,32 @@ show_menu() {
     echo -e "${PURPLE}📋 Available Commands:${NC}"
     echo
     echo -e "${GREEN}🏗️  Setup & Deploy:${NC}"
-    echo "  1. setup      - Create local Kubernetes environment"
-    echo "  2. build      - Build Docker images"
-    echo "  3. deploy     - Deploy to Kubernetes"
-    echo "  4. tunnel     - Set up tunnel to local services"
-    echo "  5. all        - Run setup + build + deploy"
+    echo "  1. setup        - Create local Kubernetes environment"
+    echo "  2. build        - Build Docker images"
+    echo "  3. deploy       - Deploy to Kubernetes"
+    echo "  4. tunnel       - Set up tunnel to local services"
+    echo "  5. port-forward - Port forward services"
+    echo "  6. all          - Run setup + build + deploy"
     echo
     echo -e "${GREEN}🔍 Monitor & Test:${NC}"
-    echo "  6. status     - Show system status"
-    echo "  7. test       - Run system tests"
-    echo "  8. logs       - View component logs"
-    echo "  9. port       - Port forward services"
+    echo "  7. status       - Show system status"
+    echo "  8. test         - Run system tests"
+    echo "  9. logs         - View component logs"
     echo
     echo -e "${GREEN}🛠️  Development:${NC}"
-    echo " 10. dev        - Development helpers"
-    echo " 11. shell      - Open shell in controller"
-    echo " 12. restart    - Restart all pods"
+    echo " 10. dev          - Development helpers"
+    echo " 11. shell        - Open shell in controller"
+    echo " 12. restart      - Restart all pods"
+    echo
+    echo -e "${GREEN}🔐 Security:${NC}"
+    echo " 13. jwt          - Generate JWT keys for .env"
     echo
     echo -e "${GREEN}🧹 Cleanup:${NC}"
-    echo " 13. cleanup    - Cleanup resources"
-    echo " 14. reset      - Complete reset"
+    echo " 14. cleanup      - Cleanup resources"
+    echo " 15. reset        - Complete reset"
     echo
-    echo " 15. help       - Show detailed help"
-    echo "  0. exit       - Exit"
+    echo " 16. help         - Show detailed help"
+    echo "  0. exit         - Exit"
     echo
 }
 
@@ -110,12 +113,18 @@ run_tunnel() {
     "${SCRIPT_DIR}/tunnel.sh"
 }
 
+run_port_forward() {
+    echo -e "${BLUE}🔗 Setting up port forwarding...${NC}"
+    "${SCRIPT_DIR}/port-forward.sh" start
+}
+
 run_all() {
     echo -e "${BLUE}🎯 Running complete setup...${NC}"
     run_setup
     run_build
     run_deploy
     run_tunnel
+    run_port_forward
     echo -e "${GREEN}✅ Complete setup finished!${NC}"
 }
 
@@ -134,11 +143,6 @@ run_logs() {
     "${SCRIPT_DIR}/logs.sh"
 }
 
-run_port_forward() {
-    echo -e "${BLUE}🔗 Setting up port forwarding...${NC}"
-    "${SCRIPT_DIR}/port-forward.sh" all
-}
-
 run_dev() {
     echo -e "${BLUE}🛠️  Development mode...${NC}"
     "${SCRIPT_DIR}/dev.sh"
@@ -152,6 +156,11 @@ run_shell() {
 run_restart() {
     echo -e "${BLUE}🔄 Restarting pods...${NC}"
     "${SCRIPT_DIR}/dev.sh" restart
+}
+
+run_jwt() {
+    echo -e "${BLUE}🔐 JWT Key Generation...${NC}"
+    "${SCRIPT_DIR}/jwt.sh" generate
 }
 
 run_cleanup() {
@@ -172,29 +181,52 @@ show_detailed_help() {
     echo
     echo -e "${PURPLE}Script Descriptions:${NC}"
     echo
-    echo "• setup.sh    - Creates kind cluster with local registry"
-    echo "• build.sh    - Builds controller and worker Docker images"
-    echo "• deploy.sh   - Deploys all Kubernetes manifests"
-    echo "• tunnel.sh   - Sets up tunnel to local services"
-    echo "• test.sh     - Runs comprehensive system tests"
-    echo "• logs.sh     - Shows logs with filtering options"
-    echo "• status.sh   - Displays system status and health"
-    echo "• cleanup.sh  - Removes resources (various levels)"
-    echo "• dev.sh      - Development helpers and shortcuts"
+    echo "• setup.sh        - Creates kind cluster with local registry"
+    echo "• build.sh        - Builds controller and worker Docker images"
+    echo "• deploy.sh       - Deploys all Kubernetes manifests"
+    echo "• tunnel.sh       - Sets up tunnel to local services"
+    echo "• port-forward.sh - Port forward services"
+    echo "• test.sh         - Runs comprehensive system tests"
+    echo "• logs.sh         - Shows logs with filtering options"
+    echo "• status.sh       - Displays system status and health"
+    echo "• cleanup.sh      - Removes resources (various levels)"
+    echo "• dev.sh          - Development helpers and shortcuts"
+    echo "• jwt.sh          - Generates JWT keys for worker authentication"
+    echo
+    echo -e "${PURPLE}JWT Authentication Setup:${NC}"
+    echo
+    echo "1. Generate JWT keys:"
+    echo "   ./main.sh jwt   (or ./main.sh 13)"
+    echo
+    echo "2. Copy generated keys to infra/k8s/.env file"
+    echo
+    echo "3. Deploy with JWT authentication:"
+    echo "   ./main.sh deploy"
     echo
     echo -e "${PURPLE}Common Workflows:${NC}"
     echo
-    echo "1. First-time setup:"
-    echo "   ./main.sh 1 && ./main.sh 2 && ./main.sh 3 && ./main.sh 4"
+    echo "1. First-time setup with JWT and services:"
+    echo "   ./main.sh setup && ./main.sh jwt && [edit .env] && ./main.sh build && ./main.sh deploy && ./main.sh tunnel && ./main.sh port-forward"
     echo
     echo "2. After code changes:"
-    echo "   ./main.sh 2 && ./main.sh 3"
+    echo "   ./main.sh build && ./main.sh deploy"
     echo
-    echo "3. Quick restart:"
-    echo "   ./main.sh 12"
+    echo "3. Check everything is running:"
+    echo "   ./main.sh status"
     echo
-    echo "4. Debug issues:"
-    echo "   ./main.sh 6 && ./main.sh 8"
+    echo "4. View all logs:"
+    echo "   ./main.sh logs"
+    echo
+    echo "5. Restart services:"
+    echo "   ./main.sh restart"
+    echo
+    echo -e "${PURPLE}JWT Configuration:${NC}"
+    echo
+    echo "• Keys are generated using RSA-2048 algorithm"
+    echo "• Private key stays on controller for JWT signing"
+    echo "• Public key is served via controller's /jwks endpoint"
+    echo "• Workers get signed JWTs for API authentication"
+    echo "• API validates worker JWTs using controller's public keys"
     echo
 }
 
@@ -206,7 +238,7 @@ interactive_mode() {
         show_banner
         show_menu
         
-        echo -n "Enter choice [0-14]: "
+        echo -n "Enter choice [0-16]: "
         read -r choice
         echo
         
@@ -215,17 +247,18 @@ interactive_mode() {
             2) run_build ;;
             3) run_deploy ;;
             4) run_tunnel ;;
-            5) run_all ;;
-            6) run_status ;;
-            7) run_test ;;
-            8) run_logs ;;
-            9) run_port_forward ;;
+            5) run_port_forward ;;
+            6) run_all ;;
+            7) run_status ;;
+            8) run_test ;;
+            9) run_logs ;;
             10) run_dev ;;
             11) run_shell ;;
             12) run_restart ;;
-            13) run_cleanup ;;
-            14) run_reset ;;
-            15) show_detailed_help ;;
+            13) run_jwt ;;
+            14) run_cleanup ;;
+            15) run_reset ;;
+            16) show_detailed_help ;;
             0) 
                 echo -e "${GREEN}👋 Goodbye!${NC}"
                 exit 0
@@ -252,14 +285,15 @@ command_line_mode() {
         "build") run_build ;;
         "deploy") run_deploy ;;
         "tunnel") run_tunnel ;;
+        "port-forward") run_port_forward ;;
         "all") run_all ;;
         "status") run_status ;;
         "test") run_test ;;
         "logs") run_logs ;;
-        "port") run_port_forward ;;
         "dev") run_dev ;;
         "shell") run_shell ;;
         "restart") run_restart ;;
+        "jwt") run_jwt ;;
         "cleanup") run_cleanup ;;
         "reset") run_reset ;;
         "help") show_detailed_help ;;

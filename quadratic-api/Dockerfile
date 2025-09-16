@@ -16,18 +16,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /quadratic
 
 # copy package.json for npm install
-COPY package.json .
-COPY ./quadratic-api/package.json ./quadratic-api/
-COPY ./quadratic-shared/package.json ./quadratic-shared/
+COPY --link package.json .
+COPY --link ./quadratic-api/package.json ./quadratic-api/
+COPY --link ./quadratic-shared/package.json ./quadratic-shared/
 
 # copy prisma schema and migrations for postinstall step
-COPY ./quadratic-api/prisma/. ./quadratic-api/prisma
+COPY --link ./quadratic-api/prisma/. ./quadratic-api/prisma
 
 RUN npm install --no-audit --no-fund
 RUN npm run postinstall --workspace=quadratic-api
 
-COPY quadratic-api ./quadratic-api
-COPY quadratic-shared ./quadratic-shared
+COPY --link quadratic-api ./quadratic-api
+COPY --link quadratic-shared ./quadratic-shared
 
 RUN npm run build --workspace=quadratic-api
 

@@ -18,11 +18,11 @@ import type {
 } from '@/app/quadratic-core-types';
 import initCoreRender from '@/app/quadratic-core/quadratic_core';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
-import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
 import type { Rectangle } from 'pixi.js';
+import { fromUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 // We need Rust, Client, and Core to be initialized before we can start rendering
 interface RenderTextStatus {

@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   pkg-config \
   libssl-dev \
+  llvm \
+  clang \
+  python3 \
+  python3-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -28,8 +32,11 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
-COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
-COPY ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-core-cloud/. ./quadratic-core-cloud/
+COPY --link ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
 
 WORKDIR /quadratic/quadratic-cloud-worker
 
@@ -45,6 +52,8 @@ FROM ubuntu:24.04 AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \  
   ca-certificates \
+  python3 \
+  libpython3.12 \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /quadratic/quadratic-cloud-worker/target/release/quadratic-cloud-worker .

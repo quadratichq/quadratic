@@ -74,7 +74,12 @@ pub trait PubSub {
     ) -> impl Future<Output = Result<()>> + Send;
 
     /// Subscribe to a channel
-    fn subscribe(&mut self, channel: &str, group: &str) -> impl Future<Output = Result<()>> + Send;
+    fn subscribe(
+        &mut self,
+        channel: &str,
+        group: &str,
+        id: Option<&str>,
+    ) -> impl Future<Output = Result<()>> + Send;
 
     /// Publish a message to a channel
     fn publish(
@@ -99,7 +104,7 @@ pub trait PubSub {
     fn trim(&mut self, channel: &str, key: &str) -> impl Future<Output = Result<i64>> + Send;
 
     /// Publish a message to a channel once with dedupe key
-    fn publish_once(
+    fn publish_once_with_dedupe_key(
         &mut self,
         dedupe_key: &str,
         channel: &str,
@@ -127,7 +132,17 @@ pub trait PubSub {
         keys: Option<&str>,
         max_messages: usize,
         preserve_sequence: bool,
-        block_ms: Option<usize>,
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
+
+    /// Get messages from a channel
+    fn messages_with_dedupe_key(
+        &mut self,
+        channel: &str,
+        group: &str,
+        consumer: &str,
+        keys: Option<&str>,
+        max_messages: usize,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
     /// Get messages from a channel before a specific key

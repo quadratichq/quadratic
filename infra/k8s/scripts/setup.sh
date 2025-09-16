@@ -17,7 +17,7 @@
 # Options:
 #   --cluster-name NAME    Custom cluster name (default: quadratic-cloud)
 #   --registry-port PORT   Custom registry port (default: 5001)
-#   --workers N            Number of worker nodes (default: 1)
+#   --workers N            Number of worker nodes (default: 4)
 #   --force                Force recreate existing cluster
 #==============================================================================
 
@@ -34,7 +34,7 @@ readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 CLUSTER_NAME="quadratic-cloud"
 REGISTRY_NAME="kind-registry"
 REGISTRY_PORT="5001"
-WORKER_NODES=1
+WORKER_NODES=4
 FORCE_RECREATE=false
 
 #------------------------------------------------------------------------------
@@ -88,13 +88,13 @@ USAGE:
 OPTIONS:
     --cluster-name NAME    Custom cluster name (default: quadratic-cloud)
     --registry-port PORT   Custom registry port (default: 5001)
-    --workers N            Number of worker nodes (default: 1)
+    --workers N            Number of worker nodes (default: 4)
     --force                Force recreate existing cluster
     --help                 Show this help message
 
 EXAMPLES:
     $0                                    # Basic setup
-    $0 --workers 2                       # Setup with 2 worker nodes
+    $0 --workers 4                       # Setup with 4 worker nodes
     $0 --force --cluster-name my-cluster # Force recreate with custom name
 
 EOF
@@ -285,12 +285,24 @@ nodes:
     protocol: TCP
 EOF
 
-    # Add worker nodes if specified
+    # Add worker nodes with descriptive labels
     for ((i=1; i<=WORKER_NODES; i++)); do
+        local role
+        if (( i == 1 )); then
+            role="localhost-tunnel"
+        elif (( i == 2 )); then
+            role="redis"
+        elif (( i == 3 )); then
+            role="controller"
+        else
+            role="worker"
+        fi
         cat >> "$config_file" << EOF
 - role: worker
   labels:
     worker-id: "worker-${i}"
+    intended-role: "${role}"
+    quadratic.io/node-purpose: "${role}"
 EOF
     done
 
@@ -354,6 +366,103 @@ EOF
     log_success "Kind cluster created successfully"
 }
 
+get_kind_worker_nodes() {
+    local ctx="kind-${CLUSTER_NAME}"
+    kubectl get nodes --context "$ctx" --no-headers -o custom-columns=":metadata.name" | grep -E ".*-worker.*" | grep -v "^$" || true
+}
+
+wait_for_kind_workers_ready() {
+    local ctx="kind-${CLUSTER_NAME}"
+    local deadline=$((SECONDS + 300))
+    
+    log_info "Waiting for worker nodes to be Ready..."
+    
+    while true; do
+        mapfile -t workers < <(get_kind_worker_nodes)
+        
+        # Debug output
+        log_info "Found ${#workers[@]} worker nodes: ${workers[*]}"
+        
+        if [ ${#workers[@]} -gt 0 ]; then
+            local all_ready=true
+            for n in "${workers[@]}"; do
+                [ -z "$n" ] && continue
+                local ready
+                ready=$(kubectl get node "$n" --context "$ctx" -o jsonpath='{range .status.conditions[?(@.type=="Ready")]}{.status}{end}' 2>/dev/null || echo "Unknown")
+                log_info "Node $n status: $ready"
+                if [ "$ready" != "True" ]; then
+                    all_ready=false
+                    break
+                fi
+            done
+            if $all_ready; then
+                log_success "All worker nodes are Ready"
+                return 0
+            fi
+        fi
+        
+        if [ $SECONDS -ge $deadline ]; then
+            log_error "Worker nodes did not become Ready in time"
+            kubectl get nodes --context "$ctx"
+            exit 1
+        fi
+        sleep 2
+    done
+}
+
+configure_local_node_roles() {
+    log_step "Configuring node roles and taints for local cluster..."
+    local ctx="kind-${CLUSTER_NAME}"
+
+    wait_for_kind_workers_ready
+    mapfile -t workers < <(get_kind_worker_nodes)
+
+    if [ ${#workers[@]} -lt 4 ]; then
+        log_error "Need at least 4 worker nodes for redis, controller, and workers. Found ${#workers[@]}"
+        log_info "Recreate with: ./infra/k8s/scripts/setup.sh --workers 4 --force"
+        exit 1
+    fi
+
+    # First worker → localhost-tunnel
+    local tunnel_node="${workers[0]}"
+    kubectl label node "$tunnel_node" quadratic.io/node-role=localhost-tunnel --overwrite --context "$ctx"
+    kubectl taint node "$tunnel_node" quadratic.io/dedicated=localhost-tunnel:NoSchedule --overwrite --context "$ctx" || true
+
+    # Second worker → redis
+    local redis_node="${workers[1]}"
+    kubectl label node "$redis_node" quadratic.io/node-role=redis --overwrite --context "$ctx"
+    kubectl taint node "$redis_node" quadratic.io/dedicated=redis:NoSchedule --overwrite --context "$ctx" || true
+
+    # Second worker → cloud controller
+    local controller_node="${workers[2]}"
+    kubectl label node "$controller_node" quadratic.io/node-role=controller --overwrite --context "$ctx"
+    kubectl taint node "$controller_node" quadratic.io/dedicated=controller:NoSchedule --overwrite --context "$ctx" || true
+
+    # Remaining workers → cloud workers
+    for n in "${workers[@]:3}"; do
+        kubectl label node "$n" quadratic.io/node-role=worker --overwrite --context "$ctx"
+        kubectl taint node "$n" quadratic.io/dedicated=worker:NoSchedule --overwrite --context "$ctx" || true
+    done
+
+    log_success "Roles: localhost-tunnel=${tunnel_node}, redis=${redis_node}, controller=${controller_node}, workers=$(printf "%s " "${workers[@]:3}")"
+}
+
+show_local_node_roles() {
+    echo
+    log_success "🏗️ Node Role Assignment:"
+    echo "========================"
+    printf "%-30s | %-15s | %s\n" "NODE NAME" "QUADRATIC ROLE" "STATUS"
+    echo "-------------------------------|-----------------|--------"
+    
+    kubectl get nodes --context "kind-${CLUSTER_NAME}" -o json | \
+    jq -r '.items[] | "\(.metadata.name)|\(.metadata.labels."quadratic.io/node-role" // "none")|\(.status.conditions[] | select(.type=="Ready") | .status)"' | \
+    while IFS='|' read -r name role status; do
+        printf "%-30s | %-15s | %s\n" "$name" "$role" "$status"
+    done
+    echo "========================"
+    echo
+}
+
 #------------------------------------------------------------------------------
 # Verification Functions
 #------------------------------------------------------------------------------
@@ -367,23 +476,15 @@ verify_setup() {
     # Check nodes
     log_info "Checking nodes..."
     kubectl get nodes --context "kind-${CLUSTER_NAME}"
+    show_local_node_roles
     
-    # Check registry connectivity
-    log_info "Testing registry connectivity..."
+    # Check registry connectivity from host
+    log_info "Testing registry connectivity from host..."
     if ! curl -s "http://localhost:${REGISTRY_PORT}/v2/_catalog" &> /dev/null; then
-        log_error "Registry is not accessible"
+        log_error "Registry is not accessible from host"
         exit 1
     fi
-    
-    # Test registry from within cluster
-    log_info "Testing registry from cluster..."
-    kubectl run --context "kind-${CLUSTER_NAME}" test-registry \
-        --image=curlimages/curl:latest \
-        --rm -i --restart=Never \
-        -- curl -s "${REGISTRY_NAME}:5000/v2/_catalog" || {
-        log_error "Registry is not accessible from within cluster"
-        exit 1
-    }
+
     
     log_success "Setup verification completed"
 }
@@ -411,9 +512,10 @@ show_setup_info() {
     log_info "📁 Next Steps:"
     echo "  1. Build images: ./infra/k8s/scripts/build.sh"
     echo "  2. Deploy system: ./infra/k8s/scripts/deploy.sh"
-    echo "  3. Set up tunnel: ./infra/k8s/scripts/tunnel.sh"
-    echo "  4. Test system: ./infra/k8s/scripts/test.sh"
-    echo "  5. Watch logs: ./infra/k8s/scripts/logs.sh"
+    echo "  3. Set up localhost tunnel: ./infra/k8s/scripts/tunnel.sh"
+    echo "  4. Set up localhost port forwarding: ./infra/k8s/scripts/port-forward.sh"
+    echo "  5. Test system: ./infra/k8s/scripts/test.sh"
+    echo "  6. Watch logs: ./infra/k8s/scripts/logs.sh"
     echo
 }
 
@@ -450,6 +552,7 @@ main() {
     check_prerequisites
     setup_local_registry
     create_kind_cluster
+    configure_local_node_roles
     verify_setup
     show_setup_info
     

@@ -13,9 +13,6 @@ use uuid::Uuid;
 
 use crate::state::State;
 
-const BLOCKING_LISTENER_MAX_MESSAGES: usize = 5;
-const BLOCKING_LISTENER_BLOCK_MS: usize = 5000;
-
 pub(crate) struct Controller {
     pub(crate) state: Arc<State>,
 }
@@ -23,49 +20,6 @@ pub(crate) struct Controller {
 impl Controller {
     pub(crate) async fn new(state: Arc<State>) -> Result<Self> {
         Ok(Self { state })
-    }
-
-    pub(crate) async fn listen_for_worker_task_events(&self) -> Result<()> {
-        info!("[listen_for_worker_task_events] Subscribing to pubsub listener");
-
-        self.state.subscribe_pubsub_blocking_listener().await?;
-
-        loop {
-            // Block and wait for new tasks in the blocking listener channel for active channel
-            let messages = match self
-                .state
-                .get_tasks_from_pubsub_blocking_listener(
-                    BLOCKING_LISTENER_MAX_MESSAGES,
-                    BLOCKING_LISTENER_BLOCK_MS,
-                )
-                .await
-            {
-                Ok(messages) => messages,
-                Err(e) => {
-                    error!("Error getting messages: {e}");
-                    continue;
-                }
-            };
-
-            // get the file ids from the messages
-            let file_ids = messages
-                .into_iter()
-                .flat_map(|(_, file_id)| match String::from_utf8(file_id) {
-                    Ok(file_id) => Uuid::parse_str(&file_id).ok(),
-                    Err(e) => {
-                        error!("[listen_for_worker_task_events] Error parsing file id, error: {e}");
-                        None
-                    }
-                })
-                .collect::<HashSet<_>>();
-
-            // ensure workers exist for the file ids
-            for file_id in file_ids {
-                if let Err(e) = self.ensure_worker_exists_if_needed_for_file(&file_id).await {
-                    error!("Failed to handle scheduled task event, file_id: {file_id}, error: {e}");
-                }
-            }
-        }
     }
 
     pub(crate) async fn scan_and_ensure_all_workers(&self) -> Result<()> {
@@ -131,27 +85,6 @@ impl Controller {
         Ok(())
     }
 
-    async fn ensure_worker_exists_if_needed_for_file(&self, file_id: &Uuid) -> Result<()> {
-        info!(
-            "[ensure_worker_exists_if_needed_for_file] Ensuring worker exists for file {file_id}"
-        );
-
-        if self.file_has_active_worker(file_id).await? {
-            info!("Active file worker found for file {file_id}");
-            return Ok(());
-        }
-
-        info!("Checking if file {file_id} has pending tasks");
-        if !self.state.file_has_pending_tasks(file_id).await? {
-            info!("File {file_id} has no pending tasks, skipping worker creation");
-            return Ok(());
-        }
-
-        self.create_worker(file_id).await?;
-
-        Ok(())
-    }
-
     async fn get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
         let jobs = Self::get_namespaced_jobs(&self.state);
         let list_params = Self::get_list_params_for_all_workers();
@@ -160,16 +93,12 @@ impl Controller {
         for job in job_list.items {
             if job.metadata.deletion_timestamp.is_none()
                 && let Some(status) = &job.status
+                && status.active.unwrap_or(0) > 0
+                && let Some(labels) = &job.metadata.labels
+                && let Some(file_id_str) = labels.get("file-id")
+                && let Ok(file_id) = Uuid::parse_str(file_id_str)
             {
-                if status.active.unwrap_or(0) > 0 {
-                    if let Some(labels) = &job.metadata.labels {
-                        if let Some(file_id_str) = labels.get("file-id") {
-                            if let Ok(file_id) = Uuid::parse_str(file_id_str) {
-                                active_file_ids.insert(file_id);
-                            }
-                        }
-                    }
-                }
+                active_file_ids.insert(file_id);
             }
         }
         Ok(active_file_ids)
@@ -187,11 +116,11 @@ impl Controller {
         {
             true => {
                 info!("[file_has_active_worker] Found file worker for file {file_id}");
-                return Ok(true);
+                Ok(true)
             }
             false => {
                 info!("[file_has_active_worker] No active worker found for file {file_id}");
-                return Ok(false);
+                Ok(false)
             }
         }
     }
@@ -244,7 +173,7 @@ impl Controller {
 
     async fn build_worker_spec(&self, file_id: &Uuid) -> Result<Job> {
         let namespace = self.state.settings.namespace.as_str();
-        let worker_token = self.state.generate_worker_token(file_id).await;
+        let worker_ephemeral_token = self.state.generate_worker_ephemeral_token(file_id).await;
         let job_yaml = format!(
             r#"
 apiVersion: batch/v1
@@ -272,19 +201,32 @@ spec:
         app.kubernetes.io/managed-by: quadratic-cloud-controller
     spec:
       restartPolicy: Never
+      serviceAccountName: quadratic-cloud-worker
+      automountServiceAccountToken: false
+      nodeSelector:
+        quadratic.io/node-role: worker
+      tolerations:
+      - key: "quadratic.io/dedicated"
+        operator: "Equal"
+        value: "worker"
+        effect: "NoSchedule"
       containers:
       - name: worker
         image: localhost:5001/quadratic-cloud-worker:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
         env:
         - name: RUST_LOG
           value: "info,worker=debug"
         - name: CONTROLLER_URL
-          value: "http://quadratic-cloud-controller:3004"
+          value: "http://quadratic-cloud-controller-worker:3005"
         - name: FILE_ID
           value: "{file_id}"
-        - name: WORKER_TOKEN
-          value: "{worker_token}"
+        - name: WORKER_EPHEMERAL_TOKEN
+          value: "{worker_ephemeral_token}"
+        - name: LOCALHOST_TUNNEL_PORTS
+          value: "8000,3001,3002,3003"
         resources:
           requests:
             cpu: 500m
@@ -293,12 +235,66 @@ spec:
             cpu: 2000m
             memory: 8Gi
         volumeMounts:
-        - name: tmp
-          mountPath: /tmp
+        - name: ready
+          mountPath: /ready
+        command: ["/bin/sh"]
+        args:
+        - -lc
+        - |
+          set -e
+          
+          # Set up localhost tunnel ports
+          PORTS=$(echo "$LOCALHOST_TUNNEL_PORTS" | tr ',' ' ')
+          echo "Waiting for localhost-tunnel readiness..."
+          until [ -f /ready/localhost-tunnel.ready ]; do sleep 0.2; done
+          echo "Verifying localhost ports..."
+          for p in $PORTS; do
+            until curl -sS --max-time 1 "http://localhost:$p/" -o /dev/null; do sleep 0.2; done
+          done
+
+          echo "Starting quadratic-cloud-worker..."
+          exec ./quadratic-cloud-worker
+      - name: localhost-tunnel
+        image: alpine:latest
+        env:
+        - name: LOCALHOST_TUNNEL_PORTS
+          value: "8000,3001,3002,3003"
+        - name: LOCALHOST_TUNNEL_SERVICE
+          value: "quadratic-localhost-tunnel.{namespace}.svc.cluster.local"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        volumeMounts:
+        - name: ready
+          mountPath: /ready
+        command: ["/bin/sh"]
+        args:
+        - -lc
+        - |
+          set -e
+          apk add --no-cache socat netcat-openbsd
+          PORTS=$(echo "$LOCALHOST_TUNNEL_PORTS" | tr ',' ' ')
+          echo "Starting IPv4 forwarders to $LOCALHOST_TUNNEL_SERVICE for: $PORTS"
+          for p in $PORTS; do
+            socat -d -d TCP-LISTEN:$p,bind=127.0.0.1,fork,reuseaddr \
+                  TCP:$LOCALHOST_TUNNEL_SERVICE:$p,forever,interval=1 &
+          done
+          echo "Waiting for ktunnel service reachability and local listeners..."
+          for p in $PORTS; do
+            until nc -z -w 1 "$LOCALHOST_TUNNEL_SERVICE" $p; do sleep 0.5; done
+            until nc -z -w 1 127.0.0.1 $p; do sleep 0.2; done
+          done
+          echo ready >/ready/localhost-tunnel.ready
+          echo "All ports ready."
+          wait
       volumes:
-      - name: tmp
+      - name: ready
         emptyDir: {{}}
-"#
+"#,
         );
         let job: Job = serde_yaml::from_str(&job_yaml)?;
         Ok(job)
@@ -306,20 +302,20 @@ spec:
 
     pub(crate) async fn shutdown_worker(state: &Arc<State>, file_id: &Uuid) -> Result<()> {
         info!("[shutdown_worker] Shutting down worker for file {file_id}");
-        let jobs = Self::get_namespaced_jobs(&state);
+        let jobs = Self::get_namespaced_jobs(state);
         let list_params = Self::get_list_params_for_worker_with_file_id(file_id);
         let job_list = jobs.list(&list_params).await?;
         for job in job_list.items {
-            if job.metadata.deletion_timestamp.is_none() {
-                if let Some(name) = job.metadata.name {
-                    info!("[shutdown_worker] Deleting worker job: {}", name);
-                    let delete_params = DeleteParams::default();
-                    match jobs.delete(&name, &delete_params).await {
-                        Ok(_) => info!("[shutdown_worker] Successfully deleted worker job: {name}"),
-                        Err(e) => {
-                            error!("[shutdown_worker] Failed to delete worker job {name}: {e}");
-                            return Err(anyhow::anyhow!(e));
-                        }
+            if job.metadata.deletion_timestamp.is_none()
+                && let Some(name) = job.metadata.name
+            {
+                info!("[shutdown_worker] Deleting worker job: {}", name);
+                let delete_params = DeleteParams::default();
+                match jobs.delete(&name, &delete_params).await {
+                    Ok(_) => info!("[shutdown_worker] Successfully deleted worker job: {name}"),
+                    Err(e) => {
+                        error!("[shutdown_worker] Failed to delete worker job {name}: {e}");
+                        return Err(anyhow::anyhow!(e));
                     }
                 }
             }

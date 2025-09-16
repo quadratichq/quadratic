@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tower::ServiceExt;
 
 #[cfg(test)]
-use crate::{config::Config, server::app, state::State};
+use crate::{config::Config, server::public_app, state::State};
 
 #[cfg(test)]
 pub(crate) async fn new_state() -> Arc<State> {
@@ -22,15 +22,16 @@ pub(crate) async fn new_state() -> Arc<State> {
 #[cfg(test)]
 pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
     let state = new_state().await;
-    let app = app(state).unwrap();
+    let public_app = public_app(state).unwrap();
 
-    app.oneshot(
-        axum::http::Request::builder()
-            .method(method)
-            .uri(uri)
-            .body(body)
-            .unwrap(),
-    )
-    .await
-    .unwrap()
+    public_app
+        .oneshot(
+            axum::http::Request::builder()
+                .method(method)
+                .uri(uri)
+                .body(body)
+                .unwrap(),
+        )
+        .await
+        .unwrap()
 }

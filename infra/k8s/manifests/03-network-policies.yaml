@@ -1,0 +1,221 @@
+# Default deny all
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: quadratic-cloud
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Tunnel Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-localhost-tunnel-ingress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-localhost-tunnel
+  policyTypes: [Ingress]
+  ingress:
+    # Allow controller and worker access
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-controller
+              app.kubernetes.io/component: controller
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-worker
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 3001
+        - protocol: TCP
+          port: 3002
+        - protocol: TCP
+          port: 3003
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-localhost-tunnel-egress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-localhost-tunnel
+  policyTypes:
+    - Egress
+  egress:
+    # Allow all egress for tunnel (it needs to reach host services)
+    - to: []
+---
+# Redis Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-cloud-redis-ingress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-redis
+  policyTypes: [Ingress]
+  ingress:
+    # Allow controller access
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-controller
+              app.kubernetes.io/component: controller
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow self-access for health checks (redis-cli ping)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-cloud-redis-egress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-redis
+  policyTypes: [Egress]
+  egress:
+    # DNS for any hostname resolution Redis might need
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Controller Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-cloud-controller-ingress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-controller
+      app.kubernetes.io/component: controller
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow external access to HTTP and metrics
+    - ports:
+        - protocol: TCP
+          port: 3004
+        - protocol: TCP
+          port: 9090
+    # Allow worker access to worker-only API
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-worker
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 3005
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-cloud-controller-egress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-controller
+      app.kubernetes.io/component: controller
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Local registry (for image pulls)
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Kubernetes API server access
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+    # Localhost-tunnel (tunnel to local services)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-localhost-tunnel
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 3001
+        - protocol: TCP
+          port: 3002
+        - protocol: TCP
+          port: 3003
+    # Redis access
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quadratic-cloud-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+# Worker Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quadratic-cloud-worker-egress
+  namespace: quadratic-cloud
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quadratic-cloud-worker
+      app.kubernetes.io/component: worker
+  policyTypes:
+    - Egress
+  egress:
+    # Allow all egress traffic (unrestricted public access)
+    - to: []

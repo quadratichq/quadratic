@@ -22,7 +22,16 @@ router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Resp
         lte: currentTime,
       },
     },
-    select: { file: true, uuid: true, nextRunTime: true, operations: true },
+    select: {
+      file: {
+        select: {
+          uuid: true,
+        },
+      },
+      uuid: true,
+      nextRunTime: true,
+      operations: true,
+    },
   });
 
   // Transform operations from Buffer to parsed JSON for consistency with other endpoints

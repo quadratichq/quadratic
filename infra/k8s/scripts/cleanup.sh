@@ -306,6 +306,7 @@ show_restart_info() {
             log_info "📁 To restart the application:"
             echo "  ./infra/k8s/scripts/deploy.sh"
             echo "  ./infra/k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/port-forward.sh"
             ;;
         "cluster")
             log_info "📁 To restart the environment:"
@@ -313,6 +314,7 @@ show_restart_info() {
             echo "  ./infra/k8s/scripts/build.sh"
             echo "  ./infra/k8s/scripts/deploy.sh"
             echo "  ./infra/k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/port-forward.sh"
             ;;
         "registry")
             log_info "📁 To restart with registry:"
@@ -329,6 +331,7 @@ show_restart_info() {
             echo "  ./infra/k8s/scripts/build.sh"
             echo "  ./infra/k8s/scripts/deploy.sh"
             echo "  ./infra/k8s/scripts/tunnel.sh"
+            echo "  ./infra/k8s/scripts/port-forward.sh"
             ;;
     esac
 }

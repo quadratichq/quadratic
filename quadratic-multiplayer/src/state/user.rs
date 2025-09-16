@@ -33,19 +33,19 @@ pub(crate) struct User {
     pub last_heartbeat: DateTime<Utc>,
 }
 
-impl Into<quadratic_rust_shared::multiplayer::message::User> for User {
-    fn into(self) -> quadratic_rust_shared::multiplayer::message::User {
+impl From<User> for quadratic_rust_shared::multiplayer::message::User {
+    fn from(val: User) -> Self {
         quadratic_rust_shared::multiplayer::message::User {
-            session_id: self.session_id,
-            user_id: self.user_id,
-            connection_id: self.connection_id,
-            first_name: self.first_name,
-            last_name: self.last_name,
-            email: self.email,
-            image: self.image,
-            index: self.index,
-            permissions: self.permissions,
-            state: self.state,
+            session_id: val.session_id,
+            user_id: val.user_id,
+            connection_id: val.connection_id,
+            first_name: val.first_name,
+            last_name: val.last_name,
+            email: val.email,
+            image: val.image,
+            index: val.index,
+            permissions: val.permissions,
+            state: val.state,
         }
     }
 }

@@ -2,10 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 use quadratic_rust_shared::{
-    pubsub::{
-        Config as PubSubConfig, PubSub as PubSubTrait,
-        redis_streams::{Message, RedisConnection},
-    },
+    pubsub::{Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection},
     quadratic_api::Task,
 };
 use tracing::{error, info};
@@ -15,9 +12,6 @@ use super::State;
 
 static GROUP_NAME: &str = "quadratic-cloud";
 static ACTIVE_FILE_CHANNEL_SET: &str = "quadratic-cloud-active-file-channel-set";
-static ACTIVE_FILE_CHANNEL_STREAM: &str = "quadratic-cloud-active-file-channel-stream";
-static ACTIVE_FILE_CHANNEL_STREAM_CONSUMER: &str =
-    "quadratic-cloud-active-file-channel-stream-consumer";
 static FILE_TASKS_CONSUMER: &str = "quadratic-cloud-file-tasks-consumer";
 static TASK_DEDUPE_KEY_PREFIX: &str = "quadratic-cloud-task";
 
@@ -72,67 +66,9 @@ impl State {
         self.pubsub.lock().await.is_healthy().await
     }
 
-    /// Check if the PubSub blocking listener connection is healthy
-    pub(crate) async fn pubsub_blocking_listener_is_healthy(&self) -> bool {
-        self.pubsub_blocking_listener
-            .lock()
-            .await
-            .is_healthy()
-            .await
-    }
-
     /// Reconnect to the PubSub server if it is unhealthy
     pub(crate) async fn reconnect_pubsub_if_unhealthy(&self) {
         self.pubsub.lock().await.reconnect_if_unhealthy().await;
-    }
-
-    /// Reconnect to the PubSub blocking listener server if it is unhealthy
-    pub(crate) async fn reconnect_pubsub_blocking_listener_if_unhealthy(&self) {
-        self.pubsub_blocking_listener
-            .lock()
-            .await
-            .reconnect_if_unhealthy()
-            .await;
-    }
-
-    /// Subscribe to the PubSub blocking listener channel for active channel
-    pub(crate) async fn subscribe_pubsub_blocking_listener(&self) -> Result<()> {
-        self.reconnect_pubsub_blocking_listener_if_unhealthy().await;
-
-        self.pubsub_blocking_listener
-            .lock()
-            .await
-            .connection
-            .subscribe(ACTIVE_FILE_CHANNEL_STREAM, GROUP_NAME)
-            .await?;
-
-        Ok(())
-    }
-
-    /// Get tasks from the PubSub blocking listener channel for active channel
-    pub(crate) async fn get_tasks_from_pubsub_blocking_listener(
-        &self,
-        max_messages: usize,
-        block_ms: usize,
-    ) -> Result<Vec<Message>> {
-        self.reconnect_pubsub_blocking_listener_if_unhealthy().await;
-
-        let mut pubsub = self.pubsub.lock().await;
-
-        let messages = pubsub
-            .connection
-            .messages(
-                ACTIVE_FILE_CHANNEL_STREAM,
-                GROUP_NAME,
-                ACTIVE_FILE_CHANNEL_STREAM_CONSUMER,
-                None,
-                max_messages,
-                true,
-                Some(block_ms),
-            )
-            .await?;
-
-        Ok(messages)
     }
 
     /// Add tasks to the PubSub channel for a file
@@ -147,7 +83,7 @@ impl State {
             // publish the task to the file_id channel
             match pubsub
                 .connection
-                .publish_once(
+                .publish_once_with_dedupe_key(
                     TASK_DEDUPE_KEY_PREFIX,
                     &task.file_id.to_string(),
                     &task.task_id.to_string(),
@@ -166,19 +102,6 @@ impl State {
             }
         }
 
-        // publish a message to the active file channel stream for each file id that has tasks
-        for file_id in file_ids {
-            pubsub
-                .connection
-                .publish(
-                    ACTIVE_FILE_CHANNEL_STREAM,
-                    "*",
-                    file_id.to_string().as_bytes(),
-                    None,
-                )
-                .await?;
-        }
-
         Ok(())
     }
 
@@ -190,19 +113,18 @@ impl State {
 
         pubsub
             .connection
-            .subscribe(&file_id.to_string(), GROUP_NAME)
+            .subscribe(&file_id.to_string(), GROUP_NAME, Some("0"))
             .await?;
 
         let messages = pubsub
             .connection
-            .messages(
+            .messages_with_dedupe_key(
                 &file_id.to_string(),
                 GROUP_NAME,
                 FILE_TASKS_CONSUMER,
                 None,
-                1,
+                10,
                 true,
-                None,
             )
             .await?;
 
@@ -228,7 +150,7 @@ impl State {
 
         pubsub
             .connection
-            .subscribe(&file_id.to_string(), GROUP_NAME)
+            .subscribe(&file_id.to_string(), GROUP_NAME, Some("0"))
             .await?;
 
         // acknowledge the tasks, removing them from the file_id channel and the active channel
@@ -263,16 +185,5 @@ impl State {
             .collect::<HashSet<_>>();
 
         Ok(file_ids)
-    }
-
-    /// Check if a file has pending tasks, by checking if the file id channel has messages
-    pub(crate) async fn file_has_pending_tasks(&self, file_id: &Uuid) -> Result<bool> {
-        self.reconnect_pubsub_if_unhealthy().await;
-
-        let mut pubsub = self.pubsub.lock().await;
-
-        let tasks_length = pubsub.connection.length(&file_id.to_string()).await?;
-
-        Ok(tasks_length > 0)
     }
 }

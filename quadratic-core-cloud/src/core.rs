@@ -25,7 +25,7 @@ use crate::{
 // receive the transaction
 // get file from S3
 // enter the multiplayer room
-// receive catchup transactions if any (receive transansactions)
+// receive catchup transactions if any (receive transactions)
 // process transactions
 // send forward transactions to multiplayer
 
@@ -33,7 +33,7 @@ use crate::{
 ///
 /// This function will start a transaction and wait for the result.
 /// If the transaction times out, it will return an error.
-pub(crate) async fn process_transaction(
+pub async fn process_transaction(
     grid: Arc<Mutex<GridController>>,
     operations: Vec<Operation>,
     cursor: Option<String>,
@@ -58,12 +58,11 @@ pub(crate) async fn process_transaction(
 
     // in a separate thread, listen for get_cells calls
     let transaction_id_clone = transaction_id.clone();
-    let grid_clone = grid.clone();
+    let grid_clone = Arc::clone(&grid);
     let task_handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         while let Some(a1) = rx_get_cells_request.recv().await {
             // lock the grid and get the cells
-            let cells = grid_clone
-                .clone()
+            let cells = Arc::clone(&grid_clone)
                 .lock()
                 .await
                 .calculation_get_cells_a1(transaction_id_clone.clone(), a1);
@@ -103,53 +102,55 @@ pub(crate) async fn process_transaction(
         .get_async_transaction(transaction_uuid);
 
     if let Ok(async_transaction) = async_transaction
-        && let Some(waiting_for_async) = async_transaction.waiting_for_async {
-            // run code
-            match waiting_for_async.language {
-                CodeCellLanguage::Python => {
-                    run_python(
-                        grid.clone(),
-                        &waiting_for_async.code,
-                        &transaction_id,
-                        Box::new(get_cells),
-                    )
-                    .await
-                }
-                CodeCellLanguage::Javascript => {
-                    run_javascript(
-                        grid.clone(),
-                        &waiting_for_async.code,
-                        &transaction_id,
-                        Box::new(get_cells),
-                    )
-                    .await
-                }
-                CodeCellLanguage::Connection { kind, id } => {
-                    run_connection(
-                        grid.clone(),
-                        &waiting_for_async.code,
-                        kind,
-                        &id,
-                        &transaction_id,
-                        &team_id,
-                        &token,
-                    )
-                    .await
-                }
-                // maybe skip these below?
-                CodeCellLanguage::Formula => todo!(),
-                CodeCellLanguage::Import => todo!(),
-            }?;
+        && let Some(waiting_for_async) = async_transaction.waiting_for_async
+    {
+        // run code
+        match waiting_for_async.language {
+            CodeCellLanguage::Python => {
+                run_python(
+                    Arc::clone(&grid),
+                    &waiting_for_async.code,
+                    &transaction_id,
+                    Box::new(get_cells),
+                )
+                .await
+            }
+            CodeCellLanguage::Javascript => {
+                run_javascript(
+                    Arc::clone(&grid),
+                    &waiting_for_async.code,
+                    &transaction_id,
+                    Box::new(get_cells),
+                )
+                .await
+            }
+            CodeCellLanguage::Connection { kind, id } => {
+                run_connection(
+                    Arc::clone(&grid),
+                    &waiting_for_async.code,
+                    kind,
+                    &id,
+                    &transaction_id,
+                    &team_id,
+                    &token,
+                )
+                .await
+            }
+            // maybe skip these below?
+            CodeCellLanguage::Formula => todo!(),
+            CodeCellLanguage::Import => todo!(),
+        }?;
 
-            // Abort the task
-            task_handle.abort();
+        // Abort the task
+        task_handle.abort();
 
-            // wait for the task to finish
-            if let Err(e) = task_handle.await
-                && !e.is_cancelled() {
-                    return Err(CoreCloudError::Core(e.to_string()));
-                }
+        // wait for the task to finish
+        if let Err(e) = task_handle.await
+            && !e.is_cancelled()
+        {
+            return Err(CoreCloudError::Core(e.to_string()));
         }
+    }
 
     // // Return the grid
     // let strong_count = Arc::strong_count(&grid_shared);
@@ -202,7 +203,7 @@ mod tests {
 
         // process the transaction
         process_transaction(
-            grid.clone(),
+            Arc::clone(&grid),
             vec![operation],
             None,
             TransactionName::Unknown,

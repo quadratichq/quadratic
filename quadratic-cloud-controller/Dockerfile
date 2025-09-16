@@ -28,8 +28,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
-COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
-COPY ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
+COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
 
 WORKDIR /quadratic/quadratic-cloud-controller
 

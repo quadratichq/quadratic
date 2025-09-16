@@ -42,7 +42,7 @@ impl Debug for RedisConnection {
 }
 
 /// A message consists of a key (String) and a value (Bytes).
-pub type Message = (String, Vec<u8>);
+type Message = (String, Vec<u8>);
 
 /// Create a Redis client
 fn client(config: Config) -> Result<Client> {
@@ -104,6 +104,29 @@ fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {
     }
 
     let value = values.iter().next().unwrap().1.to_owned();
+    let message = value_bytes(value);
+    (id.to_string(), message)
+}
+
+/// Parse a Redis message that was stored with dedupe key (publish_once_with_dedupe_key)
+fn parse_message_with_dedupe_key(id: &StreamId, preserve_sequence: bool) -> Message {
+    let StreamId {
+        mut id,
+        map: values,
+    } = id.to_owned();
+
+    if !preserve_sequence {
+        id = from_key(&id);
+    }
+
+    // Look specifically for the 'data' field when using publish_once,
+    // fall back to first field
+    let value = values
+        .get("data")
+        .or_else(|| values.iter().next().map(|(_, v)| v))
+        .unwrap()
+        .to_owned();
+
     let message = value_bytes(value);
     (id.to_string(), message)
 }
@@ -200,10 +223,10 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Create a group and a key (if it doesn't already exist), start from the beginning
-    async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()> {
+    async fn subscribe(&mut self, channel: &str, group: &str, id: Option<&str>) -> Result<()> {
         let result = self
             .multiplex
-            .xgroup_create_mkstream::<&str, &str, &str, String>(channel, group, "$")
+            .xgroup_create_mkstream::<&str, &str, &str, String>(channel, group, id.unwrap_or("$"))
             .await;
 
         match result {
@@ -270,7 +293,7 @@ impl super::PubSub for RedisConnection {
     }
 
     // Insert only once per dedupe key; returns true if added, false if already exists
-    async fn publish_once(
+    async fn publish_once_with_dedupe_key(
         &mut self,
         dedupe_key_prefix: &str,
         channel: &str,
@@ -372,19 +395,13 @@ impl super::PubSub for RedisConnection {
         maybe_id: Option<&str>,
         max_messages: usize,
         preserve_sequence: bool,
-        block_ms: Option<usize>,
     ) -> Result<Vec<Message>> {
         // convert id, default to all new messages (">") if None
         let id = maybe_id.map_or_else(|| ">".into(), |id| to_key(id, preserve_sequence));
 
-        let mut opts = StreamReadOptions::default()
+        let opts = StreamReadOptions::default()
             .count(max_messages)
             .group(group, consumer);
-
-        // if block_ms is provided, set the block time for blocking read
-        if let Some(block_ms) = block_ms {
-            opts = opts.block(block_ms);
-        }
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
@@ -399,6 +416,44 @@ impl super::PubSub for RedisConnection {
             .iter()
             .flat_map(|StreamKey { key: _key, ids }| {
                 ids.iter().map(|id| parse_message(id, preserve_sequence))
+            })
+            .collect::<Vec<_>>();
+
+        Ok(messages)
+    }
+
+    /// Get unread messages from a channel that were stored with deduplication.
+    /// This method specifically handles messages with 'data' and 'dedupe_key' fields.
+    async fn messages_with_dedupe_key(
+        &mut self,
+        channel: &str,
+        group: &str,
+        consumer: &str,
+        maybe_id: Option<&str>,
+        max_messages: usize,
+        preserve_sequence: bool,
+    ) -> Result<Vec<Message>> {
+        // convert id, default to all new messages (">") if None
+        let id = maybe_id.map_or_else(|| ">".into(), |id| to_key(id, preserve_sequence));
+
+        let opts = StreamReadOptions::default()
+            .count(max_messages)
+            .group(group, consumer);
+
+        let raw_messages: Result<StreamReadReply> = self
+            .multiplex
+            .xread_options(&[channel], &[&id], &opts)
+            .await
+            .map_err(|e| {
+                SharedError::PubSub(format!("Error reading messages for channel {channel}: {e}"))
+            });
+
+        let messages = raw_messages?
+            .keys
+            .iter()
+            .flat_map(|StreamKey { key: _key, ids }| {
+                ids.iter()
+                    .map(|id| parse_message_with_dedupe_key(id, preserve_sequence))
             })
             .collect::<Vec<_>>();
 
@@ -475,7 +530,7 @@ pub mod tests {
         let consumer = "consumer 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel, group).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
 
         // send messages
         for (key, value) in messages.iter().enumerate() {
@@ -509,7 +564,7 @@ pub mod tests {
 
         // get all new messages
         let results = connection
-            .messages(&channel, group, consumer, None, 10, false, None)
+            .messages(&channel, group, consumer, None, 10, false)
             .await
             .unwrap();
 
@@ -546,7 +601,7 @@ pub mod tests {
 
         let max_id = ids.into_iter().max().unwrap();
         let results = connection
-            .messages(&channel, group, consumer, Some(max_id), 10, false, None)
+            .messages(&channel, group, consumer, Some(max_id), 10, false)
             .await
             .unwrap();
 
@@ -560,7 +615,7 @@ pub mod tests {
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel, group).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
 
         // send messages
         for (key, value) in messages.iter().enumerate() {
@@ -583,7 +638,7 @@ pub mod tests {
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel, group).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
 
         // send messages
         for (key, value) in messages.iter().enumerate() {
@@ -608,7 +663,7 @@ pub mod tests {
         let active_channels = Uuid::new_v4().to_string();
 
         let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel, group).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
 
         // send messages
         for (key, value) in messages.iter().enumerate() {

@@ -22,7 +22,7 @@ const dbClient = new PrismaClient({
   ],
 });
 
-// intentially commented out, but leaving here so that it can be turned on for debugging
+// intentionally commented out, but leaving here so that it can be turned on for debugging
 // dbClient.$on('query', (e) => {
 //   if (NODE_ENV === 'development') {
 //     prismaLogger.info('Query executed', {

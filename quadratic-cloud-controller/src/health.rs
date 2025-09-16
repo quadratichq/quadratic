@@ -22,7 +22,6 @@ pub(crate) async fn healthcheck(Extension(state): Extension<Arc<State>>) -> Json
 pub struct FullHealthResponse {
     pub version: String,
     pub redis_is_healthy: bool,
-    pub redis_listener_is_healthy: bool,
     pub api_is_healthy: bool,
 }
 
@@ -31,13 +30,11 @@ pub(crate) async fn full_healthcheck(
 ) -> Json<FullHealthResponse> {
     let version = state.settings.version.clone();
     let redis_is_healthy = state.pubsub_is_healthy().await;
-    let redis_listener_is_healthy = state.pubsub_blocking_listener_is_healthy().await;
     let api_is_healthy = is_healthy(&state.settings.quadratic_api_uri).await;
 
     FullHealthResponse {
         version,
         redis_is_healthy,
-        redis_listener_is_healthy,
         api_is_healthy,
     }
     .into()

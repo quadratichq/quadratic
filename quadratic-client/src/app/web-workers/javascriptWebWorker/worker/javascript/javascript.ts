@@ -2,7 +2,6 @@
 // managing the Javascript runners, which is where the code is executed.
 
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { CoreJavascriptRun } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
 import {
@@ -20,6 +19,7 @@ import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/j
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 

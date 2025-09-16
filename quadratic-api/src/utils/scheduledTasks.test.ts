@@ -1,4 +1,5 @@
 import { CronExpressionParser } from 'cron-parser';
+import { fromUint8Array, toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import dbClient from '../dbClient';
 import { clearDb, createUserTeamAndFile } from '../tests/testDataGenerator';
 import {
@@ -138,7 +139,7 @@ describe('scheduledTasks utilities', () => {
           nextRunTime: getNextRunTime(cronExpression),
           lastRunTime,
           status: 'ACTIVE',
-          operations: Buffer.from(JSON.stringify(operations)),
+          operations: Buffer.from(Array.from(toUint8Array(operations))),
         },
       });
 
@@ -178,18 +179,18 @@ describe('scheduledTasks utilities', () => {
           cronExpression: '0 0 * * *',
           nextRunTime: getNextRunTime('0 0 * * *'),
           status: 'ACTIVE',
-          operations: Buffer.from(JSON.stringify(complexOperations)),
+          operations: Buffer.from(Array.from(toUint8Array(complexOperations))),
         },
       });
 
       const response = resultToScheduledTaskResponse(dbResult);
-      expect(response.operations).toEqual(complexOperations);
+      expect(fromUint8Array(new Uint8Array(response.operations))).toEqual(complexOperations);
     });
   });
 
   describe('createScheduledTask', () => {
     it('should create a new scheduled task with correct defaults', async () => {
-      const operations = Buffer.from(JSON.stringify({ action: 'backup', type: 'daily' }));
+      const operations = Array.from(toUint8Array({ action: 'backup', type: 'daily' }));
       const cronExpression = '0 2 * * *';
 
       const result = await createScheduledTask({
@@ -234,7 +235,7 @@ describe('scheduledTasks utilities', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: cron,
-          operations: Buffer.from(JSON.stringify({ action: 'test', cron })),
+          operations: Array.from(toUint8Array({ action: 'test', cron })),
         });
 
         expect(result.cronExpression).toBe(cron);
@@ -252,13 +253,13 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'original' })),
+        operations: Array.from(toUint8Array({ action: 'original' })),
       });
     });
 
     it('should update cronExpression and operations', async () => {
       const newCronExpression = '0 2 * * *';
-      const newOperations = Buffer.from(JSON.stringify({ action: 'updated', type: 'nightly' }));
+      const newOperations = Array.from(toUint8Array({ action: 'updated', type: 'nightly' }));
 
       const result = await updateScheduledTask({
         scheduledTaskId: existingTask.id,
@@ -291,7 +292,7 @@ describe('scheduledTasks utilities', () => {
         updateScheduledTask({
           scheduledTaskId: 99999,
           cronExpression: '0 1 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(toUint8Array({ action: 'test' })),
         })
       ).rejects.toThrow();
     });
@@ -308,7 +309,7 @@ describe('scheduledTasks utilities', () => {
         const result = await updateScheduledTask({
           scheduledTaskId: existingTask.id,
           cronExpression: cron,
-          operations: Buffer.from(JSON.stringify({ action: 'test', cron })),
+          operations: Array.from(toUint8Array({ action: 'test', cron })),
         });
 
         expect(result.cronExpression).toBe(cron);
@@ -326,7 +327,7 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
       });
     });
 
@@ -377,7 +378,7 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
       });
     });
 
@@ -390,7 +391,7 @@ describe('scheduledTasks utilities', () => {
         fileId: testFile.id,
         userId: testUser.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
         status: 'ACTIVE',
       });
     });
@@ -429,7 +430,7 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
       });
 
       const result = await getScheduledTasks(testFile.id);
@@ -442,14 +443,14 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
+        operations: Array.from(toUint8Array({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
+        operations: Array.from(toUint8Array({ action: 'task2' })),
       });
 
       const result = await getScheduledTasks(testFile.id);
@@ -465,14 +466,14 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'active' })),
+        operations: Array.from(toUint8Array({ action: 'active' })),
       });
 
       const deletedTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'deleted' })),
+        operations: Array.from(toUint8Array({ action: 'deleted' })),
       });
 
       // Delete one task
@@ -488,14 +489,14 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'inactive' })),
+        operations: Array.from(toUint8Array({ action: 'inactive' })),
       });
 
       const deletedTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 3 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'deleted' })),
+        operations: Array.from(toUint8Array({ action: 'deleted' })),
       });
 
       // Update statuses
@@ -515,7 +516,7 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
       });
     });
 
@@ -555,7 +556,7 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'test' })),
+        operations: Array.from(toUint8Array({ action: 'test' })),
       });
     });
 
@@ -698,7 +699,7 @@ describe('scheduledTasks utilities', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 1 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'other' })),
+          operations: Array.from(toUint8Array({ action: 'other' })),
         });
 
         // Create logs for both tasks
@@ -752,19 +753,19 @@ describe('scheduledTasks utilities', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'lifecycle_test' })),
+        operations: Array.from(toUint8Array({ action: 'lifecycle_test' })),
       });
 
       // Update task
       const updatedTask = await updateScheduledTask({
         scheduledTaskId: task.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'updated_lifecycle_test' })),
+        operations: Array.from(toUint8Array({ action: 'updated_lifecycle_test' })),
       });
 
       // Verify task was updated
       expect(updatedTask.cronExpression).toBe('0 2 * * *');
-      expect(updatedTask.operations).toEqual(Buffer.from(JSON.stringify({ action: 'updated_lifecycle_test' })));
+      expect(updatedTask.operations).toEqual(Array.from(toUint8Array({ action: 'updated_lifecycle_test' })));
 
       // Verify logs still exist
       const logs = await getScheduledTaskLogs(task.id);
@@ -794,19 +795,19 @@ describe('scheduledTasks utilities', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 1 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'concurrent1' })),
+          operations: Array.from(toUint8Array({ action: 'concurrent1' })),
         }),
         createScheduledTask({
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 2 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'concurrent2' })),
+          operations: Array.from(toUint8Array({ action: 'concurrent2' })),
         }),
         createScheduledTask({
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 3 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'concurrent3' })),
+          operations: Array.from(toUint8Array({ action: 'concurrent3' })),
         }),
       ]);
 
@@ -815,7 +816,7 @@ describe('scheduledTasks utilities', () => {
         updateScheduledTask({
           scheduledTaskId: tasks[0].id,
           cronExpression: '0 4 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'updated_concurrent1' })),
+          operations: Array.from(toUint8Array({ action: 'updated_concurrent1' })),
         }),
         createScheduledTaskLog({
           scheduledTaskId: tasks[1].id,

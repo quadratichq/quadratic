@@ -1,9 +1,12 @@
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
 
+import type { ScheduledTaskStatus } from '.prisma/client';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
 import { app } from '../../app';
+import dbClient from '../../dbClient';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
@@ -17,16 +20,14 @@ export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:sc
 
 describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   let testUser: any;
-  let otherUser: any;
   let testFile: any;
-  let testTeam: any;
   let uniqueId: string;
   let testScheduledTask: ScheduledTaskResponse;
 
   beforeEach(async () => {
     await clearDb();
 
-    ({ uniqueId, testUser, testTeam, testFile } = await createUserTeamAndFile());
+    ({ uniqueId, testUser, testFile } = await createUserTeamAndFile());
     testScheduledTask = await scheduledTask(testUser.id, testFile.id);
   });
 
@@ -213,7 +214,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: cron,
-          operations: Buffer.from(JSON.stringify({ action: 'test', cron })),
+          operations: Array.from(toUint8Array({ action: 'test', cron })),
         });
 
         const response = await request(app)
@@ -231,19 +232,19 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should handle different task statuses', async () => {
       // Note: The endpoint filters for non-DELETED tasks, so we test ACTIVE and INACTIVE
-      const statuses = ['ACTIVE', 'INACTIVE'];
+      const statuses: ScheduledTaskStatus[] = ['ACTIVE', 'INACTIVE'];
 
       for (const status of statuses) {
         const statusTask = await createScheduledTask({
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test', status })),
+          operations: Array.from(toUint8Array({ action: 'test', status })),
         });
 
         // Update status after creation if not ACTIVE (since createScheduledTask always creates ACTIVE)
         if (status !== 'ACTIVE') {
-          await require('../../dbClient').default.scheduledTask.update({
+          await dbClient.scheduledTask.update({
             where: { id: statusTask.id },
             data: { status },
           });
@@ -266,14 +267,14 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
+        operations: Array.from(toUint8Array({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
+        operations: Array.from(toUint8Array({ action: 'task2' })),
       });
 
       // Test retrieving each task individually

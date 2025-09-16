@@ -5,13 +5,11 @@ use axum::{
     response::Json,
 };
 use quadratic_rust_shared::{
-    quadratic_api::{
-        GetLastFileCheckpointResponse,
-        get_last_file_checkpoint as get_last_file_checkpoint_from_api,
-    },
+    quadratic_api::get_file_init_data,
     quadratic_cloud::{
-        AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse, ShutdownResponse,
-        WORKER_TOKEN_HEADER,
+        AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse,
+        GetWorkerAccessTokenResponse, GetWorkerInitDataResponse, ShutdownResponse,
+        WORKER_EPHEMERAL_TOKEN_HEADER,
     },
 };
 use std::sync::Arc;
@@ -49,62 +47,105 @@ fn get_uuid_from_header(headers: &HeaderMap, header_name: &str) -> Result<Uuid, 
     }
 }
 
-/// Extract the file id and worker token from the headers and verify the worker token
+/// Extract the file id and worker ephemeral token from the headers and verify the worker ephemeral token
 ///
-/// Returns the file id if the worker token is valid
-async fn handle_worker_token(state: &State, headers: &HeaderMap) -> Result<Uuid, StatusCode> {
+/// Returns the file id if the worker ephemeral token is valid
+async fn handle_worker_ephemeral_token(
+    state: &State,
+    headers: &HeaderMap,
+) -> Result<Uuid, StatusCode> {
     let file_id = get_uuid_from_header(headers, FILE_ID_HEADER)?;
-    let worker_token = match get_uuid_from_header(headers, WORKER_TOKEN_HEADER) {
-        Ok(worker_token) => worker_token,
+
+    let worker_ephemeral_token = match get_uuid_from_header(headers, WORKER_EPHEMERAL_TOKEN_HEADER)
+    {
+        Ok(worker_ephemeral_token) => worker_ephemeral_token,
         Err(e) => {
-            error!("Error getting worker token: {e}");
-            state.remove_worker_token(&file_id).await;
+            error!("Error getting worker ephemeral token: {e}");
+            state.remove_worker_ephemeral_token(&file_id).await;
             return Err(StatusCode::UNAUTHORIZED);
         }
     };
 
-    match state.verify_worker_token(file_id, worker_token).await {
+    match state
+        .verify_worker_ephemeral_token(file_id, worker_ephemeral_token)
+        .await
+    {
         Ok(file_id) => Ok(file_id),
         Err(e) => {
-            error!("Error verifying worker token: {e}");
-            state.remove_worker_token(&file_id).await;
+            error!("Error verifying worker ephemeral token: {e}");
+            state.remove_worker_ephemeral_token(&file_id).await;
             Err(StatusCode::UNAUTHORIZED)
         }
     }
 }
 
-/// Get a last file checkpoint
-pub(crate) async fn get_last_file_checkpoint(
+/// Get a worker access token
+pub(crate) async fn handle_get_worker_access_token(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
-) -> Result<Json<GetLastFileCheckpointResponse>, StatusCode> {
-    let file_id = handle_worker_token(&state, &headers).await?;
+) -> Result<Json<GetWorkerAccessTokenResponse>, StatusCode> {
+    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("[get_last_file_checkpoint] Getting last file checkpoint for file id {file_id}",);
+    info!("[handle_get_worker_access_token] Getting worker access token for file {file_id}",);
 
-    match get_last_file_checkpoint_from_api(
+    match state.generate_worker_access_token(file_id).await {
+        Ok(jwt) => Ok(Json(GetWorkerAccessTokenResponse { jwt })),
+        Err(e) => {
+            error!("Error getting worker access token: {e}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// Get a file init data
+pub(crate) async fn handle_get_file_init_data(
+    Extension(state): Extension<Arc<State>>,
+    headers: HeaderMap,
+) -> Result<Json<GetWorkerInitDataResponse>, StatusCode> {
+    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
+
+    info!("[handle_get_file_init_data] Getting file init data for file id {file_id}",);
+
+    match get_file_init_data(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
         file_id,
     )
     .await
     {
-        Ok(last_file_checkpoint) => Ok(Json(last_file_checkpoint)),
+        Ok(file_init_data) => {
+            let worker_access_token = match state.generate_worker_access_token(file_id).await {
+                Ok(worker_access_token) => worker_access_token,
+                Err(e) => {
+                    error!("Error generating worker access token for file {file_id}, error: {e}");
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+
+            let worker_init_data = GetWorkerInitDataResponse {
+                team_id: file_init_data.team_id,
+                sequence_number: file_init_data.sequence_number,
+                presigned_url: file_init_data.presigned_url,
+                worker_access_token,
+            };
+
+            Ok(Json(worker_init_data))
+        }
         Err(e) => {
-            error!("Error getting last file checkpoint: {e}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            error!("Error getting file init data for file {file_id}, error: {e}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
 
 /// Get the next tasks for this worker
-pub(crate) async fn get_tasks_for_worker(
+pub(crate) async fn handle_get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>, StatusCode> {
-    let file_id = handle_worker_token(&state, &headers).await?;
+    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("[get_tasks_for_worker] Getting tasks for worker for file {file_id}",);
+    info!("[handle_get_tasks_for_worker] Getting tasks for worker for file {file_id}",);
 
     match state.get_tasks_for_file(file_id).await {
         Ok(tasks) => Ok(Json(tasks)),
@@ -116,14 +157,14 @@ pub(crate) async fn get_tasks_for_worker(
 }
 
 /// Acknowledge tasks completion
-pub(crate) async fn ack_tasks_for_worker(
+pub(crate) async fn handle_ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>, StatusCode> {
-    let file_id = handle_worker_token(&state, &headers).await?;
+    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("[ack_tasks_for_worker] Acknowledging tasks for worker for file {file_id}",);
+    info!("[handle_ack_tasks_for_worker] Acknowledging tasks for worker for file {file_id}",);
 
     match state.ack_tasks(file_id, ack_request.task_ids).await {
         Ok(_) => Ok(Json(AckTasksResponse { success: true })),
@@ -135,15 +176,15 @@ pub(crate) async fn ack_tasks_for_worker(
 }
 
 /// Shutdown the worker
-pub(crate) async fn worker_shutdown(
+pub(crate) async fn handle_worker_shutdown(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<ShutdownResponse>, StatusCode> {
-    let file_id = handle_worker_token(&state, &headers).await?;
+    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("[shutdown_worker] Shutting down worker for file {file_id}",);
+    info!("[handle_worker_shutdown] Shutting down worker for file {file_id}",);
 
-    state.remove_worker_token(&file_id).await;
+    state.remove_worker_ephemeral_token(&file_id).await;
 
     match Controller::shutdown_worker(&state, &file_id).await {
         Ok(_) => Ok(Json(ShutdownResponse { success: true })),
