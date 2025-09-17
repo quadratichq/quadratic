@@ -6,14 +6,12 @@
 //! may execute.
 
 use serde::Serialize;
-use ts_rs::TS;
 use uuid::Uuid;
-
-use crate::{SheetPos, SheetRect, grid::sheet::validations::validation::Validation};
 
 mod from_operation;
 
-#[derive(Serialize, Clone, Debug, PartialEq, TS)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum TrackedOperation {
     /// Sets cell values in a range
@@ -117,15 +115,15 @@ pub enum TrackedOperation {
 
     /// Cell/range operations
     MoveCells {
-        from: SheetRect,
-        to: SheetPos,
+        from: String,
+        to: String,
         columns: bool,
         rows: bool,
     },
 
     /// Data validation
     ValidationSet {
-        validation: Validation,
+        selection: String,
     },
     ValidationRemoved {
         sheet_name: String,

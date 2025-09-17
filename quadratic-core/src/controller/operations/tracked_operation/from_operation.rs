@@ -238,18 +238,22 @@ impl TrackedOperation {
                 columns,
                 rows,
             } => Some(Self::MoveCells {
-                from: *from,
-                to: *dest,
+                from: sheet_rect_to_selection(*from, gc),
+                to: sheet_pos_to_selection(*dest, gc),
                 columns: *columns,
                 rows: *rows,
             }),
 
             // Data validation (simplified)
             Operation::SetValidation { validation } => Some(Self::ValidationSet {
-                validation: validation.clone(),
+                selection: validation
+                    .selection
+                    .to_string(Some(validation.selection.sheet_id), gc.a1_context()),
             }),
             Operation::CreateOrUpdateValidation { validation } => Some(Self::ValidationSet {
-                validation: validation.clone(),
+                selection: validation
+                    .selection
+                    .to_string(Some(validation.selection.sheet_id), gc.a1_context()),
             }),
             Operation::RemoveValidation {
                 sheet_id,

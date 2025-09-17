@@ -1,4 +1,3 @@
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { TrackedOperation, TrackedTransaction } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -6,14 +5,6 @@ import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 const MAX_TRANSACTIONS = 20;
-
-const sheetIdToName = (sheetId: string): string => {
-  const sheet = sheets.getById(sheetId);
-  if (sheet) {
-    return `'${sheet.name}'`;
-  }
-  return '[This sheet no longer exists]';
-};
 
 type OperationMessageMap<T extends { type: string }> = {
   [K in T['type']]: (operation: Extract<T, { type: K }>) => string;
@@ -45,10 +36,8 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
   DefaultRowSize: (operation) => `- set default row size to ${operation.size} in sheet ${operation.sheet_name}`,
   DefaultColumnSize: (operation) => `- set default column size to ${operation.size} in sheet ${operation.sheet_name}`,
   CursorChanged: (operation) => `- moved cursor to ${operation.selection}`,
-  MoveCells: (operation) =>
-    `- moved cells from ${sheetIdToName(operation.from.sheet_id.id)} to ${sheetIdToName(operation.to.sheet_id.id)}`,
-  ValidationSet: (operation) =>
-    `- set validation rules at ${sheetIdToName(operation.validation.selection.sheet_id.id)}`,
+  MoveCells: (operation) => `- moved cells from ${operation.from} to ${operation.to}`,
+  ValidationSet: (operation) => `- set validation rules at ${operation.selection}`,
   ValidationRemoved: (operation) =>
     `- removed validation rule ${operation.validation_id} in sheet ${operation.sheet_name}`,
   ValidationRemovedSelection: (operation) =>
