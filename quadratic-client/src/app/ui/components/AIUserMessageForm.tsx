@@ -279,7 +279,7 @@ export const AIUserMessageForm = memo(
 
     return (
       <div className="relative">
-        {showPromptSuggestions && messagesCount === 100 && (
+        {showPromptSuggestions && messagesCount === 0 && (
           <AIAnalystPromptSuggestions
             exampleSet={files.length > 0 ? 'file-pdf' : selectedConnectionUuid ? 'connection' : 'empty'}
             prompt={prompt}
