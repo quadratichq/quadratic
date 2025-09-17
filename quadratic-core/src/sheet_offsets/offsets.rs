@@ -40,10 +40,7 @@ impl Offsets {
     pub fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
         Offsets {
             default,
-            sizes: iter
-                .into_iter()
-                .filter(move |(index, size)| *index > 0 && *size != default)
-                .collect(),
+            sizes: iter.into_iter().collect(),
         }
     }
 
