@@ -11,6 +11,7 @@ impl GridController {
         sheet_id: SheetId,
         transient_resize: TransientResize,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let mut ops = vec![];
         let mut transaction_name = TransactionName::Unknown;
@@ -31,7 +32,7 @@ impl GridController {
                 client_resized: true,
             });
         }
-        self.start_user_transaction(ops, cursor, transaction_name);
+        self.start_user_ai_transaction(ops, cursor, transaction_name, is_ai);
     }
 
     pub fn commit_single_resize(
@@ -41,6 +42,7 @@ impl GridController {
         row: Option<i32>,
         size: f64,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let transient_resize = match (column, row) {
@@ -73,7 +75,7 @@ impl GridController {
                     client_resized: false,
                 });
             }
-            self.start_user_transaction(ops, cursor, transaction_name);
+            self.start_user_ai_transaction(ops, cursor, transaction_name, is_ai);
         }
     }
 }
@@ -99,7 +101,7 @@ mod tests {
             old_size,
             new_size,
         };
-        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        gc.commit_offsets_resize(sheet_id, transient_resize, None, false);
         assert_eq!(new_size, gc.grid.sheets()[0].offsets.column_width(0));
 
         // resize row
@@ -109,7 +111,7 @@ mod tests {
             old_size,
             new_size,
         };
-        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        gc.commit_offsets_resize(sheet_id, transient_resize, None, false);
         assert_eq!(new_size, gc.grid.sheets()[0].offsets.row_height(0));
     }
 
@@ -118,12 +120,12 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.grid().sheets()[0].id;
 
-        gc.commit_single_resize(sheet_id, Some(1), None, 200f64, None);
+        gc.commit_single_resize(sheet_id, Some(1), None, 200f64, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(1), 200f64);
 
-        gc.commit_single_resize(sheet_id, None, Some(1), 300f64, None);
+        gc.commit_single_resize(sheet_id, None, Some(1), 300f64, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(1), 300f64);

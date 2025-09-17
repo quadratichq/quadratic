@@ -2,7 +2,10 @@ use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
     SheetPos,
     a1::A1Context,
-    controller::active_transactions::pending_transaction::PendingTransaction,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        tracked_transaction::TrackedTransactions,
+    },
     grid::{ConnectionKind, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
@@ -19,6 +22,7 @@ pub mod sheet_offsets;
 pub mod sheets;
 pub mod test_util;
 pub mod thumbnail;
+pub mod tracked_transaction;
 pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
@@ -43,6 +47,9 @@ pub struct GridController {
     // the viewport buffer is a shared array buffer that is accessed by the render web worker and the controller
     // contains current viewport position and sheet id, updated by render web worker on viewport change
     viewport_buffer: Option<ViewportBuffer>,
+
+    // tracks all transactions that have been applied since the user joined the file
+    tracked_transactions: TrackedTransactions,
 
     // callbacks for running python and javascript code
     #[allow(clippy::type_complexity)]
@@ -69,6 +76,7 @@ impl Default for GridController {
             redo_stack: Vec::new(),
             transactions: ActiveTransactions::new(0),
             viewport_buffer: None,
+            tracked_transactions: Default::default(),
             run_python_callback: None,
             run_javascript_callback: None,
             run_connection_callback: None,

@@ -66,13 +66,13 @@ export const useKeyboard = (): {
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedDate);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedDate, false);
     } else if (matchShortcut(Action.InsertTodayTime, event)) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime, false);
     }
 
     if (matchShortcut(Action.GridToDataTable, event)) {

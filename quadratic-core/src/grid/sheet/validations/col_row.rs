@@ -302,7 +302,7 @@ mod tests {
             error: Default::default(),
         };
 
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![
                 Operation::SetValidation {
                     validation: validation_rect_columns.clone(),
@@ -316,6 +316,7 @@ mod tests {
             ],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -327,7 +328,7 @@ mod tests {
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove column 2
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![Operation::DeleteColumn {
                 sheet_id,
                 column: 2,
@@ -335,6 +336,7 @@ mod tests {
             }],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -365,7 +367,7 @@ mod tests {
         );
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
         assert!(
@@ -388,7 +390,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -440,7 +442,7 @@ mod tests {
             error: Default::default(),
         };
 
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![
                 Operation::SetValidation {
                     validation: validation_rect_rows.clone(),
@@ -454,6 +456,7 @@ mod tests {
             ],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -466,7 +469,7 @@ mod tests {
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove row 2
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![Operation::DeleteRow {
                 sheet_id,
                 row: 2,
@@ -474,6 +477,7 @@ mod tests {
             }],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -502,7 +506,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
         assert!(
@@ -525,7 +529,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -571,7 +575,7 @@ mod tests {
             error: Default::default(),
         };
 
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![
                 Operation::SetValidation {
                     validation: validation_rect_cols.clone(),
@@ -582,6 +586,7 @@ mod tests {
             ],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -606,7 +611,7 @@ mod tests {
         );
 
         // insert column 2
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![Operation::InsertColumn {
                 sheet_id,
                 column: 2,
@@ -614,6 +619,7 @@ mod tests {
             }],
             None,
             TransactionName::Validation,
+            false,
         );
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
@@ -641,7 +647,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         assert_eq!(sheet.validations.validations[0], validation_rect_cols);
@@ -664,7 +670,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -710,7 +716,7 @@ mod tests {
             error: Default::default(),
         };
 
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![
                 Operation::SetValidation {
                     validation: validation_rect_rows.clone(),
@@ -721,6 +727,7 @@ mod tests {
             ],
             None,
             TransactionName::Validation,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -746,7 +753,7 @@ mod tests {
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         // insert row 2
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![Operation::InsertRow {
                 sheet_id,
                 row: 3,
@@ -754,6 +761,7 @@ mod tests {
             }],
             None,
             TransactionName::Validation,
+            false,
         );
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
@@ -781,7 +789,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         assert_eq!(sheet.validations.validations[0], validation_rect_rows);
@@ -804,7 +812,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());

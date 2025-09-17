@@ -48,7 +48,7 @@ const insertColumnLeft: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const columnsSelected = getColumnsSelected();
-    quadraticCore.insertColumns(sheets.current, sheets.sheet.cursor.position.x, columnsSelected, true);
+    quadraticCore.insertColumns(sheets.current, sheets.sheet.cursor.position.x, columnsSelected, true, false);
     focusGrid();
   },
 };
@@ -70,6 +70,7 @@ const insertColumnRight: ActionSpec<void> = {
       sheets.current,
       sheets.sheet.cursor.position.x + columnsSelected,
       columnsSelected,
+      false,
       false
     );
     focusGrid();
@@ -89,7 +90,7 @@ const deleteColumns: ActionSpec<void> = {
     pixiAppSettings.setContextMenu?.({});
 
     const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
-    quadraticCore.deleteColumns(sheets.current, columns);
+    quadraticCore.deleteColumns(sheets.current, columns, false);
     focusGrid();
   },
 };
@@ -107,7 +108,7 @@ const insertRowAbove: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y, rowsSelected, true);
+    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y, rowsSelected, true, false);
     focusGrid();
   },
 };
@@ -125,7 +126,7 @@ const insertRowBelow: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y + rowsSelected, rowsSelected, false);
+    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y + rowsSelected, rowsSelected, false, false);
     focusGrid();
   },
 };
@@ -143,7 +144,7 @@ const deleteRows: ActionSpec<void> = {
     pixiAppSettings.setContextMenu?.({});
 
     const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
-    quadraticCore.deleteRows(sheets.current, rows);
+    quadraticCore.deleteRows(sheets.current, rows, false);
     focusGrid();
   },
 };

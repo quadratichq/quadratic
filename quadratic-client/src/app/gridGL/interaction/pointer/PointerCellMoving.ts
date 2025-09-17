@@ -276,7 +276,8 @@ export class PointerCellMoving {
           this.movingCells.toRow ?? 0,
           sheets.current,
           this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
-          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false
+          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
+          false
         );
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;

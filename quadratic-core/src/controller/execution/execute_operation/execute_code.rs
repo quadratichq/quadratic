@@ -16,7 +16,7 @@ impl GridController {
         output: SheetRect,
         skip_compute: Option<SheetPos>,
     ) {
-        if !transaction.is_user() {
+        if !transaction.is_user_ai() {
             return;
         }
 
@@ -120,7 +120,7 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.forward_operations.push(op);
 
                 transaction
@@ -151,7 +151,7 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user_undo_redo() && !transaction.is_server() {
+            if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
@@ -259,6 +259,7 @@ mod tests {
             "A1:A2".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -287,6 +288,7 @@ mod tests {
             },
             "cause spill".to_string(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -316,6 +318,7 @@ mod tests {
             "code".to_string(),
             None,
             None,
+            false,
         );
         expect_js_call_count("jsRunJavascript", 1, true);
 
@@ -325,6 +328,7 @@ mod tests {
             "code".to_string(),
             None,
             None,
+            false,
         );
         expect_js_call_count("jsRunPython", 1, true);
 
@@ -372,6 +376,7 @@ mod tests {
             "NOW()".to_string(),
             None,
             None,
+            false,
         );
 
         let value1 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
@@ -381,7 +386,7 @@ mod tests {
 
         // Test execute_compute_code_selection
         let ops = vec![Operation::ComputeCodeSelection { selection: None }];
-        gc.start_user_transaction(ops, None, TransactionName::Unknown);
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
 
         let value2 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value2 != value1);
@@ -392,7 +397,7 @@ mod tests {
         let ops = vec![Operation::ComputeCodeSelection {
             selection: Some(A1Selection::from_single_cell(pos![sheet_id!A1])),
         }];
-        gc.start_user_transaction(ops, None, TransactionName::Unknown);
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
 
         let value3 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value3 != value2);
@@ -403,7 +408,7 @@ mod tests {
         let ops = vec![Operation::ComputeCodeSelection {
             selection: Some(A1Selection::all(sheet_id)),
         }];
-        gc.start_user_transaction(ops, None, TransactionName::Unknown);
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
 
         let value4 = gc.sheet(sheet_id).display_value(pos![A1]).unwrap();
         assert!(value4 != value3);
