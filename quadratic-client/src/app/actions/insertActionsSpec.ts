@@ -61,7 +61,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -93,7 +92,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -125,7 +123,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -157,7 +154,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -189,7 +185,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -235,7 +230,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -267,7 +261,6 @@ export const insertActionsSpec: InsertActionSpec = {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {

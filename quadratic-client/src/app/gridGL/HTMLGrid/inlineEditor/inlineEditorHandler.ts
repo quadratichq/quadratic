@@ -585,7 +585,6 @@ class InlineEditorHandler {
         id: '',
         messages: [],
         waitingOnMessageIndex: undefined,
-        delaySeconds: 0,
       },
       diffEditorContent: undefined,
       waitingForEditorClose: {

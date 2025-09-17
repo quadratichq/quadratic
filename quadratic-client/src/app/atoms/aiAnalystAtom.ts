@@ -34,7 +34,7 @@ export interface AIAnalystState {
     loading: boolean;
   };
   waitingOnMessageIndex?: number;
-  delaySeconds: number;
+  failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -62,7 +62,7 @@ export const defaultAIAnalystState: AIAnalystState = {
     loading: false,
   },
   waitingOnMessageIndex: undefined,
-  delaySeconds: 0,
+  failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
 };
 
 export let aiAnalystInitialized = false;
@@ -163,10 +163,7 @@ export const aiAnalystLoadingAtom = selector<boolean>({
         }
       }
 
-      return {
-        ...prev,
-        loading: newValue,
-      };
+      return { ...prev, loading: newValue };
     });
   },
 });
@@ -227,10 +224,7 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
               messages: [],
             }
           : prev.currentChat,
-        promptSuggestions: {
-          abortController: undefined,
-          suggestions: [],
-        },
+        promptSuggestions: { abortController: undefined, suggestions: [] },
       };
     });
   },
@@ -284,10 +278,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         showChatHistory: false,
         chats,
         currentChat: newValue,
-        promptSuggestions: {
-          abortController: undefined,
-          suggestions,
-        },
+        promptSuggestions: { abortController: undefined, suggestions },
       };
     });
   },
@@ -317,11 +308,7 @@ export const aiAnalystCurrentChatNameAtom = selector<string>({
         console.error('[AIAnalystOfflineChats]: ', error);
       });
 
-      return {
-        ...prev,
-        chats,
-        currentChat,
-      };
+      return { ...prev, chats, currentChat };
     });
   },
 });
@@ -348,11 +335,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
       // update chats
       const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
 
-      return {
-        ...prev,
-        chats,
-        currentChat,
-      };
+      return { ...prev, chats, currentChat };
     });
   },
 });
@@ -401,10 +384,21 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
         return prev;
       }
 
-      return {
-        ...prev,
-        waitingOnMessageIndex: newValue,
-      };
+      return { ...prev, waitingOnMessageIndex: newValue };
+    });
+  },
+});
+
+export const aiAnalystFailingSqlConnectionsAtom = selector<{ uuids: string[]; lastResetTimestamp: number }>({
+  key: 'aiAnalystFailingSqlConnectionsAtom',
+  get: ({ get }) => get(aiAnalystAtom).failingSqlConnections,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return { ...prev, failingSqlConnections: newValue };
     });
   },
 });
