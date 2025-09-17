@@ -103,18 +103,56 @@ impl Offsets {
     /// up the search.
     pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
         let mut current_sum = 0.0;
-        let mut current_index = 1;
-        let mut current_size = self.get_size(current_index);
-        while current_sum + current_size <= pixel {
-            current_sum += current_size;
-            current_index += 1;
-            current_size = self.get_size(current_index);
+        let mut current_index = 1i64;
+
+        // If we have no custom sizes then it's all default sizes
+        if self.sizes.is_empty() {
+            let index = (pixel / self.default).floor() as i64;
+            let position = index as f64 * self.default;
+            return (index + 1, position);
         }
 
+        // Iterate through custom sizes only to avoid checking every default value
+        for (&custom_index, &custom_size) in &self.sizes {
+            if custom_index <= 0 {
+                continue;
+            }
+
+            // Calculate how many default-sized elements are between current_index and custom_index
+            if custom_index > current_index {
+                let default_count = custom_index - current_index;
+                let default_total = default_count as f64 * self.default;
+
+                // Check if pixel falls within the default range
+                if current_sum + default_total > pixel {
+                    // Pixel is in the default range
+                    let remaining = pixel - current_sum;
+                    let offset_in_defaults = (remaining / self.default).floor() as i64;
+                    return (
+                        current_index + offset_in_defaults,
+                        current_sum + offset_in_defaults as f64 * self.default,
+                    );
+                }
+
+                current_sum += default_total;
+                current_index = custom_index;
+            }
+
+            // Check if pixel falls within this custom size
+            if current_sum + custom_size > pixel {
+                return (current_index, current_sum);
+            }
+
+            current_sum += custom_size;
+            current_index += 1;
+        }
+
+        // Pixel is beyond all custom sizes, continue with defaults
+        let remaining = pixel - current_sum;
+        let offset_in_defaults = (remaining / self.default).floor() as i64;
         (
-            // Ensure the current_index is 1-based.
-            current_index,
-            current_sum,
+            current_index + offset_in_defaults,
+            current_sum + offset_in_defaults as f64 * self.default,
         )
     }
 
@@ -125,7 +163,9 @@ impl Offsets {
 
     /// Iterates over the sizes of all columns/rows - owned.
     pub fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
-        self.sizes.into_iter()
+        self.sizes
+            .into_iter()
+            .filter(move |(index, size)| *index > 0 && *size != self.default)
     }
 
     /// Inserts an offset at the specified index and increments all later
@@ -153,9 +193,10 @@ impl Offsets {
 
                     // if the key is the index, set the size
                     if *k == index
-                        && let Some(source_width) = source_width {
-                            sizes.insert(*k, source_width);
-                        }
+                        && let Some(source_width) = source_width
+                    {
+                        sizes.insert(*k, source_width);
+                    }
                 } else {
                     sizes.insert(*k, *size);
                 }
@@ -241,6 +282,12 @@ impl Offsets {
             .collect();
         self.sizes.clear();
         changed
+    }
+
+    /// Retains only positive non-default sizes.
+    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+        self.sizes
+            .retain(|&index, size| index > 0 && size != &self.default);
     }
 }
 
@@ -444,5 +491,46 @@ mod tests {
 
         // Verify new entries also use default
         assert_eq!(offsets.get_size(100), 10.0);
+    }
+
+    #[test]
+    fn test_find_offset_large_pixel_ranges() {
+        // Test find_offset with pixel ranges > 300 million
+        let mut offsets = Offsets::new(10.0);
+
+        // Test with default sizes only for large pixel values
+        let pixel_300m = 300_000_000.0;
+        let (index, position) = offsets.find_offset(pixel_300m);
+        let expected_index = (pixel_300m / 10.0).floor() as i64 + 1;
+        let expected_position = (expected_index - 1) as f64 * 10.0;
+        assert_eq!(index, expected_index);
+        assert_eq!(position, expected_position);
+
+        // Test with pixel value > 300m
+        let pixel_500m = 500_000_000.0;
+        let (index, position) = offsets.find_offset(pixel_500m);
+        let expected_index = (pixel_500m / 10.0).floor() as i64 + 1;
+        let expected_position = (expected_index - 1) as f64 * 10.0;
+        assert_eq!(index, expected_index);
+        assert_eq!(position, expected_position);
+
+        // Test with custom sizes and large pixel values
+        offsets.set_size(1, 20.0);
+        offsets.set_size(1000, 50.0);
+
+        // For pixel beyond custom sizes, should continue with defaults
+        let pixel_1b = 1_000_000_000.0;
+        let (index, position) = offsets.find_offset(pixel_1b);
+
+        // Calculate expected values considering custom sizes
+        let custom_contribution = 20.0 - 10.0 + 50.0 - 10.0; // difference from default
+        let remaining_pixels = pixel_1b - custom_contribution - 1000.0 * 10.0; // subtract all pixels up to index 1001
+        let additional_defaults = (remaining_pixels / 10.0).floor() as i64;
+        let expected_index = 1001 + additional_defaults;
+        let expected_position =
+            custom_contribution + 1000.0 * 10.0 + additional_defaults as f64 * 10.0;
+
+        assert_eq!(index, expected_index);
+        assert_eq!(position, expected_position);
     }
 }
