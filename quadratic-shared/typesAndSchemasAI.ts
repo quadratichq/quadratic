@@ -209,6 +209,7 @@ const InternalContextTypeSchema = z.enum([
   'sqlSchemas',
   'codeErrors',
   'fileSummary',
+  'aiUpdates',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;

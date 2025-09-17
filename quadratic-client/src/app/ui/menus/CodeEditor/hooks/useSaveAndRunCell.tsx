@@ -29,6 +29,7 @@ export const useSaveAndRunCell = () => {
           y: pos.y,
           codeString,
           language,
+          isAi: false,
         });
 
         set(codeEditorEditorContentAtom, codeString);

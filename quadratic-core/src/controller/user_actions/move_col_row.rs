@@ -178,7 +178,7 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["1", "2", "3"]);
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["", "", ""]);
 
-        gc.move_columns(SheetId::TEST, 3, 3, 5, None);
+        gc.move_columns(SheetId::TEST, 3, 3, 5, None, false);
 
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["", "", ""]);
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["1", "2", "3"]);
@@ -194,7 +194,7 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["1", "2", "3"]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 6, vec!["", "", ""]);
 
-        gc.move_rows(sheet_id, 4, 4, 6, None);
+        gc.move_rows(sheet_id, 4, 4, 6, None, false);
 
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["", "", ""]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["1", "2", "3"]);
@@ -216,7 +216,7 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
 
         // Move columns 3-5 to position 7 (which is D when the columns are removed)
-        gc.move_columns(sheet_id, 3, 5, 7, None);
+        gc.move_columns(sheet_id, 3, 5, 7, None, false);
 
         // Verify data moved correctly
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
@@ -237,7 +237,7 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 6, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns 5-6 to position 2
-        gc.move_columns(SheetId::TEST, 5, 6, 2, None);
+        gc.move_columns(SheetId::TEST, 5, 6, 2, None, false);
 
         // Verify data moved correctly
         assert_cell_value_col(&gc, sheet_id, 2, 4, 6, vec!["A", "B", "C"]);
@@ -260,7 +260,7 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["G", "H", "I"]);
 
         // Move rows 3-5 to position 7
-        gc.move_rows(sheet_id, 3, 5, 7, None);
+        gc.move_rows(sheet_id, 3, 5, 7, None, false);
 
         // Verify data moved correctly
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
@@ -281,7 +281,7 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 6, vec!["D", "E", "F"]);
 
         // Move rows 5-6 to position 2
-        gc.move_rows(SheetId::TEST, 5, 6, 2, None);
+        gc.move_rows(SheetId::TEST, 5, 6, 2, None, false);
 
         // Verify data moved correctly
         assert_cell_value_row(&gc, sheet_id, 3, 5, 2, vec!["A", "B", "C"]);
@@ -306,7 +306,7 @@ mod tests {
         print_first_sheet(&gc);
 
         // Move columns 3-5 to position 4 (between source columns)
-        gc.move_columns(SheetId::TEST, 3, 5, 4, None);
+        gc.move_columns(SheetId::TEST, 3, 5, 4, None, false);
 
         print_first_sheet(&gc);
 
@@ -329,14 +329,14 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns
-        gc.move_columns(sheet_id, 3, 4, 6, None);
+        gc.move_columns(sheet_id, 3, 4, 6, None, false);
 
         // Verify moved state
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
@@ -356,14 +356,14 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Move rows
-        gc.move_rows(SheetId::TEST, 3, 4, 6, None);
+        gc.move_rows(SheetId::TEST, 3, 4, 6, None, false);
 
         // Verify moved state
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_row(&gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
@@ -383,21 +383,21 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns
-        gc.move_columns(sheet_id, 3, 4, 6, None);
+        gc.move_columns(sheet_id, 3, 4, 6, None, false);
 
         // Verify moved state
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Redo the move
-        gc.redo(None);
+        gc.redo(1, None, false);
 
         // Verify redone state
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
@@ -417,21 +417,21 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Move rows
-        gc.move_rows(SheetId::TEST, 3, 4, 6, None);
+        gc.move_rows(SheetId::TEST, 3, 4, 6, None, false);
 
         // Verify moved state
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_row(&gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Redo
-        gc.redo(None);
+        gc.redo(1, None, false);
 
         // Verify redone state
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
@@ -451,24 +451,24 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // First move
-        gc.move_columns(sheet_id, 3, 3, 6, None);
+        gc.move_columns(sheet_id, 3, 3, 6, None, false);
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
 
         // Second move
-        gc.move_columns(sheet_id, 3, 3, 2, None);
+        gc.move_columns(sheet_id, 3, 3, 2, None, false);
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 2, 4, 6, vec!["D", "E", "F"]);
 
         // Undo second move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify first move state
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
 
         // Undo first move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify original state
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
@@ -487,14 +487,14 @@ mod tests {
         assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
 
         // Move columns
-        gc.move_columns(SheetId::TEST, 3, 3, 6, None);
+        gc.move_columns(SheetId::TEST, 3, 3, 6, None, false);
 
         // Verify moved state
         assert_display_cell_value_first_sheet(&gc, 5, 4, "A");
         assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
 
         // Undo
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify original state
         assert_display_cell_value_first_sheet(&gc, 3, 4, "A");

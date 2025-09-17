@@ -43,6 +43,7 @@ import type {
   SheetBounds,
   SheetInfo,
   SheetRect,
+  TrackedTransaction,
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
@@ -75,6 +76,7 @@ import type {
   CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
+  CoreClientGetAITransactions,
   CoreClientGetCellFormatSummary,
   CoreClientGetCellValue,
   CoreClientGetCodeCell,
@@ -96,6 +98,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRedoResponse,
   CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
   CoreClientResizeColumns,
@@ -108,6 +111,7 @@ import type {
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
+  CoreClientUndoResponse,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -253,6 +257,7 @@ class QuadraticCore {
       events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
       return;
     }
+
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {
@@ -449,7 +454,7 @@ class QuadraticCore {
     });
   }
 
-  setCellValue(sheetId: string, x: number, y: number, value: string) {
+  setCellValue(sheetId: string, x: number, y: number, value: string, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellValue',
       sheetId,
@@ -457,10 +462,11 @@ class QuadraticCore {
       y,
       value,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setCellValues(sheetId: string, x: number, y: number, values: string[][]) {
+  setCellValues(sheetId: string, x: number, y: number, values: string[][], isAi: boolean) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = () => {
@@ -468,12 +474,13 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreSetCellValues',
+        id,
         sheetId,
         x,
         y,
         values,
         cursor: sheets.getCursorPosition(),
-        id,
+        isAi,
       });
     });
   }
@@ -485,6 +492,7 @@ class QuadraticCore {
     language: CodeCellLanguage;
     codeString: string;
     codeCellName?: string;
+    isAi: boolean;
   }): Promise<string | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -493,6 +501,7 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreSetCodeCellValue',
+        id,
         sheetId: options.sheetId,
         x: options.x,
         y: options.y,
@@ -500,7 +509,7 @@ class QuadraticCore {
         codeString: options.codeString,
         cursor: sheets.getCursorPosition(),
         codeCellName: options.codeCellName,
-        id,
+        isAi: options.isAi,
       });
     });
   }
@@ -588,156 +597,178 @@ class QuadraticCore {
     });
   }
 
-  setBold(selection: string, bold?: boolean) {
+  setBold(selection: string, bold: boolean | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
       bold,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setFillColor(selection: string, fillColor?: string) {
+  setFillColor(selection: string, fillColor: string | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellFillColor',
       selection,
       fillColor,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setItalic(selection: string, italic?: boolean) {
+  setItalic(selection: string, italic: boolean | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
       italic,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setTextColor(selection: string, color?: string) {
+  setTextColor(selection: string, color: string | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellTextColor',
       selection,
       color,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setUnderline(selection: string, underline?: boolean) {
+  setUnderline(selection: string, underline: boolean | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
       underline,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setStrikeThrough(selection: string, strikeThrough?: boolean) {
+  setStrikeThrough(selection: string, strikeThrough: boolean | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
       strikeThrough,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setAlign(selection: string, align: CellAlign) {
+  setAlign(selection: string, align: CellAlign, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellAlign',
       selection,
       align,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setVerticalAlign(selection: string, verticalAlign: CellVerticalAlign) {
+  setVerticalAlign(selection: string, verticalAlign: CellVerticalAlign, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellVerticalAlign',
       selection,
       verticalAlign,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setWrap(selection: string, wrap: CellWrap) {
+  setWrap(selection: string, wrap: CellWrap, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellWrap',
       selection,
       wrap,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setCellCurrency(selection: string, symbol: string) {
+  setCellCurrency(selection: string, symbol: string, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCurrency',
       selection,
       symbol,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setCellPercentage(selection: string) {
+  setCellPercentage(selection: string, isAi: boolean) {
     this.send({
       type: 'clientCoreSetPercentage',
       selection,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setCellExponential(selection: string) {
+  setCellExponential(selection: string, isAi: boolean) {
     this.send({
       type: 'clientCoreSetExponential',
       selection,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  removeNumericFormat(selection: string) {
+  removeNumericFormat(selection: string, isAi: boolean) {
     this.send({
       type: 'clientCoreRemoveCellNumericFormat',
       selection,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  changeDecimalPlaces(selection: string, delta: number) {
+  changeDecimalPlaces(selection: string, delta: number, isAi: boolean) {
     this.send({
       type: 'clientCoreChangeDecimals',
       selection,
       delta,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  clearFormatting(selection: string) {
+  clearFormatting(selection: string, isAi: boolean) {
     this.send({
       type: 'clientCoreClearFormatting',
       selection,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setCommas(selection: string, commas?: boolean) {
+  setCommas(selection: string, commas: boolean | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
       commas,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setDateTimeFormat(selection: string, format: string) {
+  setDateTimeFormat(selection: string, format: string, isAi: boolean) {
     this.send({
       type: 'clientCoreSetDateTimeFormat',
       selection,
       format,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  setFormats(sheetId: string, selection: string, formats: FormatUpdate): Promise<JsResponse | undefined> {
+  setFormats(
+    sheetId: string,
+    selection: string,
+    formats: FormatUpdate,
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientSetFormats) => {
@@ -749,6 +780,8 @@ class QuadraticCore {
         sheetId,
         selection,
         formats,
+        cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -769,7 +802,7 @@ class QuadraticCore {
     });
   }
 
-  deleteCellValues(selection: string): Promise<JsResponse | undefined> {
+  deleteCellValues(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientDeleteCellValues) => {
@@ -780,6 +813,7 @@ class QuadraticCore {
         id,
         selection,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -815,7 +849,11 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, selection: string | undefined): Promise<string | JsResponse | undefined> {
+  rerunCodeCells(
+    sheetId: string | undefined,
+    selection: string | undefined,
+    isAi: boolean
+  ): Promise<string | JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientRerunCodeCells) => {
@@ -827,13 +865,18 @@ class QuadraticCore {
         sheetId,
         selection,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
   //#region Sheet Operations
 
-  addSheet(sheetName?: string, insertBeforeSheetName?: string): Promise<JsResponse | undefined> {
+  addSheet(
+    sheetName: string | undefined,
+    insertBeforeSheetName: string | undefined,
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientAddSheetResponse) => {
@@ -845,67 +888,75 @@ class QuadraticCore {
         sheetName,
         insertBeforeSheetName,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined): Promise<JsResponse | undefined> {
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientDuplicateSheetResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreDuplicateSheet', id, sheetId, nameOfNewSheet, cursor: sheets.getCursorPosition() });
+      this.send({
+        type: 'clientCoreDuplicateSheet',
+        id,
+        sheetId,
+        nameOfNewSheet,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
     });
   }
 
-  deleteSheet(sheetId: string): Promise<JsResponse | undefined> {
+  deleteSheet(sheetId: string, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientDeleteSheetResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreDeleteSheet', id, sheetId, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreDeleteSheet', id, sheetId, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
-  moveSheet(sheetId: string, previous: string | undefined): Promise<JsResponse | undefined> {
+  moveSheet(sheetId: string, previous: string | undefined, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveSheetResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreMoveSheet', id, sheetId, previous, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreMoveSheet', id, sheetId, previous, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
-  setSheetName(sheetId: string, name: string): Promise<JsResponse | undefined> {
+  setSheetName(sheetId: string, name: string, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientSetSheetNameResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreSetSheetName', id, sheetId, name, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreSetSheetName', id, sheetId, name, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
-  setSheetColor(sheetId: string, color: string | undefined): Promise<JsResponse | undefined> {
+  setSheetColor(sheetId: string, color: string | undefined, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientSetSheetColorResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreSetSheetColor', id, sheetId, color, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreSetSheetColor', id, sheetId, color, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
-  setSheetsColor(sheetNameToColor: JsSheetNameToColor[]): Promise<JsResponse | undefined> {
+  setSheetsColor(sheetNameToColor: JsSheetNameToColor[], isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientSetSheetsColorResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreSetSheetsColor', id, sheetNameToColor, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreSetSheetsColor', id, sheetNameToColor, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
@@ -913,12 +964,24 @@ class QuadraticCore {
 
   //#region Undo/redo
 
-  undo() {
-    this.send({ type: 'clientCoreUndo', cursor: sheets.getCursorPosition() });
+  undo(count: number, isAi: boolean): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientUndoResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreUndo', id, count, cursor: sheets.getCursorPosition(), isAi });
+    });
   }
 
-  redo() {
-    this.send({ type: 'clientCoreRedo', cursor: sheets.getCursorPosition() });
+  redo(count: number, isAi: boolean): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientRedoResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreRedo', id, count, cursor: sheets.getCursorPosition(), isAi });
+    });
   }
 
   //#endregion
@@ -943,7 +1006,7 @@ class QuadraticCore {
     });
   }
 
-  cutToClipboard(selection: string): Promise<JsClipboard> {
+  cutToClipboard(selection: string, isAi: boolean): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientCutToClipboard) => {
@@ -958,12 +1021,13 @@ class QuadraticCore {
         id,
         selection,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  pasteFromClipboard(options: { selection: string; jsClipboard: Uint8Array; special: PasteSpecial }) {
-    const { selection, jsClipboard, special } = options;
+  pasteFromClipboard(options: { selection: string; jsClipboard: Uint8Array; special: PasteSpecial; isAi: boolean }) {
+    const { selection, jsClipboard, special, isAi } = options;
     this.send(
       {
         type: 'clientCorePasteFromClipboard',
@@ -971,6 +1035,7 @@ class QuadraticCore {
         jsClipboard,
         special,
         cursor: sheets.getCursorPosition(),
+        isAi,
       },
       jsClipboard.buffer
     );
@@ -983,7 +1048,8 @@ class QuadraticCore {
   setBorders(
     selection: string,
     borderSelection: BorderSelection,
-    style?: BorderStyle
+    style: BorderStyle | undefined,
+    isAi: boolean
   ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -997,6 +1063,7 @@ class QuadraticCore {
         borderSelection,
         style,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -1005,7 +1072,14 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setChartSize(sheetId: string, x: number, y: number, width: number, height: number): Promise<JsResponse | undefined> {
+  setChartSize(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientSetCellRenderResize) => {
@@ -1013,13 +1087,14 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreSetCellRenderResize',
+        id,
         sheetId,
         x,
         y,
         width,
         height,
         cursor: sheets.getCursorPosition(),
-        id,
+        isAi,
       });
     });
   }
@@ -1033,7 +1108,8 @@ class QuadraticCore {
     fullX1: number,
     fullY1: number,
     fullX2: number,
-    fullY2: number
+    fullY2: number,
+    isAi: boolean
   ) {
     this.send({
       type: 'clientCoreAutocomplete',
@@ -1047,6 +1123,7 @@ class QuadraticCore {
       fullX2,
       fullY2,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
@@ -1070,7 +1147,8 @@ class QuadraticCore {
     targetY: number,
     targetSheetId: string,
     columns: boolean,
-    rows: boolean
+    rows: boolean,
+    isAi: boolean
   ) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1087,22 +1165,18 @@ class QuadraticCore {
         columns,
         rows,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  moveCodeCellVertically({
-    sheetId,
-    x,
-    y,
-    sheetEnd,
-    reverse,
-  }: {
+  moveCodeCellVertically(args: {
     sheetId: string;
     x: number;
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
+    isAi: boolean;
   }): Promise<Pos | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1111,29 +1185,25 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreMoveCodeCellVertically',
-        sheetId,
-        x,
-        y,
-        sheetEnd,
-        reverse,
-        cursor: sheets.getCursorPosition(),
         id,
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        sheetEnd: args.sheetEnd,
+        reverse: args.reverse,
+        cursor: sheets.getCursorPosition(),
+        isAi: args.isAi,
       });
     });
   }
 
-  moveCodeCellHorizontally({
-    sheetId,
-    x,
-    y,
-    sheetEnd,
-    reverse,
-  }: {
+  moveCodeCellHorizontally(args: {
     sheetId: string;
     x: number;
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
+    isAi: boolean;
   }): Promise<Pos | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1142,13 +1212,14 @@ class QuadraticCore {
       };
       return this.send({
         type: 'clientCoreMoveCodeCellHorizontally',
-        sheetId,
-        x,
-        y,
-        sheetEnd,
-        reverse,
-        cursor: sheets.getCursorPosition(),
         id,
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        sheetEnd: args.sheetEnd,
+        reverse: args.reverse,
+        cursor: sheets.getCursorPosition(),
+        isAi: args.isAi,
       });
     });
   }
@@ -1157,16 +1228,23 @@ class QuadraticCore {
 
   //#region Bounds
 
-  commitTransientResize(sheetId: string, transientResize: string) {
+  commitTransientResize(sheetId: string, transientResize: string, isAi: boolean) {
     this.send({
       type: 'clientCoreCommitTransientResize',
       sheetId,
       transientResize,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+  commitSingleResize(
+    sheetId: string,
+    column: number | undefined,
+    row: number | undefined,
+    size: number,
+    isAi: boolean
+  ) {
     this.send({
       type: 'clientCoreCommitSingleResize',
       sheetId,
@@ -1174,6 +1252,7 @@ class QuadraticCore {
       row,
       size,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
@@ -1231,7 +1310,7 @@ class QuadraticCore {
     });
   }
 
-  updateValidation(validation: ValidationUpdate): Promise<JsResponse | undefined> {
+  updateValidation(validation: ValidationUpdate, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientUpdateValidation) => {
@@ -1242,20 +1321,22 @@ class QuadraticCore {
         id,
         validation,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  removeValidation(sheetId: string, validationId: string) {
+  removeValidation(sheetId: string, validationId: string, isAi: boolean) {
     this.send({
       type: 'clientCoreRemoveValidation',
       sheetId,
       validationId,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  removeValidationSelection(sheetId: string, selection: string): Promise<JsResponse | undefined> {
+  removeValidationSelection(sheetId: string, selection: string, isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientRemoveValidationSelection) => {
@@ -1267,15 +1348,17 @@ class QuadraticCore {
         sheetId,
         selection,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  removeValidations(sheetId: string) {
+  removeValidations(sheetId: string, isAi: boolean) {
     this.send({
       type: 'clientCoreRemoveValidations',
       sheetId,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
@@ -1315,7 +1398,7 @@ class QuadraticCore {
   //#endregion
   //#region manipulate columns and rows
 
-  deleteColumns(sheetId: string, columns: number[]): Promise<JsResponse | undefined> {
+  deleteColumns(sheetId: string, columns: number[], isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientDeleteColumns) => {
@@ -1327,11 +1410,18 @@ class QuadraticCore {
         sheetId,
         columns,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  insertColumns(sheetId: string, column: number, count: number, right: boolean): Promise<JsResponse | undefined> {
+  insertColumns(
+    sheetId: string,
+    column: number,
+    count: number,
+    right: boolean,
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientInsertColumns) => {
@@ -1345,11 +1435,12 @@ class QuadraticCore {
         count,
         right,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  deleteRows(sheetId: string, rows: number[]): Promise<JsResponse | undefined> {
+  deleteRows(sheetId: string, rows: number[], isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientDeleteRows) => {
@@ -1361,11 +1452,18 @@ class QuadraticCore {
         sheetId,
         rows,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  insertRows(sheetId: string, row: number, count: number, below: boolean): Promise<JsResponse | undefined> {
+  insertRows(
+    sheetId: string,
+    row: number,
+    count: number,
+    below: boolean,
+    isAi: boolean
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientInsertRows) => {
@@ -1379,11 +1477,12 @@ class QuadraticCore {
         count,
         below,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number) {
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, isAi: boolean) {
     this.send({
       type: 'clientCoreMoveColumns',
       sheetId,
@@ -1391,10 +1490,11 @@ class QuadraticCore {
       colEnd,
       to,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number) {
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, isAi: boolean) {
     this.send({
       type: 'clientCoreMoveRows',
       sheetId,
@@ -1402,36 +1502,40 @@ class QuadraticCore {
       rowEnd,
       to,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
   //#endregion
   //#region data tables
 
-  flattenDataTable(sheetId: string, x: number, y: number) {
+  flattenDataTable(sheetId: string, x: number, y: number, isAi: boolean) {
     this.send({
       type: 'clientCoreFlattenDataTable',
       sheetId,
       x,
       y,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  codeDataTableToDataTable(sheetId: string, x: number, y: number) {
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, isAi: boolean) {
     this.send({
       type: 'clientCoreCodeDataTableToDataTable',
       sheetId,
       x,
       y,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
   gridToDataTable(
     sheetRect: string,
     tableName: string | undefined,
-    firstRowIsHeader: boolean
+    firstRowIsHeader: boolean,
+    isAi: boolean
   ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1445,6 +1549,7 @@ class QuadraticCore {
         firstRowIsHeader,
         tableName,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -1459,7 +1564,8 @@ class QuadraticCore {
       columns?: JsDataTableColumnHeader[];
       showName?: boolean;
       showColumns?: boolean;
-    }
+    },
+    isAi: boolean
   ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1478,6 +1584,7 @@ class QuadraticCore {
         showName: options.showName,
         showColumns: options.showColumns,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -1493,6 +1600,7 @@ class QuadraticCore {
     rows_to_remove?: number[];
     flatten_on_delete?: boolean;
     swallow_on_insert?: boolean;
+    isAi: boolean;
   }) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1513,11 +1621,12 @@ class QuadraticCore {
         flatten_on_delete: args.flatten_on_delete,
         swallow_on_insert: args.swallow_on_insert,
         cursor: sheets.getCursorPosition(),
+        isAi: args.isAi,
       });
     });
   }
 
-  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSortDataTable',
       sheetId,
@@ -1525,6 +1634,7 @@ class QuadraticCore {
       y,
       sort,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
@@ -1532,7 +1642,8 @@ class QuadraticCore {
     sheetId: string,
     x: number,
     y: number,
-    firstRowAsHeader: boolean
+    firstRowAsHeader: boolean,
+    isAi: boolean
   ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1547,6 +1658,7 @@ class QuadraticCore {
         y,
         firstRowAsHeader,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
@@ -1558,6 +1670,7 @@ class QuadraticCore {
     name: string;
     values: string[][];
     firstRowIsHeader: boolean;
+    isAi: boolean;
   }) {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -1566,6 +1679,7 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreAddDataTable',
+        id,
         sheetId: args.sheetId,
         x: args.x,
         y: args.y,
@@ -1573,13 +1687,13 @@ class QuadraticCore {
         values: args.values,
         firstRowIsHeader: args.firstRowIsHeader,
         cursor: sheets.getCursorPosition(),
-        id,
+        isAi: args.isAi,
       });
     });
   }
   //#endregion
 
-  resizeColumns(sheetId: string, columns: ColumnRowResize[]): Promise<JsResponse | undefined> {
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
@@ -1591,11 +1705,12 @@ class QuadraticCore {
         sheetId,
         columns,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[]): Promise<JsResponse | undefined> {
+  resizeRows(sheetId: string, rows: ColumnRowResize[], isAi: boolean): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
@@ -1607,25 +1722,28 @@ class QuadraticCore {
         sheetId,
         rows,
         cursor: sheets.getCursorPosition(),
+        isAi,
       });
     });
   }
 
-  resizeAllColumns(sheetId: string, size: number) {
+  resizeAllColumns(sheetId: string, size: number, isAi: boolean) {
     this.send({
       type: 'clientCoreResizeAllColumns',
       sheetId,
       size,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
-  resizeAllRows(sheetId: string, size: number) {
+  resizeAllRows(sheetId: string, size: number, isAi: boolean) {
     this.send({
       type: 'clientCoreResizeAllRows',
       sheetId,
       size,
       cursor: sheets.getCursorPosition(),
+      isAi,
     });
   }
 
@@ -1668,6 +1786,19 @@ class QuadraticCore {
         type: 'clientCoreGetAICodeErrors',
         id,
         maxErrors,
+      });
+    });
+  }
+
+  getAITransactions(): Promise<TrackedTransaction[] | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAITransactions) => {
+        resolve(message.transactions);
+      };
+      this.send({
+        type: 'clientCoreGetAITransactions',
+        id,
       });
     });
   }

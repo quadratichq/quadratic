@@ -153,7 +153,8 @@ export class PointerImages {
           this.resizing.image.column,
           this.resizing.image.row,
           this.resizing.end.column - this.resizing.image.column + 1,
-          this.resizing.end.row - this.resizing.image.row
+          this.resizing.end.row - this.resizing.image.row,
+          false
         )
         .then((response) => {
           if (!response || !response.result) {

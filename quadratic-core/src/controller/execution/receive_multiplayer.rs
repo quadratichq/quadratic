@@ -301,6 +301,7 @@ mod tests {
             },
             "Hello World".to_string(),
             None,
+            false,
         );
         let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -344,6 +345,7 @@ mod tests {
             },
             "Hello World from 1".to_string(),
             None,
+            false,
         );
         let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -362,6 +364,7 @@ mod tests {
             },
             "Hello World from 2".to_string(),
             None,
+            false,
         );
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -395,6 +398,7 @@ mod tests {
             },
             "Hello World".to_string(),
             None,
+            false,
         );
         let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -428,6 +432,7 @@ mod tests {
             },
             "Client unsaved value".to_string(),
             None,
+            false,
         );
 
         // todo...
@@ -445,6 +450,7 @@ mod tests {
             },
             "Other value".to_string(),
             None,
+            false,
         );
 
         let transaction = other.last_transaction().unwrap();
@@ -486,6 +492,7 @@ mod tests {
             },
             "This is sequence_num = 1".to_string(),
             None,
+            false,
         );
         let out_of_order_1_operations = other.last_transaction().unwrap().operations.clone();
 
@@ -497,6 +504,7 @@ mod tests {
             },
             "This is sequence_num = 2".to_string(),
             None,
+            false,
         );
         let out_of_order_2_operations = other.last_transaction().unwrap().operations.clone();
 
@@ -542,6 +550,7 @@ mod tests {
             },
             "Client unsaved value".to_string(),
             None,
+            false,
         );
         let client_transaction = client.last_transaction().unwrap().clone();
 
@@ -556,6 +565,7 @@ mod tests {
             },
             "This is sequence_num = 1".to_string(),
             None,
+            false,
         );
         let out_of_order_1_operations = other.last_transaction().unwrap().operations.clone();
 
@@ -567,6 +577,7 @@ mod tests {
             },
             "This is sequence_num = 2".to_string(),
             None,
+            false,
         );
         let out_of_order_2_operations = other.last_transaction().unwrap().operations.clone();
 
@@ -606,7 +617,7 @@ mod tests {
         );
 
         // We undo our old unsaved transaction and it will clear it (since we don't update our undo stack w/server changes).
-        client.undo(None);
+        client.undo(1, None, false);
         assert_eq!(
             client
                 .try_sheet(sheet_id)
@@ -632,6 +643,7 @@ mod tests {
             },
             "This is sequence_num = 1".to_string(),
             None,
+            false,
         );
         let other_1_operations = other.last_transaction().unwrap().operations.clone();
         let other_1_operations_compressed =
@@ -645,6 +657,7 @@ mod tests {
             },
             "This is sequence_num = 2".to_string(),
             None,
+            false,
         );
         let other_2_operations = other.last_transaction().unwrap().operations.clone();
         let other_2_operations_compressed =
@@ -712,6 +725,7 @@ mod tests {
             },
             "From other".to_string(),
             None,
+            false,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
         let other_operations_compressed =
@@ -727,6 +741,7 @@ mod tests {
             "start this before receiving multiplayer".to_string(),
             None,
             None,
+            false,
         );
 
         // ensure code_cell exists
@@ -794,6 +809,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             "From other".to_string(),
             None,
+            false,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
         let other_operations_compressed =
@@ -805,6 +821,7 @@ mod tests {
             "start this before receiving multiplayer".to_string(),
             None,
             None,
+            false,
         );
 
         // ensure code_cell exists
@@ -859,7 +876,12 @@ mod tests {
     // creates A1 = "1"
     fn create_multiple_calculations_0(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
+        gc.set_cell_value(
+            pos![A1].to_sheet_pos(sheet_id),
+            "1".to_string(),
+            None,
+            false,
+        );
         let transaction = gc.last_transaction().unwrap();
         (transaction.id, transaction.operations.clone())
     }
@@ -873,6 +895,7 @@ mod tests {
             "q.cells(\"A1\") + 1".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
@@ -899,6 +922,7 @@ mod tests {
             "q.cells(\"B1\") + 1".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
@@ -991,6 +1015,7 @@ mod tests {
             },
             "test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
@@ -1025,6 +1050,7 @@ mod tests {
             },
             "test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
@@ -1069,6 +1095,7 @@ mod tests {
             "1".to_string(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -1080,6 +1107,7 @@ mod tests {
             "2".to_string(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -1091,6 +1119,7 @@ mod tests {
             "3".to_string(),
             None,
             None,
+            false,
         );
         let find_index =
             |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
@@ -1107,23 +1136,24 @@ mod tests {
             },
             "".to_string(),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 3, 1), 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);
         assert_eq!(find_index(sheet, 3, 1), 2);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 3, 1), 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);

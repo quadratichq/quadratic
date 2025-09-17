@@ -41,20 +41,21 @@ impl GridController {
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-                    if transaction.is_user()
-                        && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                            let rows_to_resize =
-                                sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
-                            if !rows_to_resize.is_empty() {
-                                transaction
-                                    .resize_rows
-                                    .entry(sheet_pos.sheet_id)
-                                    .or_default()
-                                    .extend(rows_to_resize);
-                            }
+                    if transaction.is_user_ai()
+                        && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
+                    {
+                        let rows_to_resize =
+                            sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                        if !rows_to_resize.is_empty() {
+                            transaction
+                                .resize_rows
+                                .entry(sheet_pos.sheet_id)
+                                .or_default()
+                                .extend(rows_to_resize);
                         }
+                    }
 
-                    if transaction.is_user_undo_redo() {
+                    if transaction.is_user_ai_undo_redo() {
                         transaction.generate_thumbnail |=
                             self.thumbnail_dirty_sheet_rect(sheet_rect);
 
@@ -93,6 +94,7 @@ mod tests {
             },
             "0".to_string(),
             None,
+            false,
         );
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
@@ -109,6 +111,7 @@ mod tests {
             },
             "1".to_string(),
             None,
+            false,
         );
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
@@ -130,6 +133,7 @@ mod tests {
             },
             "test".to_string(),
             None,
+            false,
         );
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -146,6 +150,7 @@ mod tests {
             },
             "test 2".to_string(),
             None,
+            false,
         );
     }
 
@@ -164,12 +169,13 @@ mod tests {
             "1 + 1".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(2.into()))
         );
-        gc.set_cell_value(sheet_pos, "".to_string(), None);
+        gc.set_cell_value(sheet_pos, "".to_string(), None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(sheet_pos.into()), None);
     }
@@ -183,12 +189,12 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        gc.set_cell_value(sheet_pos, "1".to_string(), None);
+        gc.set_cell_value(sheet_pos, "1".to_string(), None, false);
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(1.into()))
         );
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
     }
 
@@ -203,6 +209,7 @@ mod tests {
             },
             "1".to_string(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -214,6 +221,7 @@ mod tests {
             "A0 + 5".to_string(),
             None,
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -223,6 +231,7 @@ mod tests {
             },
             "2".to_string(),
             None,
+            false,
         );
         assert_eq!(gc.active_transactions().unsaved_transactions.len(), 3);
         let last_transaction = gc
