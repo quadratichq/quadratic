@@ -69,9 +69,7 @@ pub enum JsCellValueKind {
     Duration,
     Error,
     Html,
-    Code,
     Image,
-    Import,
 }
 
 impl From<CellValue> for JsCellValueKind {
@@ -88,9 +86,7 @@ impl From<CellValue> for JsCellValueKind {
             CellValue::Duration(_) => JsCellValueKind::Duration,
             CellValue::Error(_) => JsCellValueKind::Error,
             CellValue::Html(_) => JsCellValueKind::Html,
-            CellValue::Code(_) => JsCellValueKind::Code,
             CellValue::Image(_) => JsCellValueKind::Image,
-            CellValue::Import(_) => JsCellValueKind::Import,
         }
     }
 }

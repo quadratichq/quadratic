@@ -184,7 +184,7 @@ mod tests {
             transaction_types::{JsCellValueResult, JsCodeResult},
             user_actions::import::tests::simple_csv,
         },
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         test_create_data_table,
         test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call},
@@ -192,6 +192,10 @@ mod tests {
 
     #[test]
     fn test_code_data_table_to_data_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = pos![sheet_id!A1];
+
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),
@@ -204,7 +208,7 @@ mod tests {
             cells_accessed: Default::default(),
         };
         let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
+            DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
@@ -213,44 +217,45 @@ mod tests {
             None,
         );
 
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 1 };
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos, data_table);
-        let code_cell_value = CodeCellValue {
-            language: CodeCellLanguage::Javascript,
-            code: "return [1,2,3]".into(),
-        };
-        sheet.set_cell_value(pos, CellValue::Code(code_cell_value.clone()));
-        let sheet_pos = SheetPos::from((pos, sheet_id));
-        let expected = vec!["1", "2", "3"];
-        let import = Import::new("".into());
+        test_create_raw_data_table(&mut gc, sheet_pos, data_table.clone());
 
         // initial value
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 2));
+        let expected = vec!["1", "2", "3"];
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
-        assert_cell_value(
+
+        assert_code_language(
             &gc,
-            sheet_id,
-            1,
-            1,
-            CellValue::Code(code_cell_value.clone()),
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "return [1,2,3]".to_string(),
         );
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 3));
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
-        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import.clone()));
+
+        let data_table = gc.data_table_at(sheet_pos).unwrap();
+        assert_eq!(
+            data_table.kind,
+            DataTableKind::Import(Import::new("".into()))
+        );
 
         // undo, the value should be a code run data table again
         gc.undo(None);
-        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Code(code_cell_value));
+        assert_code_language(
+            &gc,
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "return [1,2,3]".to_string(),
+        );
 
         // redo, the value should be a data table
         gc.redo(None);
-        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import));
+        let data_table = gc.data_table_at(sheet_pos).unwrap();
+        assert_eq!(
+            data_table.kind,
+            DataTableKind::Import(Import::new("".into()))
+        );
     }
 
     #[test]
@@ -287,9 +292,12 @@ mod tests {
             ..Default::default()
         });
 
-        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
-        let code_cell_value = CodeCellValue::new_python(old_code.into());
-        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+        assert_code_language(
+            &gc,
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            old_code.to_string(),
+        );
 
         // change the data table name
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -312,9 +320,12 @@ mod tests {
             .to_owned();
         assert_eq!(updated_name.to_display(), new_name);
 
-        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
-        let code_cell_value = CodeCellValue::new_python(new_code.into());
-        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+        assert_code_language(
+            &gc,
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            new_code.to_string(),
+        );
     }
 
     #[test]
@@ -352,9 +363,12 @@ mod tests {
             ..Default::default()
         });
 
-        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
-        let code_cell_value = CodeCellValue::new_python(old_code.into());
-        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+        assert_code_language(
+            &gc,
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            old_code.to_string(),
+        );
 
         // change the data table name
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -382,9 +396,12 @@ mod tests {
             .clone();
         assert_eq!(updated_name.to_string(), new_name);
 
-        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
-        let code_cell_value = CodeCellValue::new_python(new_code.into());
-        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+        assert_code_language(
+            &gc,
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            new_code.to_string(),
+        );
     }
 
     #[test]

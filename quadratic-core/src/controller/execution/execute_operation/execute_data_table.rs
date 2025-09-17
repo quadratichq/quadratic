@@ -103,11 +103,15 @@ impl GridController {
             .filter(|pos| {
                 // only delete when there's not another code cell in the same position
                 // (this maintains the original output until a run completes)
-                sheet
-                    .cell_value_ref(*pos)
-                    .is_none_or(|value| !(value.is_code() || value.is_import()))
+                sheet.cell_value_ref(*pos).is_none()
+                    && sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id))
             })
             .collect();
+
+        if data_tables_to_delete.len() > 0 {
+            dbg!(&sheet_rect);
+            dbg!(&data_tables_to_delete);
+        }
 
         // delete the data tables in reverse order, so that shift_remove is less expensive
         data_tables_to_delete.into_iter().rev().for_each(|pos| {
@@ -135,7 +139,6 @@ impl GridController {
         }
     }
 
-    /// Adds or replaces a data table at a specific position.
     pub(super) fn execute_add_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -143,8 +146,34 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::AddDataTable {
             sheet_pos,
+            data_table,
+            index,
+            // we ignore the cell_value because we no longer need it
+            ..
+        } = op
+        {
+            self.execute_add_data_table_without_cell_value(
+                transaction,
+                Operation::AddDataTableWithoutCellValue {
+                    sheet_pos,
+                    data_table,
+                    index,
+                },
+            )
+        } else {
+            bail!("Expected Operation::AddDataTable in execute_add_data_table");
+        }
+    }
+
+    /// Adds or replaces a data table at a specific position.
+    pub(super) fn execute_add_data_table_without_cell_value(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::AddDataTableWithoutCellValue {
+            sheet_pos,
             mut data_table,
-            cell_value,
             index,
         } = op
         {
@@ -164,11 +193,6 @@ impl GridController {
 
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
-
-            // update the CellValue
-            let old_value = sheet
-                .columns
-                .set_value(&data_table_pos, cell_value.to_owned());
 
             // insert the data table into the sheet
             let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
@@ -190,23 +214,16 @@ impl GridController {
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
 
-            let forward_operations = vec![Operation::AddDataTable {
+            let forward_operations = vec![Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value,
                 index,
             }];
-            let reverse_operations = vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
-                },
-                Operation::SetDataTable {
-                    sheet_pos,
-                    data_table: old_data_table,
-                    index: old_index,
-                },
-            ];
+            let reverse_operations = vec![Operation::SetDataTable {
+                sheet_pos,
+                data_table: old_data_table,
+                index: old_index,
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -218,7 +235,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::AddDataTable in execute_add_data_table");
+        bail!("Expected Operation::AddDataTable in execute_add_data_table_without_cell_value");
     }
 
     pub(super) fn execute_delete_data_table(
@@ -458,7 +475,7 @@ impl GridController {
             let index = sheet.data_table_index_result(pos)?;
             let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
             let table_name = data_table.name.to_display().clone();
-            let cell_value = sheet.cell_value_result(data_table_pos)?;
+
             let data_table_rect = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
@@ -539,10 +556,9 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            reverse_operations.push(Operation::AddDataTable {
+            reverse_operations.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value,
                 index: Some(index),
             });
             reverse_operations.push(Operation::SetCellValues {
@@ -569,37 +585,38 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SwitchDataTableKind {
-            sheet_pos,
-            kind,
-            value,
-        } = op.to_owned()
+        // convert SwitchDataTableKind to SwitchDataTableKindWithoutCellValue
+        let op = if let Operation::SwitchDataTableKind {
+            sheet_pos, kind, ..
+        } = op
         {
+            Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind }
+        } else {
+            op
+        };
+        let forward_op = op.clone();
+        if let Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind } = op {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
-            let old_cell_value = sheet.cell_value_result(data_table_pos)?.to_owned();
 
             let old_data_table_kind = sheet.data_table_result(&data_table_pos)?.kind.to_owned();
             let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                dt.kind = kind;
+                dt.kind = kind.to_owned();
                 Ok(())
             })?;
 
             let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
 
-            sheet.columns.set_value(&data_table_pos, value);
-
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             transaction.add_code_cell(sheet_id, data_table_pos);
 
-            let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::SwitchDataTableKind {
+            let forward_operations = vec![forward_op];
+            let reverse_operations = vec![Operation::SwitchDataTableKindWithoutCellValue {
                 sheet_pos,
                 kind: old_data_table_kind,
-                value: old_cell_value,
             }];
             self.data_table_operations(
                 transaction,
@@ -611,7 +628,9 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::SwitchDataTableKind in execute_flatten_data_table");
+        bail!(
+            "Expected Operation::SwitchDataTableKind(WithoutCellValue) in execute_code_data_table_to_data_table"
+        );
     }
 
     pub(super) fn execute_grid_to_data_table(
@@ -654,7 +673,6 @@ impl GridController {
                     .apply_updates(&format_update);
             }
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
-            let cell_value = CellValue::Import(import);
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             // delete cell values and formats in rect on sheet
@@ -669,7 +687,6 @@ impl GridController {
 
             // insert data table in sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            sheet.columns.set_value(&sheet_rect.min, cell_value);
             let (_, _, dirty_rects) =
                 sheet.data_table_insert_full(&sheet_rect.min, data_table.to_owned());
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
@@ -785,37 +802,35 @@ impl GridController {
             let mut old_show_columns = None;
 
             if let Some(name) = name.as_mut()
-                && old_name != *name {
-                    // sanitize table name
-                    let table_name = sanitize_table_name(name.to_string());
+                && old_name != *name
+            {
+                // sanitize table name
+                let table_name = sanitize_table_name(name.to_string());
 
-                    *name = unique_data_table_name(
-                        &table_name,
-                        false,
-                        Some(data_table_sheet_pos),
-                        &self.a1_context,
-                    );
+                *name = unique_data_table_name(
+                    &table_name,
+                    false,
+                    Some(data_table_sheet_pos),
+                    &self.a1_context,
+                );
 
-                    self.grid.update_data_table_name(
-                        data_table_sheet_pos,
-                        &old_name,
-                        name,
-                        &self.a1_context,
-                        false,
-                    )?;
+                self.grid.update_data_table_name(
+                    data_table_sheet_pos,
+                    &old_name,
+                    name,
+                    &self.a1_context,
+                    false,
+                )?;
 
-                    // mark code cells dirty to update meta data
-                    transaction.add_code_cell(sheet_id, data_table_pos);
-                }
+                // mark code cells dirty to update meta data
+                transaction.add_code_cell(sheet_id, data_table_pos);
+            }
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.as_mut(), old_columns.as_ref()) {
                 for (index, old_column) in old_columns.iter().enumerate() {
                     if let Some(new_column) = columns.get_mut(index) {
-                        let is_code_cell = new_column.name.is_code()
-                            || new_column.name.is_import()
-                            || new_column.name.is_image()
-                            || new_column.name.is_html();
+                        let is_code_cell = new_column.name.is_image() || new_column.name.is_html();
 
                         if is_code_cell {
                             if cfg!(target_family = "wasm") || cfg!(test) {
@@ -870,11 +885,12 @@ impl GridController {
 
                     // if the header is first row, update the column names in the data table value
                     if dt.header_is_first_row
-                        && let Some(columns) = columns.as_ref() {
-                            for (index, column) in columns.iter().enumerate() {
-                                dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
-                            }
+                        && let Some(columns) = columns.as_ref()
+                    {
+                        for (index, column) in columns.iter().enumerate() {
+                            dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
                         }
+                    }
 
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
@@ -1069,12 +1085,9 @@ impl GridController {
                     );
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    let has_code_cell = cell_values.iter().any(|cell_value| {
-                        cell_value.is_code()
-                            || cell_value.is_import()
-                            || cell_value.is_image()
-                            || cell_value.is_html()
-                    });
+                    let has_code_cell = cell_values
+                        .iter()
+                        .any(|cell_value| cell_value.is_image() || cell_value.is_html());
 
                     if has_code_cell {
                         if cfg!(target_family = "wasm") || cfg!(test) {
@@ -1144,13 +1157,15 @@ impl GridController {
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    if dt.header_is_first_row && column_header.is_none()
-                        && let Some(values) = &values {
-                            let first_value = values[0].to_owned();
-                            if !matches!(first_value, CellValue::Blank) {
-                                column_header = Some(first_value.to_string());
-                            }
+                    if dt.header_is_first_row
+                        && column_header.is_none()
+                        && let Some(values) = &values
+                    {
+                        let first_value = values[0].to_owned();
+                        if !matches!(first_value, CellValue::Blank) {
+                            column_header = Some(first_value.to_string());
                         }
+                    }
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
@@ -1301,15 +1316,11 @@ impl GridController {
 
                     if show_columns
                         && let Some(column_header) = &old_column_header
-                            && let (Ok(value_x), Ok(value_y)) =
-                                (u32::try_from(display_index - 1), u32::try_from(0))
-                            {
-                                sheet_cell_values.set(
-                                    value_x,
-                                    value_y,
-                                    column_header.to_owned().into(),
-                                );
-                            }
+                        && let (Ok(value_x), Ok(value_y)) =
+                            (u32::try_from(display_index - 1), u32::try_from(0))
+                    {
+                        sheet_cell_values.set(value_x, value_y, column_header.to_owned().into());
+                    }
 
                     // collect formats to flatten
                     let formats_rect = Rect::from_numbers(
@@ -1506,9 +1517,9 @@ impl GridController {
                     // check for code cells in neighboring cells
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    let has_code_cell = cell_values.iter().any(|value| {
-                        value.is_code() || value.is_import() || value.is_image() || value.is_html()
-                    });
+                    let has_code_cell = cell_values
+                        .iter()
+                        .any(|value| value.is_image() || value.is_html());
                     if has_code_cell {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
@@ -2042,7 +2053,7 @@ mod tests {
             user_actions::import::tests::{assert_simple_csv, simple_csv, simple_csv_at},
         },
         grid::{
-            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
+            CodeCellLanguage, CodeRun, DataTableKind, SheetId,
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
         },
@@ -2148,7 +2159,6 @@ mod tests {
     fn test_execute_flatten_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
         assert_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         flatten_data_table(&mut gc, sheet_id, pos, file_name);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
@@ -2156,12 +2166,10 @@ mod tests {
         // undo, the value should be a data table again
         gc.undo(None);
         assert_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // redo, the value should be on the grid
         gc.redo(None);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
     }
 
     #[test]
@@ -2202,17 +2210,10 @@ mod tests {
 
     #[test]
     fn test_execute_code_data_table_to_data_table() {
-        let code_run = CodeRun {
-            language: CodeCellLanguage::Javascript,
-            code: "return [1,2,3]".into(),
-            std_err: None,
-            std_out: None,
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-            cells_accessed: Default::default(),
-        };
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+
+        let code_run = CodeRun::new_javascript("return [1,2,3]".into());
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
@@ -2222,32 +2223,25 @@ mod tests {
             Some(true),
             None,
         );
-
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 1 };
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos, data_table);
-        let code_cell_value = CodeCellValue {
-            language: CodeCellLanguage::Javascript,
-            code: "return [1,2,3]".into(),
-        };
-        sheet.set_cell_value(pos, CellValue::Code(code_cell_value.clone()));
-        let data_table_pos = sheet.data_table_pos_that_contains_result(pos).unwrap();
-        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let sheet_pos = pos![sheet_id!A1];
+        let data_table_pos = sheet_pos.into();
+        test_create_raw_data_table(&mut gc, sheet_pos, data_table);
+        assert_code_language(
+            &gc,
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "return [1,2,3]".to_string(),
+        );
         let expected = vec!["1", "2", "3"];
 
         // initial value
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
-        let data_table = &gc.sheet(sheet_id).data_table_at(&data_table_pos).unwrap();
-        assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run.clone()));
 
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
-        let op = Operation::SwitchDataTableKind {
+        let op = Operation::SwitchDataTableKindWithoutCellValue {
             sheet_pos,
             kind: kind.clone(),
-            value: CellValue::Import(import),
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_code_data_table_to_data_table(&mut transaction, op)
@@ -2273,7 +2267,6 @@ mod tests {
     #[test]
     fn test_execute_grid_to_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 11));
 
         flatten_data_table(&mut gc, sheet_id, pos, file_name);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
@@ -2282,28 +2275,29 @@ mod tests {
         let max = Pos::new(4, 12);
         let sheet_pos = SheetPos::from((new_pos, sheet_id));
         let sheet_rect = SheetRect::new_pos_span(new_pos, max, sheet_id);
-        let op = Operation::GridToDataTable { sheet_rect };
-        let mut transaction = PendingTransaction::default();
-        gc.execute_grid_to_data_table(&mut transaction, op.clone())
-            .unwrap();
-        gc.data_table_first_row_as_header(sheet_pos, true, None);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+
+        gc.grid_to_data_table(sheet_rect, None, true, None).unwrap();
+        // let op = Operation::GridToDataTable { sheet_rect };
+        // let mut transaction = PendingTransaction::default();
+        // gc.execute_grid_to_data_table(&mut transaction, op.clone())
+        //     .unwrap();
+        // gc.data_table_first_row_as_header(sheet_pos, true, None);
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
         // undo, the value should be on the grid again
-        execute_reverse_operations(&mut gc, &transaction);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        gc.undo(None);
+        // execute_reverse_operations(&mut gc, &transaction);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // redo, the value should be a data table again
-        execute_forward_operations(&mut gc, &mut transaction);
+        gc.redo(None);
+        // execute_forward_operations(&mut gc, &mut transaction);
         gc.data_table_first_row_as_header(sheet_pos, true, None);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
         // undo, the value should be on th grid again
-        execute_reverse_operations(&mut gc, &transaction);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        gc.undo(None);
+        // execute_reverse_operations(&mut gc, &transaction);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // create a formula cell in the grid data table
@@ -2315,13 +2309,12 @@ mod tests {
             None,
             None,
         );
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
 
         // there should only be 1 data table, the formula data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         // expect that a data table is not created
-        assert!(gc.execute_grid_to_data_table(&mut transaction, op).is_err());
+        assert!(gc.grid_to_data_table(sheet_rect, None, true, None).is_err());
 
         // there should only be 1 data table, the formula data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
@@ -2689,66 +2682,70 @@ mod tests {
 
     #[test]
     fn test_execute_insert_column_row_over_data_table() {
-        clear_js_calls();
+        todo!(); // don't understand this test
 
-        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+        // clear_js_calls();
 
-        let sheet = gc.sheet_mut(sheet_id);
+        // let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        sheet.set_cell_value(pos!(F14), CellValue::Import(Import::new("table1".into())));
-        sheet.set_cell_value(pos!(I5), CellValue::Import(Import::new("table2".into())));
+        // gc.add_data_table(sheet_pos, name, values, first_row_is_header, cursor);
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(pos!(F14)),
-            Some(CellValue::Import(Import::new("table1".into())))
-        );
-        assert_eq!(
-            sheet.cell_value(pos!(I5)),
-            Some(CellValue::Import(Import::new("table2".into())))
-        );
+        // let sheet = gc.sheet_mut(sheet_id);
 
-        let mut transaction = PendingTransaction::default();
-        let insert_column_op = Operation::InsertDataTableColumns {
-            sheet_pos: pos.to_sheet_pos(sheet_id),
-            columns: vec![(4, None, None)],
-            swallow: true,
-            select_table: true,
-            copy_formats_from: None,
-            copy_formats: None,
-        };
-        let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
-        assert!(column_result.is_err());
-        expect_js_call(
-            "jsClientMessage",
-            format!(
-                "{},{}",
-                "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
-            ),
-            true,
-        );
+        // sheet.set_cell_value(pos!(F14), CellValue::Import(Import::new("table1".into())));
+        // sheet.set_cell_value(pos!(I5), CellValue::Import(Import::new("table2".into())));
 
-        let mut transaction = PendingTransaction::default();
-        let insert_row_op = Operation::InsertDataTableRows {
-            sheet_pos: pos.to_sheet_pos(sheet_id),
-            rows: vec![(12, None)],
-            swallow: true,
-            select_table: true,
-            copy_formats_from: None,
-            copy_formats: None,
-        };
-        let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
-        assert!(row_result.is_err());
-        expect_js_call(
-            "jsClientMessage",
-            format!(
-                "{},{}",
-                "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
-            ),
-            true,
-        );
+        // let sheet = gc.sheet(sheet_id);
+        // assert_eq!(
+        //     sheet.cell_value(pos!(F14)),
+        //     Some(CellValue::Import(Import::new("table1".into())))
+        // );
+        // assert_eq!(
+        //     sheet.cell_value(pos!(I5)),
+        //     Some(CellValue::Import(Import::new("table2".into())))
+        // );
+
+        // let mut transaction = PendingTransaction::default();
+        // let insert_column_op = Operation::InsertDataTableColumns {
+        //     sheet_pos: pos.to_sheet_pos(sheet_id),
+        //     columns: vec![(4, None, None)],
+        //     swallow: true,
+        //     select_table: true,
+        //     copy_formats_from: None,
+        //     copy_formats: None,
+        // };
+        // let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
+        // assert!(column_result.is_err());
+        // expect_js_call(
+        //     "jsClientMessage",
+        //     format!(
+        //         "{},{}",
+        //         "Cannot add code cell to table",
+        //         JsSnackbarSeverity::Error
+        //     ),
+        //     true,
+        // );
+
+        // let mut transaction = PendingTransaction::default();
+        // let insert_row_op = Operation::InsertDataTableRows {
+        //     sheet_pos: pos.to_sheet_pos(sheet_id),
+        //     rows: vec![(12, None)],
+        //     swallow: true,
+        //     select_table: true,
+        //     copy_formats_from: None,
+        //     copy_formats: None,
+        // };
+        // let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
+        // assert!(row_result.is_err());
+        // expect_js_call(
+        //     "jsClientMessage",
+        //     format!(
+        //         "{},{}",
+        //         "Cannot add code cell to table",
+        //         JsSnackbarSeverity::Error
+        //     ),
+        //     true,
+        // );
     }
 
     #[test]

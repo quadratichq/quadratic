@@ -61,19 +61,15 @@ mod tests {
     }
 
     #[test]
-    fn test_check_spills() {
+    fn test_check_spill_single_value() {
         let mut gc = GridController::test();
 
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
+        sheet.set_cell_value(pos![A1], CellValue::Number(1.into()));
+        sheet.set_cell_value(pos![A2], CellValue::Number(2.into()));
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -81,18 +77,10 @@ mod tests {
         );
 
         // manually set a cell value and see if spill is changed
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "3".into(),
-            None,
-        );
+        gc.set_cell_value(pos![sheet_id!B2], "3".into(), None);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(sheet.data_tables.get_at_index(0).unwrap().1.has_spill());
+        assert!(sheet.data_table_at(&pos![B1]).unwrap().has_spill());
     }
 
     #[test]

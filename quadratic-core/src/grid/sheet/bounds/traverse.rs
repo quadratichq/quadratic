@@ -169,7 +169,7 @@ impl Sheet {
 mod test {
     use crate::{
         CellValue, Pos, Value,
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
+        grid::{CodeRun, DataTable, DataTableKind, Sheet},
     };
 
     #[test]
@@ -252,13 +252,6 @@ mod test {
     fn find_next_column_with_chart() {
         let mut sheet = Sheet::test();
         let dt = chart_5x5_dt();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -279,21 +272,7 @@ mod test {
     #[test]
     fn find_next_column_with_two_tables() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
-        sheet.set_cell_value(
-            Pos { x: 20, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -316,13 +295,6 @@ mod test {
     fn find_next_row_with_table() {
         let mut sheet = Sheet::test();
         let dt = chart_5x5_dt();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -343,21 +315,7 @@ mod test {
     #[test]
     fn find_next_row_with_two_tables() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
-        sheet.set_cell_value(
-            Pos { x: 5, y: 20 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);

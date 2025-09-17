@@ -2,8 +2,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
-    grid::CodeCellLanguage,
+    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -100,7 +99,7 @@ impl GridController {
         };
 
         // get the original code cell
-        let Some(CellValue::Code(code)) = code_sheet.cell_value(code_sheet_pos.into()) else {
+        let Some(code) = code_sheet.code_run_at(&code_sheet_pos.into()) else {
             return map_error(CoreError::CodeCellSheetError(
                 "Code cell not found".to_string(),
             ));
@@ -129,7 +128,6 @@ impl GridController {
                 .cells_accessed
                 .add(selection_sheet.id, range.clone());
         });
-        self.transactions.update_async_transaction(&transaction);
 
         let context = self.a1_context();
         let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
@@ -179,6 +177,8 @@ impl GridController {
                 has_headers: false,
             }
         };
+
+        self.transactions.update_async_transaction(&transaction);
 
         JsCellsA1Response {
             values: Some(values),
