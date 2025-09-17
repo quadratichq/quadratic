@@ -1,6 +1,6 @@
+import { events } from '@/app/events/events';
 import type { ErrorMarker } from '@/app/gridGL/cells/CellsSheet';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import type { Point } from 'pixi.js';
@@ -87,7 +87,7 @@ export class CellsMarkers extends Container {
       }
       this.markers = this.markers.filter((m) => m !== marker);
     }
-    pixiApp.setCursorDirty();
+    events.emit('setDirty', { cursor: true });
   }
 
   intersectsCodeInfo(point: Point): JsRenderCodeCell | undefined {

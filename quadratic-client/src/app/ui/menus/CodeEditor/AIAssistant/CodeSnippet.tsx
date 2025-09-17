@@ -164,6 +164,7 @@ const CodeSnippetRunButton = memo(
             y: codeCell.pos.y,
             codeString: text ?? '',
             language: codeCell.language,
+            isAi: false,
           });
         },
       [language, text]

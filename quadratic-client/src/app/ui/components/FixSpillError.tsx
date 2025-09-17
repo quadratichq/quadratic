@@ -65,6 +65,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           y: codeCell.pos.y,
           sheetEnd,
           reverse: false,
+          isAi: false,
         })
         .then(updateCodeEditor);
       onClick?.();
@@ -81,6 +82,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           y: codeCell.pos.y,
           sheetEnd,
           reverse: false,
+          isAi: false,
         })
         .then(updateCodeEditor);
       onClick?.();

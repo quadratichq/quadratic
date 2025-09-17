@@ -1,6 +1,7 @@
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
@@ -53,8 +54,6 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
-  // this needs to be a child of viewportContents so it it is placed over the
-  // grid lines
   gridHeadingsRows: GridHeadingRows;
 
   dirty = true;
@@ -65,7 +64,20 @@ export class GridHeadings extends Container {
     this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
     this.gridHeadingsRows = new GridHeadingRows();
+
+    events.on('setDirty', this.setDirty);
   }
+
+  destroy() {
+    events.off('setDirty', this.setDirty);
+    super.destroy();
+  }
+
+  private setDirty = (dirty: DirtyObject) => {
+    if (dirty.headings) {
+      this.dirty = true;
+    }
+  };
 
   // calculates static character size (used in overlap calculations)
   private calculateCharacterSize() {
@@ -115,7 +127,7 @@ export class GridHeadings extends Container {
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
@@ -197,7 +209,7 @@ export class GridHeadings extends Container {
         if (
           scale < 0.2 || // this fixes a bug where multi letter labels were not showing when zoomed out
           currentWidth > charactersWidth ||
-          pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
+          content.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
           // don't show numbers if it overlaps with the selected value (eg, hides B if selected A overlaps it)
           let xPosition = x + currentWidth / 2;
@@ -283,7 +295,7 @@ export class GridHeadings extends Container {
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {
@@ -440,17 +452,8 @@ export class GridHeadings extends Container {
   }
 
   update = (viewportDirty: boolean) => {
-    // update only if dirty or if viewport is dirty and there is a column or row
-    // selection (which requires a redraw)
-    if (
-      !this.dirty &&
-      !viewportDirty
+    if (!this.dirty && !viewportDirty) return;
 
-      // todo....
-      // !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
-    ) {
-      return;
-    }
     this.dirty = false;
     this.labels.clear();
     this.headingsGraphics.clear();

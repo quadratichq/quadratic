@@ -4,6 +4,7 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TableSortEntry } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSortEntry';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -38,7 +39,7 @@ export const TableSort = () => {
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
-      quadraticCore.sortDataTable(sheets.current, contextMenu.table.x, contextMenu.table.y, sortToSend);
+      quadraticCore.sortDataTable(sheets.current, contextMenu.table.x, contextMenu.table.y, sortToSend, false);
     }
     handleClose();
   }, [contextMenu.table, sort, handleClose]);
@@ -50,7 +51,7 @@ export const TableSort = () => {
       }
 
       if (contextMenu.table) {
-        const position = pixiApp.cellsSheet().tables.getSortDialogPosition(contextMenu.table);
+        const position = content.cellsSheet.tables.getSortDialogPosition(contextMenu.table);
         if (position) {
           div.style.left = `${position.x}px`;
           div.style.top = `${position.y}px`;

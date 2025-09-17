@@ -3,6 +3,7 @@ import {
   debugFlagDescriptions,
   debugFlagGroups,
   type DebugFlagDescription,
+  type DebugFlagKeys,
 } from '@/app/debugFlags/debugFlagsDefinitions';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -82,7 +83,7 @@ export const QuadraticAppDebugSettings = () => {
                     {group}
                     {(() => {
                       const count = Object.entries(debugFlagDescriptions).filter(
-                        ([key, value]) => value.group === group && debugFlags.getFlag(key)
+                        ([key, value]) => value.group === group && debugFlags.getFlag(key as DebugFlagKeys)
                       ).length;
                       return count > 0 ? (
                         <span className="text-sm font-normal text-muted-foreground">({count})</span>
@@ -98,8 +99,8 @@ export const QuadraticAppDebugSettings = () => {
                             className={key === 'debug' ? '-mx-3 mb-1 rounded bg-accent px-3 py-3' : ''}
                             keyName={key}
                             debug={value}
-                            value={debugFlags.getFlag(key)}
-                            onChange={(newValue) => setDebugFlag(key, newValue)}
+                            value={debugFlags.getFlag(key as DebugFlagKeys)}
+                            onChange={(newValue) => setDebugFlag(key as DebugFlagKeys, newValue)}
                             key={key}
                             disabled={key !== 'debug' && !debugFlags.getFlag('debug')}
                           />

@@ -1,1 +1,2 @@
 export const GET_SCHEMA_TIMEOUT = 5000;
+export const FAILING_SQL_CONNECTIONS_EXPIRATION_TIME = 1000 * 60 * 15; // 15 minutes

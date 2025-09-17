@@ -22,13 +22,17 @@ export const codeCellToMarkdown = async (sheetId: string, x: number, y: number):
   const connection = getConnectionInfo(codeCellCore.language);
   const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
   if (connection) {
-    schemaData = await connectionClient.schemas.get(
-      connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
-      connection.id,
-      teamUuid,
-      true,
-      GET_SCHEMA_TIMEOUT
-    );
+    try {
+      schemaData = await connectionClient.schemas.get(
+        connection.kind,
+        connection.id,
+        teamUuid,
+        true,
+        GET_SCHEMA_TIMEOUT
+      );
+    } catch (e) {
+      console.error('Error getting schema for code cell', e);
+    }
   }
   const schemaMarkdownForAi = schemaData ? toMarkdown(schemaData, 'database_schema') : undefined;
 

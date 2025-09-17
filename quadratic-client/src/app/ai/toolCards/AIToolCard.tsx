@@ -24,6 +24,7 @@ import { InsertRows } from '@/app/ai/toolCards/InsertRows';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
+import { Redo } from '@/app/ai/toolCards/Redo';
 import { RemoveValidations } from '@/app/ai/toolCards/RemoveValidations';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { RerunCode } from '@/app/ai/toolCards/RerunCode';
@@ -38,6 +39,7 @@ import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
 import { TableMeta } from '@/app/ai/toolCards/TableMeta';
 import { TextSearch } from '@/app/ai/toolCards/TextSearch';
+import { Undo } from '@/app/ai/toolCards/Undo';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
@@ -143,6 +145,10 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.Undo:
+      return <Undo toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.Redo:
+      return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

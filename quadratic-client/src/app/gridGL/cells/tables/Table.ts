@@ -6,6 +6,7 @@ import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { Point } from 'pixi.js';
@@ -46,7 +47,7 @@ export class Table extends Container {
 
   destroy() {
     this.hoverTableHeaders?.removeChild(this.header);
-    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    const cellsMarkers = content.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
     if (cellsMarkers) {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
@@ -56,7 +57,7 @@ export class Table extends Container {
   }
 
   get hoverTableHeaders(): Container {
-    const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+    const cellsSheet = content.cellsSheets.getById(this.sheet.id);
     if (!cellsSheet) {
       throw new Error('Expected cellsSheet to be defined in Table.ts');
     }
@@ -78,7 +79,7 @@ export class Table extends Container {
     this.header.update(false);
     this.outline.update();
 
-    const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+    const cellsSheet = content.cellsSheets.getById(this.sheet.id);
     if (cellsSheet) {
       cellsSheet.cellsFills.updateAlternatingColors(
         this.codeCell.x,
@@ -87,7 +88,7 @@ export class Table extends Container {
       );
     }
 
-    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    const cellsMarkers = content.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
     if (!cellsMarkers) {
       console.log('Expected CellsMarkers to be defined in sheet');
       return;
@@ -109,7 +110,7 @@ export class Table extends Container {
 
   /// Based on any arbitrary viewport bounds, returns the bounds of the table header if it would be floating
   calculateHeadingBounds = (bounds: Rectangle): Rectangle | undefined => {
-    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const gridHeading = content.headings.headingSize.unscaledHeight;
     const codeCell = this.codeCell;
 
     // return undefined if the table is not floating
