@@ -296,6 +296,7 @@ mod tests {
             },
             "hello".to_string(),
             None,
+            false,
         );
         let transaction = gc.last_transaction().unwrap().clone();
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();

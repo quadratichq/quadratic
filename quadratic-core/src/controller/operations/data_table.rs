@@ -152,51 +152,55 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(columns_to_add) = columns_to_add
-            && !columns_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_add
-                        .into_iter()
-                        .map(|index| (index, None, None))
-                        .collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !columns_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableColumns {
+                sheet_pos,
+                columns: columns_to_add
+                    .into_iter()
+                    .map(|index| (index, None, None))
+                    .collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(columns_to_remove) = columns_to_remove
-            && !columns_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !columns_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableColumns {
+                sheet_pos,
+                columns: columns_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         if let Some(rows_to_add) = rows_to_add
-            && !rows_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !rows_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableRows {
+                sheet_pos,
+                rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(rows_to_remove) = rows_to_remove
-            && !rows_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !rows_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableRows {
+                sheet_pos,
+                rows: rows_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         ops
     }
@@ -513,13 +517,13 @@ mod test {
             vec!["$123".into(), "123,456.00".into()],
         ];
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc
             .grid_to_data_table_operations(sheet_rect, None, false)
             .unwrap();
-        gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
+        gc.start_user_ai_transaction(ops, None, TransactionName::GridToDataTable, false);
 
         let import = Import::new("Table1".into());
         let cell_value = CellValue::Import(import.to_owned());
@@ -531,7 +535,7 @@ mod test {
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         // undo the operation
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // convert one of the cells to a formula
         let formula_pos = SheetPos::new(sheet_id, 1, 2);
@@ -541,6 +545,7 @@ mod test {
             "=1+1".into(),
             None,
             None,
+            false,
         );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 

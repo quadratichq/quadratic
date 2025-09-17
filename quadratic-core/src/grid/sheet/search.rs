@@ -616,6 +616,7 @@ mod test {
             },
             "$5,123".to_string(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -625,6 +626,7 @@ mod test {
             },
             "10.123%".to_string(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);

@@ -77,6 +77,14 @@ impl Grid {
         ret
     }
 
+    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+        self.sheets.iter_mut().for_each(|(_, sheet)| {
+            sheet
+                .offsets
+                .migration_retain_positive_non_default_offsets();
+        });
+    }
+
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();

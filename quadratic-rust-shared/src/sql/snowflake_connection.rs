@@ -3,6 +3,7 @@
 //! Functions to interact with Snowflake
 
 use arrow::array::ArrayRef;
+use arrow::util::pretty::pretty_format_batches;
 use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -150,6 +151,7 @@ impl<'a> Connection<'a> for SnowflakeConnection {
             if let QueryResult::Arrow(batches) = query_result {
                 let file = Vec::new();
                 let mut writer = ArrowWriter::try_new(file, batches[0].schema(), None)?;
+                println!("batches: {}", pretty_format_batches(&batches).unwrap());
 
                 for batch in batches {
                     num_records += batch.num_rows();
@@ -462,7 +464,7 @@ pub mod tests {
 
     #[tokio::test]
     // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
-    #[ignore]
+    // #[ignore]
     async fn test_snowflake_query() {
         let (rows, over_the_limit, num_records) = test_query(None).await;
 

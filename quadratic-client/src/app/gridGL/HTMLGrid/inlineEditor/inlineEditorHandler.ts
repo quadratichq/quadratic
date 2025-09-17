@@ -517,6 +517,7 @@ class InlineEditorHandler {
           y: this.location.y,
           language: 'Formula',
           codeString: value.slice(1),
+          isAi: false,
         });
         trackEvent('[CodeEditor].cellRun', {
           type: 'Formula',
@@ -540,7 +541,7 @@ class InlineEditorHandler {
           }
           return false;
         } else {
-          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim());
+          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim(), false);
           if (!skipChangeSheet) {
             events.emit('hoverCell');
           }
@@ -585,7 +586,6 @@ class InlineEditorHandler {
         id: '',
         messages: [],
         waitingOnMessageIndex: undefined,
-        delaySeconds: 0,
       },
       diffEditorContent: undefined,
       waitingForEditorClose: {

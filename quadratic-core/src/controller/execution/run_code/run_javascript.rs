@@ -59,6 +59,7 @@ mod tests {
             code.clone(),
             None,
             None,
+            false,
         );
 
         let transaction = gc.async_transactions().first().unwrap();
@@ -107,6 +108,7 @@ mod tests {
             "return 'hello world';".into(),
             None,
             None,
+            false,
         );
 
         // transaction for its id
@@ -132,7 +134,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set A1 = 9
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None);
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None, false);
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
@@ -141,6 +143,7 @@ mod tests {
             "return q.cells(\"A1\") + 1;".into(),
             None,
             None,
+            false,
         );
 
         // get the transaction id for the awaiting javascript async calculation
@@ -195,7 +198,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set A1 = 9
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None);
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None, false);
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
@@ -204,6 +207,7 @@ mod tests {
             "return q.cells(\"A1\") + 1;".into(),
             None,
             None,
+            false,
         );
 
         // get the transaction id for the awaiting javascript async calculation
@@ -223,7 +227,7 @@ mod tests {
         assert_eq!(gc.async_transactions().len(), 0);
 
         // replace the value in A1 to trigger the javascript calculation
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None);
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None, false);
         assert_eq!(gc.async_transactions().len(), 1);
 
         let transaction_id = gc.async_transactions()[0].id;
@@ -287,6 +291,7 @@ mod tests {
             "create an array output".into(),
             None,
             None,
+            false,
         );
 
         // get the transaction id for the awaiting javascript async calculation
@@ -331,6 +336,7 @@ mod tests {
             "dummy calculation".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
@@ -363,6 +369,7 @@ mod tests {
             "return 'original output';".into(),
             None,
             None,
+            false,
         );
 
         // get the transaction id for the awaiting javascript async calculation
@@ -391,6 +398,7 @@ mod tests {
             "return 'new output';".into(),
             None,
             None,
+            false,
         );
 
         // check that the value at A1 contains the original output
@@ -425,6 +433,7 @@ mod tests {
             "return 'new output second time';".into(),
             None,
             None,
+            false,
         );
 
         // check that the value at A1 contains the original output
@@ -460,13 +469,19 @@ mod tests {
         // Tests in column A, and y: 1 = "1", y: 2 = "q.cells(\"A1\") + 1", y: 3 = "q.cells(\"A2\") + 1"
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
+        gc.set_cell_value(
+            pos![A1].to_sheet_pos(sheet_id),
+            "1".to_string(),
+            None,
+            false,
+        );
         gc.set_code_cell(
             pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             "q.cells(\"A1\") + 1".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -498,6 +513,7 @@ mod tests {
             "q.cells(\"B2\") + 1".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
@@ -547,6 +563,7 @@ mod tests {
             "return ['header', 1, 2, 3];".into(),
             None,
             None,
+            false,
         );
 
         let transaction_id = gc.async_transactions()[0].id;

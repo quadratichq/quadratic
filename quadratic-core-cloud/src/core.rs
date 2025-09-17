@@ -53,7 +53,7 @@ pub async fn process_transaction(
     let transaction_id =
         grid.lock()
             .await
-            .start_user_transaction(operations, cursor, transaction_name);
+            .start_user_ai_transaction(operations, cursor, transaction_name, false);
     let transaction_uuid = Uuid::parse_str(&transaction_id)?;
 
     // in a separate thread, listen for get_cells calls

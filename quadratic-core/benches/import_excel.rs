@@ -26,7 +26,7 @@ const SINGLE_TEST: bool = true;
 /// Execute the import excel benchmark
 fn execute(file: &[u8], file_name: &str) {
     let mut gc = GridController::from_grid(Grid::new_blank(), 0);
-    gc.import_excel(file, file_name, None).unwrap();
+    gc.import_excel(file, file_name, None, false).unwrap();
 }
 
 /// Benchmark for importing excel files
