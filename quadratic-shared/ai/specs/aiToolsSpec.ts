@@ -2630,7 +2630,8 @@ This tool removes all validations in a sheet from a range.\n`,
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool undoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to undo.\n
-Always pass in the count of actions to undo when using the undo tool. You may need to undo multiple times to fulfill the user's request.\n`,
+Always pass in the count of actions to undo when using the undo tool, even if the count to undo is 1.\n
+If the user's undo request is multiple transactions in the past, use the count parameter to pass the number of transactions to undo.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -2646,13 +2647,16 @@ Always pass in the count of actions to undo when using the undo tool. You may ne
     responseSchema: AIToolsArgsSchema[AITool.Undo],
     prompt: `
 This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable.\n
-Always pass in the count of actions to undo when using the undo tool. You may need to undo multiple times to fulfill the user's request.\n`,
+Always pass in the count of actions to undo when using the undo tool, even if the count to undo is 1.\n
+If the user's undo request is multiple transactions in the past, use the count parameter to pass the number of transactions to undo.\n`,
   },
   [AITool.Redo]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool redoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
+Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
+If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -2667,6 +2671,8 @@ This tool redoes the last action. You MUST use the aiUpdates context to understa
     },
     responseSchema: AIToolsArgsSchema[AITool.Redo],
     prompt: `
-This tool redoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable and redoable.\n`,
+This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
+Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
+If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
   },
 } as const;
