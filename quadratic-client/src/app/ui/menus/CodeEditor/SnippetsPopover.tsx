@@ -52,7 +52,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
         setShowSnippetsPopover(value);
       }}
     >
-      <TooltipPopover label={`Snippets`} side="bottom">
+      <TooltipPopover label={`Show snippets`} side="bottom">
         <PopoverTrigger asChild>
           <Button
             variant="ghost"

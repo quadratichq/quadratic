@@ -173,4 +173,5 @@ export enum Action {
   ShowAllColumns = 'show_all_columns',
   EditTableCode = 'edit_table_code',
   ToggleAIAnalyst = 'toggle_ai_analyst',
+  AddToAIContext = 'add_to_ai_context',
 }

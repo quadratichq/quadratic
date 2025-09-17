@@ -1,5 +1,6 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystCurrentChatMessagesCountAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
+import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -10,7 +11,8 @@ import { AIUserMessageFormSheetButton } from '@/app/ui/components/AIUserMessageF
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, CloseIcon, DraftIcon, EditIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -30,7 +32,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import { useRecoilValue, type SetterOrUpdater } from 'recoil';
+import { useRecoilState, useRecoilValue, type SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -83,6 +85,7 @@ export const AIUserMessageForm = memo(
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
+    const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
 
     const [dragOver, setDragOver] = useState(false);
     const dragOverMessage = useMemo(
@@ -101,17 +104,18 @@ export const AIUserMessageForm = memo(
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [selectedConnectionUuid, setSelectedConnectionUuid] = useState<string>('');
     const [files, setFiles] = useState<FileContent[]>([]);
-    const [prompt, setPrompt] = useState<string>('');
+    // TODO: wire this up as an atom everywhere instead of passing?
+    // const [prompt, setPrompt] = useState<string>('');
+    const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
     useEffect(() => {
       setSelectedConnectionUuid(initialContent?.find((item) => item.type === 'connection')?.uuid ?? '');
       setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
-      setPrompt(
-        initialContent
-          ?.filter((item) => isContentText(item))
-          .map((item) => item.text)
-          .join('\n') ?? ''
-      );
-    }, [initialContent]);
+      const initialPrompt = initialContent
+        ?.filter((item) => isContentText(item))
+        .map((item) => item.text)
+        .join('\n');
+      if (initialPrompt) setPrompt(initialPrompt);
+    }, [initialContent, setPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -151,7 +155,7 @@ export const AIUserMessageForm = memo(
           content: [...files, ...connectionContent, createTextContent(trimmedPrompt)],
         });
       },
-      [connections, files, initialContent, selectedConnectionUuid, submitPrompt]
+      [connections, files, initialContent, selectedConnectionUuid, submitPrompt, setPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -164,7 +168,7 @@ export const AIUserMessageForm = memo(
         setPrompt(event.target.value);
         onContentChange?.([...files, createTextContent(event.target.value)]);
       },
-      [files, onContentChange]
+      [files, onContentChange, setPrompt]
     );
 
     const handleFilesChange = useCallback(
@@ -275,7 +279,7 @@ export const AIUserMessageForm = memo(
 
     return (
       <div className="relative">
-        {showPromptSuggestions && messagesCount === 0 && (
+        {showPromptSuggestions && messagesCount === 100 && (
           <AIAnalystPromptSuggestions
             exampleSet={files.length > 0 ? 'file-pdf' : selectedConnectionUuid ? 'connection' : 'empty'}
             prompt={prompt}
@@ -283,6 +287,35 @@ export const AIUserMessageForm = memo(
             selectedConnectionUuid={selectedConnectionUuid}
             setSelectedConnectionUuid={setSelectedConnectionUuid}
           />
+        )}
+        {false && (
+          <div className="mb-1 flex gap-1">
+            <div className="flex items-center gap-1 rounded bg-accent px-1.5 py-1">
+              <LanguageIcon language="Python" />
+              <div className="flex flex-col">
+                <h3 className="text-xs font-bold">Python1</h3>
+                <p className="text-xs text-muted-foreground">5 lines</p>
+              </div>
+              <CloseIcon className="ml-2 text-muted-foreground" />
+            </div>
+
+            <div className="flex hidden items-center gap-1 rounded bg-accent px-1.5 py-1">
+              <DraftIcon />
+              <div className="flex flex-col">
+                <h3 className="text-xs font-bold">FY25_Q2_Consol[…].pdf</h3>
+                <p className="text-xs text-muted-foreground">173KB</p>
+              </div>
+              <CloseIcon className="ml-2 text-muted-foreground" />
+            </div>
+            <div className="flex hidden items-center gap-1 rounded bg-accent px-1.5 py-1">
+              <LanguageIcon language="POSTGRES" />
+              <div className="flex flex-col">
+                <h3 className="text-xs font-bold">Quadartic</h3>
+                <p className="text-xs text-muted-foreground">Postgres connection</p>
+              </div>
+              <CloseIcon className="ml-2 text-muted-foreground" />
+            </div>
+          </div>
         )}
         <form
           className={cn(
@@ -345,6 +378,9 @@ export const AIUserMessageForm = memo(
             maxHeight={maxHeight}
             disabled={waitingOnMessageIndex !== undefined}
             onDragEnter={handleDrag}
+            onFocus={() => {
+              textareaRef.current?.setSelectionRange(prompt.length, prompt.length);
+            }}
           />
 
           <AIUsageExceeded show={showAIUsageExceeded} />
@@ -355,7 +391,11 @@ export const AIUserMessageForm = memo(
             waitingOnMessageIndex={waitingOnMessageIndex}
             textareaRef={textareaRef}
             prompt={prompt}
-            submitPrompt={() => submit(prompt)}
+            setPrompt={setPrompt}
+            submitPrompt={() => {
+              submit(prompt);
+              setPrompt('');
+            }}
             abortPrompt={abortPrompt}
             disabled={disabled}
             handleFiles={handleFiles}
@@ -430,6 +470,7 @@ type AIUserMessageFormFooterProps = {
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
+  setPrompt: (prompt: React.SetStateAction<string>) => void;
   submitPrompt: () => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
@@ -444,6 +485,7 @@ const AIUserMessageFormFooter = memo(
     waitingOnMessageIndex,
     textareaRef,
     prompt,
+    setPrompt,
     submitPrompt,
     abortPrompt,
     disabled,
@@ -472,7 +514,12 @@ const AIUserMessageFormFooter = memo(
               setSelectedConnectionUuid={setSelectedConnectionUuid}
               textareaRef={textareaRef}
             />
-            <AIUserMessageFormSheetButton disabled={disabled} textareaRef={textareaRef} />
+            <AIUserMessageFormSheetButton
+              disabled={disabled}
+              textareaRef={textareaRef}
+              prompt={prompt}
+              setPrompt={setPrompt}
+            />
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">

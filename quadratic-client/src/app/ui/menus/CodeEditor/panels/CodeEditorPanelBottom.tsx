@@ -25,10 +25,13 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
+  // const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
+  // const [, setAiAnalystPrompt] = useRecoilState(aiAnalystPromptAtom);
   const hasOutput = useMemo(
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
   );
+  console.log('showAIAssistant', showAIAssistant);
 
   return (
     <Tabs
@@ -52,7 +55,6 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
         </Button>
         <TabsList>
           {!!schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAIAssistant && <TabsTrigger value="ai-assistant">Code chat</TabsTrigger>}
           <TabsTrigger
             value="console"
             className={cn(
@@ -64,7 +66,19 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
           >
             Console
           </TabsTrigger>
+          {showAIAssistant && <TabsTrigger value="ai-assistant">Code chat</TabsTrigger>}
         </TabsList>
+        {/* <Button
+          disabled={showAIAnalyst}
+          variant="ghost"
+          className="ml-auto"
+          onClick={() => {
+            setShowAIAnalyst(true);
+            setAiAnalystPrompt((prev) => prev + '\nI want to focus on XXX');
+          }}
+        >
+          Code chat
+        </Button> */}
       </div>
 
       {!!schemaBrowser && (

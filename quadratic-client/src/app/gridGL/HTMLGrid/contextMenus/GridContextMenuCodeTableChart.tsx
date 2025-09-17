@@ -21,6 +21,8 @@ export function GridContextMenuCodeTableChart() {
 
   return (
     <ContextMenuBase>
+      <ContextMenuItemAction action={Action.AddToAIContext} actionArgs={contextMenu.table?.name ?? ''} />
+      <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />

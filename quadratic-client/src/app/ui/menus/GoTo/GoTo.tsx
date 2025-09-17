@@ -3,29 +3,37 @@ import '@/app/ui/styles/floating-dialog.css';
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { tableInfoAtom } from '@/app/atoms/tableInfoAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { A1Error } from '@/app/quadratic-core-types';
 import { CloseIcon, GoToIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { cn } from '@/shared/shadcn/utils';
 import { CommandSeparator } from 'cmdk';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 type Props = {
+  // Passes back a string representing a reference for the user's selection.
+  // Could be:
+  //   - A cell ("A1")
+  //   - A range ("A1:B2")
+  //   - A code/table name ("Python1")
+  //   - A sheet name ("Sheet1")
+  //   - A user-defined input string ("foobar391.dke")
+  // Consumers should handle each of these cases, as we don't guarantee a valid
+  // reference to _something_ in the sheet.
+  onSelect: (referenceString: string) => void;
   reverse?: boolean;
 };
 
-export const GoTo = memo(({ reverse }: Props) => {
+export const GoTo = memo((props: Props) => {
+  const { reverse, onSelect } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   const setShowGoToMenu = useSetRecoilState(editorInteractionStateShowGoToMenuAtom);
-  const [value, setValue] = useState<string>();
-  const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
+  const [value, setValue] = useState<string>('');
   const tableInfo = useRecoilValue(tableInfoAtom);
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState('');
 
   const closeMenu = useCallback(() => {
     console.log('closeMenu');
@@ -44,35 +52,23 @@ export const GoTo = memo(({ reverse }: Props) => {
 
   const convertedInput = useMemo(() => {
     if (!value) {
-      return (
-        <span>
-          <span className="font-bold">A1</span>
-        </span>
-      );
+      return 'A1';
     }
     try {
       const selection = sheets.stringToSelection(value, sheets.current);
-      return (
-        <span>
-          <span className="font-bold">{selection.toA1String(sheets.current, sheets.jsA1Context)}</span>
-        </span>
-      );
+      return selection.toA1String(sheets.current, sheets.jsA1Context);
     } catch (e: any) {
       if (e) {
         try {
           const error: A1Error | undefined = JSON.parse(e);
           if (error?.type === 'InvalidSheetName') {
-            return (
-              <span>
-                Sheet <span className="font-bold">{error.error}</span> not found
-              </span>
-            );
+            return `Sheet “${error.error}” not found`;
           } else if (error?.type === 'InvalidColumn') {
-            return <span>Column {error.error} is out of bounds</span>;
+            return `Column “${error.error}” is out of bounds`;
           } else if (error?.type === 'InvalidRow') {
-            return <span>Row {error.error} is out of bounds</span>;
+            return `Row “${error.error}” is out of bounds`;
           } else if (error?.type === 'TooManySheets') {
-            return <span>Only one sheet is supported</span>;
+            return 'Only one sheet is supported';
           }
         } catch (_) {}
       }
@@ -80,37 +76,12 @@ export const GoTo = memo(({ reverse }: Props) => {
     }
   }, [value]);
 
-  const onSelect = useCallback(() => {
-    // if empty, then move cursor to A1
-    if (!value) {
-      sheets.sheet.cursor.moveTo(1, 1, { checkForTableRef: true });
-      pixiApp.viewport.reset();
-    } else {
-      try {
-        const selection = sheets.stringToSelection(value, sheets.current);
-        sheets.changeSelection(selection);
-      } catch (_) {
-        // nothing to do if we can't parse the input
-      }
-    }
-    closeMenu();
-  }, [closeMenu, value]);
-
-  const selectTable = useCallback(
-    (tableName: string) => {
-      const selection = sheets.stringToSelection(tableName, sheets.current);
-      sheets.changeSelection(selection);
+  const handleOnSelect = useCallback(
+    (referenceString: string): void => {
+      onSelect(referenceString === '' ? 'A1' : referenceString);
       closeMenu();
     },
-    [closeMenu]
-  );
-
-  const selectSheet = useCallback(
-    (sheetId: string) => {
-      setCurrentSheet(sheetId);
-      closeMenu();
-    },
-    [closeMenu]
+    [closeMenu, onSelect]
   );
 
   const tablesFiltered = useMemo(
@@ -150,76 +121,91 @@ export const GoTo = memo(({ reverse }: Props) => {
     [value]
   );
 
-  useEffect(() => {
-    if (currentSheet !== sheets.current) {
-      sheets.current = currentSheet;
-    }
-  }, [currentSheet]);
+  const filters = useMemo(() => {
+    return [
+      ['In this sheet', 4],
+      ['Tables', tablesFiltered.length],
+      ['Code', codeTablesFiltered.length],
+      ['Sheets', sheetsFiltered.length],
+    ];
+  }, [tablesFiltered, codeTablesFiltered, sheetsFiltered]);
 
   return (
-    <Command shouldFilter={false} data-testid="goto-menu">
-      <div className={cn('flex w-full items-center justify-between', reverse && 'order-last border-t border-border')}>
+    <Command
+      shouldFilter={false}
+      data-testid="goto-menu"
+      className={cn(
+        // TODO: this doesn't work — breaks arrow keys
+        reverse && 'flex flex-col-reverse [&_[cmdk-list-sizer]]:flex [&_[cmdk-list-sizer]]:flex-col-reverse'
+      )}
+    >
+      <div className={cn('flex w-full items-center justify-between', false && 'order-last border-t border-border')}>
         <div className="relative w-full flex-grow">
           <div className="flex flex-wrap items-center gap-1 px-3 pt-1.5 text-xs text-muted-foreground">
-            {[
-              // ['All', 0],
-              ['Tables', tablesFiltered.length],
-              ['Code', codeTablesFiltered.length],
-              ['Sheets', sheetsFiltered.length],
-              ['In this sheet', 4],
-            ].map(([filter, count], i) => (
-              <Badge
-                variant={filter === activeFilter ? 'primary' : 'outline'}
-                className={cn(
-                  'cursor-pointer text-muted-foreground',
-                  filter === activeFilter && 'text-primary-foreground'
-                )}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveFilter(filter === activeFilter ? 'All' : (filter as string));
-                }}
-              >
-                {filter} {filter !== 'All' && <span className="font-normal">({count})</span>}
-                {filter === activeFilter && filter !== 'All' && (
-                  <CloseIcon size="sm" className="ml-1 !h-4 !w-4 -translate-y-0.5 !text-sm" />
-                )}
-              </Badge>
-            ))}
+            {filters.map(([filter, count], i) =>
+              count === 0 ? null : (
+                <button
+                  className={cn(
+                    'flex items-center gap-0.5 font-medium',
+                    'cursor-pointer rounded-md border px-1.5 py-0.5',
+                    filter === activeFilter
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border text-muted-foreground'
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveFilter(filter === activeFilter ? '' : (filter as string));
+                    inputRef.current?.focus();
+                  }}
+                >
+                  {filter} {filter !== '' && <span className="font-normal">({count})</span>}
+                  {filter === activeFilter && filter !== '' && (
+                    <CloseIcon size="sm" className="ml-1 !h-4 !w-4 -translate-y-0.5 !text-sm" />
+                  )}
+                </button>
+              )
+            )}
           </div>
           <CommandInput
             ref={inputRef}
             value={value}
             onValueChange={setValue}
-            placeholder="Enter a cell “A1” or range “A1:B2”"
+            placeholder="Enter a cell “A1”, range “A1:B2”, or name “Python1”"
             omitIcon={true}
+            autoFocus
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           />
         </div>
       </div>
 
-      <CommandList className={cn('', reverse && 'order-first')}>
-        <CommandGroup heading={reverse ? 'Cells / range' : 'Go to'} className="border-b border-b-border">
-          <CommandItem
-            onSelect={onSelect}
-            className="flex cursor-pointer items-center justify-between"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            {convertedInput ? <div>{convertedInput}</div> : null}
-            {!reverse && <GoToIcon className="text-muted-foreground" />}
-          </CommandItem>
-        </CommandGroup>
+      <CommandList className={cn('', false && 'order-first')}>
+        {activeFilter === '' && (
+          <CommandGroup heading={'Cell / range'} className="border-b border-b-border">
+            <CommandItem
+              onSelect={() => handleOnSelect(value)}
+              className="flex cursor-pointer items-center justify-between"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              {convertedInput ? <div>{convertedInput}</div> : null}
+              {!reverse && <GoToIcon className="text-muted-foreground" />}
+            </CommandItem>
+          </CommandGroup>
+        )}
 
-        {tablesFiltered.length > 0 && (activeFilter === 'Tables' || activeFilter === 'All') && (
+        {tablesFiltered.length > 0 && (activeFilter === 'Tables' || activeFilter === '') && (
           <>
             <CommandGroup heading="Tables">
               {tablesFiltered.map(({ name }, i) => (
                 <CommandItemGoto
                   key={name}
                   value={name}
-                  onSelect={() => selectTable(name)}
+                  onSelect={() => handleOnSelect(name)}
                   name={name}
                   nameSecondary={tableNameToRange(name)}
                 />
@@ -229,13 +215,13 @@ export const GoTo = memo(({ reverse }: Props) => {
           </>
         )}
 
-        {codeTablesFiltered.length > 0 && (activeFilter === 'Code' || activeFilter === 'All') && (
+        {codeTablesFiltered.length > 0 && (activeFilter === 'Code' || activeFilter === '') && (
           <CommandGroup heading="Code">
             {codeTablesFiltered.map(({ name, language }, i) => (
               <CommandItemGoto
                 key={name}
                 value={name}
-                onSelect={() => selectTable(name)}
+                onSelect={() => handleOnSelect(name)}
                 name={name}
                 nameSecondary={tableNameToRange(name)}
                 icon={<LanguageIcon language={getConnectionKind(language)} />}
@@ -244,17 +230,15 @@ export const GoTo = memo(({ reverse }: Props) => {
           </CommandGroup>
         )}
 
-        {sheetsFiltered.length > 0 && (activeFilter === 'Sheets' || activeFilter === 'All') && (
+        {sheetsFiltered.length > 0 && (activeFilter === 'Sheets' || activeFilter === '') && (
           <CommandGroup heading="Sheets">
             {sheetsFiltered.map((sheet) => (
               <CommandItemGoto
                 key={sheet.id}
                 value={sheet.id}
-                onSelect={() => {
-                  setCurrentSheet(sheet.id);
-                  closeMenu();
-                }}
+                onSelect={() => handleOnSelect(sheet.name)}
                 name={sheet.name}
+                nameSecondary={sheet.id === sheets.current ? '(current)' : ''}
               />
             ))}
           </CommandGroup>

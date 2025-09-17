@@ -69,7 +69,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   evaluationResult: undefined,
   consoleOutput: undefined,
   spillError: undefined,
-  panelBottomActiveTab: 'ai-assistant',
+  panelBottomActiveTab: 'console',
   showSnippetsPopover: false,
   initialCode: undefined,
   editorContent: undefined,

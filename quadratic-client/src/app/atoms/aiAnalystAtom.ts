@@ -35,6 +35,7 @@ export interface AIAnalystState {
   };
   waitingOnMessageIndex?: number;
   delaySeconds: number;
+  prompt: string;
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -63,6 +64,7 @@ export const defaultAIAnalystState: AIAnalystState = {
   },
   waitingOnMessageIndex: undefined,
   delaySeconds: 0,
+  prompt: '',
 };
 
 export let aiAnalystInitialized = false;
@@ -110,7 +112,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         }
       }
     },
-    ({ onSet }) => {
+    ({ onSet, setSelf }) => {
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) {
           return;
@@ -119,6 +121,11 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         if (oldValue.showAIAnalyst && !newValue.showAIAnalyst) {
           oldValue.abortController?.abort();
           focusGrid();
+          // Reset prompt when AI analyst is hidden
+          setSelf((prev: any) => ({
+            ...prev,
+            prompt: '',
+          }));
         }
 
         if (!oldValue.showChatHistory && newValue.showChatHistory) {
@@ -143,6 +150,7 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
+export const aiAnalystPromptAtom = createSelector('prompt');
 
 export const aiAnalystLoadingAtom = selector<boolean>({
   key: 'aiAnalystLoadingAtom',

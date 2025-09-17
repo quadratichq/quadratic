@@ -1,6 +1,7 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { getAddToChatMsg } from '@/app/ai/utils/getAddToChatMsg';
 import { events } from '@/app/events/events';
 import {
   copySelectionToPNG,
@@ -16,6 +17,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
+  AIIcon,
   CopyAsPng,
   CopyIcon,
   CutIcon,
@@ -51,7 +53,12 @@ type EditActionSpec = Pick<
   | Action.SaveInlineEditorMoveRight
   | Action.SaveInlineEditorMoveLeft
   | Action.TriggerCell
+  | Action.AddToAIContext
 >;
+
+export type EditActionArgs = {
+  [Action.AddToAIContext]: string;
+};
 
 export const editActionsSpec: EditActionSpec = {
   [Action.Undo]: {
@@ -228,6 +235,25 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);
+    },
+  },
+  [Action.AddToAIContext]: {
+    label: () => 'Chat',
+    Icon: AIIcon,
+    // Setup `isAvailable` for adding to AI chat
+    run: (selection: EditActionArgs[Action.AddToAIContext]) => {
+      if (!pixiAppSettings.setAIAnalystState) return;
+      pixiAppSettings.setAIAnalystState((prev) => {
+        const newState = {
+          ...prev,
+          showAIAnalyst: true,
+          prompt: getAddToChatMsg(selection),
+          currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
+        };
+        console.log('editActionsSpec.AddToAIContext', prev);
+        return newState;
+      });
+      pixiAppSettings.setContextMenu?.({});
     },
   },
 };

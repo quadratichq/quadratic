@@ -1,15 +1,32 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { useCursorPosition } from '@/app/ui/hooks/useCursorPosition';
 import GoTo from '@/app/ui/menus/GoTo';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const CursorPosition = memo(() => {
   const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const { cursorString } = useCursorPosition();
+
+  const onSelect = useCallback((value: string) => {
+    // If sheet, set to that
+    if (sheets.nameExists(value)) {
+      sheets.current = sheets.getSheetIdFromName(value);
+      return;
+    }
+
+    // Otherwise, parse as a selection
+    try {
+      const selection = sheets.stringToSelection(value, sheets.current);
+      sheets.changeSelection(selection);
+    } catch (_) {
+      // nothing to do if we can't parse the input
+    }
+  }, []);
 
   return (
     <div className="flex h-full items-center justify-between">
@@ -31,7 +48,7 @@ export const CursorPosition = memo(() => {
           align="start"
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <GoTo />
+          <GoTo onSelect={onSelect} />
         </PopoverContent>
       </Popover>
     </div>
