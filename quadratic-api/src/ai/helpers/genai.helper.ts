@@ -12,6 +12,7 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isContentConnection,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
@@ -42,6 +43,10 @@ function convertContent(content: Content): Part[] {
     .map((content) => {
       if (isContentText(content)) {
         return { text: content.text.trim() };
+      } else if (isContentConnection(content)) {
+        return {
+          text: `The selected connection is "${content.name}" and its ID is ${content.uuid}.`,
+        };
       } else {
         return {
           inlineData: {

@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isContentConnection,
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
@@ -71,6 +72,11 @@ function convertContent(content: Content): Array<ContentBlockParam> {
           title: content.fileName,
         };
         return documentBlockParam;
+      } else if (isContentConnection(content)) {
+        return {
+          type: 'text' as const,
+          text: `The selected connection is "${content.name}" and its ID is ${content.uuid}.`,
+        };
       } else {
         const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
