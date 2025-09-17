@@ -19,7 +19,6 @@ export interface CodeEditorState {
     id: string;
     messages: ChatMessage[];
     waitingOnMessageIndex?: number;
-    delaySeconds: number;
   };
   showCodeEditor: boolean;
   escapePressed: boolean;
@@ -54,7 +53,6 @@ export const defaultCodeEditorState: CodeEditorState = {
     id: '',
     messages: [],
     waitingOnMessageIndex: undefined,
-    delaySeconds: 0,
   },
   showCodeEditor: false,
   escapePressed: false,
