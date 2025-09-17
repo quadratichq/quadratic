@@ -260,6 +260,10 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
 
+    if let Ok(grid) = &mut grid {
+        grid.migration_retain_positive_non_default_offsets();
+    }
+
     grid
 }
 
@@ -316,6 +320,10 @@ fn import_json(file_contents: String) -> Result<Grid> {
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
+
+    if let Ok(grid) = &mut grid {
+        grid.migration_retain_positive_non_default_offsets();
+    }
 
     grid
 }
