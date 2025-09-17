@@ -11,6 +11,7 @@ import path from 'path';
 import winston from 'winston';
 import authRouter from './auth/router/authRouter';
 import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import mcpRouter from './mcp';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 import logger, { format } from './utils/logger';
@@ -34,6 +35,8 @@ app.use(cookieParser());
 
 // workos auth
 app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
+
+app.use('/mcp', mcpRouter);
 
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
