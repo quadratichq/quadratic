@@ -24,7 +24,7 @@ export const codeCellToMarkdown = async (sheetId: string, x: number, y: number):
   if (connection) {
     try {
       schemaData = await connectionClient.schemas.get(
-        connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
+        connection.kind,
         connection.id,
         teamUuid,
         true,
