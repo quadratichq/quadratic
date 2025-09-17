@@ -75,7 +75,7 @@ pub(crate) async fn send_transaction(
         id: id.to_string(),
         file_id: file_id.to_string(),
         session_id: session_id.to_string(),
-        operations: compressed_ops.clone(),
+        operations: compressed_ops,
     };
     let protobuf_message = request.encode_to_vec();
     websocket.send_binary(&protobuf_message).await?;

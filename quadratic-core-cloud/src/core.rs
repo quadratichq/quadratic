@@ -25,7 +25,7 @@ use crate::{
 // receive the transaction
 // get file from S3
 // enter the multiplayer room
-// receive catchup transactions if any (receive transansactions)
+// receive catchup transactions if any (receive transactions)
 // process transactions
 // send forward transactions to multiplayer
 
@@ -33,7 +33,7 @@ use crate::{
 ///
 /// This function will start a transaction and wait for the result.
 /// If the transaction times out, it will return an error.
-pub(crate) async fn process_transaction(
+pub async fn process_transaction(
     grid: Arc<Mutex<GridController>>,
     operations: Vec<Operation>,
     cursor: Option<String>,
@@ -58,12 +58,11 @@ pub(crate) async fn process_transaction(
 
     // in a separate thread, listen for get_cells calls
     let transaction_id_clone = transaction_id.clone();
-    let grid_clone = grid.clone();
+    let grid_clone = Arc::clone(&grid);
     let task_handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         while let Some(a1) = rx_get_cells_request.recv().await {
             // lock the grid and get the cells
-            let cells = grid_clone
-                .clone()
+            let cells = Arc::clone(&grid_clone)
                 .lock()
                 .await
                 .calculation_get_cells_a1(transaction_id_clone.clone(), a1);
@@ -109,7 +108,7 @@ pub(crate) async fn process_transaction(
         match waiting_for_async.language {
             CodeCellLanguage::Python => {
                 run_python(
-                    grid.clone(),
+                    Arc::clone(&grid),
                     &waiting_for_async.code,
                     &transaction_id,
                     Box::new(get_cells),
@@ -118,7 +117,7 @@ pub(crate) async fn process_transaction(
             }
             CodeCellLanguage::Javascript => {
                 run_javascript(
-                    grid.clone(),
+                    Arc::clone(&grid),
                     &waiting_for_async.code,
                     &transaction_id,
                     Box::new(get_cells),
@@ -127,7 +126,7 @@ pub(crate) async fn process_transaction(
             }
             CodeCellLanguage::Connection { kind, id } => {
                 run_connection(
-                    grid.clone(),
+                    Arc::clone(&grid),
                     &waiting_for_async.code,
                     kind,
                     &id,
@@ -204,7 +203,7 @@ mod tests {
 
         // process the transaction
         process_transaction(
-            grid.clone(),
+            Arc::clone(&grid),
             vec![operation],
             None,
             TransactionName::Unknown,

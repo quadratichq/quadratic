@@ -48,7 +48,6 @@ import type {
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
-import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -118,6 +117,7 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
+import { fromUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 class QuadraticCore {
   private worker?: Worker;

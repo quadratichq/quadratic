@@ -97,7 +97,7 @@ impl State {
             .lock()
             .await
             .connection
-            .subscribe(&file_id.to_string(), group_name)
+            .subscribe(&file_id.to_string(), group_name, None)
             .await?;
 
         Ok(())
