@@ -569,6 +569,7 @@ mod tests {
             Operation::SetSheetName {
                 sheet_id,
                 name: "new name".to_string(),
+                old_sheet_name: None,
             },
             Operation::SetSheetColor {
                 sheet_id,
@@ -579,7 +580,11 @@ mod tests {
             .forward_operations
             .clone_from(&forward_operations);
         let reverse_operations = vec![
-            Operation::SetSheetName { sheet_id, name },
+            Operation::SetSheetName {
+                sheet_id,
+                name,
+                old_sheet_name: None,
+            },
             Operation::SetSheetColor {
                 sheet_id,
                 color: None,

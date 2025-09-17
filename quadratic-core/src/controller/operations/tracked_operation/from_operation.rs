@@ -5,8 +5,15 @@ use crate::{
         GridController,
         operations::{operation::Operation, tracked_operation::TrackedOperation},
     },
-    grid::{DataTable, file::sheet_schema::SheetSchema},
+    grid::{DataTable, SheetId, file::sheet_schema::SheetSchema},
 };
+
+fn get_sheet_name(sheet_id: SheetId, gc: &GridController) -> String {
+    match gc.try_sheet(sheet_id) {
+        Some(sheet) => sheet.name.clone(),
+        None => "[This sheet no longer exists]".to_string(),
+    }
+}
 
 fn sheet_pos_to_selection(sheet_pos: SheetPos, gc: &GridController) -> String {
     A1Selection::from_pos(sheet_pos.into(), sheet_pos.sheet_id).to_string(None, gc.a1_context())
@@ -113,7 +120,7 @@ impl TrackedOperation {
                 if let Some(rect) = formats.to_bounding_rect() {
                     let selection = A1Selection::from_rect(rect.to_sheet_rect(*sheet_id));
                     Some(Self::FormatsChanged {
-                        sheet_id: sheet_id.to_string(),
+                        sheet_name: get_sheet_name(*sheet_id, gc),
                         selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
                     })
                 } else {
@@ -129,41 +136,49 @@ impl TrackedOperation {
             }
 
             Operation::AddSheet { sheet } => Some(Self::AddSheet {
-                sheet_id: sheet.id.to_string(),
+                sheet_name: sheet.name.clone(),
             }),
 
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
-                sheet_id: match schema.as_ref() {
-                    SheetSchema::V1_11(schema) => schema.id.to_string(),
-                    SheetSchema::V1_10(schema) => schema.id.to_string(),
+                sheet_name: match schema.as_ref() {
+                    SheetSchema::V1_11(schema) => schema.name.to_string(),
+                    SheetSchema::V1_10(schema) => schema.name.to_string(),
                     SheetSchema::V1_9(schema) => schema.id.to_string(),
-                    SheetSchema::V1_8(schema) => schema.id.to_string(),
-                    SheetSchema::V1_7_1(schema) => schema.id.to_string(),
-                    SheetSchema::V1_7(schema) => schema.id.to_string(),
-                    SheetSchema::V1_6(schema) => schema.id.to_string(),
+                    SheetSchema::V1_8(schema) => schema.name.to_string(),
+                    SheetSchema::V1_7_1(schema) => schema.name.to_string(),
+                    SheetSchema::V1_7(schema) => schema.name.to_string(),
+                    SheetSchema::V1_6(schema) => schema.name.to_string(),
                 },
             }),
             Operation::DuplicateSheet {
                 sheet_id,
                 new_sheet_id,
             } => Some(Self::DuplicateSheet {
-                sheet_id: sheet_id.to_string(),
-                new_sheet_id: new_sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
+                duplicated_sheet_name: get_sheet_name(*new_sheet_id, gc),
             }),
-            Operation::DeleteSheet { sheet_id } => Some(Self::DeleteSheet {
-                sheet_id: sheet_id.to_string(),
+            Operation::DeleteSheet { sheet_name, .. } => Some(Self::DeleteSheet {
+                sheet_name: sheet_name
+                    .to_owned()
+                    .unwrap_or("[This sheet no longer exists]".to_string()),
             }),
-            Operation::SetSheetName { sheet_id, name } => Some(Self::SetSheetName {
-                sheet_id: sheet_id.to_string(),
-                name: name.clone(),
+            Operation::SetSheetName {
+                name,
+                old_sheet_name,
+                ..
+            } => Some(Self::SetSheetName {
+                old_sheet_name: old_sheet_name
+                    .to_owned()
+                    .unwrap_or("[Old sheet name not found]".to_string()),
+                new_sheet_name: name.clone(),
             }),
             Operation::SetSheetColor { sheet_id, color } => Some(Self::SetSheetColor {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 color: color.clone(),
             }),
             Operation::ReorderSheet { target, order } => Some(Self::ReorderSheet {
-                target: *target,
+                sheet_name: get_sheet_name(*target, gc),
                 order: order.clone(),
             }),
 
@@ -174,7 +189,7 @@ impl TrackedOperation {
                 new_size,
                 ..
             } => Some(Self::ResizeColumn {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 column: *column,
                 new_size: *new_size,
             }),
@@ -184,7 +199,7 @@ impl TrackedOperation {
                 new_size,
                 ..
             } => Some(Self::ResizeRow {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 row: *row,
                 new_size: *new_size,
             }),
@@ -192,22 +207,22 @@ impl TrackedOperation {
                 sheet_id,
                 column_widths,
             } => Some(Self::ColumnsResized {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 count: column_widths.len(),
             }),
             Operation::ResizeRows {
                 sheet_id,
                 row_heights,
             } => Some(Self::RowsResized {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 count: row_heights.len(),
             }),
             Operation::DefaultRowSize { sheet_id, size } => Some(Self::DefaultRowSize {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 size: *size,
             }),
             Operation::DefaultColumnSize { sheet_id, size } => Some(Self::DefaultColumnSize {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 size: *size,
             }),
 
@@ -240,14 +255,14 @@ impl TrackedOperation {
                 sheet_id,
                 validation_id,
             } => Some(Self::ValidationRemoved {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 validation_id: *validation_id,
             }),
             Operation::RemoveValidationSelection {
                 sheet_id,
                 selection,
             } => Some(Self::ValidationRemovedSelection {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
             }),
 
@@ -255,31 +270,31 @@ impl TrackedOperation {
             Operation::InsertColumn {
                 sheet_id, column, ..
             } => Some(Self::ColumnInserted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 column: *column,
             }),
             Operation::DeleteColumn {
                 sheet_id, column, ..
             } => Some(Self::ColumnDeleted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 column: *column,
             }),
             Operation::InsertRow { sheet_id, row, .. } => Some(Self::RowInserted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 row: *row,
             }),
             Operation::DeleteRow { sheet_id, row, .. } => Some(Self::RowDeleted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 row: *row,
             }),
             Operation::DeleteColumns {
                 sheet_id, columns, ..
             } => Some(Self::ColumnsDeleted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 columns: columns.clone(),
             }),
             Operation::DeleteRows { sheet_id, rows, .. } => Some(Self::RowsDeleted {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 rows: rows.clone(),
             }),
             Operation::MoveColumns {
@@ -288,7 +303,7 @@ impl TrackedOperation {
                 col_end,
                 to,
             } => Some(Self::ColumnsMoved {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 from_range: (*col_start, *col_end),
                 to: *to,
             }),
@@ -298,7 +313,7 @@ impl TrackedOperation {
                 row_end,
                 to,
             } => Some(Self::RowsMoved {
-                sheet_id: sheet_id.to_string(),
+                sheet_name: get_sheet_name(*sheet_id, gc),
                 from_range: (*row_start, *row_end),
                 to: *to,
             }),

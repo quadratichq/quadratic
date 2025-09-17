@@ -9,10 +9,7 @@ use serde::Serialize;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{
-    SheetPos, SheetRect,
-    grid::{SheetId, sheet::validations::validation::Validation},
-};
+use crate::{SheetPos, SheetRect, grid::sheet::validations::validation::Validation};
 
 mod from_operation;
 
@@ -57,59 +54,59 @@ pub enum TrackedOperation {
 
     /// Formatting operations (simplified - just position info)
     FormatsChanged {
-        sheet_id: String,
+        sheet_name: String,
         selection: String,
     },
 
     /// Sheet operations
     AddSheet {
-        sheet_id: String,
+        sheet_name: String,
     },
     DeleteSheet {
-        sheet_id: String,
+        sheet_name: String,
     },
     DuplicateSheet {
-        sheet_id: String,
-        new_sheet_id: String,
+        sheet_name: String,
+        duplicated_sheet_name: String,
     },
     SetSheetName {
-        sheet_id: String,
-        name: String,
+        old_sheet_name: String,
+        new_sheet_name: String,
     },
     SetSheetColor {
-        sheet_id: String,
+        sheet_name: String,
         color: Option<String>,
     },
     ReorderSheet {
-        target: SheetId,
+        sheet_name: String,
         order: String,
     },
 
     /// Grid structure changes
     ResizeColumn {
-        sheet_id: String,
+        sheet_name: String,
         column: i64,
         new_size: f64,
     },
     ResizeRow {
-        sheet_id: String,
+        sheet_name: String,
         row: i64,
         new_size: f64,
     },
     ColumnsResized {
-        sheet_id: String,
+        sheet_name: String,
         count: usize,
     },
     RowsResized {
-        sheet_id: String,
+        sheet_name: String,
         count: usize,
     },
     DefaultRowSize {
-        sheet_id: String,
+        sheet_name: String,
         size: f64,
     },
     DefaultColumnSize {
-        sheet_id: String,
+        sheet_name: String,
         size: f64,
     },
 
@@ -131,46 +128,46 @@ pub enum TrackedOperation {
         validation: Validation,
     },
     ValidationRemoved {
-        sheet_id: String,
+        sheet_name: String,
         validation_id: Uuid,
     },
     ValidationRemovedSelection {
-        sheet_id: String,
+        sheet_name: String,
         selection: String,
     },
 
     /// Column/row structure changes
     ColumnInserted {
-        sheet_id: String,
+        sheet_name: String,
         column: i64,
     },
     ColumnDeleted {
-        sheet_id: String,
+        sheet_name: String,
         column: i64,
     },
     RowInserted {
-        sheet_id: String,
+        sheet_name: String,
         row: i64,
     },
     RowDeleted {
-        sheet_id: String,
+        sheet_name: String,
         row: i64,
     },
     ColumnsDeleted {
-        sheet_id: String,
+        sheet_name: String,
         columns: Vec<i64>,
     },
     RowsDeleted {
-        sheet_id: String,
+        sheet_name: String,
         rows: Vec<i64>,
     },
     ColumnsMoved {
-        sheet_id: String,
+        sheet_name: String,
         from_range: (i64, i64),
         to: i64,
     },
     RowsMoved {
-        sheet_id: String,
+        sheet_name: String,
         from_range: (i64, i64),
         to: i64,
     },

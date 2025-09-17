@@ -24,6 +24,7 @@ impl GridController {
         let mut context = self.a1_context().to_owned();
 
         let sheet = self.try_sheet_result(sheet_id)?;
+        let sheet_name = sheet.name.clone();
 
         let data_tables_pos = sheet
             .data_tables
@@ -79,9 +80,10 @@ impl GridController {
         if transaction.is_user_ai_undo_redo() {
             transaction.add_fill_cells(sheet_id);
             transaction.sheet_borders.insert(sheet_id);
-            transaction
-                .reverse_operations
-                .push(Operation::DeleteSheet { sheet_id });
+            transaction.reverse_operations.push(Operation::DeleteSheet {
+                sheet_id,
+                sheet_name: Some(sheet_name),
+            });
         }
 
         Ok(())
@@ -157,7 +159,11 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::DeleteSheet { sheet_id } = op {
+        if let Operation::DeleteSheet {
+            sheet_id,
+            sheet_name,
+        } = op
+        {
             // get code run operations for the sheet
             let code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
 
@@ -167,9 +173,10 @@ impl GridController {
             };
 
             if transaction.is_user_ai_undo_redo() {
-                transaction
-                    .forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
+                transaction.forward_operations.push(Operation::DeleteSheet {
+                    sheet_id,
+                    sheet_name,
+                });
 
                 for op in code_run_ops {
                     transaction.reverse_operations.push(op);
@@ -187,6 +194,7 @@ impl GridController {
                 let name = SHEET_NAME.to_owned() + "1";
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
+                let sheet_name = new_first_sheet.name.clone();
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
 
                 if transaction.is_user_ai_undo_redo() {
@@ -195,6 +203,7 @@ impl GridController {
                     });
                     transaction.reverse_operations.push(Operation::DeleteSheet {
                         sheet_id: new_first_sheet_id,
+                        sheet_name: Some(sheet_name),
                     });
                 }
 
@@ -248,7 +257,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SetSheetName { sheet_id, name } = op {
+        if let Operation::SetSheetName {
+            sheet_id,
+            name,
+            old_sheet_name,
+        } = op
+        {
             if let Err(e) = Sheet::validate_sheet_name(&name, sheet_id, self.a1_context()) {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
@@ -266,12 +280,17 @@ impl GridController {
             if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
-                    .push(Operation::SetSheetName { sheet_id, name });
+                    .push(Operation::SetSheetName {
+                        sheet_id,
+                        name: name.clone(),
+                        old_sheet_name,
+                    });
                 transaction
                     .reverse_operations
                     .push(Operation::SetSheetName {
                         sheet_id,
                         name: old_name,
+                        old_sheet_name: Some(name),
                     });
             }
 
@@ -337,7 +356,7 @@ impl GridController {
             if self.try_sheet_from_name(&name).is_some() {
                 new_sheet.name = crate::util::unused_name(&name, &self.sheet_names());
             } else {
-                new_sheet.name = name;
+                new_sheet.name = name.clone();
             }
             self.grid.add_sheet(Some(new_sheet));
 
@@ -352,6 +371,7 @@ impl GridController {
                     });
                 transaction.reverse_operations.push(Operation::DeleteSheet {
                     sheet_id: new_sheet_id,
+                    sheet_name: Some(name),
                 });
             }
         }

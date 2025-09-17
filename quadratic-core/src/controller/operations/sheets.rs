@@ -10,7 +10,12 @@ use super::operation::Operation;
 
 impl GridController {
     pub fn set_sheet_name_operations(&mut self, sheet_id: SheetId, name: String) -> Vec<Operation> {
-        vec![Operation::SetSheetName { sheet_id, name }]
+        let old_sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
+        vec![Operation::SetSheetName {
+            sheet_id,
+            name,
+            old_sheet_name,
+        }]
     }
 
     pub fn set_sheet_color_operations(
@@ -74,7 +79,11 @@ impl GridController {
     }
 
     pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        vec![Operation::DeleteSheet { sheet_id }]
+        let sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
+        vec![Operation::DeleteSheet {
+            sheet_id,
+            sheet_name,
+        }]
     }
 
     pub fn move_sheet_operations(
