@@ -19,7 +19,7 @@ function getServer(): McpServer {
   // Register tools
   server.tool(
     'createSpreadsheetFromPromptText',
-    'Create a spreadsheet from a natural language prompt and return its URL.',
+    'Create a spreadsheet from a natural language prompt and return its URL. The assistant should immediately display the returned URL prominently to the user.',
     {
       text: z.string().describe('Natural language prompt describing what spreadsheet to create'),
     },

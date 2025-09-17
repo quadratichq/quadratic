@@ -1,7 +1,7 @@
 /*
 In Claude Desktop config:
 /Users/YOU/Library/Application Support/Claude/claude_desktop_config.json
-
+```
 {
   "mcpServers": {
     "quadratic-mcp": {
@@ -12,6 +12,9 @@ In Claude Desktop config:
     }
   }
 }
+```
+
+Then make sure the API server is running in node dev
 
 */
 
