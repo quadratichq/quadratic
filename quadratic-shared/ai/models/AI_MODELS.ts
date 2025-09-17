@@ -8,7 +8,7 @@ export const DEFAULT_MODEL_VERSION = 27;
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'baseten:deepseek-ai/DeepSeek-V3.1';
+export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
@@ -453,6 +453,29 @@ export const MODELS_CONFIGURATION: {
     model: 'moonshotai/Kimi-K2-Instruct',
     displayName: 'Kimi K2 Instruct',
     temperature: 0.1,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.6,
+    rate_per_million_output_tokens: 2.5,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'baseten:moonshotai/Kimi-K2-Instruct-0905': {
+    model: 'moonshotai/Kimi-K2-Instruct-0905',
+    displayName: 'Kimi K2 Instruct 0905',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
