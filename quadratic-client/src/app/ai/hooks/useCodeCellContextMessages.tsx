@@ -1,4 +1,6 @@
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -12,7 +14,9 @@ export function useCodeCellContextMessages() {
     try {
       text = await codeCellToMarkdown(sheetId, pos.x, pos.y);
     } catch (e) {
-      text = `Error getting code cell markdown: ${e}`;
+      const a1Pos = xyToA1(pos.x, pos.y);
+      const language = getConnectionKind(codeCell.language);
+      text = `This is a new ${language} code cell located at ${a1Pos}.`;
       console.error('Error getting code cell markdown in useCodeCellContextMessages', e);
     }
 
