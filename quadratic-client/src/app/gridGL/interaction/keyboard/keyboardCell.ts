@@ -10,7 +10,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -46,7 +46,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
     const pos = sheets.sheet.cursor.position;
     const { x: cursorX, y: cursorY } = pos;
-    const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
+    const codeCell = content.cellsSheet.tables.getCodeCellIntersects(pos);
     if (codeCell) {
       const tableStartX = codeCell.x;
       const tableStartY = codeCell.y;
@@ -107,7 +107,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           ...prev,
           showCodeEditor: false,
         }));
-        pixiApp.cellHighlights.clear();
+        content.cellHighlights.clear();
         multiplayer.sendEndCellEdit();
       } else {
         pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {
@@ -117,7 +117,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
       }
     }
     // delete a range or a single cell, depending on if MultiCursor is active
-    quadraticCore.deleteCellValues(sheets.getRustSelection());
+    quadraticCore.deleteCellValues(sheets.getRustSelection(), false);
     return true;
   }
 

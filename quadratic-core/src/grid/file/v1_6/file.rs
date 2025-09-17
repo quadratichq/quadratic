@@ -236,21 +236,25 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
             .expect("Failed to parse col_id as i64");
         for (row, mut row_borders) in sheet_borders {
             if let Some(left_old) = row_borders[0].take()
-                && let Ok(style) = convert_border_style(left_old) {
-                    borders_new.set(col, row, None, None, Some(style), None);
-                }
+                && let Ok(style) = convert_border_style(left_old)
+            {
+                borders_new.set(col, row, None, None, Some(style), None);
+            }
             if let Some(right_old) = row_borders[2].take()
-                && let Ok(style) = convert_border_style(right_old) {
-                    borders_new.set(col, row, None, None, None, Some(style));
-                }
+                && let Ok(style) = convert_border_style(right_old)
+            {
+                borders_new.set(col, row, None, None, None, Some(style));
+            }
             if let Some(top_old) = row_borders[1].take()
-                && let Ok(style) = convert_border_style(top_old) {
-                    borders_new.set(col, row, Some(style), None, None, None);
-                }
+                && let Ok(style) = convert_border_style(top_old)
+            {
+                borders_new.set(col, row, Some(style), None, None, None);
+            }
             if let Some(bottom_old) = row_borders[3].take()
-                && let Ok(style) = convert_border_style(bottom_old) {
-                    borders_new.set(col, row, None, Some(style), None, None);
-                }
+                && let Ok(style) = convert_border_style(bottom_old)
+            {
+                borders_new.set(col, row, None, Some(style), None, None);
+            }
         }
     }
 

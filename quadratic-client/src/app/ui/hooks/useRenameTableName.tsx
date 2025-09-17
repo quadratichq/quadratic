@@ -33,7 +33,7 @@ export function useRenameTableName() {
       if (oldName !== undefined) {
         sheets.updateTableName(oldName, newName);
       }
-      quadraticCore.dataTableMeta(sheetId, x, y, { name: newName });
+      quadraticCore.dataTableMeta(sheetId, x, y, { name: newName }, false);
     },
     [addGlobalSnackbar]
   );

@@ -104,7 +104,7 @@ impl GridController {
                 if *id == validation_id {
                     transaction.validation_warning_deleted(sheet_id, *pos);
 
-                    if transaction.is_user_undo_redo() {
+                    if transaction.is_user_ai_undo_redo() {
                         transaction
                             .reverse_operations
                             .push(Operation::SetValidationWarning {
@@ -184,7 +184,7 @@ impl GridController {
                     },
                 );
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.push(old);
 
                 transaction
@@ -201,7 +201,7 @@ impl GridController {
             let old = sheet.validations.set_warning(sheet_pos, None);
             transaction.validation_warning_deleted(sheet_id, *pos);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.push(old);
 
                 transaction
@@ -235,7 +235,7 @@ impl GridController {
 
             let old = sheet.validations.set(validation.clone());
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.extend(old);
 
                 transaction
@@ -287,7 +287,7 @@ impl GridController {
             let updated_validation: Validation = if let Some(existing_validation) =
                 sheet.validations.similar_validation(&validation)
             {
-                if transaction.is_user_undo_redo() {
+                if transaction.is_user_ai_undo_redo() {
                     transaction
                         .reverse_operations
                         .push(Operation::SetValidation {
@@ -302,7 +302,7 @@ impl GridController {
                     ..existing_validation.clone()
                 }
             } else {
-                if transaction.is_user_undo_redo() {
+                if transaction.is_user_ai_undo_redo() {
                     transaction
                         .reverse_operations
                         .push(Operation::RemoveValidation {
@@ -319,7 +319,7 @@ impl GridController {
 
             let selection = updated_validation.selection.clone();
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
                     .push(Operation::SetValidation {
@@ -367,7 +367,7 @@ impl GridController {
 
             let old = sheet.validations.remove(validation_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.extend(old);
 
                 transaction
@@ -386,13 +386,14 @@ impl GridController {
 
             self.send_updated_bounds(transaction, sheet_id);
             if let Some(selection) = selection
-                && let Some(sheet) = self.grid.try_sheet(sheet_id) {
-                    transaction.add_dirty_hashes_from_selections(
-                        sheet,
-                        self.a1_context(),
-                        vec![selection],
-                    );
-                }
+                && let Some(sheet) = self.grid.try_sheet(sheet_id)
+            {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
+                );
+            }
         }
     }
 
@@ -417,7 +418,7 @@ impl GridController {
                 return;
             };
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.extend(reverse);
 
                 transaction
@@ -460,7 +461,7 @@ impl GridController {
 
             let old = sheet.validations.set_warning(sheet_pos, validation_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.reverse_operations.push(old);
 
                 transaction
@@ -558,7 +559,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -673,7 +674,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -698,7 +699,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -731,7 +732,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
 
         let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
@@ -806,7 +807,7 @@ mod tests {
             A1Selection::test_a1_sheet_id("A1:B2", sheet_id)
         );
 
-        gc.delete_cells(&A1Selection::test_a1("A1"), None);
+        gc.delete_cells(&A1Selection::test_a1("A1"), None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
@@ -821,7 +822,7 @@ mod tests {
 
         dbg!(&gc.undo_stack);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.validations.validations.first().unwrap().selection,

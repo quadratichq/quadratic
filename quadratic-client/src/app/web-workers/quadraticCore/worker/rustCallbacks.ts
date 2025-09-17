@@ -232,3 +232,7 @@ export const jsSendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Arr
 export const jsSendContentCache = (sheetId: string, contentCache: Uint8Array) => {
   self.sendContentCache(sheetId, contentCache);
 };
+
+export const jsTimestamp = (): bigint => {
+  return BigInt(Date.now());
+};

@@ -102,9 +102,13 @@ const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
   return getPromptMessages(messages).filter((message): message is AIMessagePrompt => message.role === 'assistant');
 };
 
+export const getLastUserMessage = (messages: ChatMessage[]): UserMessagePrompt | ToolResultMessage => {
+  const userMessages = getUserMessages(messages);
+  return userMessages[userMessages.length - 1];
+};
+
 export const getLastUserMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
-  const userPromptMessage = getUserMessages(messages);
-  return userPromptMessage[userPromptMessage.length - 1].contextType;
+  return getLastUserMessage(messages).contextType;
 };
 
 export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {

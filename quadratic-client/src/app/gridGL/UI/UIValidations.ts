@@ -73,7 +73,9 @@ export class UIValidations extends Container<SpecialSprite> {
 
   private drawInfiniteRange(range: RefRangeBounds, type: ValidationUIType) {
     const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
-    const visibleRectangle = sheets.getVisibleRectangle();
+
+    // todo...this needs to be generic for any renderer
+    const visibleRectangle = pixiApp.getVisibleRectangle();
     const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRectangle);
     if (!intersection) {
       return;
@@ -140,7 +142,7 @@ export class UIValidations extends Container<SpecialSprite> {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
-          quadraticCore.setCellValue(sheets.current, column, row, special.checkbox ? 'false' : 'true');
+          quadraticCore.setCellValue(sheets.current, column, row, special.checkbox ? 'false' : 'true', false);
         } else if (
           special.type === 'dropdown' &&
           (world === true || intersects.rectanglePoint(special.rectangle, world))

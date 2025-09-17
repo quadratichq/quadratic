@@ -36,15 +36,12 @@ impl Sheet {
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && column >= pos.x && column < pos.x + output_rect.width() as i64 {
-                            dt.chart_output = Some((width + 1, height));
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                        && column >= pos.x
+                        && column < pos.x + output_rect.width() as i64
+                    {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                    }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
@@ -53,31 +50,27 @@ impl Sheet {
                         && (column < pos.x + output_rect.width() as i64
                             || (CopyFormats::Before == copy_formats
                                 && column < pos.x + output_rect.width() as i64 + 1))
-                        && let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                            let column_index =
-                                dt.get_column_index_from_display_index(display_column_index, true);
-                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                        && let Ok(display_column_index) = u32::try_from(column - pos.x)
+                    {
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
+                        let _ = dt.insert_column_sorted(column_index as usize, None, None);
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
                         }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
+                        }
+                    }
                 }
 
                 Ok(())
@@ -172,17 +165,17 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
 
-        gc.insert_columns(sheet_id, 1, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
 
         clear_js_calls();
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 3, "0");
         expect_js_call_count("jsUpdateCodeCells", 1, true);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
     }
@@ -195,19 +188,19 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_columns(sheet_id, 1, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
     }
@@ -220,15 +213,15 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_columns(sheet_id, 10, 1, false, None);
+        gc.insert_columns(sheet_id, 10, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
     }
@@ -240,26 +233,26 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_columns(sheet_id, 2, 1, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
     }
@@ -271,15 +264,15 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
     }
 
@@ -289,16 +282,16 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_columns(sheet_id, 5, 1, false, None);
+        gc.insert_columns(sheet_id, 5, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
@@ -314,15 +307,15 @@ mod tests {
         test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.insert_columns(sheet_id, 3, 1, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 3, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
     }
@@ -333,10 +326,10 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
     }
 
@@ -347,7 +340,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
 
         clear_js_calls();
-        gc.insert_columns(sheet_id, 1, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None, false);
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
         expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);
