@@ -336,7 +336,7 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
@@ -363,7 +363,7 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_row(&gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
@@ -390,14 +390,14 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Redo the move
-        gc.redo(None);
+        gc.redo(1, None, false);
 
         // Verify redone state
         assert_cell_value_col(&gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
@@ -424,14 +424,14 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify state is back to original
         assert_cell_value_row(&gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Redo
-        gc.redo(None);
+        gc.redo(1, None, false);
 
         // Verify redone state
         assert_cell_value_row(&gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
@@ -461,14 +461,14 @@ mod tests {
         assert_cell_value_col(&gc, sheet_id, 2, 4, 6, vec!["D", "E", "F"]);
 
         // Undo second move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify first move state
         assert_cell_value_col(&gc, sheet_id, 5, 4, 6, vec!["A", "B", "C"]);
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
 
         // Undo first move
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify original state
         assert_cell_value_col(&gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
@@ -494,7 +494,7 @@ mod tests {
         assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
 
         // Undo
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // Verify original state
         assert_display_cell_value_first_sheet(&gc, 3, 4, "A");

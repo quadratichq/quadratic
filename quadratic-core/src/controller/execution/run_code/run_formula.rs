@@ -470,14 +470,14 @@ mod test {
         );
 
         // undo the spill error
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
 
         // redo the spill error
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert!(
             gc.sheet(sheet_id)
                 .data_table_at(&Pos { x: 2, y: 1 })
@@ -486,7 +486,7 @@ mod test {
         );
 
         // undo the spill error
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))

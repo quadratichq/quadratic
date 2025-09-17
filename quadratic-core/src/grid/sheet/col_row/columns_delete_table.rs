@@ -188,18 +188,19 @@ impl Sheet {
                         .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
                         .count();
                     if count > 0
-                        && let Some((width, height)) = dt.chart_output {
-                            let min = (width - count as u32).max(1);
-                            if min != width {
-                                dt.chart_output = Some((min, height));
-                                transaction.add_from_code_run(
-                                    sheet_id,
-                                    pos,
-                                    dt.is_image(),
-                                    dt.is_html(),
-                                );
-                            }
+                        && let Some((width, height)) = dt.chart_output
+                    {
+                        let min = (width - count as u32).max(1);
+                        if min != width {
+                            dt.chart_output = Some((min, height));
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
                         }
+                    }
                 }
 
                 Ok(())
@@ -300,10 +301,10 @@ mod tests {
         gc.delete_columns(sheet_id, vec![4, 5], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
     }
 
@@ -319,11 +320,11 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 2, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 2, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 2, false);
     }
@@ -338,13 +339,13 @@ mod tests {
         gc.delete_columns(sheet_id, vec![2], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
     }
 
@@ -361,16 +362,16 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 1, 1, "");
 
         clear_js_calls();
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         expect_js_call_count("jsUpdateCodeCells", 1, true);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 0);
         assert_display_cell_value(&gc, sheet_id, 1, 1, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
     }
@@ -387,7 +388,7 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
 
         // everything should be the same after the undo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
 
@@ -396,16 +397,16 @@ mod tests {
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 1, vec!["0", "1", "2"]);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![B1], 3, 1, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 1, vec!["0", "1", "2"]);
@@ -422,14 +423,14 @@ mod tests {
 
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 3, false);
     }
@@ -445,15 +446,15 @@ mod tests {
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
         assert_table_count(&gc, sheet_id, 1);
     }
@@ -470,15 +471,15 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 5, 1, false);
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 5, 1, false);
         assert_table_count(&gc, sheet_id, 1);
     }
@@ -496,17 +497,17 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![B10], 1, 1, false);
         assert_table_count(&gc, sheet_id, 2);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 1, false);
         assert_table_count(&gc, sheet_id, 2);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 1, 1, false);
         assert_table_count(&gc, sheet_id, 2);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![B10], 3, 1, false);
         assert_table_count(&gc, sheet_id, 2);
@@ -522,14 +523,14 @@ mod tests {
         gc.delete_columns(SheetId::TEST, vec![1, 2, 3], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 2, false);
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 2, false);
         assert_table_count(&gc, sheet_id, 1);
     }
@@ -546,15 +547,15 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1, 2, 4, 5], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 2, 1, false);
         assert_table_count(&gc, sheet_id, 2);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 1, false);
         assert_data_table_size(&gc, sheet_id, pos![D1], 2, 1, false);
         assert_table_count(&gc, sheet_id, 2);
@@ -570,14 +571,14 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1, 2, 3, 4], None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B1], 2, 1, false);
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_table_count(&gc, sheet_id, 0);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B1], 2, 1, false);
         assert_table_count(&gc, sheet_id, 1);
     }
@@ -608,13 +609,13 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1], None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_sort_dirty(&gc, sheet_id, pos![A1], false);
     }
 
@@ -633,7 +634,7 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 4, false);
 
         // Test undo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 4, false);
     }
 
@@ -646,13 +647,13 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1, 2], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
     }
 
@@ -665,13 +666,13 @@ mod tests {
         gc.delete_columns(sheet_id, vec![2, 3, 4], None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
     }
 }

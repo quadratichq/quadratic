@@ -617,7 +617,7 @@ mod tests {
         );
 
         // We undo our old unsaved transaction and it will clear it (since we don't update our undo stack w/server changes).
-        client.undo(None);
+        client.undo(1, None, false);
         assert_eq!(
             client
                 .try_sheet(sheet_id)
@@ -1142,18 +1142,18 @@ mod tests {
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 3, 1), 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);
         assert_eq!(find_index(sheet, 3, 1), 2);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 3, 1), 1);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);

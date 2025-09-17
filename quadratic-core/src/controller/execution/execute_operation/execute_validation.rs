@@ -386,13 +386,14 @@ impl GridController {
 
             self.send_updated_bounds(transaction, sheet_id);
             if let Some(selection) = selection
-                && let Some(sheet) = self.grid.try_sheet(sheet_id) {
-                    transaction.add_dirty_hashes_from_selections(
-                        sheet,
-                        self.a1_context(),
-                        vec![selection],
-                    );
-                }
+                && let Some(sheet) = self.grid.try_sheet(sheet_id)
+            {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
+                );
+            }
         }
     }
 
@@ -558,7 +559,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -673,7 +674,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -698,7 +699,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -821,7 +822,7 @@ mod tests {
 
         dbg!(&gc.undo_stack);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.validations.validations.first().unwrap().selection,

@@ -367,7 +367,7 @@ mod tests {
         );
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
         assert!(
@@ -390,7 +390,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -506,7 +506,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
         assert!(
@@ -529,7 +529,7 @@ mod tests {
         expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -647,7 +647,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         assert_eq!(sheet.validations.validations[0], validation_rect_cols);
@@ -670,7 +670,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());
@@ -789,7 +789,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         assert_eq!(sheet.validations.validations[0], validation_rect_rows);
@@ -812,7 +812,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 0);
         assert!(sheet.validations.warnings.is_empty());

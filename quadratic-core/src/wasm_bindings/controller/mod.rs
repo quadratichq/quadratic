@@ -148,36 +148,14 @@ impl GridController {
         self.has_redo()
     }
 
-    /// Undoes one transaction. Returns a [`TransactionSummary`], or `null` if
-    /// there was nothing to undo.
+    /// Undoes count transactions.
     #[wasm_bindgen(js_name = "undo")]
-    pub fn js_undo(
-        &mut self,
-        count: Option<usize>,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        if let Some(count) = count {
-            Ok(serde_wasm_bindgen::to_value(
-                &self.undo_count(count, cursor),
-            )?)
-        } else {
-            Ok(serde_wasm_bindgen::to_value(&self.undo(cursor))?)
-        }
+    pub fn js_undo(&mut self, count: usize, cursor: Option<String>, is_ai: bool) -> JsValue {
+        capture_core_error(|| Ok(Some(JsValue::from_str(&self.undo(count, cursor, is_ai)))))
     }
-    /// Redoes one transaction. Returns a [`TransactionSummary`], or `null` if
-    /// there was nothing to redo.
+    /// Redoes count transactions.
     #[wasm_bindgen(js_name = "redo")]
-    pub fn js_redo(
-        &mut self,
-        count: Option<usize>,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        if let Some(count) = count {
-            Ok(serde_wasm_bindgen::to_value(
-                &self.redo_count(count, cursor),
-            )?)
-        } else {
-            Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
-        }
+    pub fn js_redo(&mut self, count: usize, cursor: Option<String>, is_ai: bool) -> JsValue {
+        capture_core_error(|| Ok(Some(JsValue::from_str(&self.redo(count, cursor, is_ai)))))
     }
 }

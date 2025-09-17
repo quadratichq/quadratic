@@ -964,23 +964,23 @@ class QuadraticCore {
 
   //#region Undo/redo
 
-  undo(count?: number): Promise<string | undefined> {
+  undo(count: number, isAi: boolean): Promise<string | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientUndoResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreUndo', id, count, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreUndo', id, count, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
-  redo(count?: number): Promise<string | undefined> {
+  redo(count: number, isAi: boolean): Promise<string | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientRedoResponse) => {
         resolve(message.response);
       };
-      this.send({ type: 'clientCoreRedo', id, count, cursor: sheets.getCursorPosition() });
+      this.send({ type: 'clientCoreRedo', id, count, cursor: sheets.getCursorPosition(), isAi });
     });
   }
 
@@ -1790,7 +1790,7 @@ class QuadraticCore {
     });
   }
 
-  getAITransactions(): Promise<TrackedTransaction[]> {
+  getAITransactions(): Promise<TrackedTransaction[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAITransactions) => {

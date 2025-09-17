@@ -194,7 +194,7 @@ mod tests {
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(1.into()))
         );
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
     }
 

@@ -388,7 +388,7 @@ mod tests {
         );
 
         // was jsAddSheet called with the right stuff
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
     }
@@ -402,7 +402,7 @@ mod tests {
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
         let new_sheet_id = gc.sheet_ids()[0];
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         let sheet = gc.sheet(sheet_id);
@@ -460,7 +460,7 @@ mod tests {
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         let sheet = gc.sheet(sheet_id);
@@ -501,7 +501,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets()[0].name, "Sheet 1".to_string());
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
@@ -525,7 +525,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets()[0].color, None);
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
@@ -560,7 +560,7 @@ mod tests {
         );
 
         // Sheet1, Sheet 2
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
@@ -580,7 +580,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id2));
@@ -626,7 +626,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call(
             "jsDeleteSheet",
@@ -664,7 +664,7 @@ mod tests {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         expect_js_call(
@@ -673,7 +673,7 @@ mod tests {
             true,
         );
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));

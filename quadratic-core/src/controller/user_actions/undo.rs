@@ -6,66 +6,74 @@ impl GridController {
     pub fn has_undo(&self) -> bool {
         !self.undo_stack.is_empty()
     }
+
     pub fn has_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
 
-    // undo multiple transactions (used by ai)
-    pub fn undo_count(&mut self, count: usize, cursor: Option<String>) -> Option<String> {
+    pub fn undo(&mut self, count: usize, cursor: Option<String>, is_ai: bool) -> String {
         if self.undo_stack.is_empty() {
-            return Some("No undo available".to_string());
+            return "No undo available".to_string();
         }
+
+        let mut actual_count = 1;
+
         if let Some(mut transaction) = self.undo_stack.pop() {
             // we need to assign the transaction a new id to avoid conflicts with the original transaction.
             transaction.id = Uuid::new_v4();
             for _ in 1..count {
                 if let Some(next) = self.undo_stack.pop() {
                     transaction.operations.extend(next.operations);
+                    actual_count += 1;
                 }
             }
-            self.start_undo_transaction(transaction, TransactionSource::Undo, cursor);
+            let source = if is_ai {
+                TransactionSource::UndoAI
+            } else {
+                TransactionSource::Undo
+            };
+            self.start_undo_transaction(transaction, source, cursor);
         }
-        None
+
+        if actual_count == count {
+            format!("Undo successful, undid {actual_count} transactions")
+        } else {
+            format!(
+                "Undo successful, Undo stack had only {actual_count} transactions, so only undid {actual_count} transactions",
+            )
+        }
     }
 
-    pub fn undo(&mut self, cursor: Option<String>) -> Option<String> {
-        if self.undo_stack.is_empty() {
-            return Some("No undo available".to_string());
-        }
-        if let Some(mut transaction) = self.undo_stack.pop() {
-            // we need to assign the transaction a new id to avoid conflicts with the original transaction.
-            transaction.id = Uuid::new_v4();
-            self.start_undo_transaction(transaction, TransactionSource::Undo, cursor);
-        }
-        None
-    }
-
-    pub fn redo_count(&mut self, count: usize, cursor: Option<String>) -> Option<String> {
+    pub fn redo(&mut self, count: usize, cursor: Option<String>, is_ai: bool) -> String {
         if self.redo_stack.is_empty() {
-            return Some("No redo available".to_string());
+            return "No redo available".to_string();
         }
+
+        let mut actual_count = 1;
+
         if let Some(mut transaction) = self.redo_stack.pop() {
             // we need to assign the transaction a new id to avoid conflicts with the original transaction.
             transaction.id = Uuid::new_v4();
             for _ in 1..count {
                 if let Some(next) = self.redo_stack.pop() {
                     transaction.operations.extend(next.operations);
+                    actual_count += 1;
                 }
             }
-            self.start_undo_transaction(transaction, TransactionSource::Redo, cursor);
+            let source = if is_ai {
+                TransactionSource::RedoAI
+            } else {
+                TransactionSource::Redo
+            };
+            self.start_undo_transaction(transaction, source, cursor);
         }
-        None
-    }
 
-    pub fn redo(&mut self, cursor: Option<String>) -> Option<String> {
-        if self.redo_stack.is_empty() {
-            return Some("No redo available".to_string());
+        if actual_count == count {
+            format!("Redo successful, redid {actual_count} transactions")
+        } else {
+            format!(
+                "Redo successful, Redo stack had only {actual_count} transactions, so only redid {actual_count} transactions",
+            )
         }
-        if let Some(mut transaction) = self.redo_stack.pop() {
-            // we need to assign the transaction a new id to avoid conflicts with the original transaction.
-            transaction.id = Uuid::new_v4();
-            self.start_undo_transaction(transaction, TransactionSource::Redo, cursor);
-        }
-        None
     }
 }

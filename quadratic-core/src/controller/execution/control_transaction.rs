@@ -92,14 +92,14 @@ impl GridController {
                 self.undo_stack.push(undo);
                 self.redo_stack.clear();
             }
-            TransactionSource::Undo => {
+            TransactionSource::Undo | TransactionSource::UndoAI => {
                 let undo = transaction.to_undo_transaction();
                 self.redo_stack.push(undo);
                 self.transactions
                     .unsaved_transactions
                     .insert_or_replace(&transaction, true);
             }
-            TransactionSource::Redo => {
+            TransactionSource::Redo | TransactionSource::RedoAI => {
                 let undo = transaction.to_undo_transaction();
                 self.undo_stack.push(undo);
                 self.transactions
@@ -383,12 +383,12 @@ mod tests {
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
 
         // undo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert!(!gc.has_undo());
         assert!(gc.has_redo());
 
         // redo
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
     }

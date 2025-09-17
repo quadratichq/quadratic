@@ -43,7 +43,7 @@ impl GridController {
                     .iter()
                     .flat_map(|op| TrackedOperation::from_operation(op, self))
                     .collect::<Vec<_>>(),
-                time_stamp: crate::wasm_bindings::js::jsTimestamp() as u64,
+                time_stamp: crate::wasm_bindings::js::jsTimestamp(),
             });
         }
     }

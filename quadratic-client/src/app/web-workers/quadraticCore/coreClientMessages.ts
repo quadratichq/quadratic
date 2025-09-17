@@ -749,15 +749,17 @@ export interface CoreClientSheetCodeCellRender {
 export interface ClientCoreUndo {
   type: 'clientCoreUndo';
   id: number;
-  count: number | undefined;
+  count: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreRedo {
   type: 'clientCoreRedo';
   id: number;
-  count: number | undefined;
+  count: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientUndoResponse {
@@ -1468,7 +1470,7 @@ export interface ClientCoreGetAITransactions {
 export interface CoreClientGetAITransactions {
   type: 'coreClientGetAITransactions';
   id: number;
-  transactions: TrackedTransaction[];
+  transactions: TrackedTransaction[] | undefined;
 }
 
 export interface CoreClientStartupTimer {

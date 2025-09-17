@@ -785,28 +785,29 @@ impl GridController {
             let mut old_show_columns = None;
 
             if let Some(name) = name.as_mut()
-                && old_name != *name {
-                    // sanitize table name
-                    let table_name = sanitize_table_name(name.to_string());
+                && old_name != *name
+            {
+                // sanitize table name
+                let table_name = sanitize_table_name(name.to_string());
 
-                    *name = unique_data_table_name(
-                        &table_name,
-                        false,
-                        Some(data_table_sheet_pos),
-                        &self.a1_context,
-                    );
+                *name = unique_data_table_name(
+                    &table_name,
+                    false,
+                    Some(data_table_sheet_pos),
+                    &self.a1_context,
+                );
 
-                    self.grid.update_data_table_name(
-                        data_table_sheet_pos,
-                        &old_name,
-                        name,
-                        &self.a1_context,
-                        false,
-                    )?;
+                self.grid.update_data_table_name(
+                    data_table_sheet_pos,
+                    &old_name,
+                    name,
+                    &self.a1_context,
+                    false,
+                )?;
 
-                    // mark code cells dirty to update meta data
-                    transaction.add_code_cell(sheet_id, data_table_pos);
-                }
+                // mark code cells dirty to update meta data
+                transaction.add_code_cell(sheet_id, data_table_pos);
+            }
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.as_mut(), old_columns.as_ref()) {
@@ -870,11 +871,12 @@ impl GridController {
 
                     // if the header is first row, update the column names in the data table value
                     if dt.header_is_first_row
-                        && let Some(columns) = columns.as_ref() {
-                            for (index, column) in columns.iter().enumerate() {
-                                dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
-                            }
+                        && let Some(columns) = columns.as_ref()
+                    {
+                        for (index, column) in columns.iter().enumerate() {
+                            dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
                         }
+                    }
 
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
@@ -1144,13 +1146,15 @@ impl GridController {
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                    if dt.header_is_first_row && column_header.is_none()
-                        && let Some(values) = &values {
-                            let first_value = values[0].to_owned();
-                            if !matches!(first_value, CellValue::Blank) {
-                                column_header = Some(first_value.to_string());
-                            }
+                    if dt.header_is_first_row
+                        && column_header.is_none()
+                        && let Some(values) = &values
+                    {
+                        let first_value = values[0].to_owned();
+                        if !matches!(first_value, CellValue::Blank) {
+                            column_header = Some(first_value.to_string());
                         }
+                    }
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
@@ -1301,15 +1305,11 @@ impl GridController {
 
                     if show_columns
                         && let Some(column_header) = &old_column_header
-                            && let (Ok(value_x), Ok(value_y)) =
-                                (u32::try_from(display_index - 1), u32::try_from(0))
-                            {
-                                sheet_cell_values.set(
-                                    value_x,
-                                    value_y,
-                                    column_header.to_owned().into(),
-                                );
-                            }
+                        && let (Ok(value_x), Ok(value_y)) =
+                            (u32::try_from(display_index - 1), u32::try_from(0))
+                    {
+                        sheet_cell_values.set(value_x, value_y, column_header.to_owned().into());
+                    }
 
                     // collect formats to flatten
                     let formats_rect = Rect::from_numbers(
@@ -2154,12 +2154,12 @@ mod tests {
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // undo, the value should be a data table again
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_simple_csv(&gc, sheet_id, pos, file_name);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // redo, the value should be on the grid
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
     }
@@ -2176,7 +2176,7 @@ mod tests {
         let op = Operation::FlattenDataTable { sheet_pos };
         gc.start_user_ai_transaction(vec![op], None, TransactionName::FlattenDataTable, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         gc.test_data_table_first_row_as_header(sheet_pos, true);
         assert_eq!(
@@ -2397,14 +2397,14 @@ mod tests {
         println!("Updated data table name: {}", &data_table.name);
 
         // undo, the value should be the initial name
-        gc.undo(None);
+        gc.undo(1, None, false);
         let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(&data_table.name().to_string(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
         {
-            gc.redo(None);
+            gc.redo(1, None, false);
             let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();
             assert_eq!(&data_table.name().to_string(), updated_name);
             println!("Updated data table name: {}", &data_table.name);

@@ -262,11 +262,11 @@ mod tests {
         assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import.clone()));
 
         // undo, the value should be a code run data table again
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Code(code_cell_value));
 
         // redo, the value should be a data table
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import));
     }
 
@@ -450,7 +450,7 @@ mod tests {
         );
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 5);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
@@ -458,7 +458,7 @@ mod tests {
         );
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
@@ -576,7 +576,7 @@ mod tests {
         }
 
         // Test undo/redo functionality
-        gc.undo(None);
+        gc.undo(1, None, false);
         {
             let sheet = gc.sheet(sheet_id);
             assert_eq!(
@@ -586,7 +586,7 @@ mod tests {
             assert!(sheet.data_table_at(&pos![D1]).is_none());
         }
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         {
             let sheet = gc.sheet(sheet_id);
             assert!(sheet.cell_value(pos![D1]).is_some());
@@ -624,7 +624,7 @@ mod tests {
         }
 
         // undo, the third data table should be gone, second data table should be back
-        gc.undo(None);
+        gc.undo(1, None, false);
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
@@ -643,7 +643,7 @@ mod tests {
         }
 
         // redo, the third data table should be back
-        gc.redo(None);
+        gc.redo(1, None, false);
         // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
@@ -695,10 +695,10 @@ mod tests {
         );
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
     }
 
@@ -725,11 +725,11 @@ mod tests {
         );
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 4, vec!["2", "3"]);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
     }
 }

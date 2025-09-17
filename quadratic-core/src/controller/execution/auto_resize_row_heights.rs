@@ -707,8 +707,8 @@ mod tests {
         expect_js_request_row_heights(sheet_id, row_heights);
 
         // should not trigger auto resize row heights for undo / redo transaction
-        gc.undo(None);
-        gc.redo(None);
+        gc.undo(1, None, false);
+        gc.redo(1, None, false);
         expect_js_call_count("jsRequestRowHeights", 0, false);
 
         // should not trigger auto resize row heights for multiplayer transactions
@@ -906,7 +906,7 @@ mod tests {
         assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 21f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.sheet(sheet_id).offsets.row_height(22), 40f64);
     }
 }

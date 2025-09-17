@@ -233,6 +233,6 @@ export const jsSendContentCache = (sheetId: string, contentCache: Uint8Array) =>
   self.sendContentCache(sheetId, contentCache);
 };
 
-export const jsTimestamp = (): number => {
-  return Date.now();
+export const jsTimestamp = (): bigint => {
+  return BigInt(Date.now());
 };

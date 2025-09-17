@@ -796,8 +796,7 @@ mod tests {
         assert_eq!(value, expected);
 
         // start over
-        gc.undo(None);
-        gc.undo(None);
+        gc.undo(2, None, false);
 
         // absolute column references, expect no change
         let base = r#"q.cells("$A:$B", first_row_header=True)"#;
@@ -808,8 +807,7 @@ mod tests {
         assert_eq!(value, expected);
 
         // start over
-        gc.undo(None);
-        gc.undo(None);
+        gc.undo(2, None, false);
 
         println!("** relative column references, expect no change");
 

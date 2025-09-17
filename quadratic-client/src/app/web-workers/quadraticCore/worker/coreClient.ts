@@ -302,7 +302,7 @@ class CoreClient {
         this.send({
           type: 'coreClientUndoResponse',
           id: e.data.id,
-          response: core.undo(e.data.count, e.data.cursor) ?? '',
+          response: core.undo(e.data.count, e.data.cursor, e.data.isAi) ?? '',
         });
         return;
 
@@ -310,7 +310,7 @@ class CoreClient {
         this.send({
           type: 'coreClientRedoResponse',
           id: e.data.id,
-          response: core.redo(e.data.count, e.data.cursor) ?? '',
+          response: core.redo(e.data.count, e.data.cursor, e.data.isAi) ?? '',
         });
         return;
 

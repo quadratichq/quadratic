@@ -945,11 +945,11 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["3", "4", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["6", "7", "8"]);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 5, vec!["", "", "5"]);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["", "", "8"]);
     }
@@ -967,10 +967,10 @@ mod test {
         gc.delete_cells(&A1Selection::test_a1("A1:C4"), None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 4, 2, vec!["", "0", "1", "2"]);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
     }
 }

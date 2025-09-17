@@ -33,6 +33,7 @@ import type {
   Pos,
   SearchOptions,
   SheetPos,
+  TrackedTransaction,
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
@@ -603,19 +604,19 @@ class Core {
     }
   }
 
-  undo(count: number | undefined, cursor: string): string | undefined {
+  undo(count: number, cursor: string, isAi: boolean): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.undo(count, cursor);
+      return this.gridController.undo(count, cursor, isAi);
     } catch (e) {
       this.handleCoreError('undo', e);
     }
   }
 
-  redo(count: number | undefined, cursor: string): string | undefined {
+  redo(count: number, cursor: string, isAi: boolean): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.redo(count, cursor);
+      return this.gridController.redo(count, cursor, isAi);
     } catch (e) {
       this.handleCoreError('redo', e);
     }
@@ -1447,12 +1448,10 @@ class Core {
     }
   }
 
-  getAITransactions() {
+  getAITransactions(): TrackedTransaction[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const result = this.gridController.getAITransactions();
-      console.log(result);
-      return result;
+      return this.gridController.getAITransactions();
     } catch (e) {
       this.handleCoreError('getAITransactions', e);
     }

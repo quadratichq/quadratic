@@ -108,13 +108,16 @@ const convertTransactionToChatMessage = (transaction: TrackedTransaction): strin
 export const useAITransactions = () => {
   const getAITransactions = useCallback(async (): Promise<ChatMessage[]> => {
     const transactions = await quadraticCore.getAITransactions();
+    if (!transactions) {
+      console.error('Failed to get transactions.');
+      return [];
+    }
+
     return [
       {
         role: 'user',
         content: [
-          {
-            type: 'text',
-            text: `
+          createTextContent(`
 The following is a list of transactions that have occurred since the file was opened. This list may be truncated, but the latest transactions are always included.
 The transactions are ordered from oldest to newest.
 Transactions that are marked undoable may be called with the undo tool call. Transactions that are marked redoable may be called with the redo tool call.
@@ -126,8 +129,7 @@ ${transactions
   .map((transaction) => `${convertTransactionToChatMessage(transaction)}`)
   .join('\n')}
 
-${transactions?.length > MAX_TRANSACTIONS ? `The list of transactions has been truncated to the latest ${MAX_TRANSACTIONS} transactions.` : ''}`,
-          },
+${transactions?.length > MAX_TRANSACTIONS ? `The list of transactions has been truncated to the latest ${MAX_TRANSACTIONS} transactions.` : ''}`),
         ],
         contextType: 'aiUpdates',
       },
@@ -143,7 +145,5 @@ ${transactions?.length > MAX_TRANSACTIONS ? `The list of transactions has been t
     ];
   }, []);
 
-  return {
-    getAITransactions,
-  };
+  return { getAITransactions };
 };

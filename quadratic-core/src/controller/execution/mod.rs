@@ -9,10 +9,10 @@ use super::active_transactions::ActiveTransactions;
 use super::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 /// Where the transaction came from.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Copy, TS)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum TransactionSource {
     /// Unknown / unspecified.
     #[default]
@@ -32,6 +32,10 @@ pub enum TransactionSource {
     Unsaved,
     /// AI performed an action.
     AI,
+    /// AI performed an undo.
+    UndoAI,
+    /// AI performed a redo.
+    RedoAI,
 }
 
 impl GridController {

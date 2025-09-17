@@ -127,28 +127,28 @@ mod test {
         g.set_cell_value(sheet_pos, String::from("b"), None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Blank);
 
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Blank);
 
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
         // ensure that not found SheetId fails silently
@@ -349,7 +349,7 @@ mod test {
             CellValue::Text("test".into())
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(
             get_cell(&gc, sheet_pos),
             CellValue::Text("Southborough".into())
@@ -726,7 +726,7 @@ mod test {
             Some(CellValue::Text("test1".into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -767,7 +767,7 @@ mod test {
             Some(CellValue::Text("test3".into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();

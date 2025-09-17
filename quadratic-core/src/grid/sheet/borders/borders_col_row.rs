@@ -584,7 +584,7 @@ mod tests {
         ));
 
         // this will reinsert the row
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -682,7 +682,7 @@ mod tests {
         ));
 
         // this will remove the inserted row
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
 

@@ -232,11 +232,11 @@ impl PendingTransaction {
     }
 
     pub fn is_undo(&self) -> bool {
-        self.source == TransactionSource::Undo
+        self.source == TransactionSource::Undo || self.source == TransactionSource::UndoAI
     }
 
     pub fn is_redo(&self) -> bool {
-        self.source == TransactionSource::Redo
+        self.source == TransactionSource::Redo || self.source == TransactionSource::RedoAI
     }
 
     fn is_ai(&self) -> bool {

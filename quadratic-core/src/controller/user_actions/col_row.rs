@@ -183,7 +183,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.cell_value(Pos::new(1, 1)), None);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -233,7 +233,7 @@ mod tests {
             Some(CellValue::Number(3.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -297,7 +297,7 @@ mod tests {
             Some("blue".to_string())
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -362,7 +362,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -428,7 +428,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -494,7 +494,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -527,7 +527,7 @@ mod tests {
         assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // insert 3 columns before C
         gc.insert_columns(sheet_id, 3, 3, true, None, false);

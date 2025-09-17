@@ -43,25 +43,25 @@ impl GridController {
         if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html)
             && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
-            {
+        {
+            self.start_user_ai_transaction(
+                ops,
+                cursor.clone(),
+                TransactionName::PasteClipboard,
+                is_ai,
+            );
+
+            if !data_table_ops.is_empty() {
                 self.start_user_ai_transaction(
-                    ops,
-                    cursor.clone(),
+                    data_table_ops,
+                    cursor,
                     TransactionName::PasteClipboard,
                     is_ai,
                 );
-
-                if !data_table_ops.is_empty() {
-                    self.start_user_ai_transaction(
-                        data_table_ops,
-                        cursor,
-                        TransactionName::PasteClipboard,
-                        is_ai,
-                    );
-                }
-
-                return;
             }
+
+            return;
+        }
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
@@ -411,7 +411,7 @@ mod test {
             sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(2.into()))
         );
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
 
@@ -442,7 +442,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 2);
 
         // undo to original code cell value
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -453,7 +453,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 1);
 
         // empty code cell
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
 
@@ -514,7 +514,7 @@ mod test {
             Some(CellValue::Number(3.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(sheet.display_value(Pos { x: 2, y: 1 }), None);
@@ -791,7 +791,7 @@ mod test {
         assert_range_paste(&gc);
 
         // undo the paste and paste again as plain text
-        gc.undo(None);
+        gc.undo(1, None, false);
         gc.paste_from_clipboard(
             &paste_selection,
             js_clipboard,
@@ -971,7 +971,7 @@ mod test {
             Some(CellValue::Number(2.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
     }
@@ -1005,7 +1005,7 @@ mod test {
         assert_eq!(sheet.display_value((1, 1).into()), None);
         assert_eq!(sheet.display_value((1, 3).into()), None);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value((11, 11).into()), None);
@@ -1124,9 +1124,9 @@ mod test {
         assert_empty_cells(&gc, sheet_id, &[(1, 15)]);
 
         // Undo and redo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(1, 15, 42)]);
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(1, result.unwrap().y, 42)]);
     }
 
@@ -1191,9 +1191,9 @@ mod test {
         assert_empty_cells(&gc, sheet_id, &[(15, 1)]);
 
         // Undo and redo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(15, 1, 42)]);
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(result.unwrap().x, 1, 42)]);
     }
 

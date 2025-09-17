@@ -180,7 +180,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |mut gc| {
                 // Test
-                gc.undo(None);
+                gc.undo(1, None, false);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -201,12 +201,12 @@ fn criterion_benchmark(c: &mut Criterion) {
                     sheet_id,
                 };
                 gc.delete_cells(&A1Selection::from_rect(sheet_rect), None, false);
-                gc.undo(None);
+                gc.undo(1, None, false);
                 gc
             },
             |mut gc| {
                 // Test
-                gc.redo(None);
+                gc.redo(1, None, false);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -277,7 +277,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |mut gc| {
                 // Test
-                gc.undo(None);
+                gc.undo(1, None, false);
             },
             criterion::BatchSize::SmallInput,
         )

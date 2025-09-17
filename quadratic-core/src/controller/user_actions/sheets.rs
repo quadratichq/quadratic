@@ -116,11 +116,11 @@ mod test {
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, "Nice Name");
 
-        g.undo(None);
+        g.undo(1, None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, SHEET_NAME.to_owned() + "1");
 
-        g.redo(None);
+        g.redo(1, None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, "Nice Name");
 
@@ -144,11 +144,11 @@ mod test {
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
 
-        g.undo(None);
+        g.undo(1, None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, None);
 
-        g.redo(None);
+        g.redo(1, None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
 
@@ -203,12 +203,12 @@ mod test {
         assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
 
         // Test undo
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(g.sheet(s1).color, Some(String::from("blue")));
         assert_eq!(g.sheet(s2).color, Some(String::from("green")));
 
         // Test redo
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(g.sheet(s1).color, Some(String::from("red")));
         assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
 
@@ -248,10 +248,10 @@ mod test {
         assert_eq!(g.sheet_ids().len(), 1);
         assert_ne!(g.sheet_ids()[0], s1);
 
-        g.undo(None);
+        g.undo(1, None, false);
         assert_eq!(g.sheet_ids(), old_sheet_ids);
 
-        g.redo(None);
+        g.redo(1, None, false);
         assert_eq!(g.sheet_ids().len(), 1);
         assert_ne!(g.sheet_ids()[0], s1);
 
@@ -286,7 +286,7 @@ mod test {
         ) {
             g.move_sheet(a, b, None, false);
             assert_eq!(expected.to_vec(), g.sheet_ids());
-            g.undo(None);
+            g.undo(1, None, false);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
@@ -308,7 +308,7 @@ mod test {
         ) {
             g.delete_sheet(a, None, false);
             assert_eq!(expected.to_vec(), g.sheet_ids());
-            g.undo(None);
+            g.undo(1, None, false);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
@@ -328,11 +328,11 @@ mod test {
         assert_eq!(new_sheet_ids.len(), 1);
         assert_ne!(new_sheet_ids[0], sheet_ids[0]);
 
-        g.undo(None);
+        g.undo(1, None, false);
         let new_sheet_ids_2 = g.sheet_ids();
         assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
 
-        g.redo(None);
+        g.redo(1, None, false);
         let new_sheet_ids_3 = g.sheet_ids();
         assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
     }
@@ -424,7 +424,7 @@ mod test {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call(
             "jsDeleteSheet",
@@ -454,7 +454,7 @@ mod test {
             true,
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
         expect_js_call(
@@ -463,7 +463,7 @@ mod test {
             true,
         );
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));

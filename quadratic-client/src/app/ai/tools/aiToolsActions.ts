@@ -1204,9 +1204,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         sheetId,
         Number(sheetRect.min.x),
         Number(sheetRect.min.y),
-        {
-          columns,
-        },
+        { columns },
         true
       );
       if (response?.result) {
@@ -1325,7 +1323,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.Undo]: async (args) => {
     try {
-      const text = await quadraticCore.undo(args.count ?? undefined);
+      const text = await quadraticCore.undo(args.count ?? 1, true);
       return [createTextContent(text ?? 'Undo tool executed successfully.')];
     } catch (e) {
       return [createTextContent(`Error executing undo tool: ${e}`)];
@@ -1333,7 +1331,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.Redo]: async (args) => {
     try {
-      const text = await quadraticCore.redo(args.count ?? undefined);
+      const text = await quadraticCore.redo(args.count ?? 1, true);
       return [createTextContent(text ?? 'Redo tool executed successfully.')];
     } catch (e) {
       return [createTextContent(`Error executing redo tool: ${e}`)];
