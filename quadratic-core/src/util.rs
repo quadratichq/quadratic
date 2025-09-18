@@ -142,6 +142,9 @@ macro_rules! pos {
 
 /// Parses a cell rectangle in A1 notation.
 ///
+/// Expressions evaluating to sheet IDs are allowed but must be surrounded in
+/// parentheses if they are anything other than a single identifier.
+///
 /// # Examples
 ///
 /// ```
@@ -149,9 +152,19 @@ macro_rules! pos {
 /// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
 /// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
 /// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+///
+/// // With a sheet ID (identifier)
+/// let my_sheet = SheetId::new();
+/// assert_eq!(rect![my_sheet!A1:C3], Rect::new(1, 1, 3, 3).to_sheet_rect(my_sheet));
+///
+/// // With a sheet ID (arbitrary expression)
+/// let some_tuple = (10, 20, my_sheet);
+/// assert_eq!(rect![(some_tuple.2)!A1:C3], Rect::new(1, 1, 3, 3).to_sheet_rect(some_tuple.2));
 /// ```
 #[macro_export]
 macro_rules! rect {
+    [$sheet_id:ident ! $corner1:ident : $corner2:ident] => { rect![($sheet_id) ! $corner1 : $corner2] };
+    [($sheet_id:expr) ! $corner1:ident : $corner2:ident] => { rect![$corner1 : $corner2].to_sheet_rect($sheet_id) };
     ($corner1:ident : $corner2:ident) => {
         $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
     };

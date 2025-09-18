@@ -260,19 +260,15 @@ impl GridController {
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
-            let old_cell_value = sheet.cell_value_result(data_table_pos)?;
-            sheet.columns.set_value(&data_table_pos, CellValue::Blank);
-
             self.send_updated_bounds(transaction, sheet_id);
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::AddDataTable {
+            let reverse_operations = vec![Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value: old_cell_value,
                 index: Some(index),
             }];
             self.data_table_operations(
@@ -2267,55 +2263,46 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        assert_data_table_eq(&gc, pos![sheet_id!A1], &dt);
+        test_set_values(&mut gc, sheet_id, pos![A1], 3, 3);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["0", "1", "2"]);
 
-        gc.flatten_data_table(pos![sheet_id!A1], None);
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["1", "2", "3"]);
+        gc.grid_to_data_table(rect![sheet_id!A1:C3], None, true, None)
+            .unwrap();
+        // height is 4 because the first row is a header, and column names = false
+        assert_import(&gc, pos![sheet_id!A1], "Table1", 3, 4);
 
-        // let new_pos = Pos::new(pos.x, pos.y + 1);
-        // let max = Pos::new(4, 12);
-        // let sheet_pos = SheetPos::from((new_pos, sheet_id));
-        // let sheet_rect = SheetRect::new_pos_span(new_pos, max, sheet_id);
+        // undo, the value should be on the grid again
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["0", "1", "2"]);
 
-        // gc.grid_to_data_table(sheet_rect, None, true, None).unwrap();
-        // assert_simple_csv(&gc, sheet_id, new_pos, file_name);
+        // back to a table
+        gc.redo(None);
+        assert_import(&gc, pos![sheet_id!A1], "Table1", 3, 4);
 
-        // // undo, the value should be on the grid again
-        // gc.undo(None);
-        // assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+        // leave it as raw data
+        gc.undo(None);
 
-        // // redo, the value should be a data table again
-        // gc.redo(None);
-        // gc.data_table_first_row_as_header(sheet_pos, true, None);
-        // assert_simple_csv(&gc, sheet_id, new_pos, file_name);
+        // create a formula cell in the grid data table
+        let formula_pos = pos![sheet_id!E1];
+        gc.set_code_cell(
+            formula_pos,
+            CodeCellLanguage::Formula,
+            "=1+1".into(),
+            None,
+            None,
+        );
 
-        // // undo the first row as header
-        // gc.undo(None);
+        // there should be 1 data table, the formula data table
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        // // undo the grid to data table
-        // gc.undo(None);
-        // // execute_reverse_operations(&mut gc, &transaction);
-        // assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+        // expect that a data table is not created
+        assert!(
+            gc.grid_to_data_table(rect![sheet_id!E1:E1], None, true, None)
+                .is_err()
+        );
 
-        // // create a formula cell in the grid data table
-        // let formula_pos = SheetPos::new(sheet_id, 1, 3);
-        // gc.set_code_cell(
-        //     formula_pos,
-        //     CodeCellLanguage::Formula,
-        //     "=1+1".into(),
-        //     None,
-        //     None,
-        // );
-
-        // // there should only be 1 data table, the formula data table
-        // assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
-
-        // // expect that a data table is not created
-        // assert!(gc.grid_to_data_table(sheet_rect, None, true, None).is_err());
-
-        // // there should only be 1 data table, the formula data table
-        // assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
+        // there should only be 1 data table, the formula data table
+        assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
     }
 
     #[test]
