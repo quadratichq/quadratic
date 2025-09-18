@@ -152,7 +152,13 @@ pub fn assert_data_table_sort_dirty(
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_import(gc: &GridController, sheet_pos: SheetPos, name: &str, w: usize, h: usize) {
+pub fn assert_import(
+    gc: &GridController,
+    sheet_pos: SheetPos,
+    name: &str,
+    w: usize,
+    h_with_ui: usize,
+) {
     use std::num::NonZero;
 
     use crate::CellValue;
@@ -172,8 +178,8 @@ pub fn assert_import(gc: &GridController, sheet_pos: SheetPos, name: &str, w: us
     );
     assert_eq!(
         size.h,
-        NonZero::<u32>::new(h as u32).unwrap(),
-        "Height of data table at {sheet_pos} is not {h}"
+        NonZero::<u32>::new(h_with_ui as u32).unwrap(),
+        "Height of data table at {sheet_pos} is not {h_with_ui}"
     );
     assert_eq!(
         dt.name,

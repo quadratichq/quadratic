@@ -517,7 +517,7 @@ mod test {
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
 
         // check that the data table is in the sheet
-        assert_import(&gc, sheet_pos, "Table1", 2, 2);
+        assert_import(&gc, sheet_pos, "Table1", 2, 4);
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         // undo the operation
