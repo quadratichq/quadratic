@@ -9,7 +9,7 @@ import logger from './utils/logger';
 
 const mcpRouter = Router();
 
-// Extract your MCP server configuration into a reusable function
+// MCP server configuration
 function getServer(): McpServer {
   // Create server instance
   const server = new McpServer({
@@ -39,8 +39,6 @@ function getServer(): McpServer {
 
   return server;
 }
-
-// Add these routes to your existing app.ts file, before the registerRoutes() call
 
 // MCP POST route for handling MCP requests
 mcpRouter.post('/', async (req: Request, res: Response) => {
@@ -102,7 +100,5 @@ mcpRouter.delete('/', async (req: Request, res: Response) => {
     id: null,
   });
 });
-
-// Your existing registerRoutes() call and error handling middleware remain the same
 
 export default mcpRouter;
