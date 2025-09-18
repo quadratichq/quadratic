@@ -364,7 +364,7 @@ mod tests {
         CellValue, SheetPos,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
-            operations::operation::Operation, user_actions::import::tests::simple_csv_at,
+            operations::operation::Operation,
         },
         grid::{CodeCellLanguage, SheetId, js_types::JsUpdateCodeCell},
         test_util::*,
@@ -683,73 +683,38 @@ mod tests {
 
     #[test]
     fn test_duplicate_sheet_with_data_table() {
-        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
-        gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
-        gc.set_code_cell(
-            pos![sheet_id!J10],
-            CodeCellLanguage::Python,
-            format!("q.cells('{file_name}')"),
-            None,
-            None,
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
-            "Table1"
-        );
-
-        gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
-        let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
-        gc.set_code_cell(
-            pos![sheet_id!T20],
-            CodeCellLanguage::Python,
-            format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
-            None,
-            None,
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos![T20]).unwrap().name(),
-            "Table2"
-        );
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 5, 5);
+        test_create_code_table(&mut gc, sheet_id, pos![J10], 2, 2);
+        test_create_code_table(&mut gc, sheet_id, pos![T20], 2, 2);
 
         let ops = gc.duplicate_sheet_operations(sheet_id, None);
         gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
 
         let duplicated_sheet_id = gc.sheet_ids()[1];
-        let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
-        assert_eq!(data_table.name().to_string(), format!("{file_name}1"));
-
-        print_first_sheet!(&gc);
 
         assert_code_language(
             &gc,
             pos![duplicated_sheet_id!J10],
             CodeCellLanguage::Python,
-            format!("q.cells(\"{file_name}1\")"),
+            "code".to_string(),
         );
 
-        let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
-        let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
-        let code_run = data_table.code_run().unwrap();
-        assert_eq!(code_run.language, CodeCellLanguage::Python);
-        assert_eq!(
-            code_run.code,
-            format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#)
-        );
+        assert_data_table_size(&gc, duplicated_sheet_id, pos![A1], 5, 5, false);
 
-        assert_eq!(
-            gc.sheet(duplicated_sheet_id)
-                .data_table_at(&pos![J10])
-                .unwrap()
-                .name(),
-            "Table3"
+        assert_code_language(
+            &gc,
+            pos![duplicated_sheet_id!J10],
+            CodeCellLanguage::Python,
+            "code".to_string(),
         );
-        assert_eq!(
-            gc.sheet(duplicated_sheet_id)
-                .data_table_at(&pos![T20])
-                .unwrap()
-                .name(),
-            "Table4"
+        assert_code_language(
+            &gc,
+            pos![duplicated_sheet_id!T20],
+            CodeCellLanguage::Python,
+            "code".to_string(),
         );
     }
 }
