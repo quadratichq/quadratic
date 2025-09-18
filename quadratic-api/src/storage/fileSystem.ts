@@ -32,7 +32,7 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
   const url = generateUrl(key, false);
 
   if (typeof contents === 'string') {
-    contents = new Uint8Array(Buffer.from(contents, 'base64'));
+    contents = Uint8Array.from(Buffer.from(contents, 'base64'));
   }
 
   try {
@@ -63,7 +63,7 @@ function streamToByteArray(stream: Readable): Promise<Uint8Array> {
 
     stream.on('end', () => {
       const buffer = Buffer.concat(chunks);
-      resolve(new Uint8Array(buffer));
+      resolve(Uint8Array.from(buffer));
     });
 
     stream.on('error', (err: Error) => {
