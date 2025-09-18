@@ -28,7 +28,13 @@ impl GridController {
             _ => code,
         };
 
-        let existing_data_table = self.data_table_at(sheet_pos);
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return vec![];
+        };
+        let existing_data_table = sheet.data_table_at(&sheet_pos.into());
+        let existing_data_table_index =
+            existing_data_table.and_then(|_| sheet.data_table_index(sheet_pos.into()));
 
         let name = if let Some(dt) = existing_data_table {
             dt.name.clone()
@@ -44,8 +50,28 @@ impl GridController {
             };
             unique_data_table_name(&language_str, true, Some(sheet_pos), &self.a1_context).into()
         };
-        let ops = vec![
-            Operation::AddDataTableWithoutCellValue {
+
+        let mut ops = vec![];
+        if let Some(existing_data_table) = existing_data_table
+            && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
+            && existing_code_run.language == language
+        {
+            ops.push(Operation::AddDataTableWithoutCellValue {
+                sheet_pos,
+                data_table: DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..existing_code_run.clone()
+                    }),
+                    name,
+                    ..existing_data_table.clone()
+                },
+                index: existing_data_table_index,
+            });
+        } else {
+            dbg!(3);
+            ops.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table: DataTable {
                     kind: DataTableKind::CodeRun(CodeRun {
@@ -78,10 +104,10 @@ impl GridController {
                     chart_output: None,
                 },
                 index: None,
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
+            });
+        }
 
+        ops.push(Operation::ComputeCode { sheet_pos });
         ops
     }
 
