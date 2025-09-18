@@ -1,6 +1,6 @@
 {
   "name": "quadratic-api",
-  "version": "0.19.0",
+  "version": "0.19.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -42,7 +42,7 @@
     "@google/genai": "1.5.1",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@ory/kratos-client": "^1.2.1",
-    "@prisma/client": "^4.12.0",
+    "@prisma/client": "^6.16.2",
     "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^10.10.0",
     "@workos-inc/node": "7.69.2",
@@ -87,7 +87,7 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
-    "prisma": "^5.5.2",
+    "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.2"
