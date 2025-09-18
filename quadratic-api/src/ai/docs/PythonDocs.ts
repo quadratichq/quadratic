@@ -241,7 +241,7 @@ When returning DataFrames, default to returning the entire DataFrame. Do not use
 
 You can only return a single item per code cell. For example, you can only return one table or one chart etc. You cannot return both a table and a chart to the sheet from the same cell. You cannot return multiple tables nor multiple charts from the same cell. Use individual code cells for each subsequent step you want to return to the sheet.
 
-IMPORTANT: THIS IS AN EXAMPLE OF BAD CODE. IT WILL ONLY RETURN THE RAW CORRELATION VALUES AND NOT THE CHART! IF YOU WANT THE CHART AS WELL, CREATE A SEPERATE CODE CELL.
+IMPORTANT: THIS IS AN EXAMPLE OF BAD CODE. IT WILL ONLY RETURN THE RAW CORRELATION VALUES AND NOT THE CHART! IF YOU WANT THE CHART AS WELL, CREATE A SEPARATE CODE CELL.
 
 \`\`\`python
 import pandas as pd
@@ -270,7 +270,7 @@ fig.show()
 correlation_matrix.round(3)
 \`\`\`
 
-NOTE THAT IN THE ABOVE EXAMPLE, ONLY THE CORRELATION MATRIX IS RETURNED TO THE SHEET. THE CHART DOES NOT GET SHOWN SINCE IT IS NOT THE LAST LINE OF CODE. IF YOU WANT THE CHART AS WELL, CREATE A SEPERATE CODE CELL. ONLY ONE ITEM CAN BE RETURNED TO THE SHEET PER CODE CELL.
+NOTE THAT IN THE ABOVE EXAMPLE, ONLY THE CORRELATION MATRIX IS RETURNED TO THE SHEET. THE CHART DOES NOT GET SHOWN SINCE IT IS NOT THE LAST LINE OF CODE. IF YOU WANT THE CHART AS WELL, CREATE A SEPARATE CODE CELL. ONLY ONE ITEM CAN BE RETURNED TO THE SHEET PER CODE CELL.
 
 ## Packages
 
