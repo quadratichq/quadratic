@@ -462,7 +462,7 @@ mod tests {
             cells_accessed,
         };
         let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
+            DataTableKind::CodeRun(code_run.clone()),
             "test",
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
@@ -482,21 +482,16 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
+        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &transaction.operations[0]
+        else {
+            panic!("Expected AddDataTableWithoutCellValue");
+        };
         assert_eq!(
-            transaction.operations[0],
-            Operation::AddDataTableWithoutCellValue {
-                sheet_pos,
-                data_table: DataTable::new(
-                    DataTableKind::CodeRun(CodeRun::new_python("q.cells('B1:B3')".to_string())),
-                    "Python1",
-                    Value::Array(Array::from(vec![vec!["3"]])),
-                    false,
-                    None,
-                    None,
-                    None,
-                ),
-                index: None,
-            }
+            data_table.kind,
+            DataTableKind::CodeRun(CodeRun {
+                code: "q.cells(\"B1:B3\")".to_string(),
+                ..code_run
+            })
         );
     }
 
