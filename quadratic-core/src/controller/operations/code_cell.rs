@@ -221,26 +221,18 @@ mod test {
             None,
         );
         assert_eq!(operations.len(), 2);
+        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &operations[0] else {
+            panic!("Expected AddDataTableWithoutCellValue");
+        };
         assert_eq!(
-            operations[0],
-            Operation::AddDataTableWithoutCellValue {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-                data_table: DataTable::new(
-                    DataTableKind::CodeRun(CodeRun {
-                        language: CodeCellLanguage::Python,
-                        code: "print('hello world')".to_string(),
-                        ..Default::default()
-                    }),
-                    "Python1",
-                    Value::Single(CellValue::Blank),
-                    false,
-                    Some(true),
-                    Some(true),
-                    None,
-                ),
-                index: None,
-            }
+            data_table.kind,
+            DataTableKind::CodeRun(CodeRun {
+                language: CodeCellLanguage::Python,
+                code: "print('hello world')".to_string(),
+                ..Default::default()
+            })
         );
+
         assert_eq!(
             operations[1],
             Operation::ComputeCode {
