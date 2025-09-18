@@ -32,6 +32,8 @@ impl GridController {
 
         let name = if let Some(dt) = existing_data_table {
             dt.name.clone()
+        } else if let Some(code_cell_name) = code_cell_name {
+            unique_data_table_name(&code_cell_name, false, Some(sheet_pos), &self.a1_context).into()
         } else {
             let language_str = match language {
                 CodeCellLanguage::Formula => "Formula".to_string(),
@@ -40,15 +42,8 @@ impl GridController {
                 CodeCellLanguage::Import => "Table".to_string(),
                 CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
             };
-            unique_data_table_name(
-                &code_cell_name.unwrap_or(language_str),
-                true,
-                Some(sheet_pos),
-                &self.a1_context,
-            )
-            .into()
+            unique_data_table_name(&language_str, true, Some(sheet_pos), &self.a1_context).into()
         };
-
         let ops = vec![
             Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
