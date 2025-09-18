@@ -35,7 +35,6 @@ impl CellValues {
     }
 
     pub fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
-        assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
         self.columns
             .get(x as usize)
             .and_then(|col| col.get(&(y as u64)))
@@ -49,43 +48,12 @@ impl CellValues {
     }
 
     pub fn get(&self, x: u32, y: u32) -> Option<&CellValue> {
-        assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
         self.columns
             .get(x as usize)
             .and_then(|col| col.get(&(y as u64)))
     }
 
-    pub fn safe_get(&self, x: u32, y: u32) -> anyhow::Result<&CellValue> {
-        if !(x < self.w && y < self.h) {
-            anyhow::bail!(
-                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
-                self.w,
-                self.h,
-                x,
-                y
-            );
-        }
-
-        let cell_value = self
-            .columns
-            .get(x as usize)
-            .and_then(|col| col.get(&(y as u64)))
-            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))?;
-
-        Ok(cell_value)
-    }
-
     pub fn get_owned(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
-        if !(x < self.w && y < self.h) {
-            anyhow::bail!(
-                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
-                self.w,
-                self.h,
-                x,
-                y
-            );
-        }
-
         let column = self
             .columns
             .get_mut(x as usize)
@@ -135,12 +103,6 @@ impl CellValues {
     }
 
     pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
-        assert!(
-            x < self.w && y < self.h,
-            "CellValues::remove out of bounds: x={x}, y={y}, w={}, h={}",
-            self.w,
-            self.h
-        );
         self.columns[x as usize].remove(&(y as u64))
     }
 
@@ -154,17 +116,13 @@ impl CellValues {
 
     /// Creates CellValues from a flat array of CellValue given a width and height
     pub fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
-        assert!(
-            w * h == values.len() as u32,
-            "CellValues::flat_array size mismatch, expected {}, got {}",
-            w * h,
-            values.len()
-        );
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (i, value) in values.into_iter().enumerate() {
             let x = (i as u32) % w;
             let y = (i as u32) / w;
-            columns[x as usize].insert(y as u64, value);
+            columns
+                .get_mut(x as usize)
+                .and_then(|col| col.insert(y as u64, value));
         }
         Self { columns, w, h }
     }
