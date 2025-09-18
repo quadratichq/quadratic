@@ -261,10 +261,10 @@ export class GridHeadings extends Container {
     if (!this.characterSize) {
       throw new Error('Expected characterSize to be defined');
     }
-    const { viewport } = pixiApp;
-    let rowWidth =
-      (bottomNumberLength * this.characterSize.width) / viewport.scale.x + (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
-    return Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
+
+    const scale = pixiApp.viewport.scale.x;
+    let rowWidth = (bottomNumberLength * this.characterSize.width) / scale + (LABEL_PADDING_ROWS / scale) * 2;
+    return Math.max(rowWidth, CELL_HEIGHT / scale);
   }
 
   private drawVerticalBar() {
@@ -314,7 +314,9 @@ export class GridHeadings extends Container {
   }
 
   private verticalLabels() {
-    if (!this.characterSize) return;
+    if (!this.characterSize) {
+      return;
+    }
 
     const viewport = pixiApp.viewport;
     const scale = viewport.scaled;
@@ -452,12 +454,15 @@ export class GridHeadings extends Container {
   }
 
   update = (viewportDirty: boolean) => {
+    if (!this.characterSize) {
+      this.calculateCharacterSize();
+    }
+
     if (!this.dirty && !viewportDirty) return;
 
     this.dirty = false;
     this.labels.clear();
     this.headingsGraphics.clear();
-
     this.gridHeadingsRows.labels.clear();
     this.gridHeadingsRows.headingsGraphics.clear();
 
@@ -470,17 +475,13 @@ export class GridHeadings extends Container {
       pixiApp.setViewportDirty();
       return;
     }
-    this.visible = true;
-    if (!this.characterSize) {
-      this.calculateCharacterSize();
-    }
 
+    this.visible = true;
     this.drawVertical();
     this.drawHorizontal();
     this.drawHeadingLines();
     this.labels.update();
     this.drawCorner();
-
     this.headingSize = {
       width: this.rowWidth * pixiApp.viewport.scale.x,
       height: CELL_HEIGHT,
@@ -539,14 +540,12 @@ export class GridHeadings extends Container {
     if (!this.characterSize) {
       throw new Error('Expected characterSize to be defined');
     }
+
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const viewportHeight = bounds.height;
-
-    const sheet = sheets.sheet;
-
     const screenBottom = viewportTopY + viewportHeight;
-    const cellBottom = sheet.getRowFromScreen(screenBottom);
+    const cellBottom = sheets.sheet.getRowFromScreen(screenBottom);
     const bottomNumberLength = cellBottom.toString().length;
     const rowWidth = this.calculateRowWidth(bottomNumberLength);
 
