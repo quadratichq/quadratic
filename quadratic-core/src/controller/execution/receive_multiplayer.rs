@@ -830,10 +830,10 @@ mod tests {
             operations: other_operations_compressed,
         }]);
 
-        // expect this to be None since the async client.set_code_cell overwrites the other's multiplayer transaction
+        // expect this to be Blank since the async client.set_code_cell overwrites the other's multiplayer transaction
         assert_eq!(
             client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
-            None
+            Some(CellValue::Blank)
         );
 
         // ensure code_cell still exists

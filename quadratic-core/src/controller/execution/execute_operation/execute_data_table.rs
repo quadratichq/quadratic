@@ -188,6 +188,18 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = Pos::from(sheet_pos);
+
+            // delete cell values that are at the anchor position of the data
+            // table (DataTables always overwrite the anchor cell)
+            if let Some(old_cell_value) = sheet.columns.delete_value(&data_table_pos) {
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetCellValues {
+                        sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                        values: CellValues::from_cell_value(old_cell_value),
+                    });
+            }
+
             let mut sheet_rect_for_compute_and_spills =
                 data_table.output_sheet_rect(sheet_pos, false);
 
