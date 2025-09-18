@@ -44,14 +44,14 @@ function convertContent(content: Content): ContentBlock[] {
       if (isContentImage(content)) {
         const image: ImageBlock = {
           format: content.mimeType.split('/')[1] as ImageFormat,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { image };
       } else if (isContentPdfFile(content) || isContentTextFile(content)) {
         const document: DocumentBlock = {
           format: content.mimeType.split('/')[1] as DocumentFormat,
           name: content.fileName,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { document };
       } else {
@@ -69,7 +69,7 @@ function convertToolResultContent(content: ToolResultContent): ToolResultContent
       if (isContentImage(content)) {
         const image: ImageBlock = {
           format: content.mimeType.split('/')[1] as ImageFormat,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { image };
       } else {
