@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { z } from 'zod';
+import { AUTH_CORS } from './env-vars';
 import logger from './utils/logger';
 
 const mcpRouter = Router();
@@ -18,18 +19,18 @@ function getServer(): McpServer {
 
   // Register tools
   server.tool(
-    'createSpreadsheetFromPromptText',
-    'Create a spreadsheet from a natural language prompt and return its URL. The assistant should immediately display the returned URL prominently to the user.',
+    'start a spreadsheet from a prompt',
+    'Start a new spreadsheet from a natural language prompt and return its URL. The assistant should immediately display the returned URL prominently to the user.',
     {
       text: z.string().describe('Natural language prompt describing what spreadsheet to create'),
     },
     async ({ text }) => {
-      const url = `http://localhost:3000/files/create?prompt=${encodeURIComponent(text)}`;
+      const url = `${AUTH_CORS}/files/create?prompt=${encodeURIComponent(text)}`;
       return {
         content: [
           {
             type: 'text',
-            text: `Create your spreadsheet by clicking this link: ${url}`,
+            text: `Spreadsheet link: ${url}`,
           },
         ],
       };
