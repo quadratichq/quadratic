@@ -224,22 +224,14 @@ mod tests {
 
         // values to copy
         gc.set_cell_values(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 
         // value to cause the spill
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A1],
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -247,43 +239,33 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
+        let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
+        let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            pos![sheet_id!A2],
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
             None,
         );
 
-        let code_run = gc
-            .sheet(sheet_id)
-            .data_table_at(&Pos { x: 1, y: 2 })
-            .unwrap();
+        let code_run = gc.sheet(sheet_id).data_table_at(&pos![A2]).unwrap();
         assert!(code_run.has_spill());
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
+        let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1),);
     }
 
     #[test]
-    fn test_check_spills_over_code_array() {
+    fn test_check_spills_code_array() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
 

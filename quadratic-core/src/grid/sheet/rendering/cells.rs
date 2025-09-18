@@ -118,7 +118,7 @@ impl Sheet {
                 })),
                 Format::default(),
                 Some(data_table.get_language()),
-                None,
+                Some(JsRenderCellSpecial::SpillError),
             ));
         } else if let Some(error) = data_table.get_error() {
             cells.push(Self::get_render_cell(

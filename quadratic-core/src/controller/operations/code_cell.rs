@@ -70,7 +70,6 @@ impl GridController {
                 index: existing_data_table_index,
             });
         } else {
-            dbg!(3);
             ops.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table: DataTable {
