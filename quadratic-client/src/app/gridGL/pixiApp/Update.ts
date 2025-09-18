@@ -70,8 +70,6 @@ export class Update {
       console.log('dirty: pixiApp viewport');
     }
 
-    debugTimeCheck('[Update] scrollbars');
-
     const contentDirty = content.update(viewportChanged);
 
     if (pixiApp.viewport.dirty || contentDirty) {
