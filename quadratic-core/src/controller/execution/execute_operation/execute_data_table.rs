@@ -108,11 +108,6 @@ impl GridController {
             })
             .collect();
 
-        if data_tables_to_delete.len() > 0 {
-            dbg!(&sheet_rect);
-            dbg!(&data_tables_to_delete);
-        }
-
         // delete the data tables in reverse order, so that shift_remove is less expensive
         data_tables_to_delete.into_iter().rev().for_each(|pos| {
             self.finalize_data_table(

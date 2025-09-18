@@ -1296,21 +1296,13 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            pos![sheet_id!A4],
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
@@ -1318,7 +1310,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![A4]),
             Some(CellValue::Number(6.into()))
         );
 
@@ -1336,13 +1328,13 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![E9]),
             Some(CellValue::Number(6.into()))
         );
     }
 
     #[test]
-    fn paste_clipboard_with_formula_across_sheets() {
+    fn paste_clipboard_across_sheets_with_formula() {
         let mut gc = GridController::new();
         gc.add_sheet(None, None, None);
         let sheet1 = gc.sheet_ids()[0];
