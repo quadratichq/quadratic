@@ -269,10 +269,16 @@ mod tests {
             None,
         );
 
+        let code_run = gc
+            .sheet(sheet_id)
+            .data_table_at(&Pos { x: 1, y: 2 })
+            .unwrap();
+        assert!(code_run.has_spill());
+
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
         let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
+            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
         assert_eq!(render_cells, output_spill_error(1, 1),);
     }
 
