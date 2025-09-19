@@ -181,6 +181,9 @@ impl TrackedOperation {
                 sheet_name: get_sheet_name(*target, gc),
                 order: order.clone(),
             }),
+            Operation::ReplaceSheet { sheet_id, .. } => Some(Self::ReplaceSheet {
+                sheet_name: get_sheet_name(*sheet_id, gc),
+            }),
 
             // Grid structure changes
             Operation::ResizeColumn {

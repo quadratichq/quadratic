@@ -215,7 +215,7 @@ mod tests {
         assert!(result.values.is_empty());
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 0);
-        assert_eq!(result.selection, "'Sheet 1'!A1:B2".to_string());
+        assert_eq!(result.selection, "Sheet1!A1:B2".to_string());
 
         // Even large empty selections should return the empty message
         let large_selection = A1Selection::test_a1("A1:Z1000");
@@ -223,7 +223,7 @@ mod tests {
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 0);
         assert!(result.values.is_empty());
-        assert_eq!(result.selection, "'Sheet 1'!A1:Z1000".to_string());
+        assert_eq!(result.selection, "Sheet1!A1:Z1000".to_string());
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
                 .count(),
             1000
         );
-        assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
+        assert_eq!(result.selection, "Sheet1!A1:J190".to_string());
 
         let result = gc.get_ai_cells(selection, 1).unwrap();
         assert_eq!(result.page, 1);
@@ -263,7 +263,7 @@ mod tests {
                 .count(),
             900
         );
-        assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
+        assert_eq!(result.selection, "Sheet1!A1:J190".to_string());
     }
 
     #[test]

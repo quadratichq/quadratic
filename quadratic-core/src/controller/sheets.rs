@@ -80,7 +80,7 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         assert_eq!(sheet_ids.len(), 2);
         let sheet_id = sheet_ids[1];
-        assert_eq!(gc.sheet(sheet_id).name, "Sheet 2");
+        assert_eq!(gc.sheet(sheet_id).name, "Sheet2");
     }
 
     #[test]

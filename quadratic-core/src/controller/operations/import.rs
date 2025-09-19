@@ -225,6 +225,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops: Vec<Operation> = vec![];
         let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
+        let xlsx_range_to_pos = |(row, col)| Pos {
+            x: col as i64 + 1,
+            y: row as i64 + 1,
+        };
 
         // detect file extension
         let path = Path::new(file_name);
@@ -244,17 +248,6 @@ impl GridController {
         };
 
         let sheets = workbook.sheet_names().to_owned();
-
-        for new_sheet_name in sheets.iter() {
-            if self.try_sheet_from_name(new_sheet_name).is_some() {
-                bail!("Sheet with name \"{new_sheet_name}\" already exists");
-            }
-        }
-
-        let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64 + 1,
-            y: row as i64 + 1,
-        };
 
         // total rows for calculating import progress
         let total_rows = sheets
@@ -278,14 +271,14 @@ impl GridController {
         let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
 
         // add data from excel file to grid
-        for sheet_name in sheets {
+        for sheet_name in sheets.iter() {
             let sheet = gc
-                .try_sheet_from_name(&sheet_name)
+                .try_sheet_from_name(sheet_name)
                 .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
             // values
-            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_range(sheet_name).map_err(error)?;
             let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -355,7 +348,7 @@ impl GridController {
             }
 
             // formulas
-            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
+            let formula = workbook.worksheet_formula(sheet_name).map_err(error)?;
             let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -402,7 +395,7 @@ impl GridController {
             }
 
             // styles
-            let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_style(sheet_name).map_err(error)?;
             let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
@@ -493,7 +486,7 @@ impl GridController {
             }
 
             // layout
-            let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
+            let layout = workbook.worksheet_layout(sheet_name).map_err(error)?;
             let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
             for column_width in layout.column_widths.iter() {
@@ -515,10 +508,33 @@ impl GridController {
         let compute_ops = gc.rerun_all_code_cells_operations();
         gc.server_apply_transaction(compute_ops, None);
 
-        for sheet in gc.grid.sheets.into_values() {
-            ops.push(Operation::AddSheet {
-                sheet: Box::new(sheet),
-            });
+        // handle sheet name duplicates from excel files
+        let mut gc_duplicate_name = GridController::new_blank();
+        for sheet_name in self.sheet_names() {
+            gc_duplicate_name.server_add_sheet_with_name(sheet_name.to_owned());
+        }
+        for new_sheet_name in sheets.iter() {
+            let unique_sheet_name = gc_duplicate_name.grid.unique_sheet_name(new_sheet_name);
+            let sheet_id = gc
+                .try_sheet_from_name(new_sheet_name)
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?
+                .id;
+            gc.grid.update_sheet_name(sheet_id, &unique_sheet_name)?;
+            gc_duplicate_name.server_add_sheet_with_name(unique_sheet_name);
+        }
+
+        for (index, sheet) in gc.grid.sheets.into_values().enumerate() {
+            // replace the first sheet if the grid is empty
+            if index == 0 && self.grid.is_empty() {
+                ops.push(Operation::ReplaceSheet {
+                    sheet_id: self.grid.first_sheet_id(),
+                    sheet: Box::new(sheet),
+                });
+            } else {
+                ops.push(Operation::AddSheet {
+                    sheet: Box::new(sheet),
+                });
+            }
         }
 
         Ok(ops)

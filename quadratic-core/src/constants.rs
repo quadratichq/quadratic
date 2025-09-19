@@ -1,1 +1,1 @@
-pub const SHEET_NAME: &str = "Sheet ";
+pub const SHEET_NAME: &str = "Sheet";

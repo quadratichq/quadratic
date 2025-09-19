@@ -16,6 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
+use crate::constants::SHEET_NAME;
 use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
@@ -104,7 +105,11 @@ impl Sheet {
 
     /// Creates a sheet for testing.
     pub fn test() -> Self {
-        Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
+        Sheet::new(
+            SheetId::TEST,
+            format!("{}{}", SHEET_NAME.to_owned(), 1),
+            String::from("a0"),
+        )
     }
 
     /// Returns an error if a sheet name would be invalid to add.

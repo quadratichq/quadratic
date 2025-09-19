@@ -63,10 +63,22 @@ impl Grid {
         ret.add_sheet(None);
         ret
     }
+
     pub fn new_blank() -> Self {
         Grid {
             sheets: IndexMap::new(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.sheets.len() == 1
+            && self
+                .sheets
+                .values()
+                .next()
+                .unwrap()
+                .bounds(false)
+                .is_empty()
     }
 
     /// Creates a grid for testing.

@@ -508,6 +508,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         // avoid collision with the default sheet
         gc.grid.update_sheet_name(sheet_id, "ignore").unwrap();
+        gc.set_cell_value(pos![sheet_id!A1], "ignore".into(), None, false);
 
         gc.import_excel(&excel.unwrap(), file_name, None, false)
             .unwrap();

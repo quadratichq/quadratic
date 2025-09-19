@@ -88,9 +88,10 @@ export class Sheets {
     const sheet = new Sheet(this, sheetInfo);
     this.sheets.push(sheet);
     this.sort();
+    content.cellsSheets.addSheet(sheetInfo);
     if (user) {
-      // the timeout is needed because cellsSheets receives the addSheet message after sheets receives the message
-      setTimeout(() => (this.current = sheet.id), 0);
+      // change the current sheet to new sheet
+      this.current = sheet.id;
     } else {
       // otherwise we update the sheet bar since another player added the sheet
       this.updateSheetBar();
@@ -105,6 +106,7 @@ export class Sheets {
 
     this.sheets[index]?.destroy();
     this.sheets.splice(index, 1);
+    content.cellsSheets.deleteSheet(sheetId);
 
     // todo: this code should be in quadratic-core, not here
     if (user && this.current === sheetId) {

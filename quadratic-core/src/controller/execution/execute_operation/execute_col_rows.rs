@@ -342,7 +342,7 @@ mod tests {
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
-            "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
+            "'Sheet1'!F1+Other!F1 - Nonexistent!F1".into(),
             None,
             None,
             false,
@@ -393,7 +393,7 @@ mod tests {
                 // second formula, x += 1 for x >= 5
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
+                    values: single_formula("Sheet1!G1+Other!F1 - Nonexistent!F1"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2)

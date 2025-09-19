@@ -114,6 +114,26 @@ impl Grid {
         Some(sheet)
     }
 
+    /// Returns a unique sheet name for a given name.
+    pub fn unique_sheet_name(&self, name: &str) -> String {
+        let mut unique_name = name.to_owned();
+        let mut index = 1;
+        loop {
+            let folded_new_name = case_fold(&unique_name);
+            if self
+                .sheets
+                .values()
+                .any(|old_sheet| case_fold(&old_sheet.name) == folded_new_name)
+            {
+                unique_name = format!("{}({})", unique_name, index);
+                index += 1;
+            } else {
+                break;
+            }
+        }
+        unique_name
+    }
+
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
     ///
@@ -131,20 +151,11 @@ impl Grid {
             )
         });
 
-        // add a suffix if a duplicate name is detected. This will protect against two users creating sheets with the same name in multiplayer.
         let new_id = new_sheet.id;
-        let mut index = 1;
-        loop {
-            let folded_new_name = case_fold(&new_sheet.name);
-            if self.sheets.values().any(|old_sheet| {
-                old_sheet.id != new_id && case_fold(&old_sheet.name) == folded_new_name
-            }) {
-                new_sheet.name = format!("{} ({})", new_sheet.name, index);
-                index += 1;
-            } else {
-                break;
-            }
-        }
+
+        // Ensure the name is unique
+        new_sheet.name = self.unique_sheet_name(&new_sheet.name);
+
         self.sheets.insert(new_id, new_sheet);
         self.sort_sheets();
         new_id
@@ -374,7 +385,7 @@ mod test {
         assert_eq!(grid.sheets[0].name, format!("{}1", SHEET_NAME.to_owned()));
         assert_eq!(
             grid.sheets[1].name,
-            format!("{}1 (1)", SHEET_NAME.to_owned())
+            format!("{}1(1)", SHEET_NAME.to_owned())
         );
     }
 }

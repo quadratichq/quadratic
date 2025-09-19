@@ -79,6 +79,9 @@ pub enum TrackedOperation {
         sheet_name: String,
         order: String,
     },
+    ReplaceSheet {
+        sheet_name: String,
+    },
 
     /// Grid structure changes
     ResizeColumn {

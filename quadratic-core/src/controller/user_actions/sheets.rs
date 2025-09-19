@@ -444,7 +444,7 @@ mod test {
 
         gc.duplicate_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy(1)");
         assert_eq!(gc.grid.sheets()[2].name, "Nice Name Copy");
         let duplicated_sheet_id3 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
@@ -465,7 +465,7 @@ mod test {
 
         gc.redo(1, None, false);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy(1)");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",

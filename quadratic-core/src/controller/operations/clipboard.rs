@@ -1395,7 +1395,7 @@ mod test {
         gc.set_code_cell(
             pos![sheet1!A4],
             CodeCellLanguage::Formula,
-            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            format!("SUM(B1:B3, B4:B6, {s1}!C4, {s2}!C4)"),
             None,
             None,
             false,
@@ -1431,7 +1431,7 @@ mod test {
         gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None, false);
         // all references should have updated
         assert_eq!(
-            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!C3)"),
+            format!("SUM(#REF!, B3:B5, {s1}!C3, {s2}!C3)"),
             get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have been re-evaluated
@@ -1448,7 +1448,7 @@ mod test {
         gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None, false);
         // all references should have stayed the same
         assert_eq!(
-            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            format!("SUM(B1:B3, B4:B6, {s1}!C4, {s2}!C4)"),
             get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have the same value
@@ -1468,7 +1468,7 @@ mod test {
         );
         // all references should have updated
         assert_eq!(
-            format!("SUM(B2:B4, B5:B7, '{s1}'!C5, '{s2}'!C5)"),
+            format!("SUM(B2:B4, B5:B7, {s1}!C5, {s2}!C5)"),
             get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
         // code cell should have been re-evaluated
@@ -1488,7 +1488,7 @@ mod test {
         );
         // all references should have updated to have a sheet name
         assert_eq!(
-            format!("SUM('{s1}'!B1:B3, '{s1}'!B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            format!("SUM({s1}!B1:B3, {s1}!B4:B6, {s1}!C4, {s2}!C4)"),
             get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
         // code cell should have the same value
