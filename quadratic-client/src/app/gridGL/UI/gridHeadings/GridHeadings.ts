@@ -12,7 +12,7 @@ import type { Size } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import type { Point } from 'pixi.js';
-import { BitmapText, Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
 type Selected = 'all' | number[] | undefined;
 
@@ -37,7 +37,7 @@ const GRID_HEADING_RESIZE_TOLERANCE = 3;
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 3;
 
 export class GridHeadings extends Container {
-  private characterSize?: Size;
+  private characterSize: Size = { width: 6.666666895151138, height: 8.09523868560791 };
   private headingsGraphics: Graphics;
   private labels: GridHeadingsLabels;
   private corner: Graphics;
@@ -78,15 +78,6 @@ export class GridHeadings extends Container {
       this.dirty = true;
     }
   };
-
-  // calculates static character size (used in overlap calculations)
-  private calculateCharacterSize() {
-    const label = new BitmapText('X', {
-      fontName: 'OpenSans',
-      fontSize: GRID_HEADER_FONT_SIZE,
-    });
-    this.characterSize = { width: label.width, height: label.height };
-  }
 
   private findIntervalX(i: number): number {
     if (i > 100) return 52;
@@ -146,8 +137,6 @@ export class GridHeadings extends Container {
 
   // Adds horizontal labels
   private horizontalLabels() {
-    if (!this.characterSize) return;
-
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
     const scale = viewport.scaled;
@@ -258,18 +247,12 @@ export class GridHeadings extends Container {
   }
 
   private calculateRowWidth(bottomNumberLength: number): number {
-    if (!this.characterSize) {
-      throw new Error('Expected characterSize to be defined');
-    }
-
     const scale = pixiApp.viewport.scale.x;
     let rowWidth = (bottomNumberLength * this.characterSize.width) / scale + (LABEL_PADDING_ROWS / scale) * 2;
     return Math.max(rowWidth, CELL_HEIGHT / scale);
   }
 
   private drawVerticalBar() {
-    if (!this.characterSize) return;
-
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
     const sheet = sheets.sheet;
@@ -314,10 +297,6 @@ export class GridHeadings extends Container {
   }
 
   private verticalLabels() {
-    if (!this.characterSize) {
-      return;
-    }
-
     const viewport = pixiApp.viewport;
     const scale = viewport.scaled;
     const bounds = viewport.getVisibleBounds();
@@ -454,10 +433,6 @@ export class GridHeadings extends Container {
   }
 
   update = (viewportDirty: boolean) => {
-    if (!this.characterSize) {
-      this.calculateCharacterSize();
-    }
-
     if (!this.dirty && !viewportDirty) return;
 
     this.dirty = false;
@@ -537,10 +512,6 @@ export class GridHeadings extends Container {
 
   /// Returns future sizes based on a new viewport position (top left)
   getFutureSizes = (viewportTopY: number): HeadingSize => {
-    if (!this.characterSize) {
-      throw new Error('Expected characterSize to be defined');
-    }
-
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const viewportHeight = bounds.height;
