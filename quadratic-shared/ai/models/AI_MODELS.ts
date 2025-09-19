@@ -2,13 +2,13 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 27;
+export const DEFAULT_MODEL_VERSION = 28;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'baseten:deepseek-ai/DeepSeek-V3.1';
+export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
@@ -153,7 +153,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
+    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -169,7 +169,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
+    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -234,7 +234,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
-    backupModelKey: 'vertexai-anthropic:claude-sonnet-4@20250514',
+    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
     displayName: 'gpt-5',
     temperature: 1,
     max_tokens: 128000,
@@ -449,14 +449,16 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'baseten:moonshotai/Kimi-K2-Instruct': {
-    model: 'moonshotai/Kimi-K2-Instruct',
-    displayName: 'Kimi K2 Instruct',
-    temperature: 0.1,
+  'baseten:moonshotai/Kimi-K2-Instruct-0905': {
+    model: 'moonshotai/Kimi-K2-Instruct-0905',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'Kimi K2 Instruct 0905',
+
+    temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'fast',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,
@@ -502,7 +504,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,

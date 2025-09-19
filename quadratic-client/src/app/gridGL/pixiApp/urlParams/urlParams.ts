@@ -22,10 +22,10 @@ class UrlParams {
     if (debugFlag('debugSaveURLState') || params.has('state')) {
       this.urlParamsDev = new UrlParamsDev(params);
       if (this.urlParamsDev.noUpdates) return;
+      setInterval(this.update, UPDATE_INTERVAL);
     } else {
       this.urlParamsUser = new UrlParamsUser(params);
     }
-    setInterval(this.update, UPDATE_INTERVAL);
   }
 
   update = () => {
