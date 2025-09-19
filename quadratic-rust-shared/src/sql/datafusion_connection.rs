@@ -7,16 +7,15 @@ use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::Bytes;
 
-use datafusion::arrow::util::pretty;
-use datafusion::prelude::{ParquetReadOptions, SessionContext};
+use datafusion::prelude::{DataFrame, ParquetReadOptions, SessionContext};
 
+use derivative::Derivative;
 use object_store::aws::AmazonS3Builder;
 use parquet::arrow::ArrowWriter;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::Instant;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::Result;
@@ -24,13 +23,17 @@ use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{Connection, connect_error, query_error, schema_error};
 
 /// datafusion connection
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Derivative, Serialize, Deserialize)]
+#[derivative(Debug)]
 pub struct DatafusionConnection {
     pub access_key_id: String,
     pub secret_access_key: String,
     pub endpoint: String,
     pub region: String,
     pub bucket: String,
+    #[serde(skip)]
+    #[derivative(Debug = "ignore")]
+    pub session_context: SessionContext,
 }
 
 impl DatafusionConnection {
@@ -48,6 +51,7 @@ impl DatafusionConnection {
             endpoint,
             region,
             bucket,
+            session_context: SessionContext::new(),
         }
     }
 }
@@ -92,7 +96,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
             .with_access_key_id(&self.access_key_id)
             .with_secret_access_key(&self.secret_access_key)
             .with_endpoint(&self.endpoint)
-            .with_allow_http(true) // Allow HTTP for LocalStack
+            .with_allow_http(true) // allow HTTP for LocalStack
             .build()
             .map_err(connect_error)?;
 
@@ -101,8 +105,8 @@ impl<'a> Connection<'a> for DatafusionConnection {
         let arc_s3 = Arc::new(s3);
         ctx.register_object_store(&s3_url, arc_s3.clone());
 
-        // Register the specific parquet file
-        let parquet_path = format!("{}/mixpanel_data.parquet", path);
+        // register the specific parquet file
+        let parquet_path = format!("{}/consolidated/", path);
         ctx.register_parquet(
             "mixpanel_data",
             &parquet_path,
@@ -136,7 +140,6 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
         for batch in &batches {
             total_records += batch.num_rows();
-            println!("{:?}", pretty::print_batches(&[batch.clone()]).unwrap());
             writer.write(batch)?;
         }
 
@@ -191,11 +194,9 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
 pub mod tests {
 
-    use std::time::Instant;
-
     use super::*;
 
-    pub const PARQUET_FILE: &str = "s3://mixpanel-data/mixpanel_data.parquet";
+    pub const PARQUET_FILE: &str = "s3://mixpanel-data/consolidated/mixpanel_data.parquet";
 
     pub fn new_datafusion_connection() -> DatafusionConnection {
         DatafusionConnection::new(
@@ -632,10 +633,9 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_datafusion_query() {
-        let start = Instant::now();
+        let start = std::time::Instant::now();
         let (rows, over_the_limit, num_records) = test_query(None).await;
-        let end = Instant::now();
-        println!("time: {:?}", end - start);
+        println!("time: {:?}", start.elapsed());
         println!("num_records: {:?}", num_records);
 
         // ensure the parquet file is the same as the bytes

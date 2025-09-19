@@ -12,6 +12,9 @@ import pyarrow.parquet as pq
 from typing import Dict, Any, List
 from datetime import datetime
 
+# set constant for the max match size
+MAX_MATCH_SIZE = 1000
+
 class ParquetTarget:
     def __init__(self):
         self.config = self._load_config()
@@ -48,7 +51,7 @@ class ParquetTarget:
                 self.records.append(record)
                 
                 # Write in batches for memory efficiency
-                if len(self.records) >= 1000:
+                if len(self.records) >= MAX_MATCH_SIZE:
                     self._write_batch()
                     
             elif message_type == 'STATE':

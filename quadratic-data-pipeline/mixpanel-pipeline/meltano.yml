@@ -10,6 +10,14 @@ plugins:
   - name: tap-mixpanel
     variant: hotgluexyz
     pip_url: git+https://github.com/hotgluexyz/tap-mixpanel.git
+    config:
+      disable_revenue: true
+    select_filter:
+    - "export.*"
+    - "engage.*"
+    - "funnels.*"
+    - "cohorts.*"
+    - "cohort_members.*"
   loaders:
   - name: target-parquet-custom
     namespace: custom

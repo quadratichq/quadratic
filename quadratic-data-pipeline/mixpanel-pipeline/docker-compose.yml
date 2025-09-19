@@ -9,6 +9,9 @@ services:
       - ./output:/project/output
       - ./logs:/project/logs
       - ./.meltano:/project/.meltano
+      - ./run-pipeline.sh:/project/run-pipeline.sh
+      - ./incremental-update.py:/project/incremental-update.py
+      - ./target-parquet-custom.py:/project/target-parquet-custom.py
     env_file:
       - .env
     environment:
@@ -28,7 +31,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5435:5432"
 
 volumes:
   postgres_data:

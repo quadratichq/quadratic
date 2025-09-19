@@ -22,13 +22,12 @@ COPY *.sh ./
 
 # Install dependencies for LocalStack integration and DataFusion
 RUN apt-get update && apt-get install -y awscli && rm -rf /var/lib/apt/lists/*
-RUN pip install datafusion pyarrow pandas requests
+RUN pip install pyarrow pandas requests
 
-# Copy Python scripts
-COPY *.py ./
+# Python scripts will be mounted as volumes in docker-compose
 
-# Make scripts executable
-RUN chmod +x *.sh *.py
+# Make shell scripts executable
+RUN chmod +x *.sh
 
 # Expose port for Meltano UI (optional)
 EXPOSE 5000

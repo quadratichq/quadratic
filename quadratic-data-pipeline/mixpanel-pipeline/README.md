@@ -26,7 +26,7 @@ This directory contains a Meltano-based data pipeline that extracts data from Mi
 
 3. **Copy and configure environment file:**
    ```bash
-   cp env.example .env
+   cp .env.example .env
    # The .env file is pre-configured for LocalStack with dummy credentials
    # You only need to add your real Mixpanel API credentials
    ```
@@ -40,7 +40,7 @@ This directory contains a Meltano-based data pipeline that extracts data from Mi
 
 1. **Copy the environment file and configure your credentials:**
    ```bash
-   cp env.example .env
+   cp .env.example .env
    # Edit .env file with your actual AWS and Mixpanel credentials
    # Remove or comment out the AWS_ENDPOINT_URL variables for production
    ```
@@ -122,6 +122,9 @@ All configuration is done through environment variables in the `.env` file. Copy
 - `MELTANO_DATABASE_URI`: Database URI (default: sqlite:///meltano.db)
 
 ## Troubleshooting
+
+### Revenue endpoint error (expected behavior):
+The pipeline may show an error like "Invalid endpoint: revenue" at the end of execution. This is expected and does not affect data extraction. The revenue endpoint is not available for all Mixpanel accounts and is disabled by default (`disable_revenue: true` in meltano.yml). All other data streams (export, engage, funnels, cohorts, cohort_members) will complete successfully.
 
 ### Plugin installation fails:
 ```bash

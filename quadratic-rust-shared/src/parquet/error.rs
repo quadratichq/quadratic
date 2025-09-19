@@ -1,4 +1,4 @@
-//! Error Handling for SQL
+//! Error Handling for Parquet
 //!
 //! Define errors used in the module.
 //! Convert third party crate errors to application errors.
@@ -6,12 +6,10 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::SharedError;
-
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Sql {
-    #[error("Error connecting to database: {0}")]
-    Connect(String),
+pub enum Parquet {
+    #[error("Error with ColumnData: {0}")]
+    ColumnData(String),
 
     #[error("Error converting results to Parquet: {0}")]
     ParquetConversion(String),
@@ -21,4 +19,13 @@ pub enum Sql {
 
     #[error("Error creating schema: {0}")]
     Schema(String),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
+
+    #[error("Error converting vec to parquet: {0}")]
+    VecToParquet(String),
+
+    #[error("Error writing record batch: {0}")]
+    WriteRecordBatch(String),
 }

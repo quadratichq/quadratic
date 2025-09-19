@@ -2,3 +2,4 @@
 
 pub mod arrow_type;
 pub mod error;
+pub mod utils;
