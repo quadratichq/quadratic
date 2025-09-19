@@ -12,7 +12,7 @@ Then in your Claude Desktop config:
     "quadratic-mcp": {
       "command": "/Users/YOU/path/to/your/node",
       "args": [
-        "/Users/YOU/path/to/quadratic/quadratic-api/run-local-mcp-proxy.cjs"
+        "/Users/YOU/path/to/quadratic/quadratic-api/scripts/run-local-mcp-proxy.cjs"
       ]
     }
   }
