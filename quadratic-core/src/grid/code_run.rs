@@ -93,6 +93,7 @@ pub enum ConnectionKind {
     Mariadb,
     Supabase,
     Neon,
+    Synced,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

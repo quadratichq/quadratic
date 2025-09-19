@@ -1,0 +1,8 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+# Ignore virtual environment files
+bin/
+lib/
+include/
+pyvenv.cfg
+# Allow the actual project
+!mixpanel-pipeline/
