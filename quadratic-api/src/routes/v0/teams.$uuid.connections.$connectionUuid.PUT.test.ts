@@ -55,6 +55,17 @@ describe('PUT /v0/teams/:uuid/connections/:connectionUuid', () => {
         });
     });
 
+    it('responds with a 200 and removes the semantic description when it is not included in the update', async () => {
+      await request(app)
+        .put('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')
+        .send({ ...validPayload, semanticDescription: undefined })
+        .set('Authorization', `Bearer ValidToken teamUserOwner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.semanticDescription).toBeUndefined();
+        });
+    });
+
     it('responds with a 403 for users who cannot edit a connection', async () => {
       await request(app)
         .put('/v0/teams/00000000-0000-0000-0000-000000000000/connections/10000000-0000-0000-0000-000000000000')

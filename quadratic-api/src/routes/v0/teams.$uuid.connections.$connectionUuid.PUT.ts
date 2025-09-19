@@ -49,7 +49,7 @@ async function handler(
     data: {
       name,
       updatedDate: new Date(),
-      semanticDescription,
+      semanticDescription: semanticDescription ? semanticDescription : null,
       typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
     },
   });
