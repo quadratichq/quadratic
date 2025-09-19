@@ -6,8 +6,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::SharedError;
-
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Sql {
     #[error("Error connecting to database: {0}")]

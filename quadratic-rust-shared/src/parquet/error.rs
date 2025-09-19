@@ -8,9 +8,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Parquet {
-    #[error("Error with ColumnData: {0}")]
-    ColumnData(String),
-
     #[error("Error converting results to Parquet: {0}")]
     ParquetConversion(String),
 
@@ -19,6 +16,9 @@ pub enum Parquet {
 
     #[error("Error creating schema: {0}")]
     Schema(String),
+
+    #[error("Error with StringColumn: {0}")]
+    StringColumn(String),
 
     #[error("Unknown error: {0}")]
     Unknown(String),
