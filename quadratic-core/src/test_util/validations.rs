@@ -142,15 +142,15 @@ mod tests {
 
         // Test case 3: Wrong validation warning (should panic)
         let wrong_validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A2"));
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             assert_validation_warning(&gc, sheet_pos, Some(wrong_validation));
-        });
+        }));
         assert!(result.is_err());
 
         // Test case 4: Expected validation warning but none present (should panic)
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             assert_validation_warning(&gc, pos![sheet_id!b1], Some(validation));
-        });
+        }));
         assert!(result.is_err());
     }
 
@@ -171,9 +171,9 @@ mod tests {
         assert_validation_count(&gc, sheet_id, 2);
 
         // Test case 4: Wrong count (should panic)
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             assert_validation_count(&gc, sheet_id, 3);
-        });
+        }));
         assert!(result.is_err());
     }
 }

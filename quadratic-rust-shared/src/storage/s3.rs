@@ -4,12 +4,15 @@
 
 use async_trait::async_trait;
 use aws_sdk_s3::Client;
+use aws_sdk_s3::presigning::PresigningConfig;
 use bytes::Bytes;
+use std::time::Duration;
 
 use super::Storage;
 use crate::{
     aws::s3::{download_object, upload_object},
     error::Result,
+    storage::error::Storage as StorageError,
 };
 
 /// S3 configuration
@@ -56,6 +59,25 @@ impl Storage for S3 {
             .map_err(|e| Self::write_error(key, &e))?;
 
         Ok(())
+    }
+
+    /// Generate a presigned URL
+    async fn presigned_url(&self, data: &str) -> Result<String> {
+        let S3Config { client, bucket } = &self.config;
+        let presigning_config = PresigningConfig::builder()
+            .expires_in(Duration::from_secs(60 * 5)) // Valid for 5 minutes
+            .build()
+            .map_err(|e| StorageError::GeneratePresignedUrl(data.to_string(), e.to_string()))?;
+
+        let presigned_request = client
+            .get_object()
+            .bucket(bucket)
+            .key(data)
+            .presigned(presigning_config)
+            .await
+            .map_err(|e| StorageError::GeneratePresignedUrl(data.to_string(), e.to_string()))?;
+
+        Ok(presigned_request.uri().to_string())
     }
 
     /// Return the S3 bucket.
