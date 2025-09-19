@@ -229,7 +229,7 @@ mod tests {
             None,
         );
 
-        // value to cause the spill
+        // copied values
         gc.set_code_cell(
             pos![sheet_id!A1],
             CodeCellLanguage::Formula,
@@ -247,6 +247,8 @@ mod tests {
         let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
+        // this is no longer possible after the removal of CellValue::Code
+        // code to cause the spill
         gc.set_code_cell(
             pos![sheet_id!A2],
             CodeCellLanguage::Formula,
