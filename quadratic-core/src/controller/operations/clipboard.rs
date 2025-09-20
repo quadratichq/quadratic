@@ -28,7 +28,6 @@ use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::Borders;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::unique_data_table_name;
 use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
 lazy_static! {
@@ -378,20 +377,19 @@ impl GridController {
         &self,
         start_pos: SheetPos,
         clipboard: &Clipboard,
-        cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
-            for (pos, _) in clipboard.data_tables.iter() {
+            for (pos, data_table) in clipboard.data_tables.iter() {
                 let source_pos = Pos {
                     x: clipboard.origin.x + pos.x,
                     y: clipboard.origin.y + pos.y,
                 };
 
                 let target_pos = Pos {
-                    x: start_pos.x + pos.x,
-                    y: start_pos.y + pos.y,
+                    x: start_pos.x + pos.x - clipboard.origin.x,
+                    y: start_pos.y + pos.y - clipboard.origin.y,
                 };
 
                 let paste_in_import = sheet
@@ -426,26 +424,12 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
-                if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
-                    let mut data_table = data_table.to_owned();
-
-                    if matches!(clipboard.operation, ClipboardOperation::Copy) {
-                        let old_name = data_table.name().to_string();
-                        let new_name =
-                            unique_data_table_name(&old_name, false, None, self.a1_context());
-
-                        // update table name in paste cursor selection
-                        cursor.replace_table_name(&old_name, &new_name);
-
-                        data_table.name = new_name.into();
-                    }
-
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
-                        data_table: Some(data_table),
-                        index: usize::MAX,
-                    });
-                }
+                ops.push(Operation::AddDataTableWithoutCellValue {
+                    sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                    data_table: data_table.clone(),
+                    index: None,
+                });
+                // }
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
                 // with the data table's cells accessed or if the paste rectangle
@@ -625,15 +609,15 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let values = clipboard.values.to_owned();
+                let cells = clipboard.cells.to_owned();
 
-                if !values.is_empty() {
+                if !cells.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
                         start_pos.to_sheet_pos(selection.sheet_id),
                         cell_value_pos,
                         cell_values,
-                        values,
+                        cells,
                         delete_value,
                     )?;
                     ops.extend(cell_value_ops);
@@ -642,7 +626,6 @@ impl GridController {
                 code_ops.extend(self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     clipboard,
-                    &mut cursor,
                 )?);
 
                 let validations_ops = self.clipboard_validations_operations(
@@ -917,23 +900,6 @@ impl GridController {
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&cols_y, cell) in col {
-                            // todo: this needs to be replaced w/another part of the clipboard
-                            // if let CellValue::Code(code_cell) = cell {
-                            //     let original_pos = SheetPos {
-                            //         x: clipboard.origin.x + cols_x as i64,
-                            //         y: clipboard.origin.y + cols_y as i64,
-                            //         sheet_id: clipboard.origin.sheet_id,
-                            //     };
-
-                            //     code_cell.adjust_references(
-                            //         sheet_id,
-                            //         self.a1_context(),
-                            //         original_pos,
-                            //         adjust,
-                            //     );
-                            // }
-                            // else
-
                             // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
                             if should_expand_data_table && let Some(sheet) = sheet {
                                 let new_x = tile_start_x + cols_x as i64;
@@ -1325,6 +1291,13 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+        );
+
+        assert_code_language(
+            &gc,
+            pos![sheet_id!E9],
+            CodeCellLanguage::Formula,
+            "SUM(B1:B3)".to_string(),
         );
 
         assert_eq!(

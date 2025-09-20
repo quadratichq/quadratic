@@ -318,6 +318,8 @@ impl Sheet {
         });
     }
 
+    /// Returns data tables that intersect the selection and corresponding cells
+    /// and values
     pub fn data_tables_and_cell_values_in_rect(
         &self,
         bounds: &Rect,
@@ -338,17 +340,9 @@ impl Sheet {
                 };
 
                 let rect_contains_anchor_pos = bounds.contains(data_table_pos);
-                let code_cell_value = self.cell_value(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if let (true, Some(value)) = (rect_contains_anchor_pos, code_cell_value) {
-                    // add the source cell to cells
-                    cells.set(
-                        (data_table_pos.x - bounds.min.x) as u32,
-                        (data_table_pos.y - bounds.min.y) as u32,
-                        value,
-                    );
-
+                if rect_contains_anchor_pos {
                     // add the data_table to data_tables
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
@@ -358,10 +352,6 @@ impl Sheet {
                     } else {
                         // don't include values for code tables
                         data_tables.insert(data_table_pos, data_table.clone_without_values());
-                    }
-
-                    if values.is_none() {
-                        return;
                     }
                 }
 

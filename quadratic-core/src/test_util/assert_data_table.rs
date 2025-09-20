@@ -187,6 +187,7 @@ pub fn assert_import(
         "Name of data table at {sheet_pos} is not {name}"
     );
 }
+
 #[cfg(test)]
 #[track_caller]
 pub fn assert_code_language(
@@ -195,15 +196,15 @@ pub fn assert_code_language(
     language: CodeCellLanguage,
     code: String,
 ) {
-    let dt = gc
-        .sheet(sheet_pos.sheet_id)
-        .data_table_at(&sheet_pos.into())
-        .unwrap_or_else(|| panic!("Data table at {sheet_pos} not found"));
+    let pos = Pos::from(sheet_pos);
+    let Some(dt) = gc.sheet(sheet_pos.sheet_id).data_table_at(&pos) else {
+        panic!("Data table at {pos} not found");
+    };
     if let Some(code_run) = dt.code_run() {
         assert_eq!(code_run.language, language);
         assert_eq!(code_run.code, code);
     } else {
-        panic!("Data table at {sheet_pos} does not have a code run");
+        panic!("Data table at {pos} does not have a code run");
     }
 }
 
