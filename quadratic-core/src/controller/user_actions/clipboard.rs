@@ -760,31 +760,34 @@ mod test {
 
     #[test]
     fn test_paste_formula_with_range_selection() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let pos = Pos::new(1, 1);
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
-        set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        set_cell_value(&mut gc, sheet_id, "2", 1, 2);
-        set_cell_value(&mut gc, sheet_id, "3", 1, 3);
-        set_formula_code_cell(&mut gc, sheet_id, "A1 + 1", 2, 1);
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None);
+        gc.set_cell_value(pos![sheet_id!A3], "3".into(), None);
+        gc.set_code_cell(
+            pos![sheet_id!B1],
+            CodeCellLanguage::Formula,
+            "A1 + 1".to_string(),
+            None,
+            None,
+        );
 
-        let selection = A1Selection::from_xy(2, 1, sheet_id);
+        let selection = A1Selection::test_a1("B1");
         let js_clipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
-        let paste_rect = SheetRect::new(2, 2, 3, 3, sheet_id);
 
         // paste as html
-        let paste_selection = A1Selection::from_rect(paste_rect);
+        let paste_selection = A1Selection::test_a1("B2:C3");
         gc.paste_from_clipboard(&paste_selection, js_clipboard, PasteSpecial::None, None);
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, paste_rect.max));
-        assert_code_cell_value(&gc, sheet_id, 2, 2, "A2 + 1");
-        assert_code_cell_value(&gc, sheet_id, 2, 3, "A3 + 1");
-        assert_code_cell_value(&gc, sheet_id, 3, 2, "B2 + 1");
-        assert_code_cell_value(&gc, sheet_id, 3, 3, "B3 + 1");
+        assert_code(&gc, pos![sheet_id!B2], "A2 + 1");
+        assert_code(&gc, pos![sheet_id!B3], "A3 + 1");
+        assert_code(&gc, pos![sheet_id!C2], "B2 + 1");
+        assert_code(&gc, pos![sheet_id!C3], "B3 + 1");
     }
 
     #[test]

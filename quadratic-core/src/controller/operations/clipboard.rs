@@ -392,6 +392,25 @@ impl GridController {
                     y: start_pos.y + pos.y - clipboard.origin.y,
                 };
 
+                // need to skip any paste where the source contains a table or
+                // code except when the new data table overwrites the anchor cell
+                let output_rect = data_table.output_rect(target_pos, true);
+                if sheet.contains_data_table_within_rect(output_rect, None) {
+                    // report the attempt to paste to the user
+                    #[cfg(any(target_family = "wasm", test))]
+                    {
+                        let cell_type = data_table.kind_as_string();
+                        let message = format!("Cannot place {cell_type} within a table");
+
+                        let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        crate::wasm_bindings::js::jsClientMessage(
+                            message.to_owned(),
+                            severity.to_string(),
+                        );
+                    }
+                    continue;
+                }
+
                 let paste_in_import = sheet
                     .iter_data_tables_in_rect(Rect::single_pos(target_pos))
                     .any(|(output_rect, data_table)| {
@@ -424,12 +443,43 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
+                // adjust the code_runs if necessary
+                let data_table = if let Some(code_run) = data_table.code_run() {
+                    let mut adjusted_code_run = code_run.clone();
+                    println!("{pos:?} or {source_pos:?} -> {target_pos:?}");
+                    adjusted_code_run.adjust_references(
+                        start_pos.sheet_id,
+                        &self.a1_context,
+                        pos.to_sheet_pos(start_pos.sheet_id),
+                        RefAdjust {
+                            sheet_id: Some(start_pos.sheet_id),
+                            dx: target_pos.x - pos.x,
+                            dy: target_pos.y - pos.y,
+                            relative_only: true,
+
+                            // ignored
+                            x_start: 0,
+                            y_start: 0,
+                        },
+                    );
+                    dbg!(&adjusted_code_run);
+                    if &adjusted_code_run != code_run {
+                        DataTable {
+                            kind: DataTableKind::CodeRun(adjusted_code_run),
+                            ..data_table.clone()
+                        }
+                    } else {
+                        data_table.to_owned()
+                    }
+                } else {
+                    data_table.to_owned()
+                };
+
                 ops.push(Operation::AddDataTableWithoutCellValue {
                     sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                     data_table: data_table.clone(),
                     index: None,
                 });
-                // }
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
                 // with the data table's cells accessed or if the paste rectangle

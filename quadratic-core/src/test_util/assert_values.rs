@@ -79,6 +79,19 @@ pub fn assert_display_cell_value_pos(
     assert_display_cell_value(grid_controller, sheet_id, pos.x, pos.y, value);
 }
 
+#[track_caller]
+#[cfg(test)]
+pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
+    let Some(code_run) = gc.sheet(pos.sheet_id).code_run_at(&pos.into()) else {
+        panic!("No code cell at {pos}");
+    };
+    assert_eq!(
+        value, code_run.code,
+        "Cell at {pos} does not have the value {:?}, it's actually {:?}",
+        value, code_run.code
+    );
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]

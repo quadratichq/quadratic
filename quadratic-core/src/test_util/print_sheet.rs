@@ -2,7 +2,7 @@ use crate::{
     CellValue, Pos, Rect,
     a1::column_name,
     controller::GridController,
-    grid::{GridBounds, Sheet, SheetId},
+    grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
 };
 
 use std::collections::HashMap;
@@ -69,61 +69,41 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
-            let cell_value = sheet.cell_value(pos).unwrap_or_else(|| {
-                if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
-                    if dt.is_html_or_image() {
-                        CellValue::Text("chart".to_string())
+            match sheet.cell_value(pos) {
+                Some(cell_value) => vals.push(cell_value.to_string()),
+                None => {
+                    if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
+                        if dt.is_html_or_image() {
+                            vals.push("chart".to_string());
+                        } else {
+                            let language = if x - pos.x == 0 && y - pos.y == 0 {
+                                if let Some(code_run) = dt.code_run() {
+                                    match code_run.language {
+                                        CodeCellLanguage::Formula => " (Formula)".to_string(),
+                                        CodeCellLanguage::Python => " (Python)".to_string(),
+                                        CodeCellLanguage::Javascript => " (Javascript)".to_string(),
+                                        CodeCellLanguage::Connection { kind, .. } => {
+                                            kind.to_string()
+                                        }
+                                        _ => "".to_string(),
+                                    }
+                                } else {
+                                    " (Import)".to_string()
+                                }
+                            } else {
+                                " (..)".to_string()
+                            };
+                            let cell_value = dt
+                                .cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                .unwrap_or(CellValue::Blank);
+                            vals.push(format!("{}{}", cell_value, language));
+                        };
                     } else {
-                        dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
-                            .unwrap_or(CellValue::Blank)
+                        vals.push(String::default());
                     }
-                } else {
-                    CellValue::Blank
                 }
-            });
+            }
 
-            // todo: don't think we need this anymore. but keeping here in case
-            // we need to revisit once we're compiling
-
-            // let cell_value = match cell_value {
-            //     Some(CellValue::Code(code_cell)) => {
-            //         match code_cell.language {
-            //             CodeCellLanguage::Formula => convert_rc_to_a1(
-            //                 &code_cell.code.to_string(),
-            //                 &parse_ctx,
-            //                 pos.to_sheet_pos(sheet.id),
-            //             ),
-            //             CodeCellLanguage::Python => code_cell.code.to_string(),
-            //             CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
-            //             CodeCellLanguage::Javascript => code_cell.code.to_string(),
-            //             CodeCellLanguage::Import => "import".to_string(),
-            //         };
-            //         let value = sheet
-            //             .display_value(pos)
-            //             .unwrap_or(CellValue::Blank)
-            //             .to_string();
-            //         format!("{:?} ({})", code_cell.language, value)
-            //     }
-            //     Some(CellValue::Import(import)) => import.to_string(),
-            //     _ => {
-            //         match sheet.display_value(pos) {
-            //             None | Some(CellValue::Blank) => {
-            //                 if sheet
-            //                     .data_table_that_contains(pos)
-            //                     .is_some_and(|(_, dt)| dt.is_html_or_image())
-            //                 {
-            //                     CellValue::Text("chart".to_string())
-            //                 } else {
-            //                     CellValue::Blank
-            //                 }
-            //             }
-            //             Some(display_value) => display_value,
-            //         }
-            //     }
-            //     .to_string(),
-            // };
-
-            vals.push(cell_value.to_string());
             count_x += 1;
         });
         builder.push_record(vals.clone());
