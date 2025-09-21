@@ -395,7 +395,11 @@ impl GridController {
                 // need to skip any paste where the source contains a table or
                 // code except when the new data table overwrites the anchor cell
                 let output_rect = data_table.output_rect(target_pos, true);
-                if sheet.contains_data_table_within_rect(output_rect, None) {
+                if sheet
+                    .data_tables
+                    .iter_pos_in_rect(output_rect, false)
+                    .any(|pos| !sheet.data_table_at(&pos).is_some())
+                {
                     // report the attempt to paste to the user
                     #[cfg(any(target_family = "wasm", test))]
                     {
@@ -890,6 +894,19 @@ impl GridController {
         let mut borders = clipboard.borders.to_owned().unwrap_or_default();
         let source_columns = clipboard.cells.columns;
 
+        self.try_sheet(selection.sheet_id).map(|sheet| {
+            sheet
+                .data_table_anchors_in_rect(Rect {
+                    min: insert_at,
+                    max: end_pos,
+                })
+                .for_each(|pos| {
+                    ops.push(Operation::DeleteDataTable {
+                        sheet_pos: pos.to_sheet_pos(sheet_id),
+                    });
+                })
+        });
+
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
@@ -1307,8 +1324,8 @@ mod test {
 
     #[test]
     fn paste_clipboard_with_formula() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         gc.set_cell_values(
             pos![sheet_id!B1],
@@ -1346,7 +1363,7 @@ mod test {
             &gc,
             pos![sheet_id!E9],
             CodeCellLanguage::Formula,
-            "SUM(B1:B3)".to_string(),
+            "SUM(F6:F8)".to_string(),
         );
 
         assert_eq!(

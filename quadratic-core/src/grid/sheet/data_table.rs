@@ -102,6 +102,11 @@ impl Sheet {
         }
     }
 
+    /// Returns anchor positions of data tables that intersect a rect
+    pub fn data_table_anchors_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.data_tables.iter_anchor_pos_in_rect(rect)
+    }
+
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables
@@ -343,16 +348,7 @@ impl Sheet {
 
                 // if the source cell is included in the rect, add the data_table to data_tables
                 if rect_contains_anchor_pos {
-                    // add the data_table to data_tables
-                    if matches!(data_table.kind, DataTableKind::Import(_))
-                        || include_code_table_values
-                    {
-                        // include values for imports
-                        data_tables.insert(data_table_pos, data_table.clone());
-                    } else {
-                        // don't include values for code tables
-                        data_tables.insert(data_table_pos, data_table.clone_without_values());
-                    }
+                    data_tables.insert(data_table_pos, data_table.clone());
                 }
 
                 let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
@@ -374,7 +370,7 @@ impl Sheet {
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 // add the CellValue to cells if the code is not included in the rect
-                                if !rect_contains_anchor_pos {
+                                if !rect_contains_anchor_pos && include_code_table_values {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 

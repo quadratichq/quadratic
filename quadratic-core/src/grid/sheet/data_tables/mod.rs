@@ -270,6 +270,26 @@ impl SheetDataTables {
         })
     }
 
+    /// Returns an iterator over all anchor positions in the sheet data tables
+    /// that intersect with a given rectangle.
+    pub fn iter_anchor_pos_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.cache
+            .single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .chain(
+                self.cache
+                    .multi_cell_tables
+                    .unique_values_in_rect(rect)
+                    .into_iter()
+                    .filter(|v| v.is_some_and(|v| self.data_tables.contains_key(&v)))
+                    .flatten(),
+            )
+    }
+
     /// Returns an iterator over all positions in the sheet data tables that intersect with a given rectangle.
     pub fn iter_pos_in_rect(
         &self,

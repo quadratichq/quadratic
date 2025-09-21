@@ -100,12 +100,7 @@ impl GridController {
 
         let data_tables_to_delete: Vec<Pos> = sheet
             .data_tables_pos_intersect_rect_sorted((*sheet_rect).into())
-            .filter(|pos| {
-                // only delete when there's not another code cell in the same position
-                // (this maintains the original output until a run completes)
-                sheet.cell_value_ref(*pos).is_none()
-                    && sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id))
-            })
+            .filter(|pos| sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id)))
             .collect();
 
         // delete the data tables in reverse order, so that shift_remove is less expensive

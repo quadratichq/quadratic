@@ -421,8 +421,9 @@ mod test {
 
         // empty code cell
         gc.undo(None);
-        assert_display(&gc, pos![sheet_id!A1], "2");
+        assert_display(&gc, pos![sheet_id!A1], "");
 
+        assert!(gc.sheet(sheet_id).data_tables.is_empty());
         assert_eq!(gc.undo_stack.len(), 0);
     }
 
