@@ -446,7 +446,6 @@ impl GridController {
                 // adjust the code_runs if necessary
                 let data_table = if let Some(code_run) = data_table.code_run() {
                     let mut adjusted_code_run = code_run.clone();
-                    println!("{pos:?} or {source_pos:?} -> {target_pos:?}");
                     adjusted_code_run.adjust_references(
                         start_pos.sheet_id,
                         &self.a1_context,
@@ -462,7 +461,7 @@ impl GridController {
                             y_start: 0,
                         },
                     );
-                    dbg!(&adjusted_code_run);
+
                     if &adjusted_code_run != code_run {
                         DataTable {
                             kind: DataTableKind::CodeRun(adjusted_code_run),

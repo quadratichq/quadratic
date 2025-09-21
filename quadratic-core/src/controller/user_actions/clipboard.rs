@@ -360,91 +360,74 @@ mod test {
 
     #[test]
     fn test_copy_code_to_clipboard() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         set_formula_code_cell(&mut gc, sheet_id, "1 + 1", 1, 1);
+        assert_display(&gc, pos![sheet_id!A1], "2");
 
-        assert_eq!(gc.undo_stack.len(), 1);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(2.into()))
-        );
-
-        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = A1Selection::test_a1("A1");
         let js_clipboard: JsClipboard = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
 
         // paste using html on a new grid controller
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         // ensure the grid controller is empty
         assert_eq!(gc.undo_stack.len(), 0);
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(1, 1, sheet_id),
+            &A1Selection::test_a1("A1"),
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
         );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(2.into()))
-        );
+        assert_display(&gc, pos![sheet_id!A1], "2");
+
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.display_value(pos![A1]), None);
 
         // prepare a cell to be overwritten
         set_formula_code_cell(&mut gc, sheet_id, "2 + 2", 1, 1);
-
         assert_eq!(gc.undo_stack.len(), 1);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(4.into()))
         );
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(1, 1, sheet_id),
+            &A1Selection::test_a1("A1"),
             js_clipboard,
             PasteSpecial::None,
             None,
         );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(2.into()))
-        );
+
+        assert_display(&gc, pos![sheet_id!A1], "2");
 
         assert_eq!(gc.undo_stack.len(), 2);
 
         // undo to original code cell value
         gc.undo(None);
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(4.into()))
-        );
+        assert_display(&gc, pos![sheet_id!A1], "4");
 
         assert_eq!(gc.undo_stack.len(), 1);
 
         // empty code cell
         gc.undo(None);
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_display(&gc, pos![sheet_id!A1], "2");
 
         assert_eq!(gc.undo_stack.len(), 0);
     }
 
     #[test]
-    fn test_copy_code_to_clipboard_with_array_output() {
+    fn test_array_output_copy_code_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
