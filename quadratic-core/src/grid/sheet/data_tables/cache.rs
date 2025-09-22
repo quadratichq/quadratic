@@ -166,6 +166,17 @@ impl SheetDataTablesCache {
     pub fn has_content(&self, rect: Rect) -> bool {
         self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content(rect)
     }
+
+    /// Checks for any tables in the rect except for the given position
+    pub fn has_content_except(&self, rect: Rect, except: Pos) -> bool {
+        self.single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .any(|(rect, _)| rect.iter().any(|p| p != except))
+            || self
+                .multi_cell_tables
+                .nondefault_rects_in_rect(rect)
+                .any(|(_, pos)| pos.is_some_and(|p| p != except))
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]

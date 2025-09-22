@@ -176,7 +176,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        Array, CellValue, Pos, Rect, SheetPos, Value,
+        Array, CellValue, Pos, SheetPos, Value,
         a1::A1Selection,
         cellvalue::Import,
         controller::{
@@ -410,7 +410,6 @@ mod tests {
 
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
             11
@@ -438,7 +437,6 @@ mod tests {
             cursor,
         );
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
             12
@@ -446,7 +444,6 @@ mod tests {
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 5);
 
         gc.undo(None);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
             11
@@ -454,7 +451,6 @@ mod tests {
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
 
         gc.redo(None);
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
             12

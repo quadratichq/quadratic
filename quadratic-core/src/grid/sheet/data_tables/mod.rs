@@ -560,6 +560,10 @@ impl SheetDataTables {
         self.cache.has_content(rect)
     }
 
+    pub fn has_content_except(&self, rect: Rect, pos: Pos) -> bool {
+        self.cache.has_content_except(rect, pos)
+    }
+
     #[cfg(test)]
     pub fn un_spilled_output_rects(&self) -> &SheetRegionMap {
         &self.un_spilled_output_rects

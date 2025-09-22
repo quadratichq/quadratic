@@ -1082,7 +1082,10 @@ impl GridController {
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
 
-                    if sheet.data_tables.has_content(values_rect) {
+                    if sheet
+                        .data_tables
+                        .has_content_except(values_rect, data_table_pos)
+                    {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
@@ -1510,7 +1513,10 @@ impl GridController {
                     // check for code cells in neighboring cells
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    if sheet.data_tables.has_content(values_rect) {
+                    if sheet
+                        .data_tables
+                        .has_content_except(values_rect, data_table_pos)
+                    {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
