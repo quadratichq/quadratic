@@ -887,5 +887,6 @@ mod tests {
             gc.grid.sheets()[0].cell_value(pos![A1]).unwrap(),
             "duplicate".into()
         );
+        assert_eq!(gc.grid.sheets()[0].order, "a0");
     }
 }
