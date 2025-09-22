@@ -17,6 +17,7 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
   SetSheetName: (operation) => `- renamed sheet ${operation.old_sheet_name} to '${operation.new_sheet_name}'`,
   SetSheetColor: (operation) => `- set sheet ${operation.sheet_name} color to ${operation.color ?? 'default'}`,
   ReorderSheet: (operation) => `- reordered sheet ${operation.sheet_name} to order ${operation.order}`,
+  ReplaceSheet: (operation) => `- replaced sheet ${operation.sheet_name} with a new one on import from Excel file`,
   SetDataTable: (operation) =>
     `- ${operation.deleted ? 'deleted' : 'set'} data table at ${operation.selection}${operation.name ? ` named '${operation.name}'` : ''}`,
   DeleteDataTable: (operation) => `- deleted data table at ${operation.selection}`,
