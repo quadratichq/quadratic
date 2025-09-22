@@ -72,11 +72,15 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
             match sheet.cell_value(pos) {
                 Some(cell_value) => vals.push(cell_value.to_string()),
                 None => {
-                    if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
+                    if let Some((dt_pos, dt)) = sheet.data_table_that_contains(pos) {
                         if dt.is_html_or_image() {
-                            vals.push("chart".to_string());
+                            if dt_pos.y == pos.y && dt_pos.x == pos.x {
+                                vals.push(format!("{} (Chart)", dt.name.to_string()));
+                            } else {
+                                vals.push("(..)".to_string());
+                            }
                         } else {
-                            let language = if x - pos.x == 0 && y - pos.y == 0 {
+                            let language = if x - dt_pos.x == 0 && y - dt_pos.y == 0 {
                                 if let Some(code_run) = dt.code_run() {
                                     match code_run.language {
                                         CodeCellLanguage::Formula => " (Formula)".to_string(),
@@ -94,7 +98,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                                 " (..)".to_string()
                             };
                             let cell_value = dt
-                                .cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                .cell_value_at((x - dt_pos.x) as u32, (y - dt_pos.y) as u32)
                                 .unwrap_or(CellValue::Blank);
                             vals.push(format!("{}{}", cell_value, language));
                         };
