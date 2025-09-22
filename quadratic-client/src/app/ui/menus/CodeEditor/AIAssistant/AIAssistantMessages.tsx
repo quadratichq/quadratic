@@ -6,7 +6,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
-import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
+import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
@@ -147,7 +147,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               <>
                 {message.content.map((item, contentIndex) =>
                   isContentThinking(item) ? (
-                    <ThinkingBlock
+                    <AIThinkingBlock
                       key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}

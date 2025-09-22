@@ -88,7 +88,7 @@ export function AIAnalystPromptSuggestions({
           key={title}
           className="flex items-center gap-3 rounded bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
           onClick={() => {
-            trackEvent('[AIAnalyst].submitExamplePrompt', { title });
+            trackEvent('[AIAnalyst].submitExamplePrompt');
             submit(prompt);
           }}
         >

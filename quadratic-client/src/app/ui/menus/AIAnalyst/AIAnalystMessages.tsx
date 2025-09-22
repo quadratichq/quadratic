@@ -16,9 +16,9 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
+import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
-import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
@@ -241,7 +241,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               <>
                 {message.content.map((item, contentIndex) =>
                   isContentThinking(item) ? (
-                    <ThinkingBlock
+                    <AIThinkingBlock
                       key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}

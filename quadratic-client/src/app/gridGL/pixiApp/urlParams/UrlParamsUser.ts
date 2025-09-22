@@ -235,11 +235,7 @@ export class UrlParamsUser {
     submitAIAnalystPrompt({
       content: [...aiFiles, createTextContent(prompt)],
       messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
-      context: {
-        sheets: [],
-        currentSheet: sheets.sheet.name,
-        selection: undefined,
-      },
+      context: { codeCell: undefined, connection: undefined },
       messageIndex: 0,
     });
   };

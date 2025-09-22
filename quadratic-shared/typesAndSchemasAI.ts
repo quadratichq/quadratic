@@ -235,9 +235,6 @@ const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Impor
   })
 );
 const ContextSchema = z.object({
-  sheets: z.array(z.string()),
-  currentSheet: z.string(),
-  selection: z.string().optional(),
   codeCell: z
     .object({
       sheetId: z.string(),
