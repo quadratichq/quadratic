@@ -213,7 +213,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.x = column + 1;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user() {
@@ -249,7 +248,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.y = row + 1;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user() {

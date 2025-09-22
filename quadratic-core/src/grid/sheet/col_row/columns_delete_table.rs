@@ -82,10 +82,6 @@ impl Sheet {
                         old_dt = Some(dt.clone());
                     }
 
-                    // we use the entire table as the reverse operation (which
-                    // is not super efficient, but easiest given the current
-                    // design. if we remove the anchors, we can use the
-                    // DataTableInsertColumn op instead)
                     if let Ok(col_to_delete) = u32::try_from(*col - output_rect.min.x) {
                         let column_index =
                             dt.get_column_index_from_display_index(col_to_delete, true);
@@ -121,31 +117,14 @@ impl Sheet {
                     data_table: Some(old_dt),
                     index,
                 });
+            // the x + 1 is needed since the column will be inserted before the
+            // old table, so its position will be shifted right before it gets here
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteDataTable {
+                    sheet_pos: pos.translate(1, 0, 1, 1).to_sheet_pos(self.id),
+                });
         }
-
-        // // ensure anchor cell survives by shifting it to the right of the deleted columns
-        // for (index, pos, old_dt, new_anchor_x) in dt_to_shift_anchor {
-        //     if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
-        //         transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
-        //         transaction.add_dirty_hashes_from_sheet_rect(
-        //             old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-        //         );
-        //         let new_pos = Pos::new(new_anchor_x, pos.y);
-        //         transaction
-        //             .reverse_operations
-        //             .push(Operation::AddDataTable {
-        //                 sheet_pos: pos.to_sheet_pos(self.id),
-        //                 data_table: old_dt,
-        //                 cell_value,
-        //                 index: Some(index),
-        //             });
-        //         transaction
-        //             .reverse_operations
-        //             .push(Operation::DeleteDataTable {
-        //                 sheet_pos: new_pos.to_sheet_pos(self.id),
-        //             });
-        //     }
-        // }
     }
 
     /// Resize charts if columns in the chart range are deleted

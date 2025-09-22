@@ -106,26 +106,28 @@ impl Sheet {
                 }
 
                 Ok(())
-            })
-                && let Some(old_dt) = old_dt {
-                    transaction.add_from_code_run(
-                        self.id,
-                        pos,
-                        old_dt.is_image(),
-                        old_dt.is_html(),
-                    );
-                    transaction.add_dirty_hashes_from_sheet_rect(
-                        old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                    );
-                    transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetDataTable {
-                            sheet_pos: pos.to_sheet_pos(self.id),
-                            data_table: Some(old_dt),
-                            index,
-                        });
-                }
+            }) && let Some(old_dt) = old_dt
+            {
+                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_dirty_hashes_from_sheet_rect(
+                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                );
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetDataTable {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+                // the y + 1 is needed since the row will be inserted before the
+                // old table, so its position will be shifted down before it gets here
+                transaction
+                    .reverse_operations
+                    .push(Operation::DeleteDataTable {
+                        sheet_pos: pos.translate(0, 1, 1, 1).to_sheet_pos(self.id),
+                    });
+            }
         }
     }
 
@@ -136,20 +138,23 @@ impl Sheet {
         let min_row = rows.iter().min().unwrap_or(&1);
         for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
             if let Some(dt) = self.data_table_at(&pos)
-                && !dt.has_spill() && dt.is_html_or_image() {
-                    let output_rect = dt.output_rect(pos, false);
-                    let count = rows
-                        .iter()
-                        .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
-                        .count();
-                    if count > 0
-                        && let Some((width, height)) = dt.chart_output {
-                            let min = (height - count as u32).max(1);
-                            if min != height {
-                                dt_to_update.push((pos, Some((width, min))));
-                            }
-                        }
+                && !dt.has_spill()
+                && dt.is_html_or_image()
+            {
+                let output_rect = dt.output_rect(pos, false);
+                let count = rows
+                    .iter()
+                    .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
+                    .count();
+                if count > 0
+                    && let Some((width, height)) = dt.chart_output
+                {
+                    let min = (height - count as u32).max(1);
+                    if min != height {
+                        dt_to_update.push((pos, Some((width, min))));
+                    }
                 }
+            }
         }
 
         for (pos, chart_output) in dt_to_update.into_iter() {
