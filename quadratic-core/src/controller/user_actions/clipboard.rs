@@ -868,8 +868,8 @@ mod test {
 
     #[test]
     fn copy_part_of_code_run() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 1, 1);
 
@@ -894,20 +894,20 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 0);
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(0, 0, sheet_id),
+            &A1Selection::test_a1("A1"),
             js_clipboard,
             PasteSpecial::None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(2.into()))
         );
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(pos![A1]), None);
     }
 
     #[test]
