@@ -400,7 +400,11 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::ReplaceSheet { sheet_id, sheet } = op {
+        if let Operation::ReplaceSheet {
+            sheet_id,
+            mut sheet,
+        } = op
+        {
             // check if new sheet already exists
             let new_sheet_id = sheet.id;
             if self.grid.try_sheet(new_sheet_id).is_some() {
@@ -413,6 +417,8 @@ impl GridController {
                 // sheet was already deleted
                 return Ok(());
             };
+
+            sheet.order.clone_from(&deleted_sheet.order);
 
             if transaction.is_user_ai_undo_redo() {
                 transaction
@@ -460,7 +466,7 @@ mod tests {
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
         },
-        grid::{CodeCellLanguage, CodeCellValue, SheetId, js_types::JsUpdateCodeCell},
+        grid::{CodeCellLanguage, CodeCellValue, Sheet, SheetId, js_types::JsUpdateCodeCell},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -847,6 +853,39 @@ mod tests {
                 .unwrap()
                 .name(),
             "Table4"
+        );
+    }
+
+    #[test]
+    fn test_replace_sheet() {
+        let mut gc = GridController::test();
+        let original_sheet_id = gc.sheet_ids()[0];
+        let original_sheet_name = "original";
+        gc.set_sheet_name(original_sheet_id, original_sheet_name.into(), None, false);
+        assert_eq!(gc.grid.sheets()[0].name, original_sheet_name);
+        gc.set_cell_value(
+            pos![original_sheet_id!A1],
+            original_sheet_name.into(),
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(original_sheet_id).cell_value(pos![A1]).unwrap(),
+            original_sheet_name.into()
+        );
+
+        let mut duplicate_sheet =
+            Sheet::new(SheetId::new(), "duplicate".to_string(), "a1".to_string());
+        duplicate_sheet.set_cell_value(pos![A1], "duplicate".to_string());
+        let op = vec![Operation::ReplaceSheet {
+            sheet_id: original_sheet_id,
+            sheet: Box::new(duplicate_sheet),
+        }];
+        gc.start_user_ai_transaction(op, None, TransactionName::ReplaceSheet, false);
+        assert_eq!(gc.grid.sheets()[0].name, "duplicate");
+        assert_eq!(
+            gc.grid.sheets()[0].cell_value(pos![A1]).unwrap(),
+            "duplicate".into()
         );
     }
 }
