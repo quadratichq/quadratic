@@ -1,20 +1,18 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { aiAnalystCurrentChatMessagesCountAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
-import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
-import { AIUserMessageFormSheetButton } from '@/app/ui/components/AIUserMessageFormSheetButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, CloseIcon, DraftIcon, EditIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, CloseIcon, DraftIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { MentionsTextarea, type MentionState } from '@/shared/shadcn/ui/mentions-textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
@@ -85,7 +83,6 @@ export const AIUserMessageForm = memo(
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
-    const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
 
     const [dragOver, setDragOver] = useState(false);
     const dragOverMessage = useMemo(
@@ -277,6 +274,15 @@ export const AIUserMessageForm = memo(
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
 
+    const [mentionState, setMentionState] = useState<MentionState>({
+      isOpen: false,
+      query: '',
+      startIndex: -1,
+      endIndex: -1,
+      position: { top: 0, left: 0 },
+      selectedIndex: 0,
+    });
+
     return (
       <div className="relative">
         {showPromptSuggestions && messagesCount === 0 && (
@@ -317,6 +323,7 @@ export const AIUserMessageForm = memo(
             </div>
           </div>
         )}
+
         <form
           className={cn(
             'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
@@ -362,7 +369,24 @@ export const AIUserMessageForm = memo(
             setSelectedConnectionUuid={setSelectedConnectionUuid}
           />
 
-          <Textarea
+          <MentionsTextarea
+            value={prompt}
+            onChange={handlePromptChange}
+            onKeyDown={handleKeyDown}
+            // mentions={mentions}
+            onMentionSearch={(q) => {
+              console.log('<MentionsTextarea>.onMentionsSearch');
+            }}
+            onMentionSelect={(m) => {
+              console.log('<MentionsTextarea>.onMentionsSelect');
+            }}
+            textareaRef={textareaRef}
+            mentionState={mentionState}
+            setMentionState={setMentionState}
+            maxHeight={maxHeight}
+          />
+
+          {/* <Textarea
             ref={textareaRef}
             value={prompt}
             className={cn(
@@ -381,7 +405,7 @@ export const AIUserMessageForm = memo(
             onFocus={() => {
               textareaRef.current?.setSelectionRange(prompt.length, prompt.length);
             }}
-          />
+          /> */}
 
           <AIUsageExceeded show={showAIUsageExceeded} />
 
@@ -402,6 +426,79 @@ export const AIUserMessageForm = memo(
             fileTypes={fileTypes}
             selectedConnectionUuid={selectedConnectionUuid}
             setSelectedConnectionUuid={setSelectedConnectionUuid}
+            // TODO: tons of cleanup
+            handleClickMention={() => {
+              const textarea = textareaRef.current;
+              if (!textarea) return;
+
+              // Get current cursor position
+              const cursorPos = textarea.selectionStart || 0;
+              const currentValue = prompt;
+
+              // Insert @ at cursor position
+              const beforeCursor = currentValue.substring(0, cursorPos);
+              const afterCursor = currentValue.substring(cursorPos);
+              const newValue = beforeCursor + '@' + afterCursor;
+
+              setPrompt(newValue);
+
+              // Trigger mention detection by simulating a change event
+              setTimeout(() => {
+                // Manually trigger the mention detection logic
+                const textBeforeCursor = newValue.substring(0, cursorPos + 1);
+                const atIndex = textBeforeCursor.lastIndexOf('@');
+
+                if (atIndex !== -1) {
+                  const textAfterAt = textBeforeCursor.substring(atIndex + 1);
+                  if (!textAfterAt.includes(' ')) {
+                    // Calculate position for the mention dropdown
+                    const rect = textarea.getBoundingClientRect();
+                    const style = getComputedStyle(textarea);
+                    const lineHeight = parseInt(style.lineHeight) || 20;
+                    const paddingTop = parseInt(style.paddingTop) || 0;
+                    const paddingLeft = parseInt(style.paddingLeft) || 0;
+
+                    // Create a temporary div to measure text up to cursor
+                    const div = document.createElement('div');
+                    div.style.position = 'absolute';
+                    div.style.visibility = 'hidden';
+                    div.style.whiteSpace = 'pre-wrap';
+                    div.style.wordWrap = 'break-word';
+                    div.style.font = style.font;
+                    div.style.width = textarea.clientWidth + 'px';
+                    div.style.padding = style.padding;
+                    div.style.border = style.border;
+                    div.style.boxSizing = style.boxSizing;
+
+                    const textBeforeCursor = newValue.substring(0, cursorPos + 1);
+                    div.textContent = textBeforeCursor;
+
+                    document.body.appendChild(div);
+                    const textHeight = div.offsetHeight;
+                    document.body.removeChild(div);
+
+                    // Calculate position
+                    const lines = Math.floor(textHeight / lineHeight);
+                    const top = rect.top + paddingTop + lines * lineHeight;
+                    const left = rect.left + paddingLeft;
+
+                    setMentionState((prev) => ({
+                      ...prev,
+                      isOpen: true,
+                      query: '',
+                      startIndex: atIndex,
+                      endIndex: cursorPos + 1,
+                      position: { top, left },
+                      selectedIndex: 0,
+                    }));
+                  }
+                }
+
+                // Focus and position cursor after @
+                textarea.focus();
+                textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+              }, 0);
+            }}
           />
         </form>
       </div>
@@ -477,6 +574,7 @@ type AIUserMessageFormFooterProps = {
   fileTypes: string[];
   selectedConnectionUuid: string;
   setSelectedConnectionUuid: (connectionUuid: string) => void;
+  handleClickMention: () => void;
 };
 const AIUserMessageFormFooter = memo(
   ({
@@ -493,6 +591,7 @@ const AIUserMessageFormFooter = memo(
     fileTypes,
     selectedConnectionUuid,
     setSelectedConnectionUuid,
+    handleClickMention,
   }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
@@ -514,12 +613,21 @@ const AIUserMessageFormFooter = memo(
               setSelectedConnectionUuid={setSelectedConnectionUuid}
               textareaRef={textareaRef}
             />
-            <AIUserMessageFormSheetButton
+            <Button
+              size="icon-sm"
+              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+              variant="ghost"
+              disabled={disabled}
+              onClick={handleClickMention}
+            >
+              <MentionIcon />
+            </Button>
+            {/* <AIUserMessageFormSheetButton
               disabled={disabled}
               textareaRef={textareaRef}
               prompt={prompt}
               setPrompt={setPrompt}
-            />
+            /> */}
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">

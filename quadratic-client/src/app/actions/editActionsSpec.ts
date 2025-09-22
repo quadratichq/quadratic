@@ -238,7 +238,7 @@ export const editActionsSpec: EditActionSpec = {
     },
   },
   [Action.AddToAIContext]: {
-    label: () => 'Chat',
+    label: () => 'Mention in chat',
     Icon: AIIcon,
     // Setup `isAvailable` for adding to AI chat
     run: (selection: EditActionArgs[Action.AddToAIContext]) => {
