@@ -38,6 +38,9 @@ export interface ResizeHeadingColumnEvent extends CustomEvent {
 export class PointerHeading {
   private downTimeout: number | undefined;
   cursor?: string;
+
+  // counts whether this was already clicked (used for double click to
+  // auto-resize)
   private clicked = false;
   private fitToColumnTimeout?: number;
 
@@ -131,6 +134,8 @@ export class PointerHeading {
         height: headingResize.height,
       };
       this.active = true;
+      if (headingResize.column !== null && cursor.isEntireColumnSelected(headingResize.column)) return true;
+      if (headingResize.row !== null && cursor.isEntireRowSelected(headingResize.row)) return true;
     } else if (
       !intersects.corner &&
       !isRightClick &&
