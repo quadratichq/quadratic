@@ -117,12 +117,10 @@ impl Sheet {
                     data_table: Some(old_dt),
                     index,
                 });
-            // the x + 1 is needed since the column will be inserted before the
-            // old table, so its position will be shifted right before it gets here
             transaction
                 .reverse_operations
                 .push(Operation::DeleteDataTable {
-                    sheet_pos: pos.translate(1, 0, 1, 1).to_sheet_pos(self.id),
+                    sheet_pos: pos.to_sheet_pos(self.id),
                 });
         }
     }
@@ -294,18 +292,22 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 2);
 
-        // Delete middle column for A1
+        // Delete column B
         gc.delete_columns(sheet_id, vec![2], None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
     }
 
     #[test]

@@ -142,6 +142,7 @@ impl Sheet {
                 sheet_id: self.id,
                 row,
                 copy_formats: CopyFormats::None,
+                ignore_tables: true,
             });
         }
 
@@ -158,6 +159,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         rows: Vec<i64>,
+        ignore_tables: bool,
         _copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) -> Result<()> {
@@ -179,10 +181,12 @@ impl Sheet {
             bail!(e);
         }
 
-        self.delete_tables_with_all_rows(transaction, &rows);
-        self.delete_table_rows(transaction, &rows);
-        self.delete_chart_rows(transaction, &rows);
-        self.move_tables_upwards(transaction, &rows);
+        if !ignore_tables {
+            self.delete_tables_with_all_rows(transaction, &rows);
+            self.delete_table_rows(transaction, &rows);
+            self.delete_chart_rows(transaction, &rows);
+            self.move_tables_upwards(transaction, &rows);
+        }
 
         for row in rows {
             self.delete_row(transaction, row, a1_context);
@@ -272,6 +276,7 @@ mod test {
         let _ = sheet.delete_rows(
             &mut transaction,
             Vec::from(&[1]),
+            false,
             CopyFormats::None,
             &a1_context,
         );

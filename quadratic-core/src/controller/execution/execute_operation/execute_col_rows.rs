@@ -54,13 +54,20 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         columns: Vec<i64>,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
 
-            sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
+            sheet.delete_columns(
+                transaction,
+                columns,
+                ignore_tables,
+                copy_formats,
+                &self.a1_context,
+            );
 
             if let Some(sheet) = self.try_sheet(sheet_id)
                 && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
@@ -92,10 +99,17 @@ impl GridController {
         if let Operation::DeleteColumn {
             sheet_id,
             column,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_columns(transaction, sheet_id, vec![column], copy_formats);
+            self.handle_delete_columns(
+                transaction,
+                sheet_id,
+                vec![column],
+                ignore_tables,
+                copy_formats,
+            );
             transaction.forward_operations.push(op);
         }
     }
@@ -104,10 +118,11 @@ impl GridController {
         if let Operation::DeleteColumns {
             sheet_id,
             columns,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_columns(transaction, sheet_id, columns, copy_formats);
+            self.handle_delete_columns(transaction, sheet_id, columns, ignore_tables, copy_formats);
             transaction.forward_operations.push(op);
         }
     }
@@ -118,13 +133,20 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
     ) -> Result<()> {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
 
-            sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
+            sheet.delete_rows(
+                transaction,
+                rows,
+                ignore_tables,
+                copy_formats,
+                &self.a1_context,
+            )?;
 
             if let Some(sheet) = self.try_sheet(sheet_id)
                 && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
@@ -161,10 +183,17 @@ impl GridController {
         if let Operation::DeleteRow {
             sheet_id,
             row,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)?;
+            self.handle_delete_rows(
+                transaction,
+                sheet_id,
+                vec![row],
+                ignore_tables,
+                copy_formats,
+            )?;
             transaction.forward_operations.push(op);
             return Ok(());
         };
@@ -180,10 +209,11 @@ impl GridController {
         if let Operation::DeleteRows {
             sheet_id,
             rows,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_rows(transaction, sheet_id, rows, copy_formats)?;
+            self.handle_delete_rows(transaction, sheet_id, rows, ignore_tables, copy_formats)?;
             transaction.forward_operations.push(op);
             return Ok(());
         };
@@ -195,11 +225,18 @@ impl GridController {
         if let Operation::InsertColumn {
             sheet_id,
             column,
+            ignore_tables,
             copy_formats,
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, &self.a1_context);
+                sheet.insert_column(
+                    transaction,
+                    column,
+                    copy_formats,
+                    ignore_tables,
+                    &self.a1_context,
+                );
 
                 transaction.forward_operations.push(op);
             } else {
@@ -230,11 +267,18 @@ impl GridController {
         if let Operation::InsertRow {
             sheet_id,
             row,
+            ignore_tables,
             copy_formats,
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
+                sheet.insert_row(
+                    transaction,
+                    row,
+                    ignore_tables,
+                    copy_formats,
+                    &self.a1_context,
+                );
 
                 transaction.forward_operations.push(op);
             } else {

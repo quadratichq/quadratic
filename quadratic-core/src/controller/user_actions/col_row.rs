@@ -13,6 +13,7 @@ impl GridController {
         let ops = vec![Operation::DeleteColumns {
             sheet_id,
             columns,
+            ignore_tables: false,
             copy_formats: CopyFormats::After,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
@@ -40,6 +41,7 @@ impl GridController {
                 } else {
                     CopyFormats::Before
                 },
+                ignore_tables: false,
             });
         }
         if !after && count > 1 {
@@ -56,6 +58,7 @@ impl GridController {
             sheet_id,
             rows,
             copy_formats: CopyFormats::None,
+            ignore_tables: false,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
@@ -82,6 +85,7 @@ impl GridController {
                 } else {
                     CopyFormats::Before
                 },
+                ignore_tables: false,
             });
         }
         if !after && count > 1 {

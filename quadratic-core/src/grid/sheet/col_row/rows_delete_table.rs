@@ -266,7 +266,13 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![2, 3], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![2, 3],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -303,7 +309,13 @@ mod tests {
         // Attempt to delete rows that contain table UI
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![1],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_err()
         );
     }
@@ -319,7 +331,13 @@ mod tests {
         // Empty vector should return Ok
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
     }
@@ -347,6 +365,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![2, 1, 2, 3],
+                    false,
                     Default::default(),
                     &context
                 )
@@ -385,6 +404,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![1, 2, 3, 4, 5],
+                    false,
                     Default::default(),
                     &context
                 )
@@ -417,7 +437,13 @@ mod tests {
         // Delete some rows from the middle of the table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![3, 4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -458,7 +484,13 @@ mod tests {
         // Try to delete rows containing the readonly table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1, 2], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![1, 2],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_err()
         );
 
@@ -498,7 +530,13 @@ mod tests {
         // Delete row that intersects both tables
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -524,7 +562,13 @@ mod tests {
         // Delete rows that contain the chart
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![3, 4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -549,6 +593,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![3, 4, 5, 6],
+                    false,
                     Default::default(),
                     &context
                 )

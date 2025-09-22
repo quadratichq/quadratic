@@ -377,6 +377,9 @@ pub enum Operation {
         // this is used to properly redo an InsertColumn operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Deletes a row.
     DeleteRow {
@@ -386,18 +389,27 @@ pub enum Operation {
         // this is used to properly redo an InsertRow operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Inserts a column.
     InsertColumn {
         sheet_id: SheetId,
         column: i64,
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Inserts a row.
     InsertRow {
         sheet_id: SheetId,
         row: i64,
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
 
     MoveColumns {
@@ -419,6 +431,9 @@ pub enum Operation {
         // this is used to properly redo an InsertColumn operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     DeleteRows {
         sheet_id: SheetId,
@@ -427,5 +442,8 @@ pub enum Operation {
         // this is used to properly redo an InsertRow operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
 }

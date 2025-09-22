@@ -144,6 +144,7 @@ impl Sheet {
                     sheet_id: self.id,
                     column,
                     copy_formats,
+                    ignore_tables: true,
                 });
         }
 
@@ -159,6 +160,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         columns: Vec<i64>,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) {
@@ -171,13 +173,15 @@ impl Sheet {
         columns.dedup();
         columns.reverse();
 
-        self.delete_tables_with_all_columns(transaction, &columns);
-        self.delete_tables_columns(transaction, &columns);
-        self.delete_chart_columns(transaction, &columns);
-        self.move_tables_leftwards(transaction, &columns);
+        for column in &columns {
+            self.delete_column(transaction, *column, copy_formats, a1_context);
+        }
 
-        for column in columns {
-            self.delete_column(transaction, column, copy_formats, a1_context);
+        if !ignore_tables {
+            self.delete_tables_with_all_columns(transaction, &columns);
+            self.delete_tables_columns(transaction, &columns);
+            self.delete_chart_columns(transaction, &columns);
+            self.move_tables_leftwards(transaction, &columns);
         }
     }
 }

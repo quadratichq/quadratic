@@ -1081,11 +1081,8 @@ impl GridController {
                     );
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    let has_code_cell = cell_values
-                        .iter()
-                        .any(|cell_value| cell_value.is_image() || cell_value.is_html());
 
-                    if has_code_cell {
+                    if sheet.data_tables.has_content(values_rect) {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
@@ -1513,10 +1510,7 @@ impl GridController {
                     // check for code cells in neighboring cells
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                     let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                    let has_code_cell = cell_values
-                        .iter()
-                        .any(|value| value.is_image() || value.is_html());
-                    if has_code_cell {
+                    if sheet.data_tables.has_content(values_rect) {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
@@ -2669,70 +2663,54 @@ mod tests {
 
     #[test]
     fn test_execute_insert_column_row_over_data_table() {
-        todo!(); // don't understand this test
+        clear_js_calls();
 
-        // clear_js_calls();
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        // let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+        test_create_data_table(&mut gc, sheet_id, pos![F14], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![I5], 2, 2);
 
-        // gc.add_data_table(sheet_pos, name, values, first_row_is_header, cursor);
+        let mut transaction = PendingTransaction::default();
+        let insert_column_op = Operation::InsertDataTableColumns {
+            sheet_pos: pos.to_sheet_pos(sheet_id),
+            columns: vec![(4, None, None)],
+            swallow: true,
+            select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
+        };
+        let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
+        assert!(column_result.is_err());
+        expect_js_call(
+            "jsClientMessage",
+            format!(
+                "{},{}",
+                "Cannot add code cell to table",
+                JsSnackbarSeverity::Error
+            ),
+            true,
+        );
 
-        // let sheet = gc.sheet_mut(sheet_id);
-
-        // sheet.set_cell_value(pos!(F14), CellValue::Import(Import::new("table1".into())));
-        // sheet.set_cell_value(pos!(I5), CellValue::Import(Import::new("table2".into())));
-
-        // let sheet = gc.sheet(sheet_id);
-        // assert_eq!(
-        //     sheet.cell_value(pos!(F14)),
-        //     Some(CellValue::Import(Import::new("table1".into())))
-        // );
-        // assert_eq!(
-        //     sheet.cell_value(pos!(I5)),
-        //     Some(CellValue::Import(Import::new("table2".into())))
-        // );
-
-        // let mut transaction = PendingTransaction::default();
-        // let insert_column_op = Operation::InsertDataTableColumns {
-        //     sheet_pos: pos.to_sheet_pos(sheet_id),
-        //     columns: vec![(4, None, None)],
-        //     swallow: true,
-        //     select_table: true,
-        //     copy_formats_from: None,
-        //     copy_formats: None,
-        // };
-        // let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
-        // assert!(column_result.is_err());
-        // expect_js_call(
-        //     "jsClientMessage",
-        //     format!(
-        //         "{},{}",
-        //         "Cannot add code cell to table",
-        //         JsSnackbarSeverity::Error
-        //     ),
-        //     true,
-        // );
-
-        // let mut transaction = PendingTransaction::default();
-        // let insert_row_op = Operation::InsertDataTableRows {
-        //     sheet_pos: pos.to_sheet_pos(sheet_id),
-        //     rows: vec![(12, None)],
-        //     swallow: true,
-        //     select_table: true,
-        //     copy_formats_from: None,
-        //     copy_formats: None,
-        // };
-        // let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
-        // assert!(row_result.is_err());
-        // expect_js_call(
-        //     "jsClientMessage",
-        //     format!(
-        //         "{},{}",
-        //         "Cannot add code cell to table",
-        //         JsSnackbarSeverity::Error
-        //     ),
-        //     true,
-        // );
+        let mut transaction = PendingTransaction::default();
+        let insert_row_op = Operation::InsertDataTableRows {
+            sheet_pos: pos.to_sheet_pos(sheet_id),
+            rows: vec![(12, None)],
+            swallow: true,
+            select_table: true,
+            copy_formats_from: None,
+            copy_formats: None,
+        };
+        let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
+        assert!(row_result.is_err());
+        expect_js_call(
+            "jsClientMessage",
+            format!(
+                "{},{}",
+                "Cannot add code cell to table",
+                JsSnackbarSeverity::Error
+            ),
+            true,
+        );
     }
 
     #[test]
