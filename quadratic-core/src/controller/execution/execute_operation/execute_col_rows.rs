@@ -31,7 +31,6 @@ impl GridController {
                         );
                     }
                     if code.code != new_code.code {
-                        dbg!(&new_code);
                         let mut data_table = dt.clone();
                         data_table.kind = DataTableKind::CodeRun(new_code);
                         transaction
@@ -69,7 +68,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.x = min_column;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user() {
@@ -134,7 +132,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.y = min_row;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user() {
@@ -746,8 +743,8 @@ mod tests {
 
     #[test]
     fn delete_columns_rows_formulas() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         gc.set_code_cell(
             pos![sheet_id!J10], // 10,10
