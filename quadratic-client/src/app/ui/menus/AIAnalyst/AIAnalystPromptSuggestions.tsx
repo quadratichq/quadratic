@@ -76,14 +76,10 @@ export function AIAnalystPromptSuggestions({
   exampleSet,
   prompt,
   submit,
-  selectedConnectionUuid,
-  setSelectedConnectionUuid,
 }: {
   exampleSet: keyof typeof examplesByContextType;
   prompt: string;
   submit: (prompt: string) => void;
-  selectedConnectionUuid: string;
-  setSelectedConnectionUuid: (connectionUuid: string) => void;
 }) {
   return (
     <div className="absolute bottom-full left-0 mb-1 flex w-full flex-row flex-wrap gap-1">

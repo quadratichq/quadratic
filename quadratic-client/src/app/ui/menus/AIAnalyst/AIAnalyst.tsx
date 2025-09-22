@@ -8,7 +8,6 @@ import { events } from '@/app/events/events';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
-import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
@@ -26,7 +25,6 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
-  const isEmptyState = messagesCount === 0 && !showChatHistory;
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -52,16 +50,6 @@ export const AIAnalyst = memo(() => {
       events.emit('resizeAIAnalystPanel');
     },
     [setPanelWidth]
-  );
-
-  const promptUI = (
-    <AIAnalystUserMessageForm
-      ref={textareaRef}
-      autoFocusRef={autoFocusRef}
-      textareaRef={textareaRef}
-      messageIndex={messagesCount}
-      showPromptSuggestions={true}
-    />
   );
 
   if (!showAIAnalyst || presentationMode) {
@@ -94,17 +82,17 @@ export const AIAnalyst = memo(() => {
             <AIAnalystChatHistory />
           ) : (
             <>
-              {isEmptyState ? (
-                <div className="flex h-full flex-col justify-center gap-2 px-2 py-0.5">
-                  {promptUI}
-                  <AIAnalystEmptyStateWaypoint />
-                </div>
-              ) : (
-                <AIAnalystMessages textareaRef={textareaRef} />
-              )}
+              <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="px-2 py-0.5">
-                {!isEmptyState && promptUI}
+              <div className={'grid grid-rows-[1fr_auto] px-2 py-0.5'}>
+                <AIAnalystUserMessageForm
+                  ref={textareaRef}
+                  autoFocusRef={autoFocusRef}
+                  textareaRef={textareaRef}
+                  messageIndex={messagesCount}
+                  showPromptSuggestions={true}
+                />
+
                 <AIUserMessageFormDisclaimer />
               </div>
             </>

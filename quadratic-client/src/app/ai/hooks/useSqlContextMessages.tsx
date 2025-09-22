@@ -2,16 +2,14 @@ import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractio
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
-import { createTextContent, getConnectionFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSqlContextMessages() {
   const getSqlContext = useRecoilCallback(
     ({ snapshot }) =>
-      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const selectedConnection = getConnectionFromChatMessages(chatMessages);
-
+      async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         if (!teamUuid) {
           console.warn('[SQL Context] No team UUID available');
@@ -88,7 +86,7 @@ Use the get_database_schemas tool to retrieve detailed column information, data 
           validConnections
             // If there's a selected connection, only show the tables for that connection
             // Otherwise put all connections in context
-            .filter((conn) => selectedConnection && conn.connectionId === selectedConnection.uuid)
+            .filter((conn) => !context.connection || context.connection === conn.connectionId)
             .forEach((conn) => {
               const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 

@@ -4,7 +4,6 @@ import type {
   AIResponseContent,
   AIResponseThinkingContent,
   ChatMessage,
-  ConnectionContent,
   Content,
   GoogleSearchContent,
   GoogleSearchGroundingMetadata,
@@ -178,12 +177,6 @@ export const isContentTextFile = (content: Content[number] | AIResponseContent[n
   return content.type === 'data' && content.mimeType === 'text/plain';
 };
 
-export const isContentConnection = (
-  content: Content[number] | AIResponseContent[number]
-): content is ConnectionContent => {
-  return content.type === 'connection';
-};
-
 export const isContentGoogleSearchInternal = (content: InternalMessage['content']): content is GoogleSearchContent => {
   return content.source === 'google_search';
 };
@@ -216,13 +209,6 @@ export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileCo
 
 export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessage[]): PdfFileContent | undefined => {
   return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
-};
-
-export const getConnectionFromChatMessages = (messages: ChatMessage[]): ConnectionContent | undefined => {
-  return getUserMessages(messages)
-    .filter((message) => message.contextType === 'userPrompt')
-    .flatMap((message) => message.content)
-    .filter(isContentConnection)[0];
 };
 
 export const createTextContent = (text: string): TextContent => {

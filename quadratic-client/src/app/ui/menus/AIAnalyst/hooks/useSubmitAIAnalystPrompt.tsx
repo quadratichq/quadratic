@@ -88,9 +88,9 @@ export function useSubmitAIAnalystPrompt() {
 
   const updateInternalContext = useRecoilCallback(
     () =>
-      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
+      async ({ chatMessages, context }: { chatMessages: ChatMessage[]; context: Context }): Promise<ChatMessage[]> => {
         const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
-          getSqlContext({ chatMessages }),
+          getSqlContext({ context }),
           getFilesContext({ chatMessages }),
           getVisibleContext(),
           getSummaryContext(),
@@ -261,7 +261,7 @@ export function useSubmitAIAnalystPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ chatMessages });
+            chatMessages = await updateInternalContext({ chatMessages, context });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);

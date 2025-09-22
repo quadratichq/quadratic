@@ -5,6 +5,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -154,6 +155,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       scrollToBottom();
     }
   }, [promptSuggestionsCount, scrollToBottom]);
+
+  if (messagesCount === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -389,10 +394,28 @@ const FeedbackButtons = memo(() => {
 const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const handleClick = useRecoilCallback(
+    ({ snapshot }) =>
+      async (prompt: string) => {
+        const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
+        trackEvent('[AIAnalyst].submitPromptSuggestion', { userMessageCountUponSubmit: userMessagesCount });
 
-  if (!messages.length || !promptSuggestions.suggestions.length) {
+        const messages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
+        const lastContext = getUserPromptMessages(messages).at(-1)?.context;
+        submitPrompt({
+          messageSource: 'User',
+          content: [createTextContent(prompt)],
+          context: {
+            ...(lastContext ?? defaultAIAnalystContext),
+          },
+          messageIndex: messages.length,
+        });
+      },
+    [submitPrompt]
+  );
+
+  if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }
 
@@ -402,16 +425,7 @@ const PromptSuggestions = memo(() => {
         <div
           key={`${index}-${suggestion.label}`}
           className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-          onClick={() =>
-            submitPrompt({
-              messageSource: 'User',
-              content: [createTextContent(suggestion.prompt)],
-              context: {
-                ...(lastContext ?? defaultAIAnalystContext),
-              },
-              messageIndex: messages.length,
-            })
-          }
+          onClick={() => handleClick(suggestion.prompt)}
         >
           <span className="truncate">{suggestion.label}</span>
         </div>

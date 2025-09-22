@@ -16,7 +16,6 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
-  isContentConnection,
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
@@ -55,10 +54,6 @@ function convertContent(content: Content): ContentBlock[] {
           source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
         };
         return { document };
-      } else if (isContentConnection(content)) {
-        return {
-          text: `The selected connection is "${content.name}" and its ID is ${content.uuid}.`,
-        };
       } else {
         return {
           text: content.text.trim(),

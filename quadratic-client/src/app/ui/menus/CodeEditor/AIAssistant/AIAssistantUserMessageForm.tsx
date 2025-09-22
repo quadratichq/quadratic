@@ -40,10 +40,10 @@ export const AIAssistantUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
+        context={{ sheets: [], currentSheet: '', codeCell }}
         isFileSupported={isSupportedImageMimeType}
         fileTypes={ASSISTANT_FILE_TYPES}
         submitPrompt={handleSubmit}
-        ctx={{ context: { sheets: [], currentSheet: '', codeCell } }}
         waitingOnMessageIndex={waitingOnMessageIndex}
       />
     );

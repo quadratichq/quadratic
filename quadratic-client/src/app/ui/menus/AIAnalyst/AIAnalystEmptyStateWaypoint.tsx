@@ -1,6 +1,15 @@
+import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { memo } from 'react';
+import { useRecoilValue } from 'recoil';
 
-export function AIAnalystEmptyStateWaypoint() {
+export const AIAnalystEmptyStateWaypoint = memo(() => {
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+
+  if (messagesCount > 0) {
+    return null;
+  }
+
   return (
     <div className="relative">
       <div className="ml-2.5 flex flex-col">
@@ -46,4 +55,4 @@ export function AIAnalystEmptyStateWaypoint() {
       </div>
     </div>
   );
-}
+});

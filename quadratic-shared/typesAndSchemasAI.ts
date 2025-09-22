@@ -257,6 +257,7 @@ const ContextSchema = z.object({
         }),
     })
     .optional(),
+  connection: z.string().uuid().optional(),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
@@ -273,13 +274,6 @@ const TextContentSchema = z.preprocess(
   })
 );
 export type TextContent = z.infer<typeof TextContentSchema>;
-
-const ConnectionContentSchema = z.object({
-  type: z.literal('connection'),
-  uuid: z.string(),
-  name: z.string(),
-});
-export type ConnectionContent = z.infer<typeof ConnectionContentSchema>;
 
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
@@ -314,7 +308,7 @@ const GoogleSearchGroundingMetadataSchema = z.object({
 });
 export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
-const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema, ConnectionContentSchema]));
+const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({

@@ -4,4 +4,5 @@ export const defaultAIAnalystContext: Context = {
   sheets: [],
   currentSheet: '',
   selection: undefined,
+  connection: undefined,
 };
