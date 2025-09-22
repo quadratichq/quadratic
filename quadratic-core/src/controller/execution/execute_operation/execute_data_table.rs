@@ -2563,8 +2563,7 @@ mod tests {
     #[test]
     fn test_execute_delete_data_table_row_on_resize() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 11));
+        assert_data_table_size(&gc, sheet_id, pos, 4, 12, true);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 11;
@@ -2580,11 +2579,11 @@ mod tests {
         gc.execute_delete_data_table_row(&mut transaction, op)
             .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 12));
         assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
+        assert_data_table_size(&gc, sheet_id, pos, 4, 11, true);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.edit_code_value(pos!(B9), &gc.a1_context).is_some());
+        assert!(sheet.display_value(pos!(B9)).is_some());
     }
 
     #[test]
