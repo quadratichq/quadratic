@@ -534,13 +534,15 @@ mod tests {
         let values_no_header = vec![vec!["A".into(), "B".into()], vec!["C".into(), "D".into()]];
 
         gc.set_cell_value(
-            SheetPos::from((pos![D1], sheet_id)),
+            SheetPos::from((pos![E1], sheet_id)),
             "Test value".into(),
             None,
         );
 
+        assert_table_count(&gc, sheet_id, 1);
+
         gc.add_data_table(
-            SheetPos::from((pos![D1], sheet_id)),
+            SheetPos::from((pos![E1], sheet_id)),
             "Table 2".to_string(),
             values_no_header.to_owned(),
             false,
@@ -550,7 +552,7 @@ mod tests {
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![E1]).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_2".into());
@@ -572,23 +574,23 @@ mod tests {
         {
             let sheet = gc.sheet(sheet_id);
             assert_eq!(
-                sheet.cell_value(pos![D1]),
+                sheet.cell_value(pos![E1]),
                 Some(CellValue::Text("Test value".into()))
             );
-            assert!(sheet.data_table_at(&pos![D1]).is_none());
+            assert!(sheet.data_table_at(&pos![E1]).is_none());
+            assert_table_count(&gc, sheet_id, 1);
         }
 
         gc.redo(None);
         {
             let sheet = gc.sheet(sheet_id);
-            assert!(sheet.cell_value(pos![D1]).is_some());
-            assert!(sheet.data_table_at(&pos![D1]).is_some());
+            assert!(sheet.data_table_at(&pos![E1]).is_some());
         }
 
         // overwrite second data table with a new data table
         let table_3_values = vec![vec!["Z".into(), "Y".into()], vec!["X".into(), "W".into()]];
         gc.add_data_table(
-            SheetPos::from((pos![D1], sheet_id)),
+            SheetPos::from((pos![E1], sheet_id)),
             "Table 3".to_string(),
             table_3_values.to_owned(),
             false,
@@ -597,7 +599,7 @@ mod tests {
         // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![E1]).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_3".into());
@@ -619,7 +621,7 @@ mod tests {
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![E1]).unwrap();
 
             // Check basic properties
             // assert_eq!(data_table.name, "Table_2".into());
@@ -638,7 +640,7 @@ mod tests {
         // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![E1]).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_3".into());

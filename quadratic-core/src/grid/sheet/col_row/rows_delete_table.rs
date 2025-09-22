@@ -125,7 +125,7 @@ impl Sheet {
                 transaction
                     .reverse_operations
                     .push(Operation::DeleteDataTable {
-                        sheet_pos: pos.translate(0, 1, 1, 1).to_sheet_pos(self.id),
+                        sheet_pos: pos.to_sheet_pos(self.id),
                     });
             }
         }
