@@ -67,7 +67,7 @@ export const uploadStringAsFileS3 = async (
   const command = new PutObjectCommand({
     Bucket: getBucketName(bucket),
     Key: fileKey,
-    Body: new Uint8Array(Buffer.from(contents, 'base64')),
+    Body: Uint8Array.from(Buffer.from(contents, 'base64')),
     // Optionally, you can add other configuration like ContentType
     // ContentType: 'text/plain'
   });

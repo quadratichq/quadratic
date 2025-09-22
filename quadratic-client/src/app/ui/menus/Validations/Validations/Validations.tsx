@@ -43,7 +43,7 @@ export const Validations = () => {
   }, [setShowValidation]);
 
   const removeValidations = useCallback(() => {
-    quadraticCore.removeValidations(sheetId);
+    quadraticCore.removeValidations(sheetId, false);
   }, [sheetId]);
 
   return (

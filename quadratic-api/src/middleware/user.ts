@@ -1,10 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
+import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
 import { triggerJourney } from '../email/mailchimp';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { Auth, RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
 const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
+  trackEvent('[User].created', { email: user.email });
   triggerJourney(user);
 
   const { id: userId, email } = user;

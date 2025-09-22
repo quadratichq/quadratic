@@ -47,8 +47,8 @@ impl Sheet {
                         for x in rect.x_range() {
                             let pos = Pos { x, y };
 
-                            let new_x = (x - origin.x) as u32;
-                            let new_y = (y - origin.y) as u32;
+                            let new_x = (pos.x - origin.x) as u32;
+                            let new_y = (pos.y - origin.y) as u32;
 
                             // create quadratic clipboard values
                             let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
@@ -128,6 +128,7 @@ mod tests {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -144,6 +145,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -161,6 +163,7 @@ mod tests {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -189,6 +192,7 @@ mod tests {
                 &A1Selection::test_a1_sheet_id(pos, sheet_id),
                 Some(true),
                 None,
+                false,
             )
             .unwrap();
         };

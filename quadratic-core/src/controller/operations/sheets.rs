@@ -10,7 +10,12 @@ use super::operation::Operation;
 
 impl GridController {
     pub fn set_sheet_name_operations(&mut self, sheet_id: SheetId, name: String) -> Vec<Operation> {
-        vec![Operation::SetSheetName { sheet_id, name }]
+        let old_sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
+        vec![Operation::SetSheetName {
+            sheet_id,
+            name,
+            old_sheet_name,
+        }]
     }
 
     pub fn set_sheet_color_operations(
@@ -74,7 +79,11 @@ impl GridController {
     }
 
     pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        vec![Operation::DeleteSheet { sheet_id }]
+        let sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
+        vec![Operation::DeleteSheet {
+            sheet_id,
+            sheet_name,
+        }]
     }
 
     pub fn move_sheet_operations(
@@ -160,8 +169,8 @@ mod test {
     #[test]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
+        gc.add_sheet(None, None, None, false);
 
         // 1, 2, 3
         let sheet_ids = gc.sheet_ids();
@@ -207,27 +216,27 @@ mod test {
     fn get_sheet_next_name() {
         // Sheet1
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
-        // Sheet1 | Sheet 2
-        assert_eq!(gc.sheet_index(1).name, "Sheet 2");
-        gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
-        // Sheet1 | Sheet 2 modified
-        gc.add_sheet(None, None, None);
-        // Sheet1 | Sheet 2 modified | Sheet 2
-        assert_eq!(gc.sheet_index(2).name, "Sheet 2");
-        gc.delete_sheet(gc.sheet_ids()[0], None);
-        // Sheet 2 modified | Sheet 2
-        gc.add_sheet(None, None, None);
-        // Sheet 2 modified | Sheet 2 | Sheet 3
-        assert_eq!(gc.sheet_index(2).name, "Sheet 3");
+        gc.add_sheet(None, None, None, false);
+        // Sheet1 | Sheet2
+        assert_eq!(gc.sheet_index(1).name, "Sheet2");
+        gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet2 modified".to_string();
+        // Sheet1 | Sheet2 modified
+        gc.add_sheet(None, None, None, false);
+        // Sheet1 | Sheet2 modified | Sheet2
+        assert_eq!(gc.sheet_index(2).name, "Sheet2");
+        gc.delete_sheet(gc.sheet_ids()[0], None, false);
+        // Sheet2 modified | Sheet2
+        gc.add_sheet(None, None, None, false);
+        // Sheet2 modified | Sheet2 | Sheet3
+        assert_eq!(gc.sheet_index(2).name, "Sheet3");
     }
 
     #[test]
     fn sheet_names() {
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
-        gc.add_sheet(None, None, None);
-        assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
+        gc.add_sheet(None, None, None, false);
+        gc.add_sheet(None, None, None, false);
+        assert_eq!(gc.sheet_names(), vec!["Sheet1", "Sheet2", "Sheet3"]);
     }
 
     #[test]

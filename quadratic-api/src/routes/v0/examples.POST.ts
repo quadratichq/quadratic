@@ -57,13 +57,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     const fileContents = await axios
       .get(lastCheckpointDataUrl, { responseType: 'arraybuffer' })
       .then((res) => res.data);
-    const buffer = new Uint8Array(fileContents);
+    const buffer = Uint8Array.from(fileContents);
 
     // Create a private file for the user in the requested team
     const dbFile = await createFile({
       name,
       userId,
-      contents: Buffer.from(new Uint8Array(buffer)).toString('base64'),
+      contents: Buffer.from(Uint8Array.from(buffer)).toString('base64'),
       version: lastCheckpointVersion,
       teamId: team.id,
       isPrivate,

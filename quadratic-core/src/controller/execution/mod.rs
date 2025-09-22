@@ -11,7 +11,8 @@ use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
 
 /// Where the transaction came from.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum TransactionSource {
     /// Unknown / unspecified.
     #[default]
@@ -29,6 +30,12 @@ pub enum TransactionSource {
     /// Local user performed an action and the transaction has not yet been sent
     /// to the server.
     Unsaved,
+    /// AI performed an action.
+    AI,
+    /// AI performed an undo.
+    UndoAI,
+    /// AI performed a redo.
+    RedoAI,
 }
 
 impl GridController {

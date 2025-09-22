@@ -19,7 +19,6 @@ export interface CodeEditorState {
     id: string;
     messages: ChatMessage[];
     waitingOnMessageIndex?: number;
-    delaySeconds: number;
   };
   showCodeEditor: boolean;
   escapePressed: boolean;
@@ -54,7 +53,6 @@ export const defaultCodeEditorState: CodeEditorState = {
     id: '',
     messages: [],
     waitingOnMessageIndex: undefined,
-    delaySeconds: 0,
   },
   showCodeEditor: false,
   escapePressed: false,
@@ -127,13 +125,11 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
 export const aiAssistantIdAtom = createAIAssistantSelector('id');
-
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
 export const aiAssistantMessagesCountAtom = selector<number>({
   key: 'aiAssistantMessagesCountAtom',
   get: ({ get }) => get(aiAssistantMessagesAtom).length,
 });
-
 export const aiAssistantWaitingOnMessageIndexAtom = selector<number | undefined>({
   key: 'aiAssistantWaitingOnMessageIndexAtom',
   get: ({ get }) => get(codeEditorAtom).aiAssistant.waitingOnMessageIndex,

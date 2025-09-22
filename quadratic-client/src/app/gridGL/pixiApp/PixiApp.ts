@@ -196,7 +196,7 @@ export class PixiApp {
     this.render();
   };
 
-  render(): void {
+  private render(): void {
     this.viewport.addChild(content);
     this.renderer.render(this.stage);
   }
@@ -205,12 +205,12 @@ export class PixiApp {
     this.canvas?.focus();
   }
 
-  reset(): void {
+  private reset(): void {
     this.viewport.scale.set(1);
     pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
-  rebuild = () => {
+  private rebuild = () => {
     this.viewport.dirty = true;
     events.emit('setDirty', {
       gridLines: true,

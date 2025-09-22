@@ -20,6 +20,7 @@ impl GridController {
         cursor: Option<String>,
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops = self.import_csv_operations(
             sheet_id,
@@ -30,7 +31,7 @@ impl GridController {
             header_is_first_row,
         )?;
         if cursor.is_some() {
-            self.start_user_transaction(ops, cursor, TransactionName::Import);
+            self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
@@ -47,10 +48,11 @@ impl GridController {
         file: &[u8],
         file_name: &str,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops = self.import_excel_operations(file, file_name)?;
         if cursor.is_some() {
-            self.start_user_transaction(ops, cursor, TransactionName::Import);
+            self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
@@ -61,6 +63,7 @@ impl GridController {
     /// Imports a Parquet file into the grid.
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
+    #[allow(clippy::too_many_arguments)]
     pub fn import_parquet(
         &mut self,
         sheet_id: SheetId,
@@ -69,10 +72,11 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
         updater: Option<impl Fn(&str, u32, u32)>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
-            self.start_user_transaction(ops, cursor, TransactionName::Import);
+            self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
@@ -132,6 +136,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(true),
+            false,
         )
         .unwrap();
 
@@ -174,7 +179,7 @@ pub(crate) mod tests {
 
         assert_simple_csv(gc, sheet_id, pos, file_name);
 
-        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+        gc.start_user_ai_transaction(vec![op], None, TransactionName::FlattenDataTable, false);
 
         assert!(
             gc.sheet(sheet_id)
@@ -252,6 +257,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(false),
+            false,
         );
         assert!(result.is_err());
     }
@@ -278,6 +284,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -306,7 +313,7 @@ pub(crate) mod tests {
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(&file, "basic.xlsx", Some("".to_string()));
+        let _ = gc.import_excel(&file, "basic.xlsx", Some("".to_string()), false);
         let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
@@ -380,8 +387,8 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
-        expect_js_call_count("jsTransactionStart", 4, false);
-        expect_js_call_count("jsTransactionEnd", 4, false);
+        expect_js_call_count("jsTransactionStart", 1, false);
+        expect_js_call_count("jsTransactionEnd", 1, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
@@ -404,7 +411,7 @@ pub(crate) mod tests {
     fn import_all_excel_functions() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = gc.import_excel(&file, "all_excel_functions.xlsx", None);
+        let _ = gc.import_excel(&file, "all_excel_functions.xlsx", None, false);
         let sheet_id = gc.grid.sheets()[0].id;
 
         print_table_at(&gc, sheet_id, pos![A1]);
@@ -449,6 +456,7 @@ pub(crate) mod tests {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
         );
 
         assert_cell_value_row(
@@ -556,6 +564,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -584,6 +593,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -611,6 +621,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             None,
+            false,
         )
         .unwrap();
 
@@ -661,8 +672,17 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            &csv_file,
+            file_name,
+            pos![A1],
+            None,
+            None,
+            None,
+            false,
+        )
+        .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
     }
@@ -675,8 +695,17 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            &csv_file,
+            file_name,
+            pos![A1],
+            None,
+            None,
+            None,
+            false,
+        )
+        .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
         assert_cell_value_row(
             &gc,
@@ -703,6 +732,7 @@ pub(crate) mod tests {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
         );
 
         print_table_from_grid(
@@ -721,8 +751,17 @@ pub(crate) mod tests {
         let sheet_id = first_sheet_id(&gc);
         let file_name = "customers-100.csv";
         let csv_file = read_test_csv_file(file_name);
-        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            &csv_file,
+            file_name,
+            pos![A1],
+            None,
+            None,
+            None,
+            false,
+        )
+        .unwrap();
         assert_table_count(&gc, sheet_id, 1);
     }
 }

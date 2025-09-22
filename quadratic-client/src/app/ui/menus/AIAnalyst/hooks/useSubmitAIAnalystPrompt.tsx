@@ -1,5 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useAITransactions } from '@/app/ai/hooks/useAITransactions';
 import { useCodeErrorMessages } from '@/app/ai/hooks/useCodeErrorMessages';
 import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
@@ -85,22 +86,26 @@ export function useSubmitAIAnalystPrompt() {
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
+  const { getAITransactions } = useAITransactions();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ chatMessages, context }: { chatMessages: ChatMessage[]; context: Context }): Promise<ChatMessage[]> => {
-        const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
-          getSqlContext({ context }),
-          getFilesContext({ chatMessages }),
-          getVisibleContext(),
-          getSummaryContext(),
-          getCodeErrorContext(),
-        ]);
+        const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext, aiTransactions] =
+          await Promise.all([
+            getSqlContext({ context }),
+            getFilesContext({ chatMessages }),
+            getVisibleContext(),
+            getSummaryContext(),
+            getCodeErrorContext(),
+            getAITransactions(),
+          ]);
 
         const messagesWithContext: ChatMessage[] = [
           ...sqlContext,
           ...filesContext,
           ...getCurrentDateTimeContext(),
+          ...aiTransactions,
           ...visibleContext,
           ...summaryContext,
           ...codeErrorContext,
@@ -116,6 +121,7 @@ export function useSubmitAIAnalystPrompt() {
       getVisibleContext,
       getSummaryContext,
       getCodeErrorContext,
+      getAITransactions,
     ]
   );
 

@@ -143,18 +143,18 @@ export class Sheet {
   //#region set sheet actions
   // -----------------------------------
 
-  setName = async (name: string): Promise<void> => {
+  setName = async (name: string, isAi: boolean): Promise<void> => {
     if (name !== this.name) {
-      const response = await quadraticCore.setSheetName(this.id, name);
+      const response = await quadraticCore.setSheetName(this.id, name, isAi);
       if (response?.result) {
         this._info.name = name;
       }
     }
   };
 
-  setColor = async (color: string | undefined): Promise<void> => {
+  setColor = async (color: string | undefined, isAi: boolean): Promise<void> => {
     if (color !== this.color) {
-      const response = await quadraticCore.setSheetColor(this.id, color);
+      const response = await quadraticCore.setSheetColor(this.id, color, isAi);
       if (response?.result) {
         this._info.color = color ?? null;
       }
@@ -296,7 +296,7 @@ export class Sheet {
         message: '',
       },
     };
-    return quadraticCore.updateValidation(validation);
+    return quadraticCore.updateValidation(validation, false);
   };
 
   hasContent = (col: number, row: number): boolean => {
