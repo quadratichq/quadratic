@@ -226,6 +226,13 @@ impl Sheet {
 
             let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTable {
+                    old_sheet_pos: new_pos.to_sheet_pos(self.id),
+                    new_sheet_pos: pos.to_sheet_pos(self.id),
+                });
         }
     }
 }

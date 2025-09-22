@@ -84,6 +84,10 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    MoveDataTable {
+        old_sheet_pos: SheetPos,
+        new_sheet_pos: SheetPos,
+    },
     FlattenDataTable {
         sheet_pos: SheetPos,
     },

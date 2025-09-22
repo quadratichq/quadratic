@@ -173,15 +173,15 @@ impl Sheet {
         columns.dedup();
         columns.reverse();
 
-        for column in &columns {
-            self.delete_column(transaction, *column, copy_formats, a1_context);
-        }
-
         if !ignore_tables {
             self.delete_tables_with_all_columns(transaction, &columns);
             self.delete_tables_columns(transaction, &columns);
             self.delete_chart_columns(transaction, &columns);
             self.move_tables_leftwards(transaction, &columns);
+        }
+
+        for column in &columns {
+            self.delete_column(transaction, *column, copy_formats, a1_context);
         }
     }
 }

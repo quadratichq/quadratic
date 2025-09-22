@@ -240,6 +240,54 @@ impl GridController {
         bail!("Expected Operation::AddDataTable in execute_add_data_table_without_cell_value");
     }
 
+    pub(super) fn execute_move_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::MoveDataTable {
+            old_sheet_pos,
+            new_sheet_pos,
+        } = op
+        {
+            if old_sheet_pos == new_sheet_pos {
+                return Ok(());
+            }
+
+            // return Ok for expected conditions, like sheets no longer exist, or data table no longer exists
+
+            if !self.grid.try_sheet(new_sheet_pos.sheet_id).is_some() {
+                return Ok(());
+            }
+            let Some(old_sheet) = self.grid.try_sheet_mut(old_sheet_pos.sheet_id) else {
+                return Ok(());
+            };
+
+            let Ok((dt, dirty_rects)) = old_sheet.delete_data_table(old_sheet_pos.into()) else {
+                return Ok(());
+            };
+            old_sheet.recalculate_bounds(&self.a1_context);
+            transaction.add_dirty_hashes_from_dirty_code_rects(old_sheet, dirty_rects);
+
+            let Some(new_sheet) = self.grid.try_sheet_mut(new_sheet_pos.sheet_id) else {
+                return Ok(());
+            };
+            let (_, _, dirty_rects) = new_sheet.data_tables.insert_full(&new_sheet_pos.into(), dt);
+            transaction.add_dirty_hashes_from_dirty_code_rects(new_sheet, dirty_rects);
+
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTable {
+                    old_sheet_pos: new_sheet_pos,
+                    new_sheet_pos: old_sheet_pos,
+                });
+
+            Ok(())
+        } else {
+            bail!("Expected Operation::MoveDataTable in execute_move_data_table");
+        }
+    }
+
     pub(super) fn execute_delete_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
