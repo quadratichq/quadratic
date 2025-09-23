@@ -332,7 +332,9 @@ impl Sheet {
         values: &mut Option<CellValues>,
         a1_context: &A1Context,
         selection: &A1Selection,
-        include_code_table_values: bool,
+
+        // todo: remove this parameter if it's not useful elsewhere
+        _include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
@@ -370,12 +372,13 @@ impl Sheet {
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 // add the CellValue to cells if the code is not included in the rect
-                                if !rect_contains_anchor_pos && include_code_table_values {
+                                if !rect_contains_anchor_pos {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 
                                 // add the display value to values if values is Some
                                 if let Some(values) = values.as_mut() {
+                                    dbg!(3);
                                     values.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
                             }

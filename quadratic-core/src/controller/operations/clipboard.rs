@@ -2157,7 +2157,6 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
 
@@ -2175,13 +2174,11 @@ mod test {
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, js_clipboard.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, js_clipboard);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
 
