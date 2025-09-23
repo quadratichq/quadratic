@@ -1,6 +1,5 @@
 import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { FAILING_SQL_CONNECTIONS_EXPIRATION_TIME, GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -11,7 +10,7 @@ import { useRecoilCallback } from 'recoil';
 export function useSqlContextMessages() {
   const getSqlContext = useRecoilCallback(
     ({ snapshot, set }) =>
-      async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
+      async ({ connections, context }: { connections: ConnectionList; context: Context }): Promise<ChatMessage[]> => {
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         if (!teamUuid) {
           console.warn('[SQL Context] No team UUID available');
@@ -19,15 +18,6 @@ export function useSqlContextMessages() {
         }
 
         try {
-          // get all team connections
-          let connections: ConnectionList;
-          try {
-            connections = await apiClient.connections.list(teamUuid);
-          } catch (error) {
-            console.warn('[SQL Context] Failed to fetch team connections, API may be unavailable:', error);
-            return [];
-          }
-
           if (!connections || connections.length === 0) {
             return [];
           }
@@ -101,7 +91,7 @@ Use the get_database_schemas tool to retrieve detailed column information, data 
           connectionTableInfo
             // If there's a selected connection, only show the tables for that connection
             // Otherwise put all connections in context
-            .filter((conn) => !context.connection || context.connection === conn.connectionId)
+            .filter((conn) => !context.connection || context.connection.id === conn.connectionId)
             .forEach((conn) => {
               const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 

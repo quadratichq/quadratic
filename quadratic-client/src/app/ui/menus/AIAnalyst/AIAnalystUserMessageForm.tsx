@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
+  aiAnalystImportFilesToGridLoadingAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
@@ -19,18 +20,21 @@ import { forwardRef, memo, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
+const IMPORT_FILE_TYPES = ['.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
+const ALL_FILE_TYPES = [...ANALYST_FILE_TYPES, ...IMPORT_FILE_TYPES];
 
 export const AIAnalystUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+    const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
     const [context, setContext] = useState<Context>(props.initialContext ?? defaultAIAnalystContext);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
     const handleSubmit = useRecoilCallback(
       ({ snapshot }) =>
-        async ({ content }: SubmitPromptArgs) => {
+        async ({ content, context, importFiles }: SubmitPromptArgs) => {
           const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
           trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
 
@@ -39,9 +43,14 @@ export const AIAnalystUserMessageForm = memo(
             content,
             context,
             messageIndex: props.messageIndex,
+            importFiles,
           });
+
+          if (!props.initialContext) {
+            setContext((prev) => ({ ...prev, connection: undefined }));
+          }
         },
-      [context, props.messageIndex, submitPrompt]
+      [props.initialContext, props.messageIndex, submitPrompt]
     );
 
     const formOnKeyDown = useRecoilCallback(
@@ -63,10 +72,12 @@ export const AIAnalystUserMessageForm = memo(
           abortController={abortController}
           loading={loading}
           setLoading={setLoading}
+          cancelDisabled={importFilesToGridLoading}
           context={context}
           setContext={setContext}
-          isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
-          fileTypes={ANALYST_FILE_TYPES}
+          isChatFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
+          isImportFileSupported={(extension) => IMPORT_FILE_TYPES.includes(extension)}
+          fileTypes={ALL_FILE_TYPES}
           submitPrompt={handleSubmit}
           formOnKeyDown={formOnKeyDown}
           waitingOnMessageIndex={waitingOnMessageIndex}

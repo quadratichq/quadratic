@@ -1,15 +1,14 @@
 //! User-focused URL parameters (default behavior)
 
+import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { filesFromIframe, IMPORT_FILE_EXTENSIONS } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
-import type { DbFile } from '@/app/ai/iframeAiChatFiles/IframeMessages';
 import { aiAnalystInitialized } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { arrayBufferToBase64, getExtension, getFileTypeFromName } from '@/app/helpers/files';
-import type { CodeCellLanguage, JsCoordinate } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { arrayBufferToBase64, getExtension } from '@/app/helpers/files';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -98,88 +97,6 @@ export class UrlParamsUser {
     filesFromIframe.loadFiles(chatId);
   };
 
-  private importDbFilesToGrid = async (importFiles: DbFile[]) => {
-    if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded || importFiles.length === 0) return;
-
-    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
-
-    const { setFilesImportProgress } = pixiAppSettings;
-    if (!setFilesImportProgress) {
-      throw new Error('Expected setFilesImportProgress to be set in urlParams.loadAIAnalystPrompt');
-    }
-
-    const firstSheet = sheets.getFirst();
-    if (!firstSheet) {
-      throw new Error('Expected to find firstSheet in urlParams.loadAIAnalystPrompt');
-    }
-
-    // push excel files to the end of the array
-    importFiles.sort((a, b) => {
-      const extensionA = getExtension(a.name);
-      const extensionB = getExtension(b.name);
-      if (['xls', 'xlsx'].includes(extensionA)) return 1;
-      if (['xls', 'xlsx'].includes(extensionB)) return -1;
-      return 0;
-    });
-
-    // initialize the import progress state
-    setFilesImportProgress(() => ({
-      importing: true,
-      createNewFile: false,
-      files: importFiles.map((file) => ({
-        name: file.name,
-        size: file.size,
-        step: 'read',
-        progress: 0,
-      })),
-    }));
-
-    // import files to the grid
-    for (const file of importFiles) {
-      // update the current file index
-      setFilesImportProgress((prev) => {
-        const currentFileIndex = (prev.currentFileIndex ?? -1) + 1;
-        return {
-          ...prev,
-          currentFileIndex,
-        };
-      });
-
-      const fileType = getFileTypeFromName(file.name);
-      if (!fileType || fileType === 'grid') {
-        console.warn(`Unsupported file type: ${file.name}`);
-        continue;
-      }
-
-      const sheetBounds = firstSheet.bounds;
-      const insertAt: JsCoordinate = {
-        x: sheetBounds.type === 'empty' ? 1 : Number(sheetBounds.max.x) + 2,
-        y: 1,
-      };
-
-      await quadraticCore.importFile({
-        file: file.data,
-        fileName: file.name,
-        fileType,
-        sheetId: firstSheet.id,
-        location: insertAt,
-        cursor: sheets.sheet.cursor.position.toString(),
-        isAi: false,
-      });
-    }
-
-    // reset the import progress state
-    setFilesImportProgress(() => ({
-      importing: false,
-      createNewFile: false,
-      files: [],
-    }));
-
-    // reset the open sheet and cursor to the first sheet and first cell
-    sheets.current = firstSheet.id;
-    sheets.sheet.cursor.moveTo(1, 1);
-  };
-
   private loadAIAnalystPrompt = async (params: URLSearchParams) => {
     if (this.aiAnalystPromptLoaded) return;
 
@@ -208,13 +125,13 @@ export class UrlParamsUser {
     const chatId = this.chatId;
     this.chatId = undefined;
 
-    const importFiles: DbFile[] = [];
-    const aiFiles: FileContent[] = [];
+    const files: FileContent[] = [];
+    const importFiles: ImportFile[] = [];
 
     // segregate files into aiFiles and importFiles
     for (const file of filesFromIframe.dbFiles) {
       if (isSupportedMimeType(file.mimeType)) {
-        aiFiles.push({
+        files.push({
           type: 'data',
           data: arrayBufferToBase64(file.data),
           mimeType: file.mimeType,
@@ -226,17 +143,13 @@ export class UrlParamsUser {
     }
     filesFromIframe.dbFiles = [];
 
-    // import the files to the grid
-    await this.importDbFilesToGrid(importFiles).catch((error) => {
-      console.error('Error importing files to grid', error);
-    });
-
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
-      content: [...aiFiles, createTextContent(prompt)],
+      content: [...files, createTextContent(prompt)],
       messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
       context: { codeCell: undefined, connection: undefined },
       messageIndex: 0,
+      importFiles,
     });
   };
 

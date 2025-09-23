@@ -1,5 +1,7 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
+import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -14,7 +16,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { createTextContent, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
+import { createTextContent, isContentFile, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
@@ -42,16 +44,20 @@ export interface AIUserMessageFormWrapperProps {
 
 export interface SubmitPromptArgs {
   content: Content;
+  context: Context;
+  importFiles: ImportFile[];
 }
 
 interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
+  cancelDisabled: boolean;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
-  isFileSupported: (mimeType: string) => boolean;
+  isChatFileSupported: (mimeType: string) => boolean;
+  isImportFileSupported: (extension: string) => boolean;
   fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
@@ -63,21 +69,24 @@ export const AIUserMessageForm = memo(
       textareaRef: bottomTextareaRef,
       autoFocusRef,
       initialContent,
+      initialContext,
       onContentChange,
       waitingOnMessageIndex,
       abortController,
       loading,
       setLoading,
-      initialContext,
+      cancelDisabled,
       context,
       setContext,
-      isFileSupported,
+      isChatFileSupported,
+      isImportFileSupported,
       fileTypes,
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
       showPromptSuggestions,
     } = props;
+
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
@@ -96,16 +105,19 @@ export const AIUserMessageForm = memo(
 
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [files, setFiles] = useState<FileContent[]>([]);
+    const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
     useEffect(() => {
-      setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
+      setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
+      setImportFiles([]);
       setPrompt(
         initialContent
           ?.filter((item) => isContentText(item))
           .map((item) => item.text)
           .join('\n') ?? ''
       );
-    }, [initialContent]);
+      setContext?.(initialContext ?? {});
+    }, [initialContent, initialContext, setContext]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -118,21 +130,25 @@ export const AIUserMessageForm = memo(
       }
     }, [editingOrDebugEditing]);
 
-    const submit = useCallback(
+    const handleSubmit = useCallback(
       (prompt: string) => {
         const trimmedPrompt = prompt.trim();
         if (trimmedPrompt.length === 0) return;
 
-        if (initialContent === undefined) {
-          setPrompt('');
-          setFiles([]);
-        }
-
         submitPrompt({
           content: [...files, createTextContent(trimmedPrompt)],
+          context,
+          importFiles,
         });
+
+        if (initialContent === undefined) {
+          setFiles([]);
+          setImportFiles([]);
+          setPrompt('');
+          setContext?.({});
+        }
       },
-      [files, initialContent, submitPrompt]
+      [context, files, importFiles, initialContent, setContext, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -164,7 +180,7 @@ export const AIUserMessageForm = memo(
           event.preventDefault();
           if (loading || waitingOnMessageIndex !== undefined) return;
 
-          submit(prompt);
+          handleSubmit(prompt);
 
           if (initialContent === undefined) {
             textareaRef.current?.focus();
@@ -187,27 +203,38 @@ export const AIUserMessageForm = memo(
           formOnKeyDown(event);
         }
       },
-      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, submit, waitingOnMessageIndex]
+      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, handleSubmit, waitingOnMessageIndex]
     );
 
     const handleFiles = useCallback(
-      (newFiles: FileList | File[]) => {
+      async (newFiles: FileList | File[]) => {
         if (newFiles && newFiles.length > 0) {
-          for (const file of newFiles) {
-            const mimeType = file.type;
-            if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
+          for (const newFile of newFiles) {
+            const mimeType = newFile.type;
+            const extension = getExtension(newFile.name);
+            if (isSupportedMimeType(mimeType) && isChatFileSupported(mimeType)) {
               const reader = new FileReader();
               reader.onloadend = (e) => {
                 const dataUrl = e.target?.result as string;
                 const base64 = dataUrl.split(',')[1];
-                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: newFile.name }]);
               };
-              reader.readAsDataURL(file);
+              reader.onerror = (e) => {
+                console.error('Error reading file', e);
+              };
+              reader.readAsDataURL(newFile);
+            } else if (isImportFileSupported(`.${extension}`)) {
+              try {
+                const data = await newFile.arrayBuffer();
+                setImportFiles((prev) => [...prev, { name: newFile.name, size: newFile.size, data }]);
+              } catch (error) {
+                console.error('Error reading file', error);
+              }
             }
           }
         }
       },
-      [files, handleFilesChange, isFileSupported]
+      [files, handleFilesChange, isChatFileSupported, isImportFileSupported]
     );
 
     const handlePasteOrDrop = useCallback(
@@ -260,7 +287,7 @@ export const AIUserMessageForm = memo(
           <AIAnalystPromptSuggestions
             exampleSet={files.length > 0 ? 'file-pdf' : context.connection ? 'connection' : 'empty'}
             prompt={prompt}
-            submit={submit}
+            submit={handleSubmit}
           />
         )}
 
@@ -296,12 +323,12 @@ export const AIUserMessageForm = memo(
           />
 
           <AIContext
-            initialContext={initialContext}
             context={context}
             setContext={setContext}
             files={files}
             setFiles={handleFilesChange}
-            isFileSupported={isFileSupported}
+            importFiles={importFiles}
+            setImportFiles={setImportFiles}
             disabled={disabled}
             textareaRef={textareaRef}
           />
@@ -332,9 +359,10 @@ export const AIUserMessageForm = memo(
             waitingOnMessageIndex={waitingOnMessageIndex}
             textareaRef={textareaRef}
             prompt={prompt}
-            submitPrompt={() => submit(prompt)}
+            submitPrompt={handleSubmit}
             abortPrompt={abortPrompt}
             disabled={disabled}
+            cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
             context={context}
@@ -378,9 +406,10 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
 
 interface CancelButtonProps {
   show: boolean;
+  disabled: boolean;
   abortPrompt: () => void;
 }
-const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
+const CancelButton = memo(({ show, disabled, abortPrompt }: CancelButtonProps) => {
   if (!show) {
     return null;
   }
@@ -394,6 +423,7 @@ const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
         e.stopPropagation();
         abortPrompt();
       }}
+      disabled={disabled}
     >
       <BackspaceIcon className="mr-1" /> Cancel generating
     </Button>
@@ -402,12 +432,13 @@ const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
 
 interface AIUserMessageFormFooterProps {
   disabled: boolean;
+  cancelDisabled: boolean;
   show: boolean;
   loading: boolean;
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
-  submitPrompt: () => void;
+  submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
@@ -416,6 +447,8 @@ interface AIUserMessageFormFooterProps {
 }
 const AIUserMessageFormFooter = memo(
   ({
+    disabled,
+    cancelDisabled,
     show,
     loading,
     waitingOnMessageIndex,
@@ -423,12 +456,24 @@ const AIUserMessageFormFooter = memo(
     prompt,
     submitPrompt,
     abortPrompt,
-    disabled,
     handleFiles,
     fileTypes,
     context,
     setContext,
   }: AIUserMessageFormFooterProps) => {
+    const handleClickSubmit = useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        submitPrompt(prompt);
+      },
+      [submitPrompt, prompt]
+    );
+
+    const disabledSubmit = useMemo(
+      () => prompt.length === 0 || loading || waitingOnMessageIndex !== undefined,
+      [prompt, loading, waitingOnMessageIndex]
+    );
+
     if (!show) {
       return null;
     }
@@ -464,15 +509,7 @@ const AIUserMessageFormFooter = memo(
                   </TooltipPopover>
                 )}
               >
-                <Button
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    submitPrompt();
-                  }}
-                  disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
-                >
+                <Button size="icon-sm" className="rounded-full" onClick={handleClickSubmit} disabled={disabledSubmit}>
                   <ArrowUpwardIcon />
                 </Button>
               </ConditionalWrapper>
@@ -480,7 +517,7 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton show={loading} abortPrompt={abortPrompt} />
+        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
       </>
     );
   }

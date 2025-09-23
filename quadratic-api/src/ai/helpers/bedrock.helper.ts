@@ -16,8 +16,10 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
   isContentImage,
   isContentPdfFile,
+  isContentText,
   isContentTextFile,
   isInternalMessage,
   isToolResultMessage,
@@ -54,12 +56,15 @@ function convertContent(content: Content): ContentBlock[] {
           source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { document };
-      } else {
+      } else if (isContentText(content)) {
         return {
           text: content.text.trim(),
         };
+      } else {
+        return undefined;
       }
-    });
+    })
+    .filter((content) => content !== undefined);
 }
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
@@ -96,7 +101,7 @@ export function getBedrockApiArgs(
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [

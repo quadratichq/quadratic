@@ -40,8 +40,10 @@ export const AIAssistantUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
+        cancelDisabled={false}
         context={{ codeCell }}
-        isFileSupported={isSupportedImageMimeType}
+        isChatFileSupported={isSupportedImageMimeType}
+        isImportFileSupported={() => false}
         fileTypes={ASSISTANT_FILE_TYPES}
         submitPrompt={handleSubmit}
         waitingOnMessageIndex={waitingOnMessageIndex}

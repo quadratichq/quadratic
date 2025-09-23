@@ -51,7 +51,7 @@ export const AIUserMessageFormConnectionsButton = memo(
 
     const handleClickConnection = useCallback(
       (connectionUuid: string) => {
-        if (context.connection === connectionUuid) {
+        if (context.connection?.id === connectionUuid) {
           trackEvent('[AIConnectionsPicker].unselectConnection');
           setContext?.((prev) => ({
             ...prev,
@@ -59,13 +59,20 @@ export const AIUserMessageFormConnectionsButton = memo(
           }));
         } else {
           trackEvent('[AIConnectionsPicker].selectConnection');
+          const connection = connections.find((connection) => connection.uuid === connectionUuid);
           setContext?.((prev) => ({
             ...prev,
-            connection: connectionUuid,
+            connection: connection
+              ? {
+                  type: connection.type,
+                  id: connection.uuid,
+                  name: connection.name,
+                }
+              : undefined,
           }));
         }
       },
-      [context.connection, setContext]
+      [connections, context.connection, setContext]
     );
 
     return (
@@ -93,7 +100,7 @@ export const AIUserMessageFormConnectionsButton = memo(
             <>
               <DropdownMenuSeparator />
 
-              <DropdownMenuRadioGroup value={context.connection ?? ''} onValueChange={handleClickConnection}>
+              <DropdownMenuRadioGroup value={context.connection?.id ?? ''} onValueChange={handleClickConnection}>
                 {connections.map((connection) => (
                   <DropdownMenuRadioItem key={connection.uuid} value={connection.uuid} className="gap-4">
                     <span className="truncate">{connection.name}</span>

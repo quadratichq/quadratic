@@ -1,14 +1,11 @@
-import {
-  aiAnalystCurrentChatMessagesAtom,
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystLoadingAtom,
-} from '@/app/atoms/aiAnalystAtom';
+import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { getFileTypeFromName } from '@/app/helpers/files';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -19,61 +16,44 @@ import {
   getFileTypeLabel,
   isSupportedImageMimeType,
 } from 'quadratic-shared/ai/helpers/files.helper';
-import { getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface AIContextProps {
-  initialContext?: Context;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: (files: FileContent[]) => void;
-  isFileSupported: (mimeType: string) => boolean;
+  importFiles: ImportFile[];
+  setImportFiles: (importFiles: ImportFile[]) => void;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 export const AIContext = memo(
-  ({
-    initialContext,
-    context,
-    setContext,
-    files,
-    setFiles,
-    isFileSupported,
-    disabled,
-    textareaRef,
-  }: AIContextProps) => {
+  ({ context, setContext, files, setFiles, importFiles, setImportFiles, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
-    const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const { connections } = useConnectionsFetcher();
 
-    // use last user message context as initial context in the bottom user message form
-    useEffect(() => {
-      if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
-        const lastUserMessage = getUserPromptMessages(messages).at(-1);
-        if (lastUserMessage) {
-          setContext(lastUserMessage.context ?? defaultAIAnalystContext);
-        }
-      }
-    }, [initialContext, loading, messages, messagesCount, setContext]);
-
     const handleOnClickConnection = useCallback(() => {
-      setContext?.((prev) => ({
-        ...prev,
-        connection: undefined,
-      }));
+      setContext?.((prev) => ({ ...prev, connection: undefined }));
       textareaRef.current?.focus();
     }, [setContext, textareaRef]);
 
     const handleOnClickFileContext = useCallback(
-      (file: FileContent) => {
-        setFiles(files.filter((f) => f !== file));
+      (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
         textareaRef.current?.focus();
       },
       [files, setFiles, textareaRef]
+    );
+
+    const handleOnClickImportFileContext = useCallback(
+      (index: number) => {
+        setImportFiles(importFiles.filter((_, i) => i !== index));
+        textareaRef.current?.focus();
+      },
+      [importFiles, setImportFiles, textareaRef]
     );
 
     return (
@@ -85,7 +65,7 @@ export const AIContext = memo(
         )}
       >
         {connections
-          .filter((connection) => context.connection === connection.uuid)
+          .filter((connection) => context.connection?.id === connection.uuid)
           .map((connection) => (
             <ContextPill
               key={connection.uuid}
@@ -99,16 +79,33 @@ export const AIContext = memo(
             />
           ))}
 
-        {files
-          .filter((file) => isFileSupported(file.mimeType))
-          .map((file, index) => (
-            <FileContextPill
-              key={`${index}-${file.fileName}`}
-              disabled={disabled}
-              file={file}
-              onClick={() => handleOnClickFileContext(file)}
-            />
-          ))}
+        {files.map((file, index) => (
+          <FileContextPill
+            key={`${index}-${file.fileName}`}
+            disabled={disabled}
+            file={file}
+            onClick={() => handleOnClickFileContext(index)}
+          />
+        ))}
+
+        {importFiles.map((file, index) => (
+          <ContextPill
+            key={`${index}-${file.name}`}
+            primary={file.name}
+            secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
+            noClose={disabled}
+            onClick={() => handleOnClickImportFileContext(index)}
+          />
+        ))}
+
+        {context.importFiles?.files.map((file, index) => (
+          <ContextPill
+            key={`${index}-${file.name}`}
+            primary={file.name}
+            secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
+            noClose={disabled}
+          />
+        ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
       </div>
@@ -179,12 +176,7 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   useEffect(() => {
     const updateTableName = () => {
       if (!codeCell?.sheetId) return;
-      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
-        codeCell.sheetId,
-        codeCell.pos.x,
-        codeCell.pos.y,
-        sheets.jsA1Context
-      );
+      const tableName = sheets.sheet.cursor.getTableNameFromPos(codeCell);
       setTableName(tableName);
     };
 
@@ -194,7 +186,7 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return () => {
       events.off('a1ContextUpdated', updateTableName);
     };
-  }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
+  }, [codeCell]);
 
   if (!codeCell) {
     return null;

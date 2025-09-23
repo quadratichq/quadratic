@@ -11,7 +11,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
   }
 
   return (
-    <div className="relative">
+    <div className="relative select-none">
       <div className="ml-2.5 flex flex-col">
         <svg
           width="16"
@@ -27,7 +27,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
           />
         </svg>
         <h3 className="mt-2 text-sm font-medium">Upload a file</h3>
-        <p className="text-xs text-muted-foreground">CSV, Excel, PDF, or Parquet</p>
+        <p className="text-xs text-muted-foreground">PDF, Image, CSV, Excel, or Parquet</p>
       </div>
       <div className="absolute left-11 top-0 flex flex-row gap-2.5">
         <svg

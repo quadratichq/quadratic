@@ -7,15 +7,19 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
+import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
+import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
-import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { cn } from '@/shared/shadcn/utils';
 import {
   isContentGoogleSearchInternal,
+  isContentImportFilesToGridInternal,
+  isContentText,
   isContentThinking,
   isInternalMessage,
   isToolResultMessage,
+  isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -105,7 +109,10 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
+        if (
+          !debugShowAIInternalContext &&
+          !['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+        ) {
           return null;
         }
 
@@ -119,7 +126,9 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               'flex flex-col gap-1',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+                ? ''
+                : 'rounded-lg bg-gray-500 p-2'
             )}
           >
             {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
@@ -127,8 +136,10 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />
+              ) : isContentImportFilesToGridInternal(message.content) ? (
+                <ImportFilesToGrid content={message.content} />
               ) : null
-            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
+            ) : isUserPromptMessage(message) ? (
               <AIAssistantUserMessageForm
                 initialContent={message.content}
                 textareaRef={textareaRef}
@@ -154,7 +165,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                       thinkingContent={item}
                       expandedDefault={false}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : isContentText(item) ? (
                     <AICodeBlockParser key={`${index}-${contentIndex}-${item.type}`} input={item.text} />
                   ) : null
                 )}

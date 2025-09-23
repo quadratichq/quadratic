@@ -17,11 +17,12 @@ import {
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
+import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
+import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -33,6 +34,8 @@ import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
+  isContentImportFilesToGridInternal,
+  isContentText,
   isContentThinking,
   isInternalMessage,
   isToolResultMessage,
@@ -178,7 +181,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
+        if (
+          !debugShowAIInternalContext &&
+          !['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+        ) {
           return null;
         }
 
@@ -192,7 +198,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+                ? ''
+                : 'rounded-lg bg-gray-500 p-2'
             )}
           >
             {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
@@ -200,6 +208,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />
+              ) : isContentImportFilesToGridInternal(message.content) ? (
+                <ImportFilesToGrid content={message.content} />
               ) : null
             ) : isUserPromptMessage(message) ? (
               <AIAnalystUserMessageForm
@@ -258,7 +268,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                         })
                       }
                     />
-                  ) : item.type === 'text' ? (
+                  ) : isContentText(item) ? (
                     <Markdown
                       key={`${index}-${contentIndex}-${item.type}`}
                       text={item.text}
@@ -407,9 +417,10 @@ const PromptSuggestions = memo(() => {
           messageSource: 'User',
           content: [createTextContent(prompt)],
           context: {
-            ...(lastContext ?? defaultAIAnalystContext),
+            ...(lastContext ? { codeCell: lastContext.codeCell } : defaultAIAnalystContext),
           },
           messageIndex: messages.length,
+          importFiles: [],
         });
       },
     [submitPrompt]
