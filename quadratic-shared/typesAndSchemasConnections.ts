@@ -21,7 +21,7 @@ export const ConnectionTypeSchema = z.enum([
   'MARIADB',
   'SUPABASE',
   'NEON',
-  'SYNCED',
+  'MIXPANEL',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
@@ -119,8 +119,9 @@ export const ConnectionTypeDetailsBigquerySchema = z.object({
   service_account_configuration: z.string().min(1, { message: 'Required' }),
 });
 
-export const ConnectionTypeDetailsSyncedSchema = z.object({
-  database: z.string().min(1, { message: 'Required' }),
+export const ConnectionTypeDetailsMixpanelSchema = z.object({
+  api_secret: z.string().min(1, { message: 'Required' }),
+  project_id: z.string().min(1, { message: 'Required' }),
 });
 
 /**
