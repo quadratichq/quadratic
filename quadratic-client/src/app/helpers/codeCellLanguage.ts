@@ -15,7 +15,7 @@ export const codeCellsById = {
   MARIADB: { id: 'MARIADB', label: 'MariaDB', type: 'connection' },
   SUPABASE: { id: 'SUPABASE', label: 'Supabase', type: 'connection' },
   NEON: { id: 'NEON', label: 'Neon', type: 'connection' },
-  SYNCED: { id: 'SYNCED', label: 'Synced', type: 'connection' },
+  MIXPANEL: { id: 'MIXPANEL', label: 'Mixpanel', type: 'connection' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];
@@ -75,7 +75,7 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
         return 'pgsql';
       case 'NEON':
         return 'pgsql';
-      case 'SYNCED':
+      case 'MIXPANEL':
         return 'sql';
     }
   }

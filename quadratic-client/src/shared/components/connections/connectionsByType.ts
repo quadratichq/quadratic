@@ -1,13 +1,13 @@
 import * as Bigquery from '@/shared/components/connections/ConnectionFormBigquery';
 import * as Cockroachdb from '@/shared/components/connections/ConnectionFormCockroachdb';
 import * as Mariadb from '@/shared/components/connections/ConnectionFormMariadb';
+import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpanel';
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Neon from '@/shared/components/connections/ConnectionFormNeon';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import * as Supabase from '@/shared/components/connections/ConnectionFormSupabase';
-import * as Synced from '@/shared/components/connections/ConnectionFormSynced';
 import type { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ReactNode } from 'react';
 import type { SubmitHandler, UseFormReturn } from 'react-hook-form';
@@ -19,6 +19,7 @@ import CockroachdbLogo from './logo-cockroachdb.svg?react';
 import DatabricksLogo from './logo-databricks.svg?react';
 import DynamoDBLogo from './logo-dynamodb.svg?react';
 import MariadbLogo from './logo-mariadb.svg?react';
+import MixpanelLogo from './logo-mixpanel.svg?react';
 import MongoLogo from './logo-mongodb.svg?react';
 import MssqlLogo from './logo-mssql.svg?react';
 import MysqlLogo from './logo-mysql.svg?react';
@@ -117,11 +118,11 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     ConnectionForm: Neon.ConnectionForm,
     useConnectionForm: Neon.useConnectionForm,
   },
-  SYNCED: {
-    name: 'Synced',
-    Logo: S3Logo,
-    ConnectionForm: Synced.ConnectionForm,
-    useConnectionForm: Synced.useConnectionForm,
+  MIXPANEL: {
+    name: 'Mixpanel',
+    Logo: MixpanelLogo,
+    ConnectionForm: Mixpanel.ConnectionForm,
+    useConnectionForm: Mixpanel.useConnectionForm,
   },
 };
 

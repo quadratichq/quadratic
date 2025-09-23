@@ -1,2 +1,2 @@
 -- AlterEnum
-ALTER TYPE "ConnectionType" ADD VALUE 'SYNCED';
+ALTER TYPE "ConnectionType" ADD VALUE 'MIXPANEL';

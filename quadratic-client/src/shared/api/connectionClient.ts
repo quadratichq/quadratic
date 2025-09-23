@@ -60,8 +60,8 @@ export const connectionClient = {
         | 'SUPABASE'
         | 'neon'
         | 'NEON'
-        | 'synced'
-        | 'SYNCED',
+        | 'mixpanel'
+        | 'MIXPANEL',
       connectionId: string,
       teamUuid: string,
       forceCacheRefresh: boolean = false,

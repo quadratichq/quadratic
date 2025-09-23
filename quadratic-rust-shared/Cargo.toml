@@ -86,7 +86,7 @@ derivative = "2.2.0"
 
 [features]
 default = ["synced"]
-arrow = ["dep:arrow", "arrow-array", "parquet"]
+arrow = ["dep:arrow", "arrow-array", "object_store", "parquet"]
 auth = ["jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 cache = ["memory", "tokio"]

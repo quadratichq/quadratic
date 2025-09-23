@@ -15,6 +15,9 @@ pub enum Arrow {
 
     #[error("Arrow error: {0}")]
     External(String),
+
+    #[error("Object store error: {0}")]
+    ObjectStore(String),
 }
 
 impl From<arrow::error::ArrowError> for SharedError {

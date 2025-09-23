@@ -4,28 +4,29 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
-  ConnectionTypeDetailsSyncedSchema,
+  ConnectionTypeDetailsMixpanelSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-const ConnectionFormSyncedSchema = z.object({
+const ConnectionFormMixpanelSchema = z.object({
   name: ConnectionNameSchema,
-  type: z.literal(ConnectionTypeSchema.enum.SYNCED),
-  ...ConnectionTypeDetailsSyncedSchema.shape,
+  type: z.literal(ConnectionTypeSchema.enum.MIXPANEL),
+  ...ConnectionTypeDetailsMixpanelSchema.shape,
 });
-type FormValues = z.infer<typeof ConnectionFormSyncedSchema>;
+type FormValues = z.infer<typeof ConnectionFormMixpanelSchema>;
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
-    type: 'SYNCED',
-    database: connection?.typeDetails?.database || '',
+    type: 'MIXPANEL',
+    api_secret: connection?.typeDetails?.api_secret || '',
+    project_id: connection?.typeDetails?.project_id || '',
   };
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(ConnectionFormSyncedSchema),
+    resolver: zodResolver(ConnectionFormMixpanelSchema),
     defaultValues,
   });
 
@@ -50,13 +51,26 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           )}
         />
 
-        <div className="grid gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="database"
+            name="api_secret"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Database</FormLabel>
+                <FormLabel>API Secret</FormLabel>
+                <FormControl>
+                  <Input autoComplete="off" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="project_id"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Project ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>

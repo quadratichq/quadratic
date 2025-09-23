@@ -7,17 +7,16 @@ use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::Bytes;
 
-use datafusion::prelude::{DataFrame, ParquetReadOptions, SessionContext};
+use datafusion::prelude::{ParquetReadOptions, SessionContext};
 
 use derivative::Derivative;
-use object_store::aws::AmazonS3Builder;
 use parquet::arrow::ArrowWriter;
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::arrow::arrow_type::ArrowType;
+use crate::arrow::object_store::new_s3_object_store;
 use crate::error::Result;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{Connection, connect_error, query_error, schema_error};
@@ -89,24 +88,19 @@ impl<'a> Connection<'a> for DatafusionConnection {
     /// Connect to a datafusion database
     async fn connect(&self) -> Result<SessionContext> {
         let ctx: SessionContext = SessionContext::new();
+        let (arc_s3, s3_url) = new_s3_object_store(
+            &self.bucket,
+            &self.region,
+            &self.access_key_id,
+            &self.secret_access_key,
+            Some(&self.endpoint),
+        )?;
 
-        let s3 = AmazonS3Builder::new()
-            .with_bucket_name(&self.bucket)
-            .with_region(&self.region)
-            .with_access_key_id(&self.access_key_id)
-            .with_secret_access_key(&self.secret_access_key)
-            .with_endpoint(&self.endpoint)
-            .with_allow_http(true) // allow HTTP for LocalStack
-            .build()
-            .map_err(connect_error)?;
-
-        let path = format!("s3://{}", self.bucket);
-        let s3_url = Url::parse(&path).map_err(connect_error)?;
-        let arc_s3 = Arc::new(s3);
+        // register the object store in datafusion context
         ctx.register_object_store(&s3_url, arc_s3.clone());
 
-        // register the specific parquet file
-        let parquet_path = format!("{}/consolidated/", path);
+        // register the parquet path
+        let parquet_path = format!("{}/", s3_url.as_str());
         ctx.register_parquet(
             "mixpanel_data",
             &parquet_path,

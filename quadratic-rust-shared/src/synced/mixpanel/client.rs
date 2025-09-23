@@ -45,9 +45,6 @@ pub struct MixpanelConfig {
     pub api_secret: String,
     pub project_id: String,
     pub server: MixpanelServer,
-    pub date_window_size: u32,
-    pub attribution_window: u32,
-    pub project_timezone: String,
     pub user_agent: Option<String>,
 }
 
@@ -87,14 +84,14 @@ impl MixpanelClient {
     pub fn new(config: MixpanelConfig) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
 
-        // Add authorization header
+        // add authorization header
         let auth = BASE64.encode(format!("{}:", config.api_secret));
         headers.insert(
             reqwest::header::AUTHORIZATION,
             format!("Basic {}", auth).parse().unwrap(),
         );
 
-        // Add user agent if provided
+        // add user agent if provided
         if let Some(ref user_agent) = config.user_agent {
             headers.insert(reqwest::header::USER_AGENT, user_agent.parse().unwrap());
         }
@@ -117,10 +114,6 @@ impl MixpanelClient {
 
     pub fn data_export_url(&self) -> &'static str {
         self.config.server.data_export_url()
-    }
-
-    pub fn date_window_size(&self) -> u32 {
-        self.config.date_window_size
     }
 
     pub async fn make_request<T: DeserializeOwned>(
@@ -155,12 +148,12 @@ impl MixpanelClient {
         Ok(result)
     }
 
-    /// Test the connection and authentication
+    /// test the connection and authentication
     pub async fn test_connection(&self) -> bool {
         self.list_cohorts().await.is_ok()
     }
 
-    /// Get project information (if available)
+    /// get project information (if available)
     pub async fn get_project_info(&self) -> Result<serde_json::Value> {
         let url = format!("{}/engage", self.config.server.base_url());
         let params = vec![("page", "0")];
@@ -189,9 +182,6 @@ pub fn new_mixpanel_client() -> MixpanelClient {
         api_secret: config.api_secret,
         project_id: config.project_id,
         server: MixpanelServer::US,
-        date_window_size: 7, // 7-day chunks
-        attribution_window: 5,
-        project_timezone: "UTC".to_string(),
         user_agent: Some("rust-mixpanel-client/1.0".to_string()),
     };
 

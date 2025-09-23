@@ -11,6 +11,7 @@ use parquet::file::properties::WriterProperties;
 use parquet::file::reader::{ChunkReader, FileReader, SerializedFileReader};
 use parquet::record::{Field, Row};
 use std::fs::File;
+use std::io::Write;
 use std::sync::Arc;
 
 use crate::SharedError;
@@ -91,7 +92,7 @@ pub fn compare_parquet_file_with_bytes(file: &str, bytes: Bytes) -> bool {
 
 /// Convert a vec into a parquet file using Arrow with direct Field to DataType conversion
 /// This preserves the full range of Parquet data types
-pub fn vec_to_parquet(vec: Vec<Row>, file: &str) -> Result<()> {
+pub fn vec_to_record_batch(vec: Vec<Row>) -> Result<RecordBatch> {
     if vec.is_empty() {
         return Err(SharedError::Generic(
             "Cannot write empty vector to parquet file".to_string(),
@@ -103,22 +104,41 @@ pub fn vec_to_parquet(vec: Vec<Row>, file: &str) -> Result<()> {
     let record_batch = RecordBatch::try_new(Arc::new(arrow_schema), arrow_arrays)
         .map_err(|e| ParquetError::VecToParquet(format!("Could not create record batch: {e}")))?;
 
-    write_record_batch(record_batch, file)?;
+    Ok(record_batch)
+}
+
+/// Convert a vec into a parquet bytes using Arrow with direct Field to DataType conversion
+pub fn vec_to_parquet_bytes(vec: Vec<Row>) -> Result<Bytes> {
+    let writer = Vec::new();
+    let record_batch = vec_to_record_batch(vec)?;
+    let arrow_writer = write_record_batch(record_batch, writer)?;
+
+    Ok(arrow_writer.into_inner()?.into())
+}
+
+/// Convert a vec into a parquet file using Arrow with direct Field to DataType conversion
+/// This preserves the full range of Parquet data types
+pub fn write_vec_to_parquet(vec: Vec<Row>, file: &str) -> Result<()> {
+    let record_batch = vec_to_record_batch(vec)?;
+    let output_file = File::create(file)
+        .map_err(|e| ParquetError::WriteRecordBatch(format!("Could not create file: {e}")))?;
+    let arrow_writer = write_record_batch(record_batch, output_file)?;
+    arrow_writer.close()?;
 
     Ok(())
 }
 
-pub fn write_record_batch(record_batch: RecordBatch, file: &str) -> Result<()> {
-    let output_file = File::create(file)
-        .map_err(|e| ParquetError::WriteRecordBatch(format!("Could not create file: {e}")))?;
+pub fn write_record_batch<W: Write + Send>(
+    record_batch: RecordBatch,
+    writer: W,
+) -> Result<ArrowWriter<W>> {
     let props = WriterProperties::builder()
         .set_compression(Compression::SNAPPY)
         .build();
-    let mut writer = ArrowWriter::try_new(output_file, record_batch.schema(), Some(props))?;
-    writer.write(&record_batch)?;
-    writer.close()?;
+    let mut arrow_writer = ArrowWriter::try_new(writer, record_batch.schema(), Some(props))?;
+    arrow_writer.write(&record_batch)?;
 
-    Ok(())
+    Ok(arrow_writer)
 }
 
 #[cfg(test)]
@@ -188,7 +208,7 @@ mod tests {
         test_rows.extend(rows2);
 
         // write to parquet
-        vec_to_parquet(test_rows, file_path_str).unwrap();
+        write_vec_to_parquet(test_rows, file_path_str).unwrap();
         assert!(file_path.exists(), "Parquet file should be created");
 
         // read back the file and verify we can parse it
@@ -268,7 +288,7 @@ mod tests {
         test_rows.extend(rows_float);
 
         // Write and verify
-        vec_to_parquet(test_rows, file_path_str)?;
+        write_vec_to_parquet(test_rows, file_path_str)?;
         assert!(file_path.exists(), "Parquet file should be created");
 
         // Read back
@@ -290,7 +310,7 @@ mod tests {
         let empty_rows: Vec<Row> = Vec::new();
 
         // Should return an error for empty vector
-        let result = vec_to_parquet(empty_rows, file_path_str);
+        let result = write_vec_to_parquet(empty_rows, file_path_str);
         assert!(result.is_err(), "Should return error for empty vector");
 
         if let Err(SharedError::Generic(msg)) = result {

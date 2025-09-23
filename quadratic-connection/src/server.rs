@@ -47,6 +47,7 @@ use crate::{
 };
 
 const STATS_INTERVAL_S: u64 = 5;
+const SYNC_INTERVAL_M: u64 = 60;
 pub(crate) const CACHE_DURATION_S: Duration = Duration::from_secs(60 * 30); // 30 minutes
 
 #[derive(Serialize, Deserialize)]
@@ -251,6 +252,17 @@ pub(crate) async fn serve() -> Result<()> {
                 if stats.last_query_time.is_some() {
                     tracing::info!("Stats: {}", stats);
                 }
+            }
+        }
+    });
+
+    // Sync connections in a separate thread
+    tokio::spawn({
+        async move {
+            let mut interval = time::interval(Duration::from_secs(SYNC_INTERVAL_M * 60));
+
+            loop {
+                interval.tick().await;
             }
         }
     });
