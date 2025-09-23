@@ -67,6 +67,15 @@ impl Sheet {
                             dt.get_column_index_from_display_index(display_column_index, true);
                         let _ = dt.insert_column_sorted(column_index as usize, None, None);
                         transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        transaction
+                            .reverse_operations
+                            .push(Operation::DeleteDataTableColumns {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                columns: vec![column_index],
+                                flatten: false,
+                                select_table: false,
+                            });
+
                         if dt
                             .formats
                             .as_ref()
