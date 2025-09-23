@@ -7,7 +7,11 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
+    CopyFormats,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
     grid::Sheet,
 };
 
@@ -36,15 +40,19 @@ impl Sheet {
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && column >= pos.x && column < pos.x + output_rect.width() as i64 {
-                            dt.chart_output = Some((width + 1, height));
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                        && column >= pos.x
+                        && column < pos.x + output_rect.width() as i64
+                    {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetChartCellSize {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                w: width,
+                                h: height,
+                            });
+                    }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
@@ -53,31 +61,27 @@ impl Sheet {
                         && (column < pos.x + output_rect.width() as i64
                             || (CopyFormats::Before == copy_formats
                                 && column < pos.x + output_rect.width() as i64 + 1))
-                        && let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                            let column_index =
-                                dt.get_column_index_from_display_index(display_column_index, true);
-                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                        && let Ok(display_column_index) = u32::try_from(column - pos.x)
+                    {
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
+                        let _ = dt.insert_column_sorted(column_index as usize, None, None);
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
                         }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
+                        }
+                    }
                 }
 
                 Ok(())
@@ -311,20 +315,20 @@ mod tests {
 
         test_create_js_chart(&mut gc, sheet_id, pos![A1], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
-        test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![B6], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
         gc.insert_columns(sheet_id, 3, 1, true, None);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 4, 3, false);
 
         gc.undo(None);
         assert_chart_size(&gc, sheet_id, pos![A1], 3, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 3, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 3, 3, false);
 
         gc.redo(None);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 4, 3, false);
     }
 
     #[test]
