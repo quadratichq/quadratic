@@ -247,8 +247,9 @@ mod tests {
         let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
+        clear_js_calls();
         // this is no longer possible after the removal of CellValue::Code
-        // code to cause the spill
+        // instead, this code fails
         gc.set_code_cell(
             pos![sheet_id!A2],
             CodeCellLanguage::Formula,
@@ -256,14 +257,9 @@ mod tests {
             None,
             None,
         );
+        expect_js_call_count("jsClientMessage", 1, true);
 
-        let code_run = gc.sheet(sheet_id).data_table_at(&pos![A2]).unwrap();
-        assert!(code_run.has_spill());
-
-        // should be spilled because of the code_cell
-        let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
-        assert_eq!(render_cells, output_spill_error(1, 1),);
+        assert!(gc.sheet(sheet_id).data_table_at(&pos![A2]).is_none());
     }
 
     #[test]

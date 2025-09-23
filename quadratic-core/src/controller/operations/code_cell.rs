@@ -8,7 +8,7 @@ use crate::{
     formulas::convert_rc_to_a1,
     grid::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
-        unique_data_table_name,
+        js_types::JsSnackbarSeverity, unique_data_table_name,
     },
     util::now,
 };
@@ -32,6 +32,20 @@ impl GridController {
             // sheet may have been deleted in a multiplayer operation
             return vec![];
         };
+        if sheet
+            .data_table_pos_that_contains(sheet_pos.into())
+            .is_some_and(|dt_pos| dt_pos != sheet_pos.into())
+        {
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                crate::wasm_bindings::js::jsClientMessage(
+                    "Cannot add code cell to table".to_string(),
+                    JsSnackbarSeverity::Error.to_string(),
+                )
+            }
+            // cannot set a code cell where there is already a data table anchor
+            return vec![];
+        }
+
         let existing_data_table = sheet.data_table_at(&sheet_pos.into());
         let existing_data_table_index =
             existing_data_table.and_then(|_| sheet.data_table_index(sheet_pos.into()));
