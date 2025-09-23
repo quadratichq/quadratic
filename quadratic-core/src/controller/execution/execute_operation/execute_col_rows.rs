@@ -908,16 +908,12 @@ mod tests {
     }
 
     #[test]
-    fn delete_columns() {
+    fn test_content_delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A1],
             vec![vec!["A".into(), "B".into(), "C".into(), "D".into()]],
             None,
         );

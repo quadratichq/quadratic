@@ -274,6 +274,7 @@ impl GridController {
             };
             let (_, _, dirty_rects) = new_sheet.data_tables.insert_full(&new_sheet_pos.into(), dt);
             transaction.add_dirty_hashes_from_dirty_code_rects(new_sheet, dirty_rects);
+            new_sheet.recalculate_bounds(&self.a1_context);
 
             transaction
                 .reverse_operations

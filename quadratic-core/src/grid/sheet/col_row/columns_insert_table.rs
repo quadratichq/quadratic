@@ -98,7 +98,6 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        // these are tables that were moved to the right by the insertion
         // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
         let mut data_tables_to_move_right = self
             .data_tables
@@ -109,21 +108,6 @@ impl Sheet {
                     (copy_formats == CopyFormats::Before && pos.x > column)
                         || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
                         || (copy_formats != CopyFormats::Before && pos.x >= column)
-                })
-            })
-            .collect::<Vec<_>>();
-
-        // these are tables that were moved but should have stayed in place (ie,
-        // a column was inserted instead of moving the table over)
-        let mut data_tables_to_move_back = self
-            .data_tables
-            .get_pos_in_columns_sorted(&[column], false)
-            .into_iter()
-            .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    (!dt.is_code() || dt.is_html_or_image())
-                        && copy_formats == CopyFormats::Before
-                        && pos.x == column
                 })
             })
             .collect::<Vec<_>>();
@@ -151,15 +135,13 @@ impl Sheet {
                 );
                 let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveDataTable {
+                        old_sheet_pos: new_pos.to_sheet_pos(self.id),
+                        new_sheet_pos: old_pos.to_sheet_pos(self.id),
+                    });
             }
-        }
-        // In the special case of CopyFormats::Before and column == pos.x, we
-        // need to move it back.
-        data_tables_to_move_back.sort_by(|(_, a), (_, b)| a.x.cmp(&b.x));
-        for (_, to) in data_tables_to_move_back {
-            let from = to.translate(1, 0, i64::MIN, i64::MIN);
-            self.columns.move_cell_value(&from, &to);
-            transaction.add_code_cell(self.id, to);
         }
     }
 }
