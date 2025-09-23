@@ -46,8 +46,6 @@ export const AIAnalyst = memo(() => {
       const containerRect = panel.getBoundingClientRect();
       const newPanelWidth = event.x - (containerRect.left - 2);
       setPanelWidth(newPanelWidth);
-
-      events.emit('resizeAIAnalystPanel');
     },
     [setPanelWidth]
   );
