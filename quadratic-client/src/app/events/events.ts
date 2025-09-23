@@ -156,6 +156,7 @@ interface EventTypes {
   a1ContextUpdated: () => void;
 
   aiAnalystInitialized: () => void;
+  aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   pixiAppSettingsInitialized: () => void;
   filesFromIframeInitialized: () => void;
 

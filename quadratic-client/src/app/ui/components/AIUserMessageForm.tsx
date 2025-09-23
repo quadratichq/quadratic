@@ -1,6 +1,7 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
 import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -259,6 +260,15 @@ export const AIUserMessageForm = memo(
       },
       [editingOrDebugEditing]
     );
+
+    useEffect(() => {
+      if (initialContent === undefined) {
+        events.on('aiAnalystDroppedFiles', handleFiles);
+      }
+      return () => {
+        events.off('aiAnalystDroppedFiles', handleFiles);
+      };
+    }, [handleFiles, initialContent]);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);

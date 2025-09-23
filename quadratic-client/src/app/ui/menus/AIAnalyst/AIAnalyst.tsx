@@ -52,6 +52,15 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      events.emit('aiAnalystDroppedFiles', files);
+    }
+  }, []);
+
   if (!showAIAnalyst || presentationMode) {
     return null;
   }
@@ -67,6 +76,8 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
+        onDragOver={handleDrop}
+        onDrop={handleDrop}
       >
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 

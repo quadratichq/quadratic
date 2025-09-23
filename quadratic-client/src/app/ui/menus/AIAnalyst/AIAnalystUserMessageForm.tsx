@@ -25,10 +25,10 @@ const ALL_FILE_TYPES = [...ANALYST_FILE_TYPES, ...IMPORT_FILE_TYPES];
 
 export const AIAnalystUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
+    const [context, setContext] = useState<Context>(props.initialContext ?? defaultAIAnalystContext);
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
-    const [context, setContext] = useState<Context>(props.initialContext ?? defaultAIAnalystContext);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
