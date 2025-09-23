@@ -17,6 +17,7 @@ import type { z } from 'zod';
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   showChatHistory: boolean;
+  clarifyingQuestionsMode: boolean;
   abortController?: AbortController;
   loading: boolean;
   chats: Chat[];
@@ -40,6 +41,7 @@ export interface AIAnalystState {
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: false,
   showChatHistory: false,
+  clarifyingQuestionsMode: false,
   abortController: undefined,
   loading: false,
   chats: [],
@@ -142,6 +144,7 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
   });
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
+export const aiAnalystClarifyingQuestionsModeAtom = createSelector('clarifyingQuestionsMode');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
 
 export const aiAnalystLoadingAtom = selector<boolean>({

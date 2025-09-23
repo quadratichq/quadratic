@@ -98,6 +98,40 @@ ${Object.entries(aiToolsSpec)
   ];
 };
 
+export const getClarifyingQuestionsContext = (): ChatMessage[] => {
+  return [
+    {
+      role: 'user',
+      content: [
+        createTextContent(`CLARIFYING QUESTIONS MODE: For every new user request, ask 2-3 clarifying questions before taking any actions. This applies to EVERY user message, regardless of conversation history.
+
+Rules:
+1. When user asks something new → Ask clarifying questions first
+2. When user answers your questions → Then take actions
+3. Keep questions focused and concise
+4. Don't use tools until questions are answered
+
+Format your questions with line breaks for readability:
+"To help you better, I have a few questions:
+
+1. [question about goal/outcome]
+
+2. [question about data/context]  
+
+3. [question about preferences/constraints]
+
+Once I understand these details, I can help you accomplish what you're looking for."`),
+      ],
+      contextType: 'clarifyingQuestions',
+    },
+    {
+      role: 'assistant',
+      content: [createTextContent('I will ask clarifying questions for every new user request before taking actions.')],
+      contextType: 'clarifyingQuestions',
+    },
+  ];
+};
+
 export const getCurrentDateContext = (time: string): ChatMessage[] => {
   return [
     {

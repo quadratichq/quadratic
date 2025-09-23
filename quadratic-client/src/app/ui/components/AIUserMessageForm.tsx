@@ -55,6 +55,7 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
     initialContext?: Context;
   };
   waitingOnMessageIndex?: number;
+  extraLeftButtons?: React.ReactNode;
 };
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -73,6 +74,7 @@ export const AIUserMessageForm = memo(
       submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
+      extraLeftButtons,
     } = props;
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
@@ -324,6 +326,7 @@ export const AIUserMessageForm = memo(
           disabled={disabled}
           handleFiles={handleFiles}
           fileTypes={fileTypes}
+          extraLeftButtons={extraLeftButtons}
         />
       </form>
     );
@@ -395,6 +398,7 @@ type AIUserMessageFormFooterProps = {
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
+  extraLeftButtons?: React.ReactNode;
 };
 const AIUserMessageFormFooter = memo(
   ({
@@ -408,6 +412,7 @@ const AIUserMessageFormFooter = memo(
     disabled,
     handleFiles,
     fileTypes,
+    extraLeftButtons,
   }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
@@ -421,7 +426,10 @@ const AIUserMessageFormFooter = memo(
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+          <div className="flex items-center gap-2">
+            <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+            {extraLeftButtons}
+          </div>
 
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 

@@ -11,7 +11,7 @@ import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
-import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { getClarifyingQuestionsContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
@@ -46,7 +46,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, messageSource, modelKey: clientModelKey, ...args } = body;
+  const { chatId, fileUuid, messageSource, modelKey: clientModelKey, clarifyingQuestionsMode, ...args } = body;
 
   const {
     file: { id: fileId, ownerTeam },
@@ -118,6 +118,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   if (args.useQuadraticContext) {
     const quadraticContext = getQuadraticContext(source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
+  }
+
+  if (clarifyingQuestionsMode) {
+    const clarifyingQuestionsContext = getClarifyingQuestionsContext();
+    args.messages = [...clarifyingQuestionsContext, ...args.messages];
   }
 
   const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
