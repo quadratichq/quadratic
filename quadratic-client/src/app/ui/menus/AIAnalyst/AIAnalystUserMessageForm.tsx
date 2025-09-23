@@ -82,6 +82,7 @@ export const AIAnalystUserMessageForm = memo(
           formOnKeyDown={formOnKeyDown}
           waitingOnMessageIndex={waitingOnMessageIndex}
           maxHeight="275px"
+          filesSupportedText="PDF, Image, CSV, Excel and Parquet"
         />
 
         <AIAnalystEmptyStateWaypoint />

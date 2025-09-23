@@ -63,6 +63,7 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   waitingOnMessageIndex?: number;
+  filesSupportedText: string;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -72,37 +73,27 @@ export const AIUserMessageForm = memo(
       initialContent,
       initialContext,
       onContentChange,
-      waitingOnMessageIndex,
+      showPromptSuggestions,
       abortController,
       loading,
       setLoading,
       cancelDisabled,
       context,
       setContext,
+      submitPrompt,
       isChatFileSupported,
       isImportFileSupported,
       fileTypes,
-      submitPrompt,
       formOnKeyDown,
       maxHeight = '120px',
-      showPromptSuggestions,
+      waitingOnMessageIndex,
+      filesSupportedText,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
     const [dragOver, setDragOver] = useState(false);
-    const dragOverMessage = useMemo(
-      () =>
-        fileTypes.includes('.pdf') && fileTypes.includes('image/*')
-          ? 'PDFs and images supported'
-          : fileTypes.includes('.pdf')
-            ? 'PDFs supported'
-            : fileTypes.includes('image/*')
-              ? 'Images supported'
-              : 'Files not supported by this model',
-      [fileTypes]
-    );
 
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [files, setFiles] = useState<FileContent[]>([]);
@@ -320,7 +311,9 @@ export const AIUserMessageForm = memo(
             >
               <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
                 <span className="text-sm font-bold">Drop files here</span>
-                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
+                  {filesSupportedText} supported
+                </span>
               </div>
             </div>
           )}
@@ -377,6 +370,7 @@ export const AIUserMessageForm = memo(
             fileTypes={fileTypes}
             context={context}
             setContext={setContext}
+            filesSupportedText={filesSupportedText}
           />
         </form>
       </div>
@@ -454,6 +448,7 @@ interface AIUserMessageFormFooterProps {
   fileTypes: string[];
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
+  filesSupportedText: string;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -470,6 +465,7 @@ const AIUserMessageFormFooter = memo(
     fileTypes,
     context,
     setContext,
+    filesSupportedText,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -497,7 +493,12 @@ const AIUserMessageFormFooter = memo(
           )}
         >
           <div className="flex items-center gap-1">
-            <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+            <AIUserMessageFormAttachFileButton
+              disabled={disabled}
+              handleFiles={handleFiles}
+              fileTypes={fileTypes}
+              filesSupportedText={filesSupportedText}
+            />
 
             <AIUserMessageFormConnectionsButton
               disabled={disabled}
