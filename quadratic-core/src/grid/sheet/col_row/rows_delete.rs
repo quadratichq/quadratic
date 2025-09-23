@@ -225,7 +225,7 @@ mod test {
     }
 
     #[test]
-    fn test_delete_row() {
+    fn test_delete_row_with_formatting() {
         // will delete row 1
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -280,7 +280,7 @@ mod test {
             CopyFormats::None,
             &a1_context,
         );
-        assert_eq!(transaction.reverse_operations.len(), 3);
+        assert_eq!(transaction.reverse_operations.len(), 5);
 
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),

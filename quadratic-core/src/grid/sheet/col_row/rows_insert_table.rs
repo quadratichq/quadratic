@@ -55,6 +55,15 @@ impl Sheet {
                     {
                         dt.insert_row(display_row_index, None)?;
 
+                        transaction
+                            .reverse_operations
+                            .push(Operation::DeleteDataTableRows {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                rows: vec![display_row_index as u32],
+                                flatten: false,
+                                select_table: false,
+                            });
+
                         if dt.sort.is_some() {
                             dt.sort_dirty = true;
                         }

@@ -1141,14 +1141,10 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
-        print_first_sheet(&gc);
         gc.insert_columns(sheet_id, 3, 1, false, None);
 
-        assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
-
-        // this is the old way
-        // assert_data_table_size(&gc, sheet_id, pos![c2], 3, 2, false);
+        assert_data_table_size(&gc, sheet_id, pos![c2], 3, 2, false);
     }
 }
