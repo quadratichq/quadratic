@@ -267,7 +267,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_remove_column() {
+    fn test_validations_remove_column() {
         clear_js_calls();
 
         let mut gc = GridController::default();
@@ -365,6 +365,8 @@ mod tests {
             false,
         );
         expect_js_call_count("jsValidationWarnings", 1, true);
+
+        dbg!(&gc.undo_stack());
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);

@@ -106,16 +106,6 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .extend(self.reverse_values_ops_for_column(column));
-
-            // reverse operation to create the column (this will also shift all impacted columns)
-            transaction
-                .reverse_operations
-                .push(Operation::InsertColumn {
-                    sheet_id: self.id,
-                    column,
-                    copy_formats,
-                    ignore_tables: true,
-                });
         }
 
         // mark hashes of existing columns dirty
@@ -143,6 +133,18 @@ impl Sheet {
         let changed_selections =
             self.validations
                 .remove_column(transaction, self.id, column, a1_context);
+
+        if transaction.is_user_undo_redo() {
+            // reverse operation to create the column (this will also shift all impacted columns)
+            transaction
+                .reverse_operations
+                .push(Operation::InsertColumn {
+                    sheet_id: self.id,
+                    column,
+                    copy_formats,
+                    ignore_tables: true,
+                });
+        }
 
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
