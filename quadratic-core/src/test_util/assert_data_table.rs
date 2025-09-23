@@ -163,10 +163,12 @@ pub fn assert_import(
 
     use crate::CellValue;
 
-    let dt = gc
+    let Some(dt) = gc
         .sheet(sheet_pos.sheet_id)
         .data_table_at(&sheet_pos.into())
-        .unwrap_or_else(|| panic!("Data table at {sheet_pos} not found"));
+    else {
+        panic!("Data table at {sheet_pos} not found");
+    };
     if dt.is_code() {
         panic!("Data table at {sheet_pos} is not an import");
     }

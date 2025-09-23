@@ -418,11 +418,12 @@ impl GridController {
 mod test {
     use crate::{
         CellValue, SheetPos, SheetRect,
+        cellvalue::Import,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation,
         },
-        grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
+        grid::{CodeCellLanguage, DataTableKind, NumericFormat, NumericFormatKind},
         test_util::*,
     };
 
@@ -436,14 +437,14 @@ mod test {
             vec!["header 1".into(), "header 2".into()],
             vec!["$123".into(), "123,456.00".into()],
         ];
-        let ops = gc.add_data_table_operations(sheet_pos, name.to_owned(), values, true);
+        let ops = gc.add_data_table_operations(sheet_pos, name.clone(), values, true);
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
             Operation::AddDataTableWithoutCellValue { data_table, .. } => {
                 assert!(data_table.header_is_first_row);
                 assert_eq!(data_table.name, name.as_str().into());
-                assert_import(&gc, sheet_pos, &name, 2, 2);
+                assert_eq!(data_table.kind, DataTableKind::Import(Import::new(name)));
                 assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 2);
                 assert_eq!(
                     data_table.column_headers.as_ref().unwrap()[0].name,
