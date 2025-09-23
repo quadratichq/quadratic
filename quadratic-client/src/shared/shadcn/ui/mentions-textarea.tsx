@@ -48,7 +48,7 @@ const MentionsTextarea = memo(
         setMentionState,
         onMentionSearch,
         onMentionSelect,
-        placeholder = 'Type @ to mention someone...',
+        placeholder = 'Ask a question, or type @ to mention some data…',
         textareaRef,
         ...props
       },
