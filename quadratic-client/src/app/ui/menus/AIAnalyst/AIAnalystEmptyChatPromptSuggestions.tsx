@@ -35,30 +35,36 @@ export function AIAnalystEmptyChatPromptSuggestions({
   files,
   importFiles,
 }: AIAnalystEmptyChatPromptSuggestionsProps) {
-  const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions>(defaultPromptSuggestions);
+  const [loading, setLoading] = useState(false);
+  const [promptSuggestions, setPromptSuggestions] = useState<EmptyChatPromptSuggestions | undefined>(undefined);
   const { getEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
   useEffect(() => {
     const updatePromptSuggestions = async () => {
       try {
+        setLoading(true);
         const promptSuggestions = await getEmptyChatPromptSuggestions({
           context,
           files,
           importFiles,
         });
-        setPromptSuggestions(promptSuggestions ?? defaultPromptSuggestions);
+        setLoading(false);
+        setPromptSuggestions(promptSuggestions);
       } catch (error) {
         console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
-        setPromptSuggestions(defaultPromptSuggestions);
+        setLoading(false);
+        setPromptSuggestions(undefined);
       }
     };
 
     updatePromptSuggestions();
   }, [context, files, importFiles, getEmptyChatPromptSuggestions]);
 
+  console.log('TODO (jim):', loading);
+
   return (
     <div className="absolute bottom-full left-0 mb-1 flex w-full flex-row flex-wrap gap-1">
-      {promptSuggestions.map(({ label, prompt }, index) => (
+      {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
         <button
           key={`${index}-${label}`}
           className="flex items-center gap-3 rounded bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
