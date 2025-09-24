@@ -598,20 +598,12 @@ mod test {
 
     #[test]
     fn test_delete_columns() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!A2];
         gc.set_cell_value(sheet_pos, "hello".to_string(), None);
 
-        let sheet_pos_2 = SheetPos {
-            x: 2,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_2 = pos![sheet_id!B2];
         gc.set_code_cell(
             sheet_pos_2,
             CodeCellLanguage::Formula,
@@ -622,7 +614,7 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        assert_eq!(operations.len(), 2);
+        assert_eq!(operations.len(), 4);
         assert_eq!(
             operations,
             vec![
@@ -630,9 +622,15 @@ mod test {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new_blank(1, 2)
                 },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
+                },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new_blank(2, 1)
+                },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
                 },
             ]
         );
