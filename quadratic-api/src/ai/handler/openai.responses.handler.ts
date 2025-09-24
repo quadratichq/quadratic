@@ -5,7 +5,12 @@ import type {
   ResponseCreateParamsStreaming,
 } from 'openai/resources/responses/responses';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, OpenAIModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIRequestHelperArgs,
+  AzureOpenAIModelKey,
+  OpenAIModelKey,
+  ParsedAIResponse,
+} from 'quadratic-shared/typesAndSchemasAI';
 import {
   getOpenAIResponsesApiArgs,
   parseOpenAIResponsesResponse,
@@ -13,7 +18,7 @@ import {
 } from '../helpers/openai.responses.helper';
 
 export const handleOpenAIResponsesRequest = async (
-  modelKey: OpenAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
@@ -33,7 +38,7 @@ export const handleOpenAIResponsesRequest = async (
   const apiArgs: ResponseCreateParamsStreaming | ResponseCreateParamsNonStreaming = {
     model,
     input: messages,
-    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+    temperature: options.temperature,
     max_output_tokens: !options.max_tokens ? undefined : options.max_tokens,
     stream: options.stream,
     tools,

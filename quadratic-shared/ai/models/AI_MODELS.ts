@@ -232,6 +232,26 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
+  'openai:gpt-5-codex': {
+    model: 'gpt-5-codex',
+    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
+    displayName: 'gpt-5 codex',
+    temperature: 1,
+    max_tokens: 128000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    serviceTier: 'default',
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0.125,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
     backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
@@ -250,25 +270,6 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_input_tokens: 2.5,
     rate_per_million_output_tokens: 20,
     rate_per_million_cache_read_tokens: 0.25,
-    rate_per_million_cache_write_tokens: 0,
-  },
-  'openai:gpt-5-codex': {
-    model: 'gpt-5-codex',
-    backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'gpt-5 codex',
-    max_tokens: 128000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'max',
-    provider: 'openai',
-    promptCaching: true, // not used for openai, managed by the api
-    strictParams: true,
-    imageSupport: true,
-    supportsReasoning: true,
-    serviceTier: 'priority',
-    rate_per_million_input_tokens: 1.25, // Estimated based on GPT-5 pricing
-    rate_per_million_output_tokens: 10, // Estimated based on GPT-5 pricing
-    rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-5-mini-2025-08-07': {
@@ -379,6 +380,25 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2.5,
     rate_per_million_cache_write_tokens: 0,
   },
+  'azure-openai:gpt-5-codex': {
+    model: 'gpt-5-codex',
+    backupModelKey: 'openai:gpt-5-codex',
+    displayName: 'gpt-5 codex',
+    temperature: 1,
+    max_tokens: 128000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'max',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0.125,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'azure-openai:gpt-5': {
     model: 'gpt-5',
     backupModelKey: 'openai:gpt-5-2025-08-07',
@@ -392,9 +412,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
-    rate_per_million_input_tokens: 1.25,
-    rate_per_million_output_tokens: 10,
-    rate_per_million_cache_read_tokens: 0.125,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 2.5,
+    rate_per_million_output_tokens: 20,
+    rate_per_million_cache_read_tokens: 0.25,
     rate_per_million_cache_write_tokens: 0,
   },
   'azure-openai:gpt-5-mini': {
@@ -472,7 +493,6 @@ export const MODELS_CONFIGURATION: {
     model: 'moonshotai/Kimi-K2-Instruct-0905',
     backupModelKey: 'azure-openai:gpt-4.1',
     displayName: 'Kimi K2 Instruct 0905',
-
     temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,

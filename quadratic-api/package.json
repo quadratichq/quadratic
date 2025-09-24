@@ -62,7 +62,7 @@
     "mixpanel": "^0.18.1",
     "multer": "^2.0.0",
     "multer-s3": "^3.0.1",
-    "openai": "5.12.2",
+    "openai": "5.23.0",
     "raindrop-ai": "^0.0.59",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",

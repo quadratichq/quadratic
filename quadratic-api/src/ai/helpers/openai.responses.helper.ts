@@ -31,6 +31,7 @@ import type {
   AIResponseThinkingContent,
   AISource,
   AIUsage,
+  AzureOpenAIModelKey,
   Content,
   ImageContent,
   ModelMode,
@@ -138,7 +139,6 @@ export function getOpenAIResponsesApiArgs(
           type: 'message',
         },
         ...message.toolCalls.map<ResponseFunctionToolCall>((toolCall) => ({
-          id: toolCall.id.startsWith('fc_') ? toolCall.id : `fc_${toolCall.id}`,
           call_id: toolCall.id.startsWith('call_') ? toolCall.id : `call_${toolCall.id}`,
           type: 'function_call' as const,
           name: toolCall.name,
@@ -148,7 +148,6 @@ export function getOpenAIResponsesApiArgs(
       return [...acc, ...openaiMessages];
     } else if (isToolResultMessage(message)) {
       const openaiMessages: ResponseInputItem[] = message.content.map((toolResult) => ({
-        id: toolResult.id.startsWith('fc_') ? toolResult.id : `fc_${toolResult.id}`,
         call_id: toolResult.id.startsWith('call_') ? toolResult.id : `call_${toolResult.id}`,
         type: 'function_call_output' as const,
         output: JSON.stringify(convertInputContent(toolResult.content, false)),
@@ -229,7 +228,7 @@ function getOpenAIToolChoice(name?: AITool): ToolChoiceOptions | ToolChoiceTypes
 
 export async function parseOpenAIResponsesStream(
   chunks: Stream<OpenAI.Responses.ResponseStreamEvent>,
-  modelKey: OpenAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -282,7 +281,7 @@ export async function parseOpenAIResponsesStream(
 
           case 'function_call':
             responseMessage.toolCalls.push({
-              id: output.id ?? `fc_${v4()}`,
+              id: output.call_id ?? `call_${v4()}`,
               name: output.name,
               arguments: output.arguments,
               loading: false,
@@ -353,7 +352,7 @@ export async function parseOpenAIResponsesStream(
 
 export function parseOpenAIResponsesResponse(
   result: OpenAI.Responses.Response,
-  modelKey: OpenAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -382,7 +381,7 @@ export function parseOpenAIResponsesResponse(
         break;
       case 'function_call':
         responseMessage.toolCalls.push({
-          id: output.id ?? v4(),
+          id: output.call_id ?? v4(),
           name: output.name,
           arguments: output.arguments,
           loading: false,
