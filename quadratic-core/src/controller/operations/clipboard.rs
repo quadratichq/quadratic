@@ -403,8 +403,10 @@ impl GridController {
                     // report the attempt to paste to the user
                     #[cfg(any(target_family = "wasm", test))]
                     {
-                        let cell_type = data_table.kind_as_string();
-                        let message = format!("Cannot place {cell_type} within a table");
+                        let message = format!(
+                            "Cannot place {} within a table",
+                            data_table.kind_as_string()
+                        );
 
                         let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
                         crate::wasm_bindings::js::jsClientMessage(
@@ -433,7 +435,10 @@ impl GridController {
                     });
 
                 if paste_in_import {
-                    let message = "Cannot place table within a table";
+                    let message = format!(
+                        "Cannot place {} within a table",
+                        data_table.kind_as_string()
+                    );
 
                     #[cfg(any(target_family = "wasm", test))]
                     {
@@ -1868,7 +1873,7 @@ mod test {
         expect_js_call(
             "jsClientMessage",
             format!(
-                "Cannot place code within a table,{}",
+                "Cannot place JavaScript within a table,{}",
                 JsSnackbarSeverity::Error
             ),
             true,

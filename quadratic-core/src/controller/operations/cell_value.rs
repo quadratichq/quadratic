@@ -386,6 +386,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
+        // todo: this is likely unnecessary as charts can currently only exist within DataTable outputs
         let handle_paste_table_in_import = |paste_table_in_import: &CellValue| {
             let cell_type = match paste_table_in_import {
                 CellValue::Image(_) => "chart",
