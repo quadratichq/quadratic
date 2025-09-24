@@ -132,10 +132,10 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
     use crate::{
         ArraySize, CellValue,
-        grid::{sort::SortDirection, test::new_data_table},
+        grid::{data_table::test_util::new_data_table, sort::SortDirection},
         test_util::pretty_print_data_table,
     };
 

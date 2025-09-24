@@ -63,10 +63,22 @@ impl Grid {
         ret.add_sheet(None);
         ret
     }
+
     pub fn new_blank() -> Self {
         Grid {
             sheets: IndexMap::new(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.sheets.len() == 1
+            && self
+                .sheets
+                .values()
+                .next()
+                .unwrap()
+                .bounds(false)
+                .is_empty()
     }
 
     /// Creates a grid for testing.
@@ -100,5 +112,25 @@ impl Grid {
     #[cfg(test)]
     pub fn origin_in_first_sheet(&self) -> crate::SheetPos {
         crate::Pos::ORIGIN.to_sheet_pos(self.sheets()[0].id)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::controller::GridController;
+
+    use super::*;
+
+    #[test]
+    fn test_is_empty() {
+        let mut gc = GridController::new();
+        assert!(gc.grid().is_empty());
+
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "1".to_string(), None, false);
+        assert!(!gc.grid().is_empty());
+
+        let grid = Grid::new();
+        assert!(grid.is_empty());
     }
 }
