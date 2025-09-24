@@ -1,8 +1,8 @@
 // Note: this is a new pattern that should replace the old `actions.ts` file
 import type { Action } from '@/app/actions/actions';
-import type { EditActionArgs } from '@/app/actions/editActionsSpec';
 import type { FileActionArgs } from '@/app/actions/fileActionsSpec';
 import type { FormatActionArgs } from '@/app/actions/formatActionsSpec';
+import type { ViewActionArgs } from '@/app/actions/viewActionsSpec';
 import type { IconComponent } from '@/shared/components/Icons';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 
@@ -64,4 +64,4 @@ export type ActionSpecRecord = {
 };
 
 // Define the possible argument types for each action
-export type ActionArgs = EditActionArgs & FileActionArgs & FormatActionArgs;
+export type ActionArgs = FileActionArgs & FormatActionArgs & ViewActionArgs;

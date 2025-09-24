@@ -92,8 +92,6 @@ export const AIUserMessageForm = memo(
       filesSupportedText,
     } = props;
 
-    console.log('AIUserMessageForm.initialPrompt', initialPrompt);
-
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 

@@ -16,7 +16,6 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
-  AIIcon,
   CopyAsPng,
   CopyIcon,
   CutIcon,
@@ -52,12 +51,7 @@ type EditActionSpec = Pick<
   | Action.SaveInlineEditorMoveRight
   | Action.SaveInlineEditorMoveLeft
   | Action.TriggerCell
-  | Action.StartChatInAIAnalyst
 >;
-
-export type EditActionArgs = {
-  [Action.StartChatInAIAnalyst]: string;
-};
 
 export const editActionsSpec: EditActionSpec = {
   [Action.Undo]: {
@@ -234,28 +228,6 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);
-    },
-  },
-  [Action.StartChatInAIAnalyst]: {
-    label: () => 'Start chat',
-    Icon: AIIcon,
-    // Only show if AI analyst is not visible at the moment
-    isAvailable: () => {
-      return !Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst);
-    },
-    // Setup `isAvailable` for adding to AI chat
-    run: (reference: EditActionArgs[Action.StartChatInAIAnalyst]) => {
-      if (!pixiAppSettings.setAIAnalystState) return;
-      pixiAppSettings.setAIAnalystState((prev) => {
-        const newState = {
-          ...prev,
-          showAIAnalyst: true,
-          initialPrompt: `@${reference} `,
-          currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
-        };
-        return newState;
-      });
-      pixiAppSettings.setContextMenu?.({});
     },
   },
 };

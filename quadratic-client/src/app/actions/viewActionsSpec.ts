@@ -6,7 +6,7 @@ import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } fro
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
+import { AIIcon, CodeIcon, GoToIcon } from '@/shared/components/Icons';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -30,7 +30,12 @@ type ViewActionSpec = Pick<
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
   | Action.ToggleAIAnalyst
+  | Action.StartChatInAIAnalyst
 >;
+
+export type ViewActionArgs = {
+  [Action.StartChatInAIAnalyst]: string;
+};
 
 export const viewActionsSpec: ViewActionSpec = {
   [Action.CmdClick]: {
@@ -180,6 +185,28 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
+    },
+  },
+  [Action.StartChatInAIAnalyst]: {
+    label: () => 'Start chat',
+    Icon: AIIcon,
+    // Only show if AI analyst is not visible at the moment
+    isAvailable: () => {
+      return !Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst);
+    },
+    // Setup `isAvailable` for adding to AI chat
+    run: (reference: ViewActionArgs[Action.StartChatInAIAnalyst]) => {
+      if (!pixiAppSettings.setAIAnalystState) return;
+      pixiAppSettings.setAIAnalystState((prev) => {
+        const newState = {
+          ...prev,
+          showAIAnalyst: true,
+          initialPrompt: `@${reference} `,
+          currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
+        };
+        return newState;
+      });
+      pixiAppSettings.setContextMenu?.({});
     },
   },
 };
