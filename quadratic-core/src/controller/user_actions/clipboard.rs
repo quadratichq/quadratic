@@ -176,6 +176,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::controller::operations::clipboard::ClipboardOperation;
+    use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
@@ -1176,8 +1177,24 @@ mod test {
 
     #[test]
     fn test_translate_code_cell_references_on_copy() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let mock_calculation_complete = |gc: &mut GridController| {
+            let result = JsCodeResult {
+                transaction_id: gc.last_transaction().unwrap().id.to_string(),
+                success: true,
+                std_out: None,
+                std_err: None,
+                line_number: None,
+                output_value: Some(JsCellValueResult("".to_string(), 1)),
+                output_array: None,
+                output_display_type: None,
+                chart_pixel_output: None,
+                has_headers: false,
+            };
+            gc.calculation_complete(result).unwrap();
+        };
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);
         set_formula_code_cell(&mut gc, sheet_id, "A1", 2, 1);
@@ -1191,6 +1208,7 @@ mod test {
             None,
             None,
         );
+        mock_calculation_complete(&mut gc);
 
         gc.set_code_cell(
             pos![D1].to_sheet_pos(sheet_id),
@@ -1199,19 +1217,23 @@ mod test {
             None,
             None,
         );
+        mock_calculation_complete(&mut gc);
 
         let sheet = gc.sheet(sheet_id);
-        let selection = A1Selection::from_rect(SheetRect::new(2, 1, 4, 1, sheet_id));
+        let selection = A1Selection::test_a1("B1:D1");
         let js_clipboard: JsClipboard = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(2, 2, sheet_id),
+            &A1Selection::test_a1("B2"),
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
         );
+        // complete JS & Python code runs in the paste
+        mock_calculation_complete(&mut gc);
+        mock_calculation_complete(&mut gc);
 
         assert_display_cell_value(&gc, sheet_id, 2, 2, "");
         assert_code_cell_value(&gc, sheet_id, 2, 2, "A2");
@@ -1224,6 +1246,9 @@ mod test {
             PasteSpecial::None,
             None,
         );
+        // complete JS & Python code runs in the paste
+        mock_calculation_complete(&mut gc);
+        mock_calculation_complete(&mut gc);
 
         assert_display_cell_value(&gc, sheet_id, 1, 1, "Bad cell reference");
         assert_code_cell_value(&gc, sheet_id, 1, 1, "#REF!");
