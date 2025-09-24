@@ -1,6 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { getConnectionMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { aiAnalystFailingSqlConnectionsAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -49,13 +49,15 @@ export const useGetEmptyChatPromptSuggestions = () => {
             return;
           }
 
-          let connectionMarkdown: string = '';
+          let connectionSchemaMarkdown: string = '';
           const failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
           if (!!connection && !failingSqlConnections.uuids.includes(connection.uuid)) {
             try {
               const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
               const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
-              connectionMarkdown = getConnectionMarkdown(connectionTableInfo);
+              connectionSchemaMarkdown = !connectionTableInfo.error
+                ? getConnectionSchemaMarkdown(connectionTableInfo)
+                : '';
             } catch (error) {
               console.warn('[useGetEmptyChatPromptSuggestions] error: ', error);
             }
@@ -69,9 +71,9 @@ export const useGetEmptyChatPromptSuggestions = () => {
                 createTextContent(
                   `Use empty_chat_prompt_suggestions tool to provide three prompt suggestions for the user based on:\n
 ${
-  !!context.connection && !!connectionMarkdown
+  !!context.connection && !!connectionSchemaMarkdown
     ? ` - User has selected a ${context.connection.type} connection named ${context.connection.name} with id ${context.connection.id}. Details of this connection are as follows for generating the prompt suggestions:
-  ${connectionMarkdown}`
+  ${connectionSchemaMarkdown}`
     : ''
 }
 
