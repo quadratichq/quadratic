@@ -97,9 +97,9 @@ pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
 #[cfg(test)]
 pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
-    let cell_value = sheet
-        .edit_code_value(Pos { x, y }, gc.a1_context())
-        .unwrap();
+    let Some(cell_value) = sheet.edit_code_value(Pos { x, y }, gc.a1_context()) else {
+        panic!("Expected code cell at {}", Pos { x, y });
+    };
 
     assert_eq!(
         value, cell_value.code_string,

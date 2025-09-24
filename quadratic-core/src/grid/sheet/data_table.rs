@@ -378,7 +378,6 @@ impl Sheet {
 
                                 // add the display value to values if values is Some
                                 if let Some(values) = values.as_mut() {
-                                    dbg!(3);
                                     values.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
                             }

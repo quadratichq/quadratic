@@ -497,7 +497,7 @@ impl GridController {
                 }
             }
         }
-
+        dbg!(&ops);
         Ok(ops)
     }
 
@@ -1401,8 +1401,6 @@ mod test {
             None,
             None,
         );
-
-        print_sheet(gc.sheet(sheet1));
 
         let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
             gc.sheet(sheet_pos.sheet_id)
