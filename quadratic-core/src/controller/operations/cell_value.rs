@@ -189,7 +189,6 @@ impl GridController {
                 let mut can_delete_column = false;
                 let mut save_data_table_anchors = vec![];
                 let mut delete_data_tables = vec![];
-                let mut data_tables_automatically_deleted = vec![];
 
                 for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect_sorted(rect)
                 {
@@ -236,10 +235,7 @@ impl GridController {
                         save_data_table_anchors.push(data_table_pos);
                     }
                     if can_delete_table {
-                        // we don't need to manually delete the table as
-                        // the SetCellValues operation below will do
-                        // this properly
-                        data_tables_automatically_deleted.push(data_table_pos);
+                        delete_data_tables.push(data_table_pos);
                     }
                     if can_delete_column {
                         // adjust for hidden columns, reverse the order to delete from right to left
@@ -259,9 +255,7 @@ impl GridController {
                             flatten: false,
                             select_table: false,
                         });
-                    } else if !delete_data_tables.contains(&data_table_pos)
-                        && !data_tables_automatically_deleted.contains(&data_table_pos)
-                    {
+                    } else if !delete_data_tables.contains(&data_table_pos) {
                         // find the intersection of the selection rect and the data table rect
                         if let Some(intersection) = rect.intersection(&data_table_rect) {
                             ops.push(Operation::SetDataTableAt {

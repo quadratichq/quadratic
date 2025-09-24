@@ -52,16 +52,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        Rect, SheetPos,
-        controller::{
-            active_transactions::transaction_name::TransactionName,
-            user_actions::import::tests::simple_csv_at,
-        },
-        test_util::*,
-    };
-
-    use super::*;
+    use crate::{SheetPos, controller::user_actions::import::tests::simple_csv_at, test_util::*};
 
     #[test]
     fn test_move_data_table_within_its_current_output_rect() {
@@ -69,25 +60,22 @@ mod tests {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
-        assert_import(&gc, sheet_pos, &file_name, 4, 11);
-
-        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        assert_import(&gc, sheet_pos, &file_name, 4, 12);
 
         let dest_pos = pos![F4];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
 
-        let ops = vec![Operation::MoveCells {
-            source: data_table.output_sheet_rect(sheet_pos, true),
-            dest: sheet_dest_pos,
-            columns: false,
-            rows: false,
-        }];
-        gc.start_user_transaction(ops, None, TransactionName::MoveCells);
-        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        gc.move_cells(
+            data_table.output_sheet_rect(sheet_pos, true),
+            sheet_dest_pos,
+            false,
+            false,
+            None,
+        );
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
         assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());
 
-        assert_import(&gc, sheet_dest_pos, &file_name, 4, 11);
+        assert_import(&gc, sheet_dest_pos, &file_name, 4, 12);
     }
 }
