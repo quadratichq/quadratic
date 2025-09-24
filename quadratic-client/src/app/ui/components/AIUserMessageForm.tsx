@@ -13,7 +13,12 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { MentionsTextarea, useMentionsState } from '@/shared/shadcn/ui/mentions-textarea';
+import {
+  detectMentionInText,
+  getMentionCursorPosition,
+  MentionsTextarea,
+  useMentionsState,
+} from '@/shared/shadcn/ui/mentions-textarea';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -289,7 +294,45 @@ export const AIUserMessageForm = memo(
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
 
+    // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
+    const handleClickMention = useCallback(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      // Get current cursor position
+      const cursorPos = textarea.selectionStart || 0;
+      const currentValue = prompt;
+
+      // Insert @ at cursor position
+      const beforeCursor = currentValue.substring(0, cursorPos);
+      const afterCursor = currentValue.substring(cursorPos);
+      const newValue = beforeCursor + '@' + afterCursor;
+
+      setPrompt(newValue);
+
+      // Trigger mention detection using shared utilities
+      setTimeout(() => {
+        const mention = detectMentionInText(newValue, cursorPos + 1);
+
+        if (mention) {
+          const position = getMentionCursorPosition(textarea);
+          setMentionState((prev) => ({
+            ...prev,
+            isOpen: true,
+            query: mention.query,
+            startIndex: mention.startIndex,
+            endIndex: mention.endIndex,
+            position,
+            selectedIndex: 0,
+          }));
+        }
+
+        // Focus and position cursor after @
+        textarea.focus();
+        textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+      }, 0);
+    }, [textareaRef, prompt, setMentionState]);
 
     const textarea = (
       <Textarea
@@ -366,17 +409,7 @@ export const AIUserMessageForm = memo(
           />
 
           {enableMentions ? (
-            <MentionsTextarea
-              onMentionSearch={(q) => {
-                console.log('<MentionsTextarea>.onMentionsSearch');
-              }}
-              onMentionSelect={(m) => {
-                console.log('<MentionsTextarea>.onMentionsSelect');
-              }}
-              textareaRef={textareaRef}
-              mentionState={mentionState}
-              setMentionState={setMentionState}
-            >
+            <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
             </MentionsTextarea>
           ) : (
@@ -401,84 +434,10 @@ export const AIUserMessageForm = memo(
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            handleClickMention={() => {
-              if (!enableMentions) return;
-
-              const textarea = textareaRef.current;
-              if (!textarea) return;
-
-              // Get current cursor position
-              const cursorPos = textarea.selectionStart || 0;
-              const currentValue = prompt;
-
-              // Insert @ at cursor position
-              const beforeCursor = currentValue.substring(0, cursorPos);
-              const afterCursor = currentValue.substring(cursorPos);
-              const newValue = beforeCursor + '@' + afterCursor;
-
-              setPrompt(newValue);
-
-              // Trigger mention detection by simulating a change event
-              setTimeout(() => {
-                // Use the same mention detection logic as MentionsTextarea
-                const textBeforeCursor = newValue.substring(0, cursorPos + 1);
-                const atIndex = textBeforeCursor.lastIndexOf('@');
-
-                if (atIndex !== -1) {
-                  const textAfterAt = textBeforeCursor.substring(atIndex + 1);
-                  if (!textAfterAt.includes(' ')) {
-                    // Calculate position for the mention dropdown using the same logic as MentionsTextarea
-                    const rect = textarea.getBoundingClientRect();
-                    const style = getComputedStyle(textarea);
-                    const lineHeight = parseInt(style.lineHeight) || 20;
-                    const paddingTop = parseInt(style.paddingTop) || 0;
-                    const paddingLeft = parseInt(style.paddingLeft) || 0;
-
-                    // Create a temporary div to measure text up to cursor
-                    const div = document.createElement('div');
-                    div.style.position = 'absolute';
-                    div.style.visibility = 'hidden';
-                    div.style.whiteSpace = 'pre-wrap';
-                    div.style.wordWrap = 'break-word';
-                    div.style.font = style.font;
-                    div.style.width = textarea.clientWidth + 'px';
-                    div.style.padding = style.padding;
-                    div.style.border = style.border;
-                    div.style.boxSizing = style.boxSizing;
-
-                    const textBeforeCursor = newValue.substring(0, cursorPos + 1);
-                    div.textContent = textBeforeCursor;
-
-                    document.body.appendChild(div);
-                    const textHeight = div.offsetHeight;
-                    document.body.removeChild(div);
-
-                    // Calculate position
-                    const lines = Math.floor(textHeight / lineHeight);
-                    const top = rect.top + paddingTop + lines * lineHeight;
-                    const left = rect.left + paddingLeft;
-
-                    setMentionState((prev) => ({
-                      ...prev,
-                      isOpen: true,
-                      query: '',
-                      startIndex: atIndex,
-                      endIndex: cursorPos + 1,
-                      position: { top, left },
-                      selectedIndex: 0,
-                    }));
-                  }
-                }
-
-                // Focus and position cursor after @
-                textarea.focus();
-                textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
-              }, 0);
-            }}
+            handleClickMention={enableMentions ? handleClickMention : undefined}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
-            enableMentions={enableMentions}
           />
         </form>
       </div>
@@ -555,11 +514,10 @@ interface AIUserMessageFormFooterProps {
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
-  handleClickMention: () => void;
+  handleClickMention: (() => void) | undefined;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
-  enableMentions?: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -579,7 +537,6 @@ const AIUserMessageFormFooter = memo(
     context,
     setContext,
     filesSupportedText,
-    enableMentions,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -620,7 +577,7 @@ const AIUserMessageFormFooter = memo(
               setContext={setContext}
               textareaRef={textareaRef}
             />
-            {enableMentions && (
+            {handleClickMention && (
               <Button
                 size="icon-sm"
                 className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"

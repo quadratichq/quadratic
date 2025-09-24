@@ -21,8 +21,6 @@ export interface MentionItem {
 }
 
 export interface MentionsTextareaProps {
-  onMentionSearch?: (query: string) => void;
-  onMentionSelect?: (mention: MentionItem) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   mentionState: MentionState;
   setMentionState: React.Dispatch<React.SetStateAction<MentionState>>;
@@ -51,7 +49,7 @@ export const useMentionsState = () => {
 
 const MentionsTextarea = memo(
   forwardRef<HTMLTextAreaElement, MentionsTextareaProps>(
-    ({ onMentionSearch, onMentionSelect, textareaRef, mentionState, setMentionState, children }, ref) => {
+    ({ textareaRef, mentionState, setMentionState, children }, ref) => {
       const mentionItemRefs = useRef<(HTMLDivElement | null)[]>([]);
       const lastProcessedValue = useRef<string>('');
       const lastProcessedCursor = useRef<number>(-1);
@@ -73,68 +71,8 @@ const MentionsTextarea = memo(
       const getCursorPosition = useCallback(() => {
         const textarea = textareaRef?.current;
         if (!textarea) return { top: 0, left: 0 };
-
-        const rect = textarea.getBoundingClientRect();
-        const style = getComputedStyle(textarea);
-        const lineHeight = parseInt(style.lineHeight) || 20;
-        const paddingTop = parseInt(style.paddingTop) || 0;
-        const paddingLeft = parseInt(style.paddingLeft) || 0;
-
-        // Create a temporary div to measure text up to cursor
-        const div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.visibility = 'hidden';
-        div.style.whiteSpace = 'pre-wrap';
-        div.style.wordWrap = 'break-word';
-        div.style.font = style.font;
-        div.style.width = textarea.clientWidth + 'px';
-        div.style.padding = style.padding;
-        div.style.border = style.border;
-        div.style.boxSizing = style.boxSizing;
-
-        const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart || 0);
-        div.textContent = textBeforeCursor;
-
-        document.body.appendChild(div);
-        const textHeight = div.offsetHeight;
-        document.body.removeChild(div);
-
-        // Calculate position
-        const lines = Math.floor(textHeight / lineHeight);
-        const top = rect.top + paddingTop + lines * lineHeight;
-        const left = rect.left + paddingLeft;
-
-        return { top, left };
+        return getMentionCursorPosition(textarea);
       }, [textareaRef]);
-
-      // Detect @ mentions in text
-      const detectMention = useCallback((text: string, cursorPos: number) => {
-        const textBeforeCursor = text.substring(0, cursorPos);
-        const atIndex = textBeforeCursor.lastIndexOf('@');
-
-        if (atIndex === -1) return null;
-
-        // Check if there's a space after @ (not a mention)
-        const textAfterAt = textBeforeCursor.substring(atIndex + 1);
-        if (textAfterAt.includes(' ')) return null;
-
-        // Check if we're still typing the mention (no space after @)
-        const textAfterCursor = text.substring(cursorPos);
-        const nextSpaceIndex = textAfterCursor.indexOf(' ');
-        const endOfText = textAfterCursor.length === 0;
-
-        if (nextSpaceIndex === 0 && !endOfText) return null;
-
-        const query = textAfterAt;
-        const startIndex = atIndex;
-        const endIndex = cursorPos;
-
-        return {
-          query,
-          startIndex,
-          endIndex,
-        };
-      }, []);
 
       // Filter mentions based on query
       const mentions = useGetMentions(mentionState.query);
@@ -163,7 +101,7 @@ const MentionsTextarea = memo(
         lastProcessedValue.current = currentValue;
         lastProcessedCursor.current = currentCursor;
 
-        const mention = detectMention(currentValue, currentCursor);
+        const mention = detectMentionInText(currentValue, currentCursor);
 
         if (mention) {
           const position = getCursorPosition();
@@ -175,11 +113,10 @@ const MentionsTextarea = memo(
             position,
             selectedIndex: 0,
           });
-          onMentionSearch?.(mention.query);
         } else {
           setMentionState((prev) => ({ ...prev, isOpen: false }));
         }
-      }, [detectMention, getCursorPosition, onMentionSearch, setMentionState, textareaRef]);
+      }, [getCursorPosition, setMentionState, textareaRef]);
 
       // Handle mention selection
       const handleMentionSelect = useCallback(
@@ -205,7 +142,6 @@ const MentionsTextarea = memo(
           textarea.dispatchEvent(event);
 
           setMentionState((prev) => ({ ...prev, isOpen: false }));
-          onMentionSelect?.(mention);
 
           // Focus back to textarea and position cursor after the mention
           setTimeout(() => {
@@ -213,7 +149,7 @@ const MentionsTextarea = memo(
             textarea.setSelectionRange(newCursorPos, newCursorPos);
           }, 0);
         },
-        [mentionState, onMentionSelect, setMentionState, textareaRef]
+        [mentionState, setMentionState, textareaRef]
       );
 
       // Add event listeners to the textarea
@@ -380,3 +316,66 @@ const MentionsTextarea = memo(
 MentionsTextarea.displayName = 'MentionsTextarea';
 
 export { MentionsTextarea };
+
+// Shared mention utilities
+export function getMentionCursorPosition(textarea: HTMLTextAreaElement) {
+  const rect = textarea.getBoundingClientRect();
+  const style = getComputedStyle(textarea);
+  const lineHeight = parseInt(style.lineHeight) || 20;
+  const paddingTop = parseInt(style.paddingTop) || 0;
+  const paddingLeft = parseInt(style.paddingLeft) || 0;
+
+  // Create a temporary div to measure text up to cursor
+  const div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.visibility = 'hidden';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.wordWrap = 'break-word';
+  div.style.font = style.font;
+  div.style.width = textarea.clientWidth + 'px';
+  div.style.padding = style.padding;
+  div.style.border = style.border;
+  div.style.boxSizing = style.boxSizing;
+
+  const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart || 0);
+  div.textContent = textBeforeCursor;
+
+  document.body.appendChild(div);
+  const textHeight = div.offsetHeight;
+  document.body.removeChild(div);
+
+  // Calculate position
+  const lines = Math.floor(textHeight / lineHeight);
+  const top = rect.top + paddingTop + lines * lineHeight;
+  const left = rect.left + paddingLeft;
+
+  return { top, left };
+}
+
+export function detectMentionInText(text: string, cursorPos: number) {
+  const textBeforeCursor = text.substring(0, cursorPos);
+  const atIndex = textBeforeCursor.lastIndexOf('@');
+
+  if (atIndex === -1) return null;
+
+  // Check if there's a space after @ (not a mention)
+  const textAfterAt = textBeforeCursor.substring(atIndex + 1);
+  if (textAfterAt.includes(' ')) return null;
+
+  // Check if we're still typing the mention (no space after @)
+  const textAfterCursor = text.substring(cursorPos);
+  const nextSpaceIndex = textAfterCursor.indexOf(' ');
+  const endOfText = textAfterCursor.length === 0;
+
+  if (nextSpaceIndex === 0 && !endOfText) return null;
+
+  const query = textAfterAt;
+  const startIndex = atIndex;
+  const endIndex = cursorPos;
+
+  return {
+    query,
+    startIndex,
+    endIndex,
+  };
+}
