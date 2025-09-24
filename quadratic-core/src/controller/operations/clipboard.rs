@@ -400,21 +400,22 @@ impl GridController {
                     .iter_pos_in_rect(output_rect, false)
                     .any(|pos| !sheet.data_table_at(&pos).is_some())
                 {
+                    let message = format!(
+                        "Cannot place {} within a table",
+                        data_table.kind_as_string()
+                    );
+
                     // report the attempt to paste to the user
                     #[cfg(any(target_family = "wasm", test))]
                     {
-                        let message = format!(
-                            "Cannot place {} within a table",
-                            data_table.kind_as_string()
-                        );
-
                         let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
                         crate::wasm_bindings::js::jsClientMessage(
-                            message.to_owned(),
+                            message.clone(),
                             severity.to_string(),
                         );
                     }
-                    continue;
+
+                    return Err(Error::msg(message));
                 }
 
                 let paste_in_import = sheet
@@ -455,21 +456,29 @@ impl GridController {
                 // adjust the code_runs if necessary
                 let data_table = if let Some(code_run) = data_table.code_run() {
                     let mut adjusted_code_run = code_run.clone();
-                    adjusted_code_run.adjust_references(
-                        start_pos.sheet_id,
-                        &self.a1_context,
-                        pos.to_sheet_pos(start_pos.sheet_id),
-                        RefAdjust {
-                            sheet_id: Some(start_pos.sheet_id),
-                            dx: target_pos.x - pos.x,
-                            dy: target_pos.y - pos.y,
-                            relative_only: true,
+                    match clipboard.operation {
+                        ClipboardOperation::Cut => adjusted_code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                            RefAdjust::NO_OP,
+                        ),
+                        ClipboardOperation::Copy => adjusted_code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            target_pos.to_sheet_pos(start_pos.sheet_id),
+                            RefAdjust {
+                                sheet_id: None,
+                                dx: target_pos.x - pos.x,
+                                dy: target_pos.y - pos.y,
+                                relative_only: true,
 
-                            // ignored
-                            x_start: 0,
-                            y_start: 0,
-                        },
-                    );
+                                // ignored
+                                x_start: 0,
+                                y_start: 0,
+                            },
+                        ),
+                    }
 
                     if &adjusted_code_run != code_run {
                         DataTable {
@@ -899,7 +908,7 @@ impl GridController {
         let mut borders = clipboard.borders.to_owned().unwrap_or_default();
         let source_columns = clipboard.cells.columns;
 
-        // remove code anchors that overlap the paste area
+        // remove code tables if their anchor cell overlap the paste area
         self.try_sheet(selection.sheet_id).map(|sheet| {
             sheet
                 .data_table_anchors_in_rect(Rect {
