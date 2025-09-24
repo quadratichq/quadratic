@@ -132,8 +132,8 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 });
+        let selected: Rect = Rect::test_a1("A1:A2");
+        let range: Rect = Rect::test_a1("A1:J10");
         let code_1 = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "SUM(A1)".into(),

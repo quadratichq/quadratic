@@ -4,7 +4,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        SheetId,
+        DataTableKind, SheetId,
         formats::SheetFormatUpdates,
         series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,
@@ -662,64 +662,48 @@ impl GridController {
         for (i, Pos { x, y }) in final_range.iter().enumerate() {
             let final_sheet_pos = SheetPos::new(sheet_id, x, y);
 
-            if let Some((_, Some(original_pos))) = new_series.get_mut(i) {
-                if let Some(code_run) = sheet.code_run_at(original_pos) {
-                    let mut code_run = code_run.clone();
-                    code_run.adjust_references(
-                        sheet_id,
-                        context,
-                        original_pos.to_sheet_pos(sheet_id),
-                        RefAdjust {
-                            sheet_id: None,
-                            relative_only: true,
-                            dx: x - original_pos.x,
-                            dy: y - original_pos.y,
-                            x_start: 0,
-                            y_start: 0,
-                        },
-                    );
+            if let Some((_, Some(original_pos))) = new_series.get_mut(i)
+                && let Some(code_run) = sheet.code_run_at(original_pos)
+            {
+                dbg!("Here");
+                let mut code_run = code_run.clone();
+                code_run.adjust_references(
+                    sheet_id,
+                    context,
+                    original_pos.to_sheet_pos(sheet_id),
+                    RefAdjust {
+                        sheet_id: None,
+                        relative_only: true,
+                        dx: x - original_pos.x,
+                        dy: y - original_pos.y,
+                        x_start: 0,
+                        y_start: 0,
+                    },
+                );
 
-                    // TODO: once we're compiling again, this needs to be fixed
-                    // and moved below, as the code_run needs to be added to the
-                    // data_tables_in_rect instead of separately set here
+                let source_pos = original_pos.to_owned();
+                original_pos.x = x;
+                original_pos.y = y;
 
-                    // data_table_ops.push(Operation::AddDataTableWithoutCellValue {
-                    //     sheet_pos: final_sheet_pos,
-                    //     data_table: Some(DataTable::new(
-                    //         DataTableKind::CodeRun(code_run),
-                    //         "CodeRun",
-                    //         "".into(),
-                    //         false,
-                    //         None,
-                    //         None,
-                    //         None,
-                    //     )),
-                    //     index: None,
-                    // });
+                // collect SetDataTable operations for any data tables in the source_pos
+                if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
+                    let mut data_table = data_table.to_owned();
+                    let old_name = data_table.name().to_string();
+                    let new_name = unique_data_table_name(&old_name, false, None, context);
+                    data_table.name = new_name.into();
+                    data_table.kind = DataTableKind::CodeRun(code_run);
 
-                    let source_pos = original_pos.to_owned();
-                    original_pos.x = x;
-                    original_pos.y = y;
-
-                    // collect SetDataTable operations for any data tables in the source_pos
-                    if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
-                        let mut data_table = data_table.to_owned();
-                        let old_name = data_table.name().to_string();
-                        let new_name = unique_data_table_name(&old_name, false, None, context);
-                        data_table.name = new_name.into();
-
-                        data_table_ops.push(Operation::SetDataTable {
-                            sheet_pos: final_sheet_pos,
-                            data_table: Some(data_table),
-                            index: usize::MAX,
-                        });
-                    }
+                    data_table_ops.push(Operation::SetDataTable {
+                        sheet_pos: final_sheet_pos,
+                        data_table: Some(data_table),
+                        index: usize::MAX,
+                    });
                 }
-
-                compute_code_ops.push(Operation::ComputeCode {
-                    sheet_pos: final_sheet_pos,
-                });
             }
+
+            compute_code_ops.push(Operation::ComputeCode {
+                sheet_pos: final_sheet_pos,
+            });
         }
 
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
