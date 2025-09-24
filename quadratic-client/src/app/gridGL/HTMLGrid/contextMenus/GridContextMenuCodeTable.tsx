@@ -14,12 +14,11 @@ import { useRecoilValue } from 'recoil';
 export function GridContextMenuCodeTable() {
   const contextMenu = useRecoilValue(contextMenuAtom);
   const hasSpillError = useMemo(() => !!contextMenu.table?.spill_error, [contextMenu.table?.spill_error]);
-  console.log('contextMenu', contextMenu);
 
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />
-      <ContextMenuItemAction action={Action.AddToAIContext} actionArgs={contextMenu.table?.name ?? ''} />
+      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={contextMenu.table?.name ?? ''} />
 
       <DropdownMenuSeparator />
 

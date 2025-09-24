@@ -1,5 +1,6 @@
 import {
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystInitialPromptAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -25,6 +26,8 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const initialPrompt = useRecoilValue(aiAnalystInitialPromptAtom);
+  console.log('AIAnalyst.initialPrompt', initialPrompt);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -95,6 +98,7 @@ export const AIAnalyst = memo(() => {
 
               <div className={'grid grid-rows-[1fr_auto] px-2 py-0.5'}>
                 <AIAnalystUserMessageForm
+                  initialPrompt={initialPrompt}
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}

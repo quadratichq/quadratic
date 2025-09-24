@@ -41,8 +41,7 @@ export interface AIAnalystState {
     loading: boolean;
   };
   waitingOnMessageIndex?: number;
-  delaySeconds: number;
-  prompt: string;
+  initialPrompt: string;
   failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
 }
 
@@ -74,8 +73,7 @@ export const defaultAIAnalystState: AIAnalystState = {
     loading: false,
   },
   waitingOnMessageIndex: undefined,
-  delaySeconds: 0,
-  prompt: '',
+  initialPrompt: '',
   failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
 };
 
@@ -133,10 +131,11 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         if (oldValue.showAIAnalyst && !newValue.showAIAnalyst) {
           oldValue.abortController?.abort();
           focusGrid();
-          // Reset prompt when AI analyst is hidden
+
+          // Reset initial prompt when AI analyst is hidden
           setSelf((prev: any) => ({
             ...prev,
-            prompt: '',
+            initialPrompt: '',
           }));
         }
 
@@ -162,7 +161,7 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
-export const aiAnalystPromptAtom = createSelector('prompt');
+export const aiAnalystInitialPromptAtom = createSelector('initialPrompt');
 
 export const aiAnalystLoadingAtom = selector<boolean>({
   key: 'aiAnalystLoadingAtom',

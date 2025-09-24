@@ -1,7 +1,6 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
-import { getAddToChatMsg } from '@/app/ai/utils/getAddToChatMsg';
 import { events } from '@/app/events/events';
 import {
   copySelectionToPNG,
@@ -53,11 +52,11 @@ type EditActionSpec = Pick<
   | Action.SaveInlineEditorMoveRight
   | Action.SaveInlineEditorMoveLeft
   | Action.TriggerCell
-  | Action.AddToAIContext
+  | Action.StartChatInAIAnalyst
 >;
 
 export type EditActionArgs = {
-  [Action.AddToAIContext]: string;
+  [Action.StartChatInAIAnalyst]: string;
 };
 
 export const editActionsSpec: EditActionSpec = {
@@ -237,20 +236,23 @@ export const editActionsSpec: EditActionSpec = {
       events.emit('triggerCell', p.x, p.y, true);
     },
   },
-  [Action.AddToAIContext]: {
-    label: () => 'Mention in chat',
+  [Action.StartChatInAIAnalyst]: {
+    label: () => 'Start chat',
     Icon: AIIcon,
+    // Only show if AI analyst is not visible at the moment
+    isAvailable: () => {
+      return !Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst);
+    },
     // Setup `isAvailable` for adding to AI chat
-    run: (selection: EditActionArgs[Action.AddToAIContext]) => {
+    run: (reference: EditActionArgs[Action.StartChatInAIAnalyst]) => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => {
         const newState = {
           ...prev,
           showAIAnalyst: true,
-          prompt: getAddToChatMsg(selection),
+          initialPrompt: `@${reference} `,
           currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
         };
-        console.log('editActionsSpec.AddToAIContext', prev);
         return newState;
       });
       pixiAppSettings.setContextMenu?.({});

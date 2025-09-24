@@ -21,7 +21,7 @@ export function GridContextMenuCodeTableChart() {
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.AddToAIContext} actionArgs={contextMenu.table?.name ?? ''} />
+      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={contextMenu.table?.name ?? ''} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />

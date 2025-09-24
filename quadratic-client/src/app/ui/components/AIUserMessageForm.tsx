@@ -38,6 +38,7 @@ export interface AIUserMessageFormWrapperProps {
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   initialContext?: Context;
+  initialPrompt?: string;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showPromptSuggestions?: boolean;
@@ -72,6 +73,7 @@ export const AIUserMessageForm = memo(
       autoFocusRef,
       initialContent,
       initialContext,
+      initialPrompt,
       onContentChange,
       showPromptSuggestions,
       abortController,
@@ -90,6 +92,8 @@ export const AIUserMessageForm = memo(
       filesSupportedText,
     } = props;
 
+    console.log('AIUserMessageForm.initialPrompt', initialPrompt);
+
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
@@ -98,20 +102,20 @@ export const AIUserMessageForm = memo(
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [files, setFiles] = useState<FileContent[]>([]);
     const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
-    // TODO: wire this up as an atom everywhere instead of passing?
     const [prompt, setPrompt] = useState<string>('');
-    // const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
     useEffect(() => {
       setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
       setImportFiles([]);
       setPrompt(
-        initialContent
-          ?.filter((item) => isContentText(item))
-          .map((item) => item.text)
-          .join('\n') ?? ''
+        initialPrompt
+          ? initialPrompt
+          : (initialContent
+              ?.filter((item) => isContentText(item))
+              .map((item) => item.text)
+              .join('\n') ?? '')
       );
       setContext?.(initialContext ?? {});
-    }, [initialContent, initialContext, setContext, setPrompt]);
+    }, [initialContent, initialContext, setContext, setPrompt, initialPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
