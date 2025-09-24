@@ -52,7 +52,8 @@ export const handleAIRequest = async (
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
-  response?: Response
+  response?: Response,
+  signal?: AbortSignal
 ): Promise<ParsedAIResponse | undefined> => {
   try {
     let parsedResponse: ParsedAIResponse | undefined;
@@ -64,7 +65,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         vertex_anthropic,
-        response
+        response,
+        signal
       );
     } else if (isBedrockAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(
@@ -73,7 +75,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         bedrock_anthropic,
-        response
+        response,
+        signal
       );
     } else if (isAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(
@@ -82,7 +85,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         anthropic,
-        response
+        response,
+        signal
       );
     } else if (isOpenAIModel(modelKey)) {
       parsedResponse = await handleOpenAIResponsesRequest(
@@ -91,7 +95,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         openai,
-        response
+        response,
+        signal
       );
     } else if (isAzureOpenAIModel(modelKey)) {
       parsedResponse = await handleOpenAIChatCompletionsRequest(
@@ -100,7 +105,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         azureOpenAI,
-        response
+        response,
+        signal
       );
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIChatCompletionsRequest(
@@ -109,7 +115,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         xai,
-        response
+        response,
+        signal
       );
     } else if (isBasetenModel(modelKey)) {
       parsedResponse = await handleOpenAIChatCompletionsRequest(
@@ -118,7 +125,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         baseten,
-        response
+        response,
+        signal
       );
     } else if (isFireworksModel(modelKey)) {
       parsedResponse = await handleOpenAIChatCompletionsRequest(
@@ -127,7 +135,8 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         fireworks,
-        response
+        response,
+        signal
       );
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIChatCompletionsRequest(
@@ -136,12 +145,29 @@ export const handleAIRequest = async (
         isOnPaidPlan,
         exceededBillingLimit,
         open_router,
-        response
+        response,
+        signal
       );
     } else if (isVertexAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, vertexai, response);
+      parsedResponse = await handleGenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        vertexai,
+        response,
+        signal
+      );
     } else if (isGenAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, geminiai, response);
+      parsedResponse = await handleGenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        geminiai,
+        response,
+        signal
+      );
     } else if (isBedrockModel(modelKey)) {
       parsedResponse = await handleBedrockRequest(
         modelKey,
@@ -168,7 +194,12 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    logger.error(`Error in handleAIRequest ${modelKey}`, error);
+    if (signal?.aborted) {
+      logger.info(`[handleAIRequest] AI request aborted by client`);
+      return;
+    }
+
+    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
@@ -186,7 +217,7 @@ export const handleAIRequest = async (
         : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
 
       if (modelKey !== backupModelKey) {
-        return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);
+        return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response, signal);
       }
     }
 

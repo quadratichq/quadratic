@@ -403,8 +403,6 @@ const FeedbackButtons = memo(() => {
 
 const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
-  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const handleClick = useRecoilCallback(
     ({ snapshot }) =>
       async (prompt: string) => {
@@ -426,6 +424,8 @@ const PromptSuggestions = memo(() => {
     [submitPrompt]
   );
 
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }

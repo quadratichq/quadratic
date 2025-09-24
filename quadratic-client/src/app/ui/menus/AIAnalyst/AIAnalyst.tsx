@@ -99,7 +99,7 @@ export const AIAnalyst = memo(() => {
                   autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}
                   messageIndex={messagesCount}
-                  showPromptSuggestions={true}
+                  showEmptyChatPromptSuggestions={true}
                 />
 
                 <AIUserMessageFormDisclaimer />

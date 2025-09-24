@@ -15,7 +15,8 @@ export const handleGenAIRequest = async (
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   genai: GoogleGenAI,
-  response?: Response
+  response?: Response,
+  signal?: AbortSignal
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -36,6 +37,7 @@ export const handleGenAIRequest = async (
           thinkingBudget: options.thinkingBudget,
         },
       }),
+      abortSignal: signal,
     },
   };
 

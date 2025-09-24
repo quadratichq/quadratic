@@ -23,7 +23,8 @@ export const handleOpenAIChatCompletionsRequest = async (
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   openai: OpenAI,
-  response?: Response
+  response?: Response,
+  signal?: AbortSignal
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -62,7 +63,7 @@ export const handleOpenAIChatCompletionsRequest = async (
         include_usage: true,
       },
     };
-    const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
+    const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming, { signal });
     const parsedResponse = await parseOpenAIChatCompletionsStream(
       completion,
       modelKey,
@@ -72,7 +73,7 @@ export const handleOpenAIChatCompletionsRequest = async (
     );
     return parsedResponse;
   } else {
-    const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
+    const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming, { signal });
     const parsedResponse = parseOpenAIChatCompletionsResponse(
       result,
       modelKey,

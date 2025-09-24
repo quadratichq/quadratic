@@ -1,4 +1,5 @@
 import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
 const AIProvidersSchema = z.enum([
@@ -19,7 +20,7 @@ const AIProvidersSchema = z.enum([
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
-const VertexAIModelSchema = z.enum(['gemini-2.5-flash']);
+const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum(['us.anthropic.claude-sonnet-4-20250514-v1:0']);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
@@ -78,6 +79,8 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash:thinking-toggle-off',
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-off',
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
@@ -216,21 +219,10 @@ export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
-const ConnectionKindSchema = z.enum([
-  'POSTGRES',
-  'MYSQL',
-  'MSSQL',
-  'SNOWFLAKE',
-  'BIGQUERY',
-  'COCKROACHDB',
-  'MARIADB',
-  'NEON',
-  'SUPABASE',
-]);
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: ConnectionKindSchema,
+      kind: ConnectionTypeSchema,
       id: z.string(),
     }),
   })
@@ -262,7 +254,7 @@ const ContextSchema = z.object({
     .optional(),
   connection: z
     .object({
-      type: ConnectionKindSchema,
+      type: ConnectionTypeSchema,
       id: z.string(),
       name: z.string(),
     })
@@ -546,6 +538,7 @@ const AISourceSchema = z.enum([
   'GetFileName',
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
+  'GetEmptyChatPromptSuggestions',
   'PDFImport',
   'ModelRouter',
   'WebSearch',
