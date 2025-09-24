@@ -615,6 +615,10 @@ mod test {
         let operations = gc.delete_cells_operations(&selection, false);
 
         assert_eq!(operations.len(), 4);
+
+        // FYI: this ends up with two delete data tables since we don't track
+        // which ops are already created and both A2: and B return the existing
+        // table before it's deleted. todo: maybe improve this?
         assert_eq!(
             operations,
             vec![
