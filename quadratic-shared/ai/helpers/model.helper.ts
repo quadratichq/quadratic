@@ -81,7 +81,7 @@ export const getModelOptions = (
   args: Pick<AIRequestBody, 'source' | 'useStream'>
 ): {
   stream: boolean;
-  temperature: number;
+  temperature?: number;
   max_tokens: number;
   thinking?: boolean;
   thinkingBudget?: number;

@@ -33,7 +33,7 @@ export const handleOpenAIResponsesRequest = async (
   const apiArgs: ResponseCreateParamsStreaming | ResponseCreateParamsNonStreaming = {
     model,
     input: messages,
-    temperature: options.temperature,
+    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
     max_output_tokens: !options.max_tokens ? undefined : options.max_tokens,
     stream: options.stream,
     tools,

@@ -26,6 +26,7 @@ const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-sonnet-4-20250514']);
 const OpenAIModelSchema = z.enum([
   'gpt-5-2025-08-07',
+  'gpt-5-codex',
   'gpt-5-mini-2025-08-07',
   'ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
   'gpt-4.1-2025-04-14',
@@ -101,6 +102,7 @@ export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
   'openai:gpt-5-2025-08-07',
+  'openai:gpt-5-codex',
   'openai:gpt-5-mini-2025-08-07',
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
   'openai:gpt-4.1-2025-04-14',
@@ -168,7 +170,7 @@ export const AIModelConfigSchema = z
     model: AIModelSchema,
     backupModelKey: AIModelKeySchema.optional(),
     displayName: z.string(),
-    temperature: z.number(),
+    temperature: z.number().optional(),
     max_tokens: z.number(),
     canStream: z.boolean(),
     canStreamWithToolCalls: z.boolean(),
