@@ -1,8 +1,12 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::arrow::object_store::{ObjectStore, new_s3_object_store};
+use quadratic_rust_shared::arrow::object_store::{
+    ObjectStore, new_filesystem_object_store, new_s3_object_store,
+};
 use quadratic_rust_shared::sql::datafusion_connection::DatafusionConnection;
+use quadratic_rust_shared::storage::StorageType;
 use reqwest::Url;
 
 use crate::config::Config;
@@ -16,13 +20,12 @@ pub(crate) struct Settings {
     pub(crate) max_response_bytes: u64,
     pub(crate) datafusion_connection: Option<DatafusionConnection>,
     pub(crate) object_store: Option<Arc<dyn ObjectStore>>,
-    pub(crate) _object_store_url: Option<Url>,
 }
 
 impl Settings {
     pub(crate) fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         let datafustion_connection = new_datafusion_connection(config).ok();
-        let (object_store, object_store_url) = s3_object_store(config).ok().unzip();
+        let object_store = object_store(config).ok();
 
         Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
@@ -31,9 +34,16 @@ impl Settings {
             max_response_bytes: config.max_response_bytes,
             datafusion_connection: datafustion_connection,
             object_store,
-            _object_store_url: object_store_url,
         }
     }
+}
+
+fn required<'a>(config: &'a Config, value: Option<&'a String>) -> &'a String {
+    let storage_type = config.storage_type.to_string();
+    value.expect(&format!(
+        "Missing required environment variables for {} storage",
+        storage_type
+    ))
 }
 
 pub fn new_datafusion_connection(config: &Config) -> Result<DatafusionConnection> {
@@ -60,14 +70,32 @@ pub fn new_datafusion_connection(config: &Config) -> Result<DatafusionConnection
     }
 }
 
+fn object_store(config: &Config) -> Result<Arc<dyn ObjectStore>> {
+    match config.storage_type {
+        StorageType::S3 => s3_object_store(config).map(|(object_store, _)| object_store),
+        StorageType::FileSystem => {
+            filesystem_object_store(config).map(|(object_store, _)| object_store)
+        }
+    }
+}
+
+fn filesystem_object_store(config: &Config) -> Result<(Arc<dyn ObjectStore>, PathBuf)> {
+    let path = required(config, config.storage_dir.as_ref());
+    new_filesystem_object_store(&path).map_err(ConnectionError::from)
+}
+
 fn s3_object_store(config: &Config) -> Result<(Arc<dyn ObjectStore>, Url)> {
     let is_local = config.environment.is_local_or_docker();
+    let bucket_name = required(config, config.aws_s3_bucket_name.as_ref());
+    let region = required(config, config.aws_s3_region.as_ref());
+    let access_key_id = required(config, config.aws_s3_access_key_id.as_ref());
+    let secret_access_key = required(config, config.aws_s3_secret_access_key.as_ref());
 
     new_s3_object_store(
-        config.aws_s3_bucket_name.as_ref().unwrap(),
-        config.aws_s3_region.as_ref().unwrap(),
-        config.aws_s3_access_key_id.as_ref().unwrap(),
-        config.aws_s3_secret_access_key.as_ref().unwrap(),
+        bucket_name,
+        region,
+        access_key_id,
+        secret_access_key,
         is_local,
     )
     .map_err(ConnectionError::from)

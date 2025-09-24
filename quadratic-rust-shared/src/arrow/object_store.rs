@@ -1,6 +1,7 @@
 use futures_util::TryStreamExt;
+use object_store::local::LocalFileSystem;
 pub use object_store::{ObjectMeta, ObjectStore, WriteMultipart, aws::AmazonS3Builder, path::Path};
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 pub use url::Url;
 
 use crate::{SharedError, arrow::error::Arrow as ArrowError, error::Result};
@@ -34,6 +35,17 @@ pub fn new_s3_object_store(
     let arc_s3 = Arc::new(s3);
 
     Ok((arc_s3, s3_url))
+}
+
+/// Create a new filesystem object store.
+pub fn new_filesystem_object_store(path: &str) -> Result<(Arc<dyn ObjectStore>, PathBuf)> {
+    let file_system = LocalFileSystem::new_with_prefix(path).map_err(object_store_error)?;
+    let file_system_url = file_system
+        .path_to_filesystem(&Path::from(path))
+        .map_err(object_store_error)?;
+    let arc_file_system = Arc::new(file_system);
+
+    Ok((arc_file_system, file_system_url))
 }
 
 /// List objects from the object store.
