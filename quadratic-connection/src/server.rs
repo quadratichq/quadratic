@@ -36,7 +36,7 @@ use crate::{
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
         datafusion::{
-            query as query_datafusion, schema as schema_datafusion, test as test_datafusion,
+            query as query_datafusion, schema as schema_datafusion, sync_mixpanel, test_mixpanel,
         },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
@@ -44,6 +44,7 @@ use crate::{
         snowflake::{query as query_snowflake, schema as schema_snowflake, test as test_snowflake},
     },
     state::State,
+    synced_connection::process_mixpanel_connections,
 };
 
 const STATS_INTERVAL_S: u64 = 5;
@@ -147,10 +148,11 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/bigquery/query", post(query_bigquery))
         .route("/bigquery/schema/:id", get(schema_bigquery))
         //
-        // datafusion
-        .route("/synced/test", post(test_datafusion))
-        .route("/synced/query", post(query_datafusion))
-        .route("/synced/schema/:id", get(schema_datafusion))
+        // mixpanel
+        .route("/mixpanel/test", post(test_mixpanel))
+        .route("/mixpanel/query", post(query_datafusion))
+        .route("/mixpanel/schema/:id", get(schema_datafusion))
+        .route("/mixpanel/sync/:id", post(sync_mixpanel))
         //
         // proxy
         .route("/proxy", any(proxy))
@@ -236,7 +238,8 @@ pub(crate) async fn serve() -> Result<()> {
     // start the cache executor
     let cache = Arc::clone(&state.cache.schema);
     let executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
-    println!("started cache executor: {executor:?}");
+
+    tracing::info!("started cache executor: {executor:?}");
 
     // log stats in a separate thread
     tokio::spawn({
@@ -263,6 +266,10 @@ pub(crate) async fn serve() -> Result<()> {
 
             loop {
                 interval.tick().await;
+
+                if let Err(e) = process_mixpanel_connections(&state.settings).await {
+                    tracing::error!("Error syncing Mixpanel connections: {e}");
+                }
             }
         }
     });

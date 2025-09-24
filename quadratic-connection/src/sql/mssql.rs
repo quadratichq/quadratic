@@ -47,17 +47,16 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<MsSqlConnection>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.email, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
     } else {
         let ssh_config = quadratic_rust_shared::net::ssh::tests::get_ssh_config();
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
             type_details: MsSqlConnection {
                 host: "0.0.0.0".into(),
                 port: Some("1433".into()),
@@ -84,7 +83,14 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let connection = get_connection(
+        &state,
+        &claims,
+        &sql_query.connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
 
     query_with_connection(state, sql_query, connection.type_details).await
 }
@@ -114,7 +120,7 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     schema_generic_with_ssh(api_connection, Extension(state), params).await
 }
@@ -177,8 +183,6 @@ mod tests {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
             type_details,
         }
     }

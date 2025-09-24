@@ -82,7 +82,7 @@ def main():
     # Paths
     output_dir = "/project/output"
     final_file = f"{output_dir}/mixpanel_data.parquet"
-    s3_consolidated_path = "s3://mixpanel-data/consolidated/mixpanel_data.parquet"
+    s3_consolidated_path = "s3://synced-data/consolidated/mixpanel_data.parquet"
     batch_dir = f"{output_dir}/batches"
     
     # Download existing consolidated file from S3 (optional, for incremental updates)

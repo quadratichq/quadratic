@@ -1,50 +1,98 @@
 use quadratic_rust_shared::{
-    arrow::object_store::{list_objects, new_s3_object_store},
+    quadratic_api::get_connections_by_type,
     synced::{
-        mixpanel::{client::new_mixpanel_client, events::ExportParams},
-        upload_to_s3,
+        get_last_date_processed,
+        mixpanel::{client::MixpanelClient, events::ExportParams},
+        upload,
     },
 };
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::config::Config;
+use crate::{
+    error::{ConnectionError, Result},
+    state::settings::Settings,
+};
 
-async fn process_mixpanel(config: &Config) {
-    let client = new_mixpanel_client();
-    let (s3, _) = new_s3_object_store(
-        "mixpanel-data",
-        "us-east-1",
-        "test",
-        "test",
-        Some("http://localhost:4566"),
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MixpanelConnection {
+    pub api_secret: String,
+    pub project_id: String,
+}
+
+pub(crate) async fn process_mixpanel_connections(settings: &Settings) -> Result<()> {
+    let connections = get_connections_by_type::<MixpanelConnection>(
+        &settings.quadratic_api_uri,
+        &settings.m2m_auth_token,
+        "MIXPANEL",
     )
-    .unwrap();
-    let num_objects = list_objects(&s3, None).await.unwrap().len();
+    .await?;
 
-    // if we don't have any objects, we need to export the last 30 days
-    let num_days = if num_objects > 0 { 0 } else { 30 };
-    let end_date = chrono::Utc::now().date_naive();
-    let start_date = end_date - chrono::Duration::days(num_days);
+    tracing::info!("Found {} Mixpanel connections", connections.len());
 
-    println!("Exporting events from {} to {}...", start_date, end_date);
+    for connection in connections {
+        process_mixpanel_connection(settings, connection.type_details, connection.uuid).await?;
+    }
 
-    let params = ExportParams {
-        from_date: start_date,
-        to_date: end_date,
-        events: None,
-        r#where: None,
+    Ok(())
+}
+
+pub(crate) async fn process_mixpanel_connection(
+    settings: &Settings,
+    connection: MixpanelConnection,
+    connection_id: Uuid,
+) -> Result<()> {
+    let s3 = settings
+        .object_store
+        .clone()
+        .ok_or_else(|| ConnectionError::Config("Object store not found".to_string()))?;
+
+    let today = chrono::Utc::now().date_naive();
+    let prefix = format!("{}/{}", connection_id, "events");
+    let end_date = today;
+    let start_time = std::time::Instant::now();
+    let mut start_date = chrono::Utc::now().date_naive() - chrono::Duration::days(30);
+
+    // if we have any objects, use the last date processed
+    if let Ok(Some(s3_start_date)) = get_last_date_processed(&s3, None).await {
+        start_date = s3_start_date;
     };
 
-    let start_time = std::time::Instant::now();
-    let events = client.export_events_as_rows(params).await.unwrap();
+    let MixpanelConnection {
+        ref api_secret,
+        ref project_id,
+    } = connection;
+    let client = MixpanelClient::new(api_secret, project_id);
 
-    println!("Exported {} event dates", events.len());
+    tracing::info!(
+        "Exporting Mixpanel events from {} to {}...",
+        start_date,
+        end_date
+    );
 
-    let (num_files, total_records) = upload_to_s3(&s3, events).await.unwrap();
+    let params = ExportParams::new(start_date, end_date);
+    let parquet_data = client.export_events(params).await.unwrap();
+    let num_files = upload(&s3, &prefix, parquet_data).await.unwrap();
 
-    println!(
-        "Time taken to write {} events to parquet for {} days: {:?}",
-        total_records,
+    tracing::info!(
+        "Processed {} Mixpanel files in {:?}",
         num_files,
         start_time.elapsed()
     );
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::test_util::new_state;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_process_mixpanel() {
+        let state = new_state().await;
+        process_mixpanel_connections(&state.settings).await.unwrap();
+    }
 }

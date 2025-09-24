@@ -55,17 +55,16 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<BigqueryConfig>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.email, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
     } else {
         let config = new_config().await;
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
             type_details: config,
         }
     };
@@ -81,8 +80,14 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let config_connection =
-        get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let config_connection = get_connection(
+        &state,
+        &claims,
+        &sql_query.connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
     let connection = BigqueryConnection::new_from_config(config_connection.type_details).await?;
 
     query_generic::<BigqueryConnection>(connection, state, sql_query).await
@@ -97,14 +102,12 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     let api_connection = ApiConnection {
         uuid: connection.uuid,
         name: connection.name,
         r#type: connection.r#type,
-        created_date: connection.created_date,
-        updated_date: connection.updated_date,
         type_details: BigqueryConnection::new_from_config(connection.type_details).await?,
     };
 

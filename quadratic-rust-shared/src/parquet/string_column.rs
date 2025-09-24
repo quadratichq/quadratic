@@ -7,8 +7,10 @@ use arrow::datatypes::{
     DataType, Field as ArrowField, Float32Type, Float64Type, Int8Type, Int16Type, Int32Type,
     Int64Type, Schema as ArrowSchema, TimeUnit, UInt8Type, UInt16Type, UInt32Type, UInt64Type,
 };
+use arrow_array::NullArray;
 use parquet::record::{Field, Row};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::SharedError;
 use crate::arrow::utils::{
@@ -78,7 +80,7 @@ impl StringColumn {
     /// Consumes the column data.
     pub fn to_array_ref(self, field: &ArrowField) -> Result<ArrayRef> {
         let array: ArrayRef = match field.data_type() {
-            DataType::Null => string_to_string_array_ref(self.values)?, // Treat null as string for now
+            DataType::Null => Arc::new(NullArray::new(self.values.len())),
             DataType::Boolean => string_to_boolean_array_ref(self.values)?,
             DataType::Int8 => string_to_array_ref::<Int8Type>(self.values)?,
             DataType::Int16 => string_to_array_ref::<Int16Type>(self.values)?,
@@ -136,6 +138,27 @@ impl StringColumn {
         Ok(arrays)
     }
 
+    /// Convert a JSON value to a Field
+    pub fn json_value_to_field(value: serde_json::Value) -> Field {
+        match value {
+            serde_json::Value::Null => Field::Null,
+            serde_json::Value::Bool(b) => Field::Bool(b),
+            serde_json::Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    Field::Long(i)
+                } else if let Some(f) = n.as_f64() {
+                    Field::Double(f)
+                } else {
+                    Field::Str(n.to_string())
+                }
+            }
+            serde_json::Value::String(s) => Field::Str(s),
+            serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+                Field::Str(value.to_string()) // Nested structures as JSON strings
+            }
+        }
+    }
+
     /// Build Arrow schema and collect column data using direct Field to DataType conversion
     /// This preserves the full range of Parquet data types without the ArrowFieldType intermediary
     pub fn build_arrow_schema_and_data(
@@ -162,11 +185,11 @@ impl StringColumn {
                         field_types.insert(field_name.clone(), data_type);
                     }
                     Some(existing_type) => {
-                        // For direct conversion, we could implement type merging here if needed
-                        // For now, just use the first type encountered
+                        // Handle type conflicts with better logic
                         if existing_type != &data_type {
-                            // If types don't match, default to string for compatibility
-                            field_types.insert(field_name.clone(), DataType::Utf8);
+                            let resolved_type =
+                                Self::resolve_type_conflict(existing_type, &data_type);
+                            field_types.insert(field_name.clone(), resolved_type);
                         }
                     }
                 }
@@ -212,6 +235,137 @@ impl StringColumn {
         let schema = ArrowSchema::new(arrow_fields);
 
         Ok((schema, column_data))
+    }
+
+    /// Resolve type conflicts between two DataTypes intelligently
+    /// Prioritizes preserving numeric types and only falls back to string when necessary
+    fn resolve_type_conflict(existing_type: &DataType, new_type: &DataType) -> DataType {
+        match (existing_type, new_type) {
+            // If one is Null and the other isn't, prefer the non-null type
+            (DataType::Null, other) => other.clone(),
+            (other, DataType::Null) => other.clone(),
+
+            // Numeric type promotion rules
+            // Integers: promote to the larger type
+            (DataType::Int8, DataType::Int16) | (DataType::Int16, DataType::Int8) => {
+                DataType::Int16
+            }
+            (DataType::Int8, DataType::Int32) | (DataType::Int32, DataType::Int8) => {
+                DataType::Int32
+            }
+            (DataType::Int8, DataType::Int64) | (DataType::Int64, DataType::Int8) => {
+                DataType::Int64
+            }
+            (DataType::Int16, DataType::Int32) | (DataType::Int32, DataType::Int16) => {
+                DataType::Int32
+            }
+            (DataType::Int16, DataType::Int64) | (DataType::Int64, DataType::Int16) => {
+                DataType::Int64
+            }
+            (DataType::Int32, DataType::Int64) | (DataType::Int64, DataType::Int32) => {
+                DataType::Int64
+            }
+
+            // Unsigned integers: promote to the larger type
+            (DataType::UInt8, DataType::UInt16) | (DataType::UInt16, DataType::UInt8) => {
+                DataType::UInt16
+            }
+            (DataType::UInt8, DataType::UInt32) | (DataType::UInt32, DataType::UInt8) => {
+                DataType::UInt32
+            }
+            (DataType::UInt8, DataType::UInt64) | (DataType::UInt64, DataType::UInt8) => {
+                DataType::UInt64
+            }
+            (DataType::UInt16, DataType::UInt32) | (DataType::UInt32, DataType::UInt16) => {
+                DataType::UInt32
+            }
+            (DataType::UInt16, DataType::UInt64) | (DataType::UInt64, DataType::UInt16) => {
+                DataType::UInt64
+            }
+            (DataType::UInt32, DataType::UInt64) | (DataType::UInt64, DataType::UInt32) => {
+                DataType::UInt64
+            }
+
+            // Mixed signed/unsigned: promote to signed with larger capacity if possible
+            (DataType::Int8, DataType::UInt8) | (DataType::UInt8, DataType::Int8) => {
+                DataType::Int16
+            }
+            (DataType::Int16, DataType::UInt16) | (DataType::UInt16, DataType::Int16) => {
+                DataType::Int32
+            }
+            (DataType::Int32, DataType::UInt32) | (DataType::UInt32, DataType::Int32) => {
+                DataType::Int64
+            }
+            (DataType::Int64, DataType::UInt64) | (DataType::UInt64, DataType::Int64) => {
+                DataType::Int64
+            }
+
+            // Float promotion
+            (DataType::Float32, DataType::Float64) | (DataType::Float64, DataType::Float32) => {
+                DataType::Float64
+            }
+
+            // Integer to float promotion
+            (DataType::Int8 | DataType::Int16 | DataType::Int32, DataType::Float32)
+            | (DataType::Float32, DataType::Int8 | DataType::Int16 | DataType::Int32) => {
+                DataType::Float32
+            }
+            (DataType::Int64, DataType::Float32) | (DataType::Float32, DataType::Int64) => {
+                DataType::Float64
+            }
+            (DataType::Int64, DataType::Float64) | (DataType::Float64, DataType::Int64) => {
+                DataType::Float64
+            }
+            (DataType::Int8 | DataType::Int16 | DataType::Int32, DataType::Float64)
+            | (DataType::Float64, DataType::Int8 | DataType::Int16 | DataType::Int32) => {
+                DataType::Float64
+            }
+
+            // UInt to float promotion
+            (DataType::UInt8 | DataType::UInt16 | DataType::UInt32, DataType::Float32)
+            | (DataType::Float32, DataType::UInt8 | DataType::UInt16 | DataType::UInt32) => {
+                DataType::Float32
+            }
+            (DataType::UInt64, DataType::Float32) | (DataType::Float32, DataType::UInt64) => {
+                DataType::Float64
+            }
+            (DataType::UInt64, DataType::Float64) | (DataType::Float64, DataType::UInt64) => {
+                DataType::Float64
+            }
+            (DataType::UInt8 | DataType::UInt16 | DataType::UInt32, DataType::Float64)
+            | (DataType::Float64, DataType::UInt8 | DataType::UInt16 | DataType::UInt32) => {
+                DataType::Float64
+            }
+
+            // Timestamp conflicts - prefer more precise timestamp
+            (
+                DataType::Timestamp(TimeUnit::Second, tz1),
+                DataType::Timestamp(TimeUnit::Millisecond, tz2),
+            )
+            | (
+                DataType::Timestamp(TimeUnit::Millisecond, tz2),
+                DataType::Timestamp(TimeUnit::Second, tz1),
+            ) => DataType::Timestamp(TimeUnit::Millisecond, tz1.clone().or_else(|| tz2.clone())),
+            (
+                DataType::Timestamp(TimeUnit::Second, tz1),
+                DataType::Timestamp(TimeUnit::Microsecond, tz2),
+            )
+            | (
+                DataType::Timestamp(TimeUnit::Microsecond, tz2),
+                DataType::Timestamp(TimeUnit::Second, tz1),
+            ) => DataType::Timestamp(TimeUnit::Microsecond, tz1.clone().or_else(|| tz2.clone())),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, tz1),
+                DataType::Timestamp(TimeUnit::Microsecond, tz2),
+            )
+            | (
+                DataType::Timestamp(TimeUnit::Microsecond, tz2),
+                DataType::Timestamp(TimeUnit::Millisecond, tz1),
+            ) => DataType::Timestamp(TimeUnit::Microsecond, tz1.clone().or_else(|| tz2.clone())),
+
+            // For all other conflicts, default to string for compatibility
+            _ => DataType::Utf8,
+        }
     }
 
     fn error(e: impl ToString) -> SharedError {

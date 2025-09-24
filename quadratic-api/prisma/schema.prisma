@@ -162,7 +162,7 @@ enum ConnectionType {
     MARIADB
     NEON
     SUPABASE
-    SYNCED
+    MIXPANEL
 }
 
 model Connection {

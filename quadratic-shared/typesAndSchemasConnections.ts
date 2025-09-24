@@ -142,6 +142,17 @@ export const ConnectionListSchema = z.array(
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
+export const ConnectionListSchemaInternal = z.array(
+  z.object({
+    uuid: z.string().uuid(),
+    name: ConnectionNameSchema,
+    type: ConnectionTypeSchema,
+    teamId: z.string().uuid(),
+    semanticDescription: ConnectionSemanticDescriptionSchema,
+    typeDetails: ConnectionTypeDetailsSchema,
+  })
+);
+
 export const ApiSchemasConnections = {
   // List connections
   '/v0/teams/:uuid/connections.GET.response': ConnectionListSchema,
@@ -168,4 +179,7 @@ export const ApiSchemasConnections = {
 
   // Delete connection
   '/v0/teams/:uuid/connections/:connectionUuid.DELETE.response': z.object({ message: z.string() }),
+
+  // Get all connections (internal)
+  '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
 };

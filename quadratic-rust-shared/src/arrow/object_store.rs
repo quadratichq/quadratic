@@ -1,7 +1,7 @@
 use futures_util::TryStreamExt;
-use object_store::{ObjectMeta, ObjectStore, WriteMultipart, aws::AmazonS3Builder, path::Path};
+pub use object_store::{ObjectMeta, ObjectStore, WriteMultipart, aws::AmazonS3Builder, path::Path};
 use std::sync::Arc;
-use url::Url;
+pub use url::Url;
 
 use crate::{SharedError, arrow::error::Arrow as ArrowError, error::Result};
 
@@ -15,7 +15,7 @@ pub fn new_s3_object_store(
     region: &str,
     access_key_id: &str,
     secret_access_key: &str,
-    endpoint: Option<&str>,
+    is_local: bool,
 ) -> Result<(Arc<dyn ObjectStore>, Url)> {
     let mut s3_builder = AmazonS3Builder::new()
         .with_bucket_name(bucket)
@@ -23,12 +23,9 @@ pub fn new_s3_object_store(
         .with_access_key_id(access_key_id)
         .with_secret_access_key(secret_access_key);
 
-    if let Some(endpoint) = endpoint {
-        s3_builder = s3_builder.with_endpoint(endpoint);
-
-        if endpoint.to_lowercase().starts_with("http:") {
-            s3_builder = s3_builder.with_allow_http(true);
-        }
+    if is_local {
+        s3_builder = s3_builder.with_endpoint("http://localhost:4566");
+        s3_builder = s3_builder.with_allow_http(true);
     }
 
     let s3 = s3_builder.build().map_err(object_store_error)?;

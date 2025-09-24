@@ -7,6 +7,7 @@ authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 [dependencies]
 arrow = "54.2.1"
 arrow-schema = "54.2.1"
+arrow-json = "54.2.1"
 axum = { version = "0.7.1", features = ["macros", "tokio"] }
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 axum-macros = "0.4.1"
@@ -30,6 +31,7 @@ openssl = { version = "0.10.72", features = ["vendored"] }
 parquet = { version = "54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
+  "json",
 ] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "auth",
@@ -39,6 +41,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "object_store",
   "parquet",
   "quadratic-api",
+  "storage",
   "sql",
   "synced",
 ] }

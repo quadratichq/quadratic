@@ -13,7 +13,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{SharedError, error::Result};
+use crate::{SharedError, error::Result, synced::mixpanel::events::ExportParams};
 
 #[derive(Debug, Clone)]
 pub enum MixpanelServer {
@@ -46,6 +46,23 @@ pub struct MixpanelConfig {
     pub project_id: String,
     pub server: MixpanelServer,
     pub user_agent: Option<String>,
+}
+
+impl MixpanelConfig {
+    pub fn new(api_secret: &str, project_id: &str) -> Self {
+        Self {
+            api_secret: api_secret.to_string(),
+            project_id: project_id.to_string(),
+            server: MixpanelServer::US,
+            user_agent: Some("rust-mixpanel-client/1.0".to_string()),
+        }
+    }
+}
+
+impl From<MixpanelConfig> for MixpanelClient {
+    fn from(config: MixpanelConfig) -> Self {
+        Self::new(&config.api_secret, &config.project_id)
+    }
 }
 
 #[derive(Debug)]
@@ -81,7 +98,8 @@ pub struct CohortMember {
 }
 
 impl MixpanelClient {
-    pub fn new(config: MixpanelConfig) -> Self {
+    pub fn new(api_secret: &str, project_id: &str) -> Self {
+        let config: MixpanelConfig = MixpanelConfig::new(api_secret, project_id);
         let mut headers = reqwest::header::HeaderMap::new();
 
         // add authorization header
@@ -150,7 +168,10 @@ impl MixpanelClient {
 
     /// test the connection and authentication
     pub async fn test_connection(&self) -> bool {
-        self.list_cohorts().await.is_ok()
+        let today = chrono::Utc::now().date_naive();
+        let mut params = ExportParams::new(today, today);
+        params.limit = Some(1);
+        self.export_events(params).await.is_ok()
     }
 
     /// get project information (if available)
@@ -178,14 +199,7 @@ pub fn new_mixpanel_client() -> MixpanelClient {
     let credentials = MIXPANEL_CREDENTIALS.lock().unwrap().to_string();
     let config = serde_json::from_str::<MixpanelConfigFromEnv>(&credentials).unwrap();
 
-    let config = MixpanelConfig {
-        api_secret: config.api_secret,
-        project_id: config.project_id,
-        server: MixpanelServer::US,
-        user_agent: Some("rust-mixpanel-client/1.0".to_string()),
-    };
-
-    MixpanelClient::new(config)
+    MixpanelClient::new(&config.api_secret, &config.project_id)
 }
 
 #[cfg(test)]

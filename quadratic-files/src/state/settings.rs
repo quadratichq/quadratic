@@ -20,8 +20,7 @@ impl Settings {
     // Create a new Settings struct from the provided Config.
     // Panics are OK here since this is set at startup and we want to fail fast.
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
-        let is_local =
-            config.environment == Environment::Docker || config.environment == Environment::Local;
+        let is_local = config.environment.is_local_or_docker();
         let expected = |val: &Option<String>, var: &str| {
             val.to_owned()
                 .unwrap_or_else(|| panic!("Expected {var} to have a value"))

@@ -95,35 +95,35 @@ echo "Uploading Parquet files to S3..."
 UPLOAD_START_TIME=$(date +%s)
 
 # Create bucket if it doesn't exist
-aws --endpoint-url=http://host.docker.internal:4566 s3 mb s3://mixpanel-data 2>/dev/null || true
+aws --endpoint-url=http://host.docker.internal:4566 s3 mb s3://synced-data 2>/dev/null || true
 
 # Upload consolidated file
 if [ -f "/project/output/mixpanel_data.parquet" ]; then
-    aws --endpoint-url=http://host.docker.internal:4566 s3 cp /project/output/mixpanel_data.parquet s3://mixpanel-data/consolidated/mixpanel_data.parquet
-    echo "✅ Consolidated Parquet file uploaded to: s3://mixpanel-data/consolidated/mixpanel_data.parquet"
+    aws --endpoint-url=http://host.docker.internal:4566 s3 cp /project/output/mixpanel_data.parquet s3://synced-data/consolidated/mixpanel_data.parquet
+    echo "✅ Consolidated Parquet file uploaded to: s3://synced-data/consolidated/mixpanel_data.parquet"
 else
     echo "❌ No consolidated Parquet file found"
 fi
 
 # Upload individual batch files
 if [ -d "/project/output/batches" ]; then
-    aws --endpoint-url=http://host.docker.internal:4566 s3 sync /project/output/batches/ s3://mixpanel-data/batches/ --exclude "*" --include "*.parquet"
+    aws --endpoint-url=http://host.docker.internal:4566 s3 sync /project/output/batches/ s3://synced-data/batches/ --exclude "*" --include "*.parquet"
     
     batch_count=$(ls -1 /project/output/batches/*.parquet 2>/dev/null | wc -l)
-    echo "✅ Uploaded $batch_count individual batch files to: s3://mixpanel-data/batches/"
+    echo "✅ Uploaded $batch_count individual batch files to: s3://synced-data/batches/"
 else
     echo "❌ No batch files directory found"
 fi
 
 echo ""
 echo "🎯 Parquet files located at:"
-echo "  - Single file: s3://mixpanel-data/consolidated/mixpanel_data.parquet"
-echo "  - Batch files: s3://mixpanel-data/batches/*.parquet"
+echo "  - Single file: s3://synced-data/consolidated/mixpanel_data.parquet"
+echo "  - Batch files: s3://synced-data/batches/*.parquet"
 echo ""
 
 # Show all uploaded files
 echo "📊 All files in S3:"
-aws --endpoint-url=http://host.docker.internal:4566 s3 ls s3://mixpanel-data/ --recursive --human-readable
+aws --endpoint-url=http://host.docker.internal:4566 s3 ls s3://synced-data/ --recursive --human-readable
 
 UPLOAD_END_TIME=$(date +%s)
 echo "✅ S3 upload completed in $(calculate_elapsed_time $UPLOAD_START_TIME $UPLOAD_END_TIME)"
