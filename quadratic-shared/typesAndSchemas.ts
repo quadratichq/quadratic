@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import { z } from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 

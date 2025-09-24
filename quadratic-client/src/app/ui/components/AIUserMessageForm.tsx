@@ -1,6 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -10,7 +9,7 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
+import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -37,7 +36,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import { useRecoilValue, type SetterOrUpdater } from 'recoil';
+import type { SetterOrUpdater } from 'recoil';
 
 export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -47,7 +46,7 @@ export interface AIUserMessageFormWrapperProps {
   initialPrompt?: string;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
-  showPromptSuggestions?: boolean;
+  showEmptyChatPromptSuggestions?: boolean;
 }
 
 export interface SubmitPromptArgs {
@@ -81,8 +80,9 @@ export const AIUserMessageForm = memo(
       initialContent,
       initialContext,
       initialPrompt,
+      messageIndex,
       onContentChange,
-      showPromptSuggestions,
+      showEmptyChatPromptSuggestions,
       abortController,
       loading,
       setLoading,
@@ -105,7 +105,6 @@ export const AIUserMessageForm = memo(
 
     const [dragOver, setDragOver] = useState(false);
 
-    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const [files, setFiles] = useState<FileContent[]>([]);
     const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
@@ -120,7 +119,7 @@ export const AIUserMessageForm = memo(
               .map((item) => item.text)
               .join('\n') ?? '')
       );
-      setContext?.(initialContext ?? {});
+      setContext?.(initialContext ? { ...initialContext } : {});
     }, [initialContent, initialContext, setContext, setPrompt, initialPrompt]);
 
     const showAIUsageExceeded = useMemo(
@@ -356,11 +355,12 @@ export const AIUserMessageForm = memo(
 
     return (
       <div className="relative">
-        {showPromptSuggestions && messagesCount === 0 && (
-          <AIAnalystPromptSuggestions
-            exampleSet={files.length > 0 ? 'file-pdf' : context.connection ? 'connection' : 'empty'}
-            prompt={prompt}
+        {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
+          <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}
+            context={context}
+            files={files}
+            importFiles={importFiles}
           />
         )}
 

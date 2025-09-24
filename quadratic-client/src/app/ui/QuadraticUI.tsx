@@ -128,12 +128,11 @@ export default function QuadraticUI() {
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
+            {!presentationMode && !isEmbed && <BottomBar />}
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
         </div>
-
-        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
       {/* Global overlay menus */}
       <FeedbackMenu />

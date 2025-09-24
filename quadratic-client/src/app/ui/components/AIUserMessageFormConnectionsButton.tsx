@@ -62,13 +62,7 @@ export const AIUserMessageFormConnectionsButton = memo(
           const connection = connections.find((connection) => connection.uuid === connectionUuid);
           setContext?.((prev) => ({
             ...prev,
-            connection: connection
-              ? {
-                  type: connection.type,
-                  id: connection.uuid,
-                  name: connection.name,
-                }
-              : undefined,
+            connection: connection ? { type: connection.type, id: connection.uuid, name: connection.name } : undefined,
           }));
         }
       },

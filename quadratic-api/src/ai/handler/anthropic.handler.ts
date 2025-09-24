@@ -23,7 +23,8 @@ export const handleAnthropicRequest = async (
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   anthropic: AnthropicVertex | AnthropicBedrock | Anthropic,
-  response?: Response
+  response?: Response,
+  signal?: AbortSignal
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
@@ -69,11 +70,11 @@ export const handleAnthropicRequest = async (
     }
     response?.write(`stream\n\n`);
 
-    const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
+    const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming, { signal });
     const parsedResponse = await parseAnthropicStream(chunks, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
-    const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming);
+    const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming, { signal });
     const parsedResponse = parseAnthropicResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }

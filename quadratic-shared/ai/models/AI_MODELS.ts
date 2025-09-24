@@ -5,7 +5,7 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 export const DEFAULT_MODEL_VERSION = 28;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
-export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
@@ -17,11 +17,13 @@ export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey =
   'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-on';
 
 // Internal tool call models
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
 export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off'; // not used
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
+export const DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL: AIModelKey =
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -41,7 +43,7 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     imageSupport: true,
-    ...AI_RATES.gemini_2_0_flash_rate,
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
     model: 'claude-sonnet-4@20250514',
@@ -135,6 +137,37 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 24576,
     imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-off': {
+    model: 'gemini-2.5-flash-lite',
+    displayName: 'gemini 2.5 flash lite',
+    temperature: 0.1,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: false,
+    thinkingBudget: 512,
+    imageSupport: true,
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
+  },
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-on': {
+    model: 'gemini-2.5-flash-lite',
+    displayName: 'gemini 2.5 flash lite',
+    temperature: 0.1,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
+    imageSupport: true,
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
     model: 'gemini-2.5-flash-lite-preview-06-17',
