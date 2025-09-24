@@ -491,7 +491,7 @@ export const MODELS_CONFIGURATION: {
   },
   'baseten:moonshotai/Kimi-K2-Instruct-0905': {
     model: 'moonshotai/Kimi-K2-Instruct-0905',
-    backupModelKey: 'azure-openai:gpt-4.1',
+    backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'Kimi K2 Instruct 0905',
     temperature: 0.6,
     max_tokens: 0, // use api default

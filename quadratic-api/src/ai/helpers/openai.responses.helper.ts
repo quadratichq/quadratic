@@ -332,7 +332,7 @@ export async function parseOpenAIResponsesStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -391,7 +391,7 @@ export function parseOpenAIResponsesResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   response?.json(responseMessage);
