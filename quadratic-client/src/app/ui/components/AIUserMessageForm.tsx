@@ -144,7 +144,7 @@ export const AIUserMessageForm = memo(
           setContext?.({});
         }
       },
-      [context, files, importFiles, initialContent, setContext, setPrompt, submitPrompt]
+      [context, files, importFiles, initialContent, setContext, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -157,7 +157,7 @@ export const AIUserMessageForm = memo(
         setPrompt(event.target.value);
         onContentChange?.([...files, createTextContent(event.target.value)]);
       },
-      [files, onContentChange, setPrompt]
+      [files, onContentChange]
     );
 
     const handleFilesChange = useCallback(
@@ -629,12 +629,6 @@ const AIUserMessageFormFooter = memo(
             >
               <MentionIcon />
             </Button>
-            {/* <AIUserMessageFormSheetButton
-              disabled={disabled}
-              textareaRef={textareaRef}
-              prompt={prompt}
-              setPrompt={setPrompt}
-            /> */}
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">

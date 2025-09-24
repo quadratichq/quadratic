@@ -1,5 +1,4 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   codeEditorCodeCellAtom,
   codeEditorShowDiffEditorAtom,
@@ -22,7 +21,6 @@ import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import {
-  AIIcon,
   CloseIcon,
   DockToBottomIcon,
   DockToRightIcon,
@@ -38,7 +36,7 @@ import { cn } from '@/shared/shadcn/utils';
 import type * as monaco from 'monaco-editor';
 import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
@@ -61,7 +59,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     [permissions, teamPermissions, isConnection]
   );
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
-  const [, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
 
   const { cancelRun } = useCancelRun();
   const { saveAndRunCell } = useSaveAndRunCell();
@@ -177,19 +174,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             {['Python', 'Javascript', 'Formula', 'Connection'].includes(language as string) && <CodeEditorRefButton />}
 
             {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
-
-            <TooltipPopover label={`Toggle AI chat`} side="bottom">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setShowAIAnalyst((prev) => !prev);
-                }}
-              >
-                <AIIcon />
-              </Button>
-            </TooltipPopover>
 
             {!isRunningComputation ? (
               <TooltipPopover

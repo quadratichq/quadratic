@@ -27,7 +27,6 @@ export const AIAnalyst = memo(() => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
   const initialPrompt = useRecoilValue(aiAnalystInitialPromptAtom);
-  console.log('AIAnalyst.initialPrompt', initialPrompt);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);

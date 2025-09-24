@@ -194,7 +194,6 @@ export const viewActionsSpec: ViewActionSpec = {
     isAvailable: () => {
       return !Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst);
     },
-    // Setup `isAvailable` for adding to AI chat
     run: (reference: ViewActionArgs[Action.StartChatInAIAnalyst]) => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => {
