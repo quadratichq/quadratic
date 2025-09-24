@@ -18,7 +18,7 @@ export function GridContextMenuCodeTable() {
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />
-      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={contextMenu.table?.name ?? ''} />
+      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={contextMenu.table?.name} />
 
       <DropdownMenuSeparator />
 

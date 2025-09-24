@@ -346,7 +346,7 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={enableMentions ? 'Ask a question, or type @ to mention some data…' : 'Ask a question...'}
+        placeholder={enableMentions ? 'Ask a question (type @ to mention data)…' : 'Ask a question…'}
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}

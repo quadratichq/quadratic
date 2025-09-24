@@ -34,7 +34,7 @@ type ViewActionSpec = Pick<
 >;
 
 export type ViewActionArgs = {
-  [Action.StartChatInAIAnalyst]: string;
+  [Action.StartChatInAIAnalyst]: string | undefined;
 };
 
 export const viewActionsSpec: ViewActionSpec = {
@@ -200,7 +200,7 @@ export const viewActionsSpec: ViewActionSpec = {
         const newState = {
           ...prev,
           showAIAnalyst: true,
-          initialPrompt: `@${reference} `,
+          initialPrompt: reference ? `@${reference} ` : '',
           currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
         };
         return newState;
