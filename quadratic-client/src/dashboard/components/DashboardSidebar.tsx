@@ -323,6 +323,7 @@ function SidebarNavLink({
   const isActive =
     // We're currently on this page and not navigating elsewhere
     (to === location.pathname && navigation.state !== 'loading') ||
+    (to.includes('/connections') && location.pathname.includes('/connections') && navigation.state !== 'loading') ||
     // We're navigating to this page
     to === navigation.location?.pathname;
 

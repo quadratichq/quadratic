@@ -1,9 +1,10 @@
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { ConnectionsList } from '@/dashboard/connections/ConnectionsList';
+import { DRAWER_WIDTH, useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { Connections } from '@/shared/components/connections/Connections';
+
 import { ROUTES } from '@/shared/constants/routes';
 import type { LoaderFunctionArgs } from 'react-router';
-import { Navigate, useLoaderData } from 'react-router';
+import { Navigate, Outlet, useLoaderData } from 'react-router';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
@@ -14,22 +15,26 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 };
 
 export const Component = () => {
-  const { teamUuid, staticIps } = useLoaderData<typeof loader>();
+  const { teamUuid } = useLoaderData<typeof loader>();
   const {
     activeTeam: {
-      connections,
       userMakingRequest: { teamPermissions },
-      team: { sshPublicKey },
     },
   } = useDashboardRouteLoaderData();
 
+  // Handles permissions for all nested routes
   if (!teamPermissions?.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(teamUuid)} />;
   }
 
   return (
-    <>
-      <Connections connections={connections} teamUuid={teamUuid} staticIps={staticIps} sshPublicKey={sshPublicKey} />
-    </>
+    <div className={'flex h-full w-full overflow-hidden'}>
+      <div style={{ width: DRAWER_WIDTH + 24 }} className="flex-none overflow-auto border-r border-border">
+        <ConnectionsList />
+      </div>
+      <div className="w-full overflow-auto">
+        <Outlet />
+      </div>
+    </div>
   );
 };

@@ -4,31 +4,30 @@ import {
   potentialConnectionsByType,
   type PotentialConnectionType,
 } from '@/shared/components/connections/connectionsByType';
+import { AddIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionsNew = ({
-  activeConnectionType,
   handleNavigateToCreateView,
   handleNavigateToCreatePotentialView,
 }: {
-  activeConnectionType?: ConnectionType;
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToCreatePotentialView: NavigateToCreatePotentialView;
 }) => {
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       {Object.entries(connectionsByType).map(([type, { Logo }]) => (
         <Button
           data-testid={`new-connection-${type}`}
           key={type}
-          variant="ghost"
-          className={cn('group relative h-auto w-full', activeConnectionType === type && 'bg-accent')}
+          variant="outline"
+          className="group relative h-auto w-full"
           onClick={() => {
             handleNavigateToCreateView(type as ConnectionType);
           }}
         >
+          <AddIcon className="absolute bottom-1 right-1 opacity-30 group-hover:opacity-100" />
           <Logo className="h-[40px] w-[160px]" />
         </Button>
       ))}
@@ -36,8 +35,8 @@ export const ConnectionsNew = ({
         <Button
           data-testid={`new-connection-${type}`}
           key={type}
+          variant="outline"
           className="group relative h-auto w-full"
-          variant="ghost"
           onClick={() => {
             handleNavigateToCreatePotentialView(type as PotentialConnectionType);
           }}

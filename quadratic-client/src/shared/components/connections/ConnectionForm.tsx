@@ -31,6 +31,7 @@ export function ConnectionFormCreate({
   handleNavigateToListView: () => void;
   handleNavigateToNewView: () => void;
 }) {
+  console.log('ConnectionFormCreate', teamUuid, type);
   const submit = useSubmit();
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {

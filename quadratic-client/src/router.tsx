@@ -122,7 +122,18 @@ export const router = createBrowserRouter(
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
-              <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')}>
+                <Route path="new" lazy={() => import('./routes/teams.$teamUuid.connections.new')} />
+                <Route
+                  path="new/:connectionType"
+                  lazy={() => import('./routes/teams.$teamUuid.connections.new.$connectionType')}
+                />
+                <Route
+                  path=":connectionUuid"
+                  lazy={() => import('./routes/teams.$teamUuid.connections.$connectionUuid')}
+                />
+                {/* 404 */}
+              </Route>
             </Route>
           </Route>
         </Route>

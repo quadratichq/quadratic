@@ -39,6 +39,10 @@ export const DRAWER_WIDTH = 264;
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
+  if (currentUrl.pathname.includes('connections') && nextUrl.pathname.includes('connections')) {
+    return false;
+  }
+
   return (
     currentUrl.pathname === '/' ||
     currentUrl.pathname.startsWith('/file/') ||
@@ -161,8 +165,8 @@ export const Component = () => {
           <div
             ref={contentPaneRef}
             className={cn(
-              `relative order-2 flex h-full w-full flex-grow flex-col transition-all`,
-              !location.pathname.includes('connections') && 'px-4 pb-10 sm:pt-0 lg:px-10',
+              `relative order-2 flex h-full w-full flex-grow flex-col transition-opacity`,
+              !location.pathname.includes('connections') && 'px-4 pb-10 sm:pt-0',
               isLoading
                 ? 'overflow-hidden'
                 : location.pathname.includes('connections')

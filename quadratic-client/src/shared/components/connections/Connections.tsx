@@ -367,7 +367,6 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
       {activeConnectionState.view === 'new' || activeConnectionState.view === 'create' ? (
         <div className="col-span-3 h-full overflow-auto border-r border-border px-3 pt-2">
           <ConnectionsNew
-            activeConnectionType={activeConnectionState.view === 'create' ? activeConnectionState.type : undefined}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
           />
