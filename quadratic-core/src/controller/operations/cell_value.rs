@@ -528,8 +528,8 @@ mod test {
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::test_util::*;
-    use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
+    use crate::{CellValue, SheetPos, a1::A1Selection};
+    use crate::{SheetRect, test_util::*};
 
     #[test]
     fn test() {
@@ -563,20 +563,12 @@ mod test {
 
     #[test]
     fn test_delete_cells_operations() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!A2];
         gc.set_cell_value(sheet_pos, "hello".to_string(), None);
 
-        let sheet_pos_2 = SheetPos {
-            x: 2,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_2 = pos![sheet_id!B2];
         gc.set_code_cell(
             sheet_pos_2,
             CodeCellLanguage::Formula,
@@ -587,19 +579,20 @@ mod test {
 
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection, false);
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A2];
 
-        assert_eq!(operations.len(), 1);
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::new_blank(2, 1)
-            },]
+            vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: CellValues::new_blank(2, 1)
+                },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
+                }
+            ]
         );
     }
 
