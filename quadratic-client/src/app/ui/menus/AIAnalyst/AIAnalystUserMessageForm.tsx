@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystClarifyingQuestionsModeAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
@@ -11,6 +12,10 @@ import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/c
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { HelpIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -24,6 +29,7 @@ export const AIAnalystUserMessageForm = memo(
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+    const [clarifyingQuestionsMode, setClarifyingQuestionsMode] = useRecoilState(aiAnalystClarifyingQuestionsModeAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
@@ -53,6 +59,22 @@ export const AIAnalystUserMessageForm = memo(
       []
     );
 
+    const clarifyingQuestionsToggle = (
+      <TooltipPopover label="Clarifying questions mode">
+        <Button
+          variant={clarifyingQuestionsMode ? 'default' : 'ghost'}
+          size="icon-sm"
+          className={cn(!clarifyingQuestionsMode && 'text-muted-foreground hover:text-foreground', 'h-6 w-6')}
+          disabled={loading || waitingOnMessageIndex !== undefined}
+          onClick={() => {
+            setClarifyingQuestionsMode((prev) => !prev);
+          }}
+        >
+          <HelpIcon className="h-3.5 w-3.5" />
+        </Button>
+      </TooltipPopover>
+    );
+
     return (
       <AIUserMessageForm
         {...rest}
@@ -71,6 +93,7 @@ export const AIAnalystUserMessageForm = memo(
         }}
         waitingOnMessageIndex={waitingOnMessageIndex}
         maxHeight="275px"
+        extraLeftButtons={clarifyingQuestionsToggle}
       />
     );
   })

@@ -46,7 +46,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, messageSource, modelKey: clientModelKey, ...args } = body;
+  const { chatId, fileUuid, messageSource, modelKey: clientModelKey, clarifyingQuestionsMode, ...args } = body;
 
   const {
     file: { id: fileId, ownerTeam },
@@ -118,6 +118,58 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   if (args.useQuadraticContext) {
     const quadraticContext = getQuadraticContext(source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
+  }
+
+  if (clarifyingQuestionsMode && messageType === 'userPrompt') {
+    // Check if the previous AI message was asking clarifying questions
+    const previousAIMessage = args.messages
+      .slice()
+      .reverse()
+      .find((msg) => msg.role === 'assistant' && msg.contextType === 'userPrompt');
+
+    const isPreviousMessageClarifyingQuestions = previousAIMessage?.content.some(
+      (content) =>
+        content.type === 'text' &&
+        (content.text.includes('clarifying questions') ||
+          content.text.includes('I have a few questions') ||
+          content.text.includes('To help you better') ||
+          content.text.match(/^\d+\./m))
+    ); // Looks for numbered questions
+
+    // Only ask clarifying questions if the user is NOT answering previous clarifying questions
+    if (!isPreviousMessageClarifyingQuestions) {
+      // Modify the last user message to include clarifying questions instruction
+      const lastUserMessageIndex = args.messages.length - 1;
+      const lastUserMessage = args.messages[lastUserMessageIndex];
+
+      if (lastUserMessage.role === 'user' && lastUserMessage.contextType === 'userPrompt') {
+        // Add the clarifying questions instruction directly to the user's message
+        const originalContent = lastUserMessage.content;
+        const instructionContent = {
+          type: 'text' as const,
+          text: `CLARIFYING QUESTIONS MODE: Ask exactly 2-3 clarifying questions using this format:
+
+"To help you better, I have a few questions:
+
+1. [specific question]
+
+2. [specific question]
+
+3. [specific question]
+
+Once I understand these details, I can help you accomplish what you're looking for."
+
+Do NOT use any tools until questions are answered.
+
+User's request: `,
+        };
+
+        args.messages[lastUserMessageIndex] = {
+          ...lastUserMessage,
+          content: [instructionContent, ...originalContent],
+        };
+      }
+    }
   }
 
   const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
