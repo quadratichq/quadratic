@@ -30,6 +30,7 @@ export const CodeEditorDiffButtons = () => {
             y: codeCell.pos.y,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
+            isAi: false,
           });
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);
@@ -55,6 +56,7 @@ export const CodeEditorDiffButtons = () => {
             y: codeCell.pos.y,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
+            isAi: false,
           });
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);

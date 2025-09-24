@@ -2,13 +2,12 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
 
-type AIUsageExceededProps = {
-  show: boolean;
-};
-
 const divClassName =
   'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
 
+interface AIUsageExceededProps {
+  show: boolean;
+}
 export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
   if (!show) {
     return null;

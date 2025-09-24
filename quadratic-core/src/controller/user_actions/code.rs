@@ -14,27 +14,38 @@ impl GridController {
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> String {
         let ops = self.set_code_cell_operations(sheet_pos, language, code_string, code_cell_name);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCode)
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, is_ai)
     }
 
     /// Reruns code cells in grid.
-    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>) -> String {
+    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> String {
         let ops = self.rerun_all_code_cells_operations();
-        self.start_user_transaction(ops, cursor, TransactionName::RunCode)
+        self.start_user_ai_transaction(ops, cursor, TransactionName::RunCode, is_ai)
     }
 
     /// Reruns code cells in a sheet.
-    pub fn rerun_sheet_code_cells(&mut self, sheet_id: SheetId, cursor: Option<String>) -> String {
+    pub fn rerun_sheet_code_cells(
+        &mut self,
+        sheet_id: SheetId,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> String {
         let ops = self.rerun_sheet_code_cells_operations(sheet_id);
-        self.start_user_transaction(ops, cursor, TransactionName::RunCode)
+        self.start_user_ai_transaction(ops, cursor, TransactionName::RunCode, is_ai)
     }
 
     /// Reruns one code cell
-    pub fn rerun_code_cell(&mut self, selection: A1Selection, cursor: Option<String>) -> String {
+    pub fn rerun_code_cell(
+        &mut self,
+        selection: A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> String {
         let ops = self.rerun_code_cell_operations(selection);
-        self.start_user_transaction(ops, cursor, TransactionName::RunCode)
+        self.start_user_ai_transaction(ops, cursor, TransactionName::RunCode, is_ai)
     }
 
     pub fn set_chart_size(
@@ -43,9 +54,10 @@ impl GridController {
         columns: u32,
         rows: u32,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.set_chart_size_operations(sheet_pos, columns, rows);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 }
 
@@ -66,6 +78,7 @@ mod tests {
             "=2 / {1;2;0}".to_owned(),
             None,
             None,
+            false,
         );
         g.set_code_cell(
             pos![B1].to_sheet_pos(sheet_id),
@@ -73,9 +86,15 @@ mod tests {
             "=A1:A3".to_owned(),
             None,
             None,
+            false,
         );
-        g.set_cell_value(pos![C1].to_sheet_pos(sheet_id), "meow".to_string(), None);
-        g.rerun_all_code_cells(None);
+        g.set_cell_value(
+            pos![C1].to_sheet_pos(sheet_id),
+            "meow".to_string(),
+            None,
+            false,
+        );
+        g.rerun_all_code_cells(None, false);
 
         let sheet = g.try_sheet(sheet_id).unwrap();
         let get_cell = |pos| {
@@ -106,6 +125,7 @@ mod tests {
             "=SUM(1, 2)".to_owned(),
             Some("MyCode".to_string()),
             None,
+            false,
         );
 
         let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
@@ -118,6 +138,7 @@ mod tests {
             "=SUM(1, 2)".to_owned(),
             Some("NameShouldNotChange".to_string()),
             None,
+            false,
         );
 
         let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();

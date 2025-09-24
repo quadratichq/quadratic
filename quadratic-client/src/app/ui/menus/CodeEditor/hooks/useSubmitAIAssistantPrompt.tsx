@@ -4,7 +4,6 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantCurrentChatMessagesCountAtom,
@@ -12,6 +11,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   aiAssistantWaitingOnMessageIndexAtom,
+  codeEditorAiAssistantAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorWaitingForEditorClose,
@@ -26,6 +26,7 @@ import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
+  isAIPromptMessage,
   isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -145,7 +146,7 @@ export function useSubmitAIAssistantPrompt() {
 
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               currentContent.text = currentContent.text.trim();
@@ -177,13 +178,12 @@ export function useSubmitAIAssistantPrompt() {
         let lastMessageIndex = -1;
         let chatId = '';
         let chatMessages: ChatMessage[] = [];
-        set(aiAnalystCurrentChatAtom, (prev) => {
+        set(codeEditorAiAssistantAtom, (prev) => {
           chatId = prev.id ? prev.id : v4();
           chatMessages = prev.messages;
           return {
             ...prev,
             id: chatId,
-            lastUpdated: Date.now(),
           };
         });
 
@@ -291,7 +291,7 @@ export function useSubmitAIAssistantPrompt() {
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {

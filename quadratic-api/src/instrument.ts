@@ -1,15 +1,25 @@
-import * as Sentry from '@sentry/node';
-import { SENTRY_DSN } from './env-vars';
+import {
+  consoleIntegration,
+  extraErrorDataIntegration,
+  httpIntegration,
+  init,
+  prismaIntegration,
+  zodErrorsIntegration,
+} from '@sentry/node';
+import { SENTRY_DSN, VERSION } from './env-vars';
 
 // Configure Sentry
 if (SENTRY_DSN) {
-  Sentry.init({
+  init({
     dsn: SENTRY_DSN,
-    integrations: [Sentry.httpIntegration()],
-
-    // Set tracesSampleRate to 1.0 to capture 100%
-    // of transactions for performance monitoring.
-    // We recommend adjusting this value in production
+    release: `quadratic@${VERSION}`,
+    integrations: [
+      consoleIntegration({ levels: ['error', 'warn'] }),
+      extraErrorDataIntegration(),
+      httpIntegration(),
+      prismaIntegration(),
+      zodErrorsIntegration(),
+    ],
     tracesSampleRate: 1.0,
   });
 }

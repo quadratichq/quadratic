@@ -48,12 +48,12 @@ export const useBorders = (): UseBordersResults => {
         }
         const rustSelection = sheets.getRustSelection();
         if (options.selection) {
-          quadraticCore.setBorders(rustSelection, options.selection, style);
+          quadraticCore.setBorders(rustSelection, options.selection, style, false);
         } else if (
           prev.selection &&
           ((!!options.color && options.color !== prev.color) || (!!options.line && options.line !== prev.line))
         ) {
-          quadraticCore.setBorders(rustSelection, prev.selection, style);
+          quadraticCore.setBorders(rustSelection, prev.selection, style, false);
         }
         return { selection, color, line };
       });
@@ -62,7 +62,7 @@ export const useBorders = (): UseBordersResults => {
   );
 
   const clearBorders = useCallback((): void => {
-    quadraticCore.setBorders(sheets.getRustSelection(), 'clear');
+    quadraticCore.setBorders(sheets.getRustSelection(), 'clear', undefined, false);
   }, []);
 
   return {

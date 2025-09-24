@@ -1,14 +1,11 @@
-import {
-  aiAnalystCurrentChatMessagesAtom,
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystLoadingAtom,
-} from '@/app/atoms/aiAnalystAtom';
+import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { getFileTypeFromName } from '@/app/helpers/files';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -19,87 +16,45 @@ import {
   getFileTypeLabel,
   isSupportedImageMimeType,
 } from 'quadratic-shared/ai/helpers/files.helper';
-import { getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-type AIContextProps = {
-  initialContext?: Context;
+interface AIContextProps {
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: (files: FileContent[]) => void;
-  isFileSupported: (mimeType: string) => boolean;
-  editing: boolean;
+  importFiles: ImportFile[];
+  setImportFiles: (importFiles: ImportFile[]) => void;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  selectedConnectionUuid: string;
-  setSelectedConnectionUuid: (connectionUuid: string) => void;
-};
+}
 export const AIContext = memo(
-  ({
-    initialContext,
-    context,
-    setContext,
-    files,
-    setFiles,
-    isFileSupported,
-    editing,
-    disabled,
-    textareaRef,
-    selectedConnectionUuid,
-    setSelectedConnectionUuid,
-  }: AIContextProps) => {
+  ({ context, setContext, files, setFiles, importFiles, setImportFiles, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
-    const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-    const [, setCurrentSheet] = useState(sheets.sheet.name);
     const { connections } = useConnectionsFetcher();
 
-    useEffect(() => {
-      const updateCurrentSheet = () => {
-        if (!loading && editing) {
-          setContext?.((prev) => ({
-            ...prev,
-            currentSheet: sheets.sheet.name,
-          }));
-        }
-        setCurrentSheet(sheets.sheet.name);
-      };
-
-      updateCurrentSheet();
-
-      events.on('changeSheet', updateCurrentSheet);
-      return () => {
-        events.off('changeSheet', updateCurrentSheet);
-      };
-    }, [editing, loading, setContext]);
-
-    // use last user message context as initial context in the bottom user message form
-    useEffect(() => {
-      if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
-        const lastUserMessage = getUserPromptMessages(messages).at(-1);
-        if (lastUserMessage) {
-          setContext(lastUserMessage.context ?? defaultAIAnalystContext);
-        }
-      }
-    }, [initialContext, loading, messages, messagesCount, setContext]);
+    const handleOnClickConnection = useCallback(() => {
+      setContext?.((prev) => ({ ...prev, connection: undefined }));
+      textareaRef.current?.focus();
+    }, [setContext, textareaRef]);
 
     const handleOnClickFileContext = useCallback(
-      (file: FileContent) => {
-        setFiles(files.filter((f) => f !== file));
+      (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
+        textareaRef.current?.focus();
       },
-      [files, setFiles]
+      [files, setFiles, textareaRef]
     );
 
-    const handleOnClickConnection = useCallback(() => {
-      setSelectedConnectionUuid('');
-    }, [setSelectedConnectionUuid]);
-
-    // const handleOnClickSelection = useCallback(() => {
-    //   setContext?.((prev) => ({ ...prev, selection: undefined }));
-    // }, [setContext]);
+    const handleOnClickImportFileContext = useCallback(
+      (index: number) => {
+        setImportFiles(importFiles.filter((_, i) => i !== index));
+        textareaRef.current?.focus();
+      },
+      [importFiles, setImportFiles, textareaRef]
+    );
 
     return (
       <div
@@ -109,33 +64,48 @@ export const AIContext = memo(
           loading && 'select-none opacity-60'
         )}
       >
-        {context &&
-          setContext &&
-          selectedConnectionUuid &&
-          connections
-            .filter((connection) => connection.uuid === selectedConnectionUuid)
-            .map((connection) => (
-              <ContextPill
-                key={connection.uuid}
-                primary={connection.name}
-                primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
-                secondary={
-                  getCodeCell({ Connection: { kind: connection.type, id: connection.uuid } })?.label ?? 'Connection'
-                }
-                onClick={handleOnClickConnection}
-                noClose={disabled}
-              />
-            ))}
-        {files
-          .filter((file) => isFileSupported(file.mimeType))
-          .map((file, index) => (
-            <FileContextPill
-              key={`${index}-${file.fileName}`}
-              disabled={disabled}
-              file={file}
-              onClick={() => handleOnClickFileContext(file)}
+        {connections
+          .filter((connection) => context.connection?.id === connection.uuid)
+          .map((connection) => (
+            <ContextPill
+              key={connection.uuid}
+              primary={connection.name}
+              primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
+              secondary={
+                getCodeCell({ Connection: { kind: connection.type, id: connection.uuid } })?.label ?? 'Connection'
+              }
+              onClick={handleOnClickConnection}
+              noClose={disabled}
             />
           ))}
+
+        {files.map((file, index) => (
+          <FileContextPill
+            key={`${index}-${file.fileName}`}
+            disabled={disabled}
+            file={file}
+            onClick={() => handleOnClickFileContext(index)}
+          />
+        ))}
+
+        {importFiles.map((file, index) => (
+          <ContextPill
+            key={`${index}-${file.name}`}
+            primary={file.name}
+            secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
+            noClose={disabled}
+            onClick={() => handleOnClickImportFileContext(index)}
+          />
+        ))}
+
+        {context.importFiles?.files.map((file, index) => (
+          <ContextPill
+            key={`${index}-${file.name}`}
+            primary={file.name}
+            secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
+            noClose={disabled}
+          />
+        ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
       </div>
@@ -143,13 +113,13 @@ export const AIContext = memo(
   }
 );
 
-type ContextPillProps = {
+interface ContextPillProps {
   primary: string;
   primaryIcon?: React.ReactNode;
   secondary: string;
   onClick?: () => void;
   noClose: boolean;
-};
+}
 const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }: ContextPillProps) => {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
@@ -174,11 +144,11 @@ const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }:
   );
 });
 
-type FileContextPillProps = {
+interface FileContextPillProps {
   disabled: boolean;
   file: FileContent;
   onClick: () => void;
-};
+}
 const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
@@ -198,20 +168,15 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
   );
 });
 
-type CodeCellContextPillProps = {
+interface CodeCellContextPillProps {
   codeCell: CodeCell | undefined;
-};
+}
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
     const updateTableName = () => {
       if (!codeCell?.sheetId) return;
-      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
-        codeCell.sheetId,
-        codeCell.pos.x,
-        codeCell.pos.y,
-        sheets.jsA1Context
-      );
+      const tableName = sheets.sheet.cursor.getTableNameFromPos(codeCell);
       setTableName(tableName);
     };
 
@@ -221,7 +186,7 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return () => {
       events.off('a1ContextUpdated', updateTableName);
     };
-  }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
+  }, [codeCell]);
 
   if (!codeCell) {
     return null;

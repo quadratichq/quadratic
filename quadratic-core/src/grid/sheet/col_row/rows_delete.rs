@@ -96,7 +96,7 @@ impl Sheet {
     ) {
         // create undo operations for the deleted row (only when needed since
         // it's a bit expensive)
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction
                 .reverse_operations
                 .extend(self.reverse_borders_ops_for_row(row));
@@ -136,7 +136,7 @@ impl Sheet {
 
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             // reverse operation to create the row (this will also shift all impacted rows)
             transaction.reverse_operations.push(Operation::InsertRow {
                 sheet_id: self.id,
@@ -172,7 +172,7 @@ impl Sheet {
 
         if self.ensure_no_table_ui(&rows) {
             let e = "delete_rows_error".to_string();
-            if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
+            if transaction.is_user_ai_undo_redo() && cfg!(target_family = "wasm") {
                 let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
                 crate::wasm_bindings::js::jsClientMessage(e.to_owned(), severity.to_string());
             }
@@ -194,9 +194,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        CellValue, DEFAULT_ROW_HEIGHT, controller::execution::TransactionSource, grid::CellWrap,
-    };
+    use crate::{CellValue, DEFAULT_ROW_HEIGHT, grid::CellWrap};
 
     use super::*;
 
@@ -264,10 +262,7 @@ mod test {
 
         sheet.recalculate_bounds(&a1_context);
 
-        let mut transaction = PendingTransaction {
-            source: TransactionSource::User,
-            ..Default::default()
-        };
+        let mut transaction = PendingTransaction::default();
 
         let _ = sheet.delete_rows(
             &mut transaction,

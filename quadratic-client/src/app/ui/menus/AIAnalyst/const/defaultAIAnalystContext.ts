@@ -2,9 +2,8 @@ import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { atom } from 'recoil';
 
 export const defaultAIAnalystContext: Context = {
-  sheets: [],
-  currentSheet: '',
-  selection: undefined,
+  codeCell: undefined,
+  connection: undefined,
 };
 
 export const aiContextAtom = atom<Context>({

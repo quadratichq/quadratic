@@ -1,17 +1,16 @@
+import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
-import { createTextContent, getConnectionFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { FAILING_SQL_CONNECTIONS_EXPIRATION_TIME, GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { useRecoilCallback } from 'recoil';
 
 export function useSqlContextMessages() {
   const getSqlContext = useRecoilCallback(
-    ({ snapshot }) =>
-      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const selectedConnection = getConnectionFromChatMessages(chatMessages);
-
+    ({ snapshot, set }) =>
+      async ({ connections, context }: { connections: ConnectionList; context: Context }): Promise<ChatMessage[]> => {
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         if (!teamUuid) {
           console.warn('[SQL Context] No team UUID available');
@@ -19,24 +18,35 @@ export function useSqlContextMessages() {
         }
 
         try {
-          // get all team connections
-          let connections;
-          try {
-            connections = await apiClient.connections.list(teamUuid);
-          } catch (error) {
-            console.warn('[SQL Context] Failed to fetch team connections, API may be unavailable:', error);
-            return [];
-          }
-
           if (!connections || connections.length === 0) {
             return [];
           }
 
+          const failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
+          const currentTime = Date.now();
+          if (currentTime - failingSqlConnections.lastResetTimestamp > FAILING_SQL_CONNECTIONS_EXPIRATION_TIME) {
+            set(aiAnalystFailingSqlConnectionsAtom, { uuids: [], lastResetTimestamp: Date.now() });
+          }
+
           // package team connections
           // get only table names for each connection to keep context light
-          const connectionTableInfo = await Promise.all(
+          const connectionTableInfo: {
+            connectionId: string;
+            connectionName: string;
+            connectionType: string;
+            semanticDescription: string | undefined;
+            database: string;
+            tableNames: string[];
+          }[] = [];
+
+          await Promise.all(
             connections.map(async (connection) => {
               try {
+                // skip failing connections
+                if (failingSqlConnections.uuids.includes(connection.uuid)) {
+                  return;
+                }
+
                 const schema = await connectionClient.schemas.get(
                   connection.type,
                   connection.uuid,
@@ -46,31 +56,26 @@ export function useSqlContextMessages() {
                 );
                 const tableNames = schema?.tables?.map((table) => table.name) || [];
 
-                return {
+                connectionTableInfo.push({
                   connectionId: connection.uuid,
                   connectionName: connection.name,
                   connectionType: connection.type,
+                  semanticDescription: connection.semanticDescription,
                   database: schema?.database || 'Unknown',
                   tableNames: tableNames,
-                };
+                });
               } catch (error) {
+                set(aiAnalystFailingSqlConnectionsAtom, (prev) => ({
+                  ...prev,
+                  uuids: [...prev.uuids.filter((uuid) => uuid !== connection.uuid), connection.uuid],
+                }));
+
                 console.warn(`[SQL Context] Failed to get table names for connection ${connection.uuid}:`, error);
-                return {
-                  connectionId: connection.uuid,
-                  connectionName: connection.name,
-                  connectionType: connection.type,
-                  database: 'Unknown',
-                  tableNames: [],
-                  error: `Failed to retrieve table names: ${error}`,
-                };
               }
             })
           );
 
-          // filter out failed connections
-          const validConnections = connectionTableInfo.filter((conn) => !conn.error);
-
-          if (validConnections.length === 0) {
+          if (connectionTableInfo.length === 0) {
             console.warn('[SQL Context] No valid database connections with table information');
             return [];
           }
@@ -83,10 +88,10 @@ Use the get_database_schemas tool to retrieve detailed column information, data 
 `;
 
           // format as lightweight context message
-          validConnections
+          connectionTableInfo
             // If there's a selected connection, only show the tables for that connection
             // Otherwise put all connections in context
-            .filter((conn) => selectedConnection && conn.connectionId === selectedConnection.uuid)
+            .filter((conn) => !context.connection || context.connection.id === conn.connectionId)
             .forEach((conn) => {
               const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
@@ -97,6 +102,7 @@ ${conn.connectionName}
 ### Information
 type: ${conn.connectionType}
 id: ${conn.connectionId}
+semanticDescription: ${conn.semanticDescription}
 
 ### Database
 ${conn.database}

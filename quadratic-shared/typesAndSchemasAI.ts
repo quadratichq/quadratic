@@ -36,9 +36,9 @@ const OpenAIModelSchema = z.enum([
 const AzureOpenAIModelSchema = z.enum(['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum([
-  'moonshotai/Kimi-K2-Instruct',
   'Qwen/Qwen3-Coder-480B-A35B-Instruct',
   'deepseek-ai/DeepSeek-V3.1',
+  'moonshotai/Kimi-K2-Instruct-0905',
 ]);
 const FireworksModelSchema = z.enum([
   'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
@@ -122,9 +122,9 @@ const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
 const BasetenModelKeySchema = z.enum([
-  'baseten:moonshotai/Kimi-K2-Instruct',
   'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
   'baseten:deepseek-ai/DeepSeek-V3.1',
+  'baseten:moonshotai/Kimi-K2-Instruct-0905',
 ]);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
@@ -209,34 +209,37 @@ const InternalContextTypeSchema = z.enum([
   'sqlSchemas',
   'codeErrors',
   'fileSummary',
+  'aiUpdates',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
+const ConnectionKindSchema = z.enum([
+  'POSTGRES',
+  'MYSQL',
+  'MSSQL',
+  'SNOWFLAKE',
+  'BIGQUERY',
+  'COCKROACHDB',
+  'MARIADB',
+  'NEON',
+  'SUPABASE',
+]);
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: z.enum([
-        'POSTGRES',
-        'MYSQL',
-        'MSSQL',
-        'SNOWFLAKE',
-        'BIGQUERY',
-        'COCKROACHDB',
-        'MARIADB',
-        'NEON',
-        'SUPABASE',
-      ]),
+      kind: ConnectionKindSchema,
       id: z.string(),
     }),
   })
 );
+const ImportFileSchema = z.object({
+  name: z.string(),
+  size: z.number(),
+});
 const ContextSchema = z.object({
-  sheets: z.array(z.string()),
-  currentSheet: z.string(),
-  selection: z.string().optional(),
   codeCell: z
     .object({
       sheetId: z.string(),
@@ -257,6 +260,19 @@ const ContextSchema = z.object({
         }),
     })
     .optional(),
+  connection: z
+    .object({
+      type: ConnectionKindSchema,
+      id: z.string(),
+      name: z.string(),
+    })
+    .optional(),
+  importFiles: z
+    .object({
+      prompt: z.string(),
+      files: z.array(ImportFileSchema),
+    })
+    .optional(),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
@@ -273,13 +289,6 @@ const TextContentSchema = z.preprocess(
   })
 );
 export type TextContent = z.infer<typeof TextContentSchema>;
-
-const ConnectionContentSchema = z.object({
-  type: z.literal('connection'),
-  uuid: z.string(),
-  name: z.string(),
-});
-export type ConnectionContent = z.infer<typeof ConnectionContentSchema>;
 
 export const ImageContentSchema = z.object({
   type: z.literal('data'),
@@ -314,7 +323,7 @@ const GoogleSearchGroundingMetadataSchema = z.object({
 });
 export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
-const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema, ConnectionContentSchema]));
+const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
@@ -444,8 +453,6 @@ const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');
-export type InternalWebSearchContextType = z.infer<typeof InternalWebSearchContextTypeSchema>;
-
 const GoogleSearchContentSchema = z.object({
   source: z.literal('google_search'),
   query: z.string(),
@@ -453,11 +460,33 @@ const GoogleSearchContentSchema = z.object({
 });
 export type GoogleSearchContent = z.infer<typeof GoogleSearchContentSchema>;
 
-const InternalMessageSchema = z.object({
-  role: z.literal('internal'),
-  contextType: InternalWebSearchContextTypeSchema,
-  content: GoogleSearchContentSchema,
+const InternalImportFilesToGridTypeSchema = z.literal('importFilesToGrid');
+const InternalImportFileSchema = z.object({
+  fileName: z.string(),
+  loading: z.boolean(),
+  error: z.string().optional(),
 });
+export type InternalImportFile = z.infer<typeof InternalImportFileSchema>;
+
+const ImportFilesToGridContentSchema = z.object({
+  source: z.literal('import_files_to_grid'),
+  files: z.array(InternalImportFileSchema),
+});
+export type ImportFilesToGridContent = z.infer<typeof ImportFilesToGridContentSchema>;
+
+const InternalMessageSchema = z
+  .object({
+    role: z.literal('internal'),
+    contextType: InternalWebSearchContextTypeSchema,
+    content: GoogleSearchContentSchema,
+  })
+  .or(
+    z.object({
+      role: z.literal('internal'),
+      contextType: InternalImportFilesToGridTypeSchema,
+      content: ImportFilesToGridContentSchema,
+    })
+  );
 export type InternalMessage = z.infer<typeof InternalMessageSchema>;
 
 const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);

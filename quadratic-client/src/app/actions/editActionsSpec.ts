@@ -66,7 +66,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: UndoIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
-      quadraticCore.undo();
+      quadraticCore.undo(1, false);
     },
   },
   [Action.Redo]: {
@@ -74,7 +74,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: RedoIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
-      quadraticCore.redo();
+      quadraticCore.redo(1, false);
     },
   },
   [Action.Cut]: {

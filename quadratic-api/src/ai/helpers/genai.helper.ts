@@ -12,7 +12,8 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
-  isContentConnection,
+  isAIPromptMessage,
+  isContentFile,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
@@ -43,19 +44,18 @@ function convertContent(content: Content): Part[] {
     .map((content) => {
       if (isContentText(content)) {
         return { text: content.text.trim() };
-      } else if (isContentConnection(content)) {
-        return {
-          text: `The selected connection is "${content.name}" and its ID is ${content.uuid}.`,
-        };
-      } else {
+      } else if (isContentFile(content)) {
         return {
           inlineData: {
             data: content.data,
             mimeType: content.mimeType,
           },
         };
+      } else {
+        return undefined;
       }
-    });
+    })
+    .filter((content) => content !== undefined);
 }
 
 function convertToolResultContent(content: ToolResultContent): string {
@@ -89,12 +89,12 @@ export function getGenAIApiArgs(
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const genaiMessage: GenAIContent = {
         role: 'model',
         parts: [
           ...message.content
-            .filter((content) => content.type === 'text' && !!content.text.trim())
+            .filter((content) => isContentText(content) && !!content.text.trim())
             .map((content) => ({
               text: content.text.trim(),
             })),

@@ -1,8 +1,17 @@
+import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { memo } from 'react';
+import { useRecoilValue } from 'recoil';
 
-export function AIAnalystEmptyStateWaypoint() {
+export const AIAnalystEmptyStateWaypoint = memo(() => {
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+
+  if (messagesCount > 0) {
+    return null;
+  }
+
   return (
-    <div className="relative">
+    <div className="relative select-none">
       <div className="ml-2.5 flex flex-col">
         <svg
           width="16"
@@ -18,7 +27,7 @@ export function AIAnalystEmptyStateWaypoint() {
           />
         </svg>
         <h3 className="mt-2 text-sm font-medium">Upload a file</h3>
-        <p className="text-xs text-muted-foreground">CSV, Excel, PDF, or Parquet</p>
+        <p className="text-xs text-muted-foreground">PDF, Image, CSV, Excel, or Parquet</p>
       </div>
       <div className="absolute left-11 top-0 flex flex-row gap-2.5">
         <svg
@@ -46,4 +55,4 @@ export function AIAnalystEmptyStateWaypoint() {
       </div>
     </div>
   );
-}
+});

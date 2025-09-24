@@ -14,11 +14,11 @@ export const Toolbar = memo(() => {
         <CursorPosition />
       </div>
 
-      <div className="no-scrollbar flex flex-1 items-center overflow-y-hidden overflow-x-scroll">
+      <div className="no-scrollbar flex flex-1 items-center justify-center overflow-y-hidden overflow-x-scroll">
         {permissions.includes('FILE_EDIT') && <FormattingBar />}
       </div>
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end xl:w-64 2xl:w-80">
         <ZoomMenu />
       </div>
     </div>

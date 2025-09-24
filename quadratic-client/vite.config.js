@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
           res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+          res.setHeader('Document-Policy', 'js-profiling');
           next();
         });
       },
@@ -40,6 +41,8 @@ export default defineConfig(({ mode }) => {
         authToken: env.SENTRY_AUTH_TOKEN,
         org: 'quadratic',
         project: 'quadratic',
+        url: 'https://sentry.quadratichq.com',
+        release: `quadratic@${env.VITE_VERSION}`,
       })
     );
   }

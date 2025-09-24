@@ -37,12 +37,13 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to view this connection');
   }
 
-  const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));
+  const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
 
   return res.status(200).json({
     uuid: connection.uuid,
     name: connection.name,
     type: connection.type,
+    semanticDescription: connection.semanticDescription || undefined,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
     typeDetails,

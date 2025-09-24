@@ -10,17 +10,21 @@ use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
+use quadratic_core::controller::execution::TransactionSource;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Values;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::operations::tracked_operation::TrackedOperation;
+use quadratic_core::controller::tracked_transaction::TrackedTransaction;
 use quadratic_core::controller::transaction_types::JsCellValueResult;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
+use quadratic_core::grid::js_types::JsAITransactions;
 use quadratic_core::grid::js_types::JsCellValueCode;
 use quadratic_core::grid::js_types::JsCellValueKind;
 use quadratic_core::grid::js_types::JsCellValueRanges;
@@ -129,6 +133,7 @@ fn main() {
         Format,
         FormatUpdate,
         GridBounds,
+        JsAITransactions,
         JsBorderHorizontal,
         JsBorderVertical,
         JsBordersSheet,
@@ -201,7 +206,10 @@ fn main() {
         TableRef,
         TextCase,
         TextMatch,
+        TrackedOperation,
+        TrackedTransaction,
         TransactionName,
+        TransactionSource,
         TransientResize,
         Validation,
         ValidationDateTime,

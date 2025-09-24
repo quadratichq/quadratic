@@ -15,7 +15,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.toA1String())}
+            action={() => quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.toA1String(), false)}
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Command]}
           />
@@ -29,7 +29,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => quadraticCore.rerunCodeCells(sheets.current, undefined)}
+            action={() => quadraticCore.rerunCodeCells(sheets.current, undefined, false)}
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
           />
@@ -43,7 +43,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => quadraticCore.rerunCodeCells(undefined, undefined)}
+            action={() => quadraticCore.rerunCodeCells(undefined, undefined, false)}
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Alt, KeyboardSymbols.Command]}
           />

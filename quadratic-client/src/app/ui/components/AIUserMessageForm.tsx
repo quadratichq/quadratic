@@ -1,5 +1,8 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { aiAnalystCurrentChatMessagesCountAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
+import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
+import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -7,17 +10,15 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, CloseIcon, DraftIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { MentionsTextarea, type MentionState } from '@/shared/shadcn/ui/mentions-textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { createTextContent, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ConnectionContent, Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import { createTextContent, isContentFile, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
+import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
   memo,
@@ -30,9 +31,9 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import { useRecoilState, useRecoilValue, type SetterOrUpdater } from 'recoil';
+import { useRecoilValue, type SetterOrUpdater } from 'recoil';
 
-export type AIUserMessageFormWrapperProps = {
+export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
@@ -40,79 +41,77 @@ export type AIUserMessageFormWrapperProps = {
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showPromptSuggestions?: boolean;
-};
+}
 
-export type SubmitPromptArgs = {
+export interface SubmitPromptArgs {
   content: Content;
-};
+  context: Context;
+  importFiles: ImportFile[];
+}
 
-type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
+interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
+  cancelDisabled: boolean;
+  context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
-  isFileSupported: (mimeType: string) => boolean;
+  isChatFileSupported: (mimeType: string) => boolean;
+  isImportFileSupported: (extension: string) => boolean;
   fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
-  ctx: {
-    context: Context;
-    setContext?: React.Dispatch<React.SetStateAction<Context>>;
-    initialContext?: Context;
-  };
   waitingOnMessageIndex?: number;
-};
+  filesSupportedText: string;
+}
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
     const {
       textareaRef: bottomTextareaRef,
       autoFocusRef,
       initialContent,
+      initialContext,
       onContentChange,
-      ctx,
-      waitingOnMessageIndex,
+      showPromptSuggestions,
       abortController,
       loading,
       setLoading,
-      isFileSupported,
-      fileTypes,
+      cancelDisabled,
+      context,
+      setContext,
       submitPrompt,
+      isChatFileSupported,
+      isImportFileSupported,
+      fileTypes,
       formOnKeyDown,
       maxHeight = '120px',
-      showPromptSuggestions,
+      waitingOnMessageIndex,
+      filesSupportedText,
     } = props;
+
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
     const [dragOver, setDragOver] = useState(false);
-    const dragOverMessage = useMemo(
-      () =>
-        fileTypes.includes('.pdf') && fileTypes.includes('image/*')
-          ? 'PDFs and images supported'
-          : fileTypes.includes('.pdf')
-            ? 'PDFs supported'
-            : fileTypes.includes('image/*')
-              ? 'Images supported'
-              : 'Files not supported by this model',
-      [fileTypes]
-    );
 
-    const { connections } = useConnectionsFetcher();
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-    const [selectedConnectionUuid, setSelectedConnectionUuid] = useState<string>('');
     const [files, setFiles] = useState<FileContent[]>([]);
+    const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     // TODO: wire this up as an atom everywhere instead of passing?
-    // const [prompt, setPrompt] = useState<string>('');
-    const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
+    const [prompt, setPrompt] = useState<string>('');
+    // const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
     useEffect(() => {
-      setSelectedConnectionUuid(initialContent?.find((item) => item.type === 'connection')?.uuid ?? '');
-      setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
-      const initialPrompt = initialContent
-        ?.filter((item) => isContentText(item))
-        .map((item) => item.text)
-        .join('\n');
-      if (initialPrompt) setPrompt(initialPrompt);
-    }, [initialContent, setPrompt]);
+      setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
+      setImportFiles([]);
+      setPrompt(
+        initialContent
+          ?.filter((item) => isContentText(item))
+          .map((item) => item.text)
+          .join('\n') ?? ''
+      );
+      setContext?.(initialContext ?? {});
+    }, [initialContent, initialContext, setContext, setPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -125,34 +124,25 @@ export const AIUserMessageForm = memo(
       }
     }, [editingOrDebugEditing]);
 
-    const submit = useCallback(
+    const handleSubmit = useCallback(
       (prompt: string) => {
         const trimmedPrompt = prompt.trim();
         if (trimmedPrompt.length === 0) return;
 
-        if (initialContent === undefined) {
-          setPrompt('');
-          setFiles([]);
-          setSelectedConnectionUuid('');
-        }
-
-        let connectionContent: ConnectionContent[] = [];
-        if (selectedConnectionUuid) {
-          const matchingConnection = connections.find((connection) => connection.uuid === selectedConnectionUuid);
-          if (matchingConnection) {
-            connectionContent.push({
-              type: 'connection',
-              uuid: matchingConnection.uuid,
-              name: matchingConnection.name,
-            });
-          }
-        }
-
         submitPrompt({
-          content: [...files, ...connectionContent, createTextContent(trimmedPrompt)],
+          content: [...files, createTextContent(trimmedPrompt)],
+          context,
+          importFiles,
         });
+
+        if (initialContent === undefined) {
+          setFiles([]);
+          setImportFiles([]);
+          setPrompt('');
+          setContext?.({});
+        }
       },
-      [connections, files, initialContent, selectedConnectionUuid, submitPrompt, setPrompt]
+      [context, files, importFiles, initialContent, setContext, setPrompt, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -184,7 +174,7 @@ export const AIUserMessageForm = memo(
           event.preventDefault();
           if (loading || waitingOnMessageIndex !== undefined) return;
 
-          submit(prompt);
+          handleSubmit(prompt);
 
           if (initialContent === undefined) {
             textareaRef.current?.focus();
@@ -207,27 +197,38 @@ export const AIUserMessageForm = memo(
           formOnKeyDown(event);
         }
       },
-      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, submit, waitingOnMessageIndex]
+      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, handleSubmit, waitingOnMessageIndex]
     );
 
     const handleFiles = useCallback(
-      (newFiles: FileList | File[]) => {
+      async (newFiles: FileList | File[]) => {
         if (newFiles && newFiles.length > 0) {
-          for (const file of newFiles) {
-            const mimeType = file.type;
-            if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
+          for (const newFile of newFiles) {
+            const mimeType = newFile.type;
+            const extension = getExtension(newFile.name);
+            if (isSupportedMimeType(mimeType) && isChatFileSupported(mimeType)) {
               const reader = new FileReader();
               reader.onloadend = (e) => {
                 const dataUrl = e.target?.result as string;
                 const base64 = dataUrl.split(',')[1];
-                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: newFile.name }]);
               };
-              reader.readAsDataURL(file);
+              reader.onerror = (e) => {
+                console.error('Error reading file', e);
+              };
+              reader.readAsDataURL(newFile);
+            } else if (isImportFileSupported(`.${extension}`)) {
+              try {
+                const data = await newFile.arrayBuffer();
+                setImportFiles((prev) => [...prev, { name: newFile.name, size: newFile.size, data }]);
+              } catch (error) {
+                console.error('Error reading file', error);
+              }
             }
           }
         }
       },
-      [files, handleFilesChange, isFileSupported]
+      [files, handleFilesChange, isChatFileSupported, isImportFileSupported]
     );
 
     const handlePasteOrDrop = useCallback(
@@ -252,6 +253,15 @@ export const AIUserMessageForm = memo(
       },
       [editingOrDebugEditing]
     );
+
+    useEffect(() => {
+      if (initialContent === undefined) {
+        events.on('aiAnalystDroppedFiles', handleFiles);
+      }
+      return () => {
+        events.off('aiAnalystDroppedFiles', handleFiles);
+      };
+    }, [handleFiles, initialContent]);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
@@ -287,41 +297,10 @@ export const AIUserMessageForm = memo(
       <div className="relative">
         {showPromptSuggestions && messagesCount === 0 && (
           <AIAnalystPromptSuggestions
-            exampleSet={files.length > 0 ? 'file-pdf' : selectedConnectionUuid ? 'connection' : 'empty'}
+            exampleSet={files.length > 0 ? 'file-pdf' : context.connection ? 'connection' : 'empty'}
             prompt={prompt}
-            submit={submit}
-            selectedConnectionUuid={selectedConnectionUuid}
-            setSelectedConnectionUuid={setSelectedConnectionUuid}
+            submit={handleSubmit}
           />
-        )}
-        {false && (
-          <div className="mb-1 flex gap-1">
-            <div className="flex items-center gap-1 rounded bg-accent px-1.5 py-1">
-              <LanguageIcon language="Python" />
-              <div className="flex flex-col">
-                <h3 className="text-xs font-bold">Python1</h3>
-                <p className="text-xs text-muted-foreground">5 lines</p>
-              </div>
-              <CloseIcon className="ml-2 text-muted-foreground" />
-            </div>
-
-            <div className="flex hidden items-center gap-1 rounded bg-accent px-1.5 py-1">
-              <DraftIcon />
-              <div className="flex flex-col">
-                <h3 className="text-xs font-bold">FY25_Q2_Consol[…].pdf</h3>
-                <p className="text-xs text-muted-foreground">173KB</p>
-              </div>
-              <CloseIcon className="ml-2 text-muted-foreground" />
-            </div>
-            <div className="flex hidden items-center gap-1 rounded bg-accent px-1.5 py-1">
-              <LanguageIcon language="POSTGRES" />
-              <div className="flex flex-col">
-                <h3 className="text-xs font-bold">Quadartic</h3>
-                <p className="text-xs text-muted-foreground">Postgres connection</p>
-              </div>
-              <CloseIcon className="ml-2 text-muted-foreground" />
-            </div>
-          </div>
         )}
 
         <form
@@ -343,7 +322,9 @@ export const AIUserMessageForm = memo(
             >
               <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
                 <span className="text-sm font-bold">Drop files here</span>
-                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
+                  {filesSupportedText} supported
+                </span>
               </div>
             </div>
           )}
@@ -356,17 +337,14 @@ export const AIUserMessageForm = memo(
           />
 
           <AIContext
-            initialContext={ctx.initialContext}
-            context={ctx.context}
-            setContext={ctx.setContext}
+            context={context}
+            setContext={setContext}
             files={files}
             setFiles={handleFilesChange}
-            editing={editingOrDebugEditing}
-            isFileSupported={isFileSupported}
+            importFiles={importFiles}
+            setImportFiles={setImportFiles}
             disabled={disabled}
             textareaRef={textareaRef}
-            selectedConnectionUuid={selectedConnectionUuid}
-            setSelectedConnectionUuid={setSelectedConnectionUuid}
           />
 
           <MentionsTextarea
@@ -417,15 +395,14 @@ export const AIUserMessageForm = memo(
             prompt={prompt}
             setPrompt={setPrompt}
             submitPrompt={() => {
-              submit(prompt);
+              handleSubmit(prompt);
               setPrompt('');
             }}
             abortPrompt={abortPrompt}
             disabled={disabled}
+            cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            selectedConnectionUuid={selectedConnectionUuid}
-            setSelectedConnectionUuid={setSelectedConnectionUuid}
             // TODO: tons of cleanup
             handleClickMention={() => {
               const textarea = textareaRef.current;
@@ -499,6 +476,9 @@ export const AIUserMessageForm = memo(
                 textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
               }, 0);
             }}
+            context={context}
+            setContext={setContext}
+            filesSupportedText={filesSupportedText}
           />
         </form>
       </div>
@@ -506,12 +486,12 @@ export const AIUserMessageForm = memo(
   })
 );
 
-type EditButtonProps = {
+interface EditButtonProps {
   show: boolean;
   loading: boolean;
   setEditing: (editing: boolean) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-};
+}
 const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
   if (!show) {
     return null;
@@ -536,11 +516,12 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
   );
 });
 
-type CancelButtonProps = {
+interface CancelButtonProps {
   show: boolean;
+  disabled: boolean;
   abortPrompt: () => void;
-};
-const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
+}
+const CancelButton = memo(({ show, disabled, abortPrompt }: CancelButtonProps) => {
   if (!show) {
     return null;
   }
@@ -554,30 +535,35 @@ const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
         e.stopPropagation();
         abortPrompt();
       }}
+      disabled={disabled}
     >
       <BackspaceIcon className="mr-1" /> Cancel generating
     </Button>
   );
 });
 
-type AIUserMessageFormFooterProps = {
+interface AIUserMessageFormFooterProps {
   disabled: boolean;
+  cancelDisabled: boolean;
   show: boolean;
   loading: boolean;
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
   setPrompt: (prompt: React.SetStateAction<string>) => void;
-  submitPrompt: () => void;
+  submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
-  selectedConnectionUuid: string;
-  setSelectedConnectionUuid: (connectionUuid: string) => void;
   handleClickMention: () => void;
-};
+  context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
+  filesSupportedText: string;
+}
 const AIUserMessageFormFooter = memo(
   ({
+    disabled,
+    cancelDisabled,
     show,
     loading,
     waitingOnMessageIndex,
@@ -586,13 +572,26 @@ const AIUserMessageFormFooter = memo(
     setPrompt,
     submitPrompt,
     abortPrompt,
-    disabled,
     handleFiles,
     fileTypes,
-    selectedConnectionUuid,
-    setSelectedConnectionUuid,
     handleClickMention,
+    context,
+    setContext,
+    filesSupportedText,
   }: AIUserMessageFormFooterProps) => {
+    const handleClickSubmit = useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        submitPrompt(prompt);
+      },
+      [submitPrompt, prompt]
+    );
+
+    const disabledSubmit = useMemo(
+      () => prompt.length === 0 || loading || waitingOnMessageIndex !== undefined,
+      [prompt, loading, waitingOnMessageIndex]
+    );
+
     if (!show) {
       return null;
     }
@@ -606,11 +605,17 @@ const AIUserMessageFormFooter = memo(
           )}
         >
           <div className="flex items-center gap-1">
-            <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+            <AIUserMessageFormAttachFileButton
+              disabled={disabled}
+              handleFiles={handleFiles}
+              fileTypes={fileTypes}
+              filesSupportedText={filesSupportedText}
+            />
+
             <AIUserMessageFormConnectionsButton
               disabled={disabled}
-              selectedConnectionUuid={selectedConnectionUuid}
-              setSelectedConnectionUuid={setSelectedConnectionUuid}
+              context={context}
+              setContext={setContext}
               textareaRef={textareaRef}
             />
             <Button
@@ -642,15 +647,7 @@ const AIUserMessageFormFooter = memo(
                   </TooltipPopover>
                 )}
               >
-                <Button
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    submitPrompt();
-                  }}
-                  disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
-                >
+                <Button size="icon-sm" className="rounded-full" onClick={handleClickSubmit} disabled={disabledSubmit}>
                   <ArrowUpwardIcon />
                 </Button>
               </ConditionalWrapper>
@@ -658,7 +655,7 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton show={loading} abortPrompt={abortPrompt} />
+        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
       </>
     );
   }
