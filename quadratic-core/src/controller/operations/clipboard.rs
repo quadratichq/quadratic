@@ -899,11 +899,17 @@ impl GridController {
         let mut borders = clipboard.borders.to_owned().unwrap_or_default();
         let source_columns = clipboard.cells.columns;
 
+        // remove code anchors that overlap the paste area
         self.try_sheet(selection.sheet_id).map(|sheet| {
             sheet
                 .data_table_anchors_in_rect(Rect {
                     min: insert_at,
                     max: end_pos,
+                })
+                .filter(|pos| {
+                    sheet
+                        .data_table_at(pos)
+                        .is_some_and(|data_table| data_table.is_code())
                 })
                 .for_each(|pos| {
                     ops.push(Operation::DeleteDataTable {
