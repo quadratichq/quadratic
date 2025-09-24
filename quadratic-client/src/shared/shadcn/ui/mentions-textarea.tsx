@@ -1,7 +1,16 @@
 import { useGetMentions } from '@/app/ui/hooks/useGetMentions';
-import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import React, {
+  cloneElement,
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 export interface MentionItem {
   id: string;
@@ -11,17 +20,13 @@ export interface MentionItem {
   icon?: React.ReactNode;
 }
 
-export interface MentionsTextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
-  value?: string;
+export interface MentionsTextareaProps {
   onMentionSearch?: (query: string) => void;
   onMentionSelect?: (mention: MentionItem) => void;
-  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  className?: string;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   mentionState: MentionState;
   setMentionState: React.Dispatch<React.SetStateAction<MentionState>>;
-  maxHeight?: string;
+  children: React.ReactElement<React.TextareaHTMLAttributes<HTMLTextAreaElement>>;
 }
 
 export interface MentionState {
@@ -33,28 +38,23 @@ export interface MentionState {
   selectedIndex: number;
 }
 
+export const useMentionsState = () => {
+  return useState<MentionState>({
+    isOpen: false,
+    query: '',
+    startIndex: -1,
+    endIndex: -1,
+    position: { top: 0, left: 0 },
+    selectedIndex: 0,
+  });
+};
+
 const MentionsTextarea = memo(
   forwardRef<HTMLTextAreaElement, MentionsTextareaProps>(
-    (
-      {
-        className,
-        onChange,
-        onKeyDown,
-        style,
-        value = '',
-        // mentions = [],
-        maxHeight,
-        mentionState,
-        setMentionState,
-        onMentionSearch,
-        onMentionSelect,
-        placeholder = 'Ask a question, or type @ to mention some data…',
-        textareaRef,
-        ...props
-      },
-      ref
-    ) => {
+    ({ onMentionSearch, onMentionSelect, textareaRef, mentionState, setMentionState, children }, ref) => {
       const mentionItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+      const lastProcessedValue = useRef<string>('');
+      const lastProcessedCursor = useRef<number>(-1);
 
       useImperativeHandle(ref, () => textareaRef.current!);
 
@@ -68,23 +68,6 @@ const MentionsTextarea = memo(
           });
         }
       }, []);
-
-      // const adjustHeight = useCallback(() => {
-      //   window.requestAnimationFrame(() => {
-      //     const textarea = textareaRef.current;
-      //     if (textarea) {
-      //       textarea.style.height = '';
-      //       textarea.style.height = `${textarea.scrollHeight}px`;
-      //     }
-      //   });
-      // }, [textareaRef]);
-
-      // const resetHeight = useCallback(() => {
-      //   const textarea = textareaRef.current;
-      //   if (textarea) {
-      //     textarea.style.height = '';
-      //   }
-      // }, [textareaRef]);
 
       // Get cursor position in textarea
       const getCursorPosition = useCallback(() => {
@@ -109,7 +92,7 @@ const MentionsTextarea = memo(
         div.style.border = style.border;
         div.style.boxSizing = style.boxSizing;
 
-        const textBeforeCursor = value.substring(0, textarea.selectionStart);
+        const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart || 0);
         div.textContent = textBeforeCursor;
 
         document.body.appendChild(div);
@@ -122,7 +105,7 @@ const MentionsTextarea = memo(
         const left = rect.left + paddingLeft;
 
         return { top, left };
-      }, [value, textareaRef]);
+      }, [textareaRef]);
 
       // Detect @ mentions in text
       const detectMention = useCallback((text: string, cursorPos: number) => {
@@ -164,139 +147,149 @@ const MentionsTextarea = memo(
         );
       }, [mentions, mentionState.query]);
 
-      // Handle text change
-      const handleChange = useCallback(
-        (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-          const newValue = event.target.value;
-          const cursorPos = event.target.selectionStart || 0;
+      // Check for mentions when textarea changes
+      const checkForMentions = useCallback(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
 
-          const mention = detectMention(newValue, cursorPos);
+        const currentValue = textarea.value;
+        const currentCursor = textarea.selectionStart || 0;
 
-          if (mention) {
-            const position = getCursorPosition();
-            setMentionState({
-              isOpen: true,
-              query: mention.query,
-              startIndex: mention.startIndex,
-              endIndex: mention.endIndex,
-              position,
-              selectedIndex: 0,
-            });
+        // Only process if value or cursor position changed
+        if (currentValue === lastProcessedValue.current && currentCursor === lastProcessedCursor.current) {
+          return;
+        }
 
-            onMentionSearch?.(mention.query);
-          } else {
-            setMentionState((prev) => ({ ...prev, isOpen: false }));
-          }
+        lastProcessedValue.current = currentValue;
+        lastProcessedCursor.current = currentCursor;
 
-          onChange?.(event);
+        const mention = detectMention(currentValue, currentCursor);
 
-          // if (autoHeight) {
-          //   adjustHeight();
-          // }
-        },
-        [detectMention, getCursorPosition, onChange, onMentionSearch, setMentionState]
-      );
+        if (mention) {
+          const position = getCursorPosition();
+          setMentionState({
+            isOpen: true,
+            query: mention.query,
+            startIndex: mention.startIndex,
+            endIndex: mention.endIndex,
+            position,
+            selectedIndex: 0,
+          });
+          onMentionSearch?.(mention.query);
+        } else {
+          setMentionState((prev) => ({ ...prev, isOpen: false }));
+        }
+      }, [detectMention, getCursorPosition, onMentionSearch, setMentionState, textareaRef]);
 
       // Handle mention selection
       const handleMentionSelect = useCallback(
         (mention: MentionItem) => {
-          console.log('handleMentionSelect', mention, textareaRef?.current);
           const textarea = textareaRef?.current;
           if (!textarea) return;
 
-          const beforeMention = value.substring(0, mentionState.startIndex);
-          const afterMention = value.substring(mentionState.endIndex);
+          const currentValue = textarea.value;
+          const beforeMention = currentValue.substring(0, mentionState.startIndex);
+          const afterMention = currentValue.substring(mentionState.endIndex);
           const newValue = beforeMention + `@${mention.value} ` + afterMention;
 
-          onChange?.({
-            target: { value: newValue } as HTMLTextAreaElement,
-            currentTarget: textarea,
-          } as React.ChangeEvent<HTMLTextAreaElement>);
+          // Update textarea value
+          textarea.value = newValue;
+
+          // Update our tracking variables to prevent re-processing
+          const newCursorPos = beforeMention.length + mention.value.length + 2; // +2 for @ and space
+          lastProcessedValue.current = newValue;
+          lastProcessedCursor.current = newCursorPos;
+
+          // Trigger a change event on the original textarea
+          const event = new Event('input', { bubbles: true });
+          textarea.dispatchEvent(event);
 
           setMentionState((prev) => ({ ...prev, isOpen: false }));
           onMentionSelect?.(mention);
 
           // Focus back to textarea and position cursor after the mention
           setTimeout(() => {
-            const newCursorPos = beforeMention.length + mention.value.length + 2; // +2 for @ and space
             textarea.focus();
             textarea.setSelectionRange(newCursorPos, newCursorPos);
           }, 0);
         },
-        [value, mentionState, onChange, onMentionSelect, setMentionState, textareaRef]
+        [mentionState, onMentionSelect, setMentionState, textareaRef]
       );
 
-      // Handle key down events
-      const handleKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Add event listeners to the textarea
+      useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        // Listen for input events to detect mentions
+        const handleInput = () => {
+          // Use setTimeout to ensure the textarea value is updated
+          setTimeout(checkForMentions, 0);
+        };
+
+        // Listen for keydown events for mention navigation
+        const handleKeyDown = (event: KeyboardEvent) => {
           if (mentionState.isOpen) {
             if (event.key === 'Escape') {
               setMentionState((prev) => ({ ...prev, isOpen: false }));
               event.preventDefault();
+              event.stopPropagation();
               return;
             }
+
             if (event.key === 'ArrowDown') {
               event.preventDefault();
+              event.stopPropagation();
               const newIndex = Math.min(mentionState.selectedIndex + 1, filteredMentions.length - 1);
               setMentionState((prev) => ({
                 ...prev,
                 selectedIndex: newIndex,
               }));
-              // Scroll the selected item into view after state update
               setTimeout(() => scrollSelectedIntoView(newIndex), 0);
               return;
             }
+
             if (event.key === 'ArrowUp') {
               event.preventDefault();
+              event.stopPropagation();
               const newIndex = Math.max(mentionState.selectedIndex - 1, 0);
               setMentionState((prev) => ({
                 ...prev,
                 selectedIndex: newIndex,
               }));
-              // Scroll the selected item into view after state update
               setTimeout(() => scrollSelectedIntoView(newIndex), 0);
               return;
             }
-            if (event.key === 'Enter' && filteredMentions.length > 0) {
+
+            if ((event.key === 'Enter' || event.key === 'Tab') && filteredMentions.length > 0) {
               event.preventDefault();
+              event.stopPropagation();
               const selectedMention = filteredMentions[mentionState.selectedIndex];
               if (selectedMention) {
                 handleMentionSelect(selectedMention);
               }
               return;
             }
-            if (event.key === 'Tab') {
-              event.preventDefault();
-              if (filteredMentions.length > 0) {
-                const selectedMention = filteredMentions[mentionState.selectedIndex];
-                if (selectedMention) {
-                  handleMentionSelect(selectedMention);
-                }
-              }
-              return;
-            }
           }
+        };
 
-          onKeyDown?.(event);
-        },
-        [
-          mentionState.isOpen,
-          mentionState.selectedIndex,
-          filteredMentions,
-          onKeyDown,
-          setMentionState,
-          handleMentionSelect,
-          scrollSelectedIntoView,
-        ]
-      );
+        textarea.addEventListener('input', handleInput);
+        textarea.addEventListener('keydown', handleKeyDown);
 
-      // Update mention position when value changes
-      useEffect(() => {
-        if (mentionState.isOpen) {
-          const position = getCursorPosition();
-          setMentionState((prev) => ({ ...prev, position }));
-        }
-      }, [value, mentionState.isOpen, getCursorPosition, setMentionState]);
+        return () => {
+          textarea.removeEventListener('input', handleInput);
+          textarea.removeEventListener('keydown', handleKeyDown);
+        };
+      }, [
+        mentionState.isOpen,
+        mentionState.selectedIndex,
+        filteredMentions,
+        checkForMentions,
+        handleMentionSelect,
+        scrollSelectedIntoView,
+        setMentionState,
+        textareaRef,
+      ]);
 
       // Update refs array when filtered mentions change
       useEffect(() => {
@@ -323,31 +316,18 @@ const MentionsTextarea = memo(
         }
       }, [mentionState.isOpen, setMentionState, textareaRef]);
 
+      // Clone the child element and ensure the ref is properly attached
+      const enhancedChild = cloneElement(children, {
+        ref: textareaRef,
+        ...children.props,
+      });
+
       return (
         <div className="relative">
-          <Textarea
-            ref={textareaRef}
-            className={cn(
-              'min-h-14 rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0'
-              // editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-              // (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
-            )}
-            style={{
-              ...style,
-            }}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            value={value}
-            placeholder={placeholder}
-            autoHeight
-            maxHeight={maxHeight}
-            // onFocus={() => {
-            //   textareaRef.current?.setSelectionRange(prompt.length, prompt.length);
-            // }}
-            {...props}
-          />
+          {/* Render the actual textarea child */}
+          {enhancedChild}
 
-          {mentionState.isOpen && (
+          {mentionState.isOpen && filteredMentions.length > 0 && (
             <div
               data-mentions-dropdown
               className="absolute z-50 w-80 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
@@ -356,43 +336,39 @@ const MentionsTextarea = memo(
                 top: mentionState.position.top - 24,
                 left: mentionState.position.left,
                 transform: 'translateY(-100%)',
+                pointerEvents: 'auto',
               }}
+              onMouseDown={(e) => e.preventDefault()}
             >
-              <div className="max-h-60 overflow-y-auto">
-                {filteredMentions.length === 0 ? (
-                  <div className="py-4 text-center text-sm text-muted-foreground">No matches found</div>
-                ) : (
-                  <div className="space-y-1">
-                    {filteredMentions.map((mention, index) => (
-                      <div
-                        key={mention.id}
-                        ref={(el) => {
-                          mentionItemRefs.current[index] = el;
-                        }}
-                        onClick={() => {
-                          console.log('mention', mention);
-                          handleMentionSelect(mention);
-                        }}
-                        className={cn(
-                          'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
-                          index === mentionState.selectedIndex
-                            ? 'bg-accent text-accent-foreground'
-                            : 'hover:bg-accent hover:text-accent-foreground'
-                        )}
-                      >
-                        <div className="flex flex-row items-center justify-between">
-                          <div className="flex flex-row items-center gap-2">
-                            {mention.icon && mention.icon}
-                            <span className="font-medium">{mention.label}</span>
-                          </div>
-                          {mention.description && (
-                            <span className="text-sm text-muted-foreground">{mention.description}</span>
-                          )}
-                        </div>
+              <div className="max-h-60 space-y-0.5 overflow-y-auto">
+                {filteredMentions.map((mention, index) => (
+                  <div
+                    key={mention.id}
+                    ref={(el) => {
+                      mentionItemRefs.current[index] = el;
+                    }}
+                    onClick={() => {
+                      handleMentionSelect(mention);
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={cn(
+                      'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
+                      index === mentionState.selectedIndex
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent hover:text-accent-foreground'
+                    )}
+                  >
+                    <div className="flex flex-row items-center justify-between">
+                      <div className="flex flex-row items-center gap-2">
+                        {mention.icon && mention.icon}
+                        <span className="font-medium">{mention.label}</span>
                       </div>
-                    ))}
+                      {mention.description && (
+                        <span className="text-xs text-muted-foreground">{mention.description}</span>
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           )}

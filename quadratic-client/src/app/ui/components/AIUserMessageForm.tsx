@@ -13,7 +13,8 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { MentionsTextarea, type MentionState } from '@/shared/shadcn/ui/mentions-textarea';
+import { MentionsTextarea, useMentionsState } from '@/shared/shadcn/ui/mentions-textarea';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
@@ -65,6 +66,7 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   maxHeight?: string;
   waitingOnMessageIndex?: number;
   filesSupportedText: string;
+  enableMentions?: boolean;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -90,6 +92,7 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
       waitingOnMessageIndex,
       filesSupportedText,
+      enableMentions,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -286,14 +289,27 @@ export const AIUserMessageForm = memo(
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
 
-    const [mentionState, setMentionState] = useState<MentionState>({
-      isOpen: false,
-      query: '',
-      startIndex: -1,
-      endIndex: -1,
-      position: { top: 0, left: 0 },
-      selectedIndex: 0,
-    });
+    const [mentionState, setMentionState] = useMentionsState();
+
+    const textarea = (
+      <Textarea
+        ref={textareaRef}
+        value={prompt}
+        className={cn(
+          'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
+          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+          (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+        )}
+        onChange={handlePromptChange}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+        placeholder={enableMentions ? 'Ask a question, or type @ to mention some data…' : 'Ask a question...'}
+        autoHeight={true}
+        maxHeight={maxHeight}
+        disabled={waitingOnMessageIndex !== undefined}
+        onDragEnter={handleDrag}
+      />
+    );
 
     return (
       <div className="relative">
@@ -349,43 +365,23 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
           />
 
-          <MentionsTextarea
-            value={prompt}
-            onChange={handlePromptChange}
-            onKeyDown={handleKeyDown}
-            // mentions={mentions}
-            onMentionSearch={(q) => {
-              console.log('<MentionsTextarea>.onMentionsSearch');
-            }}
-            onMentionSelect={(m) => {
-              console.log('<MentionsTextarea>.onMentionsSelect');
-            }}
-            textareaRef={textareaRef}
-            mentionState={mentionState}
-            setMentionState={setMentionState}
-            maxHeight={maxHeight}
-          />
-
-          {/* <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-              editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-              (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
-            )}
-            onChange={handlePromptChange}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-            autoHeight={true}
-            maxHeight={maxHeight}
-            disabled={waitingOnMessageIndex !== undefined}
-            onDragEnter={handleDrag}
-            onFocus={() => {
-              textareaRef.current?.setSelectionRange(prompt.length, prompt.length);
-            }}
-          /> */}
+          {enableMentions ? (
+            <MentionsTextarea
+              onMentionSearch={(q) => {
+                console.log('<MentionsTextarea>.onMentionsSearch');
+              }}
+              onMentionSelect={(m) => {
+                console.log('<MentionsTextarea>.onMentionsSelect');
+              }}
+              textareaRef={textareaRef}
+              mentionState={mentionState}
+              setMentionState={setMentionState}
+            >
+              {textarea}
+            </MentionsTextarea>
+          ) : (
+            textarea
+          )}
 
           <AIUsageExceeded show={showAIUsageExceeded} />
 
@@ -405,8 +401,9 @@ export const AIUserMessageForm = memo(
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            // TODO: tons of cleanup
             handleClickMention={() => {
+              if (!enableMentions) return;
+
               const textarea = textareaRef.current;
               if (!textarea) return;
 
@@ -423,14 +420,14 @@ export const AIUserMessageForm = memo(
 
               // Trigger mention detection by simulating a change event
               setTimeout(() => {
-                // Manually trigger the mention detection logic
+                // Use the same mention detection logic as MentionsTextarea
                 const textBeforeCursor = newValue.substring(0, cursorPos + 1);
                 const atIndex = textBeforeCursor.lastIndexOf('@');
 
                 if (atIndex !== -1) {
                   const textAfterAt = textBeforeCursor.substring(atIndex + 1);
                   if (!textAfterAt.includes(' ')) {
-                    // Calculate position for the mention dropdown
+                    // Calculate position for the mention dropdown using the same logic as MentionsTextarea
                     const rect = textarea.getBoundingClientRect();
                     const style = getComputedStyle(textarea);
                     const lineHeight = parseInt(style.lineHeight) || 20;
@@ -481,6 +478,7 @@ export const AIUserMessageForm = memo(
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
+            enableMentions={enableMentions}
           />
         </form>
       </div>
@@ -561,6 +559,7 @@ interface AIUserMessageFormFooterProps {
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
+  enableMentions?: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -580,6 +579,7 @@ const AIUserMessageFormFooter = memo(
     context,
     setContext,
     filesSupportedText,
+    enableMentions,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -620,15 +620,17 @@ const AIUserMessageFormFooter = memo(
               setContext={setContext}
               textareaRef={textareaRef}
             />
-            <Button
-              size="icon-sm"
-              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
-              variant="ghost"
-              disabled={disabled}
-              onClick={handleClickMention}
-            >
-              <MentionIcon />
-            </Button>
+            {enableMentions && (
+              <Button
+                size="icon-sm"
+                className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                variant="ghost"
+                disabled={disabled}
+                onClick={handleClickMention}
+              >
+                <MentionIcon />
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">
