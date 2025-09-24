@@ -467,8 +467,8 @@ mod tests {
 
         gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
 
-        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
-        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+        test_create_data_table(&mut gc, sheet_id, pos![E5], 3, 3);
+        test_create_data_table(&mut gc, sheet_id, pos![J10], 3, 3);
 
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
@@ -476,7 +476,7 @@ mod tests {
             .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
             .collect::<Vec<_>>();
 
-        assert_eq!(tables, vec![pos![5, 5]]);
+        assert_eq!(tables, vec![pos![B2], pos![E5]]);
     }
 
     #[test]
