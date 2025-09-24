@@ -497,7 +497,7 @@ impl GridController {
                 }
             }
         }
-        dbg!(&ops);
+
         Ok(ops)
     }
 

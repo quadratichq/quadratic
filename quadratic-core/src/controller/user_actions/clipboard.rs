@@ -887,8 +887,8 @@ mod test {
             .into();
 
         // paste using html on a new grid controller
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         // ensure the grid controller is empty
         assert_eq!(gc.undo_stack.len(), 0);
