@@ -5,7 +5,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{DataTableKind, NumericFormatKind};
+use crate::grid::{CodeCellLanguage, DataTableKind, NumericFormatKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -64,7 +64,17 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
+
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    if value.starts_with("=") {
+                        ops.extend(self.set_code_cell_operations(
+                            pos.to_sheet_pos(sheet.id),
+                            CodeCellLanguage::Formula,
+                            value[1..].to_string(),
+                            None,
+                        ));
+                        continue;
+                    }
                     let user_enter_percent = from_user_input
                         && sheet
                             .cell_format(pos)
