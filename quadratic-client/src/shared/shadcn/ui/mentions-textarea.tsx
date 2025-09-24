@@ -192,8 +192,8 @@ const MentionsTextarea = memo(
           const afterMention = currentValue.substring(mentionState.endIndex);
           const newValue = beforeMention + `@${mention.value} ` + afterMention;
 
-          // Update textarea value
-          textarea.value = newValue;
+          // Update textarea value using setRangeText to avoid mutation warning
+          textarea.setRangeText(`@${mention.value} `, mentionState.startIndex, mentionState.endIndex, 'select');
 
           // Update our tracking variables to prevent re-processing
           const newCursorPos = beforeMention.length + mention.value.length + 2; // +2 for @ and space
@@ -318,7 +318,6 @@ const MentionsTextarea = memo(
 
       // Clone the child element and ensure the ref is properly attached
       const enhancedChild = cloneElement(children, {
-        ref: textareaRef,
         ...children.props,
       });
 
