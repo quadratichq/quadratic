@@ -345,7 +345,7 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={enableMentions ? 'Ask a question (type @ to mention data)…' : 'Ask a question…'}
+        placeholder={enableMentions ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
@@ -578,15 +578,17 @@ const AIUserMessageFormFooter = memo(
               textareaRef={textareaRef}
             />
             {handleClickMention && (
-              <Button
-                size="icon-sm"
-                className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
-                variant="ghost"
-                disabled={disabled}
-                onClick={handleClickMention}
-              >
-                <MentionIcon />
-              </Button>
+              <TooltipPopover label="Reference data">
+                <Button
+                  size="icon-sm"
+                  className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={handleClickMention}
+                >
+                  <MentionIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </div>
 

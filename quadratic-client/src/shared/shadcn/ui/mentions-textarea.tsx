@@ -263,49 +263,65 @@ const MentionsTextarea = memo(
           {enhancedChild}
 
           {mentionState.isOpen && filteredMentions.length > 0 && (
-            <div
-              data-mentions-dropdown
-              className="absolute z-50 w-80 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-              style={{
-                position: 'fixed',
-                top: mentionState.position.top - 24,
-                left: mentionState.position.left,
-                transform: 'translateY(-100%)',
-                pointerEvents: 'auto',
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <div className="max-h-60 space-y-0.5 overflow-y-auto">
-                {filteredMentions.map((mention, index) => (
-                  <div
-                    key={mention.id}
-                    ref={(el) => {
-                      mentionItemRefs.current[index] = el;
-                    }}
-                    onClick={() => {
-                      handleMentionSelect(mention);
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className={cn(
-                      'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
-                      index === mentionState.selectedIndex
-                        ? 'bg-accent text-accent-foreground'
-                        : 'hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
-                    <div className="flex flex-row items-center justify-between">
-                      <div className="flex flex-row items-center gap-2">
-                        {mention.icon && mention.icon}
-                        <span className="font-medium">{mention.label}</span>
-                      </div>
-                      {mention.description && (
-                        <span className="text-xs text-muted-foreground">{mention.description}</span>
+            <>
+              {/* Invisible background overlay that covers the entire page */}
+              <div
+                className="fixed inset-0 z-40"
+                style={{
+                  backgroundColor: 'transparent',
+                  pointerEvents: 'auto',
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setMentionState((prev) => ({ ...prev, isOpen: false }));
+                }}
+              />
+
+              {/* Mentions dropdown */}
+              <div
+                data-mentions-dropdown
+                className="absolute z-50 w-80 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                style={{
+                  position: 'fixed',
+                  top: mentionState.position.top - 24,
+                  left: mentionState.position.left,
+                  transform: 'translateY(-100%)',
+                  pointerEvents: 'auto',
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <div className="max-h-60 space-y-0.5 overflow-y-auto">
+                  {filteredMentions.map((mention, index) => (
+                    <div
+                      key={mention.id}
+                      ref={(el) => {
+                        mentionItemRefs.current[index] = el;
+                      }}
+                      onClick={() => {
+                        handleMentionSelect(mention);
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      className={cn(
+                        'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
+                        index === mentionState.selectedIndex
+                          ? 'bg-accent text-accent-foreground'
+                          : 'hover:bg-accent hover:text-accent-foreground'
                       )}
+                    >
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="flex flex-row items-center gap-2">
+                          {mention.icon && mention.icon}
+                          <span className="font-medium">{mention.label}</span>
+                        </div>
+                        {mention.description && (
+                          <span className="text-xs text-muted-foreground">{mention.description}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       );
