@@ -117,6 +117,16 @@ where
         self.cache.get(key).map(|(_, v)| v)
     }
 
+    /// Update a value in the cache
+    ///
+    /// If the key does not exist, the None is returned.
+    async fn update(&mut self, key: &K, value: V) -> Option<&mut V> {
+        self.get_mut(key).await.map(|v| {
+            *v = value;
+            v
+        })
+    }
+
     /// Delete a value from the cache
     ///
     /// Returns `None` if the key does not exist.

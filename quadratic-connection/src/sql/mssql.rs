@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
@@ -24,7 +26,7 @@ use super::{Schema, SchemaQuery, query_generic, schema_generic_with_ssh};
 /// Test the connection to the database.
 pub(crate) async fn test(
     headers: HeaderMap,
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     claims: Claims,
     Json(mut connection): Json<MsSqlConnection>,
 ) -> Result<Json<TestResponse>> {
@@ -78,7 +80,7 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
@@ -96,7 +98,7 @@ pub(crate) async fn query(
 }
 
 pub(crate) async fn query_with_connection(
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     sql_query: Json<SqlQuery>,
     mut connection: MsSqlConnection,
 ) -> Result<impl IntoResponse> {
@@ -115,7 +117,7 @@ pub(crate) async fn query_with_connection(
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     claims: Claims,
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
@@ -198,7 +200,7 @@ mod tests {
     #[traced_test]
     async fn mssql_schema() {
         let api_connection = get_connection(false);
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let params = SchemaQuery::forced_cache_refresh();
         let response = schema_generic_with_ssh(api_connection, state, params)
             .await
@@ -393,7 +395,7 @@ mod tests {
             query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
             connection_id,
         };
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), (&connection).into())
             .await
@@ -500,8 +502,9 @@ mod tests {
             query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
             connection_id,
         };
-        let mut state = Extension(new_state().await);
-        state.settings.max_response_bytes = 0;
+        let mut test_state = new_state().await;
+        test_state.settings.max_response_bytes = 0;
+        let state = Extension(Arc::new(test_state));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), (&connection).into())
             .await
@@ -519,7 +522,7 @@ mod tests {
     async fn mssql_test_connection_with_ssh() {
         let connection = get_connection(true);
         let result = query_with_connection(
-            Extension(new_state().await),
+            Extension(Arc::new(new_state().await)),
             Json(SqlQuery {
                 query: "SELECT * FROM ALL_NATIVE_DATA_TYPES".into(),
                 connection_id: Uuid::new_v4(),

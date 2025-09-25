@@ -11,8 +11,13 @@ use uuid::Uuid;
 
 use crate::{
     error::{ConnectionError, Result},
-    state::settings::Settings,
+    state::{
+        State,
+        synced_connection_cache::{SyncedConnectionKind, SyncedConnectionStatus},
+    },
 };
+
+const MAX_DAYS_TO_EXPORT: i64 = 180;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MixpanelConnection {
@@ -20,10 +25,10 @@ pub struct MixpanelConnection {
     pub project_id: String,
 }
 
-pub(crate) async fn process_mixpanel_connections(settings: &Settings) -> Result<()> {
+pub(crate) async fn process_mixpanel_connections(state: &State) -> Result<()> {
     let connections = get_connections_by_type::<MixpanelConnection>(
-        &settings.quadratic_api_uri,
-        &settings.m2m_auth_token,
+        &state.settings.quadratic_api_uri,
+        &state.settings.m2m_auth_token,
         "MIXPANEL",
     )
     .await?;
@@ -31,27 +36,35 @@ pub(crate) async fn process_mixpanel_connections(settings: &Settings) -> Result<
     tracing::info!("Found {} Mixpanel connections", connections.len());
 
     for connection in connections {
-        process_mixpanel_connection(settings, connection.type_details, connection.uuid).await?;
+        process_mixpanel_connection(state, connection.type_details, connection.uuid).await?;
     }
 
     Ok(())
 }
 
 pub(crate) async fn process_mixpanel_connection(
-    settings: &Settings,
+    state: &State,
     connection: MixpanelConnection,
     connection_id: Uuid,
 ) -> Result<()> {
-    let object_store = settings
-        .object_store
-        .clone()
-        .ok_or_else(|| ConnectionError::Config("Object store not found".to_string()))?;
+    if !can_process_connection(state, connection_id).await? {
+        tracing::info!(
+            "Skipping Mixpanel connection {} because it is already being processed",
+            connection_id
+        );
+        return Ok(());
+    }
 
+    // add the connection to the cache
+    state.stats.lock().await.num_connections_processing += 1;
+    start_connection_status(state, connection_id, SyncedConnectionKind::Mixpanel).await;
+
+    let object_store = state.settings.object_store.clone();
     let today = chrono::Utc::now().date_naive();
     let prefix = format!("{}/{}", connection_id, "events");
     let end_date = today;
     let start_time = std::time::Instant::now();
-    let mut start_date = chrono::Utc::now().date_naive() - chrono::Duration::days(30);
+    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
 
     // if we have any objects, use the last date processed
     if let Ok(Some(object_store_start_date)) =
@@ -72,14 +85,33 @@ pub(crate) async fn process_mixpanel_connection(
         end_date
     );
 
+    update_connection_status(
+        state,
+        connection_id,
+        SyncedConnectionKind::Mixpanel,
+        SyncedConnectionStatus::ApiRequest,
+    )
+    .await;
+
     let params = ExportParams::new(start_date, end_date);
     let parquet_data = client
         .export_events(params)
         .await
         .map_err(|e| ConnectionError::Synced(format!("Failed to export events: {}", e)))?;
+
+    update_connection_status(
+        state,
+        connection_id,
+        SyncedConnectionKind::Mixpanel,
+        SyncedConnectionStatus::Upload,
+    )
+    .await;
+
     let num_files = upload(&object_store, &prefix, parquet_data)
         .await
         .map_err(|e| ConnectionError::Synced(format!("Failed to upload events: {}", e)))?;
+
+    complete_connection_status(state, connection_id).await;
 
     tracing::info!(
         "Processed {} Mixpanel files in {:?}",
@@ -87,7 +119,37 @@ pub(crate) async fn process_mixpanel_connection(
         start_time.elapsed()
     );
 
+    state.stats.lock().await.num_connections_processing -= 1;
+
     Ok(())
+}
+
+async fn can_process_connection(state: &State, connection_id: Uuid) -> Result<bool> {
+    let status = state.synced_connection_cache.get(connection_id).await;
+    Ok(status.is_none())
+}
+
+async fn start_connection_status(state: &State, connection_id: Uuid, kind: SyncedConnectionKind) {
+    state
+        .synced_connection_cache
+        .add(connection_id, kind, SyncedConnectionStatus::Setup)
+        .await;
+}
+
+async fn update_connection_status(
+    state: &State,
+    connection_id: Uuid,
+    kind: SyncedConnectionKind,
+    status: SyncedConnectionStatus,
+) {
+    state
+        .synced_connection_cache
+        .update(connection_id, kind, status)
+        .await;
+}
+
+async fn complete_connection_status(state: &State, connection_id: Uuid) {
+    state.synced_connection_cache.delete(connection_id).await;
 }
 
 #[cfg(test)]
@@ -100,6 +162,6 @@ mod tests {
     #[tokio::test]
     async fn test_process_mixpanel() {
         let state = new_state().await;
-        process_mixpanel_connections(&state.settings).await.unwrap();
+        process_mixpanel_connections(&state).await.unwrap();
     }
 }

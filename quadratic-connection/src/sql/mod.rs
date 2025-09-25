@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{Extension, Json, http::HeaderMap, response::IntoResponse};
 use quadratic_rust_shared::{
     net::ssh::SshConfig,
@@ -49,7 +51,7 @@ impl SchemaQuery {
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_generic<'a, T: Connection<'a>>(
     mut connection: T,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let mut headers = HeaderMap::new();
@@ -78,7 +80,7 @@ pub(crate) async fn query_generic<'a, T: Connection<'a>>(
 
 pub(crate) async fn schema_generic<'a, C>(
     api_connection: ApiConnection<C>,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     params: SchemaQuery,
 ) -> Result<Json<Schema>>
 where
@@ -88,10 +90,10 @@ where
 
     if should_clear_cache {
         // if the force_cache_refresh is true, delete the schema from the cache
-        state.cache.delete_schema(api_connection.uuid).await;
+        state.schema_cache.delete(api_connection.uuid).await;
     } else {
         // if the schema is in the cache, return it
-        if let Some(schema) = state.cache.get_schema(api_connection.uuid).await {
+        if let Some(schema) = state.schema_cache.get(api_connection.uuid).await {
             return Ok(Json(schema));
         }
     }
@@ -109,8 +111,8 @@ where
 
     // add a copy of the schema to the cache
     state
-        .cache
-        .add_schema(api_connection.uuid, schema.clone())
+        .schema_cache
+        .add(api_connection.uuid, schema.clone())
         .await;
 
     Ok(Json(schema))
@@ -118,7 +120,7 @@ where
 
 pub(crate) async fn schema_generic_with_ssh<'a, C>(
     mut api_connection: ApiConnection<C>,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     params: SchemaQuery,
 ) -> Result<Json<Schema>>
 where

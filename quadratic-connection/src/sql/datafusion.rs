@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Extension, Json,
     extract::{Path, Query},
@@ -42,13 +44,10 @@ async fn get_connection(
     _team_id: &Uuid,
     _headers: &HeaderMap,
 ) -> Result<ApiConnection<DatafusionConnection>> {
-    let mut datafusion_connection =
-        match cfg!(not(test)) {
-            true => state.settings.datafusion_connection.clone().ok_or_else(|| {
-                ConnectionError::Config("Datafusion connection not found".to_string())
-            }),
-            false => Ok(new_datafusion_test_connection()),
-        }?;
+    let mut datafusion_connection = match cfg!(not(test)) {
+        true => state.settings.datafusion_connection.clone(),
+        false => new_datafusion_test_connection(),
+    };
 
     datafusion_connection.connection_id = Some(*connection_id);
 
@@ -65,7 +64,7 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
@@ -80,7 +79,7 @@ pub(crate) async fn query(
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
@@ -93,7 +92,7 @@ pub(crate) async fn schema(
 pub(crate) async fn sync_mixpanel(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
@@ -111,5 +110,5 @@ pub(crate) async fn sync_mixpanel(
         project_id: api_connection.type_details.project_id,
     };
 
-    process_mixpanel_connection(&state.settings, mixpanel_connection, id).await
+    process_mixpanel_connection(&state, mixpanel_connection, id).await
 }

@@ -7,6 +7,7 @@
 // use quadratic_core::{Array, CellValue, SheetRect};
 
 use std::io::Read;
+use std::sync::Arc;
 
 use arrow_schema::DataType;
 use axum::body::Body;
@@ -31,7 +32,7 @@ use crate::state::State;
 macro_rules! test_connection {
     ( $connection:expr ) => {{
         let (_, headers) = $crate::test_util::new_team_id_with_header().await;
-        let state = Extension($crate::test_util::new_state().await);
+        let state = Extension(Arc::new($crate::test_util::new_state().await));
         let claims = $crate::test_util::get_claims();
         let response = test(headers, state, claims, axum::Json($connection))
             .await
@@ -154,7 +155,7 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
 /// Process a route and return the response.
 /// TODO(ddimaria): move to quadratic-rust-shared
 pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
-    let state = new_state().await;
+    let state = Arc::new(new_state().await);
     let app = app(state).unwrap();
 
     app.oneshot(

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
@@ -26,7 +28,7 @@ use super::{Schema, query_generic, schema_generic_with_ssh};
 // #[axum::debug_handler]
 pub(crate) async fn test(
     headers: HeaderMap,
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     claims: Claims,
     Json(mut connection): Json<PostgresConnection>,
 ) -> Result<Json<TestResponse>> {
@@ -59,7 +61,7 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
@@ -78,7 +80,7 @@ pub(crate) async fn query(
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_with_connection(
-    state: Extension<AppState>,
+    state: Extension<Arc<AppState>>,
     sql_query: Json<SqlQuery>,
     mut connection: PostgresConnection,
 ) -> Result<impl IntoResponse> {
@@ -97,7 +99,7 @@ pub(crate) async fn query_with_connection(
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     claims: Claims,
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
@@ -175,7 +177,7 @@ pub mod tests {
     #[tokio::test]
     #[traced_test]
     async fn postgres_schema() {
-        let state = new_state().await;
+        let state = Arc::new(new_state().await);
         let api_connection = get_connection(false);
         let api_connection_id = api_connection.uuid;
         let params = SchemaQuery::forced_cache_refresh();
@@ -195,7 +197,7 @@ pub mod tests {
 
         // check that the schema was added to the cache
         assert_eq!(
-            state.cache.get_schema(api_connection_id).await.unwrap(),
+            state.schema_cache.get(api_connection_id).await.unwrap(),
             response.0
         );
     }
@@ -208,7 +210,7 @@ pub mod tests {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), connection.type_details)
             .await
@@ -330,8 +332,9 @@ pub mod tests {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
-        let mut state = Extension(new_state().await);
-        state.settings.max_response_bytes = 0;
+        let mut test_state = new_state().await;
+        test_state.settings.max_response_bytes = 0;
+        let state = Extension(Arc::new(test_state));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), connection.type_details)
             .await
@@ -349,7 +352,7 @@ pub mod tests {
     async fn postgres_test_connection_with_ssh() {
         let connection = get_connection(true);
         let result = query_with_connection(
-            Extension(new_state().await),
+            Extension(Arc::new(new_state().await)),
             Json(SqlQuery {
                 query: "SELECT * FROM pg_catalog.pg_tables;".into(),
                 connection_id: Uuid::new_v4(),

@@ -35,6 +35,9 @@ pub enum ConnectionError {
     #[error("Internal token: {0}")]
     InvalidToken(String),
 
+    #[error("Error parsing: {0}")]
+    Parse(String),
+
     #[error("Proxy error: {0}")]
     Proxy(String),
 

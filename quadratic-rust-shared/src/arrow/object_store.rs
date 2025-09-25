@@ -10,6 +10,23 @@ pub fn object_store_error(e: impl ToString) -> SharedError {
     SharedError::Arrow(ArrowError::ObjectStore(e.to_string()))
 }
 
+pub enum ObjectStoreKind {
+    S3,
+    FileSystem,
+}
+
+pub fn object_store_url(kind: ObjectStoreKind, bucket_name: Option<&str>) -> Result<Url> {
+    let url = match kind {
+        ObjectStoreKind::S3 => format!(
+            "s3://{}",
+            bucket_name.ok_or_else(|| object_store_error("Bucket name is required"))?
+        ),
+        ObjectStoreKind::FileSystem => "file://".to_string(),
+    };
+
+    Ok(Url::parse(&url).map_err(object_store_error)?)
+}
+
 /// Create a new S3 object store.
 pub fn new_s3_object_store(
     bucket: &str,

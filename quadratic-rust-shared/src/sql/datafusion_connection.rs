@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use datafusion::prelude::{ParquetReadOptions, SessionContext};
 use derivative::Derivative;
+use object_store::ObjectStore;
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -16,43 +17,53 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
-use crate::arrow::object_store::new_s3_object_store;
 use crate::error::Result;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{Connection, connect_error, query_error, schema_error};
+
+pub fn default_object_store() -> Arc<dyn ObjectStore> {
+    use object_store::memory::InMemory;
+    Arc::new(InMemory::new())
+}
 
 /// datafusion connection
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Debug, Clone)]
 pub struct DatafusionConnection {
-    pub access_key_id: String,
-    pub secret_access_key: String,
-    pub endpoint: Option<String>,
-    pub region: String,
-    pub bucket: String,
     pub connection_id: Option<Uuid>,
-    #[serde(skip)]
+    pub database: Option<String>,
+    #[serde(skip, default = "SessionContext::new")]
     #[derivative(Debug = "ignore")]
     pub session_context: SessionContext,
+    #[serde(skip, default = "default_object_store")]
+    #[derivative(Debug = "ignore")]
+    pub object_store: Arc<dyn ObjectStore>,
+    pub object_store_url: Url,
 }
 
 impl DatafusionConnection {
     /// Create a new datafusion connection
-    pub fn new(
-        access_key_id: String,
-        secret_access_key: String,
-        endpoint: Option<String>,
-        region: String,
-        bucket: String,
-    ) -> DatafusionConnection {
+    pub fn new(object_store: Arc<dyn ObjectStore>, object_store_url: Url) -> DatafusionConnection {
         DatafusionConnection {
-            access_key_id,
-            secret_access_key,
-            endpoint,
-            region,
-            bucket,
             connection_id: None,
+            database: None,
             session_context: SessionContext::new(),
+            object_store,
+            object_store_url,
+        }
+    }
+
+    pub fn with_connection_id(self, connection_id: Uuid) -> DatafusionConnection {
+        DatafusionConnection {
+            connection_id: Some(connection_id),
+            ..self
+        }
+    }
+
+    pub fn with_database(self, database: String) -> DatafusionConnection {
+        DatafusionConnection {
+            database: Some(database),
+            ..self
         }
     }
 
@@ -99,16 +110,9 @@ impl<'a> Connection<'a> for DatafusionConnection {
     /// Connect to a datafusion database
     async fn connect(&self) -> Result<SessionContext> {
         let ctx: SessionContext = SessionContext::new();
-        let (arc_s3, s3_url) = new_s3_object_store(
-            &self.bucket,
-            &self.region,
-            &self.access_key_id,
-            &self.secret_access_key,
-            self.endpoint.is_some(),
-        )?;
 
         // register the object store in datafusion context
-        ctx.register_object_store(&s3_url, arc_s3.clone());
+        ctx.register_object_store(&self.object_store_url, self.object_store.clone());
 
         // hard-code for now
         // TODO(ddimaria): remove this in favor of getting the tables elsewhere
@@ -116,7 +120,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
         // register the parquet path for every table
         for table in tables {
-            let parquet_path = self.object_store_parquet_path(&s3_url, table)?;
+            let parquet_path = self.object_store_parquet_path(&self.object_store_url, table)?;
             ctx.register_parquet(table, &parquet_path, ParquetReadOptions::default())
                 .await
                 .map_err(connect_error)?;
@@ -156,7 +160,10 @@ impl<'a> Connection<'a> for DatafusionConnection {
     }
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
-        let database = self.bucket.clone();
+        let database = self
+            .database
+            .clone()
+            .unwrap_or_else(|| "public".to_string());
 
         // get all registered tables
         let table_names = client
@@ -206,13 +213,7 @@ pub mod tests {
     pub const PARQUET_FILE: &str = "s3://synced-data/consolidated/mixpanel_data.parquet";
 
     pub fn new_datafusion_connection() -> DatafusionConnection {
-        DatafusionConnection::new(
-            "test".into(),
-            "test".into(),
-            Some("http://localhost:4566".into()),
-            "us-east-2".into(),
-            "synced-data".into(),
-        )
+        DatafusionConnection::new(default_object_store(), Url::parse("file://").unwrap())
     }
 
     pub async fn setup() -> (DatafusionConnection, Result<SessionContext>) {
