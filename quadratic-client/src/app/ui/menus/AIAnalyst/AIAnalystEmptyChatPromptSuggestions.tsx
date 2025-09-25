@@ -41,10 +41,17 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
 
     useEffect(() => {
       const updatePromptSuggestions = async () => {
-        setLoading(true);
+        let prevLoading;
+        setLoading((prev) => {
+          prevLoading = prev;
+          return true;
+        });
+        if (prevLoading) {
+          return;
+        }
 
+        const abortController = new AbortController();
         try {
-          const abortController = new AbortController();
           setAbortController((prev) => {
             prev?.abort();
             return abortController;
@@ -57,10 +64,14 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           });
           setPromptSuggestions(promptSuggestions);
         } catch (error) {
-          console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
           setPromptSuggestions(undefined);
-          setLoading(false);
+          if (!abortController.signal.aborted) {
+            abortController.abort();
+            console.warn('[AIAnalystEmptyChatPromptSuggestions] getEmptyChatPromptSuggestions: ', error);
+          }
         }
+
+        setLoading(false);
       };
 
       updatePromptSuggestions();
