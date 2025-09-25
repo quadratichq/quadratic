@@ -45,7 +45,7 @@
     "@prisma/client": "^6.16.2",
     "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^10.10.0",
-    "@workos-inc/node": "7.69.2",
+    "@workos-inc/node": "7.70.0",
     "axios": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
