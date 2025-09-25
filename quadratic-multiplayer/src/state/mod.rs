@@ -21,10 +21,10 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::Result;
 use crate::state::room::Room;
-use crate::state::settings::Settings;
 
 use self::connection::Connection;
 use self::pubsub::PubSub;
+use self::settings::Settings;
 
 #[derive(Debug)]
 pub(crate) struct State {

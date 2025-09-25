@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quadratic-cloud-controller
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quadratic-cloud-controller
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quadratic-cloud-controller
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: quadratic-cloud
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: quadratic-cloud-controller
+subjects:
+  - kind: ServiceAccount
+    name: quadratic-cloud-controller
+    namespace: quadratic-cloud
+---
+# Separate service account for workers (principle of least privilege)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quadratic-cloud-worker
+  namespace: quadratic-cloud
+  labels:
+    app.kubernetes.io/name: quadratic-cloud-worker
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: quadratic-cloud
+automountServiceAccountToken: false

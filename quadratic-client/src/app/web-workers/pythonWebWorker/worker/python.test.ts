@@ -1,6 +1,6 @@
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 let pythonState: LanguageState;

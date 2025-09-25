@@ -39,6 +39,9 @@ pub enum SharedError {
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
+    #[error("Error communicating with the Quadratic Cloud Controller: {0}")]
+    QuadraticCloudController(String),
+
     #[error("Error with Protobuf: {0}")]
     Protobuf(String),
 

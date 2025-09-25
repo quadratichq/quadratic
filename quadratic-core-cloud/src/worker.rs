@@ -3,7 +3,7 @@ use prost::Message;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::TransactionServer;
+use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_core::grid::file::import;
 use quadratic_rust_shared::multiplayer::message::response::MessageResponse;
 use quadratic_rust_shared::net::websocket_client::{
@@ -166,7 +166,7 @@ impl Worker {
     }
 
     /// Load a file from a presigned URL.
-    pub async fn load_file(
+    async fn load_file(
         file_id: Uuid,
         sequence_num: u64,
         presigned_url: &str,
@@ -183,7 +183,7 @@ impl Worker {
     ///
     /// This will connect to the multiplayer server and create a new websocket
     /// sender and receiver.
-    pub async fn connect(&mut self) -> Result<()> {
+    async fn connect(&mut self) -> Result<()> {
         if !self.is_connected() {
             let (websocket, _response) = connect(&self.m2m_auth_token).await?;
             let (sender, receiver) = websocket.split();
@@ -208,12 +208,12 @@ impl Worker {
     /// - Error
     ///
     /// Returns Ok(()) if the messages are processed successfully.
-    pub async fn listen_for_messages(&mut self) -> Result<()> {
+    async fn listen_for_messages(&mut self) -> Result<()> {
         // listen for messages in a separate thread
         if let Some(receiver) = self.websocket_receiver.as_ref().cloned() {
-            let file = self.file.clone();
-            let status = self.status.clone();
-            let transaction_id = self.transaction_id.clone();
+            let file = Arc::clone(&self.file);
+            let status = Arc::clone(&self.status);
+            let transaction_id = Arc::clone(&self.transaction_id);
             let print_error = |e| println!("Error parsing message from multiplayer: {e}");
 
             self.websocket_receiver_handle = Some(tokio::spawn(async move {
@@ -294,7 +294,7 @@ impl Worker {
     }
 
     /// Check if the worker is connected to the multiplayer websocket.
-    pub fn is_connected(&self) -> bool {
+    fn is_connected(&self) -> bool {
         self.websocket_sender.is_some() && self.websocket_receiver.is_some()
     }
 
@@ -303,7 +303,7 @@ impl Worker {
     /// This will connect to the multiplayer server and enter the room for the
     /// given file.
     /// Returns true if the worker is new, false if it already exists.
-    pub async fn enter_room(&mut self, file_id: Uuid) -> Result<()> {
+    async fn enter_room(&mut self, file_id: Uuid) -> Result<()> {
         if let Some(sender) = self.websocket_sender.as_mut() {
             let user_id = Uuid::new_v4();
             enter_room(&mut *sender.lock().await, user_id, file_id, self.session_id).await?;
@@ -315,7 +315,7 @@ impl Worker {
     }
 
     /// Get transactions from the multiplayer server.
-    pub async fn get_transactions(
+    async fn get_transactions(
         &mut self,
         file_id: Uuid,
         session_id: Uuid,
@@ -336,14 +336,24 @@ impl Worker {
 
     /// Process an operation.
     /// This will create a pending transaction and apply it to the file.
-    pub async fn process_operations(&mut self, operations: Vec<Operation>) -> Result<()> {
+    pub async fn process_operations(
+        &mut self,
+        binary_ops: Vec<u8>,
+        // team_id: Uuid,
+        team_id: String,
+        token: String,
+    ) -> Result<()> {
+        let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
+            .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
+
         let transaction_id = process_transaction(
-            self.file.clone(),
+            Arc::clone(&self.file),
             operations,
             None,
             TransactionName::Unknown,
-            "test_team_id".to_string(),
-            "M2M_AUTH_TOKEN".to_string(),
+            // team_id.to_string(),
+            team_id,
+            token,
         )
         .await?;
 
@@ -394,10 +404,12 @@ mod tests {
         let sequence_num = 77;
         let full_file_url = format!("{file_id}-{sequence_num}.grid");
         let presigned_url = storage.presigned_url(&full_file_url).await.unwrap();
+        let team_id = "test_team_id".to_string();
         let m2m_auth_token = "M2M_AUTH_TOKEN".to_string();
 
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let operations = vec![Operation::ComputeCode { sheet_pos }];
+        let binary_ops = Transaction::serialize_and_compress(&operations).unwrap();
 
         // emulate a browser worker
         let mut browser_worker = Worker::new(
@@ -411,7 +423,7 @@ mod tests {
 
         // send a transaction to the server so that worker_1 gets a catchup transaction message
         browser_worker
-            .process_operations(operations.clone())
+            .process_operations(binary_ops.clone(), team_id.clone(), m2m_auth_token.clone())
             .await
             .unwrap();
 
@@ -419,11 +431,19 @@ mod tests {
         tokio::time::sleep(Duration::from_secs(2)).await;
 
         // cloud worker
-        let mut cloud_worker = Worker::new(file_id, sequence_num, &presigned_url, m2m_auth_token)
+        let mut cloud_worker = Worker::new(
+            file_id,
+            sequence_num,
+            &presigned_url,
+            m2m_auth_token.clone(),
+        )
+        .await
+        .unwrap();
+
+        cloud_worker
+            .process_operations(binary_ops, team_id, m2m_auth_token)
             .await
             .unwrap();
-
-        cloud_worker.process_operations(operations).await.unwrap();
 
         while !cloud_worker.status.lock().await.is_complete() {
             tokio::time::sleep(Duration::from_secs(1)).await;

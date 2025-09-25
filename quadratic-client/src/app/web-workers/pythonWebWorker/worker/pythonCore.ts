@@ -1,8 +1,8 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
+import { fromUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 export class PythonCore {
   private coreMessagePort?: MessagePort;

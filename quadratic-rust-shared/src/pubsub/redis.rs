@@ -96,7 +96,7 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Subscribe to a channel.
-    async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
+    async fn subscribe(&mut self, channel: &str, _group: &str, _id: Option<&str>) -> Result<()> {
         self.pubsub.subscribe(channel).await?;
         Ok(())
     }
@@ -129,7 +129,41 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
+    async fn publish_once_with_dedupe_key(
+        &mut self,
+        _dedupe_key: &str,
+        _channel: &str,
+        _key: &str,
+        _value: &[u8],
+        _active_channel: Option<&str>,
+    ) -> Result<bool> {
+        unimplemented!()
+    }
+
+    async fn ack_once(
+        &mut self,
+        _dedupe_key: &str,
+        _channel: &str,
+        _group: &str,
+        _key: &str,
+        _active_channel: Option<&str>,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
     async fn messages(
+        &mut self,
+        _channel: &str,
+        _group: &str,
+        _consumer: &str,
+        _keys: Option<&str>,
+        _max_messages: usize,
+        _preserve_sequence: bool,
+    ) -> Result<Vec<(String, Vec<u8>)>> {
+        unimplemented!()
+    }
+
+    async fn messages_with_dedupe_key(
         &mut self,
         _channel: &str,
         _group: &str,
@@ -167,10 +201,9 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
-    // /// Get the next message from the pubsub server.
-    // async fn poll<T>(&mut self) -> impl Stream {
-    //     self.pubsub.on_message()
-    // }
+    async fn length(&mut self, _channel: &str) -> Result<usize> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
@@ -204,7 +237,10 @@ pub mod tests {
         let channel_clone = channel.clone();
         let handle = tokio::spawn(async move {
             let mut connection = RedisConnection::new(config_clone).await.unwrap();
-            connection.subscribe(&channel_clone, "").await.unwrap();
+            connection
+                .subscribe(&channel_clone, "", None)
+                .await
+                .unwrap();
             let mut received = vec![];
 
             while let Some(message) = connection.pubsub.on_message().next().await {

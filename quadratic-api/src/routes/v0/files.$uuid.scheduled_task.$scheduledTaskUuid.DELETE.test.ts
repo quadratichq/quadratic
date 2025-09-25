@@ -2,16 +2,17 @@ import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
 
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
 import { app } from '../../app';
-import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
+import dbClient from '../../dbClient';
+import { clearDb, createFile, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   let testUser: any;
-  let otherUser: any;
   let testFile: any;
   let testTeam: any;
   let uniqueId: string;
@@ -134,13 +135,13 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       expect(response.status).toBe(200);
 
       // Verify task still exists in database but with DELETED status
-      const dbTask = await require('../../dbClient').default.scheduledTask.findUnique({
+      const dbTask = await dbClient.scheduledTask.findUnique({
         where: { id: testScheduledTask.id },
       });
 
       expect(dbTask).toBeDefined();
-      expect(dbTask.status).toBe('DELETED');
-      expect(dbTask.uuid).toBe(testScheduledTask.uuid);
+      expect(dbTask?.status).toBe('DELETED');
+      expect(dbTask?.uuid).toBe(testScheduledTask.uuid);
     });
 
     it('should not be able to delete already deleted task', async () => {
@@ -179,14 +180,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
+        operations: Array.from(toUint8Array({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
+        operations: Array.from(toUint8Array({ action: 'task2' })),
       });
 
       // Verify all tasks exist
@@ -224,14 +225,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task1' })),
+        operations: Array.from(toUint8Array({ action: 'task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task2' })),
+        operations: Array.from(toUint8Array({ action: 'task2' })),
       });
 
       // Delete first task
@@ -288,7 +289,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify(complexOperations)),
+        operations: Array.from(toUint8Array(complexOperations)),
       });
 
       const response = await request(app)
@@ -310,7 +311,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify(specialOperations)),
+        operations: Array.from(toUint8Array(specialOperations)),
       });
 
       const response = await request(app)
@@ -323,7 +324,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should handle deletion of inactive task', async () => {
       // Update task status to INACTIVE
-      await require('../../dbClient').default.scheduledTask.update({
+      await dbClient.scheduledTask.update({
         where: { id: testScheduledTask.id },
         data: { status: 'INACTIVE' },
       });
@@ -336,18 +337,17 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       expect(response.body).toEqual({ message: 'Scheduled task deleted' });
 
       // Verify task is marked as DELETED
-      const dbTask = await require('../../dbClient').default.scheduledTask.findUnique({
+      const dbTask = await dbClient.scheduledTask.findUnique({
         where: { id: testScheduledTask.id },
       });
 
-      expect(dbTask.status).toBe('DELETED');
+      expect(dbTask?.status).toBe('DELETED');
     });
   });
 
   describe('Multiple Files Isolation', () => {
     it('should not delete tasks from other files', async () => {
       // Create another file for the same user and team using the test data generator
-      const { createFile } = require('../../tests/testDataGenerator');
       const otherFile = await createFile({
         data: {
           name: 'Other Test File',
@@ -360,7 +360,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: otherFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'other_file_task' })),
+        operations: Array.from(toUint8Array({ action: 'other_file_task' })),
       });
 
       // Delete task from first file
@@ -409,14 +409,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'concurrent_task1' })),
+        operations: Array.from(toUint8Array({ action: 'concurrent_task1' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'concurrent_task2' })),
+        operations: Array.from(toUint8Array({ action: 'concurrent_task2' })),
       });
 
       // Perform concurrent operations

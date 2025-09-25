@@ -1,6 +1,5 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -9,6 +8,7 @@ import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonCli
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
 import type { PyodideInterface } from 'pyodide';
 import { loadPyodide } from 'pyodide';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 

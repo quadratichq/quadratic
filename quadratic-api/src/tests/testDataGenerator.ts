@@ -1,6 +1,7 @@
 import type { File, User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import dbClient from '../dbClient';
 import { encryptFromEnv } from '../utils/crypto';
 import { createScheduledTask } from '../utils/scheduledTasks';
@@ -262,7 +263,7 @@ export const scheduledTask = async (userId: number, fileId: number) =>
     userId,
     fileId,
     cronExpression: '0 0 * * *',
-    operations: Buffer.from(JSON.stringify({ action: 'test', type: 'daily' })),
+    operations: Array.from(toUint8Array({ action: 'test', type: 'daily' })),
   });
 
 /**

@@ -7,17 +7,21 @@ ARG CLIENT_DEV
 
 # Install Node.js 24, build tools, and other dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  protobuf-compiler \
+  libprotobuf-dev \
   curl \
   ca-certificates \
+  llvm \
+  clang \
   gnupg \
   && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
   && apt-get install -y --no-install-recommends \
   nodejs \
-  build-essential \
-  llvm \
-  clang \
-  protobuf-compiler \
-  libprotobuf-dev \
+  python-is-python3 \
+  python3-pip \
+  brotli \
+  pigz \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -62,17 +66,21 @@ FROM ubuntu:24.04 AS ts-rust-types-builder
 
 # Install Node.js 24, build tools, and other dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  protobuf-compiler \
+  libprotobuf-dev \
   curl \
   ca-certificates \
+  llvm \
+  clang \
   gnupg \
   && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
   && apt-get install -y --no-install-recommends \
   nodejs \
-  build-essential \
-  llvm \
-  clang \
-  protobuf-compiler \
-  libprotobuf-dev \
+  python-is-python3 \
+  python3-pip \
+  brotli \
+  pigz \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -113,8 +121,13 @@ FROM ubuntu:24.04 AS vite-builder
 
 # Install Node.js 24 and other dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  protobuf-compiler \
+  libprotobuf-dev \
   curl \
   ca-certificates \
+  llvm \
+  clang \
   gnupg \
   && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
   && apt-get install -y --no-install-recommends \
