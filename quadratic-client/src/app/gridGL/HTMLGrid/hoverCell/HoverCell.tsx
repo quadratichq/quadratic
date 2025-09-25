@@ -8,7 +8,7 @@ import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMes
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
-import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsCodeCell, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
@@ -41,6 +41,7 @@ export function HoverCell() {
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
   const [isSpillError, setIsSpillError] = useState(false);
+  const [spillErrorCellPos, setSpillErrorCellPos] = useState<{ x: number; y: number } | null>(null);
 
   const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
@@ -85,6 +86,7 @@ export function HoverCell() {
     setAllowPointerEvents(false);
     clearTimeout(timeoutId.current);
     setIsSpillError(false);
+    setSpillErrorCellPos(null);
   }, [isSpillError]);
 
   const [text, setText] = useState<ReactNode>();
@@ -100,6 +102,7 @@ export function HoverCell() {
         const validation = sheets.sheet.getValidationById(errorValidationCell.validationId);
         setOnlyCode(false);
         setIsSpillError(false);
+        setSpillErrorCellPos(null);
         if (validation) {
           setText(
             <div className="relative p-3">
@@ -120,12 +123,14 @@ export function HoverCell() {
         if (renderCodeCell.state === 'SpillError') {
           setOnlyCode(false);
           setIsSpillError(true);
+          setSpillErrorCellPos({ x: renderCodeCell.x, y: renderCodeCell.y });
           if (codeCell) {
             setText(
               <HoverCellSpillError
                 codeCell={codeCell}
                 onClick={() => {
                   setIsSpillError(false);
+                  setSpillErrorCellPos(null);
                   hideHoverCell();
                 }}
               />
@@ -136,12 +141,14 @@ export function HoverCell() {
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
             setIsSpillError(false);
+            setSpillErrorCellPos(null);
             if (codeCell) {
               setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
             setIsSpillError(false);
+            setSpillErrorCellPos(null);
             setText(
               <HoverCellDisplay title={language === 'Formula' ? 'Formula Code' : `${renderCodeCell.name} Code`}>
                 <HoverCellDisplayCode language={language}>{codeCell?.code_string}</HoverCellDisplayCode>
@@ -152,6 +159,7 @@ export function HoverCell() {
       } else if (editingCell) {
         setOnlyCode(false);
         setIsSpillError(false);
+        setSpillErrorCellPos(null);
         setText(
           <HoverCellDisplay title="Multiplayer edit">
             {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
@@ -209,6 +217,42 @@ export function HoverCell() {
       pixiApp.viewport.off('zoomed', remove);
     };
   }, [hideHoverCell, isSpillError]);
+
+  // Listen for code cell updates to detect if the spill error cell has been moved
+  useEffect(() => {
+    const handleUpdateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+      if (isSpillError && spillErrorCellPos) {
+        // Check if any update affects our tracked spill error cell
+        const affectedUpdate = updateCodeCells.find((update) => {
+          const codeCell = update.render_code_cell;
+          return (
+            codeCell &&
+            codeCell.x === spillErrorCellPos.x &&
+            codeCell.y === spillErrorCellPos.y &&
+            codeCell.state !== 'SpillError'
+          ); // Cell no longer has spill error
+        });
+
+        // Also check if the cell has been moved (no longer exists at the original position)
+        const cellStillExists = updateCodeCells.some((update) => {
+          const codeCell = update.render_code_cell;
+          return codeCell && codeCell.x === spillErrorCellPos.x && codeCell.y === spillErrorCellPos.y;
+        });
+
+        if (affectedUpdate || !cellStillExists) {
+          // The spill error has been resolved or the cell has been moved
+          setIsSpillError(false);
+          setSpillErrorCellPos(null);
+          hideHoverCell();
+        }
+      }
+    };
+
+    events.on('updateCodeCells', handleUpdateCodeCells);
+    return () => {
+      events.off('updateCodeCells', handleUpdateCodeCells);
+    };
+  }, [isSpillError, spillErrorCellPos, hideHoverCell]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement) => {
