@@ -1452,7 +1452,7 @@ mod test {
             &gc,
             pos![sheet1!A3],
             CodeCellLanguage::Formula,
-            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!C3)"),
+            format!("SUM(#REF!, B3:B5, {s1}!C3, {s2}!C3)"),
         );
         // code cell should have been re-evaluated
         assert_eq!(
@@ -1471,7 +1471,7 @@ mod test {
             &gc,
             pos![sheet1!A3],
             CodeCellLanguage::Formula,
-            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            format!("SUM(B1:B3, B4:B6, {s1}!C4, {s2}!C4)"),
         );
         // code cell should have the same value
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A3]));
@@ -1493,7 +1493,7 @@ mod test {
             &gc,
             pos![sheet2!A4],
             CodeCellLanguage::Formula,
-            format!("SUM(B2:B4, B5:B7, '{s1}'!C5, '{s2}'!C5)"),
+            format!("SUM(B2:B4, B5:B7, {s1}!C5, {s2}!C5)"),
         );
         // code cell should have been re-evaluated
         assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
@@ -1515,7 +1515,7 @@ mod test {
             &gc,
             pos![sheet2!A4],
             CodeCellLanguage::Formula,
-            format!("SUM('{s1}'!B1:B3, '{s1}'!B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            format!("SUM({s1}!B1:B3, {s1}!B4:B6, {s1}!C4, {s2}!C4)"),
         );
         // code cell should have the same value
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet2!A4]));

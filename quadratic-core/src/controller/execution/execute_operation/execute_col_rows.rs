@@ -446,7 +446,7 @@ mod tests {
         // so no operations needed
         //
         // second formula, x += 1 for x >= 5
-        assert_eq!(code_run.code, "'Sheet 1'!G1+Other!F1 - Nonexistent!F1");
+        assert_eq!(code_run.code, "Sheet1!G1+Other!F1 - Nonexistent!F1");
         assert_eq!(
             &transaction.operations[1],
             &Operation::ComputeCode {
