@@ -82,8 +82,8 @@ export function decryptSshKeys(team: Team): DecryptedTeam {
     throw new Error('SSH keys are not set');
   }
 
-  const sshPublicKey = decryptFromEnv(team.sshPublicKey.toString('utf-8'));
-  const sshPrivateKey = decryptFromEnv(team.sshPrivateKey.toString('utf-8'));
+  const sshPublicKey = decryptFromEnv(Buffer.from(team.sshPublicKey).toString('utf-8'));
+  const sshPrivateKey = decryptFromEnv(Buffer.from(team.sshPrivateKey).toString('utf-8'));
 
   return { ...team, sshPublicKey, sshPrivateKey };
 }

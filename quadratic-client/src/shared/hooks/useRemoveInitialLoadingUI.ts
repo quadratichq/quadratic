@@ -14,14 +14,13 @@ export function useRemoveInitialLoadingUI() {
     if (startTime) {
       startupTimer.start('firstRender', Number(startTime));
       startupTimer.end('firstRender');
-    }
-
-    const timers = startupTimer.show();
-    if (timers) {
-      trackEvent('[Loading].complete', {
-        route: window.location.pathname + window.location.search,
-        ...timers,
-      });
+      const timers = startupTimer.show();
+      if (timers) {
+        trackEvent('[Loading].complete', {
+          route: window.location.pathname + window.location.search,
+          ...timers,
+        });
+      }
     }
   }, []);
   return null;

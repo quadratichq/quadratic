@@ -170,7 +170,7 @@ mod tests {
         let sheet_2 = gc.sheet_mut(sheet_2_id);
         sheet_2.set_cell_value(Pos { x: 1, y: 2 }, "test2".to_string());
 
-        let code = r#"{{'Sheet 2'!$A$2}}"#;
+        let code = r#"{{'Sheet2'!$A$2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();

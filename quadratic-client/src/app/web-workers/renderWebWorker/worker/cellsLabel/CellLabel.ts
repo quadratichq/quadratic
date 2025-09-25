@@ -530,6 +530,7 @@ export class CellLabel {
   };
 
   private getUnwrappedTextWidth = (text: string): number => {
+    if (!text) return 0;
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.getUnwrappedTextWidth`);
 
