@@ -117,7 +117,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
               }
               onKeyDown?.(e);
             }}
-            data-testId={testId}
+            data-testid={testId}
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}
