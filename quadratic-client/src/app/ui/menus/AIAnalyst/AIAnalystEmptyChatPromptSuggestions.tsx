@@ -4,6 +4,9 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { SpinnerIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
@@ -83,22 +86,28 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       }
     }, [aiAnalystLoading, abortController]);
 
-    console.log('TODO (jim):', loading);
-
     return (
       <div className="absolute bottom-full left-0 mb-1 flex w-full flex-row flex-wrap gap-1">
         {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-          <button
+          <Button
             key={`${index}-${label}`}
-            className="flex items-center gap-3 rounded bg-accent px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+            disabled={loading}
+            variant="secondary"
+            size="sm"
+            className={cn('relative flex h-6 items-center px-2 text-sm font-normal')}
             onClick={() => {
               trackEvent('[AIAnalyst].submitExamplePrompt');
               submit(prompt);
             }}
           >
             {label}
-          </button>
+          </Button>
         ))}
+        {loading && (
+          <span className="absolute bottom-0 right-0 z-10 flex h-6 items-center bg-background px-1">
+            <SpinnerIcon className="text-primary" />
+          </span>
+        )}
       </div>
     );
   }
