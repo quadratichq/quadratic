@@ -43,9 +43,25 @@ rl.on('line', async (line) => {
     const result = await response.text();
 
     // Handle SSE format if needed
-    if (result.startsWith('event: message\ndata: ')) {
-      const jsonData = result.split('data: ')[1];
-      console.log(jsonData);
+    if (result.includes('data: ')) {
+      // Split by double newlines to separate events
+      const events = result.split('\n\n').filter((event) => event.trim());
+
+      for (const event of events) {
+        const lines = event.split('\n');
+        let eventData = '';
+
+        // Concatenate all data fields for this event
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            eventData += (eventData ? '\n' : '') + line.substring(6);
+          }
+        }
+
+        if (eventData) {
+          console.log(eventData);
+        }
+      }
     } else {
       console.log(result);
     }
