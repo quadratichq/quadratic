@@ -1,11 +1,11 @@
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::aws::client;
 use quadratic_rust_shared::environment::Environment;
-use quadratic_rust_shared::storage::StorageContainer;
 use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
 use quadratic_rust_shared::storage::s3::{S3, S3Config};
+use quadratic_rust_shared::storage::{StorageContainer, StorageType};
 
-use crate::config::{Config, StorageType};
+use crate::config::Config;
 
 #[derive(Debug)]
 pub(crate) struct Settings {

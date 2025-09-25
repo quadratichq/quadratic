@@ -50,15 +50,16 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
 }
 
 async function syncConnection(teamUuid: string, connectionUuid: string, type: ConnectionType) {
+  const syncTypes = ['mixpanel'] as const;
+  const syncType = syncTypes.find((syncType) => syncType === type.toLowerCase());
+
   try {
-    // If this is a Mixpanel connection, trigger sync after update
-    if (type.toUpperCase() === 'MIXPANEL') {
+    if (syncType) {
       try {
-        await connectionClient.sync.get('MIXPANEL', connectionUuid, teamUuid);
-        console.log('Mixpanel connection synced successfully after update');
+        await connectionClient.sync.get(syncType, connectionUuid, teamUuid);
+        console.log(`Successfully synced ${syncType} connection`);
       } catch (syncError) {
-        console.error('Failed to sync Mixpanel connection after update:', syncError);
-        // Don't fail the entire operation if sync fails
+        console.error(`Failed to sync ${syncType} connection:`, syncError);
       }
     }
 
