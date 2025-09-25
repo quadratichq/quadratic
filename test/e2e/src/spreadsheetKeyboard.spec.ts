@@ -309,6 +309,11 @@ test('Open calendar', async ({ page }) => {
   await page.keyboard.press('Enter', { delay: 250 });
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
+  // Change time to 1:23 pm
+  await page.locator('[data-testid="calendar-picker-time"]').fill('1:23 pm', { timeout: 10 * 1000 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await assertCellValue(page, { a1: 'A2', value: '1999-01-01 13:23:00' });
+
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

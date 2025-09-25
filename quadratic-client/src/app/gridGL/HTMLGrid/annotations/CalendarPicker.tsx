@@ -142,8 +142,13 @@ export const CalendarPicker = () => {
       </div>
       <Calendar mode="single" selected={date} defaultMonth={date} onSelect={changeDate} />
       {showTime && (
-        <div className="flex w-full gap-2 p-3" data-testid="calendar-picker-time">
-          <ValidationInput value={formatTime(value)} onChange={changeTime} onEnter={finish} />
+        <div className="flex w-full gap-2 p-3">
+          <ValidationInput
+            value={formatTime(value)}
+            onChange={changeTime}
+            onEnter={finish}
+            testId="calendar-picker-time"
+          />
           <TooltipPopover label="Set current date and time">
             <Button onClick={setCurrentDateTime} className="px-2">
               <CheckSharp fontSize="small" />
