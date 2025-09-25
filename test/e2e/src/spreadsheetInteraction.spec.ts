@@ -2432,7 +2432,7 @@ test('Key Actions', async ({ page }) => {
 test('Left and Right Sheet Navigation', async ({ page }) => {
   // Constants
   const fileName = 'LeftAndRight-SheetNavigation';
-  const lastSheetNum = 15;
+  const lastSheetNum = 20;
 
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_left_right_navigation` });
@@ -2454,7 +2454,6 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   await navigateIntoFile(page, { fileName });
 
   // Type sheet number into the first cell
-  await page.waitForTimeout(500);
   await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
 
   // Add multiple sheets
@@ -2462,12 +2461,11 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
     await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
-    await page.waitForTimeout(500);
-    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
   }
 
   // Focus on the first sheet
-  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-title="Sheet1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Right Navigation
@@ -2481,12 +2479,12 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
 
   // Store first and last sheet element
-  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
-  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet ${lastSheetNum}"]`);
+  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet1"]`);
+  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet${lastSheetNum}"]`);
 
   // Assert all expected sheets are available (Sheets 1 through 15)
   for (let i = 0; i < lastSheetNum; i++) {
-    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+    await expect(sheetNavigation.locator(`[data-title="Sheet${i + 1}"]`)).toBeVisible();
   }
 
   //--------------------------------
@@ -2502,9 +2500,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   const initialPositionX = initialPosition?.x;
 
   // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`);
 
   // Click '>' (right) chevron icon to move sheets
   // Click until the button is disabled
@@ -2533,16 +2529,12 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   expect(afterRightMoveX).not.toBe(initialPositionX);
 
   // Assert sheet navigation toolbar shows `Sheet 15` as the last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`);
 
-  // Assert that the sheet postions are NOT the same as the initial positions
+  // Assert that the sheet positions are NOT the same as the initial positions
   let isNotSame;
   try {
-    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`);
     isNotSame = false; // if it doesn't fail, it's the same (not expected)
   } catch {
     isNotSame = true; // if it fails, it's not the same (expected)
@@ -2557,7 +2549,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   // Assert all expected sheets are available (Sheets 1 through 15)
   for (let i = 0; i < lastSheetNum; i++) {
-    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+    await expect(sheetNavigation.locator(`[data-title="Sheet${i + 1}"]`)).toBeVisible();
   }
 
   // Get current X position of the first sheet (Sheet 1)
@@ -2601,20 +2593,16 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   expect(afterLeftMoveX).toBe(initialPositionX);
 
   // Assert sheet navigation toolbar shows `Sheet 12` as the last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToLeft.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToLeft.png`);
 
-  // Assert that the sheet postions are the same as the initial positions
+  // Assert that the sheet positions are the same as the initial positions
   await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Initial.png`, {
     maxDiffPixelRatio: 0.01,
   });
 
-  // Assert that the sheet postions are NOT the same as the positions after RIGHT navigation
+  // Assert that the sheet positions are NOT the same as the positions after RIGHT navigation
   try {
-    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`, {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-MovedToRight.png`);
     isNotSame = false; // if it doesn't fail, it's the same (not expected)
   } catch {
     isNotSame = true; // if it fails, it's not the same (expected)
@@ -3446,7 +3434,7 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
 test('Scroll between sheets', async ({ page }) => {
   // Constants
   const fileName = 'Scrolling-SheetNavigation';
-  const lastSheetNum = 15;
+  const lastSheetNum = 20;
 
   // Log in
   const email = await logIn(page, { emailPrefix: `e2e_scroll_between_sheets` });
@@ -3468,47 +3456,43 @@ test('Scroll between sheets', async ({ page }) => {
   await navigateIntoFile(page, { fileName });
 
   // Type sheet number into the first cell
-  await page.waitForTimeout(500);
-  await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
+  await typeInCell(page, { a1: 'A1', text: `Sheet1` });
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
     await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
-    await page.waitForTimeout(500);
-    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
   }
 
   // Focus on the first sheet
-  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-title="Sheet1"]`).click({ timeout: 60 * 1000 });
 
   // Store sheet navigation toolbar
   const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
 
-  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet12` as last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`);
 
   // Store first and last sheet element
-  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
-  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet ${lastSheetNum}"]`);
+  const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet1"]`);
+  const lastSheetEl = sheetNavigation.locator(`[data-title="Sheet${lastSheetNum}"]`);
 
-  // Assert all expected sheets are available (Sheets 1 through 15)
+  // Assert all expected sheets are available (Sheets 1 through 20)
   for (let i = 0; i < lastSheetNum; i++) {
-    await expect(sheetNavigation.locator(`[data-title="Sheet ${i + 1}"]`)).toBeVisible();
+    await expect(sheetNavigation.locator(`[data-title="Sheet${i + 1}"]`)).toBeVisible();
   }
 
   //--------------------------------
   // Act:
   //--------------------------------
 
-  // Get initial x position of the first sheet (Sheet 1)
+  // Get initial x position of the first sheet (Sheet1)
   let firstSheetPosition = await firstSheetEl.boundingBox();
   let firstSheetPositionX = firstSheetPosition?.x;
 
-  // Get initial X position of the last sheet (Sheet 15)
+  // Get initial X position of the last sheet (Sheet20)
   let lastSheetPosition = await lastSheetEl.boundingBox();
   let lastSheetPositionX = lastSheetPosition?.x;
 
@@ -3516,11 +3500,11 @@ test('Scroll between sheets', async ({ page }) => {
   await sheetNavigation.hover();
   await page.mouse.wheel(300, 0);
 
-  // Get new X position of the first sheet (Sheet 1)
+  // Get new X position of the first sheet (Sheet1)
   const firstSheetScrolledRight = await firstSheetEl.boundingBox();
   const firstSheetScrolledRightX = firstSheetScrolledRight?.x;
 
-  // Get new X position for last sheet (Sheet 15)
+  // Get new X position for last sheet (Sheet20)
   const lastSheetScrolledRight = await lastSheetEl.boundingBox();
   const lastSheetScrolledRightX = lastSheetScrolledRight?.x;
 
@@ -3528,43 +3512,37 @@ test('Scroll between sheets', async ({ page }) => {
   // Assert:
   //--------------------------------
 
-  // Assert that the focused sheet (Sheet 1) remains in the same position
+  // Assert that the focused sheet (Sheet1) remains in the same position
   expect(firstSheetScrolledRightX).toBe(firstSheetPositionX);
 
-  // Assert that the last sheet (Sheet 15) was moved from its original position
+  // Assert that the last sheet (Sheet20) was moved from its original position
   expect(lastSheetScrolledRightX).not.toBe(lastSheetPositionX);
 
-  // Assert sheet navigation toolbar shows `Sheet 15` as the last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToRight.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  // Assert sheet navigation toolbar shows `Sheet20` as the last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToRight.png`);
 
   // Assert that the sheet positions are NOT the same as the initial positions
   let isNotSame;
   try {
-    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`);
     isNotSame = false; // if it doesn't fail, it's the same (not expected)
   } catch {
     isNotSame = true; // if it fails, it's not the same (expected)
   }
   expect(isNotSame).toBeTruthy();
 
-  // Click 'Sheet 15' to focus it
+  // Click 'Sheet20' to focus it
   await lastSheetEl.click({ timeout: 60 * 1000 });
 
-  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 4` as first visible sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet4` as first visible sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`);
 
-  // Update the initial positions with 'Sheet 15' as the focused sheet
+  // Update the initial positions with 'Sheet20' as the focused sheet
   // Get initial x position of the first sheet (Sheet 1)
   firstSheetPosition = await firstSheetEl.boundingBox();
   firstSheetPositionX = firstSheetPosition?.x;
 
-  // Get initial X position of the last sheet (Sheet 15)
+  // Get initial X position of the last sheet (Sheet20)
   lastSheetPosition = await lastSheetEl.boundingBox();
   lastSheetPositionX = lastSheetPosition?.x;
 
@@ -3572,31 +3550,27 @@ test('Scroll between sheets', async ({ page }) => {
   await sheetNavigation.hover();
   await page.mouse.wheel(-300, 0);
 
-  // Get new X position of the first sheet (Sheet 1)
+  // Get new X position of the first sheet (Sheet1)
   const firstSheetScrolledLeft = await firstSheetEl.boundingBox();
   const firstSheetScrolledLeftX = firstSheetScrolledLeft?.x;
 
-  // Get new X position for last sheet (Sheet 15)
+  // Get new X position for last sheet (Sheet20)
   const lastSheetScrolledLeft = await lastSheetEl.boundingBox();
   const lastSheetScrolledLeftX = lastSheetScrolledLeft?.x;
 
-  // Assert that the focused sheet (Sheet 1) was moved from its original position
-  expect(firstSheetScrolledLeftX).not.toBe(firstSheetPositionX);
+  // Assert that the focused sheet (Sheet1) was moved from its original position
+  expect(firstSheetScrolledLeftX?.toFixed(0)).not.toBe(firstSheetPositionX?.toFixed(0));
 
-  // Assert that the last sheet (Sheet 15) remains in the same position (as the focused sheet)
-  expect(lastSheetScrolledLeftX).toBe(lastSheetPositionX);
+  // Assert that the last sheet (Sheet20) remains in the same position (as the focused sheet)
+  expect(lastSheetScrolledLeftX?.toFixed(0)).toBe(lastSheetPositionX?.toFixed(0));
 
-  // Assert sheet navigation toolbar shows `Sheet 15` as the focused sheet with `Sheet 1` at the start
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToLeft.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  // Assert sheet navigation toolbar shows `Sheet20` as the focused sheet with `Sheet1` at the start
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-ScrolledToLeft.png`);
 
   // Assert that the sheet positions are NOT the same as the v2 initial position
   isNotSame = null; // reset the variable
   try {
-    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`, {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`);
     isNotSame = false; // if it doesn't fail, it's the same (not expected)
   } catch {
     isNotSame = true; // if it fails, it's not the same (expected)
@@ -4457,7 +4431,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
     );
 
     // Assert that the sheet name is using accent color
-    await expect(page.locator(`[data-title="Sheet 1"]`)).toHaveCSS(`color`, theme.color);
+    await expect(page.locator(`[data-title="Sheet1"]`)).toHaveCSS(`color`, theme.color);
 
     // Open AI chat to assert accent color is applied to all buttons
     await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });

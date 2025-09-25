@@ -262,6 +262,11 @@ pub enum Operation {
         target: SheetId,
         order: String,
     },
+    /// Replace a sheet with a new one.
+    ReplaceSheet {
+        sheet_id: SheetId,
+        sheet: Box<Sheet>,
+    },
 
     /// Resizes a single column.
     ResizeColumn {

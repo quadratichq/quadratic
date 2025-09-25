@@ -131,10 +131,12 @@ impl DataTable {
         let header_y = if show_name { 1 } else { 0 };
 
         // if the position is the first cell and the header is shown, return the header
-        if pos.y == header_y && show_columns
-            && let Some(header) = self.display_header_at(pos.x as u32) {
-                return Ok(header.name.as_ref());
-            }
+        if pos.y == header_y
+            && show_columns
+            && let Some(header) = self.display_header_at(pos.x as u32)
+        {
+            return Ok(header.name.as_ref());
+        }
 
         pos.y -= self.y_adjustment(true);
 
@@ -230,7 +232,7 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
     use crate::{
         ArraySize, CellValue, Pos, SheetPos,
         controller::{
@@ -239,7 +241,7 @@ pub mod test {
         },
         grid::{
             CodeCellLanguage, DataTable,
-            test::{new_data_table, test_csv_values},
+            data_table::test_util::{new_data_table, test_csv_values},
         },
         test_util::*,
     };
