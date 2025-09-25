@@ -55,7 +55,7 @@ const MAX_CHAR_LENGTH = 1000;
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
 export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 
-const SPILL_ERROR_TEXT = ' #SPILL';
+const SPILL_ERROR_TEXT = ' #OVERLAP';
 const RUN_ERROR_TEXT = ' #ERROR';
 
 // values based on line position and thickness in monaco editor

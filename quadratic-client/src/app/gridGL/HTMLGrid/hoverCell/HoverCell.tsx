@@ -8,9 +8,7 @@ import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMes
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
-import { pluralize } from '@/app/helpers/pluralize';
-import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import type { JsCodeCell, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
@@ -18,6 +16,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { Cross2Icon } from '@radix-ui/react-icons';
 import { Rectangle } from 'pixi.js';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ReactNode } from 'react';
@@ -41,6 +40,8 @@ export function HoverCell() {
   const [loading, setLoading] = useState(false);
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
+  const [isSpillError, setIsSpillError] = useState(false);
+  const [spillErrorCellPos, setSpillErrorCellPos] = useState<{ x: number; y: number } | null>(null);
 
   const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
@@ -65,19 +66,28 @@ export function HoverCell() {
   }, [addPointerEvents]);
 
   const handleMouseLeave = useCallback(() => {
-    removePointerEvents();
-    setHovering(false);
-    hoveringRef.current = false;
-  }, [removePointerEvents]);
+    // Don't remove hover if it's a spill error
+    if (!isSpillError) {
+      removePointerEvents();
+      setHovering(false);
+      hoveringRef.current = false;
+    }
+  }, [removePointerEvents, isSpillError]);
 
   const hideHoverCell = useCallback(() => {
+    // Don't hide if it's a spill error (force user to fix it)
+    if (isSpillError) {
+      return;
+    }
     setCell(undefined);
     setHovering(false);
     hoveringRef.current = false;
     setDelay(false);
     setAllowPointerEvents(false);
     clearTimeout(timeoutId.current);
-  }, []);
+    setIsSpillError(false);
+    setSpillErrorCellPos(null);
+  }, [isSpillError]);
 
   const [text, setText] = useState<ReactNode>();
   const [onlyCode, setOnlyCode] = useState(false);
@@ -91,6 +101,8 @@ export function HoverCell() {
         const offsets = sheets.sheet.getCellOffsets(errorValidationCell.x, errorValidationCell.y);
         const validation = sheets.sheet.getValidationById(errorValidationCell.validationId);
         setOnlyCode(false);
+        setIsSpillError(false);
+        setSpillErrorCellPos(null);
         if (validation) {
           setText(
             <div className="relative p-3">
@@ -110,18 +122,33 @@ export function HoverCell() {
         const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
         if (renderCodeCell.state === 'SpillError') {
           setOnlyCode(false);
+          setIsSpillError(true);
+          setSpillErrorCellPos({ x: renderCodeCell.x, y: renderCodeCell.y });
           if (codeCell) {
-            setText(<HoverCellSpillError codeCell={codeCell} onClick={hideHoverCell} />);
+            setText(
+              <HoverCellSpillError
+                codeCell={codeCell}
+                onClick={() => {
+                  setIsSpillError(false);
+                  setSpillErrorCellPos(null);
+                  hideHoverCell();
+                }}
+              />
+            );
           }
         } else {
           const language = getLanguage(renderCodeCell.language);
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
+            setIsSpillError(false);
+            setSpillErrorCellPos(null);
             if (codeCell) {
               setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
+            setIsSpillError(false);
+            setSpillErrorCellPos(null);
             setText(
               <HoverCellDisplay title={language === 'Formula' ? 'Formula Code' : `${renderCodeCell.name} Code`}>
                 <HoverCellDisplayCode language={language}>{codeCell?.code_string}</HoverCellDisplayCode>
@@ -131,6 +158,8 @@ export function HoverCell() {
         }
       } else if (editingCell) {
         setOnlyCode(false);
+        setIsSpillError(false);
+        setSpillErrorCellPos(null);
         setText(
           <HoverCellDisplay title="Multiplayer edit">
             {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
@@ -175,7 +204,10 @@ export function HoverCell() {
 
   useEffect(() => {
     const remove = () => {
-      hideHoverCell();
+      // Don't hide on viewport changes if it's a spill error
+      if (!isSpillError) {
+        hideHoverCell();
+      }
     };
 
     pixiApp.viewport.on('moved', remove);
@@ -184,7 +216,43 @@ export function HoverCell() {
       pixiApp.viewport.off('moved', remove);
       pixiApp.viewport.off('zoomed', remove);
     };
-  }, [hideHoverCell]);
+  }, [hideHoverCell, isSpillError]);
+
+  // Listen for code cell updates to detect if the spill error cell has been moved
+  useEffect(() => {
+    const handleUpdateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+      if (isSpillError && spillErrorCellPos) {
+        // Check if any update affects our tracked spill error cell
+        const affectedUpdate = updateCodeCells.find((update) => {
+          const codeCell = update.render_code_cell;
+          return (
+            codeCell &&
+            codeCell.x === spillErrorCellPos.x &&
+            codeCell.y === spillErrorCellPos.y &&
+            codeCell.state !== 'SpillError'
+          ); // Cell no longer has spill error
+        });
+
+        // Also check if the cell has been moved (no longer exists at the original position)
+        const cellStillExists = updateCodeCells.some((update) => {
+          const codeCell = update.render_code_cell;
+          return codeCell && codeCell.x === spillErrorCellPos.x && codeCell.y === spillErrorCellPos.y;
+        });
+
+        if (affectedUpdate || !cellStillExists) {
+          // The spill error has been resolved or the cell has been moved
+          setIsSpillError(false);
+          setSpillErrorCellPos(null);
+          hideHoverCell();
+        }
+      }
+    };
+
+    events.on('updateCodeCells', handleUpdateCodeCells);
+    return () => {
+      events.off('updateCodeCells', handleUpdateCodeCells);
+    };
+  }, [isSpillError, spillErrorCellPos, hideHoverCell]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement) => {
@@ -299,23 +367,14 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
 
   return (
     <HoverCellDisplay
-      title="Spill error"
+      title="Overlap error"
       actions={<FixSpillError codeCell={codeCell} evaluationResult={evaluationResult} onClick={onClick} />}
       isError
+      onClose={onClick}
     >
-      <p>Array output could not expand because it would overwrite existing values.</p>
+      <p>Content could not expand because it overlaps with existing content.</p>
 
-      <p>
-        To fix: remove content in {pluralize('cell', spillError.length)}{' '}
-        {spillError.map((pos, index) => (
-          <span key={`${pos.x},${pos.y}`}>
-            <code className="hover-cell-code">{xyToA1(Number(pos.x), Number(pos.y))}</code>
-
-            {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-          </span>
-        ))}{' '}
-        Or move this cell.
-      </p>
+      <p>To fix: move the content to an open space, or delete content being overlapped.</p>
     </HoverCellDisplay>
   );
 }
@@ -325,19 +384,26 @@ function HoverCellDisplay({
   children,
   actions,
   isError,
+  onClose,
 }: {
   title: string;
   children: ReactNode;
   actions?: ReactNode;
   isError?: boolean;
+  onClose?: () => void;
 }) {
   return (
     <div className="flex flex-col gap-1 p-3">
       <div className="flex items-center justify-between">
         <span className={cn(isError ? 'text-destructive' : '')}>{title}</span>
-        {actions && <div className="flex items-center gap-0.5">{actions}</div>}
+        {onClose && (
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>
+            <Cross2Icon className="h-3 w-3" />
+          </Button>
+        )}
       </div>
       <div className="flex flex-col gap-2 text-xs">{children}</div>
+      {actions && <div className="flex justify-start pt-2">{actions}</div>}
     </div>
   );
 }
