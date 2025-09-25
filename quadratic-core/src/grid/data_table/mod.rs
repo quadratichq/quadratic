@@ -35,6 +35,9 @@ use strum_macros::Display;
 use super::sheet::borders::Borders;
 use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
 
+#[cfg(test)]
+mod test_util;
+
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).
 pub fn unique_data_table_name(
@@ -870,39 +873,15 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
 
     use super::*;
     use crate::{
         Array,
         a1::CellRefCoord,
-        controller::GridController,
-        grid::{CellsAccessed, Sheet, SheetId},
+        grid::{CellsAccessed, SheetId, data_table::test_util::new_data_table},
         test_util::pretty_print_data_table,
     };
-
-    pub fn test_csv_values() -> Vec<Vec<&'static str>> {
-        vec![
-            vec!["city", "region", "country", "population"],
-            vec!["Southborough", "MA", "United States", "1000"],
-            vec!["Denver", "CO", "United States", "10000"],
-            vec!["Seattle", "WA", "United States", "100"],
-        ]
-    }
-
-    pub fn new_data_table() -> (Sheet, DataTable) {
-        let gc = GridController::test();
-        let grid = gc.grid();
-        let sheet = grid.sheets()[0].clone();
-        let file_name = "test.csv";
-        let values = test_csv_values();
-        let import = Import::new(file_name.into());
-        let array = Array::from_str_vec(values, true).unwrap();
-        let context = gc.a1_context();
-        let data_table = DataTable::from((import.clone(), array, context));
-
-        (sheet, data_table)
-    }
 
     #[test]
     fn test_import_data_table() {

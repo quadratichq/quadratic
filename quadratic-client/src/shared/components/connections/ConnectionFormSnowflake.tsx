@@ -29,6 +29,8 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     database: String(connection?.typeDetails?.database || ''),
     username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
+    warehouse: String(connection?.typeDetails?.warehouse || ''),
+    role: String(connection?.typeDetails?.role || ''),
     semanticDescription: String(connection?.semanticDescription || ''),
   };
 

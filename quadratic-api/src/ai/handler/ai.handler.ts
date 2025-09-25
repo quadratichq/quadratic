@@ -32,13 +32,13 @@ import {
   azureOpenAI,
   baseten,
   bedrock,
-  bedrock_anthropic,
+  bedrockAnthropic,
   fireworks,
   geminiai,
-  open_router,
   openai,
-  vertex_anthropic,
+  openRouter,
   vertexai,
+  vertexAnthropic,
   xai,
 } from '../providers';
 import { handleAnthropicRequest } from './anthropic.handler';
@@ -63,7 +63,7 @@ export const handleAIRequest = async (
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        vertex_anthropic,
+        vertexAnthropic,
         response
       );
     } else if (isBedrockAnthropicModel(modelKey)) {
@@ -72,7 +72,7 @@ export const handleAIRequest = async (
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        bedrock_anthropic,
+        bedrockAnthropic,
         response
       );
     } else if (isAnthropicModel(modelKey)) {
@@ -94,7 +94,7 @@ export const handleAIRequest = async (
         response
       );
     } else if (isAzureOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIResponsesRequest(
         modelKey,
         args,
         isOnPaidPlan,
@@ -135,7 +135,7 @@ export const handleAIRequest = async (
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        open_router,
+        openRouter,
         response
       );
     } else if (isVertexAIModel(modelKey)) {

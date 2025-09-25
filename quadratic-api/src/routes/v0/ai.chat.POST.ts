@@ -221,6 +221,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
               .join('\n') ?? '',
           properties: {
             tool_calls: parsedResponse?.responseMessage.toolCalls ?? [],
+            inputTokens: (parsedResponse?.usage.inputTokens ?? 0) + (parsedResponse?.usage.cacheReadTokens ?? 0),
           },
         });
       } catch (error) {

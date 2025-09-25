@@ -348,7 +348,7 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
     use crate::{
         Pos,
         a1::A1Selection,

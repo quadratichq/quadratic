@@ -31,6 +31,7 @@ pub enum TransactionName {
     SheetAdd,
     SheetDelete,
     DuplicateSheet,
+    ReplaceSheet,
     MoveCells,
     Validation,
     ManipulateColumnRow,

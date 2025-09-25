@@ -387,8 +387,8 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
-        expect_js_call_count("jsTransactionStart", 4, false);
-        expect_js_call_count("jsTransactionEnd", 4, false);
+        expect_js_call_count("jsTransactionStart", 1, false);
+        expect_js_call_count("jsTransactionEnd", 1, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
