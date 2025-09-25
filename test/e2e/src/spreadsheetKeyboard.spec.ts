@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
@@ -253,6 +253,67 @@ test('Keyboard Editing', async ({ page }) => {
   await assertSelection(page, { a1: '*' });
 
   // All done
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Open calendar', async ({ page }) => {
+  const fileName = 'Open Calendar';
+  await logIn(page, { emailPrefix: `e2e_open_calendar` });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName, skipNavigateBack: true });
+
+  // Write 1/1/2000 in A1
+  await page.keyboard.press('Enter', { delay: 250 });
+  await page.keyboard.type('1/1/2000', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  // Check calendar picker is open
+  await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).toBeVisible({ timeout: 10 * 1000 });
+
+  // change date to 1/5/2000
+  await page.mouse.click(189, 287, { delay: 250 });
+  await assertCellValue(page, { a1: 'A1', value: '2000-01-05' });
+
+  // write 1/1/1999 1:23 am in A2
+  await gotoCells(page, { a1: 'A2' });
+  await page.keyboard.type('1/1/1999 1:23 am', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  // Check calendar picker with time is open
+  await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker-time"]')).toBeVisible({ timeout: 10 * 1000 });
+
+  // Change time to 1:23 pm
+  await page.locator('[data-testid="calendar-picker-time"]').fill('1:23 pm', { timeout: 10 * 1000 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await assertCellValue(page, { a1: 'A2', value: '1999-01-01 13:23:00' });
+
+  // Write 1:23 am in A3
+  await gotoCells(page, { a1: 'A3' });
+  await page.keyboard.type('1:23 am', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  // Calendar picker should not be open
+  await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
+  await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
