@@ -2,7 +2,6 @@ import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { getFileTypeFromName } from '@/app/helpers/files';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -71,9 +70,7 @@ export const AIContext = memo(
               key={connection.uuid}
               primary={connection.name}
               primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
-              secondary={
-                getCodeCell({ Connection: { kind: connection.type, id: connection.uuid } })?.label ?? 'Connection'
-              }
+              secondary={''}
               onClick={handleOnClickConnection}
               noClose={disabled}
             />
@@ -125,7 +122,7 @@ const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }:
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
       <span className="flex items-center gap-1">
         {primaryIcon}
-        <span className="max-w-24 truncate">{primary}</span>
+        <span className="max-w-40 truncate">{primary}</span>
       </span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
