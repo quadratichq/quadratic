@@ -398,7 +398,7 @@ impl GridController {
                 if sheet
                     .data_tables
                     .iter_pos_in_rect(output_rect, false)
-                    .any(|pos| !sheet.data_table_at(&pos).is_some())
+                    .any(|pos| sheet.data_table_at(&pos).is_none())
                 {
                     let message = format!(
                         "Cannot place {} within a table",
@@ -909,7 +909,7 @@ impl GridController {
         let source_columns = clipboard.cells.columns;
 
         // remove code tables if their anchor cell overlap the paste area
-        self.try_sheet(selection.sheet_id).map(|sheet| {
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             sheet
                 .data_table_anchors_in_rect(Rect {
                     min: insert_at,
@@ -924,8 +924,8 @@ impl GridController {
                     ops.push(Operation::DeleteDataTable {
                         sheet_pos: pos.to_sheet_pos(sheet_id),
                     });
-                })
-        });
+                });
+        }
 
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();

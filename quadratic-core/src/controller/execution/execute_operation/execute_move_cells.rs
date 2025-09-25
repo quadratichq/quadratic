@@ -87,7 +87,7 @@ mod tests {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
-        assert_import(&gc, sheet_pos, &file_name, 4, 12);
+        assert_import(&gc, sheet_pos, file_name, 4, 12);
 
         let dest_pos = pos![F4];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
@@ -104,6 +104,6 @@ mod tests {
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
         assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());
 
-        assert_import(&gc, sheet_dest_pos, &file_name, 4, 12);
+        assert_import(&gc, sheet_dest_pos, file_name, 4, 12);
     }
 }

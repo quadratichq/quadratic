@@ -256,7 +256,7 @@ impl GridController {
 
             // return Ok for expected conditions, like sheets no longer exist, or data table no longer exists
 
-            if !self.grid.try_sheet(new_sheet_pos.sheet_id).is_some() {
+            if self.grid.try_sheet(new_sheet_pos.sheet_id).is_none() {
                 return Ok(());
             }
             let Some(old_sheet) = self.grid.try_sheet_mut(old_sheet_pos.sheet_id) else {

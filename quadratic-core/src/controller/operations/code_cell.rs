@@ -40,7 +40,7 @@ impl GridController {
                 crate::wasm_bindings::js::jsClientMessage(
                     "Cannot add code cell to table".to_string(),
                     JsSnackbarSeverity::Error.to_string(),
-                )
+                );
             }
             // cannot set a code cell where there is already a data table anchor
             return vec![];

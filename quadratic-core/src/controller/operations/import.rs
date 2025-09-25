@@ -184,7 +184,7 @@ impl GridController {
 
             let import = Import::new(sanitize_table_name(file_name.into()));
             let mut data_table =
-                DataTable::from((import.to_owned(), cell_values.into(), self.a1_context()));
+                DataTable::from((import.to_owned(), cell_values, self.a1_context()));
 
             if !sheet_format_updates.is_default() {
                 data_table

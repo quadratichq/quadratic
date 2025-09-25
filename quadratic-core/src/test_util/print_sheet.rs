@@ -75,7 +75,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                     if let Some((dt_pos, dt)) = sheet.data_table_that_contains(pos) {
                         if dt.is_html_or_image() {
                             if dt_pos.y == pos.y && dt_pos.x == pos.x {
-                                vals.push(format!("{} (Chart)", dt.name.to_string()));
+                                vals.push(format!("{} (Chart)", dt.name));
                             } else {
                                 vals.push("(..)".to_string());
                             }

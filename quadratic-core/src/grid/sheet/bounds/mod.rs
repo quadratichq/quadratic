@@ -371,7 +371,7 @@ impl Sheet {
             Some(value) => value.is_blank_or_empty_string() || value.is_image() || value.is_html(),
             None => self
                 .data_table_at(&pos)
-                .map_or(false, |dt| !dt.is_single_value()),
+                .is_some_and(|dt| !dt.is_single_value()),
         };
 
         for selection_rect in selection_rects {

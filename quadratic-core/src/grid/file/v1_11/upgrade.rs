@@ -75,12 +75,9 @@ pub fn upgrade_table(table: v1_11::DataTableSchema) -> v1_12::DataTableSchema {
         header_is_first_row: table.header_is_first_row,
         show_name: table.show_name,
         show_columns: table.show_columns,
-        columns: table.columns.map(|columns| {
-            columns
-                .into_iter()
-                .map(|column| upgrade_table_columns(column))
-                .collect()
-        }),
+        columns: table
+            .columns
+            .map(|columns| columns.into_iter().map(upgrade_table_columns).collect()),
         sort: table.sort,
         sort_dirty: table.sort_dirty,
         display_buffer: table.display_buffer,

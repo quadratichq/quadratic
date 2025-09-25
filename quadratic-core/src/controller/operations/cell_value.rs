@@ -66,11 +66,11 @@ impl GridController {
                     let value = value.trim().to_string();
 
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
-                    if value.starts_with("=") {
+                    if let Some(value) = value.strip_prefix("=") {
                         ops.extend(self.set_code_cell_operations(
                             pos.to_sheet_pos(sheet.id),
                             CodeCellLanguage::Formula,
-                            value[1..].to_string(),
+                            value.to_string(),
                             None,
                         ));
                         continue;
