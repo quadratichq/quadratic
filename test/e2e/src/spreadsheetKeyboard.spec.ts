@@ -270,9 +270,12 @@ test('Open calendar', async ({ page }) => {
   await page.keyboard.press('Enter', { delay: 250 });
   await page.keyboard.type('1/1/2000', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Check calendar picker is open
   await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
   await page.keyboard.press('Enter', { delay: 250 });
   await expect(page.locator('[data-testid="calendar-picker"]')).toBeVisible({ timeout: 10 * 1000 });
 
@@ -284,9 +287,12 @@ test('Open calendar', async ({ page }) => {
   await gotoCells(page, { a1: 'A2' });
   await page.keyboard.type('1/1/1999 1:23 am', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Check calendar picker with time is open
   await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
   await page.keyboard.press('Enter', { delay: 250 });
   await expect(page.locator('[data-testid="calendar-picker-time"]')).toBeVisible({ timeout: 10 * 1000 });
 
@@ -294,9 +300,12 @@ test('Open calendar', async ({ page }) => {
   await gotoCells(page, { a1: 'A3' });
   await page.keyboard.type('1:23 am', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 
   // Calendar picker should not be open
   await page.keyboard.press('ArrowUp', { delay: 250 });
+  await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
+
   await page.keyboard.press('Enter', { delay: 250 });
   await expect(page.locator('[data-testid="calendar-picker"]')).not.toBeVisible({ timeout: 10 * 1000 });
 

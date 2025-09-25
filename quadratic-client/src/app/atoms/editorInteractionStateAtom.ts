@@ -6,7 +6,7 @@ import type { User } from '@/auth/auth';
 import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
-export type AnnotationState = 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
+type AnnotationState = 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
