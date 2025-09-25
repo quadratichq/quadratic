@@ -11,7 +11,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
   }
 
   return (
-    <div className="relative select-none">
+    <div className="relative select-none text-muted-foreground">
       <div className="ml-2.5 flex flex-col">
         <svg
           width="16"
@@ -26,8 +26,8 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
             fill="currentColor"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium">Upload a file</h3>
-        <p className="text-xs text-muted-foreground">PDF, Image, CSV, Excel, or Parquet</p>
+        <h3 className="mt-2 text-sm">Upload a file</h3>
+        <p className="hidden text-xs">PDF, Image, CSV, Excel, or Parquet</p>
       </div>
       <div className="absolute left-11 top-0 flex flex-row gap-2.5">
         <svg
@@ -44,13 +44,13 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
           />
         </svg>
         <div className="mt-4 flex flex-col">
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 opacity-50 grayscale">
             <LanguageIcon language="postgres" />
             <LanguageIcon language="mysql" />
             <LanguageIcon language="mssql" />
           </div>
-          <h3 className="mt-2 text-sm font-medium">Chat with your data</h3>
-          <p className="text-xs text-muted-foreground">Support for Postgres, MySQL, MSSQL, & more.</p>
+          <h3 className="mt-2 text-sm">Chat with a connection</h3>
+          <p className="hidden text-xs">Support for Postgres, MySQL, MSSQL, & more.</p>
         </div>
       </div>
     </div>
