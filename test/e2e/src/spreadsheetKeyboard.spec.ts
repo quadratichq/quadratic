@@ -257,7 +257,7 @@ test('Keyboard Editing', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Open calendar', async ({ page }) => {
+test('Open calendar', async ({ page }) => {
   const fileName = 'Open Calendar';
   await logIn(page, { emailPrefix: `e2e_open_calendar` });
 
