@@ -236,7 +236,7 @@ class InlineEditorHandler {
             }
 
             // open the calendar pick if the cell is a date
-            if (['date', 'date time'].includes(jsCellValue.kind)) {
+            if (['Date', 'DateTime'].includes(jsCellValue.kind)) {
               pixiAppSettings.setEditorInteractionState?.({
                 ...pixiAppSettings.editorInteractionState,
                 annotationState: `calendar${jsCellValue.kind === 'DateTime' ? '-time' : ''}`,

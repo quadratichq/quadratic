@@ -38,7 +38,7 @@ jobs:
             runner: blacksmith-2vcpu-ubuntu-2404
             test_command: "npm run docker:test"
           - package: connection
-            runner: blacksmith-2vcpu-ubuntu-2404
+            runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
           - package: rust-shared
             runner: blacksmith-4vcpu-ubuntu-2404

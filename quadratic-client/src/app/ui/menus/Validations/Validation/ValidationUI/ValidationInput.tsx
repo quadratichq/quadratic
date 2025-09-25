@@ -29,6 +29,8 @@ interface ValidationInputProps {
 
   // clears the input value when toggling to true
   clear?: boolean;
+
+  testId?: string;
 }
 
 export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref<HTMLInputElement>) => {
@@ -48,6 +50,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
     type,
     clear,
     onKeyDown,
+    testId,
   } = props;
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -114,6 +117,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
               }
               onKeyDown?.(e);
             }}
+            data-testid={testId}
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}
