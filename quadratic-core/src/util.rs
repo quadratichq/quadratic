@@ -148,7 +148,7 @@ macro_rules! pos {
 /// # Examples
 ///
 /// ```
-/// # use quadratic_core::{rect, Rect};
+/// # use quadratic_core::{rect, Rect, grid::SheetId};
 /// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
 /// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
 /// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
