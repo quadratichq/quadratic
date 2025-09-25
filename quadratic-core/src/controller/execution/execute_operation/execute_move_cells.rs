@@ -52,15 +52,14 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::*;
     use crate::{
-        CellValue, Rect, SheetPos,
-        cellvalue::Import,
+        Rect, SheetPos,
         controller::{
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
     };
-    use crate::{SheetPos, controller::user_actions::import::tests::simple_csv_at, test_util::*};
 
     use super::*;
 
@@ -99,6 +98,7 @@ mod tests {
             false,
             false,
             None,
+            false,
         );
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);

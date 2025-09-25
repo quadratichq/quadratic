@@ -2323,15 +2323,15 @@ mod tests {
         assert_import(&gc, pos![sheet_id!A1], "Table1", 3, 4);
 
         // undo, the value should be on the grid again
-        gc.undo(None, false);
+        gc.undo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["0", "1", "2"]);
 
         // back to a table
-        gc.redo(None, false);
+        gc.redo(1, None, false);
         assert_import(&gc, pos![sheet_id!A1], "Table1", 3, 4);
 
         // leave it as raw data
-        gc.undo(None, false);
+        gc.undo(1, None, false);
 
         // create a formula cell in the grid data table
         let formula_pos = pos![sheet_id!E1];

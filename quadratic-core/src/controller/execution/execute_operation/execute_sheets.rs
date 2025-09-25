@@ -466,7 +466,8 @@ mod tests {
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation,
         },
-        grid::{CodeCellLanguage, CodeCellValue, Sheet, SheetId, js_types::JsUpdateCodeCell},
+        grid::{CodeCellLanguage, Sheet, SheetId, js_types::JsUpdateCodeCell},
+        test_util::*,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},

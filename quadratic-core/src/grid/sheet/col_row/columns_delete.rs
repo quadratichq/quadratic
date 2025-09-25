@@ -148,8 +148,6 @@ impl Sheet {
                 });
         }
 
-        transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
-
         self.recalculate_bounds(a1_context);
 
         // mark hashes of new columns dirty

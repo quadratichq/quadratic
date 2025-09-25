@@ -210,8 +210,8 @@ mod tests {
     fn test_simple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None, false);
         gc.set_code_cell(
             pos![sheet_id!A3],
             CodeCellLanguage::Formula,
@@ -228,8 +228,8 @@ mod tests {
     fn test_spilled_output_over_normal_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None);
-        gc.set_cell_value(pos![sheet_id!A2], "two".into(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "two".into(), None, false);
         gc.set_code_cell(
             pos![sheet_id!B1],
             CodeCellLanguage::Formula,
@@ -253,7 +253,7 @@ mod tests {
         assert_display(&gc, pos![sheet_id!B2], "two");
         assert_display(&gc, pos![sheet_id!B3], "");
 
-        gc.set_cell_value(pos![sheet_id!B2], "cause spill".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!B2], "cause spill".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
