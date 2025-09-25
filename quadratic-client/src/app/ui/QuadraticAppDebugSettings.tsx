@@ -11,9 +11,9 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/shadcn/ui/sheet';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
-export const QuadraticAppDebugSettings = () => {
+export const QuadraticAppDebugSettings = memo(() => {
   const { debugFlags } = useDebugFlags();
 
   const [open, setOpen] = useState(false);
@@ -114,23 +114,17 @@ export const QuadraticAppDebugSettings = () => {
       </SheetContent>
     </Sheet>
   );
-};
+});
 
-function Setting({
-  className,
-  keyName,
-  value,
-  debug,
-  onChange,
-  disabled,
-}: {
+interface SettingProps {
   className?: string;
-  value: boolean;
   keyName: string;
+  value: boolean;
   debug: DebugFlagDescription;
   onChange: (newValue: boolean) => void;
   disabled?: boolean;
-}) {
+}
+const Setting = memo(({ className, keyName, value, debug, onChange, disabled }: SettingProps) => {
   if (disabled) {
     return null;
   }
@@ -149,4 +143,4 @@ function Setting({
       <Switch checked={value} onCheckedChange={onChange} className="ml-auto" disabled={disabled} />{' '}
     </Label>
   );
-}
+});

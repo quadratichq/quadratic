@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "tsc-watch": "^6.3.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.2"
   },
   "author": "",
   "license": "ISC",

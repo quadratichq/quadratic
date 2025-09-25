@@ -91,7 +91,7 @@ export const router = createBrowserRouter(
          * without having to run the dashboard loader (which these don't need).
          */}
         <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
-        <Route path="files/create" lazy={() => import('./routes/files.create')} />
+        <Route path={ROUTES.FILES_CREATE} lazy={() => import('./routes/files.create')} />
         <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
         <Route path="team/*" lazy={() => import('./routes/team.$')} />
 
@@ -127,7 +127,7 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
+        <Route path={ROUTES.ONBOARDING} lazy={() => import('./routes/onboarding')} />
         <Route path="*" lazy={() => import('./routes/404')} />
       </Route>
 

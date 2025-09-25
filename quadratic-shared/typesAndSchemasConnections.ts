@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import { z } from 'zod';
 
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
 const transformEmptyStringToUndefined = (val: any): string | undefined =>
@@ -16,8 +16,8 @@ export const ConnectionTypeSchema = z.enum([
   'MYSQL',
   'MSSQL',
   'SNOWFLAKE',
-  'COCKROACHDB',
   'BIGQUERY',
+  'COCKROACHDB',
   'MARIADB',
   'SUPABASE',
   'NEON',

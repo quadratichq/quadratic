@@ -2,7 +2,7 @@ import type { GetConnections } from '@/routes/api.connections';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect, useMemo, useRef } from 'react';
-import { useFetcher } from 'react-router';
+import { useFetcher, type FetcherWithComponents } from 'react-router';
 
 /**
  * The data for this accessed in various places in the app (cell type menu,
@@ -15,10 +15,7 @@ export const useConnectionsFetcher = () => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
-  const fetcherRef = useRef(fetcher);
-
-  const connections = fetcher.data ? fetcher.data.connections : [];
-  const staticIps = fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : [];
+  const fetcherRef = useRef<FetcherWithComponents<GetConnections>>(fetcher);
 
   // Fetch on the initial use of the hook, but only if the user has permission
   // in the current team
@@ -29,5 +26,12 @@ export const useConnectionsFetcher = () => {
     }
   }, [teamUuid, permissionsHasTeamEdit]);
 
-  return { connections, staticIps, isLoading: fetcher.data === undefined };
+  const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
+  const staticIps = useMemo(
+    () => (fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []),
+    [fetcher.data]
+  );
+  const isLoading = useMemo(() => fetcher.data === undefined, [fetcher.data]);
+
+  return { connections, staticIps, isLoading };
 };

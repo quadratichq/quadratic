@@ -5,6 +5,7 @@ import type {
   AIToolArgsPrimitive,
   ModelMode,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
 // This provides a list of AI Tools in the order that they will be sent to the
@@ -25,6 +26,7 @@ export enum AITool {
   UpdateCodeCell = 'update_code_cell',
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
+  EmptyChatPromptSuggestions = 'empty_chat_prompt_suggestions',
   PDFImport = 'pdf_import',
   GetCellData = 'get_cell_data',
   HasCellData = 'has_cell_data',
@@ -77,6 +79,7 @@ export const AIToolSchema = z.enum([
   AITool.UpdateCodeCell,
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
+  AITool.EmptyChatPromptSuggestions,
   AITool.PDFImport,
   AITool.GetCellData,
   AITool.HasCellData,
@@ -253,9 +256,7 @@ export const AIToolsArgsSchema = {
     connection_kind: z
       .string()
       .transform((val) => val.toUpperCase())
-      .pipe(
-        z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE', 'BIGQUERY', 'COCKROACHDB', 'MARIADB', 'SUPABASE', 'NEON'])
-      ),
+      .pipe(ConnectionTypeSchema),
     code_cell_position: z.string(),
     sql_code_string: z.string(),
     connection_id: z.string().uuid(),
@@ -286,6 +287,14 @@ export const AIToolsArgsSchema = {
     text_delta_at_cursor: stringSchema,
   }),
   [AITool.UserPromptSuggestions]: z.object({
+    prompt_suggestions: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+  }),
+  [AITool.EmptyChatPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
       z.object({
         label: stringSchema,
@@ -1396,7 +1405,7 @@ Completion is the delta that will be inserted at the cursor position in the code
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
 The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
 IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
@@ -1415,7 +1424,8 @@ IMPORTANT: This tool should always be called after you have provided the respons
               },
               prompt: {
                 type: 'string',
-                description: 'The prompt for the user',
+                description:
+                  'Detailed prompt for the user that will be executed by the AI agent to take actions on the spreadsheet',
               },
             },
             required: ['label', 'prompt'],
@@ -1431,10 +1441,55 @@ IMPORTANT: This tool should always be called after you have provided the respons
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
 The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
 IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+`,
+  },
+  [AITool.EmptyChatPromptSuggestions]: {
+    sources: ['GetEmptyChatPromptSuggestions'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool provides prompt suggestions for the user for an empty chat when user attaches a file or adds a connection or code cell to context, requires an array of three prompt suggestions.\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
+Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt_suggestions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the follow up prompt, maximum 25 characters',
+              },
+              prompt: {
+                type: 'string',
+                description:
+                  'Detailed prompt for the user that will be executed by the AI agent to take actions on the spreadsheet. Should be in strong correlation with the context, the files, the connections and the code cells',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['prompt_suggestions'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.EmptyChatPromptSuggestions],
+    prompt: `
+This tool provides prompt suggestions for the user for an empty chat when user attaches a file or adds a connection or code cell to context, requires an array of three prompt suggestions.\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
+Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
 `,
   },
   [AITool.PDFImport]: {

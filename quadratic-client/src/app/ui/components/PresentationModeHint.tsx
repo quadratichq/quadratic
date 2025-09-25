@@ -1,9 +1,9 @@
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { QuadraticSnackBar } from '@/app/ui/components/QuadraticSnackBar';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export default function PresentationModeHint() {
+export const PresentationModeHint = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const [open, setOpen] = useState<boolean>(false);
 
@@ -23,4 +23,4 @@ export default function PresentationModeHint() {
       message={`Press "ESC" to exit presentation mode.`}
     />
   );
-}
+});

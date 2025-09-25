@@ -171,6 +171,8 @@ interface EventTypes {
   startupTimer: (name: TimerNames, data: { start?: number; end?: number }) => void;
 
   setDirty: (dirty: DirtyObject) => void;
+
+  aiAnalystDroppedFiles: (files: FileList | File[]) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

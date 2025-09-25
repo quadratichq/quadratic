@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
           res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+          res.setHeader('Document-Policy', 'js-profiling');
           next();
         });
       },

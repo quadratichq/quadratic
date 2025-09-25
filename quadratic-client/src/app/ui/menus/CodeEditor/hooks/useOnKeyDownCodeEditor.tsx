@@ -2,10 +2,13 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import { dispatchEditorAction } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { useRecoilCallback } from 'recoil';
+
+const dispatchEditorAction = (name: string) => {
+  window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
+};
 
 export const useOnKeyDownCodeEditor = () => {
   const { saveAndRunCell } = useSaveAndRunCell();

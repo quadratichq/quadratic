@@ -4,6 +4,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
@@ -49,6 +50,15 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      events.emit('aiAnalystDroppedFiles', files);
+    }
+  }, []);
+
   if (!showAIAnalyst || presentationMode) {
     return null;
   }
@@ -64,8 +74,10 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
+        onDragOver={handleDrop}
+        onDrop={handleDrop}
       >
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
+        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
         <div
           className={cn(
@@ -81,13 +93,15 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="px-2 py-0.5">
+              <div className={'grid grid-rows-[1fr_auto] px-2 py-0.5'}>
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}
                   messageIndex={messagesCount}
+                  showEmptyChatPromptSuggestions={true}
                 />
+
                 <AIUserMessageFormDisclaimer />
               </div>
             </>
