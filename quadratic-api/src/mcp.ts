@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
+import { v4 } from 'uuid';
 import { z } from 'zod';
 import { AUTH_CORS } from './env-vars';
 import logger from './utils/logger';
@@ -47,14 +48,22 @@ mcpRouter.post('/', async (req: Request, res: Response) => {
 
   try {
     const server = getServer();
-    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: v4,
     });
 
-    res.on('close', () => {
+    const close = () => {
       logger.info('MCP request closed');
       transport.close();
       server.close();
+    };
+
+    req.socket.on('close', () => {
+      close();
+    });
+
+    res.on('close', () => {
+      close();
     });
 
     await server.connect(transport);
@@ -75,7 +84,7 @@ mcpRouter.post('/', async (req: Request, res: Response) => {
 });
 
 // SSE notifications not supported in stateless mode
-mcpRouter.get('/', async (req: Request, res: Response) => {
+mcpRouter.get('/', async (_req: Request, res: Response) => {
   logger.info('Received GET MCP request - method not allowed');
   res.status(405).json({
     jsonrpc: '2.0',
@@ -88,7 +97,7 @@ mcpRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Session termination not needed in stateless mode
-mcpRouter.delete('/', async (req: Request, res: Response) => {
+mcpRouter.delete('/', async (_req: Request, res: Response) => {
   logger.info('Received DELETE MCP request - method not allowed');
   res.status(405).json({
     jsonrpc: '2.0',

@@ -36,8 +36,6 @@ app.use(cookieParser());
 // workos auth
 app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
 
-app.use('/mcp', mcpRouter);
-
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
 
@@ -60,6 +58,8 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ version: VERSION });
 });
+
+app.use('/mcp', mcpRouter);
 
 // App routes
 // Internal routes
