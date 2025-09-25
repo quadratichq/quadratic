@@ -47,7 +47,7 @@ use crate::{
     synced_connection::process_mixpanel_connections,
 };
 
-const STATS_INTERVAL_S: u64 = 5;
+const STATS_INTERVAL_S: u64 = 60;
 const SYNC_INTERVAL_M: u64 = 60;
 pub(crate) const SCHEMA_CACHE_DURATION_S: Duration = Duration::from_secs(60 * 30); // 30 minutes
 
