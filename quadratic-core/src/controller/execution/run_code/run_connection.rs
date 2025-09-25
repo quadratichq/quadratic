@@ -150,12 +150,12 @@ mod tests {
                 .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context())
         );
 
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         let sheet_2_id = gc.sheet_ids()[1];
         let sheet_2 = gc.sheet_mut(sheet_2_id);
         sheet_2.set_cell_value(Pos { x: 1, y: 2 }, "test2".to_string());
 
-        let code = r#"{{'Sheet 2'!$A$2}}"#;
+        let code = r#"{{'Sheet2'!$A$2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -251,6 +251,7 @@ mod tests {
                 code.to_string(),
                 None,
                 None,
+                false,
             );
 
             let sheet = gc.sheet(sheet_id);

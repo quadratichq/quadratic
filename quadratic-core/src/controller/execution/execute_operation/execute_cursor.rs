@@ -39,7 +39,7 @@ impl GridController {
         unwrap_op!(let SetCursorA1 { selection } = op);
 
         // this op should only be called by a user transaction
-        if transaction.is_user() && (cfg!(target_family = "wasm") || cfg!(test)) {
+        if transaction.is_user_ai() && (cfg!(target_family = "wasm") || cfg!(test)) {
             transaction.add_update_selection(selection);
         }
     }

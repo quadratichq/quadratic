@@ -8,8 +8,8 @@ use crate::{
     a1::A1Selection,
     clear_option::ClearOption,
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting,
-        sheet_formatting::SheetFormattingType,
+        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, GridBounds, NumericFormat,
+        SheetFormatting, sheet_formatting::SheetFormattingType,
     },
 };
 
@@ -456,6 +456,62 @@ impl SheetFormatUpdates {
         self.fill_color
             .as_ref()
             .is_some_and(|fills| !fills.is_all_default())
+    }
+
+    /// Returns the bounding rect of the format updates.
+    pub fn to_bounding_rect(&self) -> Option<Rect> {
+        let mut bounds = GridBounds::default();
+        self.align
+            .as_ref()
+            .and_then(|align| align.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.vertical_align.as_ref().and_then(|vertical_align| {
+            vertical_align
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.wrap
+            .as_ref()
+            .and_then(|wrap| wrap.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.numeric_format.as_ref().and_then(|numeric_format| {
+            numeric_format
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.numeric_decimals.as_ref().and_then(|numeric_decimals| {
+            numeric_decimals
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.numeric_commas.as_ref().and_then(|numeric_commas| {
+            numeric_commas
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.bold
+            .as_ref()
+            .and_then(|bold| bold.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.italic
+            .as_ref()
+            .and_then(|italic| italic.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.text_color
+            .as_ref()
+            .and_then(|text_color| text_color.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.fill_color
+            .as_ref()
+            .and_then(|fill_color| fill_color.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.date_time
+            .as_ref()
+            .and_then(|date_time| date_time.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.underline
+            .as_ref()
+            .and_then(|underline| underline.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.strike_through.as_ref().and_then(|strike_through| {
+            strike_through
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+
+        bounds.into()
     }
 
     /// Inserts a column into the SheetFormatUpdates

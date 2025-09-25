@@ -63,7 +63,7 @@ impl GridController {
             ));
         };
 
-        if !transaction.is_user_undo_redo() {
+        if !transaction.is_user_ai_undo_redo() {
             return map_error(CoreError::TransactionNotFound(
                 "getCells can only be called for user / undo-redo transaction".to_string(),
             ));
@@ -225,6 +225,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
 
         let transactions = gc.transactions.async_transactions_mut();
@@ -248,6 +249,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -292,6 +294,7 @@ mod test {
             },
             "10".to_string(),
             None,
+            false,
         );
         // async python
         gc.set_code_cell(
@@ -304,6 +307,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -324,6 +328,7 @@ mod test {
             },
             "test".to_string(),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -336,6 +341,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -376,6 +382,7 @@ mod test {
             },
             "test1".to_string(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -385,6 +392,7 @@ mod test {
             },
             "test2".to_string(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -394,6 +402,7 @@ mod test {
             },
             "test3".to_string(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -403,6 +412,7 @@ mod test {
             },
             "test4".to_string(),
             None,
+            false,
         );
 
         // create a code cell so we can get a transaction_id
@@ -416,6 +426,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -482,6 +493,7 @@ mod test {
             },
             "test".to_string(),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -490,6 +502,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
@@ -529,6 +542,7 @@ mod test {
             },
             "test".to_string(),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -537,6 +551,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string());
@@ -574,6 +589,7 @@ mod test {
             Some(Some(true)),
             Some(Some(true)),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -582,6 +598,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
@@ -633,6 +650,7 @@ mod test {
             Some(Some(true)),
             Some(Some(true)),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -641,6 +659,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result =
@@ -701,6 +720,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
@@ -711,7 +731,7 @@ mod test {
     fn test_get_cells_table_different_sheet() {
         let mut gc = GridController::test();
         let sheet1_id = gc.sheet_ids()[0];
-        gc.add_sheet_with_name("Sheet 2".to_string(), None);
+        gc.add_sheet_with_name("Sheet 2".to_string(), None, false);
         let sheet2_id = gc.sheet_ids()[1];
 
         // set table in sheet 2
@@ -727,6 +747,7 @@ mod test {
             "".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());

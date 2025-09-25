@@ -42,10 +42,10 @@ async function handler(req: Request, res: Response) {
     throw new ApiError(403, 'You do not have permission to view this connection.');
   }
 
-  const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString('utf-8')));
+  const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
 
   if (typeDetails.useSsh && team.team.sshPrivateKey) {
-    typeDetails.sshKey = decryptFromEnv(team.team.sshPrivateKey.toString('utf-8'));
+    typeDetails.sshKey = decryptFromEnv(Buffer.from(team.team.sshPrivateKey).toString('utf-8'));
   }
 
   // Return the data

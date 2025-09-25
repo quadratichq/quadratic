@@ -115,7 +115,7 @@ extern "C" {
     pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
     pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 
-    pub fn jsTimestamp() -> i32;
+    pub fn jsTimestamp() -> u64;
 }
 
 #[cfg(test)]
@@ -541,4 +541,11 @@ pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTables
 #[allow(non_snake_case)]
 pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
     js_call("jsSendContentCache", format!("{sheet_id},{cache:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTimestamp() -> u64 {
+    // Return a fixed timestamp for deterministic tests
+    1234567890000 // Jan 13, 2009 23:31:30 GMT
 }

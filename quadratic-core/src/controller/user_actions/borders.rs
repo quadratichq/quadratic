@@ -11,11 +11,12 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops =
             self.set_borders_a1_selection_operations(selection, border_selection, style, true);
         if !ops.is_empty() {
-            self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
+            self.start_user_ai_transaction(ops, cursor, TransactionName::SetBorders, is_ai);
         }
     }
 }
@@ -36,6 +37,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -53,12 +55,13 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
         assert!(sheet.borders.vertical_borders(None).is_some());
 
-        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
+        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -74,12 +77,13 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
         assert!(sheet.borders.vertical_borders(None).is_some());
 
-        gc.clear_format_borders(&A1Selection::test_a1("*"), None);
+        gc.clear_format_borders(&A1Selection::test_a1("*"), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -95,6 +99,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
@@ -105,6 +110,7 @@ mod tests {
             BorderSelection::Clear,
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -120,12 +126,19 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
         assert!(sheet.borders.vertical_borders(None).is_some());
 
-        gc.set_borders(A1Selection::test_a1("B2"), BorderSelection::All, None, None);
+        gc.set_borders(
+            A1Selection::test_a1("B2"),
+            BorderSelection::All,
+            None,
+            None,
+            false,
+        );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
         assert!(sheet.borders.vertical_borders(None).is_none());
@@ -140,6 +153,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
@@ -150,6 +164,7 @@ mod tests {
             BorderSelection::All,
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -165,6 +180,7 @@ mod tests {
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());
@@ -175,6 +191,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_some());

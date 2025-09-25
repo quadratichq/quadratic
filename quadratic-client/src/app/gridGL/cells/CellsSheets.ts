@@ -15,18 +15,6 @@ import type { Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
-  constructor() {
-    super();
-    events.on('addSheet', this.addSheet);
-    events.on('deleteSheet', this.deleteSheet);
-  }
-
-  destroy() {
-    events.off('addSheet', this.addSheet);
-    events.off('deleteSheet', this.deleteSheet);
-    super.destroy();
-  }
-
   get current(): CellsSheet | undefined {
     return this.children.find((child) => child.sheetId === sheets.current);
   }
@@ -47,11 +35,11 @@ export class CellsSheets extends Container<CellsSheet> {
     return !!this.current;
   }
 
-  private addSheet = (sheetInfo: SheetInfo) => {
+  addSheet = (sheetInfo: SheetInfo) => {
     this.addChild(new CellsSheet(sheetInfo.sheet_id));
   };
 
-  private deleteSheet = (sheetId: string) => {
+  deleteSheet = (sheetId: string) => {
     const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheetId === sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in CellSheets.delete');
     this.removeChild(cellsSheet);

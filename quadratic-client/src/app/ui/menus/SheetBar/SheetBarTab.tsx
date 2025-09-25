@@ -236,7 +236,7 @@ const TabName = memo(
               } else {
                 setErrorMessage(undefined);
                 setIsRenaming(false);
-                sheet.setName(value);
+                sheet.setName(value, false);
               }
             }
             focusGrid();
@@ -273,7 +273,7 @@ const TabName = memo(
           setIsRenaming((isRenaming) => {
             if (!isRenaming) return false;
             if (!!value && value !== name && validateName(value)) {
-              sheet.setName(value);
+              sheet.setName(value, false);
             }
             return false;
           });

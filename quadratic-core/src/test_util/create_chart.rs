@@ -21,6 +21,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
         "code".to_string(),
         None,
         None,
+        false,
     );
     let sheet = sheet(gc, sheet_id);
     let (cell_width, cell_height) = sheet.offsets.defaults();
@@ -59,6 +60,7 @@ pub fn test_create_html_chart(
         "<html></html>".to_string(),
         None,
         None,
+        false,
     );
     let s = sheet(gc, sheet_id);
     let (cell_width, cell_height) = s.offsets.defaults();

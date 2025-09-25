@@ -283,7 +283,7 @@ mod test {
     #[test]
     fn test_rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
 
         // (1, 1) = 1 + 1
         let first = |gc: &mut GridController| {
@@ -298,6 +298,7 @@ mod test {
                 "1 + 1".to_string(),
                 None,
                 None,
+                false,
             );
         };
 
@@ -314,6 +315,7 @@ mod test {
                 "A1".to_string(),
                 None,
                 None,
+                false,
             );
         };
 
@@ -330,6 +332,7 @@ mod test {
                 format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
                 None,
+                false,
             );
         };
 
@@ -397,7 +400,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
 
         second(&mut gc);
         third(&mut gc);
@@ -406,7 +409,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         first(&mut gc);
         third(&mut gc);
         second(&mut gc);
@@ -414,7 +417,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         third(&mut gc);
         second(&mut gc);
         first(&mut gc);
@@ -422,7 +425,7 @@ mod test {
 
         // test same operations in different orders
         let mut gc = GridController::default();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         third(&mut gc);
         first(&mut gc);
         second(&mut gc);
@@ -482,9 +485,14 @@ mod test {
             "1 + 1".to_string(),
             None,
             None,
+            false,
         );
-        gc.rerun_all_code_cells(None);
-        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
-        gc.rerun_sheet_code_cells(sheet_id, None);
+        gc.rerun_all_code_cells(None, false);
+        gc.rerun_code_cell(
+            A1Selection::test_a1_context("A1", gc.a1_context()),
+            None,
+            false,
+        );
+        gc.rerun_sheet_code_cells(sheet_id, None, false);
     }
 }

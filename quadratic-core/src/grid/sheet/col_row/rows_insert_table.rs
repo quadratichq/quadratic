@@ -54,7 +54,6 @@ impl Sheet {
                         && let Ok(display_row_index) = usize::try_from(row - pos.y)
                     {
                         dt.insert_row(display_row_index, None)?;
-
                         transaction
                             .reverse_operations
                             .push(Operation::DeleteDataTableRows {
@@ -148,20 +147,20 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_rows(sheet_id, 4, 1, false, None);
+        gc.insert_rows(sheet_id, 4, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
     }
@@ -172,20 +171,20 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_rows(sheet_id, 4, 1, true, None);
+        gc.insert_rows(sheet_id, 4, 1, true, None, false);
         // this is wrong?
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
     }
@@ -196,19 +195,19 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
-        gc.insert_rows(sheet_id, 5, 1, false, None);
+        gc.insert_rows(sheet_id, 5, 1, false, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "2");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
-        gc.insert_rows(sheet_id, 5, 1, true, None);
+        gc.insert_rows(sheet_id, 5, 1, true, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_display_cell_value(&gc, sheet_id, 2, 5, "2");
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
     }
@@ -220,7 +219,7 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 2, false);
 
-        gc.insert_rows(sheet_id, 4, 1, false, None);
+        gc.insert_rows(sheet_id, 4, 1, false, None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
     }
 }

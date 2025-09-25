@@ -61,7 +61,7 @@ impl Sheet {
         }
 
         // create undo operations for the inserted column
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             // reverse operation to delete the column (this will also shift all impacted columns)
             transaction
                 .reverse_operations

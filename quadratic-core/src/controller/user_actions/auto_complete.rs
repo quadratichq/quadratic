@@ -17,9 +17,10 @@ impl GridController {
         initial_range: Rect,
         final_range: Rect,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, initial_range, final_range)?;
-        self.start_user_transaction(ops, cursor, TransactionName::Autocomplete);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::Autocomplete, is_ai);
         Ok(())
     }
 }
@@ -78,14 +79,19 @@ mod tests {
             for x in selection.x_range() {
                 let sheet_pos = SheetPos { x, y, sheet_id };
                 if let Some(cell_value) = vals.get(count) {
-                    grid_controller.set_cell_value(sheet_pos, cell_value.to_string(), None);
+                    grid_controller.set_cell_value(sheet_pos, cell_value.to_string(), None, false);
                 }
 
                 if let Some(is_bold) = bolds.get(count)
                     && *is_bold
                 {
                     grid_controller
-                        .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
+                        .set_bold(
+                            &A1Selection::from_single_cell(sheet_pos),
+                            Some(true),
+                            None,
+                            false,
+                        )
                         .unwrap();
                 }
 
@@ -95,6 +101,7 @@ mod tests {
                             &A1Selection::from_single_cell(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,
+                            false,
                         )
                         .unwrap();
                 }
@@ -106,6 +113,7 @@ mod tests {
                         code_cell.code.clone(),
                         None,
                         None,
+                        false,
                     );
                 }
 
@@ -146,7 +154,8 @@ mod tests {
         };
         let (mut grid, sheet_id) =
             test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         assert_code_cell_value(&grid, sheet_id, 1, 1, "SUM(A1)");
         assert_code_cell_value(&grid, sheet_id, 10, 1, "SUM(J1)");
@@ -161,7 +170,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
         let range: Rect = Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -188,7 +198,8 @@ mod tests {
 
         print_table_from_grid(&grid, sheet_id, range);
 
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -208,7 +219,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
         let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 15, y: 12 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -236,7 +248,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -264,7 +277,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -288,7 +302,8 @@ mod tests {
         // down + right
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 9, y: 8 });
         print_table_from_grid(&grid, sheet_id, range_over);
 
@@ -302,7 +317,8 @@ mod tests {
         // up + right
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
         print_table_from_grid(&grid, sheet_id, range_over);
 
@@ -316,7 +332,8 @@ mod tests {
         // down + left
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
         print_table_from_grid(&grid, sheet_id, range_over);
 
@@ -330,7 +347,8 @@ mod tests {
         // up + left
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: -1 }, selected.max);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 7, y: 5 });
         print_table_from_grid(&grid, sheet_id, range_over);
 
@@ -347,7 +365,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 20, y: 13 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -369,7 +388,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 3, y: 30 }, Pos { x: 15, y: 20 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -395,7 +415,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 3, y: 3 }, selected.max);
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
@@ -417,7 +438,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -442,7 +464,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 13, y: 19 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -470,7 +493,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -504,7 +528,8 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 
@@ -520,12 +545,14 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -554,12 +581,14 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 5 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -585,12 +614,14 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 5 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(
             &grid,
@@ -615,7 +646,7 @@ mod tests {
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
         let (mut grid, _) = test_setup_rect(&selected);
 
-        let result = grid.autocomplete(SheetId::new(), selected, range, None);
+        let result = grid.autocomplete(SheetId::new(), selected, range, None, false);
         assert!(result.is_err());
     }
 
@@ -629,10 +660,17 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(1, 1, 3, 3), Rect::new(1, 1, 5, 3), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::new(1, 1, 3, 3),
+            Rect::new(1, 1, 5, 3),
+            None,
+            false,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
 
@@ -649,6 +687,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         gc.autocomplete(
@@ -656,6 +695,7 @@ mod tests {
             Rect::test_a1("C1:F1"),
             Rect::test_a1("A1:F1"),
             None,
+            false,
         )
         .unwrap();
 
@@ -674,6 +714,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         gc.autocomplete(
@@ -681,6 +722,7 @@ mod tests {
             Rect::test_a1("A3:A6"),
             Rect::test_a1("A1:A6"),
             None,
+            false,
         )
         .unwrap();
 
@@ -699,6 +741,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         gc.autocomplete(
@@ -706,6 +749,7 @@ mod tests {
             Rect::test_a1("A1:A3"),
             Rect::test_a1("A1:A5"),
             None,
+            false,
         )
         .unwrap();
 
@@ -726,11 +770,18 @@ mod tests {
                 code.to_string(),
                 None,
                 None,
+                false,
             );
         };
         let autocomplete = |gc: &mut GridController| {
-            gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
-                .unwrap();
+            gc.autocomplete(
+                sheet_id,
+                Rect::new(3, 3, 3, 4),
+                Rect::new(3, 3, 4, 4),
+                None,
+                false,
+            )
+            .unwrap();
         };
 
         // relative references, expect to increment by 1
@@ -746,8 +797,7 @@ mod tests {
         );
 
         // start over
-        gc.undo(None);
-        gc.undo(None);
+        gc.undo(2, None, false);
 
         // absolute column references, expect no change
         let base = r#"q.cells("$A:$B", first_row_header=True)"#;
@@ -761,8 +811,7 @@ mod tests {
         );
 
         // start over
-        gc.undo(None);
-        gc.undo(None);
+        gc.undo(2, None, false);
 
         println!("** relative column references, expect no change");
 
@@ -789,10 +838,17 @@ mod tests {
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
             None,
+            false,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::new(3, 3, 3, 4),
+            Rect::new(3, 3, 4, 4),
+            None,
+            false,
+        )
+        .unwrap();
 
         assert_code_language(
             &gc,
@@ -808,7 +864,8 @@ mod tests {
         let pos = pos![A3];
         let selected: Rect = Rect::new_span(pos, pos);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 6, y: 14 });
-        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None, false)
+            .unwrap();
 
         print_table_from_grid(&grid, sheet_id, range);
 

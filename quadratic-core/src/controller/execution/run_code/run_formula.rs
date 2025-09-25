@@ -104,44 +104,6 @@ mod test {
         test_util::pretty_print_data_table,
     };
 
-    // todo: this shouldn't work anymore?
-    // #[test]
-    // fn test_execute_operation_set_cell_values_formula() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-
-    //     let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-    //     sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
-    //     let sheet_pos = SheetPos {
-    //         x: 2,
-    //         y: 1,
-    //         sheet_id,
-    //     };
-
-    //     let code_cell = CellValue::Code(CodeCellValue {
-    //         language: CodeCellLanguage::Formula,
-    //         code: "A1 + 1".to_string(),
-    //     });
-    //     gc.start_user_transaction(
-    //         vec![
-    //             Operation::SetCellValues {
-    //                 sheet_pos,
-    //                 values: CellValues::from(code_cell.clone()),
-    //             },
-    //             Operation::ComputeCode { sheet_pos },
-    //         ],
-    //         None,
-    //         TransactionName::Unknown,
-    //     );
-
-    //     let sheet = gc.sheet_mut(sheet_id);
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 2, y: 1 }),
-    //         Some(CellValue::Number(11.into()))
-    //     );
-    //     assert_eq!(sheet.cell_value(Pos { x: 2, y: 1 }), Some(code_cell));
-    // }
-
     #[test]
     fn test_multiple_formula() {
         let mut gc = GridController::test();
@@ -160,6 +122,7 @@ mod test {
             "A1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -178,6 +141,7 @@ mod test {
             "B1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
@@ -198,6 +162,7 @@ mod test {
             },
             "1".into(),
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -224,6 +189,7 @@ mod test {
             },
             "10".into(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -235,6 +201,7 @@ mod test {
             "A1 + 1".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -251,6 +218,7 @@ mod test {
             },
             "".into(),
             None,
+            false,
         );
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
@@ -414,6 +382,7 @@ mod test {
             },
             vec![vec!["1".into(), "2".into(), "3".into()]],
             None,
+            false,
         );
 
         // create code that will later have a spill error
@@ -427,6 +396,7 @@ mod test {
             "A1:A4".into(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
@@ -442,6 +412,7 @@ mod test {
             },
             "create spill error".into(),
             None,
+            false,
         );
         assert!(
             gc.sheet(sheet_id)
@@ -457,14 +428,14 @@ mod test {
         );
 
         // undo the spill error
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
 
         // redo the spill error
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert!(
             gc.sheet(sheet_id)
                 .data_table_at(&Pos { x: 2, y: 1 })
@@ -473,7 +444,7 @@ mod test {
         );
 
         // undo the spill error
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
@@ -491,7 +462,14 @@ mod test {
         };
         let pos: Pos = sheet_pos.into();
 
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "☺".into(),
+            None,
+            None,
+            false,
+        );
         let sheet = gc.sheet(sheet_id);
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
@@ -503,6 +481,7 @@ mod test {
             "{0,1/0;2/0,0}".into(),
             None,
             None,
+            false,
         );
         assert_code_language(
             &gc,

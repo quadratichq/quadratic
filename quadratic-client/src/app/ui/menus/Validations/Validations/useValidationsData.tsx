@@ -52,7 +52,7 @@ export const useValidationsData = (): ValidationsData => {
 
   const deleteValidation = useCallback(
     (validationId: string) => {
-      quadraticCore.removeValidation(sheetId, validationId);
+      quadraticCore.removeValidation(sheetId, validationId, false);
       setValidations((prev) => prev.filter((v) => v.id !== validationId));
     },
     [sheetId]

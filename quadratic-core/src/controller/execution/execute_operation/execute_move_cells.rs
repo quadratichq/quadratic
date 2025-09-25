@@ -52,7 +52,35 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        CellValue, Rect, SheetPos,
+        cellvalue::Import,
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            user_actions::import::tests::{simple_csv, simple_csv_at},
+        },
+    };
     use crate::{SheetPos, controller::user_actions::import::tests::simple_csv_at, test_util::*};
+
+    use super::*;
+
+    #[test]
+    fn test_move_cells() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+
+        let dest_pos = pos![F1];
+        let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
+        let ops = vec![Operation::MoveCells {
+            source: data_table.output_sheet_rect(sheet_pos, true),
+            dest: sheet_dest_pos,
+            columns: false,
+            rows: false,
+        }];
+        gc.start_user_ai_transaction(ops, None, TransactionName::MoveCells, false);
+        print_table_in_rect(&gc, sheet_id, Rect::new(6, 1, 10, 12));
+    }
 
     #[test]
     fn test_move_data_table_within_its_current_output_rect() {

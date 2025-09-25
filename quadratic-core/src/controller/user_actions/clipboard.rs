@@ -15,10 +15,11 @@ impl GridController {
         selection: &A1Selection,
         include_display_values: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<JsClipboard, String> {
         match self.cut_to_clipboard_operations(selection, include_display_values) {
             Ok((clipboard, ops)) => {
-                self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
+                self.start_user_ai_transaction(ops, cursor, TransactionName::CutClipboard, is_ai);
                 Ok(clipboard.into())
             }
             _ => Err("Failed to cut to clipboard".into()),
@@ -32,6 +33,7 @@ impl GridController {
         js_clipboard: JsClipboard,
         special: PasteSpecial,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let rect = selection.largest_rect_finite(self.a1_context());
         let insert_at = rect.min;
@@ -42,13 +44,19 @@ impl GridController {
             && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
         {
-            self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
+            self.start_user_ai_transaction(
+                ops,
+                cursor.clone(),
+                TransactionName::PasteClipboard,
+                is_ai,
+            );
 
             if !data_table_ops.is_empty() {
-                self.start_user_transaction(
+                self.start_user_ai_transaction(
                     data_table_ops,
                     cursor,
                     TransactionName::PasteClipboard,
+                    is_ai,
                 );
             }
 
@@ -63,7 +71,7 @@ impl GridController {
             js_clipboard.plain_text,
             special,
         ) {
-            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+            self.start_user_ai_transaction(ops, cursor, TransactionName::PasteClipboard, is_ai);
         }
     }
 
@@ -76,14 +84,16 @@ impl GridController {
         columns: bool,
         rows: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.move_cells_operations(source, dest, columns, rows);
-        self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
     }
 
     /// move a code cell vertically
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved up
+    #[allow(clippy::too_many_arguments)]
     pub fn move_code_cell_vertically(
         &mut self,
         sheet_id: SheetId,
@@ -92,6 +102,7 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Option<Pos> {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
@@ -122,13 +133,14 @@ impl GridController {
             dest = SheetPos::new(sheet_id, x, row);
         }
         let ops = self.move_cells_operations(source, dest, false, false);
-        self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
         Some(dest.into())
     }
 
     /// move a code cell horizontally
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved left
+    #[allow(clippy::too_many_arguments)]
     pub fn move_code_cell_horizontally(
         &mut self,
         sheet_id: SheetId,
@@ -137,6 +149,7 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Option<Pos> {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
@@ -167,7 +180,7 @@ impl GridController {
             dest = SheetPos::new(sheet_id, col, y);
         }
         let ops = self.move_cells_operations(source, dest, false, false);
-        self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
         Some(dest.into())
     }
 }
@@ -192,7 +205,7 @@ mod test {
 
     #[track_caller]
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
-        gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None);
+        gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None, false);
     }
 
     #[track_caller]
@@ -210,6 +223,7 @@ mod test {
             code.into(),
             None,
             None,
+            false,
         );
     }
 
@@ -250,16 +264,16 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "2, 2", 2, 2);
-        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None, false)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 4, 3);
-        gc.set_italic(&A1Selection::test_a1("D3"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("D3"), Some(true), None, false)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "underline", 6, 4);
-        gc.set_underline(&A1Selection::test_a1("F4"), Some(true), None)
+        gc.set_underline(&A1Selection::test_a1("F4"), Some(true), None, false)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 8, 5);
-        gc.set_strike_through(&A1Selection::test_a1("H5"), Some(true), None)
+        gc.set_strike_through(&A1Selection::test_a1("H5"), Some(true), None, false)
             .unwrap();
 
         let selection = A1Selection::from_rect(SheetRect::new(2, 2, 8, 5, sheet_id));
@@ -289,6 +303,7 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
 
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
@@ -311,6 +326,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -385,10 +401,11 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
         assert_display(&gc, pos![sheet_id!A1], "2");
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(pos![A1]), None);
 
@@ -407,6 +424,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         assert_display(&gc, pos![sheet_id!A1], "2");
@@ -414,14 +432,14 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 2);
 
         // undo to original code cell value
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         assert_display(&gc, pos![sheet_id!A1], "4");
 
         assert_eq!(gc.undo_stack.len(), 1);
 
         // empty code cell
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_display(&gc, pos![sheet_id!A1], "");
 
         assert!(gc.sheet(sheet_id).data_tables.is_empty());
@@ -466,6 +484,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -481,7 +500,7 @@ mod test {
             Some(CellValue::Number(3.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(sheet.display_value(Pos { x: 2, y: 1 }), None);
@@ -499,6 +518,7 @@ mod test {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -511,6 +531,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -529,7 +550,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id_1 = gc.sheet_ids()[0];
 
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         let sheet_id_2 = gc.sheet_ids()[1];
 
         gc.set_borders(
@@ -537,6 +558,7 @@ mod test {
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id_1);
@@ -577,6 +599,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id_2);
@@ -615,10 +638,10 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold(&A1Selection::test_a1("A1"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("A1"), Some(true), None, false)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic(&A1Selection::test_a1("C2"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("C2"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -638,6 +661,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -677,6 +701,7 @@ mod test {
                     js_clipboard.clone(),
                     PasteSpecial::None,
                     None,
+                    false,
                 );
 
                 assert_code_language(gc, dest_pos, CodeCellLanguage::Formula, code.into());
@@ -734,12 +759,19 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
         assert_range_paste(&gc);
 
         // undo the paste and paste again as plain text
-        gc.undo(None);
-        gc.paste_from_clipboard(&paste_selection, js_clipboard, PasteSpecial::None, None);
+        gc.undo(1, None, false);
+        gc.paste_from_clipboard(
+            &paste_selection,
+            js_clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
         assert_range_paste(&gc);
     }
 
@@ -748,15 +780,16 @@ mod test {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None);
-        gc.set_cell_value(pos![sheet_id!A3], "3".into(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A3], "3".into(), None, false);
         gc.set_code_cell(
             pos![sheet_id!B1],
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let selection = A1Selection::test_a1("B1");
@@ -767,7 +800,13 @@ mod test {
 
         // paste as html
         let paste_selection = A1Selection::test_a1("B2:C3");
-        gc.paste_from_clipboard(&paste_selection, js_clipboard, PasteSpecial::None, None);
+        gc.paste_from_clipboard(
+            &paste_selection,
+            js_clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
 
         assert_code(&gc, pos![sheet_id!B2], "A2 + 1");
         assert_code(&gc, pos![sheet_id!B3], "A3 + 1");
@@ -803,6 +842,7 @@ mod test {
             js_clipboard,
             PasteSpecial::Values,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -826,11 +866,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 2, 2);
-        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None, false)
             .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 3, 3);
-        gc.set_italic(&A1Selection::test_a1("C3"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("C3"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -847,6 +887,7 @@ mod test {
             js_clipboard,
             PasteSpecial::Formats,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 2, y: 2 }), None);
@@ -899,6 +940,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -906,7 +948,7 @@ mod test {
             Some(CellValue::Number(2.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(pos![A1]), None);
     }
@@ -925,6 +967,7 @@ mod test {
             false,
             false,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -939,7 +982,7 @@ mod test {
         assert_eq!(sheet.display_value((1, 1).into()), None);
         assert_eq!(sheet.display_value((1, 3).into()), None);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value((11, 11).into()), None);
@@ -977,6 +1020,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -1006,60 +1050,60 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
 
         // Move down
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 4 }));
         assert_cell_values(&gc, sheet_id, &[(1, 4, 1), (1, 5, 2), (1, 6, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
 
         // Move up
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 4, false, true, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 4, false, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 4), (1, 5), (1, 6)]);
 
         // Move to sheet end (down)
         set_cell_value(&mut gc, sheet_id, "obstacle", 1, 10);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, true, false, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, true, false, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 11 }));
         assert_cell_values(&gc, sheet_id, &[(1, 11, 1), (1, 12, 2), (1, 13, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
 
         // Move to sheet start (up)
         set_cell_value(&mut gc, sheet_id, "obstacle1", 1, 3);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 11, true, true, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 11, true, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         // Spill error!
         // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 3)]);
         // assert_empty_cells(&gc, sheet_id, &[(1, 11), (1, 12), (1, 13)]);
 
         // Move when there's no code cell
-        let result = gc.move_code_cell_vertically(sheet_id, 20, 20, false, false, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 20, 20, false, false, None, false);
         assert_eq!(result, None);
 
         // Move down with obstacles
         set_cell_value(&mut gc, sheet_id, "obstacle2", 1, 4);
         set_cell_value(&mut gc, sheet_id, "obstacle3", 1, 5);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 6 }));
         assert_cell_values(&gc, sheet_id, &[(1, 6, 1), (1, 7, 2), (1, 8, 3)]);
 
         // Move up with obstacles
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 6, false, true, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 6, false, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         // Spill error!
         // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
 
         // Move a single-cell code output
         set_formula_code_cell(&mut gc, sheet_id, "42", 1, 15);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 15, false, false, None);
+        let result = gc.move_code_cell_vertically(sheet_id, 1, 15, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 16 }));
         assert_cell_values(&gc, sheet_id, &[(1, 16, 42)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 15)]);
 
         // Undo and redo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(1, 15, 42)]);
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(1, result.unwrap().y, 42)]);
     }
 
@@ -1073,60 +1117,60 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
 
         // Move right
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 4, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(4, 1, 1), (5, 1, 2), (6, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
 
         // Move left
-        let result = gc.move_code_cell_horizontally(sheet_id, 4, 1, false, true, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 4, 1, false, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(4, 1), (5, 1), (6, 1)]);
 
         // Move to sheet end (right)
         set_cell_value(&mut gc, sheet_id, "obstacle", 10, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, true, false, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, true, false, None, false);
         assert_eq!(result, Some(Pos { x: 11, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(11, 1, 1), (12, 1, 2), (13, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
 
         // Move to sheet start (left)
         set_cell_value(&mut gc, sheet_id, "obstacle1", 3, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 11, 1, true, true, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 11, 1, true, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         // Spill error!
         // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
         // assert_empty_cells(&gc, sheet_id, &[(11, 1), (12, 1), (13, 1)]);
 
         // Move when there's no code cell
-        let result = gc.move_code_cell_horizontally(sheet_id, 20, 20, false, false, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 20, 20, false, false, None, false);
         assert_eq!(result, None);
 
         // Move right with obstacles
         set_cell_value(&mut gc, sheet_id, "obstacle2", 4, 1);
         set_cell_value(&mut gc, sheet_id, "obstacle3", 5, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 6, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(6, 1, 1), (7, 1, 2), (8, 1, 3)]);
 
         // Move left with obstacles
-        let result = gc.move_code_cell_horizontally(sheet_id, 6, 1, false, true, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 6, 1, false, true, None, false);
         assert_eq!(result, Some(Pos { x: 1, y: 1 }));
         // Spill error!
         // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
 
         // Move a single-cell code output
         set_formula_code_cell(&mut gc, sheet_id, "42", 15, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 15, 1, false, false, None);
+        let result = gc.move_code_cell_horizontally(sheet_id, 15, 1, false, false, None, false);
         assert_eq!(result, Some(Pos { x: 16, y: 1 }));
         assert_cell_values(&gc, sheet_id, &[(16, 1, 42)]);
         assert_empty_cells(&gc, sheet_id, &[(15, 1)]);
 
         // Undo and redo
-        gc.undo(None);
+        gc.undo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(15, 1, 42)]);
-        gc.redo(None);
+        gc.redo(1, None, false);
         assert_cell_values(&gc, sheet_id, &[(result.unwrap().x, 1, 42)]);
     }
 
@@ -1146,6 +1190,7 @@ mod test {
             r#"q.cells("A1")"#.to_string(),
             None,
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -1154,6 +1199,7 @@ mod test {
             r#"return q.cells("A1");"#.to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -1167,6 +1213,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         assert_cell_values(&gc, sheet_id, &[(2, 2, 1)]);
@@ -1207,6 +1254,7 @@ mod test {
             r#"q.cells("A1")"#.to_string(),
             None,
             None,
+            false,
         );
         mock_calculation_complete(&mut gc);
 
@@ -1216,6 +1264,7 @@ mod test {
             r#"return q.cells("A1");"#.to_string(),
             None,
             None,
+            false,
         );
         mock_calculation_complete(&mut gc);
 
@@ -1230,6 +1279,7 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
         // complete JS & Python code runs in the paste
         mock_calculation_complete(&mut gc);
@@ -1245,6 +1295,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
         // complete JS & Python code runs in the paste
         mock_calculation_complete(&mut gc);
@@ -1275,6 +1326,7 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1309,6 +1361,7 @@ mod test {
             js_clipboard.clone(),
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1344,6 +1397,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1394,6 +1448,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1445,6 +1500,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);

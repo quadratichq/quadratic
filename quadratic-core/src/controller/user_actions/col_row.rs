@@ -9,14 +9,20 @@ use crate::{
 };
 
 impl GridController {
-    pub fn delete_columns(&mut self, sheet_id: SheetId, columns: Vec<i64>, cursor: Option<String>) {
+    pub fn delete_columns(
+        &mut self,
+        sheet_id: SheetId,
+        columns: Vec<i64>,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = vec![Operation::DeleteColumns {
             sheet_id,
             columns,
             ignore_tables: false,
             copy_formats: CopyFormats::After,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
     /// Note the after is providing the source column, not the direction of the
@@ -30,6 +36,7 @@ impl GridController {
         count: u32,
         after: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let mut ops = vec![];
         for i in 0..count as i64 {
@@ -50,17 +57,23 @@ impl GridController {
             });
         }
 
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
-    pub fn delete_rows(&mut self, sheet_id: SheetId, rows: Vec<i64>, cursor: Option<String>) {
+    pub fn delete_rows(
+        &mut self,
+        sheet_id: SheetId,
+        rows: Vec<i64>,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = vec![Operation::DeleteRows {
             sheet_id,
             rows,
             copy_formats: CopyFormats::None,
             ignore_tables: false,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
     /// Note the after is providing the source row, not the direction of the
@@ -74,6 +87,7 @@ impl GridController {
         count: u32,
         after: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let mut ops = vec![];
         for i in 0..count as i64 {
@@ -93,7 +107,7 @@ impl GridController {
                 selection: A1Selection::rows(sheet_id, row, row - 1 + count as i64),
             });
         }
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
     pub fn move_columns(
@@ -103,6 +117,7 @@ impl GridController {
         col_end: i64,
         to: i64,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = vec![Operation::MoveColumns {
             sheet_id,
@@ -110,7 +125,7 @@ impl GridController {
             col_end,
             to,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
     pub fn move_rows(
@@ -120,6 +135,7 @@ impl GridController {
         row_end: i64,
         to: i64,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = vec![Operation::MoveRows {
             sheet_id,
@@ -127,7 +143,7 @@ impl GridController {
             row_end,
             to,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 }
 
@@ -154,6 +170,7 @@ mod tests {
             "1".to_string(),
             None,
             None,
+            false,
         );
 
         assert_code_language(
@@ -163,12 +180,12 @@ mod tests {
             "1".to_string(),
         );
 
-        gc.delete_rows(sheet_id, vec![1], None);
+        gc.delete_rows(sheet_id, vec![1], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.cell_value(Pos::new(1, 1)), None);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         assert_code_language(
             &gc,
@@ -187,6 +204,7 @@ mod tests {
             SheetPos::new(sheet_id, 1, 1),
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -195,6 +213,7 @@ mod tests {
             "5".to_string(),
             None,
             None,
+            false,
         );
 
         assert_code_language(
@@ -204,7 +223,7 @@ mod tests {
             "5".to_string(),
         );
 
-        gc.delete_rows(sheet_id, vec![2], None);
+        gc.delete_rows(sheet_id, vec![2], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -212,7 +231,7 @@ mod tests {
             Some(CellValue::Number(3.into()))
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -252,7 +271,7 @@ mod tests {
             Some("red".to_string())
         );
 
-        gc.insert_columns(sheet_id, 1, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -276,7 +295,7 @@ mod tests {
             Some("blue".to_string())
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -317,7 +336,7 @@ mod tests {
             }
         );
 
-        gc.insert_columns(sheet_id, 2, 1, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -341,7 +360,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -383,7 +402,7 @@ mod tests {
             }
         );
 
-        gc.insert_rows(sheet_id, 1, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -407,7 +426,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -449,7 +468,7 @@ mod tests {
             }
         );
 
-        gc.insert_rows(sheet_id, 2, 1, false, None);
+        gc.insert_rows(sheet_id, 2, 1, false, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -473,7 +492,7 @@ mod tests {
             }
         );
 
-        gc.undo(None);
+        gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.format(pos![A1]),
@@ -493,12 +512,12 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         // Set up formatting in column A5 and A10
-        gc.set_cell_value(pos![sheet_id!C1], "hello".to_string(), None);
-        gc.set_bold(&A1Selection::test_a1("C5"), Some(true), None)
+        gc.set_cell_value(pos![sheet_id!C1], "hello".to_string(), None, false);
+        gc.set_bold(&A1Selection::test_a1("C5"), Some(true), None, false)
             .unwrap();
 
         // Insert 3 columns after C
-        gc.insert_columns(sheet_id, 4, 3, false, None);
+        gc.insert_columns(sheet_id, 4, 3, false, None, false);
         assert_display_cell_value_first_sheet(&gc, 3, 1, "hello");
         assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
@@ -506,10 +525,10 @@ mod tests {
         assert_cell_format_bold(&gc, sheet_id, 6, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 7, 5, false);
 
-        gc.undo(None);
+        gc.undo(1, None, false);
 
         // insert 3 columns before C
-        gc.insert_columns(sheet_id, 3, 3, true, None);
+        gc.insert_columns(sheet_id, 3, 3, true, None, false);
         assert_display_cell_value_first_sheet(&gc, 6, 1, "hello");
         assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 4, 5, true);

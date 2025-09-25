@@ -85,7 +85,8 @@ export class HtmlCellResizing {
         this.htmlCell.x,
         this.htmlCell.y,
         this.endX - this.htmlCell.x,
-        this.endY - this.htmlCell.y
+        this.endY - this.htmlCell.y,
+        false
       )
       .then((response) => {
         if (!response || !response.result) {

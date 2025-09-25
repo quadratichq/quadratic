@@ -261,7 +261,7 @@ mod test {
             sheet_pos: pos![sheet_id!A1],
             values: cell_values,
         }];
-        gc.start_user_transaction(op, None, TransactionName::SetCells);
+        gc.start_user_ai_transaction(op, None, TransactionName::SetCells, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

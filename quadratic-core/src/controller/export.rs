@@ -508,8 +508,10 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         // avoid collision with the default sheet
         gc.grid.update_sheet_name(sheet_id, "ignore").unwrap();
+        gc.set_cell_value(pos![sheet_id!A1], "ignore".into(), None, false);
 
-        gc.import_excel(&excel.unwrap(), file_name, None).unwrap();
+        gc.import_excel(&excel.unwrap(), file_name, None, false)
+            .unwrap();
         let sheet_id = gc.sheet_ids()[1];
         let pos = Pos { x: 1, y: 1 };
 
@@ -564,6 +566,7 @@ mod tests {
             pos.to_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc_1.sheet(sheet_id_1).cell_value(pos),
@@ -579,6 +582,7 @@ mod tests {
                 line: CellBorderLine::Line2,
             }),
             None,
+            false,
         );
 
         // Test that export succeeds
@@ -588,7 +592,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the cell value is the same
@@ -615,6 +620,7 @@ mod tests {
             pos.to_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc_1.sheet(sheet_id_1).cell_value(pos),
@@ -632,6 +638,7 @@ mod tests {
                         line: CellBorderLine::Line1,
                     }),
                     None,
+                    false,
                 );
             }
         }
@@ -643,7 +650,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the cell value is the same
@@ -664,7 +672,8 @@ mod tests {
         let file = include_bytes!("../../test-files/styles.xlsx");
 
         let mut gc_1 = GridController::new_blank();
-        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_1 = gc_1.sheet_ids()[0];
 
         // Test that export succeeds
@@ -674,7 +683,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the columns are the same
@@ -695,7 +705,8 @@ mod tests {
         let file = include_bytes!("../../test-files/borders.xlsx");
 
         let mut gc_1 = GridController::new_blank();
-        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_1 = gc_1.sheet_ids()[0];
 
         // Test that export succeeds
@@ -705,7 +716,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Compare the borders of the two sheets

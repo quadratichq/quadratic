@@ -465,7 +465,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None, false);
 
         test_create_data_table(&mut gc, sheet_id, pos![E5], 3, 3);
         test_create_data_table(&mut gc, sheet_id, pos![J10], 3, 3);
@@ -484,7 +484,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None, false);
 
         test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
 

@@ -16,9 +16,10 @@ impl GridController {
         sheet_name: Option<String>,
         insert_before_sheet_name: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
-            self.add_sheet(sheet_name, insert_before_sheet_name, cursor);
+            self.add_sheet(sheet_name, insert_before_sheet_name, cursor, is_ai);
             Ok(None)
         })
     }
@@ -30,22 +31,28 @@ impl GridController {
         sheet_id: String,
         name_of_new_sheet: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            self.duplicate_sheet(sheet_id, name_of_new_sheet, cursor);
+            self.duplicate_sheet(sheet_id, name_of_new_sheet, cursor, is_ai);
             Ok(None)
         })
     }
 
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]
-    pub fn js_delete_sheet(&mut self, sheet_id: String, cursor: Option<String>) -> JsValue {
+    pub fn js_delete_sheet(
+        &mut self,
+        sheet_id: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> JsValue {
         capture_core_error(|| {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            self.delete_sheet(sheet_id, cursor);
+            self.delete_sheet(sheet_id, cursor, is_ai);
             Ok(None)
         })
     }
@@ -58,6 +65,7 @@ impl GridController {
         sheet_id: String,
         to_before: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id =
@@ -69,7 +77,7 @@ impl GridController {
                 ),
                 None => None,
             };
-            self.move_sheet(sheet_id, to_before, cursor);
+            self.move_sheet(sheet_id, to_before, cursor, is_ai);
             Ok(None)
         })
     }
@@ -115,11 +123,12 @@ impl GridController {
         sheet_id: String,
         name: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            self.set_sheet_name(sheet_id, name, cursor);
+            self.set_sheet_name(sheet_id, name, cursor, is_ai);
             Ok(None)
         })
     }
@@ -130,11 +139,12 @@ impl GridController {
         sheet_id: String,
         color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            self.set_sheet_color(sheet_id, color, cursor);
+            self.set_sheet_color(sheet_id, color, cursor, is_ai);
             Ok(None)
         })
     }
@@ -144,12 +154,13 @@ impl GridController {
         &mut self,
         sheet_names_to_color: JsValue,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_names_to_color =
                 serde_wasm_bindgen::from_value::<Vec<JsSheetNameToColor>>(sheet_names_to_color)
                     .map_err(|e| format!("Invalid sheet names to color: {e}"))?;
-            self.set_sheets_color(sheet_names_to_color, cursor);
+            self.set_sheets_color(sheet_names_to_color, cursor, is_ai);
             Ok(None)
         })
     }

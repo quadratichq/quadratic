@@ -223,6 +223,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops: Vec<Operation> = vec![];
         let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
+        let xlsx_range_to_pos = |(row, col)| Pos {
+            x: col as i64 + 1,
+            y: row as i64 + 1,
+        };
 
         // detect file extension
         let path = Path::new(file_name);
@@ -242,17 +246,6 @@ impl GridController {
         };
 
         let sheets = workbook.sheet_names().to_owned();
-
-        for new_sheet_name in sheets.iter() {
-            if self.try_sheet_from_name(new_sheet_name).is_some() {
-                bail!("Sheet with name \"{new_sheet_name}\" already exists");
-            }
-        }
-
-        let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64 + 1,
-            y: row as i64 + 1,
-        };
 
         // total rows for calculating import progress
         let total_rows = sheets
@@ -276,14 +269,14 @@ impl GridController {
         let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
 
         // add data from excel file to grid
-        for sheet_name in sheets {
+        for sheet_name in sheets.iter() {
             let sheet = gc
-                .try_sheet_from_name(&sheet_name)
+                .try_sheet_from_name(sheet_name)
                 .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
             // values
-            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_range(sheet_name).map_err(error)?;
             let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -353,7 +346,7 @@ impl GridController {
             }
 
             // formulas
-            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
+            let formula = workbook.worksheet_formula(sheet_name).map_err(error)?;
             let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -410,7 +403,7 @@ impl GridController {
             }
 
             // styles
-            let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_style(sheet_name).map_err(error)?;
             let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
@@ -501,7 +494,7 @@ impl GridController {
             }
 
             // layout
-            let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
+            let layout = workbook.worksheet_layout(sheet_name).map_err(error)?;
             let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
             for column_width in layout.column_widths.iter() {
@@ -523,10 +516,33 @@ impl GridController {
         let compute_ops = gc.rerun_all_code_cells_operations();
         gc.server_apply_transaction(compute_ops, None);
 
-        for sheet in gc.grid.sheets.into_values() {
-            ops.push(Operation::AddSheet {
-                sheet: Box::new(sheet),
-            });
+        // handle sheet name duplicates from excel files
+        let mut gc_duplicate_name = GridController::new_blank();
+        for sheet_name in self.sheet_names() {
+            gc_duplicate_name.server_add_sheet_with_name(sheet_name.to_owned());
+        }
+        for new_sheet_name in sheets.iter() {
+            let unique_sheet_name = gc_duplicate_name.grid.unique_sheet_name(new_sheet_name);
+            let sheet_id = gc
+                .try_sheet_from_name(new_sheet_name)
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?
+                .id;
+            gc.grid.update_sheet_name(sheet_id, &unique_sheet_name)?;
+            gc_duplicate_name.server_add_sheet_with_name(unique_sheet_name);
+        }
+
+        for (index, sheet) in gc.grid.sheets.into_values().enumerate() {
+            // replace the first sheet if the grid is empty
+            if index == 0 && self.grid.is_empty() {
+                ops.push(Operation::ReplaceSheet {
+                    sheet_id: self.grid.first_sheet_id(),
+                    sheet: Box::new(sheet),
+                });
+            } else {
+                ops.push(Operation::AddSheet {
+                    sheet: Box::new(sheet),
+                });
+            }
         }
 
         Ok(ops)
@@ -1436,6 +1452,7 @@ mod test {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -1460,7 +1477,8 @@ mod test {
     fn import_xlsx() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xlsx", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -1487,7 +1505,8 @@ mod test {
     fn import_xls() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xls");
-        gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xls", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -1502,7 +1521,7 @@ mod test {
     fn import_excel_invalid() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
+        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None, false);
         assert!(result.is_err());
     }
 
@@ -1519,6 +1538,7 @@ mod test {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
         )
         .unwrap();
 
@@ -1599,7 +1619,7 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+        gc.import_excel(file.as_ref(), "date_time.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -1710,6 +1730,7 @@ mod test {
             None,
             Some(b','),
             Some(true),
+            false,
         )
         .unwrap();
 
@@ -1738,7 +1759,7 @@ mod test {
     fn import_excel_dependent_formulas() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -1812,6 +1833,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1829,6 +1851,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1846,6 +1869,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1854,7 +1878,8 @@ mod test {
     fn import_xlsx_styles() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/styles.xlsx");
-        gc.import_excel(file.as_ref(), "styles.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "styles.xlsx", None, false)
+            .unwrap();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
 
@@ -1889,7 +1914,7 @@ mod test {
     fn import_xlsx_number_format_edge_cases() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None, false)
             .unwrap();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
@@ -1978,7 +2003,7 @@ mod test {
     fn import_excel_borders() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/borders.xlsx");
-        gc.import_excel(file.as_ref(), "borders.xlsx", None)
+        gc.import_excel(file.as_ref(), "borders.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;

@@ -164,7 +164,11 @@ impl GridController {
                 Operation::AddSheetSchema { .. } => Self::handle_execution_operation_result(
                     self.execute_add_sheet_schema(transaction, op),
                 ),
-                Operation::DeleteSheet { .. } => self.execute_delete_sheet(transaction, op),
+                Operation::DeleteSheet { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_sheet(transaction, op),
+                    );
+                }
                 Operation::ReorderSheet { .. } => self.execute_reorder_sheet(transaction, op),
                 Operation::SetSheetName { .. } => {
                     Self::handle_execution_operation_result(
@@ -173,6 +177,11 @@ impl GridController {
                 }
                 Operation::SetSheetColor { .. } => self.execute_set_sheet_color(transaction, op),
                 Operation::DuplicateSheet { .. } => self.execute_duplicate_sheet(transaction, op),
+                Operation::ReplaceSheet { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_replace_sheet(transaction, op),
+                    );
+                }
 
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),

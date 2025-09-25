@@ -257,6 +257,7 @@ mod tests {
             },
             "causes spill error".into(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -268,6 +269,7 @@ mod tests {
             "1 + 1".into(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -279,6 +281,7 @@ mod tests {
             "{1, 2, 3}".into(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let run = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();

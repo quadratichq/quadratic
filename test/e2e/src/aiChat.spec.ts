@@ -662,7 +662,7 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
   await expect(page.locator(`:text("Cancel generating")`).first()).not.toBeVisible({ timeout: 60 * 2 * 1000 });
 
   // Navigate to "Sheet 1" by clicking the "Sheet 1" div element
-  await page.locator('div[data-title="Sheet 1"]').click({ timeout: 60 * 1000 });
+  await page.locator('div[data-title="Sheet1"]').click({ timeout: 60 * 1000 });
 
   // Click the "add" icon to add the new sheet to the chat
   await page.locator('span.material-symbols-outlined:has-text("add") >>nth=1').click({ timeout: 60 * 1000 });

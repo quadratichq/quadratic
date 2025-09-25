@@ -688,6 +688,7 @@ mod test {
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.columns_bounds(1, 2, true), Some((2, 3)));
@@ -708,6 +709,7 @@ mod test {
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.rows_bounds(0, 2, true), Some((1, 3)));
@@ -728,6 +730,7 @@ mod test {
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.column_bounds(1, true), Some((2, 3)));
@@ -748,6 +751,7 @@ mod test {
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(2, true), Some((1, 3)));
@@ -766,6 +770,7 @@ mod test {
             },
             "test".to_string(),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(2, true), Some((1, 1)));
@@ -776,16 +781,17 @@ mod test {
     fn test_row_bounds_with_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None, false);
         gc.set_code_cell(
             (2, 1, sheet_id).into(),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,
             None,
+            false,
         );
-        gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);
-        gc.set_bold(&A1Selection::test_a1("D1"), Some(true), None)
+        gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None, false);
+        gc.set_bold(&A1Selection::test_a1("D1"), Some(true), None, false)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(1, true), Some((1, 3)));
@@ -796,10 +802,10 @@ mod test {
     fn find_last_data_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((1, 2, sheet_id).into(), "b".to_string(), None);
-        gc.set_cell_value((1, 3, sheet_id).into(), "c".to_string(), None);
-        gc.set_cell_value((1, 5, sheet_id).into(), "e".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None, false);
+        gc.set_cell_value((1, 2, sheet_id).into(), "b".to_string(), None, false);
+        gc.set_cell_value((1, 3, sheet_id).into(), "c".to_string(), None, false);
+        gc.set_cell_value((1, 5, sheet_id).into(), "e".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -829,6 +835,7 @@ mod test {
                 error: Default::default(),
             },
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -848,6 +855,7 @@ mod test {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -880,9 +888,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         // Set up some cells
-        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((3, 1, sheet_id).into(), "b".to_string(), None);
-        gc.set_cell_value((5, 1, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None, false);
+        gc.set_cell_value((3, 1, sheet_id).into(), "b".to_string(), None, false);
+        gc.set_cell_value((5, 1, sheet_id).into(), "c".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -910,8 +918,8 @@ mod test {
         assert_eq!(result, 6);
 
         // With multiple obstacles
-        gc.set_cell_value((7, 1, sheet_id).into(), "d".to_string(), None);
-        gc.set_cell_value((9, 1, sheet_id).into(), "e".to_string(), None);
+        gc.set_cell_value((7, 1, sheet_id).into(), "d".to_string(), None, false);
+        gc.set_cell_value((9, 1, sheet_id).into(), "e".to_string(), None, false);
         let rect = Rect::from_numbers(0, 0, 1, 1);
         let sheet = gc.sheet(sheet_id);
         let result = sheet.find_next_column_for_rect(0, 1, false, rect);
@@ -935,9 +943,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         // Set up some cells
-        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((1, 3, sheet_id).into(), "b".to_string(), None);
-        gc.set_cell_value((1, 5, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None, false);
+        gc.set_cell_value((1, 3, sheet_id).into(), "b".to_string(), None, false);
+        gc.set_cell_value((1, 5, sheet_id).into(), "c".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -965,8 +973,8 @@ mod test {
         assert_eq!(result, 6);
 
         // With multiple obstacles
-        gc.set_cell_value((1, 7, sheet_id).into(), "d".to_string(), None);
-        gc.set_cell_value((1, 9, sheet_id).into(), "e".to_string(), None);
+        gc.set_cell_value((1, 7, sheet_id).into(), "d".to_string(), None, false);
+        gc.set_cell_value((1, 9, sheet_id).into(), "e".to_string(), None, false);
         let rect = Rect::from_numbers(0, 0, 1, 1);
         let sheet = gc.sheet(sheet_id);
         let result = sheet.find_next_row_for_rect(0, 1, false, rect);
@@ -1056,6 +1064,7 @@ mod test {
                 "15".to_string(),
                 None,
                 None,
+                false,
             );
         }
         gc.set_code_cell(
@@ -1064,6 +1073,7 @@ mod test {
             "{1,2,3}".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
