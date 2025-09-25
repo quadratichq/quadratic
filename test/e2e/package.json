@@ -23,7 +23,7 @@
   "devDependencies": {
     "@playwright/test": "1.55.0",
     "@types/node": "^24.3.1",
-    "typescript": "^5.8.2",
+    "typescript": "^5.9.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

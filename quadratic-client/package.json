@@ -137,7 +137,7 @@
     "sass": "^1.86.3",
     "tailwindcss": "^3.3.5",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.8.2",
+    "typescript": "^5.9.2",
     "vite": "^7.0.3",
     "vite-plugin-checker": "^0.10.0",
     "vite-plugin-svgr": "^4.3.0",
