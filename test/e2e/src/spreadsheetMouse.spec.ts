@@ -29,7 +29,7 @@ test('Mouse Selecting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Resizing cells with errors', async ({ page }) => {
+test('Resizing cells with errors', async ({ page }) => {
   // Constants
   const fileName = 'Resizing cells with errors';
 
