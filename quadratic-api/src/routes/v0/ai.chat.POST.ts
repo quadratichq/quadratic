@@ -127,14 +127,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...quadraticContext, ...args.messages];
   }
 
-  const parsedResponse = await handleAIRequest(
+  const parsedResponse = await handleAIRequest({
     modelKey,
     args,
     isOnPaidPlan,
     exceededBillingLimit,
-    res,
-    abortController.signal
-  );
+    response: res,
+    signal: abortController.signal,
+  });
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);

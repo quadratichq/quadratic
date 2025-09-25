@@ -227,14 +227,13 @@ ${userTextPrompt}
       useQuadraticContext: false,
     };
 
-    const parsedResponse = await handleAIRequest(
-      DEFAULT_MODEL_ROUTER_MODEL,
+    const parsedResponse = await handleAIRequest({
+      modelKey: DEFAULT_MODEL_ROUTER_MODEL,
       args,
       isOnPaidPlan,
       exceededBillingLimit,
-      undefined,
-      signal
-    );
+      signal,
+    });
 
     const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
       (toolCall) => toolCall.name === AITool.SetAIModel

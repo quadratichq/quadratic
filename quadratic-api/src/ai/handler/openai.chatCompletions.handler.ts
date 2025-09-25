@@ -1,9 +1,7 @@
-import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AIRequestHelperArgs,
   AzureOpenAIModelKey,
   BasetenModelKey,
   FireworksModelKey,
@@ -16,16 +14,21 @@ import {
   parseOpenAIChatCompletionsResponse,
   parseOpenAIChatCompletionsStream,
 } from '../helpers/openai.chatCompletions.helper';
+import type { HandleAIRequestArgs } from './ai.handler';
 
-export const handleOpenAIChatCompletionsRequest = async (
-  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  openai: OpenAI,
-  response?: Response,
-  signal?: AbortSignal
-): Promise<ParsedAIResponse | undefined> => {
+interface HandleOpenAIChatCompletionsRequestArgs extends Omit<HandleAIRequestArgs, 'modelKey'> {
+  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey;
+  openai: OpenAI;
+}
+export const handleOpenAIChatCompletionsRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+  openai,
+}: HandleOpenAIChatCompletionsRequestArgs): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { messages, tools, tool_choice } = getOpenAIChatCompletionsApiArgs(

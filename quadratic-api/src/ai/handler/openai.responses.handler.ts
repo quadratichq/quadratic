@@ -1,26 +1,30 @@
-import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type {
   ResponseCreateParamsNonStreaming,
   ResponseCreateParamsStreaming,
 } from 'openai/resources/responses/responses';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, OpenAIModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type { AzureOpenAIModelKey, OpenAIModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import {
   getOpenAIResponsesApiArgs,
   parseOpenAIResponsesResponse,
   parseOpenAIResponsesStream,
 } from '../helpers/openai.responses.helper';
+import type { HandleAIRequestArgs } from './ai.handler';
 
-export const handleOpenAIResponsesRequest = async (
-  modelKey: OpenAIModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  openai: OpenAI,
-  response?: Response,
-  signal?: AbortSignal
-): Promise<ParsedAIResponse | undefined> => {
+interface HandleOpenAIResponsesRequestArgs extends Omit<HandleAIRequestArgs, 'modelKey'> {
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey;
+  openai: OpenAI;
+}
+export const handleOpenAIResponsesRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+  openai,
+}: HandleOpenAIResponsesRequestArgs): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
 

@@ -32,13 +32,13 @@ import {
   azureOpenAI,
   baseten,
   bedrock,
-  bedrock_anthropic,
+  bedrockAnthropic,
   fireworks,
   geminiai,
-  open_router,
   openai,
-  vertex_anthropic,
+  openRouter,
   vertexai,
+  vertexAnthropic,
   xai,
 } from '../providers';
 import { handleAnthropicRequest } from './anthropic.handler';
@@ -47,136 +47,145 @@ import { handleGenAIRequest } from './genai.handler';
 import { handleOpenAIChatCompletionsRequest } from './openai.chatCompletions.handler';
 import { handleOpenAIResponsesRequest } from './openai.responses.handler';
 
-export const handleAIRequest = async (
-  modelKey: AIModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  response?: Response,
-  signal?: AbortSignal
-): Promise<ParsedAIResponse | undefined> => {
+export interface HandleAIRequestArgs {
+  modelKey: AIModelKey;
+  args: AIRequestHelperArgs;
+  isOnPaidPlan: boolean;
+  exceededBillingLimit: boolean;
+  response?: Response;
+  signal?: AbortSignal;
+}
+export const handleAIRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+}: HandleAIRequestArgs): Promise<ParsedAIResponse | undefined> => {
   try {
     let parsedResponse: ParsedAIResponse | undefined;
 
     if (isVertexAIAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        vertex_anthropic,
         response,
-        signal
-      );
+        signal,
+        anthropic: vertexAnthropic,
+      });
     } else if (isBedrockAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        bedrock_anthropic,
         response,
-        signal
-      );
+        signal,
+        anthropic: bedrockAnthropic,
+      });
     } else if (isAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
         anthropic,
-        response,
-        signal
-      );
+      });
     } else if (isOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIResponsesRequest(
+      parsedResponse = await handleOpenAIResponsesRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
         openai,
-        response,
-        signal
-      );
+      });
     } else if (isAzureOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIResponsesRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        azureOpenAI,
         response,
-        signal
-      );
+        signal,
+        openai: azureOpenAI,
+      });
     } else if (isXAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        xai,
         response,
-        signal
-      );
+        signal,
+        openai: xai,
+      });
     } else if (isBasetenModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        baseten,
         response,
-        signal
-      );
+        signal,
+        openai: baseten,
+      });
     } else if (isFireworksModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        fireworks,
         response,
-        signal
-      );
+        signal,
+        openai: fireworks,
+      });
     } else if (isOpenRouterModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        open_router,
         response,
-        signal
-      );
+        signal,
+        openai: openRouter,
+      });
     } else if (isVertexAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(
+      parsedResponse = await handleGenAIRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        vertexai,
         response,
-        signal
-      );
+        signal,
+        genai: vertexai,
+      });
     } else if (isGenAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(
+      parsedResponse = await handleGenAIRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        geminiai,
         response,
-        signal
-      );
+
+        genai: geminiai,
+      });
     } else if (isBedrockModel(modelKey)) {
-      parsedResponse = await handleBedrockRequest(
+      parsedResponse = await handleBedrockRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
         bedrock,
-        response
-      );
+      });
     } else {
       throw new Error(`Model not supported: ${modelKey}`);
     }
@@ -217,7 +226,14 @@ export const handleAIRequest = async (
         : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
 
       if (modelKey !== backupModelKey) {
-        return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response, signal);
+        return handleAIRequest({
+          modelKey: backupModelKey,
+          args,
+          isOnPaidPlan,
+          exceededBillingLimit,
+          response,
+          signal,
+        });
       }
     }
 
