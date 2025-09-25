@@ -23,8 +23,7 @@ COPY ./quadratic-shared/package.json ./quadratic-shared/
 # copy prisma schema and migrations for postinstall step
 COPY ./quadratic-api/prisma/. ./quadratic-api/prisma
 
-RUN npm install --no-fund
-RUN npm audit fix
+RUN npm install --no-audit --no-fund
 RUN npm run postinstall --workspace=quadratic-api
 
 COPY quadratic-api ./quadratic-api
