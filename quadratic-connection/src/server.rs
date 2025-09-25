@@ -152,7 +152,7 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/mixpanel/test", post(test_mixpanel))
         .route("/mixpanel/query", post(query_datafusion))
         .route("/mixpanel/schema/:id", get(schema_datafusion))
-        .route("/mixpanel/sync/:id", post(sync_mixpanel))
+        .route("/mixpanel/sync/:id", get(sync_mixpanel))
         //
         // proxy
         .route("/proxy", any(proxy))

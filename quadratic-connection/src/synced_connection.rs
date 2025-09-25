@@ -42,7 +42,7 @@ pub(crate) async fn process_mixpanel_connection(
     connection: MixpanelConnection,
     connection_id: Uuid,
 ) -> Result<()> {
-    let s3 = settings
+    let object_store = settings
         .object_store
         .clone()
         .ok_or_else(|| ConnectionError::Config("Object store not found".to_string()))?;
@@ -54,8 +54,10 @@ pub(crate) async fn process_mixpanel_connection(
     let mut start_date = chrono::Utc::now().date_naive() - chrono::Duration::days(30);
 
     // if we have any objects, use the last date processed
-    if let Ok(Some(s3_start_date)) = get_last_date_processed(&s3, None).await {
-        start_date = s3_start_date;
+    if let Ok(Some(object_store_start_date)) =
+        get_last_date_processed(&object_store, Some(&prefix)).await
+    {
+        start_date = object_store_start_date;
     };
 
     let MixpanelConnection {
@@ -71,8 +73,13 @@ pub(crate) async fn process_mixpanel_connection(
     );
 
     let params = ExportParams::new(start_date, end_date);
-    let parquet_data = client.export_events(params).await.unwrap();
-    let num_files = upload(&s3, &prefix, parquet_data).await.unwrap();
+    let parquet_data = client
+        .export_events(params)
+        .await
+        .map_err(|e| ConnectionError::Synced(format!("Failed to export events: {}", e)))?;
+    let num_files = upload(&object_store, &prefix, parquet_data)
+        .await
+        .map_err(|e| ConnectionError::Synced(format!("Failed to upload events: {}", e)))?;
 
     tracing::info!(
         "Processed {} Mixpanel files in {:?}",

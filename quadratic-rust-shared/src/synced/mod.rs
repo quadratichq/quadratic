@@ -29,6 +29,10 @@ fn parse_file_date(string_date: &str) -> Result<NaiveDate> {
 
 /// Get the date from the location of the file.
 fn get_date_from_location(location: &str) -> Result<NaiveDate> {
+    if !location.to_ascii_lowercase().contains(".parquet") {
+        return Err(synced_error("Not a parquet file"));
+    }
+
     let parts = location.split('/').collect::<Vec<&str>>();
     let string_date = parts
         .last()
@@ -45,8 +49,8 @@ pub async fn get_last_date_processed(
     let objects = list_objects(object_store, prefix).await?;
     let last_date = objects
         .iter()
-        .map(|o| get_date_from_location(&o.location.to_string()))
-        .collect::<Result<Vec<NaiveDate>>>()?
+        .flat_map(|o| get_date_from_location(&o.location.to_string()))
+        .collect::<Vec<NaiveDate>>()
         .iter()
         .max()
         .cloned();

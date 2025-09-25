@@ -50,6 +50,9 @@ pub enum ConnectionError {
     #[error("SSH error: {0}")]
     Ssh(String),
 
+    #[error("Synced error: {0}")]
+    Synced(String),
+
     #[error("unknown error: {0}")]
     Unknown(String),
 }

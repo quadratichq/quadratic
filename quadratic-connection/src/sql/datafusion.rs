@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
+    connection::get_api_connection,
     error::{ConnectionError, Result},
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
@@ -71,7 +72,7 @@ pub(crate) async fn query(
     let team_id = get_team_id_header(&headers)?;
     let connection_id = sql_query.connection_id;
     let connection = get_connection(&state, &claims, &connection_id, &team_id, &headers).await?;
-    println!("connection: {:?}", connection);
+
     query_generic::<DatafusionConnection>(connection.type_details, state, sql_query).await
 }
 
@@ -96,10 +97,19 @@ pub(crate) async fn sync_mixpanel(
     claims: Claims,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
+    let api_connection = get_api_connection::<MixpanelConnection>(
+        &state,
+        "",
+        &claims.email,
+        &id,
+        &team_id,
+        &headers,
+    )
+    .await?;
     let mixpanel_connection = MixpanelConnection {
-        api_secret: connection.type_details.access_key_id,
-        project_id: connection.type_details.bucket,
+        api_secret: api_connection.type_details.api_secret,
+        project_id: api_connection.type_details.project_id,
     };
-    process_mixpanel_connection(&state.settings, mixpanel_connection, connection.uuid).await
+
+    process_mixpanel_connection(&state.settings, mixpanel_connection, id).await
 }

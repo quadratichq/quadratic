@@ -38,6 +38,17 @@ const StaticIpsSchema = z.object({
 });
 type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
+// This might get called on a public file (where the user might not be
+// logged in but can still access the file). If they're not logged in,
+// we won't make the request (to prevent the redirect). It'll fail silently
+const requireLogin = async () => {
+  const loggedIn = await authClient.isAuthenticated();
+  if (!loggedIn) {
+    console.log("User is not logged in, so we won't make a request to the connection service.");
+    return null;
+  }
+};
+
 export const connectionClient = {
   schemas: {
     // ignore case of connection type
@@ -67,14 +78,7 @@ export const connectionClient = {
       forceCacheRefresh: boolean = false,
       timeout: number = 60000
     ): Promise<SqlSchemaResponse | null> => {
-      // This might get called on a public file (where the user might not be
-      // logged in but can still access the file). If they're not logged in,
-      // we won't make the request (to prevent the redirect). It'll fail silently
-      const loggedIn = await authClient.isAuthenticated();
-      if (!loggedIn) {
-        console.log("User is not logged in, so we won't make a request to the connection service.");
-        return null;
-      }
+      await requireLogin();
 
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);
@@ -90,6 +94,43 @@ export const connectionClient = {
       }
       const data = await res.json();
       return SqlSchema.parse(data);
+    },
+  },
+  sync: {
+    get: async (
+      connectionType: 'mixpanel' | 'MIXPANEL',
+      connectionId: string,
+      teamUuid: string,
+      timeout: number = 10 * 60 * 1000 // 10 minutes
+    ) => {
+      try {
+        await requireLogin();
+
+        const typeLower = connectionType.toLowerCase();
+        const headers = new Headers(await jwtHeader());
+        headers.set('X-Team-Id', teamUuid);
+
+        const res = await fetch(`${API_URL}/${typeLower}/sync/${connectionId}`, {
+          method: 'GET',
+          headers,
+          signal: AbortSignal.timeout(timeout),
+        });
+
+        if (res.status !== 200) {
+          throw new Error('Failed to sync the connection');
+        }
+
+        return {
+          synced: true,
+          message: 'Connection synced successfully',
+        };
+      } catch (err) {
+        console.error('Failed to sync the connection', err);
+        return {
+          synced: false,
+          message: 'Failed to sync the connection',
+        };
+      }
     },
   },
   test: {
