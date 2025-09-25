@@ -53,6 +53,7 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
   cancelDisabled: boolean;
+  uiContext: 'analyst' | 'assistant';
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
@@ -88,6 +89,7 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
       waitingOnMessageIndex,
       filesSupportedText,
+      uiContext,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -371,6 +373,7 @@ export const AIUserMessageForm = memo(
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
+            uiContext={uiContext}
           />
         </form>
       </div>
@@ -449,6 +452,7 @@ interface AIUserMessageFormFooterProps {
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
+  uiContext: AIUserMessageFormProps['uiContext'];
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -466,6 +470,7 @@ const AIUserMessageFormFooter = memo(
     context,
     setContext,
     filesSupportedText,
+    uiContext,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -499,13 +504,14 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-
-            <AIUserMessageFormConnectionsButton
-              disabled={disabled}
-              context={context}
-              setContext={setContext}
-              textareaRef={textareaRef}
-            />
+            {uiContext === 'analyst' && (
+              <AIUserMessageFormConnectionsButton
+                disabled={disabled}
+                context={context}
+                setContext={setContext}
+                textareaRef={textareaRef}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">

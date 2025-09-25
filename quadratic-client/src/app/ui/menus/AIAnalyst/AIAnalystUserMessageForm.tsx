@@ -83,6 +83,7 @@ export const AIAnalystUserMessageForm = memo(
           waitingOnMessageIndex={waitingOnMessageIndex}
           maxHeight="275px"
           filesSupportedText="PDF, Image, CSV, Excel and Parquet"
+          uiContext="analyst"
         />
 
         <AIAnalystEmptyStateWaypoint />

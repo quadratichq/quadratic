@@ -48,6 +48,7 @@ export const AIAssistantUserMessageForm = memo(
         submitPrompt={handleSubmit}
         waitingOnMessageIndex={waitingOnMessageIndex}
         filesSupportedText="Image"
+        uiContext="assistant"
       />
     );
   })
