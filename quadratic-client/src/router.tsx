@@ -122,6 +122,7 @@ export const router = createBrowserRouter(
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
+              {/* TODO: Import connections path downloads all these? */}
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')}>
                 <Route path="new" lazy={() => import('./routes/teams.$teamUuid.connections.new')} />
                 <Route

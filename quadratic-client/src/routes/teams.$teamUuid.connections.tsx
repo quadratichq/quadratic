@@ -32,7 +32,7 @@ export const Component = () => {
       <div style={{ width: DRAWER_WIDTH + 24 }} className="flex-none overflow-auto border-r border-border">
         <ConnectionsList />
       </div>
-      <div className="w-full overflow-auto">
+      <div className="w-full overflow-hidden">
         <Outlet />
       </div>
     </div>

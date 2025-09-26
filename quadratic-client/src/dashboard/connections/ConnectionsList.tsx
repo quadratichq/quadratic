@@ -23,7 +23,7 @@ export const ConnectionsList = () => {
   return (
     <>
       <div className="flex flex-col gap-2 px-3 pt-3">
-        <div className="flex gap-2">
+        <div className="flex hidden gap-2">
           <form
             className="grid flex-grow gap-4"
             onSubmit={(e) => {
@@ -106,12 +106,13 @@ function ListItems({
       <Link
         to="./new"
         className={cn(
-          'flex h-10 items-center gap-2 rounded px-2 py-2 text-sm hover:bg-accent',
+          'flex h-9 items-center gap-2 rounded px-2 py-2 text-sm hover:bg-accent',
           location.pathname.includes('new') && 'bg-accent'
         )}
       >
         <AddIcon className="text-muted-foreground" /> New…
       </Link>
+      <hr className="my-1" />
       {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
         const isActive = activeConnectionUuid === uuid;
         return (
@@ -121,7 +122,7 @@ function ListItems({
               navigate(`./${uuid}`, { replace: true });
             }}
             key={uuid}
-            className={cn('flex items-center gap-2 rounded px-2 py-2 hover:bg-accent', isActive && 'bg-accent')}
+            className={cn('flex h-9 items-center gap-2 rounded px-2 hover:bg-accent', isActive && 'bg-accent')}
           >
             <div className="flex h-6 w-6 items-center justify-center">
               <LanguageIcon language={type} />
