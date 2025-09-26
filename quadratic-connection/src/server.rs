@@ -261,7 +261,6 @@ pub(crate) async fn serve() -> Result<()> {
     });
 
     // Sync connections in a separate thread
-    let cloned_state = state.clone();
     tokio::spawn({
         async move {
             let mut interval = time::interval(Duration::from_secs(SYNC_INTERVAL_M * 60));
@@ -269,7 +268,7 @@ pub(crate) async fn serve() -> Result<()> {
             loop {
                 interval.tick().await;
 
-                if let Err(e) = process_mixpanel_connections(&cloned_state).await {
+                if let Err(e) = process_mixpanel_connections(state.clone()).await {
                     tracing::error!("Error syncing Mixpanel connections: {e}");
                 }
             }

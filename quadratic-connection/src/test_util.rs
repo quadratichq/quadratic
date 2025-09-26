@@ -60,6 +60,10 @@ pub(crate) async fn new_state() -> State {
     State::new(&config, None).unwrap()
 }
 
+pub(crate) async fn new_arc_state() -> Arc<State> {
+    Arc::new(new_state().await)
+}
+
 pub(crate) async fn new_team_id_with_header() -> (Uuid, HeaderMap) {
     let team_id = Uuid::new_v4();
     let mut headers = HeaderMap::new();

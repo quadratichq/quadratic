@@ -1,13 +1,26 @@
 import request from 'supertest';
 import { app } from '../../app';
 import { M2M_AUTH_TOKEN } from '../../env-vars';
-import { clearDb, createConnection } from '../../tests/testDataGenerator';
-import { createTeamWithOwner } from '../../utils/teams.test';
+import { clearDb, createConnection, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const team1 = await createTeamWithOwner('Team 1', '00000000-0000-0000-0000-000000000001');
-  const team2 = await createTeamWithOwner('Team 2', '00000000-0000-0000-0000-000000000002');
+  const user = await createUser({ auth0Id: 'testUser' });
 
+  const team1 = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000001',
+    },
+    users: [{ userId: user.id, role: 'OWNER' }],
+  });
+
+  const team2 = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000002',
+    },
+    users: [{ userId: user.id, role: 'OWNER' }],
+  });
+
+  // Create POSTGRES connections
   await createConnection({
     teamId: team1.id,
     type: 'POSTGRES',
@@ -20,6 +33,7 @@ beforeAll(async () => {
     name: 'Postgres Connection 2',
   });
 
+  // Create MYSQL connection
   await createConnection({
     teamId: team1.id,
     type: 'MYSQL',

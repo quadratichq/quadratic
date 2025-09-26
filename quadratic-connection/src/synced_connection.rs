@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::NaiveDate;
 use quadratic_rust_shared::{
     quadratic_api::get_connections_by_type,
@@ -26,7 +28,8 @@ pub struct MixpanelConnection {
     pub project_id: String,
 }
 
-pub(crate) async fn process_mixpanel_connections(state: &State) -> Result<()> {
+/// Process all Mixpanel connections.
+pub(crate) async fn process_mixpanel_connections(state: Arc<State>) -> Result<()> {
     let connections = get_connections_by_type::<MixpanelConnection>(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
@@ -36,30 +39,44 @@ pub(crate) async fn process_mixpanel_connections(state: &State) -> Result<()> {
 
     tracing::info!("Found {} Mixpanel connections", connections.len());
 
+    // process each connection in a separate thread
     for connection in connections {
-        process_mixpanel_connection(state, connection.type_details, connection.uuid).await?;
+        let cloned_state = Arc::clone(&state);
+        tokio::spawn(async move {
+            if let Err(e) =
+                process_mixpanel_connection(cloned_state, connection.type_details, connection.uuid)
+                    .await
+            {
+                tracing::error!(
+                    "Error processing Mixpanel connection {}: {}",
+                    connection.uuid,
+                    e
+                );
+            }
+        });
     }
 
     Ok(())
 }
 
+/// Process a Mixpanel connection.
 pub(crate) async fn process_mixpanel_connection(
-    state: &State,
+    state: Arc<State>,
     connection: MixpanelConnection,
     connection_id: Uuid,
 ) -> Result<()> {
-    if !can_process_connection(state, connection_id).await? {
+    if !can_process_connection(state.clone(), connection_id).await? {
         tracing::info!("Skipping Mixpanel connection {}d", connection_id);
         return Ok(());
     }
 
     // add the connection to the cache
-    state.stats.lock().await.num_connections_processing += 1;
-    start_connection_status(state, connection_id, SyncedConnectionKind::Mixpanel).await;
+    state.clone().stats.lock().await.num_connections_processing += 1;
+    start_connection_status(state.clone(), connection_id, SyncedConnectionKind::Mixpanel).await;
 
     let object_store = state.settings.object_store.clone();
     let prefix = object_store_path(connection_id, "events");
-    let (start_date, end_date) = dates(state, connection_id, "events").await;
+    let (start_date, end_date) = dates(state.clone(), connection_id, "events").await;
     let start_time = std::time::Instant::now();
 
     let MixpanelConnection {
@@ -75,7 +92,7 @@ pub(crate) async fn process_mixpanel_connection(
     );
 
     update_connection_status(
-        state,
+        state.clone(),
         connection_id,
         SyncedConnectionKind::Mixpanel,
         SyncedConnectionStatus::ApiRequest,
@@ -89,7 +106,7 @@ pub(crate) async fn process_mixpanel_connection(
         .map_err(|e| ConnectionError::Synced(format!("Failed to export events: {}", e)))?;
 
     update_connection_status(
-        state,
+        state.clone(),
         connection_id,
         SyncedConnectionKind::Mixpanel,
         SyncedConnectionStatus::Upload,
@@ -100,7 +117,7 @@ pub(crate) async fn process_mixpanel_connection(
         .await
         .map_err(|e| ConnectionError::Synced(format!("Failed to upload events: {}", e)))?;
 
-    complete_connection_status(state, connection_id).await;
+    complete_connection_status(state.clone(), connection_id).await;
 
     tracing::info!(
         "Processed {} Mixpanel files in {:?}",
@@ -108,17 +125,18 @@ pub(crate) async fn process_mixpanel_connection(
         start_time.elapsed()
     );
 
-    state.stats.lock().await.num_connections_processing -= 1;
+    state.clone().stats.lock().await.num_connections_processing -= 1;
 
     Ok(())
 }
 
-async fn dates(state: &State, connection_id: Uuid, table_name: &str) -> (NaiveDate, NaiveDate) {
+/// Get the start and end dates for a connection from the object store.
+async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (NaiveDate, NaiveDate) {
     let object_store = state.settings.object_store.clone();
     let today = chrono::Utc::now().date_naive();
     let prefix = object_store_path(connection_id, table_name);
     let end_date = today;
-    let mut start_date: chrono::NaiveDate = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
+    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
 
     // if we have any objects, use the last date processed
     if let Ok(Some(object_store_start_date)) =
@@ -135,20 +153,27 @@ fn object_store_path(connection_id: Uuid, table_name: &str) -> String {
     format!("{}/{}", connection_id, table_name)
 }
 
-async fn can_process_connection(state: &State, connection_id: Uuid) -> Result<bool> {
+/// Check if a connection can be processed.  A connection can be processed if it is not already being processed.
+async fn can_process_connection(state: Arc<State>, connection_id: Uuid) -> Result<bool> {
     let status = state.synced_connection_cache.get(connection_id).await;
     Ok(status.is_none())
 }
 
-async fn start_connection_status(state: &State, connection_id: Uuid, kind: SyncedConnectionKind) {
+/// Start a connection status.
+async fn start_connection_status(
+    state: Arc<State>,
+    connection_id: Uuid,
+    kind: SyncedConnectionKind,
+) {
     state
         .synced_connection_cache
         .add(connection_id, kind, SyncedConnectionStatus::Setup)
         .await;
 }
 
+/// Update a connection status.
 async fn update_connection_status(
-    state: &State,
+    state: Arc<State>,
     connection_id: Uuid,
     kind: SyncedConnectionKind,
     status: SyncedConnectionStatus,
@@ -159,21 +184,122 @@ async fn update_connection_status(
         .await;
 }
 
-async fn complete_connection_status(state: &State, connection_id: Uuid) {
+/// Complete a connection status, which deletes the connection from the cache.
+async fn complete_connection_status(state: Arc<State>, connection_id: Uuid) {
     state.synced_connection_cache.delete(connection_id).await;
 }
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
 
-    use crate::test_util::new_state;
+    use crate::state::synced_connection_cache::{SyncedConnectionKind, SyncedConnectionStatus};
+    use crate::test_util::new_arc_state;
 
     use super::*;
 
     #[tokio::test]
     #[ignore]
     async fn test_process_mixpanel() {
-        let state = new_state().await;
-        process_mixpanel_connections(&state).await.unwrap();
+        let state = new_arc_state().await;
+        process_mixpanel_connections(state).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_object_store_path() {
+        let connection_id = Uuid::new_v4();
+        let table_name = "events";
+        let path = object_store_path(connection_id, table_name);
+        let expected = format!("{}/{}", connection_id, table_name);
+
+        assert_eq!(path, expected);
+    }
+
+    #[tokio::test]
+    async fn test_can_process_connection() {
+        let state = new_arc_state().await;
+        let connection_id = Uuid::new_v4();
+        let can_process = can_process_connection(state.clone(), connection_id)
+            .await
+            .unwrap();
+
+        assert!(can_process);
+
+        update_connection_status(
+            state.clone(),
+            connection_id,
+            SyncedConnectionKind::Mixpanel,
+            SyncedConnectionStatus::Setup,
+        )
+        .await;
+        let can_process = can_process_connection(state, connection_id).await.unwrap();
+
+        assert!(!can_process);
+    }
+
+    #[tokio::test]
+    async fn test_start_connection_status() {
+        let state = new_arc_state().await;
+        let connection_id = Uuid::new_v4();
+
+        start_connection_status(state.clone(), connection_id, SyncedConnectionKind::Mixpanel).await;
+
+        let status = state.synced_connection_cache.get(connection_id).await;
+        assert!(status.is_some());
+
+        let (kind, status) = status.unwrap();
+        assert!(matches!(kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(status, SyncedConnectionStatus::Setup));
+    }
+
+    #[tokio::test]
+    async fn test_update_connection_status() {
+        let state = new_arc_state().await;
+        let connection_id = Uuid::new_v4();
+
+        start_connection_status(state.clone(), connection_id, SyncedConnectionKind::Mixpanel).await;
+        update_connection_status(
+            state.clone(),
+            connection_id,
+            SyncedConnectionKind::Mixpanel,
+            SyncedConnectionStatus::ApiRequest,
+        )
+        .await;
+
+        let cached_status = state.synced_connection_cache.get(connection_id).await;
+        assert!(cached_status.is_some());
+
+        let (kind, status) = cached_status.unwrap();
+        assert!(matches!(kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(status, SyncedConnectionStatus::ApiRequest));
+    }
+
+    #[tokio::test]
+    async fn test_complete_connection_status() {
+        let state = new_arc_state().await;
+        let connection_id = Uuid::new_v4();
+
+        start_connection_status(state.clone(), connection_id, SyncedConnectionKind::Mixpanel).await;
+
+        let status = state.synced_connection_cache.get(connection_id).await;
+        assert!(status.is_some(), "Connection should be in cache");
+
+        complete_connection_status(state.clone(), connection_id).await;
+
+        let status = state.synced_connection_cache.get(connection_id).await;
+        assert!(status.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_dates_returns_correct_range() {
+        let state = new_arc_state().await;
+        let connection_id = Uuid::new_v4();
+        let table_name = "events";
+        let (start_date, end_date) = dates(state, connection_id, table_name).await;
+        let today = chrono::Utc::now().date_naive();
+        let expected_start = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
+
+        assert_eq!(end_date, today);
+        assert_eq!(start_date, expected_start);
     }
 }

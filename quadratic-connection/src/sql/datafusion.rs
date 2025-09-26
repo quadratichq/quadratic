@@ -110,7 +110,7 @@ pub(crate) async fn sync_mixpanel(
         project_id: api_connection.type_details.project_id,
     };
 
-    process_mixpanel_connection(&state, mixpanel_connection, id).await
+    process_mixpanel_connection((*state).clone(), mixpanel_connection, id).await
 }
 
 #[cfg(test)]
