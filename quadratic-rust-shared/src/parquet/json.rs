@@ -168,7 +168,7 @@ mod tests {
         let json_lines = vec![
             r#"{"name": "Alice", "age": 30, "score": 95.5}"#,
             r#"{"name": "Bob", "age": 25, "score": 87.2}"#,
-            r#"{"name": "Charlie", "score": 92.0}"#, // Missing age - should be null
+            r#"{"name": "Charlie", "score": 92.0}"#,
         ];
 
         let schema = inferred_schema_from_json_lines(&json_lines).unwrap();
@@ -188,13 +188,10 @@ mod tests {
         ];
 
         let schema = inferred_schema_from_json_lines(&json_lines).unwrap();
-
-        // Check that all fields are present
         assert!(schema.field_with_name("event").is_ok());
         assert!(schema.field_with_name("amount").is_ok());
         assert!(schema.field_with_name("user_id").is_ok());
 
-        // Test conversion
         let result = json_lines_to_parquet_bytes(schema, &json_lines);
         assert!(result.is_ok());
 
@@ -204,8 +201,6 @@ mod tests {
 
     #[test]
     fn test_null_to_string_type_handling() {
-        // This test reproduces the utm_term issue where a field starts as null
-        // but later has string values
         let json_lines = vec![
             r#"{"event": "signup", "utm_term": null, "user_id": "123"}"#,
             r#"{"event": "login", "utm_term": null, "user_id": "456"}"#,
@@ -213,13 +208,10 @@ mod tests {
         ];
 
         let schema = inferred_schema_from_json_lines(&json_lines).unwrap();
-
-        // utm_term should be Utf8, not Null, to handle mixed null/string values
         let utm_term_field = schema.field_with_name("utm_term").unwrap();
         assert_eq!(utm_term_field.data_type(), &DataType::Utf8);
         assert!(utm_term_field.is_nullable()); // Should be nullable
 
-        // Test conversion - this should not panic
         let result = json_lines_to_parquet_bytes(schema, &json_lines);
         assert!(result.is_ok());
 
@@ -229,7 +221,6 @@ mod tests {
 
     #[test]
     fn test_mixed_types_handling() {
-        // Test handling of fields that have different types across records
         let json_lines = vec![
             r#"{"event": "signup", "language": "en", "user_id": "123"}"#,
             r#"{"event": "login", "language": "fr", "user_id": "456"}"#,
@@ -237,12 +228,9 @@ mod tests {
         ];
 
         let schema = inferred_schema_from_json_lines(&json_lines).unwrap();
-
-        // language should be Utf8 to handle both strings and serialized objects
         let language_field = schema.field_with_name("language").unwrap();
         assert_eq!(language_field.data_type(), &DataType::Utf8);
 
-        // Test conversion - this should not panic
         let result = json_lines_to_parquet_bytes(schema, &json_lines);
         assert!(result.is_ok());
 
@@ -253,7 +241,6 @@ mod tests {
     #[test]
     fn test_grouped_json_with_inference() {
         let mut grouped_json = HashMap::new();
-
         grouped_json.insert(
             "2024-01-01".to_string(),
             vec![
@@ -261,34 +248,27 @@ mod tests {
                 r#"{"event": "signup", "amount": 0, "user_id": "456"}"#.to_string(),
             ],
         );
-
         grouped_json.insert(
             "2024-01-02".to_string(),
             vec![r#"{"event": "login", "user_id": "123", "device": "mobile"}"#.to_string()],
         );
 
         let result = grouped_json_to_parquet(grouped_json).unwrap();
-
         assert_eq!(result.len(), 2);
         assert!(result.contains_key("2024-01-01"));
         assert!(result.contains_key("2024-01-02"));
-
-        // Both files should have data
         assert!(!result["2024-01-01"].is_empty());
         assert!(!result["2024-01-02"].is_empty());
     }
 
     #[test]
     fn test_parallel_performance() {
-        // Create a larger dataset to test parallel performance
         let mut grouped_json = HashMap::new();
 
-        // Create multiple date groups with many records each
         for day in 1..=10 {
             let date_key = format!("2024-01-{:02}", day);
             let mut records = Vec::new();
 
-            // Add many records per date (using properly flattened structure)
             for i in 1..=1000 {
                 let record = format!(
                     r#"{{"event": "test_event", "user_id": "{}", "amount": {}, "timestamp": {}, "complex_field": "{{\"nested\": \"value_{}\"}}" }}"#,
@@ -306,13 +286,10 @@ mod tests {
         let start_time = std::time::Instant::now();
         let result = grouped_json_to_parquet(grouped_json).unwrap();
         let duration = start_time.elapsed();
-
         println!("Parallel processing took: {:?}", duration);
 
-        // Should have 10 date groups
         assert_eq!(result.len(), 10);
 
-        // Each group should have parquet data
         for (_, parquet_data) in result {
             assert!(!parquet_data.is_empty());
         }

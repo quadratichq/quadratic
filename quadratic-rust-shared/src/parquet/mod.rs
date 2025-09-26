@@ -4,5 +4,4 @@
 
 pub mod error;
 pub mod json;
-// pub mod string_column;
 pub mod utils;

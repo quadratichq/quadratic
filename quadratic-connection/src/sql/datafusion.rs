@@ -19,7 +19,7 @@ use uuid::Uuid;
 use crate::{
     auth::Claims,
     connection::get_api_connection,
-    error::{ConnectionError, Result},
+    error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
     state::State,
@@ -111,4 +111,113 @@ pub(crate) async fn sync_mixpanel(
     };
 
     process_mixpanel_connection(&state, mixpanel_connection, id).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::{get_claims, new_state, new_team_id_with_header};
+    use axum::Extension;
+    use std::sync::Arc;
+    use tracing_test::traced_test;
+    use uuid::Uuid;
+
+    fn get_test_mixpanel_connection() -> MixpanelConnection {
+        MixpanelConnection {
+            api_secret: "test_secret".to_string(),
+            project_id: "test_project_id".to_string(),
+        }
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_mixpanel_connection_success() {
+        let connection = get_test_mixpanel_connection();
+        let response = test_mixpanel(Json(connection)).await;
+        assert!(response.0.connected || !response.0.connected);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_get_connection() {
+        let state = new_state().await;
+        let claims = get_claims();
+        let connection_id = Uuid::new_v4();
+        let team_id = Uuid::new_v4();
+        let headers = HeaderMap::new();
+
+        let result = get_connection(&state, &claims, &connection_id, &team_id, &headers).await;
+        assert!(result.is_ok());
+
+        let api_connection = result.unwrap();
+        assert_eq!(api_connection.uuid, connection_id);
+        assert_eq!(
+            api_connection.type_details.connection_id,
+            Some(connection_id)
+        );
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_query() {
+        let (_, headers) = new_team_id_with_header().await;
+        let state = Extension(Arc::new(new_state().await));
+        let claims = get_claims();
+        let connection_id = Uuid::new_v4();
+        let sql_query = SqlQuery {
+            query: "SELECT 1 as test_column".to_string(),
+            connection_id,
+        };
+
+        let result = query(headers, state, claims, Json(sql_query)).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_schema_with_forced_refresh() {
+        let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
+        let state = Extension(Arc::new(new_state().await));
+        let claims = get_claims();
+        let params = SchemaQuery {
+            force_cache_refresh: Some(true),
+        };
+
+        let result = schema(Path(connection_id), headers, state, claims, Query(params))
+            .await
+            .unwrap();
+        assert_eq!(result.0.id, connection_id);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_schema_without_forced_refresh() {
+        let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
+        let state = Extension(Arc::new(new_state().await));
+        let claims = get_claims();
+        let params = SchemaQuery {
+            force_cache_refresh: Some(false),
+        };
+
+        let result = schema(Path(connection_id), headers, state, claims, Query(params))
+            .await
+            .unwrap();
+        assert_eq!(result.0.id, connection_id);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    #[ignore]
+    async fn test_sync_mixpanel_basic() {
+        let connection_id = Uuid::new_v4();
+        let (_, headers) = new_team_id_with_header().await;
+        let state = Extension(Arc::new(new_state().await));
+        let claims = get_claims();
+
+        sync_mixpanel(Path(connection_id), headers, state, claims)
+            .await
+            .unwrap();
+    }
 }

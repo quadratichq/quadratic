@@ -41,3 +41,50 @@ impl SchemaCache {
         (*self.schema.lock().await).delete(&uuid).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use quadratic_rust_shared::sql::{
+        bigquery_connection::tests::expected_bigquery_schema, schema::SchemaTable,
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_schema_cache() {
+        let schema = Schema {
+            id: Uuid::new_v4(),
+            name: "test".into(),
+            r#type: "test".into(),
+            database: "test".into(),
+            tables: vec![SchemaTable {
+                name: "test".into(),
+                schema: "test".into(),
+                columns: expected_bigquery_schema(),
+            }],
+        };
+        let cache = SchemaCache::new();
+        let id = Uuid::new_v4();
+        let non_existent_id = Uuid::new_v4();
+
+        let result = cache.get(id).await;
+        assert!(result.is_none());
+
+        cache.add(id, schema.clone()).await;
+        let result = cache.get(id).await;
+        assert_eq!(result, Some(schema.clone()));
+
+        let result = cache.get(non_existent_id).await;
+        assert!(result.is_none());
+
+        let result = cache.delete(id).await;
+        assert_eq!(result, Some(schema));
+
+        let result = cache.get(id).await;
+        assert!(result.is_none());
+
+        let result = cache.delete(non_existent_id).await;
+        assert!(result.is_none());
+    }
+}

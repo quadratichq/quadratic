@@ -95,12 +95,3 @@ where
         None => Ok(None),
     }
 }
-
-#[cfg(test)]
-pub(crate) fn s3_object_store() -> Arc<dyn ObjectStore> {
-    use crate::arrow::object_store::new_s3_object_store;
-
-    let (s3, _) = new_s3_object_store("synced-data", "us-east-1", "test", "test", true).unwrap();
-
-    s3
-}

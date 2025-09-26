@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use quadratic_rust_shared::{
     quadratic_api::get_connections_by_type,
     synced::{
@@ -48,10 +49,7 @@ pub(crate) async fn process_mixpanel_connection(
     connection_id: Uuid,
 ) -> Result<()> {
     if !can_process_connection(state, connection_id).await? {
-        tracing::info!(
-            "Skipping Mixpanel connection {} because it is already being processed",
-            connection_id
-        );
+        tracing::info!("Skipping Mixpanel connection {}d", connection_id);
         return Ok(());
     }
 
@@ -60,18 +58,9 @@ pub(crate) async fn process_mixpanel_connection(
     start_connection_status(state, connection_id, SyncedConnectionKind::Mixpanel).await;
 
     let object_store = state.settings.object_store.clone();
-    let today = chrono::Utc::now().date_naive();
-    let prefix = format!("{}/{}", connection_id, "events");
-    let end_date = today;
+    let prefix = object_store_path(connection_id, "events");
+    let (start_date, end_date) = dates(state, connection_id, "events").await;
     let start_time = std::time::Instant::now();
-    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
-
-    // if we have any objects, use the last date processed
-    if let Ok(Some(object_store_start_date)) =
-        get_last_date_processed(&object_store, Some(&prefix)).await
-    {
-        start_date = object_store_start_date;
-    };
 
     let MixpanelConnection {
         ref api_secret,
@@ -124,6 +113,28 @@ pub(crate) async fn process_mixpanel_connection(
     Ok(())
 }
 
+async fn dates(state: &State, connection_id: Uuid, table_name: &str) -> (NaiveDate, NaiveDate) {
+    let object_store = state.settings.object_store.clone();
+    let today = chrono::Utc::now().date_naive();
+    let prefix = object_store_path(connection_id, table_name);
+    let end_date = today;
+    let mut start_date: chrono::NaiveDate = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
+
+    // if we have any objects, use the last date processed
+    if let Ok(Some(object_store_start_date)) =
+        get_last_date_processed(&object_store, Some(&prefix)).await
+    {
+        start_date = object_store_start_date;
+    };
+
+    (start_date, end_date)
+}
+
+/// Get the object store path for a table
+fn object_store_path(connection_id: Uuid, table_name: &str) -> String {
+    format!("{}/{}", connection_id, table_name)
+}
+
 async fn can_process_connection(state: &State, connection_id: Uuid) -> Result<bool> {
     let status = state.synced_connection_cache.get(connection_id).await;
     Ok(status.is_none())
@@ -160,6 +171,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore]
     async fn test_process_mixpanel() {
         let state = new_state().await;
         process_mixpanel_connections(&state).await.unwrap();

@@ -27,11 +27,11 @@ pub(crate) mod snowflake;
 
 #[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct Schema {
-    id: Uuid,
-    name: String,
-    r#type: String,
-    database: String,
-    pub tables: Vec<SchemaTable>,
+    pub(crate) id: Uuid,
+    pub(crate) name: String,
+    pub(crate) r#type: String,
+    pub(crate) database: String,
+    pub(crate) tables: Vec<SchemaTable>,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Deserialize)]

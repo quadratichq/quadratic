@@ -88,44 +88,6 @@ pub fn compare_parquet_file_with_bytes(file: &str, bytes: Bytes) -> bool {
     file_rows == bytes_rows
 }
 
-// /// Convert a vec into a parquet file using Arrow with direct Field to DataType conversion
-// /// This preserves the full range of Parquet data types
-// pub fn vec_to_record_batch(vec: Vec<Row>) -> Result<RecordBatch> {
-//     if vec.is_empty() {
-//         return Err(SharedError::Generic(
-//             "Cannot write empty vector to parquet file".to_string(),
-//         ));
-//     }
-
-//     let (arrow_schema, column_data) = StringColumn::build_arrow_schema_and_data(&vec)?;
-//     let arrow_arrays = StringColumn::arrow_arrays(column_data, &arrow_schema)?;
-//     let record_batch = RecordBatch::try_new(Arc::new(arrow_schema), arrow_arrays)
-//         .map_err(|e| ParquetError::VecToParquet(format!("Could not create record batch: {e}")))?;
-
-//     Ok(record_batch)
-// }
-
-// /// Convert a vec into a parquet bytes using Arrow with direct Field to DataType conversion
-// pub fn vec_to_parquet_bytes(vec: Vec<Row>) -> Result<Bytes> {
-//     let writer = Vec::new();
-//     let record_batch = vec_to_record_batch(vec)?;
-//     let arrow_writer = write_record_batch(record_batch, writer)?;
-
-//     Ok(arrow_writer.into_inner()?.into())
-// }
-
-// /// Convert a vec into a parquet file using Arrow with direct Field to DataType conversion
-// /// This preserves the full range of Parquet data types
-// pub fn vec_to_parquet_file(vec: Vec<Row>, file: &str) -> Result<()> {
-//     let record_batch = vec_to_record_batch(vec)?;
-//     let output_file = File::create(file)
-//         .map_err(|e| ParquetError::WriteRecordBatch(format!("Could not create file: {e}")))?;
-//     let arrow_writer = write_record_batch(record_batch, output_file)?;
-//     arrow_writer.close()?;
-
-//     Ok(())
-// }
-
 /// Convert a a record batch into a parquet bytes using Arrow with direct Field to DataType conversion
 pub fn record_batch_to_parquet_bytes(record_batch: RecordBatch) -> Result<Bytes> {
     let writer = Vec::new();
@@ -150,183 +112,346 @@ pub fn write_record_batch<W: Write + Send>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arrow::datatypes::{DataType, Field as ArrowField, Schema as ArrowSchema};
+    use arrow::datatypes::{DataType, Field as ArrowField, Schema as ArrowSchema, TimeUnit};
     use arrow::record_batch::RecordBatch;
-    use arrow_array::{BooleanArray, Float32Array, Float64Array, Int32Array, StringArray};
-    use parquet::arrow::ArrowWriter;
-    use parquet::record::Row;
-    use std::fs::{self, File};
+    use arrow_array::{
+        BinaryArray, BooleanArray, Date32Array, Float64Array, Int32Array, Int64Array, StringArray,
+        TimestampMillisecondArray,
+    };
+    use bytes::Bytes;
+    use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
+    use parquet::data_type::{ByteArray, Decimal};
+    use parquet::record::{Field, RowAccessor};
+    use std::fs::File;
     use std::sync::Arc;
     use tempfile::tempdir;
     use tracing_test::traced_test;
 
-    // #[traced_test]
-    // #[test]
-    // fn test_vec_to_parquet_with_overlapping_keys() {
-    //     let temp_dir = tempdir()
-    //         .map_err(|e| SharedError::Generic(format!("Could not create temp dir: {e}")))
-    //         .unwrap();
-    //     let file_path = temp_dir.path().join("test_overlapping.parquet");
-    //     let file_path_str = file_path.to_str().unwrap();
+    #[test]
+    fn test_field_to_data_type_basic_types() {
+        assert_eq!(field_to_data_type(&Field::Null).unwrap(), DataType::Null);
+        assert_eq!(
+            field_to_data_type(&Field::Bool(true)).unwrap(),
+            DataType::Boolean
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Byte(42)).unwrap(),
+            DataType::Int8
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Short(42)).unwrap(),
+            DataType::Int16
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Int(42)).unwrap(),
+            DataType::Int32
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Long(42)).unwrap(),
+            DataType::Int64
+        );
+        assert_eq!(
+            field_to_data_type(&Field::UByte(42)).unwrap(),
+            DataType::UInt8
+        );
+        assert_eq!(
+            field_to_data_type(&Field::UShort(42)).unwrap(),
+            DataType::UInt16
+        );
+        assert_eq!(
+            field_to_data_type(&Field::UInt(42)).unwrap(),
+            DataType::UInt32
+        );
+        assert_eq!(
+            field_to_data_type(&Field::ULong(42)).unwrap(),
+            DataType::UInt64
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Float(3.14)).unwrap(),
+            DataType::Float32
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Double(3.14)).unwrap(),
+            DataType::Float64
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Str("test".to_string())).unwrap(),
+            DataType::Utf8
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Bytes(vec![1, 2, 3].into())).unwrap(),
+            DataType::Binary
+        );
+        assert_eq!(
+            field_to_data_type(&Field::Date(12345)).unwrap(),
+            DataType::Date32
+        );
+        assert_eq!(
+            field_to_data_type(&Field::TimestampMillis(1234567890)).unwrap(),
+            DataType::Timestamp(TimeUnit::Millisecond, None)
+        );
+        assert_eq!(
+            field_to_data_type(&Field::TimestampMicros(1234567890)).unwrap(),
+            DataType::Timestamp(TimeUnit::Microsecond, None)
+        );
 
-    //     let temp_file_1 = temp_dir.path().join("source1.parquet");
-    //     let schema1 = ArrowSchema::new(vec![
-    //         ArrowField::new("name", DataType::Utf8, true),
-    //         ArrowField::new("age", DataType::Int32, true),
-    //         ArrowField::new("score", DataType::Float32, true),
-    //     ]);
-    //     let batch1 = RecordBatch::try_new(
-    //         Arc::new(schema1.clone()),
-    //         vec![
-    //             Arc::new(StringArray::from(vec![Some("Alice"), Some("Bob")])),
-    //             Arc::new(Int32Array::from(vec![Some(25), Some(30)])),
-    //             Arc::new(Float32Array::from(vec![Some(95.5), None])), // Bob has no score
-    //         ],
-    //     )
-    //     .unwrap();
-    //     let file1 = File::create(&temp_file_1).unwrap();
-    //     let mut writer1 = ArrowWriter::try_new(file1, batch1.schema(), None).unwrap();
-    //     writer1.write(&batch1).unwrap();
-    //     writer1.close().unwrap();
+        let byte_array = ByteArray::from(vec![1, 2, 3]);
+        let decimal_value = Decimal::from_bytes(byte_array, 10, 2);
+        assert_eq!(
+            field_to_data_type(&Field::Decimal(decimal_value)).unwrap(),
+            DataType::Decimal128(38, 10)
+        );
+    }
 
-    //     let temp_file_2 = temp_dir.path().join("source2.parquet");
-    //     let schema2 = ArrowSchema::new(vec![
-    //         ArrowField::new("name", DataType::Utf8, true),
-    //         ArrowField::new("active", DataType::Boolean, true),
-    //         ArrowField::new("category", DataType::Utf8, true),
-    //     ]);
-    //     let batch2 = RecordBatch::try_new(
-    //         Arc::new(schema2.clone()),
-    //         vec![
-    //             Arc::new(StringArray::from(vec![Some("Charlie"), Some("Diana")])),
-    //             Arc::new(BooleanArray::from(vec![Some(true), Some(false)])),
-    //             Arc::new(StringArray::from(vec![Some("premium"), Some("gold")])),
-    //         ],
-    //     )
-    //     .unwrap();
-    //     let file2 = File::create(&temp_file_2).unwrap();
-    //     let mut writer2 = ArrowWriter::try_new(file2, batch2.schema(), None).unwrap();
-    //     writer2.write(&batch2).unwrap();
-    //     writer2.close().unwrap();
+    #[test]
+    fn test_record_batch_to_parquet_bytes() {
+        let schema = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("id", DataType::Int32, false),
+            ArrowField::new("name", DataType::Utf8, true),
+            ArrowField::new("active", DataType::Boolean, true),
+        ]));
+        let id_array = Arc::new(Int32Array::from(vec![1, 2, 3]));
+        let name_array = Arc::new(StringArray::from(vec![Some("Alice"), Some("Bob"), None]));
+        let active_array = Arc::new(BooleanArray::from(vec![
+            Some(true),
+            Some(false),
+            Some(true),
+        ]));
+        let record_batch =
+            RecordBatch::try_new(schema, vec![id_array, name_array, active_array]).unwrap();
+        let parquet_bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
 
-    //     let rows1 = file_to_rows(temp_file_1.to_str().unwrap()).unwrap();
-    //     let rows2 = file_to_rows(temp_file_2.to_str().unwrap()).unwrap();
-    //     let mut test_rows = rows1;
-    //     test_rows.extend(rows2);
+        assert!(!parquet_bytes.is_empty());
 
-    //     // write to parquet
-    //     vec_to_parquet_file(test_rows, file_path_str).unwrap();
-    //     assert!(file_path.exists(), "Parquet file should be created");
+        let builder = ParquetRecordBatchReaderBuilder::try_new(parquet_bytes).unwrap();
+        let reader = builder.build().unwrap();
 
-    //     // read back the file and verify we can parse it
-    //     let rows = file_to_rows(file_path_str).unwrap();
-    //     assert_eq!(rows.len(), 4, "Should have 4 rows in the parquet file");
+        let batches: Result<Vec<_>, _> = reader.collect();
+        let batches = batches.unwrap();
+        assert_eq!(batches.len(), 1);
 
-    //     if !rows.is_empty() {
-    //         println!(
-    //             "All row fields: {:?}",
-    //             rows.iter()
-    //                 .map(|row| row.get_column_iter().collect::<Vec<_>>())
-    //                 .collect::<Vec<_>>()
-    //         );
-    //     }
+        let batch = &batches[0];
+        assert_eq!(batch.num_columns(), 3);
+        assert_eq!(batch.num_rows(), 3);
+    }
 
-    //     // clean up
-    //     fs::remove_file(&file_path).ok();
-    // }
+    #[test]
+    fn test_write_record_batch() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "value",
+            DataType::Float64,
+            false,
+        )]));
+        let value_array = Arc::new(Float64Array::from(vec![1.1, 2.2, 3.3]));
+        let record_batch = RecordBatch::try_new(schema, vec![value_array]).unwrap();
+        let mut buffer = Vec::new();
+        let arrow_writer = write_record_batch(record_batch, &mut buffer).unwrap();
+        arrow_writer.close().unwrap();
 
-    // #[test]
-    // fn test_vec_to_parquet_type_unification() -> Result<()> {
-    //     let temp_dir = tempdir()
-    //         .map_err(|e| SharedError::Generic(format!("Could not create temp dir: {e}")))?;
-    //     let file_path = temp_dir.path().join("test_types.parquet");
-    //     let file_path_str = file_path.to_str().unwrap();
+        assert!(!buffer.is_empty());
 
-    //     let mut test_rows: Vec<Row> = Vec::new();
+        let bytes = Bytes::from(buffer);
+        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes).unwrap();
+        let reader = builder.build().unwrap();
 
-    //     // Create test data with type progression: Int -> Float -> Double -> String
-    //     // This will test the type unification logic
+        let batches: Result<Vec<_>, _> = reader.collect();
+        let batches = batches.unwrap();
+        assert_eq!(batches.len(), 1);
 
-    //     // Create first file with Int32 values
-    //     let temp_file_int = temp_dir.path().join("int_data.parquet");
-    //     let schema_int = ArrowSchema::new(vec![
-    //         ArrowField::new("id", DataType::Int32, false),
-    //         ArrowField::new("value", DataType::Int32, false),
-    //     ]);
+        let batch = &batches[0];
+        assert_eq!(batch.num_rows(), 3);
 
-    //     let batch_int = RecordBatch::try_new(
-    //         Arc::new(schema_int),
-    //         vec![
-    //             Arc::new(Int32Array::from(vec![1, 2])),
-    //             Arc::new(Int32Array::from(vec![100, 200])),
-    //         ],
-    //     )?;
+        let values = batch
+            .column(0)
+            .as_any()
+            .downcast_ref::<Float64Array>()
+            .unwrap();
+        assert_eq!(values.value(0), 1.1);
+        assert_eq!(values.value(1), 2.2);
+        assert_eq!(values.value(2), 3.3);
+    }
 
-    //     let file_int = File::create(&temp_file_int)?;
-    //     let mut writer_int = ArrowWriter::try_new(file_int, batch_int.schema(), None)?;
-    //     writer_int.write(&batch_int)?;
-    //     writer_int.close()?;
+    #[test]
+    fn test_bytes_to_rows() {
+        let schema = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("id", DataType::Int64, false),
+            ArrowField::new("message", DataType::Utf8, true),
+        ]));
+        let id_array = Arc::new(Int64Array::from(vec![100, 200]));
+        let message_array = Arc::new(StringArray::from(vec![Some("hello"), Some("world")]));
+        let record_batch = RecordBatch::try_new(schema, vec![id_array, message_array]).unwrap();
+        let parquet_bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
+        let rows = bytes_to_rows(parquet_bytes).unwrap();
+        assert_eq!(rows.len(), 2);
 
-    //     // Create second file with Float32 values (should widen to Float64 when combined)
-    //     let temp_file_float = temp_dir.path().join("float_data.parquet");
-    //     let schema_float = ArrowSchema::new(vec![
-    //         ArrowField::new("id", DataType::Int32, false),
-    //         ArrowField::new("value", DataType::Float64, false), // Use Float64 to test type widening
-    //     ]);
+        let first_row = &rows[0];
+        assert_eq!(first_row.len(), 2);
 
-    //     let batch_float = RecordBatch::try_new(
-    //         Arc::new(schema_float),
-    //         vec![
-    //             Arc::new(Int32Array::from(vec![3, 4])),
-    //             Arc::new(Float64Array::from(vec![100.5, 200.123456789])),
-    //         ],
-    //     )?;
+        match first_row.get_long(0) {
+            Ok(value) => assert_eq!(value, 100),
+            Err(_) => panic!("Expected Long value at index 0"),
+        }
 
-    //     let file_float = File::create(&temp_file_float)?;
-    //     let mut writer_float = ArrowWriter::try_new(file_float, batch_float.schema(), None)?;
-    //     writer_float.write(&batch_float)?;
-    //     writer_float.close()?;
+        match first_row.get_string(1) {
+            Ok(value) => assert_eq!(value, "hello"),
+            Err(_) => panic!("Expected String value at index 1"),
+        }
+    }
 
-    //     // Read both files and combine
-    //     let rows_int = file_to_rows(temp_file_int.to_str().unwrap())?;
-    //     let rows_float = file_to_rows(temp_file_float.to_str().unwrap())?;
+    #[test]
+    #[traced_test]
+    fn test_file_to_rows() {
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("test.parquet");
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "test_col",
+            DataType::Int32,
+            false,
+        )]));
+        let test_array = Arc::new(Int32Array::from(vec![42, 84, 126]));
+        let record_batch = RecordBatch::try_new(schema, vec![test_array]).unwrap();
+        let file = File::create(&file_path).unwrap();
+        let arrow_writer = write_record_batch(record_batch, file).unwrap();
+        arrow_writer.close().unwrap();
+        let rows = file_to_rows(file_path.to_str().unwrap()).unwrap();
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0].get_int(0).unwrap(), 42);
+        assert_eq!(rows[1].get_int(0).unwrap(), 84);
+        assert_eq!(rows[2].get_int(0).unwrap(), 126);
+    }
 
-    //     test_rows.extend(rows_int);
-    //     test_rows.extend(rows_float);
+    #[test]
+    fn test_file_to_rows_nonexistent_file() {
+        let result = file_to_rows("/nonexistent/path/file.parquet");
+        assert!(result.is_err());
+    }
 
-    //     // Write and verify
-    //     vec_to_parquet_file(test_rows, file_path_str)?;
-    //     assert!(file_path.exists(), "Parquet file should be created");
+    #[test]
+    #[traced_test]
+    fn test_compare_parquet_file_with_bytes() {
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("compare_test.parquet");
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "value",
+            DataType::Utf8,
+            true,
+        )]));
+        let value_array = Arc::new(StringArray::from(vec![Some("test1"), Some("test2")]));
+        let record_batch = RecordBatch::try_new(schema, vec![value_array]).unwrap();
+        let file = File::create(&file_path).unwrap();
+        let arrow_writer = write_record_batch(record_batch.clone(), file).unwrap();
+        arrow_writer.close().unwrap();
+        let parquet_bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
 
-    //     // Read back
-    //     let rows = file_to_rows(file_path_str)?;
-    //     assert_eq!(rows.len(), 4, "Should have 4 rows");
+        let result = compare_parquet_file_with_bytes(file_path.to_str().unwrap(), parquet_bytes);
+        assert!(result);
 
-    //     // Clean up
-    //     fs::remove_file(&file_path).ok();
+        let different_schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "value",
+            DataType::Utf8,
+            true,
+        )]));
+        let different_array = Arc::new(StringArray::from(vec![
+            Some("different1"),
+            Some("different2"),
+        ]));
+        let different_batch =
+            RecordBatch::try_new(different_schema, vec![different_array]).unwrap();
+        let different_bytes = record_batch_to_parquet_bytes(different_batch).unwrap();
 
-    //     Ok(())
-    // }
+        let result = compare_parquet_file_with_bytes(file_path.to_str().unwrap(), different_bytes);
+        assert!(!result);
+    }
 
-    // #[test]
-    // fn test_vec_to_parquet_empty_vec() {
-    //     let temp_dir = tempdir().unwrap();
-    //     let file_path = temp_dir.path().join("test_empty.parquet");
-    //     let file_path_str = file_path.to_str().unwrap();
+    #[test]
+    fn test_compare_parquet_file_with_bytes_nonexistent_file() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "dummy",
+            DataType::Int32,
+            false,
+        )]));
+        let dummy_array = Arc::new(Int32Array::from(vec![1]));
+        let record_batch = RecordBatch::try_new(schema, vec![dummy_array]).unwrap();
+        let bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
+        let result = compare_parquet_file_with_bytes("/nonexistent/file.parquet", bytes);
+        assert!(!result);
+    }
 
-    //     let empty_rows: Vec<Row> = Vec::new();
+    #[test]
+    fn test_reader_to_vec_empty() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "empty_col",
+            DataType::Int32,
+            true,
+        )]));
+        let empty_array = Arc::new(Int32Array::from(Vec::<Option<i32>>::new()));
+        let record_batch = RecordBatch::try_new(schema, vec![empty_array]).unwrap();
+        let parquet_bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
 
-    //     // Should return an error for empty vector
-    //     let result = vec_to_parquet_file(empty_rows, file_path_str);
-    //     assert!(result.is_err(), "Should return error for empty vector");
+        let rows = bytes_to_rows(parquet_bytes).unwrap();
+        assert_eq!(rows.len(), 0);
+    }
 
-    //     if let Err(SharedError::Generic(msg)) = result {
-    //         assert!(
-    //             msg.contains("Cannot write empty vector"),
-    //             "Error should mention empty vector"
-    //         );
-    //     } else {
-    //         panic!("Expected Generic error");
-    //     }
-    // }
+    #[test]
+    fn test_various_data_types_conversion() {
+        let schema = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("int32_col", DataType::Int32, true),
+            ArrowField::new("float64_col", DataType::Float64, true),
+            ArrowField::new("string_col", DataType::Utf8, true),
+            ArrowField::new("bool_col", DataType::Boolean, true),
+            ArrowField::new("binary_col", DataType::Binary, true),
+            ArrowField::new("date_col", DataType::Date32, true),
+            ArrowField::new(
+                "timestamp_col",
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                true,
+            ),
+        ]));
+
+        let int32_array = Arc::new(Int32Array::from(vec![Some(42), None, Some(-123)]));
+        let float64_array = Arc::new(Float64Array::from(vec![Some(3.14), Some(-2.71), None]));
+        let string_array = Arc::new(StringArray::from(vec![Some("hello"), None, Some("world")]));
+        let bool_array = Arc::new(BooleanArray::from(vec![Some(true), Some(false), None]));
+        let binary_array = Arc::new(BinaryArray::from(vec![
+            Some(b"binary1".as_slice()),
+            None,
+            Some(b"binary2".as_slice()),
+        ]));
+        let date_array = Arc::new(Date32Array::from(vec![Some(18628), None, Some(18629)])); // 2021-01-01, 2021-01-02
+        let timestamp_array = Arc::new(TimestampMillisecondArray::from(vec![
+            Some(1609459200000), // 2021-01-01 00:00:00
+            None,
+            Some(1609545600000), // 2021-01-02 00:00:00
+        ]));
+
+        let record_batch = RecordBatch::try_new(
+            schema,
+            vec![
+                int32_array,
+                float64_array,
+                string_array,
+                bool_array,
+                binary_array,
+                date_array,
+                timestamp_array,
+            ],
+        )
+        .unwrap();
+
+        let parquet_bytes = record_batch_to_parquet_bytes(record_batch).unwrap();
+        let rows = bytes_to_rows(parquet_bytes).unwrap();
+        assert_eq!(rows.len(), 3);
+
+        let first_row = &rows[0];
+        assert_eq!(first_row.get_int(0).unwrap(), 42);
+        assert_eq!(first_row.get_double(1).unwrap(), 3.14);
+        assert_eq!(first_row.get_string(2).unwrap(), "hello");
+        assert_eq!(first_row.get_bool(3).unwrap(), true);
+
+        let second_row = &rows[1];
+        assert!(matches!(second_row.get_int(0), Err(_)));
+        assert_eq!(second_row.get_double(1).unwrap(), -2.71);
+        assert!(matches!(second_row.get_string(2), Err(_)));
+        assert_eq!(second_row.get_bool(3).unwrap(), false);
+    }
 }
