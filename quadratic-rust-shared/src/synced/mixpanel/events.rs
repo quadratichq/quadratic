@@ -301,43 +301,8 @@ mod tests {
     use super::*;
     use crate::synced::mixpanel::client::new_mixpanel_client;
 
-    // #[tokio::test]
-    // async fn test_mixpanel_events() {
-    //     let client = new_mixpanel_client();
-    //     let s3 = s3_object_store();
-    //     let num_objects = list_objects(&s3, None).await.unwrap().len();
-    //     println!("Number of objects: {}", num_objects);
-
-    //     // if we don't have any objects, we need to export the last 30 days
-    //     // let num_days = if num_objects > 0 { 0 } else { 30 };
-    //     let num_days = 31;
-    //     let end_date = chrono::Utc::now().date_naive();
-    //     let start_date = end_date - chrono::Duration::days(num_days);
-
-    //     println!("Exporting events from {} to {}...", start_date, end_date);
-
-    //     let params = ExportParams {
-    //         from_date: start_date,
-    //         to_date: end_date,
-    //         events: None,
-    //         r#where: None,
-    //     };
-
-    //     let start_time = std::time::Instant::now();
-    //     let events = client.export_events_as_rows(params).await.unwrap();
-
-    //     println!("Exported {} event dates", events.len());
-
-    //     let (num_files, total_records) = upload_to_s3(&s3, events).await.unwrap();
-
-    //     println!(
-    //         "Time taken to write {} events to parquet for {} days: {:?}",
-    //         total_records,
-    //         num_files,
-    //         start_time.elapsed()
-    //     );
-    // }
-
+    // TODO(ddimaria): remove this ignore once we have events mocked
+    #[ignore]
     #[tokio::test]
     async fn test_mixpanel_events() {
         let client = new_mixpanel_client();

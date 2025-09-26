@@ -85,6 +85,8 @@ impl MixpanelClient {
 mod tests {
     use crate::synced::mixpanel::client::new_mixpanel_client;
 
+    // TODO(ddimaria): remove this ignore once we have cohorts mocked
+    #[ignore]
     #[tokio::test]
     async fn test_mixpanel_cohorts() {
         let client = new_mixpanel_client();

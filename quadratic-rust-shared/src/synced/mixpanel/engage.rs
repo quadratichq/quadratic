@@ -87,6 +87,8 @@ mod tests {
 
     use super::*;
 
+    // TODO(ddimaria): remove this ignore once we have engage mocked
+    #[ignore]
     #[tokio::test]
     async fn test_mixpanel_engage() {
         let client = new_mixpanel_client();
@@ -98,7 +100,7 @@ mod tests {
         };
         let response = client.engage(engage_params).await.unwrap();
 
-        println!("✅ Got {} user profiles", response.results.len());
+        println!("Got {} user profiles", response.results.len());
 
         if let Some(first_profile) = response.results.first() {
             println!("Sample profile ID: {}", first_profile.distinct_id);

@@ -35,12 +35,14 @@ impl MixpanelClient {
 mod tests {
     use crate::synced::mixpanel::client::new_mixpanel_client;
 
+    // TODO(ddimaria): remove this ignore once we have annotations mocked
+    #[ignore]
     #[tokio::test]
     async fn test_mixpanel_annotations() {
         let client = new_mixpanel_client();
         let annotations = client.get_annotations().await.unwrap();
 
-        println!("✅ Found {} annotations", annotations.len());
+        println!("Found {} annotations", annotations.len());
 
         for annotation in annotations {
             println!("  - {}: {}", annotation.date, annotation.description);

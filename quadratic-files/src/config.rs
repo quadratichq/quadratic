@@ -10,7 +10,6 @@ use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
 use quadratic_rust_shared::storage::StorageType;
 use serde::Deserialize;
-use strum_macros::Display;
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]

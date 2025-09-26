@@ -24,9 +24,11 @@ impl MixpanelClient {
     pub async fn get_revenue(&self, params: RevenueParams) -> Result<Vec<RevenueData>> {
         let url = format!("{}/engage/revenue", self.config().server.base_url());
 
-        let query_params = [("from_date", params.from_date.format("%Y-%m-%d").to_string()),
+        let query_params = [
+            ("from_date", params.from_date.format("%Y-%m-%d").to_string()),
             ("to_date", params.to_date.format("%Y-%m-%d").to_string()),
-            ("unit", params.unit)];
+            ("unit", params.unit),
+        ];
 
         let query_params_str: Vec<(&str, &str)> =
             query_params.iter().map(|(k, v)| (*k, v.as_str())).collect();
@@ -58,7 +60,7 @@ mod tests {
 
     use super::*;
 
-    // TODO(ddimaria): we don't have revenue data for quadratic
+    // TODO(ddimaria): remove this ignore once we have revenue mocked
     #[ignore]
     #[tokio::test]
     async fn test_mixpanel_revenue() {
