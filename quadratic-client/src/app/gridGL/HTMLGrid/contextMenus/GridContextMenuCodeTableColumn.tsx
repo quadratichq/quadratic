@@ -1,11 +1,15 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuCodeTableNested } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
+import { useCursorPosition } from '@/app/ui/hooks/useCursorPosition';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 
 export function GridContextMenuCodeTableColumn() {
+  const { cursorString } = useCursorPosition();
   return (
     <ContextMenuBase>
+      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorString} />
+      <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
