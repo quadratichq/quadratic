@@ -74,16 +74,13 @@ const MentionsTextarea = memo(
         return getMentionCursorPosition(textarea);
       }, [textareaRef]);
 
-      // Filter mentions based on query
-      const mentions = useGetMentions(mentionState.query);
-      const filteredMentions = useMemo(() => {
-        if (!mentionState.query) return mentions;
-        return mentions.filter(
-          (mention) =>
-            mention.label.toLowerCase().includes(mentionState.query.toLowerCase()) ||
-            mention.value.toLowerCase().includes(mentionState.query.toLowerCase())
-        );
-      }, [mentions, mentionState.query]);
+      // Get grouped mentions
+      const mentionGroups = useGetMentions(mentionState.query);
+
+      // Flatten mentions for navigation
+      const allMentions = useMemo(() => {
+        return mentionGroups.flatMap((group) => group.items);
+      }, [mentionGroups]);
 
       // Check for mentions when textarea changes
       const checkForMentions = useCallback(() => {
@@ -176,7 +173,7 @@ const MentionsTextarea = memo(
             if (event.key === 'ArrowDown') {
               event.preventDefault();
               event.stopPropagation();
-              const newIndex = Math.min(mentionState.selectedIndex + 1, filteredMentions.length - 1);
+              const newIndex = Math.min(mentionState.selectedIndex + 1, allMentions.length - 1);
               setMentionState((prev) => ({
                 ...prev,
                 selectedIndex: newIndex,
@@ -197,10 +194,10 @@ const MentionsTextarea = memo(
               return;
             }
 
-            if ((event.key === 'Enter' || event.key === 'Tab') && filteredMentions.length > 0) {
+            if ((event.key === 'Enter' || event.key === 'Tab') && allMentions.length > 0) {
               event.preventDefault();
               event.stopPropagation();
-              const selectedMention = filteredMentions[mentionState.selectedIndex];
+              const selectedMention = allMentions[mentionState.selectedIndex];
               if (selectedMention) {
                 handleMentionSelect(selectedMention);
               }
@@ -219,7 +216,7 @@ const MentionsTextarea = memo(
       }, [
         mentionState.isOpen,
         mentionState.selectedIndex,
-        filteredMentions,
+        allMentions,
         checkForMentions,
         handleMentionSelect,
         scrollSelectedIntoView,
@@ -227,10 +224,10 @@ const MentionsTextarea = memo(
         textareaRef,
       ]);
 
-      // Update refs array when filtered mentions change
+      // Update refs array when mentions change
       useEffect(() => {
-        mentionItemRefs.current = mentionItemRefs.current.slice(0, filteredMentions.length);
-      }, [filteredMentions.length]);
+        mentionItemRefs.current = mentionItemRefs.current.slice(0, allMentions.length);
+      }, [allMentions.length]);
 
       // Handle click outside to close mentions
       useEffect(() => {
@@ -262,7 +259,7 @@ const MentionsTextarea = memo(
           {/* Render the actual textarea child */}
           {enhancedChild}
 
-          {mentionState.isOpen && filteredMentions.length > 0 && (
+          {mentionState.isOpen && allMentions.length > 0 && (
             <>
               {/* Invisible background overlay that covers the entire page */}
               <div
@@ -291,32 +288,40 @@ const MentionsTextarea = memo(
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <div className="max-h-60 space-y-0.5 overflow-y-auto">
-                  {filteredMentions.map((mention, index) => (
-                    <div
-                      key={mention.id}
-                      ref={(el) => {
-                        mentionItemRefs.current[index] = el;
-                      }}
-                      onClick={() => {
-                        handleMentionSelect(mention);
-                      }}
-                      onMouseDown={(e) => e.preventDefault()}
-                      className={cn(
-                        'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
-                        index === mentionState.selectedIndex
-                          ? 'bg-accent text-accent-foreground'
-                          : 'hover:bg-accent hover:text-accent-foreground'
-                      )}
-                    >
-                      <div className="flex flex-row items-center justify-between">
-                        <div className="flex flex-row items-center gap-2">
-                          {mention.icon && mention.icon}
-                          <span className="font-medium">{mention.label}</span>
-                        </div>
-                        {mention.description && (
-                          <span className="text-xs text-muted-foreground">{mention.description}</span>
-                        )}
-                      </div>
+                  {mentionGroups.map((group) => (
+                    <div key={group.heading}>
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{group.heading}</div>
+                      {group.items.map((mention, index) => {
+                        const globalIndex = allMentions.findIndex((m) => m.id === mention.id);
+                        return (
+                          <div
+                            key={mention.id}
+                            ref={(el) => {
+                              mentionItemRefs.current[globalIndex] = el;
+                            }}
+                            onClick={() => {
+                              handleMentionSelect(mention);
+                            }}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className={cn(
+                              'cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors',
+                              globalIndex === mentionState.selectedIndex
+                                ? 'bg-accent text-accent-foreground'
+                                : 'hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            <div className="flex flex-row items-center justify-between">
+                              <div className="flex flex-row items-center gap-2">
+                                {mention.icon && mention.icon}
+                                <span className="font-medium">{mention.label}</span>
+                              </div>
+                              {mention.description && (
+                                <span className="text-xs text-muted-foreground">{mention.description}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>

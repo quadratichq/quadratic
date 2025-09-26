@@ -7,7 +7,12 @@ import type { MentionItem } from '@/shared/shadcn/ui/mentions-textarea';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const useGetMentions = (value: string): MentionItem[] => {
+export interface MentionGroup {
+  heading: string;
+  items: MentionItem[];
+}
+
+export const useGetMentions = (value: string): MentionGroup[] => {
   const tableInfo = useRecoilValue(tableInfoAtom);
 
   const tablesFiltered = useMemo(
@@ -45,28 +50,47 @@ export const useGetMentions = (value: string): MentionItem[] => {
     [value]
   );
 
-  return [
-    ...tablesFiltered.map(({ name }) => ({
-      id: name,
-      label: name,
-      value: name,
-      description: tableNameToRange(name),
-      icon: <TableIcon />,
-    })),
-    ...codeTablesFiltered.map(({ name, language }) => ({
-      id: name,
-      label: name,
-      value: name,
-      description: tableNameToRange(name),
-      icon: <LanguageIcon language={getConnectionKind(language)} />,
-    })),
-    ...sheetsFiltered.map((sheet) => ({
-      id: sheet.id,
-      label: sheet.name,
-      value: sheet.name,
-      icon: <SheetIcon />,
-    })),
-  ];
+  const groups: MentionGroup[] = [];
+
+  if (tablesFiltered.length > 0) {
+    groups.push({
+      heading: 'Tables',
+      items: tablesFiltered.map(({ name }) => ({
+        id: name,
+        label: name,
+        value: name,
+        description: tableNameToRange(name),
+        icon: <TableIcon />,
+      })),
+    });
+  }
+
+  if (codeTablesFiltered.length > 0) {
+    groups.push({
+      heading: 'Code',
+      items: codeTablesFiltered.map(({ name, language }) => ({
+        id: name,
+        label: name,
+        value: name,
+        description: tableNameToRange(name),
+        icon: <LanguageIcon language={getConnectionKind(language)} />,
+      })),
+    });
+  }
+
+  if (sheetsFiltered.length > 0) {
+    groups.push({
+      heading: 'Sheets',
+      items: sheetsFiltered.map((sheet) => ({
+        id: sheet.id,
+        label: sheet.name,
+        value: sheet.name,
+        icon: <SheetIcon />,
+      })),
+    });
+  }
+
+  return groups;
 };
 
 function tableNameToRange(tableName: string) {
