@@ -181,7 +181,8 @@ impl GridController {
 
             // delete cell values that are at the anchor position of the data
             // table (DataTables always overwrite the anchor cell)
-            if let Some(old_cell_value) = sheet.columns.delete_value(&data_table_pos) {
+            if let Some(old_cell_value) = sheet.columns.set_value(&data_table_pos, CellValue::Blank)
+            {
                 transaction
                     .reverse_operations
                     .push(Operation::SetCellValues {
@@ -192,9 +193,6 @@ impl GridController {
 
             let mut sheet_rect_for_compute_and_spills =
                 data_table.output_sheet_rect(sheet_pos, false);
-
-            // select the entire data table
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
             // insert the data table into the sheet
             let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
@@ -237,7 +235,9 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::AddDataTable in execute_add_data_table_without_cell_value");
+        bail!(
+            "Expected Operation::AddDataTableWithoutCellValue in execute_add_data_table_without_cell_value"
+        );
     }
 
     pub(super) fn execute_move_data_table(

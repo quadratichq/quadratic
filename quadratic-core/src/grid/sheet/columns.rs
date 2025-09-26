@@ -141,19 +141,6 @@ impl SheetColumns {
         }
     }
 
-    pub fn delete_value(&mut self, pos: &Pos) -> Option<CellValue> {
-        if let Some(column) = self.columns.get_mut(&pos.x) {
-            if column.values.contains_key(&pos.y) {
-                self.has_cell_value.set(*pos, None);
-                column.values.remove(&pos.y).to_owned()
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
     /// Deletes the values in the given rectangle.
     pub fn delete_values(&mut self, rect: Rect) -> Array {
         self.has_cell_value.set_rect(
