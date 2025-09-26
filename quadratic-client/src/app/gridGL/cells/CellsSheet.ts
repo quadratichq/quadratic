@@ -86,6 +86,7 @@ export class CellsSheet extends Container {
 
   adjustOffsets() {
     this.tables.sheetOffsets(this.sheetId);
+    this.cellsMarkers.adjustOffsets(this.sheetId);
   }
 
   getCellsImages(): CellsImage[] {

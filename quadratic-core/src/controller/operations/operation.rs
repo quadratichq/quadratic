@@ -240,11 +240,17 @@ pub enum Operation {
     /// Deletes an existing sheet.
     DeleteSheet {
         sheet_id: SheetId,
+
+        #[serde(default)]
+        sheet_name: Option<String>,
     },
     /// Sets a sheet's name.
     SetSheetName {
         sheet_id: SheetId,
         name: String,
+
+        #[serde(default)]
+        old_sheet_name: Option<String>,
     },
     /// Sets a sheet's color.
     SetSheetColor {
@@ -255,6 +261,11 @@ pub enum Operation {
     ReorderSheet {
         target: SheetId,
         order: String,
+    },
+    /// Replace a sheet with a new one.
+    ReplaceSheet {
+        sheet_id: SheetId,
+        sheet: Box<Sheet>,
     },
 
     /// Resizes a single column.

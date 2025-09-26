@@ -1,7 +1,7 @@
 use serde::Serialize;
 use ts_rs::TS;
 
-#[derive(Debug, Serialize, Clone, PartialEq, TS)]
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, TS)]
 pub enum TransactionName {
     Unknown,
     ResizeColumn,
@@ -31,6 +31,7 @@ pub enum TransactionName {
     SheetAdd,
     SheetDelete,
     DuplicateSheet,
+    ReplaceSheet,
     MoveCells,
     Validation,
     ManipulateColumnRow,

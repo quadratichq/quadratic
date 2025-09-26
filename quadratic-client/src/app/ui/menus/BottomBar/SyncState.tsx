@@ -65,7 +65,7 @@ export default function SyncState() {
           title: 'Undo',
           callback: () => {
             for (let i = 0; i < timestamps.length; i++) {
-              quadraticCore.undo();
+              quadraticCore.undo(1, false);
             }
           },
         },

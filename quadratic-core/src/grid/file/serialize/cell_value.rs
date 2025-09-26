@@ -130,8 +130,13 @@ mod tests {
     fn test_import_and_export_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_date_time_format(&A1Selection::test_a1("A1"), Some("%H".to_string()), None)
-            .unwrap();
+        gc.set_date_time_format(
+            &A1Selection::test_a1("A1"),
+            Some("%H".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
         let grid = gc.grid().clone();
         let exported = file::export(grid).unwrap();
         let imported = file::import(exported).unwrap();

@@ -76,13 +76,14 @@ impl SheetCellRefRange {
         a1_context: &A1Context,
     ) -> String {
         if self.needs_sheet_name(default_sheet_id)
-            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    super::quote_sheet_name(sheet_name),
-                    self.cells.to_a1_string(),
-                );
-            }
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                super::quote_sheet_name(sheet_name),
+                self.cells.to_a1_string(),
+            );
+        }
         format!("{}", self.cells)
     }
 
@@ -96,13 +97,14 @@ impl SheetCellRefRange {
         base_pos: Pos,
     ) -> String {
         if self.needs_sheet_name(default_sheet_id)
-            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    super::quote_sheet_name(sheet_name),
-                    self.cells.to_rc_string(base_pos),
-                );
-            }
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                super::quote_sheet_name(sheet_name),
+                self.cells.to_rc_string(base_pos),
+            );
+        }
         self.cells.to_rc_string(base_pos)
     }
 
@@ -158,7 +160,7 @@ mod tests {
         let sheet1_id = SheetId::TEST;
         let sheet2_id = SheetId::new();
         let context = A1Context::test(
-            &[("Sheet1", sheet1_id), ("Sheet 2", sheet2_id)],
+            &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
 

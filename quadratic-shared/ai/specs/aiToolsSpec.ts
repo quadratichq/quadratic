@@ -58,6 +58,8 @@ export enum AITool {
   AddNumberValidation = 'add_number_validation',
   AddDateTimeValidation = 'add_date_time_validation',
   RemoveValidations = 'remove_validation',
+  Undo = 'undo',
+  Redo = 'redo',
 }
 
 export const AIToolSchema = z.enum([
@@ -108,6 +110,8 @@ export const AIToolSchema = z.enum([
   AITool.AddNumberValidation,
   AITool.AddDateTimeValidation,
   AITool.RemoveValidations,
+  AITool.Undo,
+  AITool.Redo,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -521,6 +525,12 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
+  [AITool.Undo]: z.object({
+    count: numberSchema.nullable().optional(),
+  }),
+  [AITool.Redo]: z.object({
+    count: numberSchema.nullable().optional(),
+  }),
 } as const;
 
 export type AIToolsArgs = {
@@ -620,7 +630,7 @@ This name should be from user's perspective, not the assistant's.\n
     prompt: '',
   },
   [AITool.GetCellData]: {
-    sources: ['AIAnalyst'],
+    sources: ['AIAnalyst', 'AIAssistant'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
@@ -962,7 +972,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
@@ -1025,7 +1035,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
-IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
@@ -1267,8 +1277,9 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
         },
         selection: {
           type: 'string',
-          description:
-            'The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.',
+          description: `
+The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.\n
+When you are formatting multiple, non-contiguous cells, or cells not in a rectangle, you may use a list of ranges in A1 notation separated by commas. For example, "A1,B2:D5,E20".`,
         },
         bold: {
           type: ['boolean', 'null'],
@@ -1585,7 +1596,7 @@ It requires the query to search for.\n
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
-This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
 `,
     parameters: {
       type: 'object',
@@ -1608,7 +1619,7 @@ This tool should not be used to list the sheets in the file. The names of all sh
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
-This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n 
+This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -2624,5 +2635,55 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
+  },
+  [AITool.Undo]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool undoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to undo.\n
+Always pass in the count of actions to undo when using the undo tool, even if the count to undo is 1.\n
+If the user's undo request is multiple transactions in the past, use the count parameter to pass the number of transactions to undo.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        count: {
+          type: 'number',
+          description:
+            'The number of transactions to undo. Should be a number and at least 1 (which only performs an undo on the last transaction)',
+        },
+      },
+      required: ['count'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.Undo],
+    prompt: `
+This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable.\n
+Always pass in the count of actions to undo when using the undo tool, even if the count to undo is 1.\n
+If the user's undo request is multiple transactions in the past, use the count parameter to pass the number of transactions to undo.\n`,
+  },
+  [AITool.Redo]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
+Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
+If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        count: {
+          type: 'number',
+          description:
+            'The number of transactions to redo. Should be a number and at least 1 (which only performs an redo on the last transaction). Can only redo after the same number of undos have been performed.',
+        },
+      },
+      required: ['count'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.Redo],
+    prompt: `
+This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
+Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
+If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
   },
 } as const;

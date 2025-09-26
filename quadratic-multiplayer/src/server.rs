@@ -595,6 +595,7 @@ pub(crate) mod tests {
         let operations = vec![Operation::SetSheetName {
             sheet_id: SheetId::new(),
             name: "test".to_string(),
+            old_sheet_name: None,
         }];
         let id = Uuid::new_v4();
         let compressed_ops = Transaction::serialize_and_compress(&operations).unwrap();

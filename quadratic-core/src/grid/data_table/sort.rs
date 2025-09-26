@@ -137,11 +137,11 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
 
     use super::*;
     use crate::{
-        grid::test::{new_data_table, test_csv_values},
+        grid::data_table::test_util::{new_data_table, test_csv_values},
         test_util::{assert_data_table_row, pretty_print_data_table},
     };
 

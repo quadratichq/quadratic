@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.18.1",
+  "version": "0.20.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -59,7 +59,7 @@
     "@ory/kratos-client": "^1.2.1",
     "@protobuf-ts/runtime": "^2.11.0",
     "@radix-ui/react-icons": "^1.3.2",
-    "@sentry/react": "^9.40.0",
+    "@sentry/react": "^10.10.0",
     "@szhsin/react-menu": "^4.0.2",
     "@workos-inc/authkit-js": "0.13.0",
     "bignumber.js": "^9.2.1",
@@ -100,7 +100,7 @@
   },
   "devDependencies": {
     "@protobuf-ts/plugin": "^2.11.0",
-    "@sentry/vite-plugin": "^3.6.1",
+    "@sentry/vite-plugin": "^4.3.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
     "@types/fontfaceobserver": "^2.1.3",

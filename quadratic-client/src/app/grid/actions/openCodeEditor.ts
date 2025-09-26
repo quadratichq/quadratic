@@ -54,7 +54,6 @@ export const openCodeEditor = async () => {
           id: '',
           messages: [],
           waitingOnMessageIndex: undefined,
-          delaySeconds: 0,
         },
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -79,7 +78,6 @@ export const openCodeEditor = async () => {
         id: '',
         messages: [],
         waitingOnMessageIndex: undefined,
-        delaySeconds: 0,
       },
       diffEditorContent: undefined,
       waitingForEditorClose: {
@@ -107,7 +105,6 @@ export const openCodeEditor = async () => {
         id: '',
         messages: [],
         waitingOnMessageIndex: undefined,
-        delaySeconds: 0,
       },
       diffEditorContent: undefined,
       initialCode: '',

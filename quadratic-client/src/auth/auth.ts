@@ -1,3 +1,5 @@
+import { oryClient } from '@/auth/ory';
+import { workosClient } from '@/auth/workos';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
@@ -32,19 +34,12 @@ export interface AuthClient {
   authenticateWithMagicCode(args: { email: string; code: string }): Promise<void>;
 }
 
-let cachedAuthClient: Promise<AuthClient> | AuthClient | null = null;
-const getAuthClient = async (): Promise<AuthClient> => {
-  if (cachedAuthClient) {
-    return await cachedAuthClient;
-  }
-
+const getAuthClient = (): AuthClient => {
   switch (AUTH_TYPE) {
     case 'ory':
-      cachedAuthClient = (await import('@/auth/ory')).oryClient;
-      return cachedAuthClient;
+      return oryClient;
     case 'workos':
-      cachedAuthClient = (await import('@/auth/workos')).workosClient;
-      return cachedAuthClient;
+      return workosClient;
     default:
       throw new Error(`Unsupported auth type in getAuthClient(): ${AUTH_TYPE}`);
   }
@@ -53,59 +48,59 @@ const getAuthClient = async (): Promise<AuthClient> => {
 // Create a proxy client that lazily loads the actual client
 export const authClient: AuthClient = {
   async isAuthenticated() {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.isAuthenticated();
   },
   async user() {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.user();
   },
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.login(args);
   },
   async handleSigninRedirect(href: string) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.handleSigninRedirect(href);
   },
   async logout() {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.logout();
   },
   async getTokenOrRedirect(skipRedirect?: boolean) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.getTokenOrRedirect(skipRedirect);
   },
   async loginWithPassword(args: { email: string; password: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.loginWithPassword(args);
   },
   async loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.loginWithOAuth(args);
   },
   async signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.signupWithPassword(args);
   },
   async verifyEmail(args: { pendingAuthenticationToken: string; code: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.verifyEmail(args);
   },
   async sendResetPassword(args: { email: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.sendResetPassword(args);
   },
   async resetPassword(args: { token: string; password: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.resetPassword(args);
   },
   async sendMagicAuthCode(args: { email: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.sendMagicAuthCode(args);
   },
   async authenticateWithMagicCode(args: { email: string; code: string }) {
-    const client = await getAuthClient();
+    const client = getAuthClient();
     return client.authenticateWithMagicCode(args);
   },
 };
