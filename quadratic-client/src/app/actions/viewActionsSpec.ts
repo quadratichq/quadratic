@@ -1,3 +1,4 @@
+import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
@@ -188,13 +189,16 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.StartChatInAIAnalyst]: {
-    label: () => 'Start chat',
+    label: () => 'Reference in chat',
     Icon: AIIcon,
     // Only show if AI analyst is not visible at the moment
-    isAvailable: () => {
-      return !Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst);
-    },
+    isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
     run: (reference: ViewActionArgs[Action.StartChatInAIAnalyst]) => {
+      // TODO:
+      // We want to keep track of the last focused prompt input in the AI analyst and
+      // when the user uses this action via the grid, we want to (open if closed)
+      // insert/append a reference to the selection in the last focused prompt input.
+      console.log('TODO(ayush): pass reference to AI analyst chat');
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => {
         const newState = {

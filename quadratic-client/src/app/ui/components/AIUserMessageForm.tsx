@@ -408,6 +408,8 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
           />
 
+          {/* TODO(ayush): replace textarea with custom editor that supports 
+              highlighting/styling mentions */}
           {enableMentions ? (
             <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
