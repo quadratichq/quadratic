@@ -15,7 +15,7 @@ export function GridContextMenuCell() {
   const [rowAvailable, setRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
   const [canRunSelection, setCanRunSelection] = useState(false);
-  const { cursorString } = useCursorPosition();
+  const { cursorStringWithSheetName } = useCursorPosition();
 
   useEffect(() => {
     const updateCursor = () => {
@@ -43,7 +43,7 @@ export function GridContextMenuCell() {
   return (
     <ContextMenuBase>
       {canRunSelection && <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />}
-      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorString} />
+      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorStringWithSheetName} />
 
       <DropdownMenuSeparator />
 
