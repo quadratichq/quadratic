@@ -129,12 +129,14 @@ mod tests {
         }
     }
 
+    // TODO(ddimaria): remove this ignore once datafusion connection is mocked
     #[tokio::test]
     #[traced_test]
+    #[ignore]
     async fn test_mixpanel_connection_success() {
         let connection = get_test_mixpanel_connection();
         let response = test_mixpanel(Json(connection)).await;
-        assert!(response.0.connected || !response.0.connected);
+        assert!(response.0.connected);
     }
 
     #[tokio::test]

@@ -49,7 +49,7 @@ pub async fn get_last_date_processed(
     let objects = list_objects(object_store, prefix).await?;
     let last_date = objects
         .iter()
-        .flat_map(|o| get_date_from_location(&o.location.to_string()))
+        .flat_map(|o| get_date_from_location(o.location.as_ref()))
         .collect::<Vec<NaiveDate>>()
         .iter()
         .max()

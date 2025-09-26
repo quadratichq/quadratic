@@ -41,10 +41,8 @@ impl Settings {
 /// Get a required value from the config.
 fn required<'a>(config: &'a Config, value: Option<&'a String>) -> &'a String {
     let storage_type = config.storage_type.to_string();
-    value.expect(&format!(
-        "Missing required environment variables for {} storage",
-        storage_type
-    ))
+    value.unwrap_or_else(|| panic!("Missing required environment variables for {} storage",
+        storage_type))
 }
 
 /// Create a new datafusion connection.
@@ -74,7 +72,7 @@ fn object_store(config: &Config) -> Result<Arc<dyn ObjectStore>> {
 /// Create a new filesystem object store.
 fn filesystem_object_store(config: &Config) -> Result<(Arc<dyn ObjectStore>, PathBuf)> {
     let path = required(config, config.storage_dir.as_ref());
-    new_filesystem_object_store(&path).map_err(ConnectionError::from)
+    new_filesystem_object_store(path).map_err(ConnectionError::from)
 }
 
 /// Create a new S3 object store.

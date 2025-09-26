@@ -24,7 +24,7 @@ pub fn object_store_url(kind: ObjectStoreKind, bucket_name: Option<&str>) -> Res
         ObjectStoreKind::FileSystem => "file://".to_string(),
     };
 
-    Ok(Url::parse(&url).map_err(object_store_error)?)
+    Url::parse(&url).map_err(object_store_error)
 }
 
 /// Create a new S3 object store.
@@ -74,7 +74,7 @@ pub async fn list_objects(
     object_store: &Arc<dyn ObjectStore>,
     prefix: Option<&str>,
 ) -> Result<Vec<ObjectMeta>> {
-    let list_stream = object_store.list(prefix.map(|p| Path::from(p)).as_ref());
+    let list_stream = object_store.list(prefix.map(Path::from).as_ref());
     let objects: Vec<ObjectMeta> = list_stream
         .try_collect()
         .await

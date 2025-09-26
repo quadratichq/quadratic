@@ -62,12 +62,10 @@ impl MixpanelClient {
     ) -> Result<FunnelData> {
         let url = format!("{}/funnels", self.config().server.base_url());
 
-        let query_params = vec![
-            ("funnel_id", funnel_id.to_string()),
+        let query_params = [("funnel_id", funnel_id.to_string()),
             ("from_date", params.from_date.format("%Y-%m-%d").to_string()),
             ("to_date", params.to_date.format("%Y-%m-%d").to_string()),
-            ("unit", params.unit),
-        ];
+            ("unit", params.unit)];
 
         let query_params_str: Vec<(&str, &str)> =
             query_params.iter().map(|(k, v)| (*k, v.as_str())).collect();

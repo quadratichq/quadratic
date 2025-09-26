@@ -109,18 +109,18 @@ impl MixpanelClient {
                 // parse and flatten the Mixpanel event structure
                 let event: Event = serde_json::from_str(line)?;
 
-                if let Some(time_value) = event.properties.get("time") {
-                    if let Some(timestamp) = time_value.as_i64() {
-                        let datetime = DateTime::<Utc>::from_timestamp(timestamp, 0)
-                            .ok_or_else(|| SharedError::Synced("Invalid timestamp".to_string()))?;
-                        let date_key = datetime.format(DATE_FORMAT).to_string();
+                if let Some(time_value) = event.properties.get("time")
+                    && let Some(timestamp) = time_value.as_i64()
+                {
+                    let datetime = DateTime::<Utc>::from_timestamp(timestamp, 0)
+                        .ok_or_else(|| SharedError::Synced("Invalid timestamp".to_string()))?;
+                    let date_key = datetime.format(DATE_FORMAT).to_string();
 
-                        // flatten the event into a single JSON object
-                        let flattened_event = Self::flatten_mixpanel_event(&event);
-                        let flattened_json = serde_json::to_string(&flattened_event)?;
+                    // flatten the event into a single JSON object
+                    let flattened_event = Self::flatten_mixpanel_event(&event);
+                    let flattened_json = serde_json::to_string(&flattened_event)?;
 
-                        return Ok(Some((date_key, flattened_json)));
-                    }
+                    return Ok(Some((date_key, flattened_json)));
                 }
                 Ok(None)
             })
@@ -128,16 +128,14 @@ impl MixpanelClient {
 
         // collect results and handle any errors
         for result in results {
-            match result? {
-                Some((date_key, flattened_json)) => {
-                    grouped_json
-                        .lock()
-                        .unwrap()
-                        .entry(date_key)
-                        .or_insert_with(Vec::new)
-                        .push(flattened_json);
-                }
-                None => {} // skip events without timestamps
+            // skip events without timestamps
+            if let Some((date_key, flattened_json)) = result? {
+                grouped_json
+                    .lock()
+                    .unwrap()
+                    .entry(date_key)
+                    .or_default()
+                    .push(flattened_json);
             }
         }
 

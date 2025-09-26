@@ -167,11 +167,11 @@ mod tests {
             DataType::UInt64
         );
         assert_eq!(
-            field_to_data_type(&Field::Float(3.14)).unwrap(),
+            field_to_data_type(&Field::Float(3.12)).unwrap(),
             DataType::Float32
         );
         assert_eq!(
-            field_to_data_type(&Field::Double(3.14)).unwrap(),
+            field_to_data_type(&Field::Double(3.12)).unwrap(),
             DataType::Float64
         );
         assert_eq!(
@@ -409,7 +409,7 @@ mod tests {
         ]));
 
         let int32_array = Arc::new(Int32Array::from(vec![Some(42), None, Some(-123)]));
-        let float64_array = Arc::new(Float64Array::from(vec![Some(3.14), Some(-2.71), None]));
+        let float64_array = Arc::new(Float64Array::from(vec![Some(3.12), Some(-2.71), None]));
         let string_array = Arc::new(StringArray::from(vec![Some("hello"), None, Some("world")]));
         let bool_array = Arc::new(BooleanArray::from(vec![Some(true), Some(false), None]));
         let binary_array = Arc::new(BinaryArray::from(vec![
@@ -444,14 +444,14 @@ mod tests {
 
         let first_row = &rows[0];
         assert_eq!(first_row.get_int(0).unwrap(), 42);
-        assert_eq!(first_row.get_double(1).unwrap(), 3.14);
+        assert_eq!(first_row.get_double(1).unwrap(), 3.12);
         assert_eq!(first_row.get_string(2).unwrap(), "hello");
-        assert_eq!(first_row.get_bool(3).unwrap(), true);
+        assert!(first_row.get_bool(3).unwrap());
 
         let second_row = &rows[1];
-        assert!(matches!(second_row.get_int(0), Err(_)));
+        assert!(second_row.get_int(0).is_err());
         assert_eq!(second_row.get_double(1).unwrap(), -2.71);
-        assert!(matches!(second_row.get_string(2), Err(_)));
-        assert_eq!(second_row.get_bool(3).unwrap(), false);
+        assert!(second_row.get_string(2).is_err());
+        assert!(!second_row.get_bool(3).unwrap());
     }
 }

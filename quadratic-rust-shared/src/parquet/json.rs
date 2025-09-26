@@ -34,8 +34,7 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
     // use Arrow's JSON schema inference with more samples to get better type detection
     let sample_json = json_lines
         .iter()
-        .take(2000) // Take more samples for better schema inference
-        .map(|s| *s)
+        .take(2000).copied()
         .collect::<Vec<_>>()
         .join("\n");
 
