@@ -206,6 +206,8 @@ pub fn new_mixpanel_client() -> MixpanelClient {
 mod tests {
     use super::*;
 
+    // TODO(ddimaria): remove this ignore once we have mixpanel mocked
+    #[ignore]
     #[tokio::test]
     async fn test_mixpanel_connection() {
         let client = new_mixpanel_client();
