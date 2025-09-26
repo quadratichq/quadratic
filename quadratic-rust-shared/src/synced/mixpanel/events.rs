@@ -131,15 +131,14 @@ impl MixpanelClient {
             // skip events without timestamps
             if let Some((date_key, flattened_json)) = result? {
                 grouped_json
-                    .lock()
-                    .unwrap()
+                    .lock()?
                     .entry(date_key)
                     .or_default()
                     .push(flattened_json);
             }
         }
 
-        let grouped_json = grouped_json.into_inner().unwrap();
+        let grouped_json = grouped_json.into_inner()?;
 
         // convert grouped JSON to Parquet using arrow-json with schema inference
         if grouped_json.is_empty() {
@@ -182,117 +181,6 @@ impl MixpanelClient {
 
         flattened
     }
-
-    // /// Export raw event data as Row objects for direct parquet writing (legacy method)
-    // pub async fn export_events_as_rows(
-    //     &self,
-    //     params: ExportParams,
-    // ) -> Result<HashMap<String, Vec<parquet::record::Row>>> {
-    //     let url = format!("{}/export", self.data_export_url());
-
-    //     let mut query_params = vec![
-    //         ("from_date", params.from_date.format("%Y-%m-%d").to_string()),
-    //         ("to_date", params.to_date.format("%Y-%m-%d").to_string()),
-    //     ];
-
-    //     if let Some(events) = &params.events {
-    //         let events_json = serde_json::to_string(events)?;
-    //         query_params.push(("event", events_json));
-    //     }
-
-    //     if let Some(where_clause) = params.r#where {
-    //         query_params.push(("where", where_clause));
-    //     }
-
-    //     let query_params_str: Vec<_> = query_params.iter().map(|(k, v)| (*k, v.as_str())).collect();
-
-    //     let start_time = std::time::Instant::now();
-
-    //     let response = self
-    //         .client()
-    //         .get(&url)
-    //         .query(&query_params_str)
-    //         .send()
-    //         .await
-    //         .map_err(|e| SharedError::Synced(format!("Failed to send request: {}", e)))?;
-
-    //     if !response.status().is_success() {
-    //         return Err(SharedError::Synced(format!(
-    //             "Export request failed: {}",
-    //             response.status()
-    //         )));
-    //     }
-
-    //     println!("Time taken to send request: {:?}", start_time.elapsed());
-
-    //     let start_time = std::time::Instant::now();
-
-    //     // Use bytes() which is more efficient than text()
-    //     let text = response
-    //         .text()
-    //         .await
-    //         .map_err(|e| SharedError::Synced(format!("Failed to get bytes: {}", e)))?;
-
-    //     println!(
-    //         "Time taken to get response data: {:?}",
-    //         start_time.elapsed()
-    //     );
-
-    //     // let start_time = std::time::Instant::now();
-
-    //     // let text = String::from_utf8(bytes.to_vec()).map_err(|e| {
-    //     //     SharedError::Synced(format!("Failed to convert bytes to string: {}", e))
-    //     // })?;
-
-    //     // println!(
-    //     //     "Time taken to convert bytes to string: {:?}",
-    //     //     start_time.elapsed()
-    //     // );
-
-    //     let start_time = std::time::Instant::now();
-    //     let mut records: HashMap<String, Vec<Row>> = HashMap::new();
-
-    //     for line in text.lines() {
-    //         if !line.trim().is_empty() {
-    //             let event: Event = serde_json::from_str(line)?;
-
-    //             // Convert directly to Row with flattened properties
-    //             let mut fields = Vec::new();
-    //             fields.push(("event".to_string(), Field::Str(event.event)));
-    //             let mut datetime = None;
-
-    //             // Flatten JSON properties into individual fields
-    //             if let serde_json::Value::Object(props) = event.properties {
-    //                 for (key, value) in props {
-    //                     let field_value = StringColumn::json_value_to_field(value);
-
-    //                     if key == "time"
-    //                         && let Field::Long(n) = field_value
-    //                     {
-    //                         datetime = Some(DateTime::<Utc>::from_timestamp(n, 0).unwrap());
-    //                     }
-
-    //                     fields.push((key, field_value));
-    //                 }
-    //             }
-
-    //             if let Some(datetime) = datetime {
-    //                 let key = datetime.format("%Y-%m-%d").to_string();
-    //                 let row = Row::new(fields);
-
-    //                 if let Some(record) = records.get_mut(&key) {
-    //                     record.push(row);
-    //                 } else {
-    //                     records.insert(key, vec![row]);
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     println!("Time taken to parse rows: {:?}", start_time.elapsed());
-
-    //     Ok(records)
-    // }
 }
 
 #[cfg(test)]

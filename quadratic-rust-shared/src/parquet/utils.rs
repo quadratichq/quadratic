@@ -15,7 +15,6 @@ use std::io::Write;
 use crate::SharedError;
 use crate::error::Result;
 use crate::parquet::error::Parquet as ParquetError;
-// use crate::parquet::string_column::StringColumn;
 
 /// Direct conversion from Parquet Field to Arrow DataType.
 /// This bypasses the ArrowFieldType intermediary for cases where you want
@@ -40,7 +39,7 @@ pub fn field_to_data_type(field: &Field) -> Result<DataType> {
         Field::Date(_) => Ok(DataType::Date32),
         Field::TimestampMillis(_) => Ok(DataType::Timestamp(TimeUnit::Millisecond, None)),
         Field::TimestampMicros(_) => Ok(DataType::Timestamp(TimeUnit::Microsecond, None)),
-        Field::Decimal(_) => Ok(DataType::Decimal128(38, 10)), // Default precision and scale
+        Field::Decimal(_) => Ok(DataType::Decimal128(38, 10)), // default precision and scale
         Field::Group(_) => {
             Err(ParquetError::Unknown("nested groups not supported yet".into()).into())
         }

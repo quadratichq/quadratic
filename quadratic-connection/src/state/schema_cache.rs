@@ -45,11 +45,10 @@ impl SchemaCache {
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use quadratic_rust_shared::sql::{
         bigquery_connection::tests::expected_bigquery_schema, schema::SchemaTable,
     };
-
-    use super::*;
 
     #[tokio::test]
     async fn test_schema_cache() {

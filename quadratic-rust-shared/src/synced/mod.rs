@@ -95,3 +95,272 @@ where
         None => Ok(None),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::arrow::object_store::new_filesystem_object_store;
+    use bytes::Bytes;
+    use chrono::NaiveDate;
+    use std::{collections::HashMap, fs};
+    use tempfile::TempDir;
+
+    fn create_temp_object_store() -> (TempDir, Arc<dyn ObjectStore>) {
+        let temp_dir = TempDir::new().expect("Failed to create temp directory");
+        let path = temp_dir.path().to_str().expect("Invalid temp path");
+        let (store, _) = new_filesystem_object_store(path).expect("Failed to create object store");
+        (temp_dir, store)
+    }
+
+    fn create_test_parquet_files(temp_dir: &TempDir, dates: &[&str]) {
+        for date in dates {
+            let file_path = temp_dir.path().join(format!("{}.parquet", date));
+            fs::write(&file_path, b"fake parquet data").expect("Failed to write test file");
+        }
+    }
+
+    #[test]
+    fn test_parse_file_date_valid() {
+        let result = parse_file_date("2024-01-15.parquet").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+
+        let result = parse_file_date("2024-01-15").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+
+        let result = parse_file_date("2024-01-15.PARQUET").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+    }
+
+    #[test]
+    fn test_parse_file_date_invalid() {
+        let result = parse_file_date("invalid-date");
+        assert!(result.is_err());
+
+        let result = parse_file_date("2024-13-01");
+        assert!(result.is_err());
+
+        let result = parse_file_date("2024-01-32");
+        assert!(result.is_err());
+
+        let result = parse_file_date("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_date_from_location_valid() {
+        let result = get_date_from_location("2024-01-15.parquet").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+
+        let result = get_date_from_location("data/events/2024-01-15.parquet").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+
+        let result =
+            get_date_from_location("s3://bucket/prefix/data/events/2024-12-25.parquet").unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 12, 25).unwrap());
+    }
+
+    #[test]
+    fn test_get_date_from_location_invalid() {
+        let result = get_date_from_location("2024-01-15.txt");
+        assert!(result.is_err());
+
+        let result = get_date_from_location("");
+        assert!(result.is_err());
+
+        let result = get_date_from_location("data/events/");
+        assert!(result.is_err());
+
+        let result = get_date_from_location("invalid-date.parquet");
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_last_date_processed_empty_store() {
+        let (_temp_dir, store) = create_temp_object_store();
+
+        let result = get_last_date_processed(&store, None).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn test_get_last_date_processed_with_files() {
+        let (temp_dir, store) = create_temp_object_store();
+        let dates = ["2024-01-01", "2024-01-15", "2024-01-10", "2024-02-01"];
+        create_test_parquet_files(&temp_dir, &dates);
+
+        let result = get_last_date_processed(&store, None)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 2, 1).unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_get_last_date_processed_with_prefix() {
+        let (temp_dir, store) = create_temp_object_store();
+        let events_dir = temp_dir.path().join("events");
+        let logs_dir = temp_dir.path().join("logs");
+        fs::create_dir(&events_dir).expect("Failed to create events dir");
+        fs::create_dir(&logs_dir).expect("Failed to create logs dir");
+        let events_file = events_dir.join("2024-01-15.parquet");
+        fs::write(&events_file, b"events data").expect("Failed to write events file");
+        let logs_file = logs_dir.join("2024-02-01.parquet");
+        fs::write(&logs_file, b"logs data").expect("Failed to write logs file");
+
+        let result = get_last_date_processed(&store, Some("events/"))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_get_last_date_processed_with_invalid_files() {
+        let (temp_dir, store) = create_temp_object_store();
+        let invalid_files = ["invalid-date.parquet", "2024-01-15.txt", "not-a-date"];
+
+        for file in &invalid_files {
+            let file_path = temp_dir.path().join(file);
+            fs::write(&file_path, b"test data").expect("Failed to write test file");
+        }
+
+        let result = get_last_date_processed(&store, None).await.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_upload_single_file() {
+        let (_temp_dir, store) = create_temp_object_store();
+        let mut data = HashMap::new();
+        let test_content = Bytes::from("test parquet data");
+        data.insert("2024-01-15".to_string(), test_content.clone());
+
+        let result = upload(&store, "events", data).await.unwrap();
+        assert_eq!(result, 1);
+
+        let objects = list_objects(&store, Some("events/")).await.unwrap();
+        assert_eq!(objects.len(), 1);
+        assert_eq!(
+            objects[0].location.filename().unwrap(),
+            "2024-01-15.parquet"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_upload_multiple_files() {
+        let (_temp_dir, store) = create_temp_object_store();
+        let mut data = HashMap::new();
+        let dates = ["2024-01-01", "2024-01-02", "2024-01-03"];
+
+        for date in &dates {
+            let content = Bytes::from(format!("test data for {}", date));
+            data.insert(date.to_string(), content);
+        }
+
+        let result = upload(&store, "mixpanel", data).await.unwrap();
+        assert_eq!(result, 3);
+
+        let objects = list_objects(&store, Some("mixpanel/"))
+            .await
+            .expect("Failed to list objects");
+        assert_eq!(objects.len(), 3);
+
+        let mut uploaded_files: Vec<String> = objects
+            .iter()
+            .map(|obj| obj.location.filename().unwrap().to_string())
+            .collect();
+        uploaded_files.sort();
+
+        let mut expected_files: Vec<String> = dates
+            .iter()
+            .map(|date| format!("{}.parquet", date))
+            .collect();
+        expected_files.sort();
+
+        assert_eq!(uploaded_files, expected_files);
+    }
+
+    #[tokio::test]
+    async fn test_upload_empty_data() {
+        let (_temp_dir, store) = create_temp_object_store();
+        let data = HashMap::new();
+        let result = upload(&store, "events", data).await.unwrap();
+        assert_eq!(result, 0);
+
+        let objects = list_objects(&store, Some("events/")).await.unwrap();
+        assert_eq!(objects.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_upload_with_nested_prefix() {
+        let (_temp_dir, store) = create_temp_object_store();
+        let mut data = HashMap::new();
+        let test_content = Bytes::from("nested test data");
+        data.insert("2024-01-15".to_string(), test_content);
+
+        let result = upload(&store, "data/events/mixpanel", data).await.unwrap();
+        assert_eq!(result, 1);
+
+        let objects = list_objects(&store, Some("data/events/mixpanel/"))
+            .await
+            .unwrap();
+        assert_eq!(objects.len(), 1);
+        assert_eq!(
+            objects[0].location.filename().unwrap(),
+            "2024-01-15.parquet"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_int_to_bool() {
+        use serde::Deserialize;
+        use serde_json;
+
+        #[derive(Deserialize)]
+        struct TestStruct {
+            #[serde(deserialize_with = "deserialize_int_to_bool")]
+            flag: Option<bool>,
+        }
+
+        let json = r#"{"flag": 0}"#;
+        let result: TestStruct = serde_json::from_str(json).expect("Failed to deserialize");
+        assert_eq!(result.flag, Some(false));
+
+        let json = r#"{"flag": 1}"#;
+        let result: TestStruct = serde_json::from_str(json).expect("Failed to deserialize");
+        assert_eq!(result.flag, Some(true));
+
+        let json = r#"{"flag": 42}"#;
+        let result: TestStruct = serde_json::from_str(json).expect("Failed to deserialize");
+        assert_eq!(result.flag, Some(true));
+
+        let json = r#"{"flag": null}"#;
+        let result: TestStruct = serde_json::from_str(json).expect("Failed to deserialize");
+        assert_eq!(result.flag, None);
+    }
+
+    #[tokio::test]
+    async fn test_integration_upload_and_get_last_date() {
+        let (_temp_dir, store) = create_temp_object_store();
+        let mut data = HashMap::new();
+        let dates = ["2024-01-01", "2024-01-15", "2024-02-01"];
+
+        for date in &dates {
+            let content = Bytes::from(format!("data for {}", date));
+            data.insert(date.to_string(), content);
+        }
+
+        let upload_result = upload(&store, "events", data).await.unwrap();
+        assert_eq!(upload_result, 3);
+
+        let last_date_result = get_last_date_processed(&store, Some("events/"))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            last_date_result,
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap()
+        );
+    }
+}

@@ -194,6 +194,11 @@ mod tests {
             Some(&value)
         );
 
+        // update an entry
+        let new_value = "new_value".to_string();
+        cache.update(&key, new_value.clone()).await;
+        assert_eq!(cache.get(&key).await, Some(&new_value));
+
         // expiration
         assert_eq!(cache.is_expired(&key).await, Some(false));
         cache.set_expires(&key, Some(Duration::from_secs(0))).await;

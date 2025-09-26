@@ -13,32 +13,8 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
+use crate::synced::mixpanel::MixpanelServer;
 use crate::{SharedError, error::Result, synced::mixpanel::events::ExportParams};
-
-#[derive(Debug, Clone)]
-pub enum MixpanelServer {
-    US,
-    EU,
-    India,
-}
-
-impl MixpanelServer {
-    pub fn base_url(&self) -> &'static str {
-        match self {
-            MixpanelServer::US => "https://mixpanel.com/api/2.0",
-            MixpanelServer::EU => "https://eu.mixpanel.com/api/2.0",
-            MixpanelServer::India => "https://in.mixpanel.com/api/2.0",
-        }
-    }
-
-    pub fn data_export_url(&self) -> &'static str {
-        match self {
-            MixpanelServer::US => "https://data.mixpanel.com/api/2.0",
-            MixpanelServer::EU => "https://data-eu.mixpanel.com/api/2.0",
-            MixpanelServer::India => "https://data-in.mixpanel.com/api/2.0",
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct MixpanelConfig {
@@ -61,7 +37,7 @@ impl MixpanelConfig {
 
 impl From<MixpanelConfig> for MixpanelClient {
     fn from(config: MixpanelConfig) -> Self {
-        Self::new(&config.api_secret, &config.project_id)
+        Self::from_config(config)
     }
 }
 
@@ -71,35 +47,13 @@ pub struct MixpanelClient {
     config: MixpanelConfig,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Annotation {
-    pub id: u32,
-    pub project_id: u32,
-    pub date: String,
-    pub description: String,
-    pub created: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Cohort {
-    pub id: u32,
-    pub name: String,
-    pub description: Option<String>,
-    pub created: String,
-    pub count: Option<u32>,
-    #[serde(deserialize_with = "crate::synced::deserialize_int_to_bool")]
-    pub is_visible: Option<bool>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CohortMember {
-    pub distinct_id: String,
-    pub cohort_id: u32,
-}
-
 impl MixpanelClient {
     pub fn new(api_secret: &str, project_id: &str) -> Self {
         let config: MixpanelConfig = MixpanelConfig::new(api_secret, project_id);
+        Self::from_config(config)
+    }
+
+    pub fn from_config(config: MixpanelConfig) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
 
         // add authorization header
@@ -206,6 +160,25 @@ pub fn new_mixpanel_client() -> MixpanelClient {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_mixpanel_client_new() {
+        let client = MixpanelClient::new("test_secret", "test_project");
+
+        assert_eq!(client.config().api_secret, "test_secret");
+        assert_eq!(client.config().project_id, "test_project");
+    }
+
+    #[tokio::test]
+    async fn test_make_request_invalid_url() {
+        let client = MixpanelClient::new("test_secret", "test_project");
+        let invalid_url = "not-a-valid-url";
+        let params = vec![];
+
+        let result: Result<serde_json::Value> = client.make_request(invalid_url, &params).await;
+        assert!(result.is_err());
+    }
+
+    // Integration test that requires real credentials - kept ignored
     // TODO(ddimaria): remove this ignore once we have mixpanel mocked
     #[ignore]
     #[tokio::test]
@@ -214,5 +187,56 @@ mod tests {
         let is_connected = client.test_connection().await;
 
         assert!(is_connected);
+    }
+
+    // Integration test for project info - kept ignored
+    #[ignore]
+    #[tokio::test]
+    async fn test_get_project_info_integration() {
+        let client = new_mixpanel_client();
+        let project_info = client.get_project_info().await.unwrap();
+        assert!(project_info.is_object());
+    }
+
+    #[test]
+    fn test_export_params_creation() {
+        let today = chrono::Utc::now().date_naive();
+        let mut params = ExportParams::new(today, today);
+        params.limit = Some(1);
+
+        assert_eq!(params.from_date, today);
+        assert_eq!(params.to_date, today);
+        assert_eq!(params.limit, Some(1));
+        assert!(params.events.is_none());
+        assert!(params.r#where.is_none());
+    }
+
+    #[test]
+    fn test_export_params_with_all_fields() {
+        let from_date = chrono::NaiveDate::from_ymd_opt(2023, 1, 1).expect("Valid date");
+        let to_date = chrono::NaiveDate::from_ymd_opt(2023, 1, 31).expect("Valid date");
+        let mut params = ExportParams::new(from_date, to_date);
+
+        params.events = Some(vec!["event1".to_string(), "event2".to_string()]);
+        params.r#where = Some("properties[\"user_id\"] == \"123\"".to_string());
+        params.limit = Some(1000);
+
+        assert_eq!(params.from_date, from_date);
+        assert_eq!(params.to_date, to_date);
+
+        match &params.events {
+            Some(events) => {
+                assert_eq!(events.len(), 2);
+                assert_eq!(events[0], "event1");
+                assert_eq!(events[1], "event2");
+            }
+            None => panic!("Expected events to be Some"),
+        }
+
+        assert_eq!(
+            params.r#where.unwrap(),
+            "properties[\"user_id\"] == \"123\""
+        );
+        assert_eq!(params.limit, Some(1000));
     }
 }

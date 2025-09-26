@@ -1,3 +1,11 @@
+//! Synced Connection
+//!
+//! Synced connections are connections that are synced to the object store on
+//! behalf of the user.  Data is downloaded from the source, grouped by day,
+//! converted to parquet, and uploaded to the object store.
+//!
+//! We currently only support Mixpanel, but plan to add more in the future.
+
 use std::sync::Arc;
 
 use chrono::NaiveDate;
@@ -41,11 +49,10 @@ pub(crate) async fn process_mixpanel_connections(state: Arc<State>) -> Result<()
 
     // process each connection in a separate thread
     for connection in connections {
-        let cloned_state = Arc::clone(&state);
+        let state = Arc::clone(&state);
         tokio::spawn(async move {
             if let Err(e) =
-                process_mixpanel_connection(cloned_state, connection.type_details, connection.uuid)
-                    .await
+                process_mixpanel_connection(state, connection.type_details, connection.uuid).await
             {
                 tracing::error!(
                     "Error processing Mixpanel connection {}: {}",
@@ -139,10 +146,8 @@ async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (Nai
     let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
 
     // if we have any objects, use the last date processed
-    if let Ok(Some(object_store_start_date)) =
-        get_last_date_processed(&object_store, Some(&prefix)).await
-    {
-        start_date = object_store_start_date;
+    if let Ok(Some(new_start_date)) = get_last_date_processed(&object_store, Some(&prefix)).await {
+        start_date = new_start_date;
     };
 
     (start_date, end_date)
@@ -191,12 +196,10 @@ async fn complete_connection_status(state: Arc<State>, connection_id: Uuid) {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
+    use super::*;
     use crate::state::synced_connection_cache::{SyncedConnectionKind, SyncedConnectionStatus};
     use crate::test_util::new_arc_state;
-
-    use super::*;
+    use uuid::Uuid;
 
     #[tokio::test]
     #[ignore]

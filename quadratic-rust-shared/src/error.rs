@@ -5,6 +5,8 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
+use std::sync::PoisonError;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -114,5 +116,11 @@ impl From<crate::parquet::error::Parquet> for SharedError {
 impl From<std::io::Error> for SharedError {
     fn from(error: std::io::Error) -> Self {
         SharedError::Generic(format!("IO error: {}", error))
+    }
+}
+
+impl<T> From<PoisonError<T>> for SharedError {
+    fn from(error: PoisonError<T>) -> Self {
+        SharedError::Generic(format!("Poison error: {}", error))
     }
 }

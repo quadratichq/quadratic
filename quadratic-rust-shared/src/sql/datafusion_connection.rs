@@ -26,7 +26,7 @@ pub fn default_object_store() -> Arc<dyn ObjectStore> {
     Arc::new(InMemory::new())
 }
 
-/// datafusion connection
+/// Datafusion connection
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Debug, Clone)]
 pub struct DatafusionConnection {
@@ -53,6 +53,7 @@ impl DatafusionConnection {
         }
     }
 
+    /// Set the connection ID
     pub fn with_connection_id(self, connection_id: Uuid) -> DatafusionConnection {
         DatafusionConnection {
             connection_id: Some(connection_id),
@@ -60,6 +61,7 @@ impl DatafusionConnection {
         }
     }
 
+    /// Set the database
     pub fn with_database(self, database: String) -> DatafusionConnection {
         DatafusionConnection {
             database: Some(database),
@@ -67,7 +69,7 @@ impl DatafusionConnection {
         }
     }
 
-    /// Get the parquet path for a table in the object store
+    /// Get the parquet path for a table in the object store (format: s3://synced-data/consolidated/{table}/{connection_id}/{table}.parquet)
     pub fn object_store_parquet_path(&self, url: &Url, table: &str) -> Result<String> {
         let connection_id = self
             .connection_id
@@ -137,7 +139,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
         _max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let df = client.sql(sql).await.map_err(query_error)?;
-        // TODO(ddimaria): remove this
+        // test helper
         // df.clone().show().await.unwrap();
         let batches = df.collect().await.map_err(query_error)?;
 
@@ -159,6 +161,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
         Ok((parquet.into(), false, total_records))
     }
 
+    /// Get the schema of a datafusion database
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self
             .database

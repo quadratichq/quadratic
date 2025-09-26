@@ -34,7 +34,8 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
     // use Arrow's JSON schema inference with more samples to get better type detection
     let sample_json = json_lines
         .iter()
-        .take(2000).copied()
+        .take(2000)
+        .copied()
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -78,11 +79,8 @@ pub fn json_lines_to_record_batch(schema: Arc<Schema>, json_lines: &[&str]) -> R
     let json_data = json_lines.join("\n");
     let cursor = Cursor::new(json_data);
 
-    // create reader with our schema
     let builder = ReaderBuilder::new(schema.clone());
     let reader = builder.build(cursor)?;
-
-    // read all batches and combine them
     let batches: std::result::Result<Vec<_>, _> = reader.collect();
     let batches = batches?;
 
@@ -90,9 +88,11 @@ pub fn json_lines_to_record_batch(schema: Arc<Schema>, json_lines: &[&str]) -> R
         return Err(error("No data batches produced from JSON".to_string()));
     }
 
-    // if we have multiple batches, concatenate them
     if batches.len() == 1 {
-        Ok(batches.into_iter().next().unwrap())
+        Ok(batches
+            .into_iter()
+            .next()
+            .ok_or_else(|| error("No data batches produced from JSON".to_string()))?)
     } else {
         // concatenate multiple batches
         let schema = batches[0].schema();
@@ -139,7 +139,7 @@ pub fn grouped_json_to_parquet(
     let schema = inferred_schema_from_json_lines(&all_json_lines)?;
 
     // process groups in parallel
-    let results: Vec<Result<(String, Bytes)>> = grouped_json
+    let grouped_json_bytes: Vec<Result<(String, Bytes)>> = grouped_json
         .into_par_iter()
         .map(|(key, json_lines)| {
             let json_refs: Vec<&str> = json_lines.iter().map(|s| s.as_str()).collect();
@@ -150,8 +150,8 @@ pub fn grouped_json_to_parquet(
         .collect();
 
     // collect results and handle any errors
-    for res in results {
-        let (key, parquet_bytes) = res?;
+    for json_bytes in grouped_json_bytes {
+        let (key, parquet_bytes) = json_bytes?;
         result.insert(key, parquet_bytes);
     }
 
