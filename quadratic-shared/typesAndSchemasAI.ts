@@ -232,6 +232,7 @@ const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Impor
         'MARIADB',
         'NEON',
         'SUPABASE',
+        'MIXPANEL',
       ]),
       id: z.string(),
     }),

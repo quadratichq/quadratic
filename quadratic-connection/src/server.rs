@@ -35,16 +35,21 @@ use crate::{
     proxy::proxy,
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
+        datafusion::{
+            query as query_datafusion, schema as schema_datafusion, sync_mixpanel, test_mixpanel,
+        },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
         snowflake::{query as query_snowflake, schema as schema_snowflake, test as test_snowflake},
     },
     state::State,
+    synced_connection::process_mixpanel_connections,
 };
 
-const STATS_INTERVAL_S: u64 = 5;
-pub(crate) const CACHE_DURATION_S: Duration = Duration::from_secs(60 * 30); // 30 minutes
+const STATS_INTERVAL_S: u64 = 60;
+const SYNC_INTERVAL_M: u64 = 60;
+pub(crate) const SCHEMA_CACHE_DURATION_S: Duration = Duration::from_secs(60 * 30); // 30 minutes
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -71,7 +76,7 @@ pub(crate) struct StaticIpsResponse {
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
-pub(crate) fn app(state: State) -> Result<Router> {
+pub(crate) fn app(state: Arc<State>) -> Result<Router> {
     let cors = CorsLayer::new()
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST, Method::CONNECT])
@@ -143,6 +148,12 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/bigquery/query", post(query_bigquery))
         .route("/bigquery/schema/:id", get(schema_bigquery))
         //
+        // mixpanel
+        .route("/mixpanel/test", post(test_mixpanel))
+        .route("/mixpanel/query", post(query_datafusion))
+        .route("/mixpanel/schema/:id", get(schema_datafusion))
+        .route("/mixpanel/sync/:id", get(sync_mixpanel))
+        //
         // proxy
         .route("/proxy", any(proxy))
         //
@@ -213,7 +224,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
     let jwks = get_jwks(&config.jwks_uri).await?;
-    let state = State::new(&config, Some(jwks.clone()))?;
+    let state = Arc::new(State::new(&config, Some(jwks.clone()))?);
     let app = app(state.clone())?;
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
@@ -225,11 +236,13 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| ConnectionError::InternalServer(e.to_string()))?;
 
     // start the cache executor
-    let cache = Arc::clone(&state.cache.schema);
+    let cache = Arc::clone(&state.schema_cache.schema);
     let executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
-    println!("started cache executor: {executor:?}");
+
+    tracing::info!("started cache executor: {executor:?}");
 
     // log stats in a separate thread
+    let stats_state = state.clone();
     tokio::spawn({
         async move {
             let mut interval = time::interval(Duration::from_secs(STATS_INTERVAL_S));
@@ -237,11 +250,26 @@ pub(crate) async fn serve() -> Result<()> {
             loop {
                 interval.tick().await;
 
-                let stats = state.stats.lock().await;
+                let stats = stats_state.stats.lock().await;
 
-                // push stats to the logs if there are files to process
-                if stats.last_query_time.is_some() {
-                    tracing::info!("Stats: {}", stats);
+                // push stats to the logs if there are files to process or connections are processing
+                if stats.last_query_time.is_some() || stats.num_connections_processing > 0 {
+                    tracing::info!("{}", stats);
+                }
+            }
+        }
+    });
+
+    // Sync connections in a separate thread
+    tokio::spawn({
+        async move {
+            let mut interval = time::interval(Duration::from_secs(SYNC_INTERVAL_M * 60));
+
+            loop {
+                interval.tick().await;
+
+                if let Err(e) = process_mixpanel_connections(state.clone()).await {
+                    tracing::error!("Error syncing Mixpanel connections: {e}");
                 }
             }
         }

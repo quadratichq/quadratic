@@ -31,6 +31,11 @@ pub trait Cache<'a, K, V> {
     /// If the key does not exist, the value is created and returned.
     async fn get_or_create(&mut self, key: &K, value: V, duration: Option<Duration>) -> Option<&V>;
 
+    // Update a value in the cache
+    ///
+    /// If the key does not exist, the None is returned.
+    async fn update(&mut self, key: &K, value: V) -> Option<&mut V>;
+
     // Delete a value from the cache
     ///
     /// Returns `None` if the key does not exist.

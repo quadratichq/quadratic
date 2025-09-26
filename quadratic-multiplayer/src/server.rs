@@ -9,14 +9,14 @@ use axum::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::get,
 };
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
+use quadratic_rust_shared::auth::jwt::{authorize, extract_m2m_token, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use std::{ops::ControlFlow, time::Duration};
@@ -160,6 +160,7 @@ async fn ws_handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Extension(state): Extension<Arc<State>>,
     cookie: Option<TypedHeader<headers::Cookie>>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
@@ -204,8 +205,10 @@ async fn ws_handler(
             return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
         }
     }
-
-    let pre_connection = PreConnection::new(jwt);
+    // check if the connection is m2m service connection
+    // strip "Bearer " from the token
+    let m2m_token = extract_m2m_token(&headers);
+    let pre_connection = PreConnection::new(jwt, m2m_token);
 
     tracing::info!(
         "New connection {}, `{user_agent}` at {addr}",

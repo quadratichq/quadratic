@@ -1,11 +1,10 @@
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::aws::client;
-use quadratic_rust_shared::environment::Environment;
-use quadratic_rust_shared::storage::StorageContainer;
 use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
 use quadratic_rust_shared::storage::s3::{S3, S3Config};
+use quadratic_rust_shared::storage::{StorageContainer, StorageType};
 
-use crate::config::{Config, StorageType};
+use crate::config::Config;
 
 #[derive(Debug)]
 pub(crate) struct Settings {
@@ -20,8 +19,7 @@ impl Settings {
     // Create a new Settings struct from the provided Config.
     // Panics are OK here since this is set at startup and we want to fail fast.
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
-        let is_local =
-            config.environment == Environment::Docker || config.environment == Environment::Local;
+        let is_local = config.environment.is_local_or_docker();
         let expected = |val: &Option<String>, var: &str| {
             val.to_owned()
                 .unwrap_or_else(|| panic!("Expected {var} to have a value"))

@@ -1,5 +1,5 @@
 {
-  "pythonVersion": "3.11",
+  "pythonVersion": "3.13",
   "pythonPlatform": "Linux",
   "typeCheckingMode": "basic",
   "typeshedPath": "/typings/",

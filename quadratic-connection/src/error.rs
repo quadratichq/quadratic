@@ -35,6 +35,9 @@ pub enum ConnectionError {
     #[error("Internal token: {0}")]
     InvalidToken(String),
 
+    #[error("Error parsing: {0}")]
+    Parse(String),
+
     #[error("Proxy error: {0}")]
     Proxy(String),
 
@@ -49,6 +52,9 @@ pub enum ConnectionError {
 
     #[error("SSH error: {0}")]
     Ssh(String),
+
+    #[error("Synced error: {0}")]
+    Synced(String),
 
     #[error("unknown error: {0}")]
     Unknown(String),
