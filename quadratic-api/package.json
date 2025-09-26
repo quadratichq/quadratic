@@ -40,7 +40,7 @@
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
     "@google/genai": "1.5.1",
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "^1.18.2",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@ory/kratos-client": "^1.2.1",
     "@prisma/client": "^6.16.2",
