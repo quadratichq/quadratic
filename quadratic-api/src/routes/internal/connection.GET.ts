@@ -43,7 +43,7 @@ router.get(
       name: connection.name,
       type: connection.type,
       teamId: connection.team.uuid,
-      typeDetails: JSON.parse(decryptFromEnv(connection.typeDetails.toString())),
+      typeDetails: JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8'))),
     }));
 
     return res.status(200).json(data);
