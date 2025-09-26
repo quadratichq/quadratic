@@ -1,7 +1,6 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
+import { AddIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -12,7 +11,6 @@ import type {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
@@ -20,29 +18,33 @@ import { useState } from 'react';
 import { useLocation } from 'react-router';
 
 type Props = {
+  activeConnection?: string;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
+  handleNavigateToListView: () => void;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   handleNavigateToNewView: () => void;
 };
 
 export const ConnectionsList = ({
+  activeConnection,
   connections,
   connectionsAreLoading,
   handleNavigateToNewView,
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
+  handleNavigateToListView,
   handleShowConnectionDemo,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
-
+  console.log(activeConnection);
   return (
     <>
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-2">
         <div className="flex gap-2">
           <form
             className="grid flex-grow gap-4"
@@ -70,7 +72,6 @@ export const ConnectionsList = ({
               )}
             </div>
           </form>
-          <Button onClick={handleNavigateToNewView}>New connection</Button>
         </div>
         {connectionsAreLoading && (
           <div className="flex flex-col gap-2">
@@ -79,8 +80,19 @@ export const ConnectionsList = ({
           </div>
         )}
 
+        <div
+          onClick={handleNavigateToNewView}
+          className={cn(
+            'flex h-10 items-center gap-2 text-sm text-primary hover:bg-accent',
+            activeConnection === 'new' && 'bg-accent'
+          )}
+        >
+          <AddIcon className="ml-1 mr-2" /> New
+        </div>
         {!connectionsAreLoading && connections.length ? (
           <ListItems
+            handleNavigateToListView={handleNavigateToListView}
+            activeConnection={activeConnection}
             filterQuery={filterQuery}
             items={connections}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
@@ -117,20 +129,22 @@ export const ConnectionsList = ({
 };
 
 function ListItems({
+  activeConnection,
   filterQuery,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
+  handleNavigateToListView,
   items,
 }: {
+  activeConnection?: string;
   filterQuery: string;
   handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
+  handleNavigateToListView: Props['handleNavigateToListView'];
   items: ConnectionsListConnection[];
 }) {
-  const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -142,10 +156,9 @@ function ListItems({
       {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo }, i) => {
         const isNavigable = !(disabled || isDemo);
         const showSecondaryAction = !isApp && !disabled;
-        const showIconHideDemo = !disabled && isDemo;
-        const showIconBrowseSchema = !isApp && !disabled && !isDemo;
+
         return (
-          <div className="group" key={uuid}>
+          <div className={cn('group', activeConnection === uuid && 'bg-accent')} key={uuid}>
             <div
               className={cn(
                 'relative flex w-full items-center gap-1',
@@ -156,7 +169,12 @@ function ListItems({
             >
               <button
                 onClick={() => {
-                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                  if (activeConnection === uuid) {
+                    handleNavigateToListView();
+                  } else {
+                    handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+                  }
+                  // handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
                 }}
                 disabled={!isNavigable}
                 key={uuid}
@@ -172,44 +190,14 @@ function ListItems({
                   </span>
 
                   {isDemo ? (
-                    <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                    <span className="hidden text-xs text-muted-foreground">Maintained by the Quadratic team</span>
                   ) : (
-                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                    <time dateTime={createdDate} className="hidden text-xs text-muted-foreground">
                       Created {timeAgo(createdDate)}
                     </time>
                   )}
                 </div>
               </button>
-
-              {showIconHideDemo && (
-                <TooltipPopover label="Remove connection">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-                    onClick={async () => {
-                      if (await confirmFn()) {
-                        handleShowConnectionDemo(false);
-                      }
-                    }}
-                  >
-                    <CloseIcon />
-                  </Button>
-                </TooltipPopover>
-              )}
-
-              {showIconBrowseSchema && (
-                <TooltipPopover label="Browse schema">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
-                    onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
-                  >
-                    <ExploreSchemaIcon />
-                  </Button>
-                </TooltipPopover>
-              )}
             </div>
           </div>
         );
