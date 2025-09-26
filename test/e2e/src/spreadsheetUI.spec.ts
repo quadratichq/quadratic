@@ -963,7 +963,7 @@ test('Resize Column width with Fill', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Right Click Actions', async ({ page }) => {
+test('Right Click Actions', async ({ page }) => {
   // Constants
   const fileName = 'RightClickActions';
   const fileType = 'csv';
