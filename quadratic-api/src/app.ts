@@ -11,6 +11,7 @@ import path from 'path';
 import winston from 'winston';
 import authRouter from './auth/router/authRouter';
 import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import mcpRouter from './mcp';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 import logger, { format } from './utils/logger';
@@ -57,6 +58,8 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ version: VERSION });
 });
+
+app.use('/mcp', mcpRouter);
 
 // App routes
 // Internal routes
