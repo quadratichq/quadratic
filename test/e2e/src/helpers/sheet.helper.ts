@@ -90,3 +90,27 @@ export const changeSheet = async (page: Page, sheetName: string) => {
   await button.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
 };
+
+const TOP_X = 71;
+const TOP_Y = 106;
+const CELL_WIDTH = 100;
+const CELL_HEIGHT = 21;
+
+// NOTE: this is untested and may be incorrect. Keeping this here for now for reference.
+
+// Returns the rectangle of a cell relative to the entire app (ie, mouse
+// coordinates for Playwright). Assumptions: (1) viewport is at its home
+// position (A1 in the top left); (2) viewport is at 100%; (3) all column and
+// rows are their default widths and heights; and (4) grid headings are visible.
+// column is 1-indexed, ie, A = 1, B = 2, etc.
+export const getCellLocation = (
+  column: number,
+  row: number
+): { x: number; y: number; width: number; height: number } => {
+  return {
+    x: TOP_X + (column - 1) * CELL_WIDTH,
+    y: TOP_Y + (row - 1) * CELL_HEIGHT,
+    width: CELL_WIDTH,
+    height: CELL_HEIGHT,
+  };
+};
