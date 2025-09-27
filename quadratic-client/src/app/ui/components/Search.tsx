@@ -84,14 +84,19 @@ export function Search() {
       const found = await quadraticCore.search(inputEl?.value, searchOptions);
       if (found) {
         setResults(found);
+        let currentLocal = 0;
         setCurrent((current) => {
-          if (current > found.length - 1) return 0;
+          if (current > found.length - 1) {
+            currentLocal = 0;
+            return 0;
+          }
+          currentLocal = current;
           return current;
         });
         setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
         events.emit(
           'search',
-          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), 0)
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), currentLocal)
         );
       } else {
         setResults([]);
@@ -103,7 +108,7 @@ export function Search() {
     return () => {
       events.off('transactionEnd', updateSearch);
     };
-  }, [inputEl?.value, results, searchOptions, showSearch]);
+  }, [current, inputEl?.value, searchOptions, showSearch]);
 
   const navigate = useCallback(
     (delta: 1 | -1) => {
@@ -255,10 +260,22 @@ export function Search() {
           )}
         </div>
         <div className="flex w-full justify-between min-[400px]:w-auto">
-          <Button variant="ghost" className="px-2" onClick={() => navigate(-1)} disabled={results.length === 0}>
+          <Button
+            variant="ghost"
+            className="px-2"
+            onClick={() => navigate(-1)}
+            disabled={results.length === 0}
+            data-testid="search-results-previous"
+          >
             <ChevronLeftIcon />
           </Button>
-          <Button variant="ghost" className="px-2" onClick={() => navigate(1)} disabled={results.length === 0}>
+          <Button
+            variant="ghost"
+            className="px-2"
+            onClick={() => navigate(1)}
+            disabled={results.length === 0}
+            data-testid="search-results-next"
+          >
             <ChevronRightIcon />
           </Button>
 

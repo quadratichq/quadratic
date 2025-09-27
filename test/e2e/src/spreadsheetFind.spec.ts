@@ -35,6 +35,35 @@ test('Find improperly changes sheets', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
+// Fixes bug in PR #3481 where reverse searching doesn't update the viewport
+test.only('Search viewport updates when reverse searching', async ({ page }) => {
+  const fileName = 'Airports distance (example)';
+  const fileType = 'grid';
+
+  await logIn(page, { emailPrefix: `e2e_search_viewport_updates_when_reverse_searching` });
+  await uploadFile(page, { fileName, fileType });
+
+  await page.keyboard.press('Control+F', { delay: 250 });
+  await page.keyboard.type('gri', { delay: 250 });
+  await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 14');
+
+  for (let i = 0; i < 5; i++) {
+    await page.locator('[data-testid="search-results-previous"]').click();
+    await expect(page.locator('[data-testid="search-results-count"]')).toHaveText(`${14 - i} of 14`);
+    await page.waitForTimeout(2000);
+    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+      `search_viewport_updates_when_reverse_searching_${i}.png`,
+      {
+        maxDiffPixels: 1000,
+      }
+    );
+  }
+
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(page, { fileName });
+});
+
 test('Search refreshes on changes', async ({ page }) => {
   const fileName = 'Athletes_table';
 
