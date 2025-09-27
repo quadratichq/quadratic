@@ -121,6 +121,8 @@ export function Search() {
   );
 
   const closeSearch = useCallback(() => {
+    setCursor(undefined);
+    setSearchOptions({ case_sensitive: null, whole_cell: null, search_code: null, sheet_id: null });
     events.emit('search');
     focusGrid();
   }, []);
