@@ -50,7 +50,9 @@ export function Search() {
       if (sheets.current !== cursor.sheet_id.id) {
         sheets.current = cursor.sheet_id.id;
       }
-      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y));
+      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y), {
+        ensureVisible: { x: Number(cursor.x), y: Number(cursor.y) },
+      });
       inputEl?.focus();
     }
   }, [cursor, inputEl]);
@@ -121,6 +123,8 @@ export function Search() {
   );
 
   const closeSearch = useCallback(() => {
+    setCursor(undefined);
+    setSearchOptions({ case_sensitive: null, whole_cell: null, search_code: null, sheet_id: null });
     events.emit('search');
     focusGrid();
   }, []);
@@ -215,7 +219,10 @@ export function Search() {
             autoCorrect="off"
           />
           {inputEl && inputEl.value.length !== 0 && (
-            <div className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground">
+            <div
+              className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground"
+              data-testid="search-results-count"
+            >
               {results.length === 0 ? '0' : current + 1} of {results.length}
             </div>
           )}
