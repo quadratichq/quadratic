@@ -21,6 +21,14 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
   await assertSelection(page, { a1 });
 };
 
+export const setValueInCell = async (page: Page, a1: string, value: string) => {
+  await gotoCells(page, { a1 });
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(value, { delay: 250 });
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(2 * 1000);
+};
+
 /**
  * Asserts the selection is the expected a1 notation.
  */

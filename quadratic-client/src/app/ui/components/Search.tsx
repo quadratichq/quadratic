@@ -78,6 +78,33 @@ export function Search() {
     [searchOptions]
   );
 
+  useEffect(() => {
+    const updateSearch = async () => {
+      if (!showSearch || !inputEl?.value) return;
+      const found = await quadraticCore.search(inputEl?.value, searchOptions);
+      if (found) {
+        setResults(found);
+        setCurrent((current) => {
+          if (current > found.length - 1) return 0;
+          return current;
+        });
+        setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
+        events.emit(
+          'search',
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), 0)
+        );
+      } else {
+        setResults([]);
+        events.emit('search');
+      }
+    };
+    events.on('transactionEnd', updateSearch);
+
+    return () => {
+      events.off('transactionEnd', updateSearch);
+    };
+  }, [inputEl?.value, results, searchOptions, showSearch]);
+
   const navigate = useCallback(
     (delta: 1 | -1) => {
       setCurrent((current) => {
