@@ -358,7 +358,7 @@ impl GridController {
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
                         sheet.data_table_insert_full(
-                            &sheet_pos.into(),
+                            sheet_pos.into(),
                             DataTable::new(
                                 DataTableKind::CodeRun(CodeRun {
                                     language: CodeCellLanguage::Formula,

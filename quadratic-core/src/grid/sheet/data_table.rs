@@ -150,11 +150,9 @@ impl Sheet {
     /// Checks spill due to values on sheet
     ///
     /// spill due to other data tables is managed internally by SheetDataTables
-    fn check_spills_due_to_column_values(&self, pos: &Pos, data_table: &DataTable) -> bool {
-        let new_output_rect = data_table.output_rect(*pos, true);
-        let mut nondefault_rects = self.columns.get_nondefault_rects_in_rect(new_output_rect);
-        let root_cell_rect = Rect::single_pos(*pos);
-        nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
+    fn check_spills_due_to_column_values(&self, pos: Pos, data_table: &DataTable) -> bool {
+        let output_rect = data_table.output_rect(pos, true);
+        self.columns.has_content(output_rect)
     }
 
     /// Returns a mutable DataTable at a Pos
@@ -168,7 +166,7 @@ impl Sheet {
 
     pub fn data_table_insert_full(
         &mut self,
-        pos: &Pos,
+        pos: Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
@@ -178,7 +176,7 @@ impl Sheet {
     pub fn data_table_insert_before(
         &mut self,
         index: usize,
-        pos: &Pos,
+        pos: Pos,
         mut data_table: DataTable,
     ) -> (usize, Option<DataTable>, HashSet<Rect>) {
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
@@ -192,12 +190,12 @@ impl Sheet {
         self.data_tables.shift_remove_full(pos)
     }
 
-    pub fn data_table_shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.data_tables.shift_remove(pos)
+    pub fn data_table_shift_remove(&mut self, pos: Pos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove(&pos)
     }
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
-        self.data_table_shift_remove(&pos)
+        self.data_table_shift_remove(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
@@ -205,7 +203,7 @@ impl Sheet {
         let mut data_tables_to_modify = Vec::new();
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
-            let new_spill = self.check_spills_due_to_column_values(&pos, data_table);
+            let new_spill = self.check_spills_due_to_column_values(pos, data_table);
             if new_spill != data_table.spill_value {
                 data_tables_to_modify.push((pos, new_spill));
             }
@@ -591,9 +589,9 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_table_insert_full(&pos, data_table).1
+            self.data_table_insert_full(pos, data_table).1
         } else {
-            self.data_table_shift_remove(&pos)
+            self.data_table_shift_remove(pos)
                 .map(|(data_table, _)| data_table)
         }
     }

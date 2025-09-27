@@ -16,7 +16,7 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        sheet::data_tables::SheetDataTables,
+        sheet::{columns::SheetColumns, data_tables::SheetDataTables},
     },
 };
 
@@ -237,8 +237,6 @@ fn export_cells_accessed(
 }
 
 fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
-    let cells_accessed = code_run.cells_accessed;
-
     let error = if let Some(error) = code_run.error {
         Some(RunError {
             span: error.span.map(|span| crate::Span {
@@ -250,13 +248,14 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
     } else {
         None
     };
+
     let code_run = CodeRun {
         language: import_code_cell_language(code_run.language),
         code: code_run.code,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
-        cells_accessed: import_cells_accessed(cells_accessed)?,
+        cells_accessed: import_cells_accessed(code_run.cells_accessed)?,
         return_type: code_run.return_type,
         line_number: code_run.line_number,
         output_type: code_run.output_type,
@@ -267,25 +266,13 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
+    columns: &SheetColumns,
 ) -> Result<SheetDataTables> {
-    let mut new_data_tables = IndexMap::new();
+    let mut sheet_data_tables = SheetDataTables::new();
 
     for (pos, data_table) in data_tables.into_iter() {
-        let value = match data_table.value {
-            current::OutputValueSchema::Single(value) => Value::Single(import_cell_value(value)),
-            current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
-                Value::Array(crate::Array::from(
-                    values
-                        .into_iter()
-                        .chunks(size.w as usize)
-                        .into_iter()
-                        .map(|row| row.into_iter().map(import_cell_value).collect::<Vec<_>>())
-                        .collect::<Vec<Vec<_>>>(),
-                ))
-            }
-        };
-
-        let data_table = DataTable {
+        let pos = Pos { x: pos.x, y: pos.y };
+        let mut data_table = DataTable {
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
                     DataTableKind::CodeRun(import_code_run_builder(code_run)?)
@@ -297,7 +284,21 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: CellValue::Text(data_table.name),
-            value,
+            value: match data_table.value {
+                current::OutputValueSchema::Single(value) => {
+                    Value::Single(import_cell_value(value))
+                }
+                current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
+                    Value::Array(crate::Array::from(
+                        values
+                            .into_iter()
+                            .chunks(size.w as usize)
+                            .into_iter()
+                            .map(|row| row.into_iter().map(import_cell_value).collect::<Vec<_>>())
+                            .collect::<Vec<Vec<_>>>(),
+                    ))
+                }
+            },
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             header_is_first_row: data_table.header_is_first_row,
             show_name: data_table.show_name,
@@ -330,8 +331,8 @@ pub(crate) fn import_data_table_builder(
             }),
             sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
-            spill_value: data_table.spill_value,
-            spill_data_table: data_table.spill_data_table,
+            spill_value: false,
+            spill_data_table: false,
             alternating_colors: data_table.alternating_colors,
             formats: data_table.formats.map(import_formats),
             borders: data_table.borders.map(import_borders),
@@ -339,10 +340,13 @@ pub(crate) fn import_data_table_builder(
             chart_output: data_table.chart_output,
         };
 
-        new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
+        let output_rect = data_table.output_rect(pos, true);
+        data_table.spill_value = columns.has_content(output_rect);
+
+        sheet_data_tables.insert_full(pos, data_table);
     }
 
-    Ok(new_data_tables.into())
+    Ok(sheet_data_tables)
 }
 
 fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
@@ -558,8 +562,6 @@ pub(crate) fn export_data_tables(
                 sort,
                 sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
-                spill_value: data_table.spill_value,
-                spill_data_table: data_table.spill_data_table,
                 alternating_colors: data_table.alternating_colors,
                 formats,
                 borders,

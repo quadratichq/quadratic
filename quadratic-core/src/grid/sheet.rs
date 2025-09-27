@@ -1157,7 +1157,7 @@ mod test {
             Some(true),
             None,
         );
-        sheet.data_table_insert_full(&anchor_pos, dt);
+        sheet.data_table_insert_full(anchor_pos, dt);
 
         // Test row edges
         assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
@@ -1186,7 +1186,7 @@ mod test {
             None,
         );
         dt_no_ui.show_name = Some(false);
-        sheet.data_table_insert_full(&pos![E5], dt_no_ui);
+        sheet.data_table_insert_full(pos![E5], dt_no_ui);
 
         // Test edges without UI
         assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge

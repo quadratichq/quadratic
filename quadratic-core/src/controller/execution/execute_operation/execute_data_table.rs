@@ -197,7 +197,7 @@ impl GridController {
             // insert the data table into the sheet
             let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
                 index.unwrap_or(usize::MAX),
-                &data_table_pos,
+                data_table_pos,
                 data_table.to_owned(),
             );
 
@@ -272,7 +272,7 @@ impl GridController {
             let Some(new_sheet) = self.grid.try_sheet_mut(new_sheet_pos.sheet_id) else {
                 return Ok(());
             };
-            let (_, _, dirty_rects) = new_sheet.data_tables.insert_full(&new_sheet_pos.into(), dt);
+            let (_, _, dirty_rects) = new_sheet.data_tables.insert_full(new_sheet_pos.into(), dt);
             transaction.add_dirty_hashes_from_dirty_code_rects(new_sheet, dirty_rects);
             new_sheet.recalculate_bounds(&self.a1_context);
 
@@ -735,7 +735,7 @@ impl GridController {
             // insert data table in sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let (_, _, dirty_rects) =
-                sheet.data_table_insert_full(&sheet_rect.min, data_table.to_owned());
+                sheet.data_table_insert_full(sheet_rect.min, data_table.to_owned());
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             // Sets the cursor to the entire table, including the new header

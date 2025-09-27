@@ -179,7 +179,7 @@ impl GridController {
         if transaction.is_user_ai_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
             {
-                sheet.data_table_insert_before(index, &pos, new_data_table.to_owned())
+                sheet.data_table_insert_before(index, pos, new_data_table.to_owned())
             } else {
                 sheet.data_table_shift_remove_full(&pos).map_or(
                     (index, None, HashSet::new()),
@@ -224,12 +224,10 @@ impl GridController {
                 });
         } else {
             let dirty_rects = if let Some(new_data_table) = new_data_table {
-                sheet
-                    .data_table_insert_before(index, &pos, new_data_table)
-                    .2
+                sheet.data_table_insert_before(index, pos, new_data_table).2
             } else {
                 sheet
-                    .data_table_shift_remove(&pos)
+                    .data_table_shift_remove(pos)
                     .map_or(HashSet::new(), |(_, dirty_rects)| dirty_rects)
             };
 

@@ -81,7 +81,7 @@ pub fn test_create_data_table_with_values(
         v.push(row);
     }
 
-    gc.add_data_table(
+    gc.add_data_table_from_values(
         pos.to_sheet_pos(sheet_id),
         "test_table".to_string(),
         v,
