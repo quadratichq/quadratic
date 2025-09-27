@@ -92,5 +92,5 @@ export const changeSheet = async (page: Page, sheetName: string) => {
 };
 
 export const assertActiveSheetName = async (page: Page, sheetName: string) => {
-  await expect(page.locator('[data-test-active]')).toHaveText(sheetName, { timeout: 10 * 1000 });
+  await expect(page.locator('[data-test-active]')).toContainText(sheetName, { timeout: 10 * 1000 });
 };

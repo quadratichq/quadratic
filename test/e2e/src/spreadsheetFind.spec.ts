@@ -1,15 +1,17 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
-import { uploadFile } from './helpers/file.helpers';
+import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
 import { assertActiveSheetName, changeSheet } from './helpers/sheet.helper';
 
 // ensures that find doesn't inappropriately change the active sheet when first
 // opening (see PR #3481)
-test.only('Find improperly changes sheets', async ({ page }) => {
+test('Find improperly changes sheets', async ({ page }) => {
+  const fileName = 'Athletes_table';
+
   // Log in
   await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
 
-  await uploadFile(page, { fileName: 'Athletes_table', fileType: 'grid' });
+  await uploadFile(page, { fileName, fileType: 'grid' });
 
   // duplicate first sheet
   await page.keyboard.press('Control+P');
@@ -29,6 +31,6 @@ test.only('Find improperly changes sheets', async ({ page }) => {
   await assertActiveSheetName(page, 'Sheet 1 Copy');
 
   // Cleanup newly created files
-  // await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
-  // await cleanUpFiles(page, { fileName });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(page, { fileName });
 });
