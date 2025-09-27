@@ -217,7 +217,10 @@ export function Search() {
             autoCorrect="off"
           />
           {inputEl && inputEl.value.length !== 0 && (
-            <div className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground">
+            <div
+              className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground"
+              data-testid="search-results-count"
+            >
               {results.length === 0 ? '0' : current + 1} of {results.length}
             </div>
           )}

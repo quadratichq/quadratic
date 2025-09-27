@@ -90,3 +90,7 @@ export const changeSheet = async (page: Page, sheetName: string) => {
   await button.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
 };
+
+export const assertActiveSheetName = async (page: Page, sheetName: string) => {
+  await expect(page.locator('[data-test-active]')).toHaveText(sheetName, { timeout: 10 * 1000 });
+};

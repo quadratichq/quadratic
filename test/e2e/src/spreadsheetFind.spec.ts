@@ -1,0 +1,34 @@
+import { test } from '@playwright/test';
+import { logIn } from './helpers/auth.helpers';
+import { uploadFile } from './helpers/file.helpers';
+import { assertActiveSheetName, changeSheet } from './helpers/sheet.helper';
+
+// ensures that find doesn't inappropriately change the active sheet when first
+// opening (see PR #3481)
+test.only('Find improperly changes sheets', async ({ page }) => {
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
+
+  await uploadFile(page, { fileName: 'Athletes_table', fileType: 'grid' });
+
+  // duplicate first sheet
+  await page.keyboard.press('Control+P');
+  await page.keyboard.type('duplicate', { delay: 250 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
+  await page.keyboard.press('Enter');
+  await changeSheet(page, 'Sheet 1');
+
+  await page.keyboard.press('Control+F');
+  await page.keyboard.type('baseball', { delay: 250 });
+
+  await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 2');
+  await page.keyboard.press('Escape');
+
+  await changeSheet(page, 'Sheet 1 Copy');
+  await page.keyboard.press('Control+F');
+  await assertActiveSheetName(page, 'Sheet 1 Copy');
+
+  // Cleanup newly created files
+  // await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  // await cleanUpFiles(page, { fileName });
+});
