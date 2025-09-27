@@ -545,21 +545,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Returns whether any of the non-default values in `self` intersects
     /// `rect`.
     pub fn intersects(&self, rect: Rect) -> bool {
-        // TODO(perf): this could be optimized a LOT using `.non_default_blocks()`
-        let default = T::default();
-        for x in rect.x_range() {
-            let Some(x) = convert_coord(x) else { continue };
-            let Some(column) = self.0.get(x) else {
-                continue;
-            };
-            for y in rect.y_range() {
-                let Some(y) = convert_coord(y) else { continue };
-                if column.get(y).is_some_and(|v| *v != default) {
-                    return true;
-                }
-            }
-        }
-        false
+        self.nondefault_rects_in_rect(rect).next().is_some()
     }
 
     /// Returns whether a column contains entirely default values.

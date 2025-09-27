@@ -54,6 +54,8 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
   RowsMoved: (operation) =>
     `- moved rows ${operation.from_range[0]}-${operation.from_range[1]} to ${operation.to} in sheet ${operation.sheet_name}`,
   ComputeCode: (operation) => `- computed code at ${operation.selection}`,
+  MoveDataTable: (operation) => `- moved data table from ${operation.from} to ${operation.to}`,
+  SwitchDataTableKind: (operation) => `- switched data table at ${operation.selection} to ${operation.kind}`,
 };
 
 const convertTransactionToChatMessage = (transaction: TrackedTransaction): string => {

@@ -101,7 +101,6 @@ impl Sheet {
     // Converts a CodeValue::Code and CodeRun into a vector of JsRenderCell.
     pub(crate) fn get_render_code_cells(
         &self,
-        code: &CellValue,
         data_table: &DataTable,
         render_rect: &Rect,
         code_rect: &Rect,
@@ -109,90 +108,88 @@ impl Sheet {
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
-        if let Some(code_cell_value) = code.code_cell_value() {
-            if data_table.has_spill() {
-                cells.push(Self::get_render_cell(
-                    code_rect.min.x,
-                    code_rect.min.y,
-                    &CellValue::Error(Box::new(RunError {
-                        span: None,
-                        msg: RunErrorMsg::Spill,
-                    })),
-                    Format::default(),
-                    Some(code_cell_value.language),
-                    None,
-                ));
-            } else if let Some(error) = data_table.get_error() {
-                cells.push(Self::get_render_cell(
-                    code_rect.min.x,
-                    code_rect.min.y,
-                    &CellValue::Error(Box::new(error)),
-                    Format::default(),
-                    Some(code_cell_value.language),
-                    None,
-                ));
-            } else if let Some(intersection) = code_rect.intersection(render_rect) {
-                let y_adjustment = data_table.y_adjustment(false);
-                for y in intersection.y_range() {
-                    // We now render the header row to ensure clipping works
-                    // properly to the left of the header since we rely on the
-                    // renderer for clipping purposes
-                    let is_header = y < code_rect.min.y + y_adjustment;
-                    let is_table_name = data_table.get_show_name() && y == code_rect.min.y;
-                    let is_column_headers = is_header && !is_table_name;
+        if data_table.has_spill() {
+            cells.push(Self::get_render_cell(
+                code_rect.min.x,
+                code_rect.min.y,
+                &CellValue::Error(Box::new(RunError {
+                    span: None,
+                    msg: RunErrorMsg::Spill,
+                })),
+                Format::default(),
+                Some(data_table.get_language()),
+                Some(JsRenderCellSpecial::SpillError),
+            ));
+        } else if let Some(error) = data_table.get_error() {
+            cells.push(Self::get_render_cell(
+                code_rect.min.x,
+                code_rect.min.y,
+                &CellValue::Error(Box::new(error)),
+                Format::default(),
+                Some(data_table.get_language()),
+                None,
+            ));
+        } else if let Some(intersection) = code_rect.intersection(render_rect) {
+            let y_adjustment = data_table.y_adjustment(false);
+            for y in intersection.y_range() {
+                // We now render the header row to ensure clipping works
+                // properly to the left of the header since we rely on the
+                // renderer for clipping purposes
+                let is_header = y < code_rect.min.y + y_adjustment;
+                let is_table_name = data_table.get_show_name() && y == code_rect.min.y;
+                let is_column_headers = is_header && !is_table_name;
 
-                    for x in intersection.x_range() {
-                        let pos = Pos {
-                            x: x - code_rect.min.x,
-                            y: y - code_rect.min.y,
+                for x in intersection.x_range() {
+                    let pos = Pos {
+                        x: x - code_rect.min.x,
+                        y: y - code_rect.min.y,
+                    };
+
+                    let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+
+                    if let Some(value) = value {
+                        let mut format = if is_header {
+                            // column headers are always clipped and bold
+                            Format {
+                                wrap: Some(CellWrap::Clip),
+                                bold: Some(true),
+                                ..Default::default()
+                            }
+                        } else {
+                            let table_format = data_table.get_format(pos);
+                            let sheet_format =
+                                self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                            table_format.combine(&sheet_format)
                         };
 
-                        let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+                        let language = if x == code_rect.min.x && y == code_rect.min.y {
+                            Some(data_table.get_language())
+                        } else {
+                            None
+                        };
 
-                        if let Some(value) = value {
-                            let mut format = if is_header {
-                                // column headers are always clipped and bold
-                                Format {
-                                    wrap: Some(CellWrap::Clip),
-                                    bold: Some(true),
-                                    ..Default::default()
-                                }
-                            } else {
-                                let table_format = data_table.get_format(pos);
-                                let sheet_format =
-                                    self.formats.try_format(Pos { x, y }).unwrap_or_default();
-                                table_format.combine(&sheet_format)
-                            };
+                        let special = self
+                            .validations
+                            .render_special_pos(Pos { x, y }, context)
+                            .or(match value {
+                                CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                _ => None,
+                            });
 
-                            let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code_cell_value.language.to_owned())
-                            } else {
-                                None
-                            };
+                        Self::ensure_lists_are_clipped(&mut format, &special);
 
-                            let special = self
-                                .validations
-                                .render_special_pos(Pos { x, y }, context)
-                                .or(match value {
-                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
-                                    _ => None,
-                                });
+                        let mut render_cell =
+                            Self::get_render_cell(x, y, &value, format, language, special);
 
-                            Self::ensure_lists_are_clipped(&mut format, &special);
-
-                            let mut render_cell =
-                                Self::get_render_cell(x, y, &value, format, language, special);
-
-                            if is_table_name {
-                                render_cell.table_name = Some(true);
-                            }
-
-                            if is_column_headers {
-                                render_cell.column_header = Some(true);
-                            }
-
-                            cells.push(render_cell);
+                        if is_table_name {
+                            render_cell.table_name = Some(true);
                         }
+
+                        if is_column_headers {
+                            render_cell.column_header = Some(true);
+                        }
+
+                        cells.push(render_cell);
                     }
                 }
             }
@@ -223,44 +220,35 @@ impl Sheet {
             .for_each(|(x, column)| {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_) | CellValue::Import(_)) {
-                        let special = self
-                            .validations
-                            .render_special_pos(Pos { x, y }, a1_context)
-                            .or({
-                                if matches!(value, CellValue::Logical(_)) {
-                                    Some(JsRenderCellSpecial::Logical)
-                                } else {
-                                    None
-                                }
-                            });
+                    let special = self
+                        .validations
+                        .render_special_pos(Pos { x, y }, a1_context)
+                        .or({
+                            if matches!(value, CellValue::Logical(_)) {
+                                Some(JsRenderCellSpecial::Logical)
+                            } else {
+                                None
+                            }
+                        });
 
-                        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                    let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
 
-                        Self::ensure_lists_are_clipped(&mut format, &special);
+                    Self::ensure_lists_are_clipped(&mut format, &special);
 
-                        render_cells
-                            .push(Self::get_render_cell(x, y, value, format, None, special));
-                    }
+                    render_cells.push(Self::get_render_cell(x, y, value, format, None, special));
                 });
             });
 
         // Fetch values from code cells
         self.iter_data_tables_in_rect(rect)
             .for_each(|(data_table_rect, data_table)| {
-                // sanity check that there is a CellValue::Code for this CodeRun
-                if let Some(cell_value) = self.cell_value_ref(Pos {
-                    x: data_table_rect.min.x,
-                    y: data_table_rect.min.y,
-                }) {
-                    render_cells.extend(self.get_render_code_cells(
-                        cell_value,
-                        data_table,
-                        &rect,
-                        &data_table_rect,
-                        a1_context,
-                    ));
-                }
+                render_cells.extend(self.get_render_code_cells(
+                    data_table,
+                    &rect,
+                    &data_table_rect,
+                    a1_context,
+                ));
+                // }
             });
 
         // Populate validations for cells that are not yet in the render_cells
@@ -315,7 +303,7 @@ mod tests {
         SheetPos, Value,
         a1::A1Selection,
         controller::GridController,
-        grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
+        grid::{CellVerticalAlign, CellWrap, CodeRun, DataTableKind},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
@@ -341,13 +329,6 @@ mod tests {
             .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_cell_value(
-            Pos { x: 2, y: 3 },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "1 + 1".to_string(),
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),

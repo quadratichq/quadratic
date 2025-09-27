@@ -69,6 +69,7 @@ impl Sheet {
 
         let mut data_tables = IndexMap::new();
         if let Some(bounds) = sheet_bounds {
+            // todo: not sure this is still useful; it's ignored in data_tables_and_cell_values_in_rect
             let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,

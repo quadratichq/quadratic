@@ -93,58 +93,16 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
-        cell_values::CellValues,
+        Array, ArraySize, CellValue, Pos, SheetPos, Value, assert_code_language,
         controller::{
             GridController,
-            active_transactions::{
-                pending_transaction::PendingTransaction, transaction_name::TransactionName,
-            },
-            operations::operation::Operation,
+            active_transactions::pending_transaction::PendingTransaction,
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         number::decimal_from_str,
         test_util::pretty_print_data_table,
     };
-
-    #[test]
-    fn test_execute_operation_set_cell_values_formula() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
-        let sheet_pos = SheetPos {
-            x: 2,
-            y: 1,
-            sheet_id,
-        };
-
-        let code_cell = CellValue::Code(CodeCellValue {
-            language: CodeCellLanguage::Formula,
-            code: "A1 + 1".to_string(),
-        });
-        gc.start_user_ai_transaction(
-            vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: CellValues::from(code_cell.clone()),
-                },
-                Operation::ComputeCode { sheet_pos },
-            ],
-            None,
-            TransactionName::Unknown,
-            false,
-        );
-
-        let sheet = gc.sheet_mut(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Number(11.into()))
-        );
-        assert_eq!(sheet.cell_value(Pos { x: 2, y: 1 }), Some(code_cell));
-    }
 
     #[test]
     fn test_multiple_formula() {
@@ -513,13 +471,6 @@ mod test {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(pos),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "☺".into(),
-            }))
-        );
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
@@ -532,14 +483,13 @@ mod test {
             None,
             false,
         );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(pos),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "{0,1/0;2/0,0}".into(),
-            }))
+        assert_code_language(
+            &gc,
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "{0,1/0;2/0,0}".into(),
         );
+        let sheet = gc.sheet(sheet_id);
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());

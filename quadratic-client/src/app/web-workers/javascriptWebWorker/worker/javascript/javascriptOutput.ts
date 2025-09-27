@@ -57,7 +57,7 @@ export function javascriptConvertOutputType(
     return { output: [value ? 'true' : 'false', CellValueType.Logical], displayType: 'boolean' };
   } else if (Array.isArray(value)) {
     // this handles the case where the value.flat() is empty
-    return { output: ['', CellValueType.Code], displayType: 'empty array' };
+    return { output: ['', CellValueType.Blank], displayType: 'empty array' };
   } else {
     message.push(
       `WARNING: Unsupported output type "${typeof value}" at cell(${column + (x ?? 0)}, ${

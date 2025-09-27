@@ -26,12 +26,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
-        let cell_value = CellValue::Import(import);
 
-        Ok(vec![Operation::SwitchDataTableKind {
+        Ok(vec![Operation::SwitchDataTableKindWithoutCellValue {
             sheet_pos,
             kind,
-            value: cell_value,
         }])
     }
 
@@ -270,7 +268,7 @@ impl GridController {
             for (x, value) in row.iter().enumerate() {
                 let value = value.trim();
 
-                let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                let (cell_value, format_update) = CellValue::string_to_cell_value(value, false);
 
                 if let Err(e) = cell_values.set(x as u32, y as u32, cell_value, false) {
                     dbgjs!(format!(
@@ -307,10 +305,9 @@ impl GridController {
             .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
-        ops.push(Operation::AddDataTable {
+        ops.push(Operation::AddDataTableWithoutCellValue {
             sheet_pos,
             data_table,
-            cell_value: CellValue::Import(import),
             index: None,
         });
 
@@ -420,14 +417,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Rect, SheetPos, SheetRect,
+        CellValue, SheetPos, SheetRect,
         cellvalue::Import,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation,
         },
-        grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, print_table_in_rect},
+        grid::{CodeCellLanguage, DataTableKind, NumericFormat, NumericFormatKind},
+        test_util::*,
     };
 
     #[test]
@@ -440,18 +437,14 @@ mod test {
             vec!["header 1".into(), "header 2".into()],
             vec!["$123".into(), "123,456.00".into()],
         ];
-        let ops = gc.add_data_table_operations(sheet_pos, name.to_owned(), values, true);
+        let ops = gc.add_data_table_operations(sheet_pos, name.clone(), values, true);
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTable {
-                data_table,
-                cell_value,
-                ..
-            } => {
+            Operation::AddDataTableWithoutCellValue { data_table, .. } => {
                 assert!(data_table.header_is_first_row);
                 assert_eq!(data_table.name, name.as_str().into());
-                assert_eq!(cell_value, &CellValue::Import(Import::new(name.to_owned())));
+                assert_eq!(data_table.kind, DataTableKind::Import(Import::new(name)));
                 assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 2);
                 assert_eq!(
                     data_table.column_headers.as_ref().unwrap()[0].name,
@@ -511,7 +504,6 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let sheet_rect = SheetRect::new(1, 1, 2, 2, sheet_id);
-        let data_table_rect = Rect::new(1, 1, 2, 4);
         let values = vec![
             vec!["header 1".into(), "header 2".into()],
             vec!["$123".into(), "123,456.00".into()],
@@ -525,13 +517,8 @@ mod test {
             .unwrap();
         gc.start_user_ai_transaction(ops, None, TransactionName::GridToDataTable, false);
 
-        let import = Import::new("Table1".into());
-        let cell_value = CellValue::Import(import.to_owned());
-
-        print_table_in_rect(&gc, sheet_id, data_table_rect);
-
         // check that the data table is in the sheet
-        assert_cell_value(&gc, sheet_id, 1, 1, cell_value.clone());
+        assert_import(&gc, sheet_pos, "Table1", 2, 4);
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         // undo the operation
@@ -549,14 +536,10 @@ mod test {
         );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
-        print_table_in_rect(&gc, sheet_id, sheet_rect.into());
-
         let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
         assert!(ops.is_err());
 
         // there should still be just 1 data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
-
-        print_table_in_rect(&gc, sheet_id, data_table_rect);
     }
 }

@@ -19,6 +19,7 @@ impl GridController {
         let ops = vec![Operation::DeleteColumns {
             sheet_id,
             columns,
+            ignore_tables: false,
             copy_formats: CopyFormats::After,
         }];
         self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
@@ -47,6 +48,7 @@ impl GridController {
                 } else {
                     CopyFormats::Before
                 },
+                ignore_tables: false,
             });
         }
         if !after && count > 1 {
@@ -69,6 +71,7 @@ impl GridController {
             sheet_id,
             rows,
             copy_formats: CopyFormats::None,
+            ignore_tables: false,
         }];
         self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
@@ -96,6 +99,7 @@ impl GridController {
                 } else {
                     CopyFormats::Before
                 },
+                ignore_tables: false,
             });
         }
         if !after && count > 1 {
@@ -149,7 +153,7 @@ mod tests {
     use crate::{
         CellValue, Pos, SheetPos,
         a1::A1Selection,
-        grid::{CodeCellLanguage, CodeCellValue, formats::Format},
+        grid::{CodeCellLanguage, formats::Format},
         test_util::*,
     };
 
@@ -169,13 +173,11 @@ mod tests {
             false,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(1, 1)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "1".to_string(),
         );
 
         gc.delete_rows(sheet_id, vec![1], None, false);
@@ -185,13 +187,11 @@ mod tests {
 
         gc.undo(1, None, false);
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(1, 1)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "1".to_string(),
         );
     }
 
@@ -216,13 +216,11 @@ mod tests {
             false,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos::new(2, 2)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "5".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 2, 2),
+            CodeCellLanguage::Formula,
+            "5".to_string(),
         );
 
         gc.delete_rows(sheet_id, vec![2], None, false);
@@ -240,12 +238,12 @@ mod tests {
             sheet.display_value(Pos::new(1, 2)),
             Some(CellValue::Number(2.into()))
         );
-        assert_eq!(
-            sheet.cell_value(Pos::new(2, 2)),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "5".to_string()
-            }))
+
+        assert_code_language(
+            &gc,
+            SheetPos::new(sheet_id, 2, 2),
+            CodeCellLanguage::Formula,
+            "5".to_string(),
         );
     }
 

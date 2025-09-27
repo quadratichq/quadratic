@@ -75,6 +75,15 @@ impl TrackedOperation {
                 name: get_table_name(Some(data_table)),
                 deleted: false,
             }),
+            Operation::AddDataTableWithoutCellValue {
+                sheet_pos,
+                data_table,
+                ..
+            } => Some(Self::SetDataTable {
+                selection: data_table_to_selection(Some(data_table), *sheet_pos, gc),
+                name: get_table_name(Some(data_table)),
+                deleted: false,
+            }),
             Operation::DeleteDataTable { sheet_pos } => Some(Self::DeleteDataTable {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
@@ -142,6 +151,7 @@ impl TrackedOperation {
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
                 sheet_name: match schema.as_ref() {
+                    SheetSchema::V1_12(schema) => schema.name.to_string(),
                     SheetSchema::V1_11(schema) => schema.name.to_string(),
                     SheetSchema::V1_10(schema) => schema.name.to_string(),
                     SheetSchema::V1_9(schema) => schema.id.to_string(),
@@ -328,6 +338,21 @@ impl TrackedOperation {
             Operation::ComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
+
+            Operation::MoveDataTable {
+                old_sheet_pos,
+                new_sheet_pos,
+            } => Some(Self::MoveDataTable {
+                from: sheet_pos_to_selection(*old_sheet_pos, gc),
+                to: sheet_pos_to_selection(*new_sheet_pos, gc),
+            }),
+
+            Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind } => {
+                Some(Self::SwitchDataTableKind {
+                    selection: sheet_pos_to_selection(*sheet_pos, gc),
+                    kind: kind.to_string(),
+                })
+            }
 
             // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }

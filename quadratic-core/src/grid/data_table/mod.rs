@@ -5,6 +5,7 @@
 //! performed yet).
 use crate::util::is_false;
 
+mod code_run;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
@@ -13,12 +14,10 @@ pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
-
 use std::num::NonZeroU32;
 
 use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
-use crate::grid::CodeRun;
 use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
@@ -32,8 +31,10 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 
+pub use code_run::*;
+
 use super::sheet::borders::Borders;
-use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
+use super::{Grid, SheetFormatting, SheetId};
 
 #[cfg(test)]
 mod test_util;
@@ -869,6 +870,20 @@ impl DataTable {
     /// Returns true if the data table is a formula table
     pub fn is_formula_table(&self) -> bool {
         matches!(self.get_language(), CodeCellLanguage::Formula)
+    }
+
+    /// Converts a DataTable to a string of its kind.
+    pub fn kind_as_string(&self) -> String {
+        match &self.kind {
+            DataTableKind::CodeRun(code_run) => match code_run.language {
+                CodeCellLanguage::Import => "Import".into(),
+                CodeCellLanguage::Formula => "Formula".into(),
+                CodeCellLanguage::Python => "Python".into(),
+                CodeCellLanguage::Javascript => "JavaScript".into(),
+                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
+            },
+            DataTableKind::Import(..) => "Data Table".into(),
+        }
     }
 }
 
