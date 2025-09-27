@@ -50,7 +50,9 @@ export function Search() {
       if (sheets.current !== cursor.sheet_id.id) {
         sheets.current = cursor.sheet_id.id;
       }
-      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y));
+      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y), {
+        ensureVisible: { x: Number(cursor.x), y: Number(cursor.y) },
+      });
       inputEl?.focus();
     }
   }, [cursor, inputEl]);
