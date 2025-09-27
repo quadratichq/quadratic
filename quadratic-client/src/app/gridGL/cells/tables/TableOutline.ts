@@ -3,6 +3,7 @@
 import { events } from '@/app/events/events';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
@@ -12,8 +13,12 @@ import { Graphics, Rectangle } from 'pixi.js';
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_FILL_ALPHA = 0.05;
 
+const RUNNING_ALPHA_TIME = 250;
+
 export class TableOutline extends Graphics {
   private table: Table;
+
+  running: boolean | 'awaiting' = false;
 
   constructor(table: Table) {
     super();
@@ -29,8 +34,21 @@ export class TableOutline extends Graphics {
     super.destroy();
   };
 
-  update = () => {
+  update = (runningCount?: number) => {
     this.clear();
+
+    if (this.running && runningCount) {
+      const running = runningCount % RUNNING_ALPHA_TIME;
+      let change = 0;
+      if (running < RUNNING_ALPHA_TIME / 2) {
+        change = running / (RUNNING_ALPHA_TIME / 2);
+      } else {
+        change = 1 - (running - RUNNING_ALPHA_TIME / 2) / (RUNNING_ALPHA_TIME / 2);
+      }
+      this.beginFill(getCSSVariableTint('background'), 0.75 * change);
+      this.drawRect(0, 0, this.table.tableBounds.width, this.table.tableBounds.height);
+      this.endFill();
+    }
 
     if (!pixiAppSettings.showCellTypeOutlines) return;
 
@@ -75,6 +93,8 @@ export class TableOutline extends Graphics {
         this.drawDashedRectangle(rectangle, colors.cellColorError);
       });
     }
+
+    pixiApp.setViewportDirty();
   };
 
   // draw a dashed and filled rectangle to identify the cause of the spill error

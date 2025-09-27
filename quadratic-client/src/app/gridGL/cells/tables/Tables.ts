@@ -15,6 +15,8 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, type Point, type Rectangle } from 'pixi.js';
 
@@ -55,6 +57,9 @@ export class Tables extends Container<Table> {
 
   tableCursor: string | undefined;
 
+  private runningState: string[] = [];
+  private runningCount = 0;
+
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
@@ -74,6 +79,10 @@ export class Tables extends Container<Table> {
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('updateImage', this.updateImage);
+
+    events.on('pythonState', this.updateRunningState);
+    events.on('javascriptState', this.updateRunningState);
+    events.on('connectionState', this.updateRunningState);
   }
 
   destroy() {
@@ -89,6 +98,10 @@ export class Tables extends Container<Table> {
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);
     events.off('updateImage', this.updateImage);
+
+    events.off('pythonState', this.updateRunningState);
+    events.off('javascriptState', this.updateRunningState);
+    events.off('connectionState', this.updateRunningState);
 
     super.destroy();
   }
@@ -285,6 +298,14 @@ export class Tables extends Container<Table> {
       const gridHeading = content.headings.headingSize.unscaledHeight;
       const visibleTables = this.getVisibleTables();
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
+    }
+    if (this.runningState.length !== 0) {
+      this.runningCount++;
+      for (const tablePos of this.runningState) {
+        const [x, y] = tablePos.split(',');
+        const table = this.getTable(Number(x), Number(y));
+        table?.outline.update(this.runningCount);
+      }
     }
   };
 
@@ -645,4 +666,52 @@ export class Tables extends Container<Table> {
   };
 
   //#endregion
+
+  private updateRunningState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    if (!current && !awaitingExecution) {
+      for (const tablePos of this.runningState) {
+        const [x, y] = tablePos.split(',');
+        const table = this.getTable(Number(x), Number(y));
+        if (table) {
+          table.outline.running = false;
+          table.outline.update();
+        }
+      }
+    }
+    const newTables: { table: Table; running: true | 'awaiting' }[] = [];
+    if (current && current.sheetPos.sheetId === this.cellsSheet.sheetId) {
+      const table = this.getTable(current.sheetPos.x, current.sheetPos.y);
+      if (table) {
+        newTables.push({ table, running: true });
+      }
+    }
+    if (awaitingExecution) {
+      for (const cell of awaitingExecution) {
+        if (cell.sheetPos.sheetId === this.cellsSheet.sheetId) {
+          const table = this.getTable(cell.sheetPos.x, cell.sheetPos.y);
+          if (table) {
+            newTables.push({ table, running: 'awaiting' });
+          }
+        }
+      }
+    }
+
+    for (const tablePos of this.runningState) {
+      const [x, y] = tablePos.split(',');
+      const table = this.getTable(Number(x), Number(y));
+      if (table && !newTables.find((t) => t.table === table)) {
+        table.outline.running = false;
+        table.outline.update();
+      }
+    }
+    const newRunningState: string[] = [];
+    for (const table of newTables) {
+      if (!this.runningState.includes(`${table.table.codeCell.x},${table.table.codeCell.y}`)) {
+        table.table.outline.running = table.running;
+        table.table.outline.update();
+        newRunningState.push(`${table.table.codeCell.x},${table.table.codeCell.y}`);
+      }
+    }
+    this.runningState = newRunningState;
+  };
 }
