@@ -187,7 +187,7 @@ impl GridController {
                     .reverse_operations
                     .push(Operation::SetCellValues {
                         sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                        values: CellValues::from_cell_value(old_cell_value),
+                        values: old_cell_value.into(),
                     });
             }
 
@@ -902,7 +902,7 @@ impl GridController {
 
                             new_column.name = CellValue::Text(unique_column_name);
 
-                            self.grid.replace_table_column_name_in_code_cells(
+                            self.grid.update_data_table_column_name(
                                 &old_name,
                                 &old_column.name.to_string(),
                                 &new_column.name.to_string(),

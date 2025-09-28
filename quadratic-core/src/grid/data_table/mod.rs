@@ -73,7 +73,11 @@ impl Grid {
         let unique_name =
             unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
+        for sheet in self.sheets.values_mut() {
+            sheet
+                .data_tables
+                .replace_table_name_in_code_cells(sheet.id, old_name, new_name, a1_context);
+        }
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
@@ -87,25 +91,8 @@ impl Grid {
         Ok(())
     }
 
-    /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
-        unique_data_table_name("Table", true, None, a1_context)
-    }
-
-    /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_name_in_code_cells(
-        &mut self,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        for sheet in self.sheets.values_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
-        }
-    }
-
-    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_column_name_in_code_cells(
+    /// Updates the column name in all code cells that reference the old name in all sheets in the grid.
+    pub fn update_data_table_column_name(
         &mut self,
         table_name: &str,
         old_name: &str,
@@ -113,10 +100,15 @@ impl Grid {
         a1_context: &A1Context,
     ) {
         for sheet in self.sheets.values_mut() {
-            sheet.replace_table_column_name_in_code_cells(
-                table_name, old_name, new_name, a1_context,
+            sheet.data_tables.replace_table_column_name_in_code_cells(
+                sheet.id, table_name, old_name, new_name, a1_context,
             );
         }
+    }
+
+    /// Returns a unique name for a data table
+    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, a1_context)
     }
 }
 

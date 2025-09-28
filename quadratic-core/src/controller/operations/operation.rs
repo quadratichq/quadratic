@@ -95,6 +95,8 @@ pub enum Operation {
         sheet_pos: SheetPos,
         kind: DataTableKind,
     },
+    /// **Deprecated** (Sept 2025) and replaced with SwitchDataTableKindWithoutCellValue
+    /// Switches the kind (CodeRun or Import) of a data table at a specific SheetPos.
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,

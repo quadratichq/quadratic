@@ -334,13 +334,7 @@ impl GridController {
             output_type: code_run.output_type.clone(),
             std_out: None,
             std_err: Some(error.msg.to_string()),
-
-            // use a combination of both the errored and old cells_accessed to
-            // maintain the best chance of rerunning after an error
-            cells_accessed: code_run
-                .cells_accessed
-                .clone()
-                .merge(std::mem::take(&mut transaction.cells_accessed)),
+            cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
         let table_name = match code_run.language {

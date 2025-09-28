@@ -85,7 +85,7 @@ mod test {
         assert!(first_sheet(&gc).has_content(pos));
 
         // Table content
-        gc.add_data_table_from_values(
+        gc.add_data_table(
             pos.to_sheet_pos(sheet_id),
             "test".into(),
             vec![vec!["test".into(), "test".into()]],

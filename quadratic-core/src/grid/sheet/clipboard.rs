@@ -30,7 +30,7 @@ impl Sheet {
         }
 
         // Cell values
-        let mut cells = CellValues::default();
+        let mut cells = Some(CellValues::default());
 
         // Display values
         let mut values = if include_display_values {
@@ -39,45 +39,49 @@ impl Sheet {
             None
         };
 
-        for range in selection.ranges.iter() {
-            match range {
-                CellRefRange::Sheet { range } => {
-                    let rect = self.ref_range_bounds_to_rect(range, true);
-                    for y in rect.y_range() {
-                        for x in rect.x_range() {
-                            let pos = Pos { x, y };
+        if cells.is_some() || values.is_some() {
+            for range in selection.ranges.iter() {
+                match range {
+                    CellRefRange::Sheet { range } => {
+                        let rect = self.ref_range_bounds_to_rect(range, true);
+                        for y in rect.y_range() {
+                            for x in rect.x_range() {
+                                let pos = Pos { x, y };
 
-                            let new_x = (pos.x - origin.x) as u32;
-                            let new_y = (pos.y - origin.y) as u32;
+                                let new_x = (pos.x - origin.x) as u32;
+                                let new_y = (pos.y - origin.y) as u32;
 
-                            // create quadratic clipboard values
-                            let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
-                            cells.set(new_x, new_y, cell_value);
+                                // create quadratic clipboard values
+                                if let Some(cells) = cells.as_mut() {
+                                    let cell_value =
+                                        self.cell_value(pos).unwrap_or(CellValue::Blank);
+                                    cells.set(new_x, new_y, cell_value);
+                                }
 
-                            // create quadratic clipboard value-only for PasteSpecial::Values
-                            if let Some(values) = values.as_mut() {
-                                let display_value =
-                                    self.display_value(pos).unwrap_or(CellValue::Blank);
-                                values.set(new_x, new_y, display_value);
+                                // create quadratic clipboard value-only for PasteSpecial::Values
+                                if let Some(values) = values.as_mut() {
+                                    let display_value =
+                                        self.display_value(pos).unwrap_or(CellValue::Blank);
+                                    values.set(new_x, new_y, display_value);
+                                }
                             }
                         }
                     }
+                    CellRefRange::Table { .. } => (),
                 }
-                CellRefRange::Table { .. } => (),
             }
         }
 
         let mut data_tables = IndexMap::new();
         if let Some(bounds) = sheet_bounds {
-            // todo: not sure this is still useful; it's ignored in data_tables_and_cell_values_in_rect
             let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,
+                include_code_table_values,
+                a1_context,
+                Some(selection),
                 &mut cells,
                 &mut values,
-                a1_context,
-                selection,
-                include_code_table_values,
             );
             data_tables.extend(data_tables_in_rect);
         }
@@ -87,7 +91,7 @@ impl Sheet {
             selection: selection.clone(),
             w,
             h,
-            cells,
+            cells: cells.unwrap_or_default(),
             values: values.unwrap_or_default(),
             formats: self.formats.to_clipboard(selection, self, a1_context).ok(),
             borders: self.borders.to_clipboard(selection),

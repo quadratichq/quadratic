@@ -5,8 +5,9 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Rect,
-    grid::{CodeRun, DataTable, SheetRegionMap},
+    Pos, Rect, SheetPos,
+    a1::A1Context,
+    grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
 
 use anyhow::{Result, anyhow};
@@ -77,11 +78,6 @@ impl SheetDataTables {
     /// Returns the data table at the given position, if it exists.
     pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
-    }
-
-    /// Returns a mutable reference to the data table at the given position, if it exists.
-    pub fn get_at_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
-        self.data_tables.get_mut(pos)
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.
@@ -490,6 +486,69 @@ impl SheetDataTables {
     /// Returns an iterator over all data tables in the sheet data tables.
     pub fn expensive_iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
         self.data_tables.iter()
+    }
+
+    /// Calls a function to mutate all code cells.
+    fn update_code_cells(&mut self, sheet_id: SheetId, func: impl Fn(&mut CodeRun, SheetPos)) {
+        self.data_tables
+            .iter_mut()
+            .filter_map(|(data_table_pos, data_table)| {
+                data_table
+                    .code_run_mut()
+                    .map(|code_run| (data_table_pos.to_sheet_pos(sheet_id), code_run))
+            })
+            .for_each(|(data_table_sheet_pos, data_table)| {
+                func(data_table, data_table_sheet_pos);
+            });
+    }
+
+    /// Replaces a sheet name when referenced in code cells.
+    pub fn replace_sheet_name_in_code_cells(
+        &mut self,
+        sheet_id: SheetId,
+        old_name: &str,
+        new_name: &str,
+    ) {
+        let other_sheet_id = SheetId::new();
+        let old_a1_context = A1Context::with_single_sheet(old_name, other_sheet_id);
+        let new_a1_context = A1Context::with_single_sheet(new_name, other_sheet_id);
+        self.update_code_cells(sheet_id, |code_run, data_table_sheet_pos| {
+            code_run.replace_sheet_name_in_cell_references(
+                &old_a1_context,
+                &new_a1_context,
+                data_table_sheet_pos,
+            );
+        });
+    }
+
+    /// Replaces the table name in all code cells that reference the old name.
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        sheet_id: SheetId,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        self.update_code_cells(sheet_id, |code_cell_value, pos| {
+            code_cell_value
+                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
+        });
+    }
+
+    /// Replaces the column name in all code cells that reference the old name.
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        sheet_id: SheetId,
+        table_name: &str,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        self.update_code_cells(sheet_id, |code_cell_value, pos| {
+            code_cell_value.replace_column_name_in_cell_references(
+                a1_context, pos, table_name, old_name, new_name,
+            );
+        });
     }
 
     /// Returns an iterator over all code runs in the sheet data tables.

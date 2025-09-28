@@ -129,18 +129,17 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .for_each(|(data_table_pos, data_table)| {
-                if search_code && let Some(code_run) = data_table.code_run() {
-                    let code = &code_run.code;
-                    if (case_sensitive && code.contains(query))
-                        || (!case_sensitive && code.to_lowercase().contains(query))
-                    {
-                        results.push(JsSheetPosText {
-                            sheet_id: self.id.to_string(),
-                            x: data_table_pos.x,
-                            y: data_table_pos.y,
-                            text: Some(code.to_string()),
-                        });
-                    }
+                if search_code
+                    && let Some(code_run) = data_table.code_run()
+                    && ((case_sensitive && code_run.code.contains(query))
+                        || (!case_sensitive && code_run.code.to_lowercase().contains(query)))
+                {
+                    results.push(JsSheetPosText {
+                        sheet_id: self.id.to_string(),
+                        x: data_table_pos.x,
+                        y: data_table_pos.y,
+                        text: Some(code_run.code.to_string()),
+                    });
                 }
 
                 // we can return early if the data table has a spill or error

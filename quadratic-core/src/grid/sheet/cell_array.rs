@@ -97,26 +97,18 @@ impl Sheet {
         })
     }
 
-    /// Returns all cell values and their positions in a rect.
-    pub fn cell_values_pos_in_rect(
-        &self,
-        &selection: &Rect,
-        include_code: bool,
-    ) -> Vec<(CellValue, Option<Pos>)> {
+    /// Returns all cell values in a rect.
+    pub fn cell_values_pos_in_rect(&self, &selection: &Rect) -> Vec<CellValue> {
         selection
             .y_range()
             .flat_map(|y| {
                 selection
                     .x_range()
                     .map(|x| {
-                        let pos = Pos { x, y };
-                        if include_code && self.code_run_at(&pos).is_some() {
-                            (CellValue::Blank, Some(pos))
-                        } else {
-                            (self.display_value(pos).unwrap_or(CellValue::Blank), None)
-                        }
+                        self.display_value((x, y).into())
+                            .unwrap_or(CellValue::Blank)
                     })
-                    .collect::<Vec<(CellValue, Option<Pos>)>>()
+                    .collect::<Vec<CellValue>>()
             })
             .collect()
     }

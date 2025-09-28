@@ -213,7 +213,7 @@ impl GridController {
         let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
             .map_err(|_| JsValue::from_str("Invalid values"))?;
 
-        self.add_data_table_from_values(
+        self.add_data_table(
             pos.to_sheet_pos(sheet_id),
             name,
             values,

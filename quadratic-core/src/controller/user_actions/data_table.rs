@@ -175,7 +175,7 @@ impl GridController {
         );
     }
 
-    pub fn add_data_table_from_values(
+    pub fn add_data_table(
         &mut self,
         sheet_pos: SheetPos,
         name: String,
@@ -502,7 +502,7 @@ mod tests {
             vec!["4".into(), "5".into(), "6".into()],
         ];
 
-        gc.add_data_table_from_values(
+        gc.add_data_table(
             SheetPos::from((pos![A1], sheet_id)),
             "Table 1".to_string(),
             values.to_owned(),
@@ -561,7 +561,7 @@ mod tests {
 
         assert_table_count(&gc, sheet_id, 1);
 
-        gc.add_data_table_from_values(
+        gc.add_data_table(
             SheetPos::from((pos![E1], sheet_id)),
             "Table 2".to_string(),
             values_no_header.to_owned(),
@@ -610,7 +610,7 @@ mod tests {
 
         // overwrite second data table with a new data table
         let table_3_values = vec![vec!["Z".into(), "Y".into()], vec!["X".into(), "W".into()]];
-        gc.add_data_table_from_values(
+        gc.add_data_table(
             SheetPos::from((pos![E1], sheet_id)),
             "Table 3".to_string(),
             table_3_values.to_owned(),

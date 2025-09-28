@@ -141,7 +141,7 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
 
     let mut possible_text_series = text_series.iter().map(|_| Some(vec![])).collect::<Vec<_>>();
 
-    series.iter().for_each(|(cell, _)| {
+    series.iter().for_each(|cell| {
         text_series.iter().enumerate().for_each(|(i, text_series)| {
             let cell_value = cell.to_string();
 
@@ -174,32 +174,33 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
 
     for i in 0..possible_text_series.len() {
         if let Some(entry) = &possible_text_series[i].clone()
-            && !entry.is_empty() {
-                let current = if !negative {
-                    entry[entry.len() - 1].to_owned()
-                } else {
-                    entry[0].to_owned()
-                };
+            && !entry.is_empty()
+        {
+            let current = if !negative {
+                entry[entry.len() - 1].to_owned()
+            } else {
+                entry[0].to_owned()
+            };
 
-                // TODO(ddimaria): replace with new to-cell-value code when it's ready
-                let mut cell_value = match current {
-                    CellValue::Text(current) => current,
-                    _ => "".into(),
-                };
+            // TODO(ddimaria): replace with new to-cell-value code when it's ready
+            let mut cell_value = match current {
+                CellValue::Text(current) => current,
+                _ => "".into(),
+            };
 
-                (0..*spaces).for_each(|_| {
-                    if let Ok(next) = get_series_next_key(&cell_value, &text_series[i], *negative) {
-                        results.push(CellValue::Text(next.to_owned()));
-                        cell_value = next;
-                    }
-                });
-
-                if *negative {
-                    results.reverse();
+            (0..*spaces).for_each(|_| {
+                if let Ok(next) = get_series_next_key(&cell_value, &text_series[i], *negative) {
+                    results.push(CellValue::Text(next.to_owned()));
+                    cell_value = next;
                 }
+            });
 
-                return Some(results);
+            if *negative {
+                results.reverse();
             }
+
+            return Some(results);
+        }
     }
 
     if !results.is_empty() {

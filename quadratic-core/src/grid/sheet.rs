@@ -138,30 +138,6 @@ impl Sheet {
         Ok(())
     }
 
-    /// Replaces a sheet name when referenced in code cells.
-    pub fn replace_sheet_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        let sheet_id = SheetId::new();
-        let old_a1_context = A1Context::with_single_sheet(old_name, sheet_id);
-        let new_a1_context = A1Context::with_single_sheet(new_name, sheet_id);
-        self.replace_names_in_code_cells(&old_a1_context, &new_a1_context);
-    }
-
-    /// Replaces any number of sheet names and table names when referenced in
-    /// code cells.
-    pub fn replace_names_in_code_cells(
-        &mut self,
-        old_a1_context: &A1Context,
-        new_a1_context: &A1Context,
-    ) {
-        self.update_code_cells(|code_cell_value, pos| {
-            code_cell_value.replace_sheet_name_in_cell_references(
-                old_a1_context,
-                new_a1_context,
-                pos,
-            );
-        });
-    }
-
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
@@ -211,7 +187,9 @@ impl Sheet {
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = self.cell_value_ref(pos) {
+        if let Some(cell_value) = self.cell_value_ref(pos)
+            && !matches!(cell_value, CellValue::Blank)
+        {
             return Some(cell_value.clone());
         }
 

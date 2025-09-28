@@ -396,8 +396,7 @@ impl GridController {
                 // code except when the new data table overwrites the anchor cell
                 let output_rect = data_table.output_rect(target_pos, true);
                 if sheet
-                    .data_tables
-                    .iter_pos_in_rect(output_rect, false)
+                    .data_tables_pos_intersect_rect(output_rect, false)
                     .any(|pos| sheet.data_table_at(&pos).is_none())
                 {
                     let message = format!(
@@ -911,10 +910,7 @@ impl GridController {
         // remove code tables if their anchor cell overlap the paste area
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             sheet
-                .data_table_anchors_in_rect(Rect {
-                    min: insert_at,
-                    max: end_pos,
-                })
+                .data_tables_pos_intersect_rect(Rect::new_span(insert_at, end_pos), false)
                 .filter(|pos| {
                     sheet
                         .data_table_at(pos)

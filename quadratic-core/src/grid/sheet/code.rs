@@ -148,71 +148,48 @@ impl Sheet {
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         if let Some((code_pos, data_table)) = self.data_table_that_contains(pos)
-            && let DataTableKind::CodeRun(code_cell_value) = &data_table.kind
+            && let DataTableKind::CodeRun(code_run) = &data_table.kind
         {
-            let mut code: String = code_cell_value.code.clone();
-            let language = code_cell_value.language.clone();
+            let mut code: String = code_run.code.clone();
 
             // replace internal cell references with a1 notation
-            if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                let replaced = convert_rc_to_a1(
-                    &code_cell_value.code,
-                    a1_context,
-                    code_pos.to_sheet_pos(self.id),
-                );
+            if matches!(code_run.language, CodeCellLanguage::Formula) {
+                let replaced = convert_rc_to_a1(&code, a1_context, code_pos.to_sheet_pos(self.id));
                 code = replaced;
             }
 
-            let evaluation_result = serde_json::to_string(&data_table.value).unwrap_or("".into());
+            let evaluation_result = match &code_run.error {
+                Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                None => Some(serde_json::to_string(&data_table.value).unwrap_or("".into())),
+            };
+
             let spill_error =
-                if data_table.has_spill() {
-                    Some(self.find_spill_error_reasons(
+                match data_table.has_spill() {
+                    true => Some(self.find_spill_error_reasons(
                         &data_table.output_rect(code_pos, true),
                         code_pos,
-                    ))
-                } else {
-                    None
+                    )),
+                    false => None,
                 };
 
-            match &data_table.kind {
-                DataTableKind::CodeRun(code_run) => {
-                    let evaluation_result = if let Some(error) = &code_run.error {
-                        Some(serde_json::to_string(error).unwrap_or("".into()))
-                    } else {
-                        Some(evaluation_result)
-                    };
+            let return_info = Some(JsReturnInfo {
+                line_number: code_run.line_number,
+                output_type: code_run.output_type.clone(),
+            });
 
-                    Some(JsCodeCell {
-                        x: code_pos.x,
-                        y: code_pos.y,
-                        code_string: code,
-                        language,
-                        std_err: code_run.std_err.clone(),
-                        std_out: code_run.std_out.clone(),
-                        evaluation_result,
-                        spill_error,
-                        return_info: Some(JsReturnInfo {
-                            line_number: code_run.line_number,
-                            output_type: code_run.output_type.clone(),
-                        }),
-                        cells_accessed: Some(code_run.cells_accessed.clone().into()),
-                        last_modified: data_table.last_modified.timestamp_millis(),
-                    })
-                }
-                DataTableKind::Import(_) => Some(JsCodeCell {
-                    x: code_pos.x,
-                    y: code_pos.y,
-                    code_string: code,
-                    language,
-                    std_err: None,
-                    std_out: None,
-                    evaluation_result: Some(evaluation_result),
-                    spill_error,
-                    return_info: None,
-                    cells_accessed: None,
-                    last_modified: 0,
-                }),
-            }
+            Some(JsCodeCell {
+                x: code_pos.x,
+                y: code_pos.y,
+                code_string: code,
+                language: code_run.language.clone(),
+                std_err: code_run.std_err.clone(),
+                std_out: code_run.std_out.clone(),
+                evaluation_result,
+                spill_error,
+                return_info,
+                cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                last_modified: data_table.last_modified.timestamp_millis(),
+            })
         } else {
             None
         }

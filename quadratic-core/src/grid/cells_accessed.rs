@@ -180,14 +180,6 @@ impl CellsAccessed {
             })
         })
     }
-
-    pub fn merge(&self, other: Self) -> Self {
-        let mut cells = self.cells.clone();
-        for (sheet_id, ranges) in other.cells {
-            cells.entry(sheet_id).or_default().extend(ranges);
-        }
-        Self { cells }
-    }
 }
 
 #[cfg(test)]
@@ -305,55 +297,5 @@ mod tests {
         assert_eq!(cells, deserialized);
         assert_eq!(deserialized.cells.len(), 1);
         assert_eq!(deserialized.cells[&sheet_id].len(), 2);
-    }
-
-    #[test]
-    fn test_merge() {
-        // Test merging two CellsAccessed with different sheet IDs
-        let mut cells1 = CellsAccessed::default();
-        let sheet_id1 = SheetId::new();
-        cells1.add(sheet_id1, CellRefRange::ALL);
-        cells1.add(sheet_id1, CellRefRange::new_relative_xy(1, 1));
-
-        let mut cells2 = CellsAccessed::default();
-        let sheet_id2 = SheetId::new();
-        cells2.add(sheet_id2, CellRefRange::new_relative_xy(2, 2));
-        cells2.add(
-            sheet_id2,
-            CellRefRange::new_relative_rect(Rect::new(3, 3, 5, 5)),
-        );
-
-        let merged = cells1.merge(cells2);
-        assert_eq!(merged.cells.len(), 2);
-        assert_eq!(merged.cells[&sheet_id1].len(), 2);
-        assert_eq!(merged.cells[&sheet_id2].len(), 2);
-        assert!(merged.cells[&sheet_id1].contains(&CellRefRange::ALL));
-        assert!(merged.cells[&sheet_id1].contains(&CellRefRange::new_relative_xy(1, 1)));
-        assert!(merged.cells[&sheet_id2].contains(&CellRefRange::new_relative_xy(2, 2)));
-        assert!(
-            merged.cells[&sheet_id2]
-                .contains(&CellRefRange::new_relative_rect(Rect::new(3, 3, 5, 5)))
-        );
-
-        // Test merging two CellsAccessed with the same sheet ID (ranges should be combined)
-        let mut cells3 = CellsAccessed::default();
-        cells3.add(sheet_id1, CellRefRange::new_relative_xy(3, 3));
-
-        let merged_same_sheet = cells1.merge(cells3);
-        assert_eq!(merged_same_sheet.cells.len(), 1);
-        assert_eq!(merged_same_sheet.cells[&sheet_id1].len(), 3);
-        assert!(merged_same_sheet.cells[&sheet_id1].contains(&CellRefRange::ALL));
-        assert!(merged_same_sheet.cells[&sheet_id1].contains(&CellRefRange::new_relative_xy(1, 1)));
-        assert!(merged_same_sheet.cells[&sheet_id1].contains(&CellRefRange::new_relative_xy(3, 3)));
-
-        // Test merging with an empty CellsAccessed
-        let empty = CellsAccessed::default();
-        let merged_with_empty = cells1.merge(empty);
-        assert_eq!(merged_with_empty, cells1);
-
-        // Test merging an empty CellsAccessed with a non-empty one
-        let empty = CellsAccessed::default();
-        let merged_empty_with_cells = empty.merge(cells1.clone());
-        assert_eq!(merged_empty_with_cells, cells1);
     }
 }

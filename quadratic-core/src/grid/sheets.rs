@@ -218,7 +218,9 @@ impl Grid {
         let old_name = std::mem::replace(&mut sheet.name, new_name.to_owned());
 
         for sheet in self.sheets.values_mut() {
-            sheet.replace_sheet_name_in_code_cells(&old_name, new_name);
+            sheet
+                .data_tables
+                .replace_sheet_name_in_code_cells(sheet.id, &old_name, new_name);
         }
 
         Ok(old_name)
