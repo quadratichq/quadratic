@@ -420,6 +420,7 @@ class Core {
     cursor,
     csvDelimiter,
     hasHeading,
+    isOverwrite,
     isAi,
   }: ClientCoreImportFile): Promise<{
     contents?: ArrayBufferLike;
