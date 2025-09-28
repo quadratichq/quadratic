@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { hasPermissionToEditFile } from '@/app/actions';
 import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isExcelMimeType } from '@/app/helpers/files';
-import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { Rectangle } from 'pixi.js';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { DragEvent, PropsWithChildren } from 'react';
 import { useCallback, useRef, useState } from 'react';
@@ -28,9 +31,31 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     return sheets.sheet.getColumnRowFromScreen(world.x, world.y);
   }, []);
 
+  const [dragTargetTable, setDragTargetTable] = useState<JsRenderCodeCell | undefined>(undefined);
+  const [dragTargetRectangle, setDragTargetRectangle] = useState<Rectangle | undefined>(undefined);
   const moveCursor = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
       const { column, row } = getColumnRowFromScreen(e);
+      const table = content.cellsSheet.tables.getTableIntersects({ x: column, y: row });
+      if (table) {
+        setDragTargetTable(table.codeCell);
+        const tableBounds = table.tableBounds;
+        const viewportBounds = pixiApp.viewport.getVisibleBounds();
+        const topLeft = pixiApp.viewport.toScreen(
+          Math.max(tableBounds.left, viewportBounds.left),
+          Math.max(tableBounds.top, viewportBounds.top)
+        );
+        const bottomRight = pixiApp.viewport.toScreen(
+          Math.min(tableBounds.right, viewportBounds.right),
+          Math.min(tableBounds.bottom, viewportBounds.bottom)
+        );
+        setDragTargetRectangle(
+          new Rectangle(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y)
+        );
+      } else {
+        setDragTargetTable(undefined);
+        setDragTargetRectangle(undefined);
+      }
       const cursor = sheets.sheet.cursor;
       const hasMoved = cursor.position.x !== column || cursor.position.y !== row;
       if (hasMoved) {
@@ -63,6 +88,8 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
       } else if (e.type === 'dragleave') {
         setDragActive(false);
         setUserMessageState({ message: undefined });
+        setDragTargetTable(undefined);
+        setDragTargetRectangle(undefined);
       }
     },
     [moveCursor, setUserMessageState]
@@ -105,6 +132,27 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
       }}
     >
       {props.children}
+      {dragTargetRectangle && dragTargetTable && (
+        <div
+          style={{
+            position: 'absolute',
+            width: dragTargetRectangle.width,
+            height: dragTargetRectangle.height,
+            top: dragTargetRectangle.top,
+            left: dragTargetRectangle.left,
+            border: '4px dashed #000',
+            opacity: 0.75,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+          }}
+        >
+          <div className="padding-2 rounded-md bg-white p-2 text-2xl font-bold">
+            Replace table {dragTargetTable.name} with this file
+          </div>
+        </div>
+      )}
       {dragActive && (
         <div
           onDragLeave={handleDrag}
