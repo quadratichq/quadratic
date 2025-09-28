@@ -11,6 +11,7 @@ import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessa
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystClarifyingQuestionsModeAtom,
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
@@ -143,6 +144,7 @@ export function useSubmitAIAnalystPrompt() {
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
 
+        const clarifyingQuestionsMode = await snapshot.getPromise(aiAnalystClarifyingQuestionsModeAtom);
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
@@ -305,6 +307,7 @@ export function useSubmitAIAnalystPrompt() {
               useToolsPrompt: true,
               language: undefined,
               useQuadraticContext: true,
+              clarifyingQuestionsMode,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
               onExceededBillingLimit,
