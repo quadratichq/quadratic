@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    Pos, Rect, SheetPos,
+    CellValue, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -154,9 +154,11 @@ impl Sheet {
         &mut self,
         pos: Pos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+    ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
+        let old_cell_value = self.columns.set_value(&pos, CellValue::Blank);
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_full(pos, data_table)
+        let (index, old_data_table, dirty_rects) = self.data_tables.insert_full(pos, data_table);
+        (old_cell_value, index, old_data_table, dirty_rects)
     }
 
     pub fn data_table_insert_before(
@@ -164,9 +166,12 @@ impl Sheet {
         index: usize,
         pos: Pos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+    ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
+        let old_cell_value = self.columns.set_value(&pos, CellValue::Blank);
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_before(index, pos, data_table)
+        let (index, old_data_table, dirty_rects) =
+            self.data_tables.insert_before(index, pos, data_table);
+        (old_cell_value, index, old_data_table, dirty_rects)
     }
 
     pub fn data_table_shift_remove_full(
@@ -550,7 +555,7 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_table_insert_full(pos, data_table).1
+            self.data_table_insert_full(pos, data_table).2
         } else {
             self.data_table_shift_remove(pos)
                 .map(|(_, data_table, _)| data_table)

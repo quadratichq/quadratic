@@ -43,7 +43,7 @@ impl GridController {
                     None,
                     None,
                 );
-                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
             }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
@@ -84,7 +84,7 @@ impl GridController {
             None,
             None,
         );
-        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
     }
 }
 

@@ -650,10 +650,11 @@ impl GridController {
                         });
                     }
 
-                    data_table_ops.push(Operation::AddDataTableWithoutCellValue {
+                    data_table_ops.push(Operation::SetDataTable {
                         sheet_pos: final_pos.to_sheet_pos(sheet_id),
-                        data_table,
+                        data_table: Some(data_table),
                         index: usize::MAX,
+                        ignore_old_data_table: true,
                     });
                 }
             }

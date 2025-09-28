@@ -33,13 +33,12 @@ impl GridController {
                     if code.code != new_code.code {
                         let mut data_table = dt.clone();
                         data_table.kind = DataTableKind::CodeRun(new_code);
-                        transaction
-                            .operations
-                            .push_back(Operation::AddDataTableWithoutCellValue {
-                                sheet_pos,
-                                data_table,
-                                index: usize::MAX,
-                            });
+                        transaction.operations.push_back(Operation::SetDataTable {
+                            sheet_pos,
+                            data_table: Some(data_table),
+                            index: usize::MAX,
+                            ignore_old_data_table: true,
+                        });
                         transaction
                             .operations
                             .push_back(Operation::ComputeCode { sheet_pos });
@@ -405,17 +404,18 @@ mod tests {
             &transaction.operations,
             &[
                 // first formula, y += 1 for y >= 2
-                Operation::AddDataTableWithoutCellValue {
+                Operation::SetDataTable {
                     sheet_pos: pos![sheet_id!A1],
-                    data_table: DataTable {
+                    data_table: Some(DataTable {
                         kind: DataTableKind::CodeRun(CodeRun {
                             language: CodeCellLanguage::Formula,
                             code: "B$17 + $B18".to_string(),
                             ..old_code_run
                         }),
                         ..old_dt
-                    },
+                    }),
                     index: usize::MAX,
+                    ignore_old_data_table: true,
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
@@ -431,12 +431,12 @@ mod tests {
             &[RefAdjust::new_insert_column(sheet_id, 5)],
         );
 
-        let Operation::AddDataTableWithoutCellValue {
+        let Operation::SetDataTable {
             data_table:
-                DataTable {
+                Some(DataTable {
                     kind: DataTableKind::CodeRun(code_run),
                     ..
-                },
+                }),
             ..
         } = &transaction.operations[0]
         else {
@@ -519,7 +519,7 @@ mod tests {
             None,
         );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -530,12 +530,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
-        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &transaction.operations[0]
-        else {
-            panic!("Expected AddDataTableWithoutCellValue");
+        let Operation::SetDataTable { data_table, .. } = &transaction.operations[0] else {
+            panic!("Expected SetDataTable");
         };
         assert_eq!(
-            data_table.kind,
+            data_table.as_ref().unwrap().kind,
             DataTableKind::CodeRun(CodeRun {
                 code: "q.cells(\"B1:B3\")".to_string(),
                 ..code_run
@@ -607,7 +606,13 @@ mod tests {
             None,
         );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_data_table(transaction, sheet_pos, Some(data_table.clone()), None);
+        gc.finalize_data_table(
+            transaction,
+            sheet_pos,
+            Some(data_table.clone()),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -622,11 +627,13 @@ mod tests {
             code: r#"return q.cells("B1:B3");"#.to_string(),
             ..code_run
         };
-        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &transaction.operations[0]
-        else {
-            panic!("Expected AddDataTableWithoutCellValue");
+        let Operation::SetDataTable { data_table, .. } = &transaction.operations[0] else {
+            panic!("Expected SetDataTable");
         };
-        assert_eq!(data_table.kind, DataTableKind::CodeRun(expected_code_run));
+        assert_eq!(
+            data_table.as_ref().unwrap().kind,
+            DataTableKind::CodeRun(expected_code_run)
+        );
     }
 
     #[test]

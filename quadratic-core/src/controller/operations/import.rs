@@ -194,10 +194,11 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table,
+                data_table: Some(data_table),
                 index: usize::MAX,
+                ignore_old_data_table: true,
             });
             drop(sheet_format_updates);
         } else {
@@ -563,10 +564,11 @@ impl GridController {
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
-        let ops = vec![Operation::AddDataTableWithoutCellValue {
+        let ops = vec![Operation::SetDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
-            data_table,
+            data_table: Some(data_table),
             index: usize::MAX,
+            ignore_old_data_table: true,
         }];
 
         Ok(ops)
@@ -1382,16 +1384,17 @@ mod test {
         expected_data_table.apply_first_row_as_header();
 
         let data_table = match ops[0].clone() {
-            Operation::AddDataTableWithoutCellValue { data_table, .. } => data_table,
-            _ => panic!("Expected AddDataTable operation"),
+            Operation::SetDataTable { data_table, .. } => data_table,
+            _ => panic!("Expected SetDataTable operation"),
         };
-        expected_data_table.last_modified = data_table.last_modified;
+        expected_data_table.last_modified = data_table.as_ref().unwrap().last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTableWithoutCellValue {
+        let expected = Operation::SetDataTable {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
-            data_table: expected_data_table,
+            data_table: Some(expected_data_table),
             index: usize::MAX,
+            ignore_old_data_table: true,
         };
 
         assert_eq!(ops.len(), 1);
@@ -1423,16 +1426,16 @@ mod test {
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTableWithoutCellValue {
+            Operation::SetDataTable {
                 sheet_pos,
                 data_table,
                 ..
             } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected SetDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 1),
+            data_table.as_ref().unwrap().cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }

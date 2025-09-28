@@ -75,15 +75,6 @@ impl TrackedOperation {
                 name: get_table_name(Some(data_table)),
                 deleted: false,
             }),
-            Operation::AddDataTableWithoutCellValue {
-                sheet_pos,
-                data_table,
-                ..
-            } => Some(Self::SetDataTable {
-                selection: data_table_to_selection(Some(data_table), *sheet_pos, gc),
-                name: get_table_name(Some(data_table)),
-                deleted: false,
-            }),
             Operation::DeleteDataTable { sheet_pos } => Some(Self::DeleteDataTable {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),

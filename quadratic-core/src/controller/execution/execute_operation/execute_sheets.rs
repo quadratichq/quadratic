@@ -4,10 +4,7 @@ use crate::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{
-        Sheet, SheetId, file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity,
-        unique_data_table_name,
-    },
+    grid::{Sheet, SheetId, file::sheet_schema::export_sheet, unique_data_table_name},
 };
 use anyhow::{Result, bail};
 use lexicon_fractional_index::key_between;
@@ -285,7 +282,7 @@ impl GridController {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
                         e.to_owned(),
-                        JsSnackbarSeverity::Error.to_string(),
+                        crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                     );
                 }
                 // clear remaining operations

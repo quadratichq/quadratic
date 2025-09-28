@@ -84,7 +84,7 @@ impl Grid {
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
         sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
-            dt.update_table_name(&unique_name);
+            dt.name = unique_name.into();
             Ok(())
         })?;
 
@@ -468,11 +468,6 @@ impl DataTable {
         }
 
         std::result::Result::Ok(true)
-    }
-
-    /// Updates the table name.
-    pub fn update_table_name(&mut self, name: &str) {
-        self.name = name.into();
     }
 
     /// Returns a reference to the values in the data table.

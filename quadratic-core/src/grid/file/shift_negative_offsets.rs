@@ -9,9 +9,7 @@ use std::collections::HashMap;
 use crate::{
     CopyFormats, Pos, RefAdjust,
     a1::A1Context,
-    grid::{
-        Grid, GridBounds, Sheet, js_types::JsSnackbarSeverity, sheet::validations::Validations,
-    },
+    grid::{Grid, GridBounds, Sheet, sheet::validations::Validations},
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
@@ -122,7 +120,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     if changed && (cfg!(target_family = "wasm") || cfg!(test)) {
         crate::wasm_bindings::js::jsClientMessage(
             "negative_offsets".to_string(),
-            JsSnackbarSeverity::Success.to_string(),
+            crate::grid::js_types::JsSnackbarSeverity::Success.to_string(),
         );
     }
 

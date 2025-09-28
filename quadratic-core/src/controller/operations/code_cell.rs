@@ -6,10 +6,7 @@ use crate::{
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{
-        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
-        js_types::JsSnackbarSeverity, unique_data_table_name,
-    },
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId},
     util::now,
 };
 
@@ -22,16 +19,13 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let parse_ctx = self.a1_context();
-        let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
-            _ => code,
-        };
+        let mut ops = vec![];
 
         let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
             // sheet may have been deleted in a multiplayer operation
-            return vec![];
+            return ops;
         };
+
         if sheet
             .data_table_pos_that_contains(sheet_pos.into())
             .is_some_and(|dt_pos| dt_pos != sheet_pos.into())
@@ -39,61 +33,56 @@ impl GridController {
             if cfg!(target_family = "wasm") || cfg!(test) {
                 crate::wasm_bindings::js::jsClientMessage(
                     "Cannot add code cell to table".to_string(),
-                    JsSnackbarSeverity::Error.to_string(),
+                    crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                 );
             }
             // cannot set a code cell where there is already a data table anchor
-            return vec![];
+            return ops;
         }
 
-        let existing_data_table = sheet.data_table_full_at(&sheet_pos.into());
-
-        let name = if let Some((_, dt)) = existing_data_table {
-            dt.name.clone()
-        } else if let Some(code_cell_name) = code_cell_name {
-            unique_data_table_name(&code_cell_name, false, Some(sheet_pos), &self.a1_context).into()
-        } else {
-            let language_str = match language {
-                CodeCellLanguage::Formula => "Formula".to_string(),
-                CodeCellLanguage::Python => "Python".to_string(),
-                CodeCellLanguage::Javascript => "Javascript".to_string(),
-                CodeCellLanguage::Import => "Table".to_string(),
-                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
-            };
-            unique_data_table_name(&language_str, true, Some(sheet_pos), &self.a1_context).into()
+        let code = match language {
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, self.a1_context(), sheet_pos),
+            _ => code,
         };
 
-        let mut ops = vec![];
-        if let Some((existing_data_table_index, existing_data_table)) = existing_data_table
+        if let Some((existing_data_table_index, existing_data_table)) =
+            sheet.data_table_full_at(&sheet_pos.into())
             && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
             && existing_code_run.language == language
         {
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table: DataTable {
+                data_table: Some(DataTable {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
                         ..existing_code_run.clone()
                     }),
                     ..existing_data_table.clone()
-                },
+                }),
                 index: existing_data_table_index,
+                ignore_old_data_table: false,
             });
         } else {
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            let name = match code_cell_name {
+                Some(code_cell_name) => code_cell_name,
+                None => match language {
+                    CodeCellLanguage::Formula => "Formula1".to_string(),
+                    CodeCellLanguage::Python => "Python1".to_string(),
+                    CodeCellLanguage::Javascript => "Javascript1".to_string(),
+                    CodeCellLanguage::Import => "Table1".to_string(),
+                    CodeCellLanguage::Connection { kind, .. } => format!("{kind}1"),
+                },
+            }
+            .into();
+
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table: DataTable {
+                data_table: Some(DataTable {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
-                        std_out: None,
-                        std_err: None,
-                        cells_accessed: CellsAccessed::default(),
-                        error: None,
-                        return_type: None,
-                        line_number: None,
-                        output_type: None,
+                        ..Default::default()
                     }),
                     name,
                     header_is_first_row: false,
@@ -112,8 +101,9 @@ impl GridController {
                     borders: None,
                     chart_pixel_output: None,
                     chart_output: None,
-                },
+                }),
                 index: usize::MAX,
+                ignore_old_data_table: false,
             });
         }
 
@@ -257,11 +247,11 @@ mod test {
             None,
         );
         assert_eq!(operations.len(), 2);
-        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &operations[0] else {
-            panic!("Expected AddDataTableWithoutCellValue");
+        let Operation::SetDataTable { data_table, .. } = &operations[0] else {
+            panic!("Expected SetDataTable");
         };
         assert_eq!(
-            data_table.kind,
+            data_table.as_ref().unwrap().kind,
             DataTableKind::CodeRun(CodeRun {
                 language: CodeCellLanguage::Python,
                 code: "print('hello world')".to_string(),

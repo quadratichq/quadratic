@@ -88,7 +88,7 @@ impl Sheet {
         }
     }
 
-    pub(crate) fn delete_row(
+    fn delete_row(
         &mut self,
         transaction: &mut PendingTransaction,
         row: i64,
@@ -181,15 +181,15 @@ impl Sheet {
             bail!(e);
         }
 
+        for row in rows.iter() {
+            self.delete_row(transaction, *row, a1_context);
+        }
+
         if !ignore_tables {
             self.delete_tables_with_all_rows(transaction, &rows);
             self.delete_table_rows(transaction, &rows);
             self.delete_chart_rows(transaction, &rows);
             self.move_tables_upwards(transaction, &rows);
-        }
-
-        for row in rows {
-            self.delete_row(transaction, row, a1_context);
         }
 
         Ok(())

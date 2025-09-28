@@ -13,7 +13,6 @@ use crate::{
         DataTable, SheetId,
         fix_names::{sanitize_column_name, sanitize_table_name},
         formats::{FormatUpdate, SheetFormatUpdates},
-        js_types::JsSnackbarSeverity,
         unique_data_table_name,
     },
 };
@@ -110,6 +109,7 @@ impl GridController {
                 pos.to_sheet_pos(sheet_rect.sheet_id),
                 None,
                 None,
+                false,
             );
         });
     }
@@ -118,14 +118,24 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
-    ) {
+    ) -> Result<()> {
         if let Operation::SetDataTable {
             sheet_pos,
             data_table,
             index,
+            ignore_old_data_table,
         } = op
         {
-            self.finalize_data_table(transaction, sheet_pos, data_table, Some(index));
+            self.finalize_data_table(
+                transaction,
+                sheet_pos,
+                data_table,
+                Some(index),
+                ignore_old_data_table,
+            );
+            Ok(())
+        } else {
+            bail!("Expected Operation::SetDataTable in execute_set_data_table");
         }
     }
 
@@ -142,99 +152,18 @@ impl GridController {
             ..
         } = op
         {
-            self.execute_add_data_table_without_cell_value(
+            self.execute_set_data_table(
                 transaction,
-                Operation::AddDataTableWithoutCellValue {
+                Operation::SetDataTable {
                     sheet_pos,
-                    data_table,
+                    data_table: Some(data_table),
                     index: index.unwrap_or(usize::MAX),
+                    ignore_old_data_table: true,
                 },
             )
         } else {
             bail!("Expected Operation::AddDataTable in execute_add_data_table");
         }
-    }
-
-    /// Adds or replaces a data table at a specific position.
-    pub(super) fn execute_add_data_table_without_cell_value(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) -> Result<()> {
-        if let Operation::AddDataTableWithoutCellValue {
-            sheet_pos,
-            mut data_table,
-            index,
-        } = op
-        {
-            data_table.name = unique_data_table_name(
-                data_table.name(),
-                false,
-                Some(sheet_pos),
-                self.a1_context(),
-            )
-            .into();
-
-            let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = Pos::from(sheet_pos);
-
-            // delete cell values that are at the anchor position of the data
-            // table (DataTables always overwrite the anchor cell)
-            if let Some(old_cell_value) = sheet.columns.set_value(&data_table_pos, CellValue::Blank)
-            {
-                transaction
-                    .reverse_operations
-                    .push(Operation::SetCellValues {
-                        sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                        values: old_cell_value.into(),
-                    });
-            }
-
-            let mut sheet_rect_for_compute_and_spills =
-                data_table.output_sheet_rect(sheet_pos, false);
-
-            // insert the data table into the sheet
-            let (old_index, old_data_table, dirty_rects) =
-                sheet.data_table_insert_before(index, data_table_pos, data_table.to_owned());
-
-            // mark new data table as dirty
-            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
-            self.send_updated_bounds(transaction, sheet_id);
-
-            // mark old data table as dirty, if it exists
-            if let Some(old_data_table) = &old_data_table {
-                let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
-                sheet_rect_for_compute_and_spills =
-                    sheet_rect_for_compute_and_spills.union(&old_data_table_rect);
-                transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
-            }
-
-            let forward_operations = vec![Operation::AddDataTableWithoutCellValue {
-                sheet_pos,
-                data_table,
-                index,
-            }];
-            let reverse_operations = vec![Operation::SetDataTable {
-                sheet_pos,
-                data_table: old_data_table,
-                index: old_index,
-            }];
-
-            self.data_table_operations(
-                transaction,
-                forward_operations,
-                reverse_operations,
-                Some(sheet_rect_for_compute_and_spills),
-            );
-
-            return Ok(());
-        };
-
-        bail!(
-            "Expected Operation::AddDataTableWithoutCellValue in execute_add_data_table_without_cell_value"
-        );
     }
 
     pub(super) fn execute_move_data_table(
@@ -313,10 +242,11 @@ impl GridController {
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::AddDataTableWithoutCellValue {
+            let reverse_operations = vec![Operation::SetDataTable {
                 sheet_pos,
-                data_table,
+                data_table: Some(data_table),
                 index,
+                ignore_old_data_table: true,
             }];
             self.data_table_operations(
                 transaction,
@@ -598,10 +528,11 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            reverse_operations.push(Operation::AddDataTableWithoutCellValue {
+            reverse_operations.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table,
+                data_table: Some(data_table),
                 index,
+                ignore_old_data_table: true,
             });
             reverse_operations.push(Operation::SetCellValues {
                 sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
@@ -719,7 +650,7 @@ impl GridController {
 
             // insert data table in sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let (_, _, dirty_rects) =
+            let (_, _, _, dirty_rects) =
                 sheet.data_table_insert_full(sheet_rect.min, data_table.to_owned());
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
@@ -866,7 +797,7 @@ impl GridController {
                             if cfg!(target_family = "wasm") || cfg!(test) {
                                 crate::wasm_bindings::js::jsClientMessage(
                                     "Cannot add code cell to table".to_string(),
-                                    JsSnackbarSeverity::Error.to_string(),
+                                    crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                                 );
                             }
                             // clear remaining operations
@@ -1123,7 +1054,7 @@ impl GridController {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
-                                JsSnackbarSeverity::Error.to_string(),
+                                crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                             );
                         }
                         // clear remaining operations
@@ -1554,7 +1485,7 @@ impl GridController {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 "Cannot add code cell to table".to_string(),
-                                JsSnackbarSeverity::Error.to_string(),
+                                crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                             );
                         }
                         // clear remaining operations
@@ -2691,7 +2622,7 @@ mod tests {
             format!(
                 "{},{}",
                 "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
+                crate::grid::js_types::JsSnackbarSeverity::Error
             ),
             true,
         );
@@ -2712,7 +2643,7 @@ mod tests {
             format!(
                 "{},{}",
                 "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
+                crate::grid::js_types::JsSnackbarSeverity::Error
             ),
             true,
         );
@@ -2743,7 +2674,7 @@ mod tests {
             format!(
                 "{},{}",
                 "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
+                crate::grid::js_types::JsSnackbarSeverity::Error
             ),
             true,
         );
@@ -2764,7 +2695,7 @@ mod tests {
             format!(
                 "{},{}",
                 "Cannot add code cell to table",
-                JsSnackbarSeverity::Error
+                crate::grid::js_types::JsSnackbarSeverity::Error
             ),
             true,
         );

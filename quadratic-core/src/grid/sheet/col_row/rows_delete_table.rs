@@ -61,6 +61,7 @@ impl Sheet {
                         sheet_pos: pos.to_sheet_pos(self.id),
                         data_table: Some(old_dt),
                         index,
+                        ignore_old_data_table: true,
                     });
             }
         }
@@ -119,6 +120,7 @@ impl Sheet {
                         sheet_pos: pos.to_sheet_pos(self.id),
                         data_table: Some(old_dt),
                         index,
+                        ignore_old_data_table: true,
                     });
                 // the y + 1 is needed since the row will be inserted before the
                 // old table, so its position will be shifted down before it gets here
@@ -222,7 +224,7 @@ impl Sheet {
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
             let new_pos = pos.translate(0, -shift_table, 1, 1);
-            let dirty_rects = self.data_table_insert_before(index, new_pos, old_dt).2;
+            let dirty_rects = self.data_table_insert_before(index, new_pos, old_dt).3;
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
             transaction
