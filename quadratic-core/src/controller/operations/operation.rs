@@ -91,16 +91,9 @@ pub enum Operation {
     FlattenDataTable {
         sheet_pos: SheetPos,
     },
-    SwitchDataTableKindWithoutCellValue {
-        sheet_pos: SheetPos,
-        kind: DataTableKind,
-    },
-    /// **Deprecated** (Sept 2025) and replaced with SwitchDataTableKindWithoutCellValue
-    /// Switches the kind (CodeRun or Import) of a data table at a specific SheetPos.
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,
-        value: CellValue,
     },
     GridToDataTable {
         sheet_rect: SheetRect,

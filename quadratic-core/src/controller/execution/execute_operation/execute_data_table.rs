@@ -632,17 +632,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        // convert SwitchDataTableKind to SwitchDataTableKindWithoutCellValue
-        let op = if let Operation::SwitchDataTableKind {
-            sheet_pos, kind, ..
-        } = op
-        {
-            Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind }
-        } else {
-            op
-        };
-        let forward_op = op.clone();
-        if let Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind } = op {
+        if let Operation::SwitchDataTableKind { sheet_pos, kind } = op.clone() {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -660,8 +650,8 @@ impl GridController {
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             transaction.add_code_cell(sheet_id, data_table_pos);
 
-            let forward_operations = vec![forward_op];
-            let reverse_operations = vec![Operation::SwitchDataTableKindWithoutCellValue {
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::SwitchDataTableKind {
                 sheet_pos,
                 kind: old_data_table_kind,
             }];
@@ -2284,7 +2274,7 @@ mod tests {
 
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
-        let op = Operation::SwitchDataTableKindWithoutCellValue {
+        let op = Operation::SwitchDataTableKind {
             sheet_pos,
             kind: kind.clone(),
         };

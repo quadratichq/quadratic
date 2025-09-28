@@ -27,10 +27,7 @@ impl GridController {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
 
-        Ok(vec![Operation::SwitchDataTableKindWithoutCellValue {
-            sheet_pos,
-            kind,
-        }])
+        Ok(vec![Operation::SwitchDataTableKind { sheet_pos, kind }])
     }
 
     /// Collects all operations that would be needed to convert a grid to a data table.
