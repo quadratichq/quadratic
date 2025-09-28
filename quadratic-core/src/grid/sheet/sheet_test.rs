@@ -45,7 +45,7 @@ impl Sheet {
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
-    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
+    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: CellValue) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),

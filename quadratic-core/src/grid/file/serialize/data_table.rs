@@ -10,7 +10,7 @@ use crate::{
     ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
-        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
+        CellsAccessed, CodeRun, DataTable, DataTableKind, SheetId,
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,

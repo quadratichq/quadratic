@@ -1,6 +1,6 @@
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
-pub use column::{Column, ColumnData};
+pub use column::Column;
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
 pub use data_table::*;
 pub use formats::Format;
@@ -16,7 +16,6 @@ pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
 pub use sheet_region_map::SheetRegionMap;
 
-use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 
