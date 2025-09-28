@@ -7,7 +7,7 @@ use crate::{
 impl Sheet {
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
     /// tables. Ignores Blanks except in tables.
-    pub fn has_content(&self, pos: Pos) -> bool {
+    pub fn has_content_at_pos(&self, pos: Pos) -> bool {
         if self
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y))
@@ -19,7 +19,7 @@ impl Sheet {
     }
 
     pub fn has_content_in_rect(&self, rect: Rect) -> bool {
-        self.columns.has_content(rect) || self.data_tables.has_content(rect)
+        self.columns.has_content_in_rect(rect) || self.data_tables.has_content_in_rect(rect)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores
@@ -70,19 +70,19 @@ mod test {
         let pos = pos![A1];
 
         // Empty cell should have no content
-        assert!(!first_sheet(&gc).has_content(pos));
+        assert!(!first_sheet(&gc).has_content_at_pos(pos));
 
         // Text content
         gc.set_cell_value(pos.to_sheet_pos(sheet_id), "test".into(), None, false);
-        assert!(first_sheet(&gc).has_content(pos));
+        assert!(first_sheet(&gc).has_content_at_pos(pos));
 
         // Empty string should count as no content
         gc.set_cell_value(pos.to_sheet_pos(sheet_id), "".into(), None, false);
-        assert!(!first_sheet(&gc).has_content(pos));
+        assert!(!first_sheet(&gc).has_content_at_pos(pos));
 
         // Number content
         gc.set_cell_value(pos.to_sheet_pos(sheet_id), "1".into(), None, false);
-        assert!(first_sheet(&gc).has_content(pos));
+        assert!(first_sheet(&gc).has_content_at_pos(pos));
 
         // Table content
         gc.add_data_table(
@@ -93,9 +93,9 @@ mod test {
             None,
             false,
         );
-        assert!(first_sheet(&gc).has_content(pos));
-        assert!(first_sheet(&gc).has_content(Pos { x: 2, y: 2 }));
-        assert!(!first_sheet(&gc).has_content(Pos { x: 3, y: 2 }));
+        assert!(first_sheet(&gc).has_content_at_pos(pos));
+        assert!(first_sheet(&gc).has_content_at_pos(Pos { x: 2, y: 2 }));
+        assert!(!first_sheet(&gc).has_content_at_pos(Pos { x: 3, y: 2 }));
 
         let pos2 = Pos { x: 10, y: 10 };
         gc.set_code_cell(
@@ -125,9 +125,9 @@ mod test {
                 Ok(())
             })
             .unwrap();
-        assert!(first_sheet(&gc).has_content(pos2));
-        assert!(first_sheet(&gc).has_content(Pos { x: 14, y: 10 }));
-        assert!(!first_sheet(&gc).has_content(Pos { x: 15, y: 10 }));
+        assert!(first_sheet(&gc).has_content_at_pos(pos2));
+        assert!(first_sheet(&gc).has_content_at_pos(Pos { x: 14, y: 10 }));
+        assert!(!first_sheet(&gc).has_content_at_pos(Pos { x: 15, y: 10 }));
     }
 
     #[test]

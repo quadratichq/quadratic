@@ -390,7 +390,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let has_value = self.has_content(pos);
+                    let has_value = self.has_content_at_pos(pos);
                     if !has_value {
                         continue;
                     }

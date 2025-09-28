@@ -64,9 +64,9 @@ impl GridController {
                 ignore_old_data_table: false,
             });
         } else {
-            let name = code_cell_name
-                .unwrap_or_else(|| format!("{}1", language.as_string()))
-                .into();
+            let name = CellValue::Text(
+                code_cell_name.unwrap_or_else(|| format!("{}1", language.as_string())),
+            );
 
             ops.push(Operation::SetDataTable {
                 sheet_pos,

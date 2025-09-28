@@ -572,8 +572,8 @@ impl SheetDataTables {
     }
 
     /// Returns true if the given rectangle has any content.
-    pub fn has_content(&self, rect: Rect) -> bool {
-        self.cache.has_content(rect)
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+        self.cache.has_content_in_rect(rect)
     }
 
     pub fn has_content_except(&self, rect: Rect, pos: Pos) -> bool {

@@ -321,7 +321,7 @@ impl SheetColumns {
     }
 
     /// Returns true if the given rectangle has any content.
-    pub fn has_content(&self, rect: Rect) -> bool {
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.has_cell_value.intersects(rect)
     }
 }

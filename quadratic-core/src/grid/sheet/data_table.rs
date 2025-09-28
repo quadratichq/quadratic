@@ -138,7 +138,7 @@ impl Sheet {
     /// spill due to other data tables is managed internally by SheetDataTables
     fn check_spills_due_to_column_values(&self, pos: Pos, data_table: &DataTable) -> bool {
         let output_rect = data_table.output_rect(pos, true);
-        self.columns.has_content(output_rect)
+        self.columns.has_content_in_rect(output_rect)
     }
 
     /// Returns a mutable DataTable at a Pos
@@ -155,7 +155,10 @@ impl Sheet {
         pos: Pos,
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
-        let old_cell_value = self.columns.set_value(&pos, CellValue::Blank);
+        let old_cell_value = match self.columns.get_value(&pos).is_some() {
+            true => self.columns.set_value(&pos, CellValue::Blank),
+            false => None,
+        };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
         let (index, old_data_table, dirty_rects) = self.data_tables.insert_full(pos, data_table);
         (old_cell_value, index, old_data_table, dirty_rects)
@@ -167,7 +170,10 @@ impl Sheet {
         pos: Pos,
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
-        let old_cell_value = self.columns.set_value(&pos, CellValue::Blank);
+        let old_cell_value = match self.columns.get_value(&pos).is_some() {
+            true => self.columns.set_value(&pos, CellValue::Blank),
+            false => None,
+        };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
         let (index, old_data_table, dirty_rects) =
             self.data_tables.insert_before(index, pos, data_table);
@@ -437,7 +443,7 @@ impl Sheet {
                         for y in 0..data_table_left.height() {
                             let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
 
-                            if self.has_content(pos) {
+                            if self.has_content_at_pos(pos) {
                                 return false;
                             }
                         }
@@ -487,7 +493,7 @@ impl Sheet {
                     let next_is_not_blank = || {
                         for x in 0..data_table_above.width() {
                             let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
-                            if self.has_content(pos) {
+                            if self.has_content_at_pos(pos) {
                                 return false;
                             }
                         }
