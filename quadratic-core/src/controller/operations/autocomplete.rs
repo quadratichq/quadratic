@@ -187,26 +187,16 @@ impl GridController {
                 final_range.x_range().step_by(width).for_each(|x| {
                     let new_x = final_range.max.x.min(x + width as i64 - 1);
                     let start_pos = (initial_range.min.x, y).into();
-                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    let format_rect = Rect::new(x, y, new_x, y);
                     self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                     self.apply_borders(sheet_id, start_pos, format_rect, &mut borders);
                 });
 
-                let source_row = SheetRect::new_pos_span(
-                    (initial_range.min.x, y).into(),
-                    (initial_range.max.x, y).into(),
-                    sheet_id,
-                );
-                let target_row =
-                    Rect::new_span((final_range.min.x, y).into(), (final_range.max.x, y).into());
-                let (operations, cell_values) = self.apply_auto_complete(
-                    sheet_id,
-                    false,
-                    &source_row.into(),
-                    &target_row,
-                    None,
-                )?;
+                let source_row = Rect::new(initial_range.min.x, y, initial_range.max.x, y);
+                let target_row = Rect::new(final_range.min.x, y, final_range.max.x, y);
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, false, &source_row, &target_row, None)?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -271,26 +261,15 @@ impl GridController {
                     } else {
                         (initial_range.min.x, y).into()
                     };
-                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    let format_rect = Rect::new(x, y, new_x, y);
                     self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
-
                     self.apply_borders(sheet_id, start_pos, format_rect, &mut borders);
                 });
 
-                let source_row = SheetRect::new_pos_span(
-                    (initial_range.min.x, y).into(),
-                    (initial_range.max.x, y).into(),
-                    sheet_id,
-                );
-                let target_row =
-                    Rect::new_span((final_range.min.x, y).into(), (final_range.max.x, y).into());
-                let (operations, cell_values) = self.apply_auto_complete(
-                    sheet_id,
-                    true,
-                    &source_row.into(),
-                    &target_row,
-                    None,
-                )?;
+                let source_row = Rect::new(initial_range.min.x, y, initial_range.max.x, y);
+                let target_row = Rect::new(final_range.min.x, y, final_range.max.x, y);
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, true, &source_row, &target_row, None)?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -347,28 +326,15 @@ impl GridController {
                 final_range.y_range().step_by(height).for_each(|y| {
                     let new_y = final_range.max.y.min(y + height as i64 - 1);
                     let start_pos = (x, initial_range.min.y).into();
-                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    let format_rect = Rect::new(x, y, x, new_y);
                     self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
-
                     self.apply_borders(sheet_id, start_pos, format_rect, &mut borders);
                 });
 
-                let source_col = SheetRect::new_pos_span(
-                    (x, initial_range.min.y).into(),
-                    (x, initial_range.max.y).into(),
-                    sheet_id,
-                );
-                let target_col = Rect::new_span(
-                    (x, initial_range.max.y + 1).into(),
-                    (x, final_range.max.y).into(),
-                );
-                let (operations, _) = self.apply_auto_complete(
-                    sheet_id,
-                    false,
-                    &source_col.into(),
-                    &target_col,
-                    None,
-                )?;
+                let source_col = Rect::new(x, initial_range.min.y, x, initial_range.max.y);
+                let target_col = Rect::new(x, initial_range.max.y + 1, x, final_range.max.y);
+                let (operations, _) =
+                    self.apply_auto_complete(sheet_id, false, &source_col, &target_col, None)?;
 
                 Ok(operations)
             })
@@ -407,28 +373,15 @@ impl GridController {
                     } else {
                         (x, initial_range.min.y).into()
                     };
-                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    let format_rect = Rect::new(x, y, x, new_y);
                     self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
-
                     self.apply_borders(sheet_id, start_pos, format_rect, &mut borders);
                 });
 
-                let source_col = SheetRect::new_pos_span(
-                    (x, initial_range.min.y).into(),
-                    (x, initial_range.max.y).into(),
-                    sheet_id,
-                );
-                let target_col = Rect::new_span(
-                    (x, initial_range.min.y - 1).into(),
-                    (x, final_range.min.y).into(),
-                );
-                let (operations, _) = self.apply_auto_complete(
-                    sheet_id,
-                    true,
-                    &source_col.into(),
-                    &target_col,
-                    None,
-                )?;
+                let source_col = Rect::new(x, initial_range.min.y, x, initial_range.max.y);
+                let target_col = Rect::new(x, initial_range.min.y - 1, x, final_range.min.y);
+                let (operations, _) =
+                    self.apply_auto_complete(sheet_id, true, &source_col, &target_col, None)?;
 
                 Ok(operations)
             })
