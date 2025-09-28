@@ -862,13 +862,7 @@ impl DataTable {
     /// Converts a DataTable to a string of its kind.
     pub fn kind_as_string(&self) -> String {
         match &self.kind {
-            DataTableKind::CodeRun(code_run) => match code_run.language {
-                CodeCellLanguage::Import => "Import".into(),
-                CodeCellLanguage::Formula => "Formula".into(),
-                CodeCellLanguage::Python => "Python".into(),
-                CodeCellLanguage::Javascript => "JavaScript".into(),
-                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
-            },
+            DataTableKind::CodeRun(code_run) => code_run.language.as_string(),
             DataTableKind::Import(..) => "Data Table".into(),
         }
     }

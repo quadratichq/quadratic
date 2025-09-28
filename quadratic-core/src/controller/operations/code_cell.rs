@@ -64,17 +64,9 @@ impl GridController {
                 ignore_old_data_table: false,
             });
         } else {
-            let name = match code_cell_name {
-                Some(code_cell_name) => code_cell_name,
-                None => match language {
-                    CodeCellLanguage::Formula => "Formula1".to_string(),
-                    CodeCellLanguage::Python => "Python1".to_string(),
-                    CodeCellLanguage::Javascript => "Javascript1".to_string(),
-                    CodeCellLanguage::Import => "Table1".to_string(),
-                    CodeCellLanguage::Connection { kind, .. } => format!("{kind}1"),
-                },
-            }
-            .into();
+            let name = code_cell_name
+                .unwrap_or_else(|| format!("{}1", language.as_string()))
+                .into();
 
             ops.push(Operation::SetDataTable {
                 sheet_pos,
