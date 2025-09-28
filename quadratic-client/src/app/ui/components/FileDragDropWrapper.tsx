@@ -11,7 +11,7 @@ import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { Rectangle } from 'pixi.js';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { DragEvent, PropsWithChildren } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const FileDragDropWrapper = (props: PropsWithChildren) => {
@@ -65,7 +65,27 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     [getColumnRowFromScreen]
   );
 
-  // handle drag events
+  // Handle escape key press
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && dragActive) {
+        setDragActive(false);
+        setUserMessageState({ message: undefined });
+        setDragTargetTable(undefined);
+        setDragTargetRectangle(undefined);
+      }
+    },
+    [dragActive, setUserMessageState, setDragTargetTable, setDragTargetRectangle]
+  );
+
+  // Add/remove keyboard event listener
+  useEffect(() => {
+    if (dragActive) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [dragActive, handleKeyDown]);
+
   const handleDrag = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
