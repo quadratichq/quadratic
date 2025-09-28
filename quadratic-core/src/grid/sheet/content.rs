@@ -8,11 +8,7 @@ impl Sheet {
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
     /// tables. Ignores Blanks except in tables.
     pub fn has_content_at_pos(&self, pos: Pos) -> bool {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y))
-            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
-        {
+        if self.columns.has_content_in_rect(Rect::single_pos(pos)) {
             return true;
         }
         self.has_table_content(pos, false)
@@ -25,11 +21,7 @@ impl Sheet {
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores
     /// Blanks in tables.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y))
-            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
-        {
+        if self.columns.has_content_in_rect(Rect::single_pos(pos)) {
             return true;
         }
         self.has_table_content_ignore_blanks(pos)

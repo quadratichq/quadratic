@@ -155,7 +155,7 @@ impl Sheet {
         pos: Pos,
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
-        let old_cell_value = match self.columns.get_value(&pos).is_some() {
+        let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
             true => self.columns.set_value(&pos, CellValue::Blank),
             false => None,
         };
@@ -170,7 +170,7 @@ impl Sheet {
         pos: Pos,
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
-        let old_cell_value = match self.columns.get_value(&pos).is_some() {
+        let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
             true => self.columns.set_value(&pos, CellValue::Blank),
             false => None,
         };
