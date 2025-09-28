@@ -228,7 +228,7 @@ impl GridController {
             } else {
                 sheet
                     .data_table_shift_remove(pos)
-                    .map_or(HashSet::new(), |(_, dirty_rects)| dirty_rects)
+                    .map_or(HashSet::new(), |(_, _, dirty_rects)| dirty_rects)
             };
 
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);

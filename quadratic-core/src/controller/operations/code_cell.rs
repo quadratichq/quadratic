@@ -46,11 +46,9 @@ impl GridController {
             return vec![];
         }
 
-        let existing_data_table = sheet.data_table_at(&sheet_pos.into());
-        let existing_data_table_index =
-            existing_data_table.and_then(|_| sheet.data_table_index(sheet_pos.into()));
+        let existing_data_table = sheet.data_table_full_at(&sheet_pos.into());
 
-        let name = if let Some(dt) = existing_data_table {
+        let name = if let Some((_, dt)) = existing_data_table {
             dt.name.clone()
         } else if let Some(code_cell_name) = code_cell_name {
             unique_data_table_name(&code_cell_name, false, Some(sheet_pos), &self.a1_context).into()
@@ -66,7 +64,7 @@ impl GridController {
         };
 
         let mut ops = vec![];
-        if let Some(existing_data_table) = existing_data_table
+        if let Some((existing_data_table_index, existing_data_table)) = existing_data_table
             && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
             && existing_code_run.language == language
         {
@@ -78,7 +76,6 @@ impl GridController {
                         code,
                         ..existing_code_run.clone()
                     }),
-                    name,
                     ..existing_data_table.clone()
                 },
                 index: existing_data_table_index,
@@ -116,7 +113,7 @@ impl GridController {
                     chart_pixel_output: None,
                     chart_output: None,
                 },
-                index: None,
+                index: usize::MAX,
             });
         }
 

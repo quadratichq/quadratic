@@ -494,7 +494,7 @@ impl GridController {
                 ops.push(Operation::AddDataTableWithoutCellValue {
                     sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                     data_table: data_table.clone(),
-                    index: None,
+                    index: usize::MAX,
                 });
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
@@ -804,7 +804,7 @@ impl GridController {
                             Some(true),
                             None,
                         ),
-                        index: None,
+                        index: usize::MAX,
                     });
                     compute_code_ops.push(Operation::ComputeCode { sheet_pos });
                 } else {

@@ -38,7 +38,7 @@ impl GridController {
                             .push_back(Operation::AddDataTableWithoutCellValue {
                                 sheet_pos,
                                 data_table,
-                                index: None,
+                                index: usize::MAX,
                             });
                         transaction
                             .operations
@@ -415,7 +415,7 @@ mod tests {
                         }),
                         ..old_dt
                     },
-                    index: None,
+                    index: usize::MAX,
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)

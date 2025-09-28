@@ -197,7 +197,7 @@ impl GridController {
             ops.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                index: None,
+                index: usize::MAX,
             });
             drop(sheet_format_updates);
         } else {
@@ -566,7 +566,7 @@ impl GridController {
         let ops = vec![Operation::AddDataTableWithoutCellValue {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
             data_table,
-            index: None,
+            index: usize::MAX,
         }];
 
         Ok(ops)
@@ -1391,7 +1391,7 @@ mod test {
         let expected = Operation::AddDataTableWithoutCellValue {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
             data_table: expected_data_table,
-            index: None,
+            index: usize::MAX,
         };
 
         assert_eq!(ops.len(), 1);

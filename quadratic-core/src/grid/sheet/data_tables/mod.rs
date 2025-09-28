@@ -81,8 +81,10 @@ impl SheetDataTables {
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.
-    pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
-        self.data_tables.get_full(pos)
+    pub fn get_full_at(&self, pos: &Pos) -> Option<(usize, &DataTable)> {
+        self.data_tables
+            .get_full(pos)
+            .map(|(index, _, data_table)| (index, data_table))
     }
 
     /// Updates mutual spill and cache for the data table at the given index and position.
@@ -298,9 +300,8 @@ impl SheetDataTables {
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
-                self.data_tables
-                    .get_full(&pos)
-                    .map(|(index, _, data_table)| (index, pos, data_table))
+                self.get_full_at(&pos)
+                    .map(|(index, data_table)| (index, pos, data_table))
             })
     }
 
@@ -312,11 +313,9 @@ impl SheetDataTables {
     ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
-                self.data_tables
-                    .get_full(&pos)
-                    .and_then(|(index, _, data_table)| {
-                        data_table.code_run().map(|code_run| (index, pos, code_run))
-                    })
+                self.get_full_at(&pos).and_then(|(index, data_table)| {
+                    data_table.code_run().map(|code_run| (index, pos, code_run))
+                })
             })
     }
 
@@ -464,8 +463,9 @@ impl SheetDataTables {
     }
 
     /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.shift_remove_full(pos).map(|full| (full.2, full.3))
+    pub fn shift_remove(&mut self, pos: &Pos) -> Option<(usize, DataTable, HashSet<Rect>)> {
+        self.shift_remove_full(pos)
+            .map(|full| (full.0, full.2, full.3))
     }
 
     /// Returns the bounds of the column at the given index.

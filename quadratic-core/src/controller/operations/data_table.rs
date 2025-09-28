@@ -305,7 +305,7 @@ impl GridController {
         ops.push(Operation::AddDataTableWithoutCellValue {
             sheet_pos,
             data_table,
-            index: None,
+            index: usize::MAX,
         });
 
         ops

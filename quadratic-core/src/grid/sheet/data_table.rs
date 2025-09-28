@@ -21,23 +21,12 @@ impl Sheet {
         self.data_tables.get_at(pos)
     }
 
+    pub fn data_table_full_at(&self, pos: &Pos) -> Option<(usize, &DataTable)> {
+        self.data_tables.get_full_at(pos)
+    }
+
     pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
         self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
-    }
-
-    /// Gets the index of the data table
-    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
-        self.data_tables.get_index_of(&pos)
-    }
-
-    /// Returns the index of the data table as a result.
-    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
-        self.data_table_index(pos).ok_or_else(|| {
-            anyhow!(
-                "Data table not found at {:?} in data_table_index_result()",
-                pos
-            )
-        })
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
@@ -187,11 +176,14 @@ impl Sheet {
         self.data_tables.shift_remove_full(pos)
     }
 
-    pub fn data_table_shift_remove(&mut self, pos: Pos) -> Option<(DataTable, HashSet<Rect>)> {
+    pub fn data_table_shift_remove(
+        &mut self,
+        pos: Pos,
+    ) -> Option<(usize, DataTable, HashSet<Rect>)> {
         self.data_tables.shift_remove(&pos)
     }
 
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
+    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(usize, DataTable, HashSet<Rect>)> {
         self.data_table_shift_remove(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
@@ -561,7 +553,7 @@ impl Sheet {
             self.data_table_insert_full(pos, data_table).1
         } else {
             self.data_table_shift_remove(pos)
-                .map(|(data_table, _)| data_table)
+                .map(|(_, data_table, _)| data_table)
         }
     }
 }
@@ -727,26 +719,6 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         assert!(sheet.is_source_cell(pos![A1]));
-    }
-
-    #[test]
-    fn test_data_table_index() {
-        let mut gc = GridController::test();
-        let sheet_id = first_sheet_id(&gc);
-
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        test_create_code_table(&mut gc, sheet_id, pos![E2], 3, 3);
-
-        let sheet = gc.sheet(sheet_id);
-
-        // Test that the data table index is 0 for the first data table
-        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
-
-        // Test that a non-existent data table returns None
-        assert_eq!(sheet.data_table_index(pos![B2]), None);
-
-        // The second data table should have index 1
-        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
     }
 
     #[test]

@@ -147,7 +147,7 @@ impl GridController {
                 Operation::AddDataTableWithoutCellValue {
                     sheet_pos,
                     data_table,
-                    index,
+                    index: index.unwrap_or(usize::MAX),
                 },
             )
         } else {
@@ -195,11 +195,8 @@ impl GridController {
                 data_table.output_sheet_rect(sheet_pos, false);
 
             // insert the data table into the sheet
-            let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
-                index.unwrap_or(usize::MAX),
-                data_table_pos,
-                data_table.to_owned(),
-            );
+            let (old_index, old_data_table, dirty_rects) =
+                sheet.data_table_insert_before(index, data_table_pos, data_table.to_owned());
 
             // mark new data table as dirty
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
@@ -263,7 +260,7 @@ impl GridController {
                 return Ok(());
             };
 
-            let Ok((dt, dirty_rects)) = old_sheet.delete_data_table(old_sheet_pos.into()) else {
+            let Ok((_, dt, dirty_rects)) = old_sheet.delete_data_table(old_sheet_pos.into()) else {
                 return Ok(());
             };
             old_sheet.recalculate_bounds(&self.a1_context);
@@ -305,8 +302,7 @@ impl GridController {
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
 
-            let index = sheet.data_table_index_result(data_table_pos)?;
-            let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
+            let (index, data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
             let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
@@ -320,7 +316,7 @@ impl GridController {
             let reverse_operations = vec![Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                index: Some(index),
+                index,
             }];
             self.data_table_operations(
                 transaction,
@@ -519,8 +515,7 @@ impl GridController {
 
             // Pull out the data table via a swap, removing it from the sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let index = sheet.data_table_index_result(pos)?;
-            let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
+            let (index, data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
             let table_name = data_table.name.to_display().clone();
 
             let data_table_rect = data_table
@@ -606,7 +601,7 @@ impl GridController {
             reverse_operations.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                index: Some(index),
+                index,
             });
             reverse_operations.push(Operation::SetCellValues {
                 sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
