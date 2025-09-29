@@ -5,7 +5,7 @@ import { assertActiveSheetName, changeSheet, setValueInCell } from './helpers/sh
 
 // ensures that find doesn't inappropriately change the active sheet when first
 // opening (see PR #3481)
-test.only('Find improperly changes sheets', async ({ page }) => {
+test('Find improperly changes sheets', async ({ page }) => {
   const fileName = 'Athletes_table';
   await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
   await cleanUpFiles(page, { fileName });
