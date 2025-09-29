@@ -13,7 +13,7 @@ impl TableRef {
         if let Some(bounds) = self.convert_to_ref_range_bounds(false, a1_context, false, false) {
             if bounds.intersection(to_delete).is_some() {
                 let remaining =
-                    A1Selection::find_excluded_rects(bounds, to_delete.to_rect_unbounded());
+                    A1Selection::find_excluded_rects(bounds, to_delete.as_rect_unbounded());
 
                 if let Some(table) = a1_context.try_table(&self.table_name) {
                     remaining

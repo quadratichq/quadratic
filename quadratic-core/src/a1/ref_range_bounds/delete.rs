@@ -10,7 +10,7 @@ impl RefRangeBounds {
         }
 
         // find any parts that need removing
-        let exclude = range.to_rect_unbounded();
+        let exclude = range.as_rect_unbounded();
 
         // we need a copy since we mutate it to normalize it
         A1Selection::find_excluded_rects(*self, exclude)

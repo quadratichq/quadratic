@@ -1,5 +1,3 @@
-#[cfg(test)]
-use crate::CopyFormats;
 use crate::{
     SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
@@ -109,51 +107,6 @@ impl GridController {
             rows_to_remove,
             flatten_on_delete,
             swallow_on_insert,
-        );
-        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    #[cfg(test)]
-    pub(crate) fn data_table_insert_columns(
-        &mut self,
-        sheet_pos: SheetPos,
-        columns: Vec<u32>,
-        swallow: bool,
-        copy_formats_from: Option<u32>,
-        copy_formats: Option<CopyFormats>,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) {
-        let ops = self.data_table_insert_columns_operations(
-            sheet_pos,
-            columns,
-            swallow,
-            copy_formats_from,
-            copy_formats,
-        );
-        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    #[cfg(test)]
-    #[allow(unused)]
-    pub(crate) fn data_table_insert_rows(
-        &mut self,
-        sheet_pos: SheetPos,
-        rows: Vec<u32>,
-        swallow: bool,
-        copy_formats_from: Option<u32>,
-        copy_formats: Option<CopyFormats>,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) {
-        let ops = self.data_table_insert_rows_operations(
-            sheet_pos,
-            rows,
-            swallow,
-            copy_formats_from,
-            copy_formats,
         );
         self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
     }
@@ -447,25 +400,18 @@ mod tests {
         );
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
 
-        let sheet_pos = SheetPos::from((pos, sheet_id));
-        let select_table = true;
-        let columns_to_add = Some(vec![4]);
-        let columns_to_remove = None;
-        let rows_to_add = Some(vec![11]);
-        let rows_to_remove = None;
-        let flatten_on_delete = Some(true);
-        let swallow_on_insert = Some(true);
-        let cursor = None;
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
+
         gc.data_table_mutations(
             sheet_pos,
-            select_table,
-            columns_to_add,
-            columns_to_remove,
-            rows_to_add,
-            rows_to_remove,
-            flatten_on_delete,
-            swallow_on_insert,
-            cursor,
+            true,
+            Some(vec![4]),
+            None,
+            Some(vec![11]),
+            None,
+            Some(true),
+            Some(true),
+            None,
             false,
         );
 

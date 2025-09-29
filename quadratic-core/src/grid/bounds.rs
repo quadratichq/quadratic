@@ -67,7 +67,7 @@ impl GridBounds {
             }
         }
     }
-    pub(crate) fn to_bounds_rect(&self) -> Option<BoundsRect> {
+    pub(crate) fn as_bounds_rect(&self) -> Option<BoundsRect> {
         match self {
             GridBounds::Empty => None,
             GridBounds::NonEmpty(rect) => Some(BoundsRect {
@@ -98,20 +98,20 @@ impl GridBounds {
     }
 
     pub(crate) fn first_column(&self) -> Option<i64> {
-        self.to_bounds_rect().map(|rect| rect.x)
+        self.as_bounds_rect().map(|rect| rect.x)
     }
 
     pub(crate) fn last_column(&self) -> Option<i64> {
-        self.to_bounds_rect()
+        self.as_bounds_rect()
             .map(|rect| rect.x + rect.width as i64 - 1)
     }
 
     pub(crate) fn first_row(&self) -> Option<i64> {
-        self.to_bounds_rect().map(|rect| rect.y)
+        self.as_bounds_rect().map(|rect| rect.y)
     }
 
     pub(crate) fn last_row(&self) -> Option<i64> {
-        self.to_bounds_rect()
+        self.as_bounds_rect()
             .map(|rect| rect.y + rect.height as i64 - 1)
     }
 }
@@ -129,13 +129,13 @@ mod test {
             height: 4,
         };
         let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 5));
-        assert_eq!(grid_bounds.to_bounds_rect(), Some(bounds));
+        assert_eq!(grid_bounds.as_bounds_rect(), Some(bounds));
     }
 
     #[test]
     fn test_bounds_rect_empty() {
         let grid_bounds = GridBounds::Empty;
-        assert_eq!(grid_bounds.to_bounds_rect(), None);
+        assert_eq!(grid_bounds.as_bounds_rect(), None);
     }
 
     #[test]

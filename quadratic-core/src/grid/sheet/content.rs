@@ -26,7 +26,7 @@ impl Sheet {
         context: &A1Context,
     ) -> bool {
         for range in selection.ranges {
-            if let Some(rect) = range.to_rect_unbounded(context) {
+            if let Some(rect) = range.as_rect_unbounded(context) {
                 if self.contains_value_within_rect(rect, None) {
                     return true;
                 }

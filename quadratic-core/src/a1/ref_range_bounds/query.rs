@@ -83,7 +83,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a rectangle that may contain an unbounded range.
-    pub(crate) fn to_rect_unbounded(&self) -> Rect {
+    pub(crate) fn as_rect_unbounded(&self) -> Rect {
         Rect::new(
             self.start.col(),
             self.start.row(),
@@ -93,7 +93,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a rectangle that bounds a finite range.
-    pub(crate) fn to_rect(&self) -> Option<Rect> {
+    pub(crate) fn as_rect(&self) -> Option<Rect> {
         if self.is_finite() {
             Some(Rect::new(
                 self.start.col(),
@@ -151,7 +151,7 @@ impl RefRangeBounds {
     }
 
     /// Converts the CellRefRange to coordinates to be used in Contiguous2D.
-    pub(crate) fn to_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
+    pub(crate) fn as_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
         let (x1, y1, x2, y2) = (
             if self.start.col.is_unbounded() {
                 1
@@ -205,18 +205,18 @@ mod tests {
     #[test]
     fn test_to_rect() {
         assert_eq!(
-            RefRangeBounds::test_a1("A1").to_rect(),
+            RefRangeBounds::test_a1("A1").as_rect(),
             Some(Rect::new(1, 1, 1, 1))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:B2").to_rect(),
+            RefRangeBounds::test_a1("A1:B2").as_rect(),
             Some(Rect::new(1, 1, 2, 2))
         );
-        assert_eq!(RefRangeBounds::test_a1("A:B").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("1:2").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("A1:C").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("C3:A").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("*").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A:B").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("1:2").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A1:C").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("C3:A").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("*").as_rect(), None);
     }
 
     #[test]
@@ -499,29 +499,29 @@ mod tests {
     }
 
     #[test]
-    fn test_to_contiguous2d_coords() {
+    fn test_as_contiguous2d_coords() {
         assert_eq!(
-            RefRangeBounds::test_a1("A1").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("A1").as_contiguous2d_coords(),
             (1, 1, Some(1), Some(1))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:B2").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("A1:B2").as_contiguous2d_coords(),
             (1, 1, Some(2), Some(2))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("B1:C").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("B1:C").as_contiguous2d_coords(),
             (2, 1, Some(3), None)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("2").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("2").as_contiguous2d_coords(),
             (1, 2, None, Some(2))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("*").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("*").as_contiguous2d_coords(),
             (1, 1, None, None)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("E:G").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("E:G").as_contiguous2d_coords(),
             (5, 1, Some(7), None)
         );
     }
@@ -529,19 +529,19 @@ mod tests {
     #[test]
     fn test_to_rect_unbounded() {
         assert_eq!(
-            RefRangeBounds::test_a1("*").to_rect_unbounded(),
+            RefRangeBounds::test_a1("*").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:").to_rect_unbounded(),
+            RefRangeBounds::test_a1("A1:").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("1:").to_rect_unbounded(),
+            RefRangeBounds::test_a1("1:").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("B3:D5").to_rect_unbounded(),
+            RefRangeBounds::test_a1("B3:D5").as_rect_unbounded(),
             Rect::test_a1("B3:D5")
         );
     }

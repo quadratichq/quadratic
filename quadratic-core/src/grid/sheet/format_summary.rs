@@ -139,7 +139,7 @@ impl Sheet {
             check_format!(underline, self.formats.underline, range);
             check_format!(strike_through, self.formats.strike_through, range);
 
-            if let Some(rect) = range.to_rect() {
+            if let Some(rect) = range.as_rect() {
                 self.data_tables_intersect_rect_sorted(rect)
                     .for_each(|(_, pos, data_table)| {
                         // adjust the range by the data table position and

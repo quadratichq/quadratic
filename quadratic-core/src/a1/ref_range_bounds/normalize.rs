@@ -3,7 +3,7 @@ use super::*;
 impl RefRangeBounds {
     /// Translates the range in place by the given delta.
     pub(crate) fn normalize_in_place(&mut self) {
-        let rect = self.to_rect_unbounded();
+        let rect = self.as_rect_unbounded();
         self.start = CellRefRangeEnd::new_relative_pos(rect.min);
         self.end = CellRefRangeEnd::new_relative_pos(rect.max);
     }

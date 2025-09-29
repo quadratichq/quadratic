@@ -194,10 +194,10 @@ mod tests {
         let all = ref_range_bounds![:];
         let finite = ref_range_bounds![B2:D17];
 
-        map.insert(pos![A1], columns.to_rect_unbounded());
-        map.insert(pos![A2], rows.to_rect_unbounded());
-        map.insert(pos![A3], all.to_rect_unbounded());
-        map.insert(pos![A4], finite.to_rect_unbounded());
+        map.insert(pos![A1], columns.as_rect_unbounded());
+        map.insert(pos![A2], rows.as_rect_unbounded());
+        map.insert(pos![A3], all.as_rect_unbounded());
+        map.insert(pos![A4], finite.as_rect_unbounded());
 
         assert_eq!(
             map.get_positions_associated_with_region(rect![D4:F10]),
@@ -205,7 +205,7 @@ mod tests {
         );
 
         assert_eq!(
-            map.get_positions_associated_with_region(ref_range_bounds![F:].to_rect_unbounded()),
+            map.get_positions_associated_with_region(ref_range_bounds![F:].as_rect_unbounded()),
             HashSet::from_iter([pos![A2], pos![A3]]),
         );
     }

@@ -150,7 +150,7 @@ impl SheetRect {
         }
     }
 
-    pub(crate) fn to_hashes(&self) -> HashSet<Pos> {
+    pub(crate) fn as_hashes(&self) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         let min_hash = self.min.quadrant();
         let max_hash = self.max.quadrant();
@@ -162,12 +162,12 @@ impl SheetRect {
         hashes
     }
 
-    pub(crate) fn to_rect(&self) -> Rect {
+    pub(crate) fn as_rect(&self) -> Rect {
         Rect::new_span(self.min, self.max)
     }
 
-    pub(crate) fn to_region(&self) -> (SheetId, Rect) {
-        (self.sheet_id.to_owned(), self.to_rect())
+    pub(crate) fn as_region(&self) -> (SheetId, Rect) {
+        (self.sheet_id.to_owned(), self.as_rect())
     }
 }
 

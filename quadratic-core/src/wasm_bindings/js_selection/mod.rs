@@ -91,7 +91,7 @@ impl JsSelection {
             .first()
             .ok_or("Invalid selection: no ranges")?;
         let rect = range
-            .to_rect(context.get_context())
+            .as_rect(context.get_context())
             .ok_or("Invalid selection: not a rectangle")?;
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())

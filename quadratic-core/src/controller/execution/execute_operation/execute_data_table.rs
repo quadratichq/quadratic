@@ -2721,7 +2721,18 @@ mod tests {
         assert_validation_id(&gc, checkbox_pos, None);
 
         // ensure the new column does not have a checkbox validation
-        gc.data_table_insert_columns(sheet_pos, vec![0], false, None, None, None, false);
+        gc.data_table_mutations(
+            sheet_pos,
+            false,
+            Some(vec![0]),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            false,
+        );
         assert_validation_id(&gc, checkbox_pos, None);
 
         assert_validation_count(&gc, sheet_id, 0);
@@ -2735,7 +2746,18 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 5, 25);
 
-        gc.data_table_insert_columns(sheet_pos, vec![2], false, None, None, None, false);
+        gc.data_table_mutations(
+            sheet_pos,
+            false,
+            Some(vec![2]),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            false,
+        );
 
         let data_table = gc.sheet(sheet_id).data_table_at(&sheet_pos.into()).unwrap();
         assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 6);

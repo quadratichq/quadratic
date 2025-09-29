@@ -92,17 +92,17 @@ impl CellRefRange {
     }
 
     /// Returns the largest finite rectangle that contains the range.
-    pub(crate) fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
+    pub(crate) fn as_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
-            Self::Sheet { range } => range.to_rect(),
+            Self::Sheet { range } => range.as_rect(),
             Self::Table { range } => range.to_largest_rect(a1_context),
         }
     }
 
     /// Returns the largest rectangle that contains the range.
-    pub(crate) fn to_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
+    pub(crate) fn as_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
-            Self::Sheet { range } => Some(range.to_rect_unbounded()),
+            Self::Sheet { range } => Some(range.as_rect_unbounded()),
             Self::Table { range } => range.to_largest_rect(a1_context),
         }
     }
@@ -208,21 +208,21 @@ mod tests {
     fn test_to_rect() {
         let context = A1Context::default();
         assert_eq!(
-            CellRefRange::test_a1("A1").to_rect(&context),
+            CellRefRange::test_a1("A1").as_rect(&context),
             Some(Rect::new(1, 1, 1, 1))
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:B2").to_rect(&context),
+            CellRefRange::test_a1("A1:B2").as_rect(&context),
             Some(Rect::new(1, 1, 2, 2))
         );
-        assert_eq!(CellRefRange::test_a1("A:B").to_rect(&context), None);
-        assert_eq!(CellRefRange::test_a1("1:2").to_rect(&context), None);
-        assert_eq!(CellRefRange::test_a1("A1:C").to_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("A:B").as_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("1:2").as_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("A1:C").as_rect(&context), None);
         assert_eq!(
-            CellRefRange::test_a1("A:C3").to_rect(&context),
+            CellRefRange::test_a1("A:C3").as_rect(&context),
             Some(Rect::new(1, 1, 3, 3))
         );
-        assert_eq!(CellRefRange::test_a1("*").to_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("*").as_rect(&context), None);
     }
 
     #[test]

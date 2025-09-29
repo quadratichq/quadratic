@@ -125,7 +125,7 @@ impl A1Selection {
     pub(crate) fn rects_unbounded(&self, a1_context: &A1Context) -> Vec<Rect> {
         self.ranges
             .iter()
-            .filter_map(|range| range.to_rect_unbounded(a1_context))
+            .filter_map(|range| range.as_rect_unbounded(a1_context))
             .collect()
     }
 
@@ -136,7 +136,7 @@ impl A1Selection {
         } else {
             self.ranges.first().and_then(|range| {
                 range
-                    .to_rect(a1_context)
+                    .as_rect(a1_context)
                     .and_then(|rect| if rect.len() > 1 { Some(rect) } else { None })
             })
         }
@@ -152,7 +152,7 @@ impl A1Selection {
         } else {
             self.ranges
                 .first()
-                .and_then(|range| range.to_rect(a1_context))
+                .and_then(|range| range.as_rect(a1_context))
         }
     }
 
@@ -162,7 +162,7 @@ impl A1Selection {
         let finite_selection = sheet.finitize_selection(self, false, false, false, a1_context);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
-            if let Some(rect) = range.to_rect(a1_context) {
+            if let Some(rect) = range.as_rect(a1_context) {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         let mut pos = Pos { x, y };

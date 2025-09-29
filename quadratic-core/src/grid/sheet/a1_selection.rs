@@ -144,7 +144,7 @@ impl Sheet {
 
         range
             .convert_to_ref_range_bounds(false, a1_context, force_columns, force_table_bounds)
-            .and_then(|range| range.to_rect())
+            .and_then(|range| range.as_rect())
     }
 
     /// Converts a cell reference range to a minimal rectangle covering the data

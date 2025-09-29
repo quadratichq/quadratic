@@ -172,7 +172,7 @@ impl CellsAccessed {
         self.cells.iter().flat_map(|(sheet_id, ranges)| {
             ranges.iter().flat_map(|range| {
                 range
-                    .to_rect_unbounded(a1_context)
+                    .as_rect_unbounded(a1_context)
                     .map(|rect| (*sheet_id, rect))
             })
         })

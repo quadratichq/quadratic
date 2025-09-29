@@ -293,7 +293,7 @@ impl PendingTransaction {
             return;
         }
 
-        let hashes = sheet_rect.to_hashes();
+        let hashes = sheet_rect.as_hashes();
         let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
         dirty_hashes.extend(hashes);
 

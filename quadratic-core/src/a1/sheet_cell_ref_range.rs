@@ -83,7 +83,7 @@ impl SheetCellRefRange {
     /// Returns an RC-style string describing the range. The sheet name is
     /// included in the output only if `default_sheet_id` is `None` or differs
     /// from the ID of the sheet containing the range.
-    pub(crate) fn to_rc_string(
+    pub(crate) fn as_rc_string(
         &self,
         default_sheet_id: Option<SheetId>,
         a1_context: &A1Context,
@@ -95,10 +95,10 @@ impl SheetCellRefRange {
             return format!(
                 "{}!{}",
                 super::quote_sheet_name(sheet_name),
-                self.cells.to_rc_string(base_pos),
+                self.cells.as_rc_string(base_pos),
             );
         }
-        self.cells.to_rc_string(base_pos)
+        self.cells.as_rc_string(base_pos)
     }
 
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out

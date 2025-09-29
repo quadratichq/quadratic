@@ -47,9 +47,9 @@ impl CellRefRange {
     }
 
     /// Converts the reference to a string, preferring RC notation.
-    pub(crate) fn to_rc_string(&self, base_pos: Pos) -> String {
+    pub(crate) fn as_rc_string(&self, base_pos: Pos) -> String {
         match self {
-            CellRefRange::Sheet { range } => range.to_rc_string(base_pos),
+            CellRefRange::Sheet { range } => range.as_rc_string(base_pos),
             CellRefRange::Table { range } => range.to_string(),
         }
     }

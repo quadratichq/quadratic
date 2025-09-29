@@ -213,7 +213,7 @@ impl Rect {
         self.max.y = self.max.y.max(y);
     }
 
-    pub(crate) fn to_hashes(&self) -> HashSet<Pos> {
+    pub(crate) fn as_hashes(&self) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         let min_hash = self.min.quadrant();
         let max_hash = self.max.quadrant();
@@ -274,7 +274,7 @@ impl Rect {
         use crate::a1::A1Context;
 
         crate::a1::CellRefRange::test_a1(s)
-            .to_rect(&A1Context::default())
+            .as_rect(&A1Context::default())
             .unwrap()
     }
 }

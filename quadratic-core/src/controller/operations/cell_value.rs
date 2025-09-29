@@ -510,7 +510,7 @@ impl GridController {
             }
         }
 
-        for (x, y, value) in values.into_owned_iter() {
+        for (x, y, value) in values.into_iter() {
             cell_values.set(
                 cell_value_pos.x as u32 + x,
                 cell_value_pos.y as u32 + y,

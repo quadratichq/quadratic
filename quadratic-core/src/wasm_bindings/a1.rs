@@ -38,7 +38,7 @@ fn selection_to_sheet_rect(
 
     // we don't really need the context here, but we need to pass something
     let rect = range
-        .to_rect(context.get_context())
+        .as_rect(context.get_context())
         .ok_or("Invalid selection: not a rectangle")?;
     Ok(rect.to_sheet_rect(sheet_id))
 }

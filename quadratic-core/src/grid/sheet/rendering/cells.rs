@@ -258,7 +258,7 @@ impl Sheet {
                         .iter()
                         .for_each(|validations_range| {
                             if let Some(validation_rect) =
-                                validations_range.to_rect_unbounded(a1_context)
+                                validations_range.as_rect_unbounded(a1_context)
                                 && let Some(validation_intersect) =
                                     validation_rect.intersection(&rect)
                             {

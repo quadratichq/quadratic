@@ -165,7 +165,7 @@ impl Clipboard {
     }
 
     /// Return the largest rect that contains the clipboard, with `insert_at` as the top left corner
-    pub(crate) fn to_rect(&self, insert_at: Pos) -> Rect {
+    pub(crate) fn as_rect(&self, insert_at: Pos) -> Rect {
         Rect::from_numbers(insert_at.x, insert_at.y, self.w as i64, self.h as i64)
     }
 }
@@ -528,7 +528,7 @@ impl GridController {
             ClipboardOperation::Copy => true,
             ClipboardOperation::Cut => {
                 let cut_rects = clipboard.selection.rects_unbounded(self.a1_context());
-                let paste_rect = clipboard.to_rect(start_pos.into());
+                let paste_rect = clipboard.as_rect(start_pos.into());
 
                 let cells_accessed = clipboard
                     .data_tables
@@ -889,7 +889,7 @@ impl GridController {
         let mut clipboard_ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
-        let clipboard_rect = clipboard.to_rect(insert_at);
+        let clipboard_rect = clipboard.as_rect(insert_at);
 
         let sheet_id = match clipboard.operation {
             ClipboardOperation::Cut => selection.sheet_id,

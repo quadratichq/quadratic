@@ -115,7 +115,7 @@ impl SheetDataTablesCache {
     pub(crate) fn code_in_selection(&self, selection: &A1Selection, context: &A1Context) -> bool {
         let sheet_id = selection.sheet_id;
         for range in selection.ranges.iter() {
-            if let Some(rect) = range.to_rect_unbounded(context) {
+            if let Some(rect) = range.as_rect_unbounded(context) {
                 if !self.single_cell_tables.is_all_default_in_rect(rect) {
                     return true;
                 }

@@ -27,11 +27,11 @@ impl A1Selection {
                             if let Some(rect) = other_range.to_largest_rect(a1_context)
                                 && let Some(intersection) =
                                     RefRangeBounds::new_relative_rect(rect).intersection(range)
-                                {
-                                    ranges.push(CellRefRange::Sheet {
-                                        range: intersection,
-                                    });
-                                }
+                            {
+                                ranges.push(CellRefRange::Sheet {
+                                    range: intersection,
+                                });
+                            }
                         }
                     });
             }
@@ -94,7 +94,7 @@ impl A1Selection {
         other_range: &TableRef,
         a1_context: &A1Context,
     ) -> bool {
-        let rect = range.to_rect_unbounded();
+        let rect = range.as_rect_unbounded();
         if let Some(other_rect) = other_range.to_largest_rect(a1_context) {
             rect.intersects(other_rect)
         } else {

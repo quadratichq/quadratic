@@ -143,7 +143,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 #[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
-        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, pos.into()))
+        Ok(range_ref.as_rc_string(Some(pos.sheet_id), ctx, pos.into()))
     };
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }

@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
 use super::operation::Operation;
-#[cfg(test)]
-use crate::CopyFormats;
 use crate::{
-    Array, ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
@@ -91,12 +89,12 @@ impl GridController {
     /// Inserts a column in the table. If swallow is true, then the column is inserted
     /// using the data that already exists on the sheet. Otherwise, copy_formats
     /// is checked and any formats and borders are taken from the source column.
-    #[cfg(test)]
     pub(crate) fn data_table_insert_columns_operations(
         &self,
         sheet_pos: SheetPos,
         columns: Vec<u32>,
         swallow: bool,
+        select_table: bool,
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
     ) -> Vec<Operation> {
@@ -107,7 +105,7 @@ impl GridController {
                 .map(|index| (index, None, None))
                 .collect(),
             swallow,
-            select_table: false,
+            select_table,
             copy_formats_from,
             copy_formats,
         }]
@@ -116,12 +114,12 @@ impl GridController {
     /// Inserts a row in the table. If swallow is true, then the row is inserted
     /// using the data that already exists on the sheet. Otherwise, copy_formats
     /// is checked and any formats and borders are taken from the source row.
-    #[cfg(test)]
     pub(crate) fn data_table_insert_rows_operations(
         &self,
         sheet_pos: SheetPos,
         rows: Vec<u32>,
         swallow: bool,
+        select_table: bool,
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
     ) -> Vec<Operation> {
@@ -129,7 +127,7 @@ impl GridController {
             sheet_pos,
             rows: rows.into_iter().map(|index| (index, None)).collect(),
             swallow,
-            select_table: false,
+            select_table,
             copy_formats_from,
             copy_formats,
         }]
@@ -152,17 +150,14 @@ impl GridController {
         if let Some(columns_to_add) = columns_to_add
             && !columns_to_add.is_empty()
         {
-            ops.push(Operation::InsertDataTableColumns {
+            ops.extend(self.data_table_insert_columns_operations(
                 sheet_pos,
-                columns: columns_to_add
-                    .into_iter()
-                    .map(|index| (index, None, None))
-                    .collect(),
-                swallow: swallow_on_insert.unwrap_or(false),
+                columns_to_add,
+                swallow_on_insert.unwrap_or(false),
                 select_table,
-                copy_formats_from: None,
-                copy_formats: None,
-            });
+                None,
+                None,
+            ));
         }
 
         if let Some(columns_to_remove) = columns_to_remove
@@ -179,14 +174,14 @@ impl GridController {
         if let Some(rows_to_add) = rows_to_add
             && !rows_to_add.is_empty()
         {
-            ops.push(Operation::InsertDataTableRows {
+            ops.extend(self.data_table_insert_rows_operations(
                 sheet_pos,
-                rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
-                swallow: swallow_on_insert.unwrap_or(false),
+                rows_to_add,
+                swallow_on_insert.unwrap_or(false),
                 select_table,
-                copy_formats_from: None,
-                copy_formats: None,
-            });
+                None,
+                None,
+            ));
         }
 
         if let Some(rows_to_remove) = rows_to_remove

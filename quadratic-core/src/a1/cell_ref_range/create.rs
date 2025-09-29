@@ -86,7 +86,7 @@ mod tests {
 
             let base_pos = Pos::new(10, 15);
             let a1_string = cell_ref_range.to_string();
-            let rc_string = cell_ref_range.to_rc_string(base_pos);
+            let rc_string = cell_ref_range.as_rc_string(base_pos);
             let expected = (cell_ref_range, None);
 
             assert_eq!(expected, CellRefRange::parse(&a1_string, &context, None).unwrap());

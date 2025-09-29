@@ -130,7 +130,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a new range bounded by the given rect.
-    pub(crate) fn to_bounded(&self, rect: &Rect) -> Self {
+    pub(crate) fn as_bounded(&self, rect: &Rect) -> Self {
         Self {
             start: self.start.to_bounded_start(rect.min),
             end: self.end.to_bounded_end(rect.max),
@@ -138,11 +138,11 @@ impl RefRangeBounds {
     }
 
     /// Returns an R[1]C[1]-style reference relative to the given position.
-    pub(crate) fn to_rc_string(&self, base_pos: Pos) -> String {
-        let start_col = self.start.col.to_rc_string(base_pos.x);
-        let start_row = self.start.row.to_rc_string(base_pos.y);
-        let end_col = self.end.col.to_rc_string(base_pos.x);
-        let end_row = self.end.row.to_rc_string(base_pos.y);
+    pub(crate) fn as_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.as_rc_string(base_pos.x);
+        let start_row = self.start.row.as_rc_string(base_pos.y);
+        let end_col = self.end.col.as_rc_string(base_pos.x);
+        let end_row = self.end.row.as_rc_string(base_pos.y);
         if *self == Self::ALL {
             "*".to_string()
         } else if self.is_col_range() {
@@ -186,7 +186,7 @@ mod tests {
                 assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
             }
 
-            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_rc_string(base_pos), Some(base_pos)).unwrap());
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.as_rc_string(base_pos), Some(base_pos)).unwrap());
         }
     }
 

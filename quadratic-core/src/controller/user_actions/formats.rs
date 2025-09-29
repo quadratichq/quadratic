@@ -41,7 +41,7 @@ impl GridController {
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => {
-                    let rect = range.to_rect_unbounded();
+                    let rect = range.as_rect_unbounded();
                     for (output_rect, intersection_rect, data_table) in
                         sheet.iter_data_tables_intersects_rect(rect)
                     {
@@ -64,12 +64,13 @@ impl GridController {
                             .set_format_rect(intersection_rect, FormatUpdate::cleared());
 
                         if let Some(table_format_updates) = table_format_updates
-                            && !table_format_updates.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    formats: table_format_updates,
-                                });
-                            }
+                            && !table_format_updates.is_default()
+                        {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                formats: table_format_updates,
+                            });
+                        }
                     }
                 }
                 CellRefRange::Table { range } => {
@@ -93,7 +94,7 @@ impl GridController {
                             1 - data_table_pos.y - y_adjustment,
                         );
 
-                        let mut format_rect = table_range.to_rect_unbounded();
+                        let mut format_rect = table_range.as_rect_unbounded();
 
                         if let Some(column_headers) = &data_table.column_headers {
                             for column_header in column_headers.iter() {

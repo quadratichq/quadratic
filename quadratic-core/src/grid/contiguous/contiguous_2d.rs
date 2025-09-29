@@ -739,7 +739,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     }
 
     /// Returns an iterator over the blocks in the contiguous 2d.
-    pub(crate) fn into_iter(
+    pub(crate) fn iter_blocks(
         &self,
     ) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
         self.0.iter().flat_map(|x_block| {
@@ -757,7 +757,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     /// Returns the finite bounds of the contiguous 2d.
     pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
-        self.into_iter().for_each(|(x1, y1, x2, y2, _)| {
+        self.iter_blocks().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
                 bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64));
             }
@@ -790,7 +790,7 @@ fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
         }
     }
 
-    let r = range.to_rect_unbounded();
+    let r = range.as_rect_unbounded();
     let x1 = i64_to_u64(r.min.x);
     let x2 = i64_to_u64(r.max.x).saturating_add(1);
     let y1 = i64_to_u64(r.min.y);
@@ -1115,10 +1115,10 @@ mod tests {
     #[test]
     fn test_into_iter() {
         let mut c = Contiguous2D::<Option<bool>>::new();
-        assert_eq!(c.into_iter().count(), 0);
+        assert_eq!(c.iter_blocks().count(), 0);
 
         c.set_rect(1, 1, Some(3), Some(3), Some(true));
-        let iter_result: Vec<_> = c.into_iter().collect();
+        let iter_result: Vec<_> = c.iter_blocks().collect();
         assert_eq!(iter_result.len(), 1);
         assert_eq!(iter_result[0], (1, 1, Some(3), Some(3), true));
 
@@ -1126,7 +1126,7 @@ mod tests {
         c.set_rect(1, 1, Some(2), Some(2), Some(true));
         c.set_rect(5, 5, None, Some(10), Some(false));
 
-        let iter_result: Vec<_> = c.into_iter().collect();
+        let iter_result: Vec<_> = c.iter_blocks().collect();
         assert_eq!(iter_result.len(), 2);
         assert!(iter_result.contains(&(1, 1, Some(2), Some(2), true)));
         assert!(iter_result.contains(&(5, 5, None, Some(10), false)));

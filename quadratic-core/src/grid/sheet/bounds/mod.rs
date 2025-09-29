@@ -12,8 +12,8 @@ impl Sheet {
     ///
     /// Returns whether any of the sheet's bounds has changed
     pub fn recalculate_bounds(&mut self, a1_context: &A1Context) -> bool {
-        let old_data_bounds = self.data_bounds.to_bounds_rect();
-        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        let old_data_bounds = self.data_bounds.as_bounds_rect();
+        let old_format_bounds = self.format_bounds.as_bounds_rect();
         self.data_bounds.clear();
         self.format_bounds.clear();
 
@@ -42,8 +42,8 @@ impl Sheet {
             self.format_bounds.add_rect(rect);
         }
 
-        old_data_bounds != self.data_bounds.to_bounds_rect()
-            || old_format_bounds != self.format_bounds.to_bounds_rect()
+        old_data_bounds != self.data_bounds.as_bounds_rect()
+            || old_format_bounds != self.format_bounds.as_bounds_rect()
     }
 
     /// Returns the bounds of the sheet, including borders.
