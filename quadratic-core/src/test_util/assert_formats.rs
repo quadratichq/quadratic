@@ -73,7 +73,7 @@ pub fn assert_fill_color(gc: &GridController, pos: SheetPos, fill_color: &str) {
     assert_eq!(
         cell_fill_color,
         Some(fill_color.to_string()),
-        "Cell at {pos:?} should be fill_color={fill_color:?}, but is actually fill_color={fill_color:?}"
+        "Cell at {pos:?} should be fill_color={fill_color:?}, but is actually fill_color={cell_fill_color:?}"
     );
 }
 
