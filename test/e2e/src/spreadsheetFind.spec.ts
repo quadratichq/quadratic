@@ -7,10 +7,7 @@ import { assertActiveSheetName, changeSheet, setValueInCell } from './helpers/sh
 // opening (see PR #3481)
 test('Find improperly changes sheets', async ({ page }) => {
   const fileName = 'Athletes_table';
-
-  // Log in
   await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
-
   await uploadFile(page, { fileName, fileType: 'grid' });
 
   // duplicate first sheet
@@ -78,8 +75,4 @@ test('Search refreshes on changes', async ({ page }) => {
 
   await setValueInCell(page, 'A10', 'baseball');
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3');
-
-  // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
-  await cleanUpFiles(page, { fileName });
 });
