@@ -626,9 +626,9 @@ impl GridController {
                 let mut copied_formats = copied_formats.clone();
                 copied_formats
                     .translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-
+                dbgjs!(&copied_formats.fill_color);
                 formats.merge(&copied_formats);
-
+                dbgjs!(&copied_formats.fill_color);
                 let formats_rect = Rect::from_numbers(
                     start_pos.x,
                     start_pos.y,
