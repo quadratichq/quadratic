@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{Pos, controller::GridController, grid::SheetId};
+use crate::{Pos, SheetPos, controller::GridController, grid::SheetId};
 
 #[track_caller]
 #[cfg(test)]
@@ -63,6 +63,18 @@ pub fn assert_cell_format_cell_fill_color_row(
             value.get(index).unwrap().to_owned(),
         );
     }
+}
+
+#[track_caller]
+#[cfg(test)]
+pub fn assert_fill_color(gc: &GridController, pos: SheetPos, fill_color: &str) {
+    let sheet = gc.sheet(pos.sheet_id);
+    let cell_fill_color = sheet.formats.fill_color.get(pos.into());
+    assert_eq!(
+        cell_fill_color,
+        Some(fill_color.to_string()),
+        "Cell at {pos:?} should be fill_color={fill_color:?}, but is actually fill_color={fill_color:?}"
+    );
 }
 
 #[track_caller]

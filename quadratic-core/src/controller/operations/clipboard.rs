@@ -529,11 +529,11 @@ impl GridController {
         }
     }
 
-    fn clipboard_formats_operations(
+    fn clipboard_formats_tables_operations(
         &self,
         sheet_id: SheetId,
         formats_rect: Rect,
-        sheet_format_updates: &mut SheetFormatUpdates,
+        formats: &SheetFormatUpdates,
         selection: Option<&A1Selection>,
         delete_value: bool,
     ) -> Vec<Operation> {
@@ -564,7 +564,7 @@ impl GridController {
                 let table_format_updates = data_table.transfer_formats_from_sheet_format_updates(
                     data_table_pos,
                     intersection_rect,
-                    sheet_format_updates,
+                    formats,
                 );
 
                 if let Some(table_format_updates) = table_format_updates
@@ -604,6 +604,50 @@ impl GridController {
         } else {
             vec![]
         }
+    }
+
+    // Collects the format operations
+    fn get_formats_ops(
+        &self,
+        start_pos: Pos,
+        formats: &mut SheetFormatUpdates,
+        clipboard: &Clipboard,
+        special: PasteSpecial,
+        delete_value: bool,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
+            // for formats and borders, we need to translate the clipboard to the start_pos
+            let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+            let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
+            if let Some(copied_formats) = &clipboard.formats
+                && !copied_formats.is_default()
+            {
+                let mut copied_formats = copied_formats.clone();
+                copied_formats
+                    .translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+
+                formats.merge(&copied_formats);
+
+                let formats_rect = Rect::from_numbers(
+                    start_pos.x,
+                    start_pos.y,
+                    clipboard.w as i64,
+                    clipboard.h as i64,
+                );
+
+                let formats_ops = self.clipboard_formats_tables_operations(
+                    clipboard.selection.sheet_id,
+                    formats_rect,
+                    &clipboard.formats,
+                    Some(&clipboard.selection),
+                    delete_value,
+                );
+
+                ops.extend(formats_ops);
+            }
+        }
+        ops
     }
 
     /// Collect the operations to paste the clipboard cells
@@ -708,32 +752,37 @@ impl GridController {
         }
 
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
-            // for formats and borders, we need to translate the clipboard to the start_pos
-            let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
-            let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
+            ops.extend(self.get_formats_ops(start_pos, formats, clipboard, special));
 
-            if !formats.is_default() {
-                formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+            // // for formats and borders, we need to translate the clipboard to the start_pos
+            // let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+            // let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
+            // if !formats.is_default() {
+            //     dbg!(&formats.fill_color);
+            //     formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+            //     dbg!(&formats.fill_color);
 
-                let formats_rect = Rect::from_numbers(
-                    start_pos.x,
-                    start_pos.y,
-                    clipboard.w as i64,
-                    clipboard.h as i64,
-                );
+            //     let formats_rect = Rect::from_numbers(
+            //         start_pos.x,
+            //         start_pos.y,
+            //         clipboard.w as i64,
+            //         clipboard.h as i64,
+            //     );
 
-                let formats_ops = self.clipboard_formats_operations(
-                    selection.sheet_id,
-                    formats_rect,
-                    formats,
-                    Some(&clipboard.selection),
-                    delete_value,
-                );
+            //     let formats_ops = self.clipboard_formats_tables_operations(
+            //         selection.sheet_id,
+            //         formats_rect,
+            //         formats,
+            //         Some(&clipboard.selection),
+            //         delete_value,
+            //     );
 
-                ops.extend(formats_ops);
-            }
+            //     ops.extend(formats_ops);
+            // }
 
             if !borders.is_empty() {
+                let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+                let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
                 borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
             }
         }
@@ -829,7 +878,7 @@ impl GridController {
             let formats_rect =
                 Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
 
-            ops.extend(self.clipboard_formats_operations(
+            ops.extend(self.clipboard_formats_tables_operations(
                 start_pos.sheet_id,
                 formats_rect,
                 &mut sheet_format_updates,
@@ -2447,5 +2496,42 @@ mod test {
             gc.sheet(sheet_id).display_value(pos![E2]).unwrap(),
             CellValue::Text("ab cd ef".to_string())
         );
+    }
+
+    #[test]
+    fn paste_tiled_formatting() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // red from B2:B5
+        gc.set_fill_color(
+            &A1Selection::test_a1("B2:B5"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // copy B2:B5 to B2:E5 (all cells should be red)
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("B2:B5"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("B2:E5"),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        dbg!(&gc.sheet(sheet_id).formats.fill_color);
+
+        assert_fill_color(&gc, pos![sheet_id!B2], "red");
+        assert_fill_color(&gc, pos![sheet_id!E5], "red");
     }
 }
