@@ -220,6 +220,7 @@ impl Worker {
                 while let Some(message) = receiver.lock().await.stream.next().await {
                     match message {
                         Ok(WebsocketMessage::Text(text)) => {
+                            tracing::info!("received text message: {text}");
                             match serde_json::from_str(&text) {
                                 Ok(message) => match message {
                                     MessageResponse::TransactionAck { id, .. } => {

@@ -111,7 +111,10 @@ pub(crate) async fn process_queue_for_room(
     let mut pubsub = state.pubsub.lock().await;
 
     // subscribe to the channel
-    pubsub.connection.subscribe(channel, GROUP_NAME).await?;
+    pubsub
+        .connection
+        .subscribe(channel, GROUP_NAME, None)
+        .await?;
 
     // get all transactions for the room in the queue
     let transactions = pubsub
