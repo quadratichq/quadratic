@@ -59,8 +59,8 @@ pub struct PendingTransaction {
     /// save code_cell info for async calls
     pub current_sheet_pos: Option<SheetPos>,
 
-    /// whether we are awaiting an async call
-    pub waiting_for_async: bool,
+    /// whether we are awaiting an async call for a code cell
+    pub waiting_for_async_code_cell: bool,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -132,7 +132,7 @@ impl Default for PendingTransaction {
             has_async: 0,
             cells_accessed: Default::default(),
             current_sheet_pos: None,
-            waiting_for_async: false,
+            waiting_for_async_code_cell: false,
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,

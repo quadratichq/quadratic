@@ -18,21 +18,21 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().values() {
-            for (pos, dt) in sheet.data_tables.expensive_iter() {
-                if let DataTableKind::CodeRun(code) = &dt.kind {
-                    let sheet_pos = pos.to_sheet_pos(sheet.id);
-                    let mut new_code = code.clone();
+            for (data_table_pos, data_table) in sheet.data_tables.expensive_iter() {
+                if let Some(code_run) = data_table.code_run() {
+                    let sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
+                    let mut new_code_run = code_run.clone();
                     for &adj in adjustments {
-                        new_code.adjust_references(
+                        new_code_run.adjust_references(
                             sheet_pos.sheet_id,
                             &self.a1_context,
                             sheet_pos,
                             adj,
                         );
                     }
-                    if code.code != new_code.code {
-                        let mut data_table = dt.clone();
-                        data_table.kind = DataTableKind::CodeRun(new_code);
+                    if code_run.code != new_code_run.code {
+                        let mut data_table = data_table.clone();
+                        data_table.kind = DataTableKind::CodeRun(new_code_run);
                         transaction.operations.push_back(Operation::SetDataTable {
                             sheet_pos,
                             data_table: Some(data_table),

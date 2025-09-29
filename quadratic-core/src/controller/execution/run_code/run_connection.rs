@@ -105,7 +105,7 @@ impl GridController {
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = true;
+        transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
     }
 }

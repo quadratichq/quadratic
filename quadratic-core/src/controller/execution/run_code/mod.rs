@@ -38,7 +38,7 @@ impl GridController {
     ) {
         transaction.current_sheet_pos = None;
         transaction.cells_accessed.clear();
-        transaction.waiting_for_async = false;
+        transaction.waiting_for_async_code_cell = false;
 
         self.update_cells_accessed_cache(sheet_pos, &new_data_table);
 
@@ -274,9 +274,9 @@ impl GridController {
             }
         };
 
-        match &transaction.waiting_for_async {
+        match &transaction.waiting_for_async_code_cell {
             false => {
-                return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
+                return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async_code_cell to be defined in transaction::complete".into()));
             }
             true => {
                 if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
