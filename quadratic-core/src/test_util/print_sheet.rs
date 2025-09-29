@@ -1,15 +1,17 @@
-#[cfg(test)]
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 use crate::{
     CellValue, Pos, Rect,
     a1::column_name,
-    controller::GridController,
-    grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
+    grid::{CodeCellLanguage, GridBounds, Sheet},
 };
 
 #[cfg(test)]
+use crate::{controller::GridController, grid::SheetId};
+
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 use std::collections::HashMap;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 use tabled::{
     builder::Builder,
     settings::{Color, themes::Colorization},
@@ -26,7 +28,7 @@ pub(crate) fn print_first_sheet(gc: &GridController) {
 
 /// Util to print the entire sheet
 #[track_caller]
-#[cfg(test)]
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 #[allow(unused)]
 pub(crate) fn print_sheet(sheet: &Sheet) {
     let bounds = sheet.bounds(true);
@@ -48,7 +50,7 @@ pub(crate) fn print_table_from_grid(grid: &GridController, sheet_id: SheetId, re
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
-#[cfg(test)]
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 #[allow(unused)]
 pub(crate) fn print_table_sheet(sheet: &Sheet, rect: Rect) {
     let mut vals = vec![];

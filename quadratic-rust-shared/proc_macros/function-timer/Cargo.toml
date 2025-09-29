@@ -7,11 +7,8 @@ edition = "2024"
 proc-macro = true
 
 [dependencies]
-chrono = { version = "=0.4.39", features = ["serde", "wasmbind"] }
-proc-macro2 = "*"
 quote = "1.0"
 syn = { version = "2.0", features = ["full"] }
-wasm-bindgen = { version = "0.2.100" }
 
 [dev-dependencies]
 trybuild = "*"

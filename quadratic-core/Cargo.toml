@@ -35,22 +35,14 @@ path = "src/bin/upgrade_file.rs"
 [features]
 default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = [
-  "js-sys",
-  "serde-wasm-bindgen",
-  "ts-rs",
-  "wasm-bindgen",
-  "wasm-bindgen-futures",
-]
+js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen"]
 show-operations = []
-show-first-sheet-operations = []
+show-first-sheet-operations = ["tabled"]
 dbgjs = []
 function-timer = ["function-timer/enabled"]
 
 [dependencies]
 anyhow = "1.0"
-async-trait = "0.1.63"
-futures = "0.3.25"
 itertools = "0.14.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
 regex = "1.7"
@@ -61,7 +53,7 @@ serde_repr = "0.1"
 smallvec = { version = "1.11.0", features = ["serde", "union"] }
 strum = { version = "0.27.1", features = ["derive"] }
 strum_macros = "0.27.1"
-pollster = "0.4.0"
+tabled = { version = "0.14.0", features = ["color"], optional = true }
 unicode-case-mapping = "1.0.0"
 uuid = { version = "1.13.1", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "=0.4.39", features = ["serde", "wasmbind"] }
@@ -84,7 +76,6 @@ ts-rs = { git = "https://github.com/quadratichq/ts-rs/", branch = "update-v10", 
   "no-serde-warnings",
 ] }
 wasm-bindgen = { version = "0.2.100", optional = true }
-wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.4-a1"
 csv = "1.3.0"
 indexmap = { version = "2.8.0", features = ["serde"] }
@@ -133,7 +124,6 @@ criterion = { version = "0.5", default-features = false, features = [
   "html_reports",
 ] }
 tabled = { version = "0.14.0", features = ["color"] }
-memory-stats = "1.2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"

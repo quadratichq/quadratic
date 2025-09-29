@@ -400,7 +400,7 @@ macro_rules! print_sheet {
 }
 
 #[allow(unused)]
-#[cfg(test)]
+#[cfg(any(test, feature = "show-first-sheet-operations"))]
 macro_rules! print_first_sheet {
     ($gc:expr) => {
         let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
@@ -421,7 +421,6 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 #[cfg(test)]
 mod tests {
     use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds};
-    use crate::ref_range_bounds;
 
     use super::*;
 
