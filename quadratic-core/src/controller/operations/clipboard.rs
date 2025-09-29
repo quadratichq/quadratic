@@ -652,6 +652,28 @@ impl GridController {
         ops
     }
 
+    fn get_borders_ops(
+        &self,
+        start_pos: Pos,
+        borders: &mut BordersUpdates,
+        clipboard: &Clipboard,
+        special: PasteSpecial,
+    ) {
+        // todo: this does not support tables (should be similar to get_formats_ops)
+        if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
+            if let Some(original_borders) = &clipboard.borders
+                && !borders.is_empty()
+            {
+                let mut new_borders = original_borders.clone();
+                let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+                let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
+                new_borders
+                    .translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+                borders.merge(&new_borders);
+            }
+        }
+    }
+
     /// Collect the operations to paste the clipboard cells
     /// For cell values, formats and borders, we just add to the data structure to avoid extra operations
     #[allow(clippy::too_many_arguments)]
@@ -756,37 +778,7 @@ impl GridController {
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
             ops.extend(self.get_formats_ops(start_pos, formats, clipboard, special, delete_value));
 
-            // // for formats and borders, we need to translate the clipboard to the start_pos
-            // let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
-            // let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
-            // if !formats.is_default() {
-            //     dbg!(&formats.fill_color);
-            //     formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-            //     dbg!(&formats.fill_color);
-
-            //     let formats_rect = Rect::from_numbers(
-            //         start_pos.x,
-            //         start_pos.y,
-            //         clipboard.w as i64,
-            //         clipboard.h as i64,
-            //     );
-
-            //     let formats_ops = self.clipboard_formats_tables_operations(
-            //         selection.sheet_id,
-            //         formats_rect,
-            //         formats,
-            //         Some(&clipboard.selection),
-            //         delete_value,
-            //     );
-
-            //     ops.extend(formats_ops);
-            // }
-
-            if !borders.is_empty() {
-                let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
-                let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
-                borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-            }
+            self.get_borders_ops(start_pos, borders, clipboard, special);
         }
 
         Ok((ops, code_ops))
