@@ -2,7 +2,7 @@ use crate::grid::{Sheet, sheet::borders::JsBordersSheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
-    pub fn borders_in_sheet(&self) -> JsBordersSheet {
+    pub(crate) fn borders_in_sheet(&self) -> JsBordersSheet {
         let mut horizontal = vec![];
         let mut vertical = vec![];
 
@@ -41,7 +41,7 @@ impl Sheet {
     }
 
     /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self) {
+    pub(crate) fn send_sheet_borders(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }

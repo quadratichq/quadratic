@@ -13,7 +13,7 @@ use crate::{
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table(
+pub(crate) fn test_create_data_table(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -33,7 +33,7 @@ pub fn test_create_data_table(
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table_no_ui(
+pub(crate) fn test_create_data_table_no_ui(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -64,7 +64,7 @@ pub fn test_create_data_table_no_ui(
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table_with_values(
+pub(crate) fn test_create_data_table_with_values(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,

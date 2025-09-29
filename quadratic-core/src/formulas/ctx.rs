@@ -25,7 +25,7 @@ pub struct Ctx<'ctx> {
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
-    pub fn new(grid_controller: &'ctx GridController, sheet_pos: SheetPos) -> Self {
+    pub(crate) fn new(grid_controller: &'ctx GridController, sheet_pos: SheetPos) -> Self {
         Ctx {
             grid_controller,
             sheet_pos,
@@ -37,7 +37,7 @@ impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for checking the syntax and some basic types of a
     /// formula in `grid`. Expensive computations are skipped, so the value
     /// returned by "evaluating" the formula will be nonsense (probably blank).
-    pub fn new_for_syntax_check(grid_controller: &'ctx GridController) -> Self {
+    pub(crate) fn new_for_syntax_check(grid_controller: &'ctx GridController) -> Self {
         Ctx {
             grid_controller,
             sheet_pos: Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
@@ -47,7 +47,7 @@ impl<'ctx> Ctx<'ctx> {
     }
 
     /// Resolves a cell range reference relative to `self.sheet_pos`.
-    pub fn resolve_range_ref(
+    pub(crate) fn resolve_range_ref(
         &self,
         range: &SheetCellRefRange,
         span: Span,
@@ -79,7 +79,7 @@ impl<'ctx> Ctx<'ctx> {
     /// or returns an error in the case of a circular reference. If
     /// add_cells_accessed is true, it will add the cell reference to
     /// cells_accessed. Otherwise, it needs to be added manually.
-    pub fn get_cell(
+    pub(crate) fn get_cell(
         &mut self,
         pos: SheetPos,
         span: Span,
@@ -112,7 +112,7 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell array at `rect`, or returns an error in
     /// the case of a circular reference.
-    pub fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
+    pub(crate) fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
@@ -194,7 +194,7 @@ impl<'ctx> Ctx<'ctx> {
     /// 2-dimensionally: if one argument is a 1x3 array and the other argument
     /// is a 3x1 array, then both arguments are first expanded to 3x3 arrays. If
     /// arrays cannot be expanded like this, then an error is returned.
-    pub fn zip_map<'a, I: Copy + IntoIterator<Item = &'a Spanned<Value>>>(
+    pub(crate) fn zip_map<'a, I: Copy + IntoIterator<Item = &'a Spanned<Value>>>(
         &mut self,
         arrays: I,
         f: impl for<'b> Fn(&'b mut Ctx<'_>, &[Spanned<&CellValue>]) -> CodeResult<CellValue>,
@@ -239,7 +239,7 @@ impl<'ctx> Ctx<'ctx> {
     ///
     /// This is useful for implementing functions that take multiple criteria,
     /// like `SUMIFS`, `COUNTIFS`, etc.
-    pub fn zip_map_eval_ranges_and_criteria_from_args(
+    pub(crate) fn zip_map_eval_ranges_and_criteria_from_args(
         &mut self,
         eval_range1: Spanned<Array>,
         criteria1: Spanned<Value>,

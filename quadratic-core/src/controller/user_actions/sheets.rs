@@ -4,7 +4,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn set_sheet_name(
+    pub(crate) fn set_sheet_name(
         &mut self,
         sheet_id: SheetId,
         name: String,
@@ -15,12 +15,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
 
-    pub fn server_set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
-        let ops = self.set_sheet_name_operations(sheet_id, name);
-        self.server_apply_transaction(ops, None);
-    }
-
-    pub fn set_sheet_color(
+    pub(crate) fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
         color: Option<String>,
@@ -31,7 +26,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
 
-    pub fn set_sheets_color(
+    pub(crate) fn set_sheets_color(
         &mut self,
         sheet_names_to_color: Vec<JsSheetNameToColor>,
         cursor: Option<String>,
@@ -52,12 +47,18 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SheetAdd, is_ai);
     }
 
-    pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>, is_ai: bool) {
+    #[cfg(test)]
+    pub(crate) fn add_sheet_with_name(
+        &mut self,
+        name: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.add_sheet_operations(Some(name), None);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SheetAdd, is_ai);
     }
 
-    pub fn server_add_sheet_with_name(&mut self, name: String) {
+    pub(crate) fn server_add_sheet_with_name(&mut self, name: String) {
         let ops = self.add_sheet_operations(Some(name), None);
         self.server_apply_transaction(ops, None);
     }
@@ -66,7 +67,8 @@ impl GridController {
         let ops = self.delete_sheet_operations(sheet_id);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SheetDelete, is_ai);
     }
-    pub fn move_sheet(
+
+    pub(crate) fn move_sheet(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
@@ -76,7 +78,8 @@ impl GridController {
         let ops = self.move_sheet_operations(sheet_id, to_before);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
-    pub fn duplicate_sheet(
+
+    pub(crate) fn duplicate_sheet(
         &mut self,
         sheet_id: SheetId,
         name_of_new_sheet: Option<String>,

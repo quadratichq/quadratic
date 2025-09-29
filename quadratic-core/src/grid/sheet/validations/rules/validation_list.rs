@@ -68,7 +68,7 @@ impl ValidationList {
     }
 
     /// Gets the drop down list.
-    pub fn to_drop_down(&self, sheet: &Sheet, a1_context: &A1Context) -> Option<Vec<String>> {
+    pub(crate) fn to_drop_down(&self, sheet: &Sheet, a1_context: &A1Context) -> Option<Vec<String>> {
         if !self.drop_down {
             return None;
         }

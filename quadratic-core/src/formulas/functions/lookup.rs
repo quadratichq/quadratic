@@ -393,7 +393,7 @@ pub struct IndexFunctionArgs {
     pub y: u32,
 }
 impl IndexFunctionArgs {
-    pub fn from_values(
+    pub(crate) fn from_values(
         get_array_size: impl FnOnce(usize) -> Option<ArraySize>,
         mut row: Option<Spanned<i64>>,
         mut column: Option<Spanned<i64>>,

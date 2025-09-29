@@ -3,7 +3,7 @@ use anyhow::Result;
 use crate::grid::file::v1_10 as current;
 use crate::grid::file::v1_11;
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_11::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_11::SheetSchema {
     v1_11::SheetSchema {
         id: sheet.id,
         name: sheet.name,

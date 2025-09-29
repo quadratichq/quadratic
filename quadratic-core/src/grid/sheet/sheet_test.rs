@@ -12,7 +12,7 @@ use crate::{
 #[cfg(test)]
 impl Sheet {
     /// Sets a test value in the sheet of &str converted to a Decimal.
-    pub fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
+    pub(crate) fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
         if s.is_empty() {
             return;
         }
@@ -27,7 +27,7 @@ impl Sheet {
 
     /// Sets values in a rectangle starting at (x, y) with width w and height h.
     /// Rectangle is formed row first (so for x then for y).
-    pub fn test_set_values(&mut self, x: i64, y: i64, w: i64, h: i64, s: Vec<&str>) {
+    pub(crate) fn test_set_values(&mut self, x: i64, y: i64, w: i64, h: i64, s: Vec<&str>) {
         assert!(
             w * h == s.len() as i64,
             "Expected array to be same size as w * h in set_values"
@@ -45,7 +45,7 @@ impl Sheet {
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
-    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: CellValue) {
+    pub(crate) fn test_set_code_run_single(&mut self, x: i64, y: i64, value: CellValue) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
@@ -73,12 +73,12 @@ impl Sheet {
     }
 
     /// Sets a code run and CellValue::Code with an empty code string and a single value from_str(n) result.
-    pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
+    pub(crate) fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
         self.test_set_code_run_single(x, y, CellValue::Number(decimal_from_str(n).unwrap()));
     }
 
     /// Sets a code run array with code string of "" and an array output of the given values.
-    pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
+    pub(crate) fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
         let array_size = if vertical {
             ArraySize::new(1, n.len() as u32).unwrap()
         } else {
@@ -127,7 +127,14 @@ impl Sheet {
         self.recalculate_bounds(&a1_context);
     }
 
-    pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
+    pub(crate) fn test_set_code_run_array_2d(
+        &mut self,
+        x: i64,
+        y: i64,
+        w: u32,
+        h: u32,
+        n: Vec<&str>,
+    ) {
         let array_size = ArraySize::new(w, h).unwrap();
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
@@ -168,7 +175,7 @@ impl Sheet {
     }
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
-    pub fn test_set_chart(&mut self, pos: Pos, w: u32, h: u32) {
+    pub(crate) fn test_set_chart(&mut self, pos: Pos, w: u32, h: u32) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "code".to_string(),
@@ -195,7 +202,9 @@ impl Sheet {
     }
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
-    pub fn test_set_chart_html(&mut self, pos: Pos, w: u32, h: u32) {
+    #[cfg(test)]
+    #[allow(unused)]
+    pub(crate) fn test_set_chart_html(&mut self, pos: Pos, w: u32, h: u32) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "code".to_string(),
@@ -222,7 +231,9 @@ impl Sheet {
     }
 
     /// Sets an empty data table on the sheet.
-    pub fn test_set_data_table(
+    #[cfg(test)]
+    #[allow(unused)]
+    pub(crate) fn test_set_data_table(
         &mut self,
         pos: Pos,
         w: u32,

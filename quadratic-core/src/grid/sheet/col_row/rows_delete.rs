@@ -155,7 +155,7 @@ impl Sheet {
     /// Deletes rows. Returns false if the rows contain table UI and the
     /// operation was aborted.
     #[allow(clippy::result_unit_err)]
-    pub fn delete_rows(
+    pub(crate) fn delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         rows: Vec<i64>,

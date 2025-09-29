@@ -42,7 +42,7 @@ pub struct SheetFormatting {
 }
 
 impl SheetFormatting {
-    pub fn is_all_default(&self) -> bool {
+    pub(crate) fn is_all_default(&self) -> bool {
         self.align.is_all_default()
             && self.vertical_align.is_all_default()
             && self.wrap.is_all_default()

@@ -168,7 +168,7 @@ impl Sheet {
     /// Sets formats using SheetFormatUpdates.
     ///
     /// Returns (reverse_operations, dirty_hashes, rows_to_resize)
-    pub fn set_formats_a1(
+    pub(crate) fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {

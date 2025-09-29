@@ -194,7 +194,7 @@ fn upgrade_code_runs(
         .collect::<Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>>>()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
     let current::SheetSchema {
         id,
         name,

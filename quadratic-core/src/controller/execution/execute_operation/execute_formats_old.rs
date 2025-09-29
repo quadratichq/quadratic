@@ -124,7 +124,7 @@ impl GridController {
     }
 
     /// Executes SetCellFormatsSelection operation.
-    pub fn execute_set_cell_formats_selection(
+    pub(crate) fn execute_set_cell_formats_selection(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,

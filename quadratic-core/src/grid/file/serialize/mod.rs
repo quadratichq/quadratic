@@ -20,7 +20,7 @@ pub(crate) mod selection;
 pub mod sheets;
 pub(crate) mod validations;
 
-pub fn import(file: current::GridSchema) -> Result<Grid> {
+pub(crate) fn import(file: current::GridSchema) -> Result<Grid> {
     let mut grid = Grid {
         sheets: file
             .sheets
@@ -36,7 +36,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(grid)
 }
 
-pub fn export(grid: Grid) -> Result<current::GridSchema> {
+pub(crate) fn export(grid: Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid.sheets.into_values().map(export_sheet).collect(),

@@ -9,7 +9,7 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    pub fn set_cell_values(&mut self, rect: Rect, values: Array) -> Array {
+    pub(crate) fn set_cell_values(&mut self, rect: Rect, values: Array) -> Array {
         let mut old_values = Array::new_empty(values.size());
         for x in rect.x_range() {
             for y in rect.y_range() {
@@ -35,7 +35,7 @@ impl Sheet {
         old_values
     }
 
-    pub fn get_cells_response(&self, rect: Rect) -> Vec<JsCellsA1Value> {
+    pub(crate) fn get_cells_response(&self, rect: Rect) -> Vec<JsCellsA1Value> {
         let mut response = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
@@ -67,7 +67,7 @@ impl Sheet {
     /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet directly
     /// davidfig: regrettably, the Array::new_row_major requires the ordering to be row-based and not column based.
     /// we would need to rework how Array works for this to be more performant.
-    pub fn cell_values_in_rect(&self, &selection: &Rect, include_code: bool) -> Result<Array> {
+    pub(crate) fn cell_values_in_rect(&self, &selection: &Rect, include_code: bool) -> Result<Array> {
         let values = selection
             .y_range()
             .flat_map(|y| {
@@ -98,7 +98,7 @@ impl Sheet {
     }
 
     /// Returns all cell values in a rect.
-    pub fn cell_values_pos_in_rect(&self, &selection: &Rect) -> Vec<CellValue> {
+    pub(crate) fn cell_values_pos_in_rect(&self, &selection: &Rect) -> Vec<CellValue> {
         selection
             .y_range()
             .flat_map(|y| {
@@ -115,7 +115,7 @@ impl Sheet {
 
     /// Returns all positions that caused a spill error in the rect.
     /// Note this assumes there is a spill error with the output = spill_rect, and position in code_pos
-    pub fn find_spill_error_reasons(&self, spill_rect: &Rect, code_pos: Pos) -> Vec<Pos> {
+    pub(crate) fn find_spill_error_reasons(&self, spill_rect: &Rect, code_pos: Pos) -> Vec<Pos> {
         let mut results = HashSet::new();
 
         // first check cell values

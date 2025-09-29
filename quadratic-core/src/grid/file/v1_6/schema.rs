@@ -2,7 +2,6 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use uuid::Uuid;
 
 use super::schema_validation::Validations;
 pub use crate::grid::file::v1_5::run_error::Axis;
@@ -19,13 +18,6 @@ pub struct GridSchema {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub struct Id {
     pub id: String,
-}
-impl Id {
-    pub fn new() -> Self {
-        Self {
-            id: Uuid::new_v4().to_string(),
-        }
-    }
 }
 impl From<String> for Id {
     fn from(id: String) -> Self {

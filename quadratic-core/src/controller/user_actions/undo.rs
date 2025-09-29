@@ -3,11 +3,11 @@ use uuid::Uuid;
 use crate::controller::{GridController, execution::TransactionSource};
 
 impl GridController {
-    pub fn has_undo(&self) -> bool {
+    pub(crate) fn has_undo(&self) -> bool {
         !self.undo_stack.is_empty()
     }
 
-    pub fn has_redo(&self) -> bool {
+    pub(crate) fn has_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
 

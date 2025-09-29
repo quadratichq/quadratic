@@ -4,7 +4,7 @@ use super::*;
 
 impl RefRangeBounds {
     /// Find intersection between two CellRefRanges.
-    pub fn intersection(&self, other: &RefRangeBounds) -> Option<RefRangeBounds> {
+    pub(crate) fn intersection(&self, other: &RefRangeBounds) -> Option<RefRangeBounds> {
         // Handle all-* cases
         if self.is_all() {
             return Some(*other);

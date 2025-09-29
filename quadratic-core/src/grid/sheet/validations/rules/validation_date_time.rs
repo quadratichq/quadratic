@@ -31,7 +31,7 @@ pub struct ValidationDateTime {
 
 impl ValidationDateTime {
     // Validate a CellValue against the validation rule.
-    pub fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
         if let Some(value) = value {
             let (date, time) = match value {
                 CellValue::DateTime(dt) => {

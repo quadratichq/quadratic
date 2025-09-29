@@ -25,7 +25,7 @@ impl SheetFormatting {
     }
 
     /// Applies updates to the sheet formatting.
-    pub fn apply_updates(&mut self, updates: &SheetFormatUpdates) -> SheetFormatUpdates {
+    pub(crate) fn apply_updates(&mut self, updates: &SheetFormatUpdates) -> SheetFormatUpdates {
         SheetFormatUpdates {
             align: Self::apply_updates_item(&updates.align, &mut self.align),
             vertical_align: Self::apply_updates_item(
@@ -58,7 +58,7 @@ impl SheetFormatting {
         }
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         self.align.translate_in_place(x, y);
         self.vertical_align.translate_in_place(x, y);
         self.wrap.translate_in_place(x, y);

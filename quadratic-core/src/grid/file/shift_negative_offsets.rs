@@ -15,7 +15,7 @@ use crate::{
 const IMPORT_OFFSET: i64 = 1000000;
 pub const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
 
-pub fn add_import_offset_to_contiguous_2d_rect(
+pub(crate) fn add_import_offset_to_contiguous_2d_rect(
     x1: i64,
     y1: i64,
     x2: Option<i64>,
@@ -29,7 +29,7 @@ pub fn add_import_offset_to_contiguous_2d_rect(
 }
 
 /// Shifts all negative offsets in the grid and signals client.
-pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
+pub(crate) fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     // This is a dummy transaction because it happens before the initial
     // render of the grid file, so there's no info to share with the
     // client. Also, we do not send any information to multiplayer, as
@@ -209,7 +209,7 @@ impl Sheet {
     ///
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     /// and Contiguous2d cache does not work for -ve coordinates
-    pub fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) {
+    pub(crate) fn migration_recalculate_bounds(&mut self, a1_context: &A1Context) {
         self.data_bounds.clear();
         self.format_bounds.clear();
 

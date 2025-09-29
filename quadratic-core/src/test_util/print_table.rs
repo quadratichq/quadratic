@@ -1,10 +1,13 @@
+#[cfg(test)]
 use crate::grid::data_table::DataTable;
+#[cfg(test)]
 use crate::{
     Pos, Rect,
     controller::GridController,
     grid::{Sheet, SheetId},
 };
 
+#[cfg(test)]
 use tabled::{
     builder::Builder,
     settings::Color,
@@ -13,14 +16,20 @@ use tabled::{
 
 /// Util to print a data table when testing
 #[track_caller]
-pub fn pretty_print_data_table(data_table: &DataTable, title: Option<&str>, max: Option<usize>) {
+#[cfg(test)]
+pub(crate) fn pretty_print_data_table(
+    data_table: &DataTable,
+    title: Option<&str>,
+    max: Option<usize>,
+) {
     let data_table = output_pretty_print_data_table(data_table, title, max);
     println!("{data_table}");
 }
 
 /// Returns a String for a pretty print of a data table for testing
 #[track_caller]
-pub fn output_pretty_print_data_table(
+#[cfg(test)]
+pub(crate) fn output_pretty_print_data_table(
     data_table: &DataTable,
     title: Option<&str>,
     max: Option<usize>,
@@ -92,7 +101,9 @@ pub fn output_pretty_print_data_table(
 }
 
 /// Prints the positions of all data tables in a sheet
-pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
     sheet.data_tables.expensive_iter().for_each(|(pos, _)| {
         println!("Data table at {pos:?}");
@@ -101,7 +112,8 @@ pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
 
 // Util to print a data table given its anchor position
 #[track_caller]
-pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
+#[cfg(test)]
+pub(crate) fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
     let data_table = sheet.data_table_at(&pos).expect("Data table not found");
     pretty_print_data_table(data_table, None, None);
@@ -109,7 +121,8 @@ pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
 
 // Util to print a simple grid to assist in TDD
 #[track_caller]
-pub fn print_table_in_rect(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
+#[cfg(test)]
+pub(crate) fn print_table_in_rect(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     let sheet = grid_controller
         .try_sheet(sheet_id)
         .expect("Sheet not found");
@@ -123,7 +136,9 @@ pub fn print_table_in_rect(grid_controller: &GridController, sheet_id: SheetId, 
 }
 
 /// Prints the order of the data_tables to the console.
-pub fn print_data_table_order(sheet: &Sheet) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_data_table_order(sheet: &Sheet) {
     dbgjs!(
         sheet
             .data_tables
@@ -134,7 +149,8 @@ pub fn print_data_table_order(sheet: &Sheet) {
 }
 
 // prints formatting for table
-pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
+#[cfg(test)]
+pub(crate) fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
     let mut builder = Builder::default();
     let columns = (rect.x_range())
         .map(|i| i.to_string())
@@ -158,7 +174,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 }
 
 #[cfg(test)]
-pub fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
+pub(crate) fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.sheet(sheet_id);
     sheet.data_tables.expensive_iter().for_each(|(pos, dt)| {
         let size = dt.output_rect(*pos, false);

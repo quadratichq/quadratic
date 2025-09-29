@@ -89,7 +89,7 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
     }
 
     /// Returns all data as owned 2D blocks.
-    pub fn into_xy_blocks(
+    pub(crate) fn into_xy_blocks(
         self,
     ) -> impl Iterator<Item = BlockSchema<impl Iterator<Item = BlockSchema<T>>>> {
         self.0
@@ -103,7 +103,7 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
     /// All coordinates are inclusive.
     ///
     /// If `x2` or `y2` are `None`, the rectangle is infinite in that direction.
-    pub fn set_rect(
+    pub(crate) fn set_rect(
         &mut self,
         x1: i64,
         y1: i64,
@@ -114,7 +114,7 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
         self.set_from(&Contiguous2DUpgrade::from_rect(x1, y1, x2, y2, Some(value)))
     }
 
-    pub fn upgrade_schema(self) -> Contiguous2DSchema<T> {
+    pub(crate) fn upgrade_schema(self) -> Contiguous2DSchema<T> {
         self.into_xy_blocks()
             .map(|x_block| BlockSchema {
                 start: x_block.start,

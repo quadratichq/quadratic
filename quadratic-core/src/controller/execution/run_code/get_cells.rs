@@ -39,7 +39,7 @@ pub struct JsCellsA1Error {
 
 impl GridController {
     /// This is used to get cells during an async calculation.
-    pub fn calculation_get_cells_a1(
+    pub(crate) fn calculation_get_cells_a1(
         &mut self,
         transaction_id: String,
         a1: String,

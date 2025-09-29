@@ -11,11 +11,11 @@ pub enum Cell {
     Text(String),
 }
 impl Cell {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         matches!(self, Self::Empty)
     }
 
-    pub fn string_value(&self) -> Cow<'_, str> {
+    pub(crate) fn string_value(&self) -> Cow<'_, str> {
         match self {
             Cell::Empty => "".into(),
             Cell::Int(i) => i.to_string().into(),

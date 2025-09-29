@@ -26,14 +26,14 @@ pub struct TrackedTransactions {
 }
 
 impl TrackedTransactions {
-    pub fn add(&mut self, transaction: TrackedTransaction) {
+    pub(crate) fn add(&mut self, transaction: TrackedTransaction) {
         self.changes.push(transaction);
     }
 }
 
 impl GridController {
     /// Add changes to the change tracker.
-    pub fn track_transactions(&mut self, transaction: &PendingTransaction) {
+    pub(crate) fn track_transactions(&mut self, transaction: &PendingTransaction) {
         if transaction.complete && (cfg!(target_family = "wasm") || cfg!(test)) {
             self.tracked_transactions.add(TrackedTransaction {
                 source: transaction.source,
@@ -49,7 +49,7 @@ impl GridController {
     }
 
     /// Get the changes from the change tracker.
-    pub fn get_tracked_transactions(&self) -> &Vec<TrackedTransaction> {
+    pub(crate) fn get_tracked_transactions(&self) -> &Vec<TrackedTransaction> {
         &self.tracked_transactions.changes
     }
 }

@@ -39,25 +39,25 @@ impl From<GridBounds> for Option<Rect> {
 }
 
 impl GridBounds {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         *self == GridBounds::Empty
     }
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         *self = GridBounds::default();
     }
-    pub fn add(&mut self, pos: Pos) {
+    pub(crate) fn add(&mut self, pos: Pos) {
         match self {
             GridBounds::Empty => *self = Rect::single_pos(pos).into(),
             GridBounds::NonEmpty(rect) => rect.extend_to(pos),
         }
     }
-    pub fn add_rect(&mut self, rect: Rect) {
+    pub(crate) fn add_rect(&mut self, rect: Rect) {
         match self {
             GridBounds::Empty => *self = rect.into(),
             GridBounds::NonEmpty(r) => *r = r.union(&rect),
         }
     }
-    pub fn merge(a: Self, b: Self) -> Self {
+    pub(crate) fn merge(a: Self, b: Self) -> Self {
         match (a, b) {
             (GridBounds::Empty, r) | (r, GridBounds::Empty) => r,
             (GridBounds::NonEmpty(mut a), GridBounds::NonEmpty(b)) => {
@@ -67,7 +67,7 @@ impl GridBounds {
             }
         }
     }
-    pub fn to_bounds_rect(&self) -> Option<BoundsRect> {
+    pub(crate) fn to_bounds_rect(&self) -> Option<BoundsRect> {
         match self {
             GridBounds::Empty => None,
             GridBounds::NonEmpty(rect) => Some(BoundsRect {
@@ -79,7 +79,8 @@ impl GridBounds {
         }
     }
 
-    pub fn extend_x(&mut self, x: i64) {
+    #[cfg(test)]
+    pub(crate) fn extend_x(&mut self, x: i64) {
         match self {
             // we cannot extend x to an empty bounds
             GridBounds::Empty => (),
@@ -87,7 +88,8 @@ impl GridBounds {
         }
     }
 
-    pub fn extend_y(&mut self, y: i64) {
+    #[cfg(test)]
+    pub(crate) fn extend_y(&mut self, y: i64) {
         match self {
             // we cannot extend y to an empty bounds
             GridBounds::Empty => (),
@@ -95,20 +97,20 @@ impl GridBounds {
         }
     }
 
-    pub fn first_column(&self) -> Option<i64> {
+    pub(crate) fn first_column(&self) -> Option<i64> {
         self.to_bounds_rect().map(|rect| rect.x)
     }
 
-    pub fn last_column(&self) -> Option<i64> {
+    pub(crate) fn last_column(&self) -> Option<i64> {
         self.to_bounds_rect()
             .map(|rect| rect.x + rect.width as i64 - 1)
     }
 
-    pub fn first_row(&self) -> Option<i64> {
+    pub(crate) fn first_row(&self) -> Option<i64> {
         self.to_bounds_rect().map(|rect| rect.y)
     }
 
-    pub fn last_row(&self) -> Option<i64> {
+    pub(crate) fn last_row(&self) -> Option<i64> {
         self.to_bounds_rect()
             .map(|rect| rect.y + rect.height as i64 - 1)
     }

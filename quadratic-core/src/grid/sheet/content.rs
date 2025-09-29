@@ -7,29 +7,24 @@ use crate::{
 impl Sheet {
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
     /// tables. Ignores Blanks except in tables.
-    pub fn has_content_at_pos(&self, pos: Pos) -> bool {
+    pub(crate) fn has_content_at_pos(&self, pos: Pos) -> bool {
         if self.columns.has_content_in_rect(Rect::single_pos(pos)) {
             return true;
         }
         self.has_table_content(pos, false)
     }
 
-    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+    pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.columns.has_content_in_rect(rect) || self.data_tables.has_content_in_rect(rect)
-    }
-
-    /// Returns true if the cell at Pos has content (ie, not blank). Ignores
-    /// Blanks in tables.
-    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        if self.columns.has_content_in_rect(Rect::single_pos(pos)) {
-            return true;
-        }
-        self.has_table_content_ignore_blanks(pos)
     }
 
     /// Returns true if the selection has content (ie, not blank). Also checks
     /// tables. Ignores Blanks except in tables.
-    pub fn has_content_in_selection(&self, selection: A1Selection, context: &A1Context) -> bool {
+    pub(crate) fn has_content_in_selection(
+        &self,
+        selection: A1Selection,
+        context: &A1Context,
+    ) -> bool {
         for range in selection.ranges {
             if let Some(rect) = range.to_rect_unbounded(context) {
                 if self.contains_value_within_rect(rect, None) {
@@ -48,9 +43,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        Array, CellValue, Pos, Value,
+        Pos,
         controller::transaction_types::{JsCellValueResult, JsCodeResult},
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        grid::CodeCellLanguage,
         test_util::*,
     };
 
@@ -120,78 +115,6 @@ mod test {
         assert!(first_sheet(&gc).has_content_at_pos(pos2));
         assert!(first_sheet(&gc).has_content_at_pos(Pos { x: 14, y: 10 }));
         assert!(!first_sheet(&gc).has_content_at_pos(Pos { x: 15, y: 10 }));
-    }
-
-    #[test]
-    fn test_has_content_ignore_blank_table() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-        let pos = pos![A1];
-        let sheet_pos = pos.to_sheet_pos(sheet_id);
-
-        // Empty cell should have no content
-        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
-
-        // Blank value should count as no content
-        gc.sheet_mut(sheet_id).set_value(pos, CellValue::Blank);
-        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
-
-        // Text content
-        gc.set_cell_value(sheet_pos, "test".into(), None, false);
-        assert!(gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
-
-        // Empty string should count as no content
-        gc.set_cell_value(sheet_pos, "".into(), None, false);
-        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
-
-        // Table with non-blank content
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Array(Array::from(vec![vec!["test", "test"]])),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(pos, dt.clone());
-        assert!(sheet.has_content_ignore_blank_table(pos));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
-
-        // Table with blank content should be ignored
-        sheet.test_set_code_run_array(10, 10, vec!["1", "", "", "4"], false);
-
-        let a1_context = gc.a1_context().clone();
-        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 10, y: 10 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 11, y: 10 }));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
-
-        // Chart output should still count as content
-        let dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "test",
-            Value::Single(CellValue::Html("Html".to_string())),
-            false,
-            Some(true),
-            Some(true),
-            Some((5, 5)),
-        );
-        let pos3 = Pos { x: 20, y: 20 };
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(pos3, dt);
-
-        let a1_context = gc.a1_context().clone();
-        gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(sheet.has_content_ignore_blank_table(pos3));
-        assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
-        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));
     }
 
     #[test]

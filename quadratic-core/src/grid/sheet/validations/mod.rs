@@ -4,8 +4,10 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
+use validation::Validation;
 
+#[cfg(test)]
+use crate::grid::sheet::validations::validation::ValidationDisplaySheet;
 use crate::{
     Pos, Rect,
     a1::{A1Context, A1Selection},
@@ -34,7 +36,7 @@ pub struct Validations {
 impl Validations {
     /// Updates or adds a new validation to the sheet. Returns the reverse
     /// operations.
-    pub fn set(&mut self, validation: Validation) -> Vec<Operation> {
+    pub(crate) fn set(&mut self, validation: Validation) -> Vec<Operation> {
         if let Some(existing) = self.validations.iter_mut().find(|v| v.id == validation.id) {
             let old_validation = existing.clone();
             *existing = validation;
@@ -52,17 +54,18 @@ impl Validations {
     }
 
     /// Gets a validation based on a validation_id
-    pub fn validation(&self, validation_id: Uuid) -> Option<&Validation> {
+    pub(crate) fn validation(&self, validation_id: Uuid) -> Option<&Validation> {
         self.validations.iter().find(|v| v.id == validation_id)
     }
 
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
+    #[cfg(test)]
+    pub(crate) fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
         self.validations.iter().find(|v| v.selection == selection)
     }
 
     /// Gets a validation that overlaps with a selection.
-    pub fn validation_overlaps_selection(
+    pub(crate) fn validation_overlaps_selection(
         &self,
         selection: &A1Selection,
         a1_context: &A1Context,
@@ -73,7 +76,7 @@ impl Validations {
     }
 
     /// Gets all validations in the Sheet.
-    pub fn validations(&self) -> Option<&Vec<Validation>> {
+    pub(crate) fn validations(&self) -> Option<&Vec<Validation>> {
         if self.validations.is_empty() {
             None
         } else {
@@ -82,7 +85,7 @@ impl Validations {
     }
 
     /// Gets the JsRenderCellSpecial for a cell based on Validation.
-    pub fn render_special_pos(
+    pub(crate) fn render_special_pos(
         &self,
         pos: Pos,
         a1_context: &A1Context,
@@ -124,7 +127,8 @@ impl Validations {
     }
 
     /// Gets the ValidationDisplaySheet.
-    pub fn display_sheet(&self) -> Option<ValidationDisplaySheet> {
+    #[cfg(test)]
+    pub(crate) fn display_sheet(&self) -> Option<ValidationDisplaySheet> {
         let mut displays = vec![];
         for v in &self.validations {
             if !v.rule.has_ui() {
@@ -132,6 +136,8 @@ impl Validations {
             }
             v.selection.ranges.iter().for_each(|range| {
                 if !range.is_finite() {
+                    use crate::grid::sheet::validations::validation::ValidationDisplay;
+
                     displays.push(ValidationDisplay {
                         range: range.clone(),
                         checkbox: v.rule.is_logical(),
@@ -144,7 +150,7 @@ impl Validations {
     }
 
     /// Removes a validation. Returns the reverse operations.
-    pub fn remove(&mut self, validation_id: Uuid) -> Vec<Operation> {
+    pub(crate) fn remove(&mut self, validation_id: Uuid) -> Vec<Operation> {
         let mut reverse = vec![];
         self.validations.retain(|v| {
             if v.id == validation_id {
@@ -160,7 +166,12 @@ impl Validations {
     }
 
     /// Validates a pos in the sheet. Returns any failing Validation.
-    pub fn validate(&self, sheet: &Sheet, pos: Pos, a1_context: &A1Context) -> Option<&Validation> {
+    pub(crate) fn validate(
+        &self,
+        sheet: &Sheet,
+        pos: Pos,
+        a1_context: &A1Context,
+    ) -> Option<&Validation> {
         self.validations.iter().rev().find(|v| {
             v.selection.might_contain_pos(pos, a1_context)
                 && !v
@@ -169,7 +180,7 @@ impl Validations {
         })
     }
 
-    pub fn in_rect_unbounded(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
+    pub(crate) fn in_rect_unbounded(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
             .filter(|validation| {
@@ -183,7 +194,7 @@ impl Validations {
     }
 
     /// Returns validations that intersect with a rect.
-    pub fn in_rect(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
+    pub(crate) fn in_rect(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
             .filter(|validation| {
@@ -197,14 +208,18 @@ impl Validations {
     }
 
     /// Gets a validation from a position
-    pub fn get_validation_from_pos(&self, pos: Pos, a1_context: &A1Context) -> Option<&Validation> {
+    pub(crate) fn get_validation_from_pos(
+        &self,
+        pos: Pos,
+        a1_context: &A1Context,
+    ) -> Option<&Validation> {
         self.validations
             .iter()
             .find(|v| v.selection.might_contain_pos(pos, a1_context))
     }
 
     /// Removes a selection from a validation. Returns the reverse operations.
-    pub fn remove_selection(
+    pub(crate) fn remove_selection(
         &mut self,
         selection: &A1Selection,
         context: &A1Context,
@@ -234,7 +249,7 @@ impl Validations {
     }
 
     /// Finds a validation that matches the rule, message, and error.
-    pub fn similar_validation(&self, validation: &Validation) -> Option<&Validation> {
+    pub(crate) fn similar_validation(&self, validation: &Validation) -> Option<&Validation> {
         self.validations.iter().find(|v| {
             v.rule == validation.rule
                 && v.message == validation.message
@@ -247,6 +262,7 @@ impl Validations {
 mod tests {
     use rules::{ValidationRule, validation_logical::ValidationLogical};
 
+    use crate::grid::sheet::validations::validation::ValidationDisplay;
     use crate::test_util::*;
     use crate::{SheetRect, a1::CellRefRange, grid::SheetId};
 

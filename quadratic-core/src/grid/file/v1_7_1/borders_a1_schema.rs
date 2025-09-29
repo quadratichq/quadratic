@@ -20,7 +20,7 @@ pub struct BordersSchema {
 }
 
 impl BordersSchema {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.left.is_empty()
             && self.right.is_empty()
             && self.top.is_empty()

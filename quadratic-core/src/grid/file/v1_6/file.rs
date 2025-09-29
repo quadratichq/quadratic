@@ -262,7 +262,7 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
     Ok(borders)
 }
 
-pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
+pub(crate) fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
     Ok(v1_7::SheetSchema {
         id: sheet.id,
         name: sheet.name,
@@ -280,7 +280,7 @@ pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
     })
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
+pub(crate) fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
     let new_grid = v1_7::GridSchema {
         version: Some("1.7".to_string()),
         sheets: grid

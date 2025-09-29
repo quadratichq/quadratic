@@ -371,7 +371,7 @@ impl GridController {
     ///
     /// Finds intersection of selection with tables and calculates the border updates for each table,
     /// and sheet border updates for the remaining selection.
-    pub fn get_sheet_and_table_border_updates(
+    pub(crate) fn get_sheet_and_table_border_updates(
         &self,
         selection: &A1Selection,
         border_selection: BorderSelection,
@@ -443,7 +443,7 @@ impl GridController {
     }
 
     /// Creates border operations. Returns None if selection is empty.
-    pub fn set_borders_a1_selection_operations(
+    pub(crate) fn set_borders_a1_selection_operations(
         &self,
         selection: A1Selection,
         border_selection: BorderSelection,

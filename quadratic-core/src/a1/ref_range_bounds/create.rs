@@ -28,24 +28,16 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_all_from(pos: Pos) -> Self {
-        let start = CellRefRangeEnd::new_relative_pos(pos);
-        RefRangeBounds {
-            start,
-            end: CellRefRangeEnd::UNBOUNDED,
-        }
-    }
-
-    pub fn new_relative_xy(x: i64, y: i64) -> Self {
+    pub(crate) fn new_relative_xy(x: i64, y: i64) -> Self {
         let start = CellRefRangeEnd::new_relative_xy(x, y);
         RefRangeBounds { start, end: start }
     }
 
-    pub fn new_relative_pos(pos: Pos) -> Self {
+    pub(crate) fn new_relative_pos(pos: Pos) -> Self {
         Self::new_relative_xy(pos.x, pos.y)
     }
 
-    pub fn new_relative_col(x: i64) -> Self {
+    pub(crate) fn new_relative_col(x: i64) -> Self {
         Self {
             start: CellRefRangeEnd {
                 col: CellRefCoord::new_rel(x),
@@ -58,7 +50,7 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_row(y: i64) -> Self {
+    pub(crate) fn new_relative_row(y: i64) -> Self {
         Self {
             start: CellRefRangeEnd {
                 col: CellRefCoord::REL_START,
@@ -71,7 +63,7 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_column_range(x1: i64, x2: i64) -> Self {
+    pub(crate) fn new_relative_column_range(x1: i64, x2: i64) -> Self {
         if x1 == x2 {
             return Self::new_relative_col(x1);
         }
@@ -87,7 +79,7 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_row_range(y1: i64, y2: i64) -> Self {
+    pub(crate) fn new_relative_row_range(y1: i64, y2: i64) -> Self {
         if y1 == y2 {
             return Self::new_relative_row(y1);
         }
@@ -105,7 +97,7 @@ impl RefRangeBounds {
 
     // Creates a range from a rectangle. Be careful as this will normalize the
     // CellRefRange, which is not always what the user wants.
-    pub fn new_relative_rect(rect: Rect) -> Self {
+    pub(crate) fn new_relative_rect(rect: Rect) -> Self {
         if rect.min == rect.max {
             Self::new_relative_pos(rect.min)
         } else {
@@ -118,7 +110,7 @@ impl RefRangeBounds {
 
     /// Returns a test range from the A1-string.
     #[cfg(test)]
-    pub fn test_a1(a1: &str) -> Self {
+    pub(crate) fn test_a1(a1: &str) -> Self {
         Self::from_str(a1, None).unwrap()
     }
 }
@@ -126,12 +118,6 @@ impl RefRangeBounds {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_new_relative_all_from() {
-        let range = RefRangeBounds::new_relative_all_from(Pos { x: 1, y: 2 });
-        assert_eq!(range.to_string(), "A2:");
-    }
 
     #[test]
     fn test_new_relative_xy() {

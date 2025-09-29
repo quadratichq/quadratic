@@ -180,7 +180,7 @@ impl From<v1_7_1::RunErrorMsgSchema> for RunErrorMsgSchema {
 
 // todo: There's probably a better way to do the From/Into between the types.
 impl RunErrorSchema {
-    pub fn from_grid_run_error(error: crate::RunError) -> Self {
+    pub(crate) fn from_grid_run_error(error: crate::RunError) -> Self {
         Self {
             span: error.span.map(|span| SpanSchema {
                 start: span.start,

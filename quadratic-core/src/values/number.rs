@@ -29,38 +29,38 @@ pub fn round_with_strategy(number: Decimal, digits: i64, strategy: RoundingStrat
 }
 
 /// Rounds a number to the specified number of digits after the decimal point.
-pub fn round(number: Decimal, digits: i64) -> Decimal {
+pub(crate) fn round(number: Decimal, digits: i64) -> Decimal {
     round_with_strategy(number, digits, RoundingStrategy::MidpointAwayFromZero)
 }
 
 /// Rounds a number **away from zero** to the specified number of digits after the decimal point.
-pub fn round_up(number: Decimal, digits: i64) -> Decimal {
+pub(crate) fn round_up(number: Decimal, digits: i64) -> Decimal {
     round_with_strategy(number, digits, RoundingStrategy::AwayFromZero)
 }
 
 /// Rounds a number **toward zero** to the specified number of digits after the decimal point.
-pub fn round_down(number: Decimal, digits: i64) -> Decimal {
+pub(crate) fn round_down(number: Decimal, digits: i64) -> Decimal {
     round_with_strategy(number, digits, RoundingStrategy::ToZero)
 }
 
 /// Rounds a number **toward zero** to the specified number of digits after the decimal point.
 /// This is exactly the same as `round_down()`.
-pub fn truncate(number: Decimal, digits: i64) -> Decimal {
+pub(crate) fn truncate(number: Decimal, digits: i64) -> Decimal {
     round_with_strategy(number, digits, RoundingStrategy::ToZero)
 }
 
 /// Strips any trailing zero's from a `Decimal` and converts -0 to 0.
-pub fn normalize(number: Decimal) -> Decimal {
+pub(crate) fn normalize(number: Decimal) -> Decimal {
     number.normalize()
 }
 
 /// Sums a vector of `Decimal`s and normalizes the result.
-pub fn sum(numbers: Vec<Decimal>) -> Decimal {
+pub(crate) fn sum(numbers: Vec<Decimal>) -> Decimal {
     normalize(numbers.iter().sum())
 }
 
 /// Converts a string to a `Decimal`.
-pub fn decimal_from_str(s: &str) -> Result<Decimal> {
+pub(crate) fn decimal_from_str(s: &str) -> Result<Decimal> {
     Ok(Decimal::from_str(s)?)
 }
 

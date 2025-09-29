@@ -8,7 +8,7 @@ use crate::grid::SheetId;
 use crate::grid::js_types::JsRowHeight;
 
 impl GridController {
-    pub fn start_auto_resize_row_heights(
+    pub(crate) fn start_auto_resize_row_heights(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -56,7 +56,7 @@ impl GridController {
         }
     }
 
-    pub fn complete_auto_resize_row_heights(
+    pub(crate) fn complete_auto_resize_row_heights(
         &mut self,
         transaction_id: Uuid,
         sheet_id: SheetId,

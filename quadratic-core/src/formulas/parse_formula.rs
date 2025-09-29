@@ -70,7 +70,7 @@ impl From<Spanned<SheetCellRefRange>> for JsCellRefSpan {
 ///
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
-pub fn parse_formula_results(
+pub(crate) fn parse_formula_results(
     formula_string: &str,
     ctx: &A1Context,
     sheet_id: SheetId,

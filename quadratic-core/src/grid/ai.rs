@@ -53,7 +53,7 @@ impl GridController {
     }
 
     /// Returns the rendered values of the cells in a given rect.
-    pub fn get_ai_cells(
+    pub(crate) fn get_ai_cells(
         &self,
         selection: A1Selection,
         mut page: u32,
@@ -105,7 +105,7 @@ impl GridController {
     }
 
     /// Returns the rendered formats of the cells in a given rect.
-    pub fn get_ai_cell_formats(
+    pub(crate) fn get_ai_cell_formats(
         &self,
         selection: A1Selection,
         page: u32,

@@ -1,7 +1,8 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
+#[cfg(test)]
+use crate::RefError;
 use crate::{
-    RefError,
     a1::A1Context,
     grid::{RefAdjust, SheetId},
 };
@@ -10,7 +11,7 @@ use super::A1Selection;
 
 impl A1Selection {
     /// Updates the cursor position to the position of the last range.
-    pub fn update_cursor(&mut self, a1_context: &A1Context) {
+    pub(crate) fn update_cursor(&mut self, a1_context: &A1Context) {
         if let Some(last) = self.ranges.last() {
             self.cursor = Self::cursor_pos_from_last_range(last, a1_context);
         }
@@ -18,7 +19,7 @@ impl A1Selection {
 
     /// Potentially shrinks a selection after the removal of a column.
     /// A1Selection may have no ranges after the removal.
-    pub fn removed_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
+    pub(crate) fn removed_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -40,7 +41,7 @@ impl A1Selection {
 
     /// Potentially shrinks a selection after the removal of a row.
     /// A1Selection may have no ranges after the removal.///
-    pub fn removed_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
+    pub(crate) fn removed_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -61,7 +62,7 @@ impl A1Selection {
     }
 
     /// Potentially shifts / grows a selection after the insertion of a column.
-    pub fn inserted_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
+    pub(crate) fn inserted_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {
@@ -74,7 +75,7 @@ impl A1Selection {
     }
 
     /// Potentially shifts / grows a selection after the insertion of a row.
-    pub fn inserted_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
+    pub(crate) fn inserted_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {
@@ -89,6 +90,7 @@ impl A1Selection {
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out
     /// of bounds.
     #[must_use = "this method returns a new value instead of modifying its input"]
+    #[cfg(test)]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if adjust.affects_sheet(self.sheet_id) {
             Ok(Self {
@@ -128,7 +130,7 @@ impl A1Selection {
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the whole selection becomes empty.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+    pub(crate) fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         if adjust.affects_sheet(self.sheet_id) {
             Some(Self {
                 sheet_id: self.sheet_id,
@@ -147,27 +149,27 @@ impl A1Selection {
 
     /// Translates the selection, clamping the result within the sheet bounds.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
+    pub(crate) fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
         let adjust = RefAdjust::new_translate(dx, dy);
         self.saturating_adjust(adjust)
     }
 
     /// Replaces a table name in the selection.
-    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
             range.replace_table_name(old_name, new_name);
         });
     }
 
     /// Replaces a table column name in the selection.
-    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
             range.replace_column_name(table_name, old_name, new_name);
         });
     }
 
     /// Attempts to convert ranges to table refs (if possible).
-    pub fn change_to_table_refs(&mut self, sheet_id: SheetId, a1_context: &A1Context) {
+    pub(crate) fn change_to_table_refs(&mut self, sheet_id: SheetId, a1_context: &A1Context) {
         self.ranges.iter_mut().for_each(|range| {
             if let Some(table_range) = range.check_for_table_ref(sheet_id, a1_context) {
                 *range = table_range;
@@ -454,32 +456,44 @@ mod tests {
     fn test_adjust_translate() {
         // Test positive translation
         let selection = A1Selection::test_a1("A1:B2");
-        let res = selection.adjust(RefAdjust::new_translate(1, 1)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(1, 1))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test negative translation
         let selection = A1Selection::test_a1("C3:D4");
-        let res = selection.adjust(RefAdjust::new_translate(-1, -1)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(-1, -1))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test zero translation
         let selection = A1Selection::test_a1("A1:B2");
-        let res = selection.adjust(RefAdjust::new_translate(0, 0)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(0, 0))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("A1:B2"));
 
         // Test x-only translation
         let selection = A1Selection::test_a1("A1:B2");
-        let res = selection.adjust(RefAdjust::new_translate(2, 0)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(2, 0))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("C1:D2"));
 
         // Test y-only translation
         let selection = A1Selection::test_a1("A1:B2");
-        let res = selection.adjust(RefAdjust::new_translate(0, 2)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(0, 2))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("A3:B4"));
 
         // Test single cell selection
         let selection = A1Selection::test_a1("A1");
-        let res = selection.adjust(RefAdjust::new_translate(1, 1)).unwrap();
+        let res = selection
+            .saturating_adjust(RefAdjust::new_translate(1, 1))
+            .unwrap();
         assert_eq!(res, A1Selection::test_a1("B2"));
 
         // Test negative translation capping
@@ -495,27 +509,27 @@ mod tests {
         let a1_context = A1Context::default();
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 2));
+        let result = selection.saturating_adjust(RefAdjust::new_insert_column(sheet_id, 2));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "C3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 2));
+        let result = selection.saturating_adjust(RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B4");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 3));
+        let result = selection.saturating_adjust(RefAdjust::new_insert_column(sheet_id, 3));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 4));
+        let result = selection.saturating_adjust(RefAdjust::new_insert_row(sheet_id, 4));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_delete_column(sheet_id, 1));
+        let result = selection.saturating_adjust(RefAdjust::new_delete_column(sheet_id, 1));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "A3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_delete_row(sheet_id, 1));
+        let result = selection.saturating_adjust(RefAdjust::new_delete_row(sheet_id, 1));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B2");
     }
 

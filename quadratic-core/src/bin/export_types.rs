@@ -45,10 +45,10 @@ use quadratic_core::grid::js_types::JsSheetPosText;
 use quadratic_core::grid::js_types::JsSummaryContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
-    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
-    JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsClipboard, JsCodeCell, JsDataTableColumnHeader, JsHtmlOutput,
+    JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+    JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill, JsSnackbarSeverity,
+    JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -146,7 +146,6 @@ fn main() {
         JsCellValueCode,
         JsCellValueSummary,
         JsCellValueKind,
-        JsCellValuePos,
         JsCellValueRanges,
         JsCellValueResult,
         JsChartContext,

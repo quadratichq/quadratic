@@ -619,7 +619,7 @@ fn upgrade_columns_formats(
     (columns, formats)
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
     let current::SheetSchema {
         id,
         name,

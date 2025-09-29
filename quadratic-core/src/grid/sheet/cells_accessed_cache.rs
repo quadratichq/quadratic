@@ -4,7 +4,7 @@ use super::*;
 
 impl Sheet {
     /// Adds this sheet to the CellsAccessedCache.
-    pub fn add_sheet_to_cells_accessed_cache(
+    pub(crate) fn add_sheet_to_cells_accessed_cache(
         &self,
         cells_accessed: &mut RegionMap,
         a1_context: &A1Context,

@@ -48,7 +48,7 @@ pub struct SheetFormattingSchema {
 }
 
 impl SheetFormattingSchema {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.align.is_empty()
             && self.vertical_align.is_empty()
             && self.wrap.is_empty()

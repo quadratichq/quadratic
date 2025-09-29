@@ -8,7 +8,7 @@ use super::GridController;
 
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
+    pub(crate) fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
         let all_dependent_cells = self
             .cells_accessed()
             .get_positions_associated_with_region(sheet_rect.to_region());

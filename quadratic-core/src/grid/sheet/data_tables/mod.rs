@@ -66,7 +66,7 @@ impl SheetDataTables {
     }
 
     /// Returns the data table at the given position, if it exists.
-    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
+    pub(crate) fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
     }
 

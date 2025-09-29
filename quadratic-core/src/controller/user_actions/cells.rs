@@ -34,7 +34,7 @@ impl GridController {
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
-    pub fn set_cell_values(
+    pub(crate) fn set_cell_values(
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
@@ -79,17 +79,6 @@ impl GridController {
     ) {
         let ops = self.clear_format_borders_operations(selection, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
-    }
-
-    /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(
-        &mut self,
-        selection: &A1Selection,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) {
-        let ops = self.delete_values_and_formatting_operations(selection, false);
-        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
     }
 }
 
@@ -286,30 +275,6 @@ mod test {
         // ensure not found sheet_id fails silently
         let selection = A1Selection::from_xy(1, 1, SheetId::new());
         gc.clear_formatting(&selection, None, false);
-    }
-
-    #[test]
-    fn delete_values_and_formatting() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-        gc.set_cell_value(sheet_pos, String::from("1.12345678"), None, false);
-        let selection = A1Selection::from_single_cell(sheet_pos);
-        let _ = gc.set_currency(&selection, "$".to_string(), None, false);
-        gc.delete_values_and_formatting(&selection, None, false);
-        let cells = gc.sheet(sheet_id).get_render_cells(
-            Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }),
-            gc.a1_context(),
-        );
-        assert_eq!(cells.len(), 0);
-
-        // ensure not found sheet_id fails silently
-        let selection = A1Selection::from_xy(1, 1, SheetId::new());
-        gc.delete_values_and_formatting(&selection, None, false);
     }
 
     #[test]

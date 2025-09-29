@@ -105,7 +105,7 @@ impl GridController {
         &self.a1_context
     }
 
-    pub fn cells_accessed(&self) -> &RegionMap {
+    pub(crate) fn cells_accessed(&self) -> &RegionMap {
         &self.cells_accessed_cache
     }
 
@@ -173,19 +173,19 @@ impl GridController {
         Self::from_grid(Grid::test(), 0)
     }
 
-    pub fn new_blank() -> Self {
+    pub(crate) fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
     }
 
     /// Returns the undo stack for testing purposes
     #[cfg(test)]
-    pub fn undo_stack(&self) -> &Vec<Transaction> {
+    pub(crate) fn undo_stack(&self) -> &Vec<Transaction> {
         &self.undo_stack
     }
 
     /// Returns the redo stack for testing purposes
     #[cfg(test)]
-    pub fn redo_stack(&self) -> &Vec<Transaction> {
+    pub(crate) fn redo_stack(&self) -> &Vec<Transaction> {
         &self.redo_stack
     }
 
@@ -193,7 +193,7 @@ impl GridController {
     ///
     /// This method is incredibly dubious and should only be used for testing.
     #[cfg(test)]
-    pub fn set_first_sheet_id(&mut self, new_id: SheetId) {
+    pub(crate) fn set_first_sheet_id(&mut self, new_id: SheetId) {
         let (_old_id, mut sheet) = self
             .grid
             .sheets

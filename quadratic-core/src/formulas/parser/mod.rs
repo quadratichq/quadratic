@@ -21,7 +21,11 @@ use crate::{
 };
 
 /// Parses a formula.
-pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult<ast::Formula> {
+pub(crate) fn parse_formula(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+) -> CodeResult<ast::Formula> {
     Ok(Formula {
         ast: parse_exactly_one(source, ctx, pos, rules::Expression)?,
     })
@@ -29,7 +33,7 @@ pub fn parse_formula(source: &str, ctx: &A1Context, pos: SheetPos) -> CodeResult
 
 /// Calls `parse_formula()` with an empty context at position A1.
 #[cfg(test)]
-pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
+pub(crate) fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
     let grid_controller = GridController::new();
     let pos = grid_controller.grid().origin_in_first_sheet();
     parse_formula(source, grid_controller.a1_context(), pos)
@@ -46,7 +50,7 @@ fn parse_exactly_one<R: SyntaxRule>(
     p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
 }
 
-pub fn find_cell_references(
+pub(crate) fn find_cell_references(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
@@ -80,7 +84,11 @@ pub fn find_cell_references(
 
 /// Parses and checks whether the formula has the correct arguments, and returns
 /// whether it does.
-pub fn parse_and_check_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> bool {
+pub(crate) fn parse_and_check_formula(
+    formula_string: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+) -> bool {
     // We are not running any calculations, so an empty Grid is fine for
     // purposes of evaluating the formula for correctness. (Especially since we
     // do not have the actual Grid when running this formula in RustClient.)
@@ -143,7 +151,7 @@ pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// Adjusts all cell references in a formula. If a references is out of bounds
 /// after the adjustment, it is replaced with an error.
 #[must_use = "this method returns a new value instead of modifying its input"]
-pub fn adjust_references(
+pub(crate) fn adjust_references(
     source: &str,
     new_default_sheet_id: SheetId,
     ctx: &A1Context,
@@ -159,7 +167,7 @@ pub fn adjust_references(
 }
 
 #[must_use = "this method returns a new value instead of modifying its input"]
-pub fn replace_table_name(
+pub(crate) fn replace_table_name(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
@@ -175,7 +183,7 @@ pub fn replace_table_name(
 }
 
 #[must_use = "this method returns a new value instead of modifying its input"]
-pub fn replace_column_name(
+pub(crate) fn replace_column_name(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
@@ -210,7 +218,7 @@ fn replace_table_references(
 }
 
 #[must_use = "this method returns a new value instead of modifying its input"]
-pub fn replace_sheet_name(
+pub(crate) fn replace_sheet_name(
     source: &str,
     pos: SheetPos,
     old_ctx: &A1Context,
@@ -264,7 +272,7 @@ pub struct Parser<'a> {
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
-    pub fn new(
+    pub(crate) fn new(
         source_str: &'a str,
         tokens: &'a [Spanned<Token>],
         ctx: &'a A1Context,
@@ -289,12 +297,12 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns the token at the cursor.
-    pub fn current(self) -> Option<Token> {
+    pub(crate) fn current(self) -> Option<Token> {
         Some(self.tokens.get(self.cursor?)?.inner)
     }
     /// Returns the span of the current token. If there is no current token,
     /// returns an empty span at the beginning or end of the input appropriately.
-    pub fn span(&self) -> Span {
+    pub(crate) fn span(&self) -> Span {
         if let Some(idx) = self.cursor {
             if let Some(token) = self.tokens.get(idx) {
                 // This is a token in the middle of the region.
@@ -312,27 +320,27 @@ impl<'a> Parser<'a> {
     }
     /// Returns the source string of the current token. If there is no current
     /// token, returns an empty string.
-    pub fn token_str(&self) -> &'a str {
+    pub(crate) fn token_str(&self) -> &'a str {
         let Span { start, end } = self.span();
         &self.source_str[start as usize..end as usize]
     }
 
     /// Moves the cursor forward without skipping whitespace/comments and then
     /// returns the token at the cursor.
-    pub fn next_noskip(&mut self) -> Option<Token> {
+    pub(crate) fn next_noskip(&mut self) -> Option<Token> {
         // Add 1 or set to zero.
         self.cursor = Some(self.cursor.map(|idx| idx + 1).unwrap_or(0));
         self.current()
     }
     /// Moves the cursor back without skipping whitespace/comments and then
     /// returns the token at the cursor.
-    pub fn prev_noskip(&mut self) -> Option<Token> {
+    pub(crate) fn prev_noskip(&mut self) -> Option<Token> {
         // Subtract 1 if possible.
         self.cursor = self.cursor.and_then(|idx| idx.checked_sub(1));
         self.current()
     }
     /// Returns whether the current token would normally be skipped.
-    pub fn is_skip(self) -> bool {
+    pub(crate) fn is_skip(self) -> bool {
         if let Some(t) = self.current() {
             t.is_skip()
         } else {
@@ -340,13 +348,13 @@ impl<'a> Parser<'a> {
         }
     }
     /// Returns whether the end of the input has been reached.
-    pub fn is_done(self) -> bool {
+    pub(crate) fn is_done(self) -> bool {
         self.cursor.is_some() && self.current().is_none()
     }
 
     /// Moves the cursor forward and then returns the token at the cursor.
     #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Token> {
+    pub(crate) fn next(&mut self) -> Option<Token> {
         loop {
             self.next_noskip();
             if !self.is_skip() {
@@ -355,7 +363,7 @@ impl<'a> Parser<'a> {
         }
     }
     /// Moves the cursor back and then returns the token at the cursor.
-    pub fn prev(&mut self) -> Option<Token> {
+    pub(crate) fn prev(&mut self) -> Option<Token> {
         loop {
             self.prev_noskip();
             if !self.is_skip() {
@@ -366,14 +374,14 @@ impl<'a> Parser<'a> {
 
     /// Returns the token after the one at the cursor, without mutably moving
     /// the cursor.
-    pub fn peek_next(self) -> Option<Token> {
+    pub(crate) fn peek_next(self) -> Option<Token> {
         let mut tmp = self;
         tmp.next()
     }
 
     /// Returns the span of the token after the one at the cursor, without
     /// mutably moving the cursor.
-    pub fn peek_next_span(self) -> Span {
+    pub(crate) fn peek_next_span(self) -> Span {
         let mut tmp = self;
         tmp.next();
         tmp.span()
@@ -383,13 +391,13 @@ impl<'a> Parser<'a> {
     /// error if it fails. This should only be used when this syntax rule
     /// represents the only valid parse; if there are other options,
     /// `try_parse()` is preferred.
-    pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
+    pub(crate) fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
         self.try_parse(&rule).unwrap_or_else(|| self.expected(rule))
     }
     /// Applies a syntax rule starting at the cursor, returning `None` if the
     /// syntax rule definitely doesn't match (i.e., its `might_match()`
     /// implementation returned false).
-    pub fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<CodeResult<R::Output>> {
+    pub(crate) fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<CodeResult<R::Output>> {
         rule.prefix_matches(*self).then(|| {
             let old_state = *self; // Save state.
             let ret = rule.consume_match(self);
@@ -402,13 +410,13 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns an error describing that `expected` was expected.
-    pub fn expected<T>(self, expected: impl ToString) -> CodeResult<T> {
+    pub(crate) fn expected<T>(self, expected: impl ToString) -> CodeResult<T> {
         // TODO: when #[feature(never_type)] stabilizes, use that here and
         // return CodeResult<!>.
         Err(self.expected_err(expected))
     }
     /// Returns an error describing that EOF was expected.
-    pub fn ok_if_not_eof<T>(mut self, or_else: T) -> CodeResult<T> {
+    pub(crate) fn ok_if_not_eof<T>(mut self, or_else: T) -> CodeResult<T> {
         if let Some(tok) = self.next() {
             Err(RunErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
         } else {
@@ -416,7 +424,7 @@ impl<'a> Parser<'a> {
         }
     }
     /// Returns an error describing that `expected` was expected.
-    pub fn expected_err(mut self, expected: impl ToString) -> RunError {
+    pub(crate) fn expected_err(mut self, expected: impl ToString) -> RunError {
         self.next();
         RunErrorMsg::Expected {
             expected: expected.to_string().into(),

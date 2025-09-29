@@ -31,15 +31,6 @@ impl fmt::Display for RunError {
     }
 }
 impl std::error::Error for RunError {}
-impl RunError {
-    /// Attaches a span to this Error, if it does not already have one.
-    pub fn with_span(mut self, span: impl Into<Span>) -> Self {
-        if self.span.is_none() {
-            self.span = Some(span.into());
-        }
-        self
-    }
-}
 
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS, Hash)]
@@ -269,7 +260,7 @@ impl fmt::Display for RunErrorMsg {
 }
 impl RunErrorMsg {
     /// Attaches a span to this error message, returning a Error.
-    pub fn with_span(self, span: impl Into<Span>) -> RunError {
+    pub(crate) fn with_span(self, span: impl Into<Span>) -> RunError {
         RunError {
             span: Some(span.into()),
             msg: self,

@@ -12,7 +12,7 @@ impl DataTable {
     /// 0,0 is the top left.
     ///
     /// This is expensive for multiple cell queries, used for single cell queries only.
-    pub fn get_format(&self, pos: Pos) -> Format {
+    pub(crate) fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_pos(pos);
         let mut format = self
             .formats
@@ -50,7 +50,7 @@ impl DataTable {
     /// Create a SheetFormatUpdates object that transfers the formats from the DataTable to the Sheet.
     ///
     /// This is used when flattening a DataTable, or part of it, to a Sheet.
-    pub fn transfer_formats_to_sheet(
+    pub(crate) fn transfer_formats_to_sheet(
         &self,
         data_table_pos: Pos,
         display_rect: Rect,
@@ -143,7 +143,7 @@ impl DataTable {
     /// Create a SheetFormatUpdates object that transfers the formats from the Sheet to the DataTable.
     ///
     /// This is used when converting data on a Sheet to a DataTable.
-    pub fn transfer_formats_from_sheet(
+    pub(crate) fn transfer_formats_from_sheet(
         &self,
         data_table_pos: Pos,
         display_rect: Rect,
@@ -174,7 +174,7 @@ impl DataTable {
     }
 
     /// Transfers the formats from a SheetFormatUpdates into the DataTable.
-    pub fn transfer_formats_from_sheet_format_updates(
+    pub(crate) fn transfer_formats_from_sheet_format_updates(
         &self,
         data_table_pos: Pos,
         display_rect: Rect,

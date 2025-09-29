@@ -3,9 +3,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    CellValue,
-    a1::{A1Context, A1Selection, CellRefRange},
-    grid::{Sheet, js_types::JsRenderCellSpecial},
+    a1::{A1Selection, CellRefRange},
+    grid::js_types::JsRenderCellSpecial,
 };
 
 use super::rules::ValidationRule;
@@ -19,7 +18,7 @@ pub struct ValidationMessage {
 
 #[cfg(test)]
 impl ValidationMessage {
-    pub fn test(title: &str) -> Self {
+    pub(crate) fn test(title: &str) -> Self {
         Self {
             show: true,
             title: Some(title.to_string()),
@@ -96,18 +95,8 @@ impl From<Validation> for ValidationUpdate {
 }
 
 impl Validation {
-    /// Validate a cell value against its validation rule.
-    pub fn validate(
-        &self,
-        sheet: &Sheet,
-        value: Option<&CellValue>,
-        a1_context: &A1Context,
-    ) -> bool {
-        self.rule.validate(sheet, value, a1_context)
-    }
-
     /// Gets the JsRenderCellSpecial for a cell based on Validation.
-    pub fn render_special(&self) -> Option<JsRenderCellSpecial> {
+    pub(crate) fn render_special(&self) -> Option<JsRenderCellSpecial> {
         match &self.rule {
             ValidationRule::List(list) => {
                 if list.drop_down {
@@ -137,7 +126,8 @@ pub struct ValidationDisplay {
 }
 
 impl ValidationDisplay {
-    pub fn is_empty(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_empty(&self) -> bool {
         !self.checkbox && !self.list
     }
 }
@@ -150,7 +140,8 @@ pub struct ValidationDisplaySheet {
 }
 
 impl ValidationDisplaySheet {
-    pub fn is_default(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_default(&self) -> bool {
         self.displays.is_empty()
     }
 }

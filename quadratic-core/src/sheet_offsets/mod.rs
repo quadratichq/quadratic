@@ -39,7 +39,7 @@ pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
 
 impl SheetOffsets {
     /// exports offsets to a GridFile
-    pub fn export(self) -> OffsetWidthHeight {
+    pub(crate) fn export(self) -> OffsetWidthHeight {
         (
             self.column_widths.into_iter_sizes().collect(),
             self.row_heights.into_iter_sizes().collect(),
@@ -47,7 +47,7 @@ impl SheetOffsets {
     }
 
     /// import offsets from a GridFile
-    pub fn import(offsets: OffsetWidthHeight) -> Self {
+    pub(crate) fn import(offsets: OffsetWidthHeight) -> Self {
         let mut offsets = SheetOffsets {
             column_widths: Offsets::from_iter(crate::DEFAULT_COLUMN_WIDTH, offsets.0),
             row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1),
@@ -58,71 +58,38 @@ impl SheetOffsets {
         offsets
     }
 
-    /// Returns the widths of a range of columns.
-    pub fn column_widths(&self, x_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
-        self.column_widths.iter_offsets(x_range)
-    }
-    /// Returns the heights of a range of rows.
-    pub fn row_heights(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
-        self.row_heights.iter_offsets(y_range)
-    }
-
     /// Sets the width of a column and returns the old width.
-    pub fn set_column_width(&mut self, x: i64, width: f64) -> f64 {
+    pub(crate) fn set_column_width(&mut self, x: i64, width: f64) -> f64 {
         let old = self.column_widths.set_size(x, width);
         self.calculate_thumbnail();
         old
     }
     /// Sets the height of a row and returns the old height.
-    pub fn set_row_height(&mut self, y: i64, height: f64) -> f64 {
+    pub(crate) fn set_row_height(&mut self, y: i64, height: f64) -> f64 {
         let old = self.row_heights.set_size(y, height);
         self.calculate_thumbnail();
         old
     }
 
-    /// Resets the width of a column and returns the old width.
-    pub fn reset_column_width(&mut self, x: i64) -> f64 {
-        let old = self.column_widths.reset(x);
-        self.calculate_thumbnail();
-        old
-    }
-
-    /// Resets the height of a row and returns the old height.
-    pub fn reset_row_height(&mut self, y: i64) -> f64 {
-        let old = self.row_heights.reset(y);
-        self.calculate_thumbnail();
-        old
-    }
-
-    pub fn column_width(&self, x: i64) -> f64 {
+    pub(crate) fn column_width(&self, x: i64) -> f64 {
         self.column_widths.get_size(x)
     }
 
-    /// Gets the sum of the widths of a range of columns.
-    pub fn total_columns_width(&self, from: i64, to: i64) -> f64 {
-        (from..=to).map(|i| self.column_width(i)).sum()
-    }
-
-    /// Gets the sum of the heights of a range of rows.
-    pub fn total_rows_height(&self, from: i64, to: i64) -> f64 {
-        (from..=to).map(|i| self.row_height(i)).sum()
-    }
-
-    pub fn row_height(&self, y: i64) -> f64 {
+    pub(crate) fn row_height(&self, y: i64) -> f64 {
         self.row_heights.get_size(y)
     }
 
     /// gets the column index from an x-coordinate on the screen
-    pub fn column_from_x(&self, x: f64) -> (i64, f64) {
+    pub(crate) fn column_from_x(&self, x: f64) -> (i64, f64) {
         self.column_widths.find_offset(x)
     }
     /// gets the column index from an x-coordinate on the screen
-    pub fn row_from_y(&self, y: f64) -> (i64, f64) {
+    pub(crate) fn row_from_y(&self, y: f64) -> (i64, f64) {
         self.row_heights.find_offset(y)
     }
 
     /// gets a column's position and size
-    pub fn column_position_size(&self, mut column: i64) -> (f64, f64) {
+    pub(crate) fn column_position_size(&self, mut column: i64) -> (f64, f64) {
         if column <= 0 {
             column = 1;
         }
@@ -139,7 +106,7 @@ impl SheetOffsets {
     }
 
     /// gets a row's position and size
-    pub fn row_position_size(&self, mut row: i64) -> (f64, f64) {
+    pub(crate) fn row_position_size(&self, mut row: i64) -> (f64, f64) {
         if row <= 0 {
             row = 1;
         }
@@ -156,7 +123,7 @@ impl SheetOffsets {
     }
 
     /// get the offset rect from a cell
-    pub fn cell_offsets(&self, column: i64, row: i64) -> ScreenRect {
+    pub(crate) fn cell_offsets(&self, column: i64, row: i64) -> ScreenRect {
         let (x, w) = self.column_position_size(column);
         let (y, h) = self.row_position_size(row);
         ScreenRect { x, y, w, h }
@@ -164,7 +131,7 @@ impl SheetOffsets {
 
     /// Gets the start and end screen position for a range of columns (where the
     /// end is the final position + size).
-    pub fn column_range(&self, mut x0: i64, mut x1: i64) -> (f64, f64) {
+    pub(crate) fn column_range(&self, mut x0: i64, mut x1: i64) -> (f64, f64) {
         if x0 <= 0 {
             x0 = 1;
         }
@@ -185,7 +152,7 @@ impl SheetOffsets {
 
     // Gets the start and end screen position for a range of rows (where the end
     // is the final position + size).
-    pub fn row_range(&self, mut y0: i64, mut y1: i64) -> (f64, f64) {
+    pub(crate) fn row_range(&self, mut y0: i64, mut y1: i64) -> (f64, f64) {
         if y0 <= 0 {
             y0 = 1;
         }
@@ -204,23 +171,8 @@ impl SheetOffsets {
         (y1, y2)
     }
 
-    pub fn rect_cell_offsets(&self, rect: Rect) -> Rect {
-        let (x_start, x_end) = self.column_range(rect.min.x, rect.max.x);
-        let (y_start, y_end) = self.row_range(rect.min.y, rect.max.y);
-        Rect {
-            min: Pos {
-                x: x_start as i64,
-                y: y_start as i64,
-            },
-            max: Pos {
-                x: x_end as i64,
-                y: y_end as i64,
-            },
-        }
-    }
-
     // Returns the screen position for a rectangular range of cells.
-    pub fn screen_rect_cell_offsets(&self, rect: Rect) -> ScreenRect {
+    pub(crate) fn screen_rect_cell_offsets(&self, rect: Rect) -> ScreenRect {
         let (x_start, x_end) = self.column_range(rect.min.x, rect.max.x);
         let (y_start, y_end) = self.row_range(rect.min.y, rect.max.y);
         ScreenRect {
@@ -232,7 +184,7 @@ impl SheetOffsets {
     }
 
     /// calculates thumbnail columns and rows that are visible starting from 0,0
-    pub fn calculate_thumbnail(&mut self) {
+    pub(crate) fn calculate_thumbnail(&mut self) {
         let mut x = 0;
         let mut y = 0;
         let mut width = 0.0;
@@ -248,7 +200,7 @@ impl SheetOffsets {
         self.thumbnail = (x, y);
     }
 
-    pub fn thumbnail(&self) -> Rect {
+    pub(crate) fn thumbnail(&self) -> Rect {
         Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos {
@@ -262,7 +214,11 @@ impl SheetOffsets {
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
     /// is represented as a tuple (index, new_size).
-    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) -> Vec<(i64, f64)> {
+    pub(crate) fn insert_column(
+        &mut self,
+        column: i64,
+        copy_formats: CopyFormats,
+    ) -> Vec<(i64, f64)> {
         let source_width = self.column_width(if copy_formats == CopyFormats::Before {
             column - 1
         } else {
@@ -276,7 +232,7 @@ impl SheetOffsets {
     /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
     /// the changes made to the offsets structure, and the Option<f64> is the
     /// old size of the removed offset, if it existed.
-    pub fn delete_column(&mut self, column: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+    pub(crate) fn delete_column(&mut self, column: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.column_widths.delete(column)
     }
 
@@ -284,7 +240,7 @@ impl SheetOffsets {
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
     /// is represented as a tuple (index, new_size).
-    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) -> Vec<(i64, f64)> {
+    pub(crate) fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) -> Vec<(i64, f64)> {
         let source_height = self.row_height(if copy_formats == CopyFormats::Before {
             row - 1
         } else {
@@ -298,12 +254,12 @@ impl SheetOffsets {
     /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
     /// the changes made to the offsets structure, and the Option<f64> is the
     /// old size of the removed offset, if it existed.
-    pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+    pub(crate) fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.row_heights.delete(row)
     }
 
     /// Calculates the grid width and height for a given grid position and pixel size.
-    pub fn calculate_grid_size(&self, pos: Pos, width: f32, height: f32) -> (u32, u32) {
+    pub(crate) fn calculate_grid_size(&self, pos: Pos, width: f32, height: f32) -> (u32, u32) {
         let start = self.cell_offsets(pos.x, pos.y);
         let (end_x, _) = self.column_from_x(start.x + width as f64);
         let (end_y, _) = self.row_from_y(start.y + height as f64);
@@ -311,42 +267,43 @@ impl SheetOffsets {
     }
 
     /// Returns the default column width and row height.
-    pub fn defaults(&self) -> (f64, f64) {
+    #[cfg(test)]
+    pub(crate) fn defaults(&self) -> (f64, f64) {
         (self.column_width(0), self.row_height(0))
     }
 
     /// Sets the default column widths. Does not change any set sizes.
-    pub fn set_default_width(&mut self, size: f64) -> f64 {
+    pub(crate) fn set_default_width(&mut self, size: f64) -> f64 {
         self.column_widths.set_default(size)
     }
 
     /// Sets the default row heights. Does not change any set sizes.
-    pub fn set_default_height(&mut self, size: f64) -> f64 {
+    pub(crate) fn set_default_height(&mut self, size: f64) -> f64 {
         self.row_heights.set_default(size)
     }
 
     /// Clears all column widths and resets to the default.
-    pub fn clear_widths(&mut self) -> Vec<(i64, f64)> {
+    pub(crate) fn clear_widths(&mut self) -> Vec<(i64, f64)> {
         self.column_widths.clear()
     }
 
     /// Clears all row heights and resets to the default.
-    pub fn clear_heights(&mut self) -> Vec<(i64, f64)> {
+    pub(crate) fn clear_heights(&mut self) -> Vec<(i64, f64)> {
         self.row_heights.clear()
     }
 
     /// Returns an iterator over custom column widths (non-default widths).
-    pub fn iter_column_widths(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+    pub(crate) fn iter_column_widths(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.column_widths.iter_sizes()
     }
 
     /// Returns an iterator over custom row heights (non-default heights).
-    pub fn iter_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+    pub(crate) fn iter_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.row_heights.iter_sizes()
     }
 
     /// Retains only the custom column widths (non-default widths).
-    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+    pub(crate) fn migration_retain_positive_non_default_offsets(&mut self) {
         self.column_widths
             .migration_retain_positive_non_default_offsets();
         self.row_heights
@@ -381,24 +338,6 @@ mod test {
     }
 
     #[test]
-    fn rect_cell_offsets() {
-        let offsets = SheetOffsets::default();
-        let rect = Rect::new(1, 1, 1, 1);
-        let rect = offsets.rect_cell_offsets(rect);
-        assert_eq!(rect.min.x, 0);
-        assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, offsets.defaults().0 as i64);
-        assert_eq!(rect.max.y, offsets.defaults().1 as i64);
-
-        let rect = Rect::from_numbers(1, 1, 2, 2);
-        let rect = offsets.rect_cell_offsets(rect);
-        assert_eq!(rect.min.x, 0);
-        assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, (offsets.defaults().0 * 2.0) as i64);
-        assert_eq!(rect.max.y, (offsets.defaults().1 * 2.0) as i64);
-    }
-
-    #[test]
     fn test_defaults() {
         let sheet = super::SheetOffsets::default();
         assert_eq!(sheet.defaults(), (100.0, 21.0));
@@ -410,28 +349,6 @@ mod test {
         let (width, height) = sheet.calculate_grid_size(Pos { x: 1, y: 1 }, 100.0, 21.0);
         assert_eq!(width, 2);
         assert_eq!(height, 2);
-    }
-
-    #[test]
-    fn test_total_widths_heights() {
-        let sheet = SheetOffsets::default();
-        let (default_col, default_row) = sheet.defaults();
-
-        // Test total width for a range of columns
-        assert_eq!(sheet.total_columns_width(1, 3), default_col * 3.0);
-        assert_eq!(sheet.total_columns_width(1, 1), default_col);
-
-        // Test total height for a range of rows
-        assert_eq!(sheet.total_rows_height(1, 3), default_row * 3.0);
-        assert_eq!(sheet.total_rows_height(1, 1), default_row);
-
-        // Test with modified sizes
-        let mut sheet = SheetOffsets::default();
-        sheet.set_column_width(2, 150.0);
-        sheet.set_row_height(2, 30.0);
-
-        assert_eq!(sheet.total_columns_width(1, 3), default_col * 2.0 + 150.0);
-        assert_eq!(sheet.total_rows_height(1, 3), default_row * 2.0 + 30.0);
     }
 
     #[test]

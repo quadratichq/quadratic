@@ -45,7 +45,7 @@ pub struct Id {
     pub id: String,
 }
 impl Id {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
         }
@@ -188,7 +188,7 @@ pub struct Column {
     pub render_size: HashMap<String, ColumnFormatType<RenderSize>>,
 }
 impl Column {
-    pub fn with_id(id: Id) -> Self {
+    pub(crate) fn with_id(id: Id) -> Self {
         Column {
             id,
             ..Default::default()

@@ -63,7 +63,7 @@ impl AstNodeContents {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
+    pub(crate) fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
         self.ast.eval(ctx)
     }
 }

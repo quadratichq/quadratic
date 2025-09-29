@@ -43,7 +43,7 @@ impl TableRef {
         }
     }
 
-    pub fn delete(&self, range: &CellRefRange, a1_context: &A1Context) -> Vec<CellRefRange> {
+    pub(crate) fn delete(&self, range: &CellRefRange, a1_context: &A1Context) -> Vec<CellRefRange> {
         match range {
             CellRefRange::Sheet { range } => self.delete_ref_range_bounds(range, a1_context),
             CellRefRange::Table { range } => {

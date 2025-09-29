@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn move_columns_action(
+    pub(crate) fn move_columns_action(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -81,7 +81,7 @@ impl GridController {
         }
     }
 
-    pub fn move_rows_action(
+    pub(crate) fn move_rows_action(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,

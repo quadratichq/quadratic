@@ -55,7 +55,7 @@ impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
+    pub(crate) fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
         let sheet = self
             .grid
             .try_sheet(selection.sheet_id)
@@ -100,7 +100,7 @@ impl GridController {
     /// Only preserves formulas, everything else is flattened.
     ///
     /// Returns a [`Vec<u8>`].
-    pub fn export_excel(&self) -> Result<Vec<u8>> {
+    pub(crate) fn export_excel(&self) -> Result<Vec<u8>> {
         let mut workbook = Workbook::new();
         let error = |e: XlsxError| anyhow!("Error exporting excel file: {}", e);
 

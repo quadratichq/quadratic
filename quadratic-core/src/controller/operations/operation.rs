@@ -21,7 +21,7 @@ use crate::{
             validations::validation::Validation,
         },
     },
-    selection::OldSelection,
+    old_selection::OldSelection,
     util::is_false,
 };
 

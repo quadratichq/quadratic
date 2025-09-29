@@ -7,7 +7,7 @@ impl CellRefRange {
     /// of bounds.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+    pub(crate) fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         match self {
             Self::Sheet { range } => Ok(Self::Sheet {
                 range: range.adjust(adjust)?,
@@ -21,7 +21,7 @@ impl CellRefRange {
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+    pub(crate) fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         match self {
             CellRefRange::Sheet { range } => Some(Self::Sheet {
                 range: range.saturating_adjust(adjust)?,
@@ -33,7 +33,8 @@ impl CellRefRange {
     /// Translates the range by the given delta, clamping the result within the
     /// sheet bounds. Returns `None` if the result is empty. Returns a new
     /// CellRefRange.
-    pub fn translate(self, dx: i64, dy: i64) -> Option<Self> {
+    #[cfg(test)]
+    pub(crate) fn translate(self, dx: i64, dy: i64) -> Option<Self> {
         match self {
             CellRefRange::Sheet { range } => Some(Self::Sheet {
                 range: range.translate_unchecked(dx, dy),
@@ -44,7 +45,7 @@ impl CellRefRange {
 
     /// Translates the range by the given delta, clamping the result within the
     /// sheet bounds. Returns a new CellRefRange.
-    pub fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
+    pub(crate) fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
         match self {
             CellRefRange::Sheet { range } => {
                 let adjust = RefAdjust::new_translate(dx, dy);
@@ -57,7 +58,7 @@ impl CellRefRange {
     }
 
     /// Replaces a table name in the range.
-    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         match self {
             Self::Sheet { .. } => {}
             Self::Table { range } => {
@@ -67,7 +68,7 @@ impl CellRefRange {
     }
 
     /// Replaces a table column name in the range.
-    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         match self {
             Self::Sheet { .. } => {}
             Self::Table { range } => {

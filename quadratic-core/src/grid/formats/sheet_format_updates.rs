@@ -51,7 +51,7 @@ impl SheetFormatUpdates {
     ///
     /// The mapping is used to turn Option<Option<T>> into
     /// Option<ClearOption<T>> so it properly serializes.
-    pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
+    pub(crate) fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
         Self {
             align: Self::apply_selection(selection, update.align),
             vertical_align: Self::apply_selection(selection, update.vertical_align),
@@ -85,7 +85,7 @@ impl SheetFormatUpdates {
     }
 
     /// Constructs a format update that uses formats from every cell in the selection.
-    pub fn from_sheet_formatting_selection(
+    pub(crate) fn from_sheet_formatting_selection(
         selection: &A1Selection,
         formats: &SheetFormatting,
     ) -> Self {
@@ -138,7 +138,7 @@ impl SheetFormatUpdates {
     }
 
     /// Constructs a format update that uses formats from every cell in the rect.
-    pub fn from_sheet_formatting_rect(
+    pub(crate) fn from_sheet_formatting_rect(
         rect: Rect,
         formats: &SheetFormatting,
         clear_on_none: bool,
@@ -205,7 +205,7 @@ impl SheetFormatUpdates {
     }
 
     /// Returns whether the format update intersects with the given rect.
-    pub fn intersects(&self, rect: Rect) -> bool {
+    pub(crate) fn intersects(&self, rect: Rect) -> bool {
         Self::item_intersects(&self.align, rect)
             || Self::item_intersects(&self.vertical_align, rect)
             || Self::item_intersects(&self.wrap, rect)
@@ -222,7 +222,7 @@ impl SheetFormatUpdates {
     }
 
     /// Returns whether the format update is empty.
-    pub fn is_default(&self) -> bool {
+    pub(crate) fn is_default(&self) -> bool {
         self.align.as_ref().is_none_or(|a| a.is_all_default())
             && self
                 .vertical_align
@@ -268,7 +268,7 @@ impl SheetFormatUpdates {
     }
 
     /// Sets all formats for a cell
-    pub fn set_format_cell(&mut self, pos: Pos, update: FormatUpdate) {
+    pub(crate) fn set_format_cell(&mut self, pos: Pos, update: FormatUpdate) {
         Self::set_format_cell_item(pos, &mut self.align, update.align);
         Self::set_format_cell_item(pos, &mut self.vertical_align, update.vertical_align);
         Self::set_format_cell_item(pos, &mut self.wrap, update.wrap);
@@ -285,6 +285,7 @@ impl SheetFormatUpdates {
     }
 
     /// Returns the format for a cell within the SheetFormatUpdates.
+    #[cfg(test)]
     fn format_update_item<T>(item: &SheetFormatUpdatesType<T>, pos: Pos) -> Option<Option<T>>
     where
         T: Clone + Debug + PartialEq,
@@ -294,7 +295,8 @@ impl SheetFormatUpdates {
     }
 
     /// Returns the format for a cell within the SheetFormatUpdates.
-    pub fn format_update(&self, pos: Pos) -> FormatUpdate {
+    #[cfg(test)]
+    pub(crate) fn format_update(&self, pos: Pos) -> FormatUpdate {
         FormatUpdate {
             align: Self::format_update_item(&self.align, pos),
             vertical_align: Self::format_update_item(&self.vertical_align, pos),
@@ -339,7 +341,7 @@ impl SheetFormatUpdates {
     }
 
     /// Sets all formats for a rect within the SheetFormatUpdates
-    pub fn set_format_rect(&mut self, rect: Rect, update: FormatUpdate) {
+    pub(crate) fn set_format_rect(&mut self, rect: Rect, update: FormatUpdate) {
         Self::set_format_rect_item(&mut self.align, rect, update.align);
         Self::set_format_rect_item(&mut self.vertical_align, rect, update.vertical_align);
         Self::set_format_rect_item(&mut self.wrap, rect, update.wrap);
@@ -374,7 +376,11 @@ impl SheetFormatUpdates {
     }
 
     /// Transfers a rect from another SheetFormatUpdates into this one, clearing the other.
-    pub fn transfer_format_rect_from_other(&mut self, rect: Rect, other: &mut SheetFormatUpdates) {
+    pub(crate) fn transfer_format_rect_from_other(
+        &mut self,
+        rect: Rect,
+        other: &mut SheetFormatUpdates,
+    ) {
         Self::transfer_format_rect_item(&mut self.align, rect, &mut other.align);
         Self::transfer_format_rect_item(&mut self.vertical_align, rect, &mut other.vertical_align);
         Self::transfer_format_rect_item(&mut self.wrap, rect, &mut other.wrap);
@@ -402,7 +408,7 @@ impl SheetFormatUpdates {
             .translate_in_place(x, y);
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         Self::translate_rect_item(&mut self.align, x, y);
         Self::translate_rect_item(&mut self.vertical_align, x, y);
         Self::translate_rect_item(&mut self.wrap, x, y);
@@ -435,7 +441,7 @@ impl SheetFormatUpdates {
     }
 
     /// Merges another SheetFormatUpdates into this one.
-    pub fn merge(&mut self, other: &SheetFormatUpdates) {
+    pub(crate) fn merge(&mut self, other: &SheetFormatUpdates) {
         Self::merge_item(&mut self.align, &other.align);
         Self::merge_item(&mut self.vertical_align, &other.vertical_align);
         Self::merge_item(&mut self.wrap, &other.wrap);
@@ -452,14 +458,15 @@ impl SheetFormatUpdates {
     }
 
     /// Whether the update includes any fill color changes
-    pub fn has_fills(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn has_fills(&self) -> bool {
         self.fill_color
             .as_ref()
             .is_some_and(|fills| !fills.is_all_default())
     }
 
     /// Returns the bounding rect of the format updates.
-    pub fn to_bounding_rect(&self) -> Option<Rect> {
+    pub(crate) fn to_bounding_rect(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
         self.align
             .as_ref()
@@ -527,7 +534,7 @@ impl SheetFormatUpdates {
         }
     }
 
-    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         Self::insert_column_item(&mut self.align, column, copy_formats);
         Self::insert_column_item(&mut self.vertical_align, column, copy_formats);
         Self::insert_column_item(&mut self.wrap, column, copy_formats);
@@ -552,7 +559,7 @@ impl SheetFormatUpdates {
         }
     }
 
-    pub fn remove_column(&mut self, column: i64) {
+    pub(crate) fn remove_column(&mut self, column: i64) {
         Self::remove_column_item(&mut self.align, column);
         Self::remove_column_item(&mut self.vertical_align, column);
         Self::remove_column_item(&mut self.wrap, column);
@@ -577,7 +584,7 @@ impl SheetFormatUpdates {
             .map(|c| c.map_ref(|opt| opt.clone().and_then(|x| x)))
     }
 
-    pub fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
+    pub(crate) fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
         let updates = SheetFormatUpdates {
             align: Self::copy_row_item(&self.align, row),
             vertical_align: Self::copy_row_item(&self.vertical_align, row),

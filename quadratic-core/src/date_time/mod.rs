@@ -113,7 +113,7 @@ fn find_items_date_start(items: &[Item<'_>]) -> Option<usize> {
 }
 
 /// Converts a NaiveDateTime to a date and time string using a strftime format string.
-pub fn date_time_to_date_time_string(date_time: NaiveDateTime, format: Option<String>) -> String {
+pub(crate) fn date_time_to_date_time_string(date_time: NaiveDateTime, format: Option<String>) -> String {
     let format = format.map_or(DEFAULT_DATE_TIME_FORMAT.to_string(), |f| f);
     let strftime_items = StrftimeItems::new(&format);
     let Ok(items) = strftime_items.parse() else {
@@ -123,7 +123,7 @@ pub fn date_time_to_date_time_string(date_time: NaiveDateTime, format: Option<St
 }
 
 /// Converts a NaiveDateTime to a date-only string using a strftime format string.
-pub fn date_to_date_string(date: NaiveDate, format: Option<String>) -> String {
+pub(crate) fn date_to_date_string(date: NaiveDate, format: Option<String>) -> String {
     let format = format.map_or(DEFAULT_DATE_TIME_FORMAT.to_string(), |f| f);
     let strftime_items = StrftimeItems::new(&format);
     let Ok(mut items) = strftime_items.parse() else {
@@ -160,7 +160,7 @@ pub fn date_to_date_string(date: NaiveDate, format: Option<String>) -> String {
 }
 
 /// Converts a NaiveDateTime to a time-only string using a strftime format string.
-pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
+pub(crate) fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
     let format = format.map_or(DEFAULT_DATE_TIME_FORMAT.to_string(), |f| f);
     let strftime_items = StrftimeItems::new(&format);
     let Ok(mut items) = strftime_items.parse() else {
@@ -196,7 +196,7 @@ pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
 }
 
 /// Parses a time string using a list of possible formats.
-pub fn parse_time(value: &str) -> Option<NaiveTime> {
+pub(crate) fn parse_time(value: &str) -> Option<NaiveTime> {
     let formats = [
         "%H:%M:%S",
         "%I:%M:%S %p",
@@ -281,7 +281,7 @@ impl ParsedDateComponents {
     /// - `D` = number that MUST be a day (e.g., because it is an ordinal number)
     ///
     /// Any other symbols cause a panic.
-    pub fn try_format(&self, format: &str) -> Option<chrono::NaiveDate> {
+    pub(crate) fn try_format(&self, format: &str) -> Option<chrono::NaiveDate> {
         if format.len() != self.components.len() {
             return None;
         }
@@ -398,7 +398,7 @@ impl ParsedDateComponent {
 }
 
 /// Parses a date string using a list of possible formats.
-pub fn parse_date(value: &str) -> Option<NaiveDate> {
+pub(crate) fn parse_date(value: &str) -> Option<NaiveDate> {
     let components = ParsedDateComponents::from_str(value).ok()?;
     let sep = components.separator;
 
@@ -452,14 +452,14 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
 }
 
 /// Convert the entire time into seconds since midnight
-pub fn naive_time_to_i32(time: NaiveTime) -> i32 {
+pub(crate) fn naive_time_to_i32(time: NaiveTime) -> i32 {
     let hours = time.hour() as i32;
     let minutes = time.minute() as i32;
     let seconds = time.second() as i32;
     hours * 3600 + minutes * 60 + seconds
 }
 
-pub fn i32_to_naive_time(time: i32) -> Option<NaiveTime> {
+pub(crate) fn i32_to_naive_time(time: i32) -> Option<NaiveTime> {
     let hours = time / 3600;
     let minutes = (time % 3600) / 60;
     let seconds = time % 60;
@@ -467,19 +467,19 @@ pub fn i32_to_naive_time(time: i32) -> Option<NaiveTime> {
 }
 
 /// Convert a NaiveDateTime to an i64 timestamp.
-pub fn naive_date_time_to_i64(date: NaiveDateTime) -> i64 {
+pub(crate) fn naive_date_time_to_i64(date: NaiveDateTime) -> i64 {
     date.and_utc().timestamp()
 }
 
 /// Convert a NaiveDate to an i64 timestamp.
-pub fn naive_date_to_i64(date: NaiveDate) -> Option<i64> {
+pub(crate) fn naive_date_to_i64(date: NaiveDate) -> Option<i64> {
     let time = NaiveTime::from_hms_opt(0, 0, 0)?;
     let dt = NaiveDateTime::new(date, time);
     Some(naive_date_time_to_i64(dt))
 }
 
 /// Convert an i64 timestamp to a NaiveDate.
-pub fn i64_to_naive_date(timestamp: i64) -> Option<NaiveDate> {
+pub(crate) fn i64_to_naive_date(timestamp: i64) -> Option<NaiveDate> {
     let dt = DateTime::from_timestamp(timestamp, 0)?;
     Some(dt.date_naive())
 }

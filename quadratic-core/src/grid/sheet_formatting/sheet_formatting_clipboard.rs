@@ -10,7 +10,7 @@ use anyhow::Result;
 impl SheetFormatting {
     /// Returns a format update that applies the formatting from the cells in
     /// the selection.
-    pub fn to_clipboard(
+    pub(crate) fn to_clipboard(
         &self,
         selection: &A1Selection,
         sheet: &Sheet,

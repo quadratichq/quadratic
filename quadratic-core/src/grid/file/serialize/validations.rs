@@ -18,7 +18,7 @@ use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
 
 use super::selection::{export_selection, import_selection};
 
-pub fn import_validations(validations: current::ValidationsSchema) -> Validations {
+pub(crate) fn import_validations(validations: current::ValidationsSchema) -> Validations {
     Validations {
         validations: validations
             .validations
@@ -274,7 +274,7 @@ fn export_validation_rule(rule: ValidationRule) -> current::ValidationRuleSchema
     }
 }
 
-pub fn export_validations(validations: Validations) -> current::ValidationsSchema {
+pub(crate) fn export_validations(validations: Validations) -> current::ValidationsSchema {
     current::ValidationsSchema {
         validations: validations
             .validations

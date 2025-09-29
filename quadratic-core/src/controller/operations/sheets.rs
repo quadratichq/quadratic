@@ -9,7 +9,7 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
-    pub fn set_sheet_name_operations(&mut self, sheet_id: SheetId, name: String) -> Vec<Operation> {
+    pub(crate) fn set_sheet_name_operations(&mut self, sheet_id: SheetId, name: String) -> Vec<Operation> {
         let old_sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
         vec![Operation::SetSheetName {
             sheet_id,
@@ -18,7 +18,7 @@ impl GridController {
         }]
     }
 
-    pub fn set_sheet_color_operations(
+    pub(crate) fn set_sheet_color_operations(
         &mut self,
         sheet_id: SheetId,
         color: Option<String>,
@@ -26,7 +26,7 @@ impl GridController {
         vec![Operation::SetSheetColor { sheet_id, color }]
     }
 
-    pub fn set_sheets_color_operations(
+    pub(crate) fn set_sheets_color_operations(
         &mut self,
         sheet_names_to_color: Vec<JsSheetNameToColor>,
     ) -> Vec<Operation> {
@@ -44,7 +44,7 @@ impl GridController {
     }
 
     /// Returns all sheet names
-    pub fn sheet_names(&self) -> Vec<&str> {
+    pub(crate) fn sheet_names(&self) -> Vec<&str> {
         self.grid
             .sheets()
             .values()
@@ -56,7 +56,7 @@ impl GridController {
         util::unused_name("Sheet", &self.sheet_names())
     }
 
-    pub fn add_sheet_operations(
+    pub(crate) fn add_sheet_operations(
         &mut self,
         name: Option<String>,
         insert_before_sheet_name: Option<String>,
@@ -78,7 +78,7 @@ impl GridController {
         }]
     }
 
-    pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
+    pub(crate) fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
         let sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
         vec![Operation::DeleteSheet {
             sheet_id,
@@ -86,7 +86,7 @@ impl GridController {
         }]
     }
 
-    pub fn move_sheet_operations(
+    pub(crate) fn move_sheet_operations(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
@@ -115,7 +115,7 @@ impl GridController {
         }]
     }
 
-    pub fn duplicate_sheet_operations(
+    pub(crate) fn duplicate_sheet_operations(
         &mut self,
         sheet_id: SheetId,
         name_of_new_sheet: Option<String>,

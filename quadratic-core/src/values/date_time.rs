@@ -6,23 +6,23 @@ use crate::date_time::{parse_date, parse_time};
 use super::CellValue;
 
 impl CellValue {
-    pub fn unpack_time(value: &str) -> Option<CellValue> {
+    pub(crate) fn unpack_time(value: &str) -> Option<CellValue> {
         let time = parse_time(value)?;
         Some(CellValue::Time(time))
     }
 
-    pub fn unpack_date(value: &str) -> Option<CellValue> {
+    pub(crate) fn unpack_date(value: &str) -> Option<CellValue> {
         let date = parse_date(value)?;
         Some(CellValue::Date(date))
     }
 
-    pub fn unpack_date_time(value: &str) -> Option<CellValue> {
+    pub(crate) fn unpack_date_time(value: &str) -> Option<CellValue> {
         parse_with_timezone(value, &Utc)
             .map(|dt| CellValue::DateTime(dt.naive_utc()))
             .ok()
     }
 
-    pub fn unpack_duration(value: &str) -> Option<CellValue> {
+    pub(crate) fn unpack_duration(value: &str) -> Option<CellValue> {
         value.parse().map(CellValue::Duration).ok()
     }
 }

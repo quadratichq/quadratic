@@ -2,6 +2,7 @@ use crate::compression::{
     CompressionFormat, SerializationFormat, add_header, decompress_and_deserialize, deserialize,
     remove_header, serialize, serialize_and_compress,
 };
+use crate::grid::file::shift_negative_offsets::shift_negative_offsets;
 
 use super::Grid;
 use anyhow::{Result, anyhow};
@@ -10,7 +11,6 @@ use migrate_code_cell_references::{
 };
 use migrate_data_table_spills::migrate_all_data_table_spills;
 use serde::{Deserialize, Serialize};
-pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
 pub use v1_12 as current;

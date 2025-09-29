@@ -56,7 +56,7 @@ pub enum CellBorderLine {
 }
 
 impl CellBorderLine {
-    pub fn as_css_string(&self) -> &'static str {
+    pub(crate) fn as_css_string(&self) -> &'static str {
         match self {
             CellBorderLine::Line1 => "1px solid",
             CellBorderLine::Line2 => "2px solid",
@@ -91,15 +91,7 @@ pub struct BorderStyleTimestamp {
 }
 
 impl BorderStyleTimestamp {
-    pub fn new(color: Rgba, line: CellBorderLine) -> Self {
-        BorderStyleTimestamp {
-            color,
-            line,
-            timestamp: SmallTimestamp::now(),
-        }
-    }
-
-    pub fn clear() -> Self {
+    pub(crate) fn clear() -> Self {
         BorderStyleTimestamp {
             color: Rgba::default(),
             line: CellBorderLine::Clear,
@@ -107,13 +99,8 @@ impl BorderStyleTimestamp {
         }
     }
 
-    /// If the style is clear, then returns None, otherwise returns the style.
-    pub fn remove_clear(style: Option<BorderStyleTimestamp>) -> Option<BorderStyleTimestamp> {
-        style.filter(|&style| style.line != CellBorderLine::Clear)
-    }
-
     /// Returns true if the two styles are equal ignoring the timestamp.
-    pub fn is_equal_ignore_timestamp(
+    pub(crate) fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleTimestamp>,
         b2: Option<BorderStyleTimestamp>,
     ) -> bool {
@@ -153,7 +140,7 @@ pub struct BorderStyleCell {
 }
 impl BorderStyleCell {
     #[cfg(test)]
-    pub fn all() -> Self {
+    pub(crate) fn all() -> Self {
         BorderStyleCell {
             top: Some(BorderStyleTimestamp::default()),
             bottom: Some(BorderStyleTimestamp::default()),
@@ -162,7 +149,7 @@ impl BorderStyleCell {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.top.is_none() && self.bottom.is_none() && self.left.is_none() && self.right.is_none()
     }
 }
@@ -179,19 +166,6 @@ pub struct JsBorder {
     pub time_stamp: i64,
 }
 
-impl JsBorder {
-    #[cfg(test)]
-    pub fn compare_without_timestamp(&self, other: &Self) -> bool {
-        self.x == other.x
-            && self.y == other.y
-            && self.w == other.w
-            && self.h == other.h
-            && self.side == other.side
-            && self.color == other.color
-            && self.line == other.line
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
 pub struct JsBorderHorizontal {
     pub color: Rgba,
@@ -204,13 +178,6 @@ pub struct JsBorderHorizontal {
     pub unbounded: bool,
 }
 
-impl JsBorderHorizontal {
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
-        self.x += x;
-        self.y += y;
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
 pub struct JsBorderVertical {
     pub color: Rgba,
@@ -221,13 +188,6 @@ pub struct JsBorderVertical {
 
     // whether there are unbounded vertical lines to the right
     pub unbounded: bool,
-}
-
-impl JsBorderVertical {
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
-        self.x += x;
-        self.y += y;
-    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, TS)]

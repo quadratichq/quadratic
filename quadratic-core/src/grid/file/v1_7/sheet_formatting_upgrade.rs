@@ -1,11 +1,12 @@
-use crate::grid::file::v1_7_1::{
-    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema,
-    RenderSizeSchema, SheetFormattingSchema,
+use crate::grid::file::{
+    shift_negative_offsets::add_import_offset_to_contiguous_2d_rect,
+    v1_7_1::{
+        CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema,
+        RenderSizeSchema, SheetFormattingSchema,
+    },
 };
 
 use super::{Contiguous2DUpgrade, schema::FormatSchema};
-
-use crate::grid::file::add_import_offset_to_contiguous_2d_rect;
 
 #[derive(Default)]
 pub struct SheetFormattingUpgrade {
@@ -26,7 +27,7 @@ pub struct SheetFormattingUpgrade {
 }
 
 impl SheetFormattingUpgrade {
-    pub fn apply_format(
+    pub(crate) fn apply_format(
         &mut self,
         x1: i64,
         y1: i64,
@@ -85,7 +86,7 @@ impl SheetFormattingUpgrade {
         }
     }
 
-    pub fn upgrade_schema(self) -> SheetFormattingSchema {
+    pub(crate) fn upgrade_schema(self) -> SheetFormattingSchema {
         SheetFormattingSchema {
             align: self.align.upgrade_schema(),
             vertical_align: self.vertical_align.upgrade_schema(),

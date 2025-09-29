@@ -6,7 +6,7 @@ use crate::{CellValue, arrow::arrow_col_to_cell_value_vec};
 
 use crate::{Array, ArraySize};
 
-pub fn parquet_to_array(
+pub(crate) fn parquet_to_array(
     file: Vec<u8>,
     file_name: &str,
     updater: Option<impl Fn(&str, u32, u32)>,

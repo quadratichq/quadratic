@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn delete_columns(
+    pub(crate) fn delete_columns(
         &mut self,
         sheet_id: SheetId,
         columns: Vec<i64>,
@@ -29,7 +29,7 @@ impl GridController {
     /// insertion. DF: While confusing, it was created originally to support
     /// copying formats, but later turned into a differentiator for inserting
     /// columns, since the behavior was different for insert to left vs right.
-    pub fn insert_columns(
+    pub(crate) fn insert_columns(
         &mut self,
         sheet_id: SheetId,
         column: i64,
@@ -60,7 +60,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
-    pub fn delete_rows(
+    pub(crate) fn delete_rows(
         &mut self,
         sheet_id: SheetId,
         rows: Vec<i64>,
@@ -80,7 +80,7 @@ impl GridController {
     /// insertion. DF: While confusing, it was created originally to support
     /// copying formats, but later turned into a differentiator for inserting
     /// rows, since the behavior was different for insert to above vs below.
-    pub fn insert_rows(
+    pub(crate) fn insert_rows(
         &mut self,
         sheet_id: SheetId,
         row: i64,
@@ -110,7 +110,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
-    pub fn move_columns(
+    pub(crate) fn move_columns(
         &mut self,
         sheet_id: SheetId,
         col_start: i64,
@@ -128,7 +128,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ManipulateColumnRow, is_ai);
     }
 
-    pub fn move_rows(
+    pub(crate) fn move_rows(
         &mut self,
         sheet_id: SheetId,
         row_start: i64,

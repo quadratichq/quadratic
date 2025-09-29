@@ -4,7 +4,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::Pos;
 use crate::grid::block::SameValue;
 use crate::grid::column::ColumnData;
 use crate::{RunLengthEncoding, grid::sheet::borders::BorderStyleTimestamp};
@@ -30,7 +29,7 @@ pub struct OldBorders {
 impl OldBorders {
     /// Sets the border for a cell. This is used in the upgrade_border for going
     /// from v1_6 to v1_7.
-    pub fn set(
+    pub(crate) fn set(
         &mut self,
         x: i64,
         y: i64,
@@ -90,29 +89,6 @@ pub struct BorderStyleCellUpdate {
     pub right: Option<Option<BorderStyleTimestamp>>,
 }
 
-impl BorderStyleCellUpdate {
-    /// Create a update that will clear the border. If force_clear is true, then
-    /// the border is set to BorderLineStyle::Clear, otherwise the border is set
-    /// to None (ie, removed).
-    pub fn clear(force_clear: bool) -> Self {
-        if force_clear {
-            BorderStyleCellUpdate {
-                top: Some(Some(BorderStyleTimestamp::clear())),
-                bottom: Some(Some(BorderStyleTimestamp::clear())),
-                left: Some(Some(BorderStyleTimestamp::clear())),
-                right: Some(Some(BorderStyleTimestamp::clear())),
-            }
-        } else {
-            BorderStyleCellUpdate {
-                top: Some(None),
-                bottom: Some(None),
-                left: Some(None),
-                right: Some(None),
-            }
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
     pub per_cell: IdSpaceBorders,
@@ -155,29 +131,6 @@ impl<'de> Deserialize<'de> for IdSpaceBorders {
     }
 }
 
-impl IdSpaceBorders {
-    pub fn set_cell_border(&mut self, pos: Pos, side: CellSide, style: Option<BorderStyle>) {
-        let column_borders = self.borders.entry(pos.x).or_default();
-        let new_borders = CellBorders::combine(column_borders.get(pos.y), side, style);
-
-        if new_borders.is_empty() {
-            column_borders.set(pos.y, None);
-        } else {
-            column_borders.set(pos.y, Some(new_borders));
-        }
-    }
-
-    pub fn try_get_cell_border(&self, pos: Pos) -> Option<CellBorders> {
-        let column_borders = self.borders.get(&pos.x)?;
-        column_borders.get(pos.y)
-    }
-
-    pub fn get_cell_border(&mut self, pos: Pos) -> Option<CellBorders> {
-        let column_borders = self.borders.entry(pos.x).or_default();
-        column_borders.get(pos.y)
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct GridSpaceBorders {
     pub(super) vertical: HashMap<i64, ColumnData<SameValue<BorderStyle>>>,
@@ -198,36 +151,4 @@ pub enum CellSide {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, Copy)]
 pub struct CellBorders {
     pub borders: [Option<BorderStyle>; 4],
-}
-
-impl CellBorders {
-    pub fn new(borders: &[(CellSide, BorderStyle)]) -> Self {
-        let mut as_array = [None; 4];
-        for (side, style) in borders {
-            as_array[*side as usize] = Some(*style);
-        }
-        Self { borders: as_array }
-    }
-
-    pub(super) fn combine(
-        maybe_existing: Option<Self>,
-        side: CellSide,
-        style: Option<BorderStyle>,
-    ) -> Self {
-        if let Some(existing) = maybe_existing {
-            existing.with_side(side, style)
-        } else {
-            Self::default().with_side(side, style)
-        }
-    }
-
-    pub(super) fn is_empty(&self) -> bool {
-        self.borders.iter().all(|style| style.is_none())
-    }
-
-    fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
-        let mut cloned = *self;
-        cloned.borders[side as usize] = style;
-        cloned
-    }
 }

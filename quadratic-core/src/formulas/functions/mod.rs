@@ -27,7 +27,7 @@ use crate::{
 
 pub use lookup::IndexFunctionArgs;
 
-pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
+pub(crate) fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
     ALL_FUNCTIONS.get(
         excel::remove_excel_function_prefix(name)
             .to_ascii_uppercase()
@@ -78,7 +78,7 @@ pub struct FormulaFnArgs {
 }
 impl FormulaFnArgs {
     /// Constructs a list of arguments values.
-    pub fn new(
+    pub(crate) fn new(
         values: impl Into<VecDeque<Spanned<Value>>>,
         span: Span,
         func_name: &'static str,
@@ -90,10 +90,6 @@ impl FormulaFnArgs {
             args_popped: 0,
         }
     }
-    /// Returns whether there is another argument.
-    pub fn has_next(&self) -> bool {
-        !self.values.is_empty()
-    }
     /// Takes the next argument.
     fn take_next(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
@@ -103,12 +99,12 @@ impl FormulaFnArgs {
     }
     /// Takes the next argument, or returns `None` if there is none or the
     /// argument is blank˙.
-    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
+    pub(crate) fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
         self.take_next()
             .filter(|v| v.inner != Value::Single(CellValue::Blank))
     }
     /// Takes the next argument, or returns an error if there is none.
-    pub fn take_next_required(
+    pub(crate) fn take_next_required(
         &mut self,
         arg_name: impl Into<Cow<'static, str>>,
     ) -> CodeResult<Spanned<Value>> {
@@ -121,12 +117,15 @@ impl FormulaFnArgs {
         })
     }
     /// Takes the rest of the arguments and iterates over them.
-    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
+    pub(crate) fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
         std::mem::take(&mut self.values).into_iter()
     }
 
     /// Returns an error if there are no more arguments.
-    pub fn error_if_no_more_args(&self, arg_name: impl Into<Cow<'static, str>>) -> CodeResult<()> {
+    pub(crate) fn error_if_no_more_args(
+        &self,
+        arg_name: impl Into<Cow<'static, str>>,
+    ) -> CodeResult<()> {
         if !self.values.is_empty() {
             Ok(())
         } else {
@@ -139,7 +138,7 @@ impl FormulaFnArgs {
     }
 
     /// Returns an error if there are any arguments that have not been taken.
-    pub fn error_if_more_args(&self) -> CodeResult<()> {
+    pub(crate) fn error_if_more_args(&self) -> CodeResult<()> {
         if let Some(next_arg) = self.values.front() {
             Err(RunErrorMsg::TooManyArguments {
                 func_name: self.func_name.into(),
@@ -180,7 +179,7 @@ impl FormulaFunction {
     }
 
     /// Returns the autocomplete snippet for this function.
-    pub fn autocomplete_snippet(&self) -> String {
+    pub(crate) fn autocomplete_snippet(&self) -> String {
         let name = self.name;
         match self.arg_completion {
             Some(arg_completion) => format!("{name}({arg_completion})"),
@@ -190,7 +189,7 @@ impl FormulaFunction {
 
     /// Returns the Markdown documentation for this function that should appear
     /// in the formula editor via the language server.
-    pub fn lsp_full_docs(&self) -> String {
+    pub(crate) fn lsp_full_docs(&self) -> String {
         let mut ret = String::new();
         if !self.doc.is_empty() {
             ret.push_str(&format!("# Description\n\n{}\n\n", self.doc));

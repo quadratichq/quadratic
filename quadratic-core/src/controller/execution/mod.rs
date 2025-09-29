@@ -6,8 +6,9 @@ pub mod run_code;
 pub mod spills;
 
 use super::active_transactions::ActiveTransactions;
-use super::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::GridController;
+#[cfg(test)]
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use serde::{Deserialize, Serialize};
 
 /// Where the transaction came from.
@@ -40,7 +41,7 @@ pub enum TransactionSource {
 
 impl GridController {
     /// Sets the last_sequence_num for multiplayer. This should only be called when receiving the sequence_num.
-    pub fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
+    pub(crate) fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
         self.transactions.last_sequence_num = last_sequence_num;
     }
 }
@@ -48,12 +49,13 @@ impl GridController {
 // for testing purposes...
 impl GridController {
     /// Gets ActiveTransaction for test purposes
-    pub fn active_transactions(&self) -> &ActiveTransactions {
+    pub(crate) fn active_transactions(&self) -> &ActiveTransactions {
         &self.transactions
     }
 
     /// Gets the pending transactions for test purposes
-    pub fn async_transactions(&self) -> &[PendingTransaction] {
+    #[cfg(test)]
+    pub(crate) fn async_transactions(&self) -> &[PendingTransaction] {
         self.transactions.async_transactions()
     }
 }

@@ -67,7 +67,7 @@ impl ArraySize {
 
     /// Constructs a new `ArraySize`, or returns an `None` if the width or
     /// height is zero.
-    pub fn new(w: u32, h: u32) -> Option<Self> {
+    pub(crate) fn new(w: u32, h: u32) -> Option<Self> {
         Some(ArraySize {
             w: NonZeroU32::new(w)?,
             h: NonZeroU32::new(h)?,
@@ -75,28 +75,28 @@ impl ArraySize {
     }
     /// Construct a new `ArraySize`, or returns an error if the width or height
     /// is zero.
-    pub fn new_or_err(w: u32, h: u32) -> Result<Self, RunErrorMsg> {
+    pub(crate) fn new_or_err(w: u32, h: u32) -> Result<Self, RunErrorMsg> {
         Self::new(w, h).ok_or(RunErrorMsg::EmptyArray)
     }
     /// Returns the number of elements in the array.
     #[allow(clippy::len_without_is_empty)]
-    pub fn len(self) -> usize {
+    pub(crate) fn len(self) -> usize {
         self.w.get() as usize * self.h.get() as usize
     }
     /// Flips the width and height of the array size.
     #[must_use]
-    pub fn transpose(self) -> ArraySize {
+    pub(crate) fn transpose(self) -> ArraySize {
         ArraySize {
             w: self.h,
             h: self.w,
         }
     }
     /// Iterates over `(x, y)` array indices in canonical order.
-    pub fn iter(self) -> impl Iterator<Item = (u32, u32)> {
+    pub(crate) fn iter(self) -> impl Iterator<Item = (u32, u32)> {
         itertools::iproduct!(0..self.h.get(), 0..self.w.get()).map(|(y, x)| (x, y))
     }
     /// Flattens an index into the array.
-    pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, RunErrorMsg> {
+    pub(crate) fn flatten_index(self, x: u32, y: u32) -> Result<usize, RunErrorMsg> {
         let w = self.w.get();
         let h = self.h.get();
         let x = if w > 1 { x } else { 0 };
@@ -121,20 +121,20 @@ pub enum Axis {
 impl Axis {
     pub const ALL: [Axis; 2] = [Axis::X, Axis::Y];
 
-    pub fn other_axis(self) -> Self {
+    pub(crate) fn other_axis(self) -> Self {
         match self {
             Axis::X => Axis::Y,
             Axis::Y => Axis::X,
         }
     }
 
-    pub fn width_height_str(self) -> &'static str {
+    pub(crate) fn width_height_str(self) -> &'static str {
         match self {
             Axis::X => "width",
             Axis::Y => "height",
         }
     }
-    pub fn rows_cols_str(self, len: u32) -> String {
+    pub(crate) fn rows_cols_str(self, len: u32) -> String {
         format!(
             "{len} {}{}",
             match self {

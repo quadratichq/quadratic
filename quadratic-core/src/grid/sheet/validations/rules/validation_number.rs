@@ -21,7 +21,7 @@ pub struct ValidationNumber {
 
 impl ValidationNumber {
     // Validate a CellValue against the validation rule.
-    pub fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
         if let Some(cell_value) = value {
             match cell_value {
                 CellValue::Number(n) => {

@@ -58,7 +58,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
 }
 impl Criterion {
     /// Evaluates the criterion on a value and returns whether it matches.
-    pub fn matches(&self, value: &CellValue) -> bool {
+    pub(crate) fn matches(&self, value: &CellValue) -> bool {
         match self {
             Criterion::Regex(r) => r.is_match(&value.to_string()),
             Criterion::NotRegex(r) => !r.is_match(&value.to_string()),
@@ -114,7 +114,7 @@ impl Criterion {
     }
 
     /// Iterates over values, excluding those that do not match.
-    pub fn iter_matching<'a>(
+    pub(crate) fn iter_matching<'a>(
         &'a self,
         eval_range: &'a Spanned<Array>,
         output_values_range: Option<&'a Spanned<Array>>,
@@ -140,7 +140,7 @@ impl Criterion {
     }
     /// Iterates over values and coerces each one, excluding those that do not
     /// match or where coercion fails.
-    pub fn iter_matching_coerced<'a, T>(
+    pub(crate) fn iter_matching_coerced<'a, T>(
         &'a self,
         eval_range: &'a Spanned<Array>,
         output_values_range: Option<&'a Spanned<Array>>,
@@ -158,7 +158,7 @@ impl Criterion {
 
     /// Iterates over values, excluding those that do not match all the
     /// criteria.
-    pub fn iter_matching_multi<'a>(
+    pub(crate) fn iter_matching_multi<'a>(
         eval_ranges_and_criteria: &'a [(&'a Spanned<Array>, Self)],
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
@@ -199,7 +199,7 @@ impl Criterion {
     }
     /// Iterates over values and coerces each one, excluding those that do not
     /// match all the criteria or where coercion fails.
-    pub fn iter_matching_multi_coerced<'a, T>(
+    pub(crate) fn iter_matching_multi_coerced<'a, T>(
         eval_ranges_and_criteria: &'a [(&'a Spanned<Array>, Self)],
         output_values_range: &'a Spanned<Array>,
     ) -> CodeResult<impl 'a + Iterator<Item = CodeResult<T>>>

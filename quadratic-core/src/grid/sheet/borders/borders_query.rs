@@ -1,10 +1,10 @@
-use crate::{Pos, Rect, grid::GridBounds};
+use crate::{Rect, grid::GridBounds};
 
 use super::*;
 
 impl Borders {
     /// Returns the finite bounds of the borders.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
 
         self.top.to_rects().for_each(|(x1, y1, x2, y2, _)| {
@@ -33,7 +33,7 @@ impl Borders {
     }
 
     /// Returns true if all the borders are empty.
-    pub fn is_default(&self) -> bool {
+    pub(crate) fn is_default(&self) -> bool {
         self.top.is_all_default()
             && self.bottom.is_all_default()
             && self.left.is_all_default()
@@ -56,38 +56,43 @@ impl Borders {
     }
 
     /// Returns true if the borders update is already applied to the sheet.
-    pub fn is_toggle_borders(&self, border_update: &BordersUpdates) -> bool {
+    pub(crate) fn is_toggle_borders(&self, border_update: &BordersUpdates) -> bool {
         // First check if update borders match current borders
         if let Some(update_left) = border_update.left.as_ref()
             && self.left.zip_any(update_left, |border, update| {
                 !Borders::same_border_and_update(border, update)
-            }) {
-                return false;
-            }
+            })
+        {
+            return false;
+        }
         if let Some(update_right) = border_update.right.as_ref()
             && self.right.zip_any(update_right, |border, update| {
                 !Borders::same_border_and_update(border, update)
-            }) {
-                return false;
-            }
+            })
+        {
+            return false;
+        }
         if let Some(update_top) = border_update.top.as_ref()
             && self.top.zip_any(update_top, |border, update| {
                 !Borders::same_border_and_update(border, update)
-            }) {
-                return false;
-            }
+            })
+        {
+            return false;
+        }
         if let Some(update_bottom) = border_update.bottom.as_ref()
             && self.bottom.zip_any(update_bottom, |border, update| {
                 !Borders::same_border_and_update(border, update)
-            }) {
-                return false;
-            }
+            })
+        {
+            return false;
+        }
 
         true
     }
 
     /// Returns the border style for the given side and position.
-    pub fn get(&self, side: BorderSide, pos: Pos) -> Option<BorderStyle> {
+    #[cfg(test)]
+    pub(crate) fn get(&self, side: BorderSide, pos: Pos) -> Option<BorderStyle> {
         match side {
             BorderSide::Top => self.top.get(pos).map(|b| b.into()),
             BorderSide::Bottom => self.bottom.get(pos).map(|b| b.into()),

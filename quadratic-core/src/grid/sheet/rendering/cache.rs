@@ -7,12 +7,12 @@ use crate::{
 
 impl Sheet {
     #[cfg(test)]
-    pub fn content_cache(&self) -> SheetContentCache {
+    pub(crate) fn content_cache(&self) -> SheetContentCache {
         self.into()
     }
 
     /// Sends the content cache to the client.
-    pub fn send_content_cache(&self) {
+    pub(crate) fn send_content_cache(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -34,7 +34,7 @@ impl Sheet {
     }
 
     /// Sends the data tables cache to the client.
-    pub fn send_data_tables_cache(&self) {
+    pub(crate) fn send_data_tables_cache(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }

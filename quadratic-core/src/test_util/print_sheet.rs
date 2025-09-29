@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::{
     CellValue, Pos, Rect,
     a1::column_name,
@@ -5,8 +6,10 @@ use crate::{
     grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
 };
 
+#[cfg(test)]
 use std::collections::HashMap;
 
+#[cfg(test)]
 use tabled::{
     builder::Builder,
     settings::{Color, themes::Colorization},
@@ -14,14 +17,18 @@ use tabled::{
 };
 
 /// Util to print the first sheet
-pub fn print_first_sheet(gc: &GridController) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_first_sheet(gc: &GridController) {
     let sheet = gc.try_sheet(gc.sheet_ids()[0]).unwrap();
     print_sheet(sheet);
 }
 
 /// Util to print the entire sheet
 #[track_caller]
-pub fn print_sheet(sheet: &Sheet) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_sheet(sheet: &Sheet) {
     let bounds = sheet.bounds(true);
     if let GridBounds::NonEmpty(rect) = bounds {
         print_table_sheet(sheet, rect);
@@ -32,14 +39,18 @@ pub fn print_sheet(sheet: &Sheet) {
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
-pub fn print_table_from_grid(grid: &GridController, sheet_id: SheetId, rect: Rect) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_table_from_grid(grid: &GridController, sheet_id: SheetId, rect: Rect) {
     let sheet = grid.grid().try_sheet(sheet_id).unwrap();
     print_table_sheet(sheet, rect);
 }
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
-pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
+#[cfg(test)]
+#[allow(unused)]
+pub(crate) fn print_table_sheet(sheet: &Sheet, rect: Rect) {
     let mut vals = vec![];
     let mut builder = Builder::default();
     let columns = (rect.x_range()).map(column_name).collect::<Vec<String>>();

@@ -20,7 +20,7 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
-    pub fn from_table(sheet_id: SheetId, pos: Pos, table: &DataTable) -> Self {
+    pub(crate) fn from_table(sheet_id: SheetId, pos: Pos, table: &DataTable) -> Self {
         if table.has_spill() || table.has_error() {
             Self {
                 sheet_id,
@@ -52,7 +52,7 @@ impl TableMapEntry {
 
     /// Returns the start and end of the table in row coordinates relative to
     /// the sheet.
-    pub fn to_sheet_rows(&self) -> (i64, i64) {
+    pub(crate) fn to_sheet_rows(&self) -> (i64, i64) {
         (self.bounds.min.y, self.bounds.max.y)
     }
 
@@ -60,7 +60,7 @@ impl TableMapEntry {
     /// Returns None if the range is not visible or no longer exists.
     ///
     /// Note: the index does not include the table's column offset.
-    pub fn try_col_index(&self, col: &str) -> Option<i64> {
+    pub(crate) fn try_col_index(&self, col: &str) -> Option<i64> {
         let index = self
             .visible_columns
             .iter()
@@ -72,7 +72,7 @@ impl TableMapEntry {
     /// column index either after or before the hidden one. Returns None if there are none.
     ///
     /// Note: the index does not include the table's column offset.
-    pub fn try_col_closest(&self, col: &str, after: bool) -> Option<i64> {
+    pub(crate) fn try_col_closest(&self, col: &str, after: bool) -> Option<i64> {
         if let Some(index) = self.try_col_index(col) {
             // If the column is visible, return its index
             Some(index)
@@ -129,7 +129,7 @@ impl TableMapEntry {
     /// range is not visible or no longer exists.
     ///
     /// Note: the index does not include the table's column offset.
-    pub fn try_col_range(&self, col1: &str, col2: &str) -> Option<(i64, i64)> {
+    pub(crate) fn try_col_range(&self, col1: &str, col2: &str) -> Option<(i64, i64)> {
         // Get closest visible columns for start and end
         let start = self.try_col_closest(col1, true)?;
         let end = self.try_col_closest(col2, false)?;
@@ -142,35 +142,24 @@ impl TableMapEntry {
     /// range is not visible or no longer exists.
     ///
     /// Note: the index does not include the table's column offset.
-    pub fn try_col_range_to_end(&self, col: &str) -> Option<(i64, i64)> {
+    pub(crate) fn try_col_range_to_end(&self, col: &str) -> Option<(i64, i64)> {
         let start = self.try_col_closest(col, true)?;
         let end = (self.visible_columns.len() - 1) as i64;
         Some((start, end))
     }
 
     /// Returns true if the table contains the given position.
-    pub fn contains(&self, pos: SheetPos) -> bool {
+    pub(crate) fn contains(&self, pos: SheetPos) -> bool {
         self.sheet_id == pos.sheet_id && self.bounds.contains(pos.into())
     }
 
     /// Returns the column name from the index.
-    pub fn col_name_from_index(&self, index: usize) -> Option<String> {
+    pub(crate) fn col_name_from_index(&self, index: usize) -> Option<String> {
         self.visible_columns.get(index).cloned()
     }
 
-    /// Returns the index of the column in the all_columns vector from the
-    /// index of the column in the visible_columns vector.
-    pub fn get_column_index_from_display_index(&self, index: usize) -> Option<usize> {
-        let visible_column_name = self.visible_columns.get(index)?;
-        let all_column_index = self
-            .all_columns
-            .iter()
-            .position(|c| c == visible_column_name)?;
-        Some(all_column_index)
-    }
-
     /// Returns the y adjustment for the table to account for the UI elements.
-    pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
+    pub(crate) fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
         if self.show_name {
@@ -189,7 +178,7 @@ impl TableMapEntry {
     }
 
     #[cfg(test)]
-    pub fn test(
+    pub(crate) fn test(
         table_name: &str,
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
@@ -309,28 +298,5 @@ mod tests {
         assert!(entry.contains(SheetPos::new(entry.sheet_id, 2, 2)));
         assert!(!entry.contains(SheetPos::new(entry.sheet_id, 0, 0)));
         assert!(!entry.contains(SheetPos::new(SheetId::new(), 2, 2))); // Different sheet
-    }
-
-    #[test]
-    fn test_get_column_index_from_visible_index() {
-        let table = TableMapEntry::test(
-            "test",
-            &["A", "C", "E"],
-            Some(&["A", "B", "C", "D", "E"]),
-            Rect::test_a1("A1:E5"),
-            CodeCellLanguage::Import,
-        );
-
-        // visible index 0 (A) should return all_columns index 0
-        assert_eq!(table.get_column_index_from_display_index(0), Some(0));
-
-        // visible index 1 (C) should return all_columns index 2
-        assert_eq!(table.get_column_index_from_display_index(1), Some(2));
-
-        // visible index 2 (E) should return all_columns index 4
-        assert_eq!(table.get_column_index_from_display_index(2), Some(4));
-
-        // out of bounds
-        assert_eq!(table.get_column_index_from_display_index(3), None);
     }
 }

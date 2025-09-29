@@ -8,14 +8,17 @@ use crate::{
     formulas::convert_rc_to_a1,
     grid::{
         CodeCellLanguage, DataTableKind,
-        data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
     },
 };
 
 impl Sheet {
     /// Gets column bounds (ie, a range of rows) for data_tables that output to the columns
-    pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
+    pub(crate) fn code_columns_bounds(
+        &self,
+        column_start: i64,
+        column_end: i64,
+    ) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for col in column_start..=column_end {
@@ -36,7 +39,7 @@ impl Sheet {
     }
 
     /// Gets the row bounds for data_tables that output to the rows
-    pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
+    pub(crate) fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for row in row_start..=row_end {
@@ -56,61 +59,19 @@ impl Sheet {
         }
     }
 
-    // TODO(ddimaria): move to DataTable code
-    /// Returns the DataTable that overlaps the Pos if it is an HTML or image chart.
-    pub fn chart_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
-        if data_table.is_html_or_image() {
-            Some((data_table_pos, data_table))
-        } else {
-            None
-        }
-    }
-
-    /// Returns the DataTable if the pos intersects with the table header.
-    pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
-        let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
-        let output_rect = data_table.output_rect(data_table_pos, false);
-        if data_table.get_show_name() && pos.y == output_rect.min.y {
-            Some((data_table_pos, output_rect))
-        } else {
-            None
-        }
-    }
-
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included.
     /// If ignore_readonly is true, it will ignore readonly tables.
-    pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
+    pub(crate) fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
         self.data_table_that_contains(pos)
             .is_some_and(|(_, data_table)| !ignore_readonly || !data_table.is_code())
-    }
-
-    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
-    /// the DataTable's output_rect for the check to ensure that charts are
-    /// included. Ignores Blanks.
-    pub fn has_table_content_ignore_blanks(&self, pos: Pos) -> bool {
-        self.data_table_that_contains(pos)
-            .is_some_and(|(code_cell_pos, data_table)| {
-                data_table
-                        .cell_value_ref_at(
-                            (pos.x - code_cell_pos.x) as u32,
-                            (pos.y - code_cell_pos.y) as u32,
-                        )
-                        .is_some_and(|cell_value| {
-                            !cell_value.is_blank_or_empty_string()
-                        })
-                        || data_table.is_html_or_image()
-                        // also check if its the table name (the entire width of the table is valid for content)
-                        || (data_table.get_show_name() && pos.y == code_cell_pos.y)
-            })
     }
 
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
-    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+    pub(crate) fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         data_table.cell_value_at(
             (pos.x - data_table_pos.x) as u32,
@@ -119,7 +80,7 @@ impl Sheet {
     }
 
     /// TODO(ddimaria): move to DataTable code
-    pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
+    pub(crate) fn get_code_cell_values(&self, rect: Rect) -> CellValues {
         self.iter_data_tables_in_rect(rect)
             .flat_map(|(data_table_rect, data_table)| match &data_table.value {
                 Value::Single(v) => vec![vec![v.to_owned()]],
@@ -146,7 +107,7 @@ impl Sheet {
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
-    pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
+    pub(crate) fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         if let Some((code_pos, data_table)) = self.data_table_that_contains(pos)
             && let DataTableKind::CodeRun(code_run) = &data_table.kind
         {
@@ -202,7 +163,7 @@ mod test {
     use crate::{
         Array, SheetPos, Value,
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, js_types::JsRenderCellSpecial},
+        grid::{CodeCellLanguage, CodeRun, DataTable, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 
@@ -388,28 +349,5 @@ mod test {
         assert_eq!(sheet.code_rows_bounds(-9, 1), Some(1..4));
         assert_eq!(sheet.code_rows_bounds(3, 6), Some(4..7));
         assert_eq!(sheet.code_rows_bounds(11, 11), None);
-    }
-
-    #[test]
-    fn chart_at() {
-        let mut sheet = Sheet::test();
-        assert_eq!(sheet.chart_at(Pos { x: 1, y: 1 }), None);
-
-        let mut dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "Table 1",
-            CellValue::Html("<html></html>".to_string()).into(),
-            false,
-            Some(false),
-            Some(false),
-            None,
-        );
-        dt.chart_output = Some((2, 2));
-
-        let pos = Pos { x: 1, y: 1 };
-        sheet.set_data_table(pos, Some(dt.clone()));
-
-        assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));
-        assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((pos, &dt)));
     }
 }

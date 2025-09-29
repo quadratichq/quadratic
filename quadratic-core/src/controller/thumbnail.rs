@@ -1,6 +1,5 @@
 use crate::{
     Rect, SheetPos, SheetRect,
-    a1::A1Selection,
     grid::{SheetId, formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
 };
 
@@ -10,14 +9,14 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `sheet_rect`. If this method returns `true`, then updates in
     /// `sheet_rect` must force the thumbnail to update.
-    pub fn thumbnail_dirty_sheet_pos(&self, sheet_pos: SheetPos) -> bool {
+    pub(crate) fn thumbnail_dirty_sheet_pos(&self, sheet_pos: SheetPos) -> bool {
         self.thumbnail_dirty_sheet_rect(sheet_pos.into())
     }
 
     /// Returns whether the thumbnail contains any intersection with
     /// `sheet_rect`. If this method returns `true`, then updates in
     /// `sheet_rect` must force the thumbnail to update.
-    pub fn thumbnail_dirty_sheet_rect(&self, sheet_rect: SheetRect) -> bool {
+    pub(crate) fn thumbnail_dirty_sheet_rect(&self, sheet_rect: SheetRect) -> bool {
         if sheet_rect.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -28,27 +27,13 @@ impl GridController {
     }
 
     /// Returns whether the thumbnail contains any intersection with
-    /// `selection`. If this method returns `true`, then updates in `selection`
-    /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_a1(&self, selection: &A1Selection) -> bool {
-        if selection.sheet_id != self.grid().first_sheet_id() {
-            return false;
-        }
-        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-            return false;
-        };
-
-        let thumbnail_a1 =
-            A1Selection::from_rect(sheet.offsets.thumbnail().to_sheet_rect(sheet.id));
-
-        let context = self.a1_context();
-        selection.overlaps_a1_selection(&thumbnail_a1, context)
-    }
-
-    /// Returns whether the thumbnail contains any intersection with
     /// `formats`. If this method returns `true`, then updates in `formats`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_formats(&self, sheet_id: SheetId, formats: &SheetFormatUpdates) -> bool {
+    pub(crate) fn thumbnail_dirty_formats(
+        &self,
+        sheet_id: SheetId,
+        formats: &SheetFormatUpdates,
+    ) -> bool {
         if sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -61,7 +46,11 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `borders`. If this method returns `true`, then updates in `borders`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_borders(&self, sheet_id: SheetId, borders: &BordersUpdates) -> bool {
+    pub(crate) fn thumbnail_dirty_borders(
+        &self,
+        sheet_id: SheetId,
+        borders: &BordersUpdates,
+    ) -> bool {
         if sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -76,7 +65,6 @@ impl GridController {
 mod test {
     use crate::{
         Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
-        a1::A1Selection,
         controller::GridController,
         grid::{
             SheetId,
@@ -109,19 +97,6 @@ mod test {
             y: THUMBNAIL_HEIGHT as i64,
             sheet_id
         }));
-    }
-
-    #[test]
-    fn test_thumbnail_dirty_a1() {
-        let gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        let wrong_sheet_id = SheetId::new();
-
-        assert!(gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A1", wrong_sheet_id)));
-
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("O1:O", sheet_id)));
-        assert!(!gc.thumbnail_dirty_a1(&A1Selection::test_a1_sheet_id("A75:75", sheet_id)));
     }
 
     #[test]

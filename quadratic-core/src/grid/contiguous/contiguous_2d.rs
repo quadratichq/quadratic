@@ -71,7 +71,7 @@ impl<T: Default> Default for Contiguous2D<T> {
 }
 impl<T: Default> Contiguous2D<T> {
     /// Constructs an empty map.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 }
@@ -96,7 +96,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// All coordinates are inclusive.
     ///
     /// If `x2` or `y2` are `None`, the rectangle is infinite in that direction.
-    pub fn from_rect(x1: i64, y1: i64, x2: Option<i64>, y2: Option<i64>, value: T) -> Self {
+    pub(crate) fn from_rect(x1: i64, y1: i64, x2: Option<i64>, y2: Option<i64>, value: T) -> Self {
         match convert_rect(x1, y1, x2, y2) {
             None => Self::default(),
             Some((x1, y1, x2, y2)) => Self(ContiguousBlocks::from_block(Block {
@@ -113,7 +113,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Constructs a Contiguous2D from a selection and a value set across the
     /// selection.
-    pub fn new_from_selection(selection: &A1Selection, value: T) -> Contiguous2D<T> {
+    pub(crate) fn new_from_selection(selection: &A1Selection, value: T) -> Contiguous2D<T> {
         let mut c: Contiguous2D<T> = Contiguous2D::new();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
@@ -150,17 +150,17 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns whether the whole sheet is default.
-    pub fn is_all_default(&self) -> bool {
+    pub(crate) fn is_all_default(&self) -> bool {
         self.0.is_all_default()
     }
 
     /// Returns whether the values in a rectangle are all default.
-    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
+    pub(crate) fn is_all_default_in_rect(&self, rect: Rect) -> bool {
         self.is_all_default_in_range(RefRangeBounds::new_relative_rect(rect))
     }
 
     /// Returns whether the values in a range are all default.
-    pub fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
+    pub(crate) fn is_all_default_in_range(&self, range: RefRangeBounds) -> bool {
         let [x1, x2, y1, y2] = range_to_rect(range);
         self.0
             .blocks_touching_range(x1, x2)
@@ -168,7 +168,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns a set of unique values in a rect.
-    pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<T>
+    pub(crate) fn unique_values_in_rect(&self, rect: Rect) -> HashSet<T>
     where
         T: Eq + Hash,
     {
@@ -176,7 +176,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns a set of unique values in a range.
-    pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<T>
+    pub(crate) fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<T>
     where
         T: Eq + Hash,
     {
@@ -189,12 +189,12 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns a list of rectangles containing non-default values.
-    pub fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
+    pub(crate) fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
         self.nondefault_rects_in_range(RefRangeBounds::new_relative_rect(rect))
     }
 
     /// Returns a list of rectangles containing non-default values.
-    pub fn nondefault_rects_in_range(
+    pub(crate) fn nondefault_rects_in_range(
         &self,
         range: RefRangeBounds,
     ) -> impl Iterator<Item = (Rect, T)> {
@@ -223,7 +223,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns a single value. Returns `T::default()` if `pos` is invalid.
-    pub fn get(&self, pos: Pos) -> T {
+    pub(crate) fn get(&self, pos: Pos) -> T {
         // IIFE to mimic try_block
         (|| {
             let (x, y) = convert_pos(pos)?;
@@ -235,7 +235,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Sets a single value and returns the old one, or `T::default()` if `pos`
     /// is invalid.
-    pub fn set(&mut self, pos: Pos, value: T) -> T {
+    pub(crate) fn set(&mut self, pos: Pos, value: T) -> T {
         // IIFE to mimic try_block
         (|| {
             let (x, y) = convert_pos(pos)?;
@@ -249,7 +249,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     ///
     /// - `U` is the data required to update the value.
     /// - `R` is the data required to perform the reverse operation.
-    pub fn update_from<U: PartialEq, R: Clone + PartialEq>(
+    pub(crate) fn update_from<U: PartialEq, R: Clone + PartialEq>(
         &mut self,
         other: &Contiguous2D<Option<U>>,
         update_fn: impl Fn(&mut T, &U) -> Option<R>,
@@ -267,7 +267,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Sets non-`None` values from `other`, and returns the blocks to set to
     /// undo it.
-    pub fn set_from(&mut self, other: &Contiguous2D<Option<T>>) -> Contiguous2D<Option<T>> {
+    pub(crate) fn set_from(&mut self, other: &Contiguous2D<Option<T>>) -> Contiguous2D<Option<T>> {
         self.update_from(other, |value, new_value| {
             (value != new_value).then(|| std::mem::replace(value, new_value.clone()))
         })
@@ -276,7 +276,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// For each non-`None` value in `other`, calls `predicate` with the
     /// corresponding values in `self` and `other`. Returns `true` if **any**
     /// invocation of `predicate` returns true.
-    pub fn zip_any<U: PartialEq>(
+    pub(crate) fn zip_any<U: PartialEq>(
         &self,
         other: &Contiguous2D<Option<U>>,
         predicate: impl Fn(&T, &U) -> bool,
@@ -292,7 +292,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Sets multiple block of values in the same column range.
-    pub fn raw_set_xy_blocks(
+    pub(crate) fn raw_set_xy_blocks(
         &mut self,
         xy_block: Block<impl Clone + IntoIterator<Item = Block<T>>>,
     ) {
@@ -306,14 +306,16 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns all data as 2D blocks.
-    pub fn xy_blocks(&self) -> impl Iterator<Item = Block<impl Iterator<Item = &Block<T>>>> {
+    pub(crate) fn xy_blocks(&self) -> impl Iterator<Item = Block<impl Iterator<Item = &Block<T>>>> {
         self.0
             .iter()
             .map(|column_block| column_block.map_ref(|column_data| column_data.iter()))
     }
 
     /// Returns all data as owned 2D blocks.
-    pub fn into_xy_blocks(self) -> impl Iterator<Item = Block<impl Iterator<Item = Block<T>>>> {
+    pub(crate) fn into_xy_blocks(
+        self,
+    ) -> impl Iterator<Item = Block<impl Iterator<Item = Block<T>>>> {
         self.0
             .into_iter()
             .map(|column_block| column_block.map(|column_data| column_data.into_iter()))
@@ -322,7 +324,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// Translates all non-default values.
     ///
     /// Values before 1,1 are truncated.
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         self.0.translate_in_place(x);
         for column_data in self.0.values_mut() {
             column_data.value.translate_in_place(y);
@@ -335,7 +337,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// All coordinates are inclusive.
     ///
     /// If `x2` or `y2` are `None`, the rectangle is infinite in that direction.
-    pub fn set_rect(
+    pub(crate) fn set_rect(
         &mut self,
         x1: i64,
         y1: i64,
@@ -348,7 +350,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns the upper bound on the finite regions in the given column.
     /// Returns 0 if there are no values.
-    pub fn col_max(&self, column: i64) -> i64 {
+    pub(crate) fn col_max(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
             return 0;
         };
@@ -361,7 +363,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         column_data.finite_max().try_into().unwrap_or(UNBOUNDED)
     }
 
-    pub fn col_min(&self, column: i64) -> i64 {
+    pub(crate) fn col_min(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
             return 0;
         };
@@ -373,7 +375,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns the upper bound on the finite regions in the given row. Returns
     /// 0 if there are no values.
-    pub fn row_max(&self, row: i64) -> i64 {
+    pub(crate) fn row_max(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
             return 0;
         };
@@ -398,7 +400,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns the lower bound on the finite regions in the given row. Returns
     /// 0 if there are no values.
-    pub fn row_min(&self, row: i64) -> i64 {
+    pub(crate) fn row_min(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
             return 0;
         };
@@ -415,7 +417,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Removes a column and returns the values that used to inhabit it. Returns
     /// `None` if `column` is out of range.
-    pub fn remove_column(&mut self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+    pub(crate) fn remove_column(&mut self, column: i64) -> Option<Contiguous2D<Option<T>>> {
         let ret = self.copy_column(column);
         let column = convert_coord(column)?;
         self.0.shift_remove(column, column.saturating_add(1));
@@ -424,7 +426,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns a new [`Contiguous2D`] containing a single column from `self`.
     /// Returns `None` if `column` is out of range.
-    pub fn copy_column(&self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+    pub(crate) fn copy_column(&self, column: i64) -> Option<Contiguous2D<Option<T>>> {
         let column = convert_coord(column)?;
 
         let mut ret: Contiguous2D<Option<T>> = Contiguous2D::new();
@@ -444,7 +446,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Inserts a column and optionally populates it based on the column before
     /// or after it.
-    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         // This is required when migrating versions < 1.7.1 having negative
         // column offsets. When inserting a column at a negative offset, we need
         // insert at column 1 with no copy.
@@ -466,7 +468,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Removes a row and returns the values that used to inhabit it.
-    pub fn remove_row(&mut self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+    pub(crate) fn remove_row(&mut self, row: i64) -> Option<Contiguous2D<Option<T>>> {
         let ret = self.copy_row(row);
         let row = convert_coord(row)?;
         self.0.update_all(|column_data| {
@@ -478,7 +480,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns a new [`Contiguous2D`] containing a single row from `self`.
     /// Returns `None` if `row` is out of range.
-    pub fn copy_row(&self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+    pub(crate) fn copy_row(&self, row: i64) -> Option<Contiguous2D<Option<T>>> {
         let row = convert_coord(row)?;
         let mut ret = Contiguous2D::new();
         ret.0
@@ -491,7 +493,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Inserts a row and optionally populates it based on the row before
     /// or after it.
-    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
         // This is required when migrating versions < 1.7.1 having negative
         // row offsets. When inserting a row at a negative offset, we need
         // insert at row 1 with no copy.
@@ -519,65 +521,24 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Constructs a new [`Contiguous2D`] by applying a pure function to every
     /// value.
-    pub fn map_ref<U: Clone + PartialEq>(&self, f: impl Fn(&T) -> U) -> Contiguous2D<U> {
+    pub(crate) fn map_ref<U: Clone + PartialEq>(&self, f: impl Fn(&T) -> U) -> Contiguous2D<U> {
         Contiguous2D(self.0.map_ref(|column| column.map_ref(&f)))
-    }
-
-    /// Returns the values in a Rect as a Vec of values, organized by y then x.
-    pub fn rect_values(&self, rect: Rect) -> Vec<Option<T>> {
-        let mut values = vec![None; rect.len() as usize];
-        for x in rect.x_range() {
-            let dx = x - rect.min.x;
-            let Some(x) = convert_coord(x) else { continue };
-            let Some(column) = self.0.get(x) else {
-                continue;
-            };
-            for y in rect.y_range() {
-                let dy = y - rect.min.y;
-                let Some(y) = convert_coord(y) else { continue };
-                let Some(value) = column.get(y) else { continue };
-                values[dy as usize * rect.width() as usize + dx as usize] = Some(value.clone());
-            }
-        }
-        values
     }
 
     /// Returns whether any of the non-default values in `self` intersects
     /// `rect`.
-    pub fn intersects(&self, rect: Rect) -> bool {
+    pub(crate) fn intersects(&self, rect: Rect) -> bool {
         self.nondefault_rects_in_rect(rect).next().is_some()
     }
 
-    /// Returns whether a column contains entirely default values.
-    pub fn is_col_default(&self, col: i64) -> bool {
-        let Some(col) = convert_coord(col) else {
-            return true;
-        };
-        self.0.get(col).is_none_or(|column| column.is_all_default())
-    }
-
     /// Returns whether a row contains entirely default values.
-    pub fn is_row_default(&self, row: i64) -> bool {
+    pub(crate) fn is_row_default(&self, row: i64) -> bool {
         let default = T::default();
         self.all_in_row(row, |value| *value == default)
     }
 
-    /// Returns whether any cell in the column satisfies the predicate
-    pub fn any_in_col(&self, col: i64, f: impl Fn(&T) -> bool) -> bool {
-        let Some(col) = convert_coord(col) else {
-            return f(&T::default());
-        };
-        self.0
-            .get(col)
-            .is_some_and(|column| column.iter().any(|block| f(&block.value)))
-    }
-    /// Returns whether all cells in the column satisfy the predicate.
-    pub fn all_in_col(&self, col: i64, f: impl Fn(&T) -> bool) -> bool {
-        !self.any_in_col(col, |value| !f(value))
-    }
-
     /// Returns whether any cell in the row satisfies the predicate.
-    pub fn any_in_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
+    pub(crate) fn any_in_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
         let Some(row) = convert_coord(row) else {
             return f(&T::default());
         };
@@ -587,12 +548,12 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         })
     }
     /// Returns whether all cells in the row satisfy the predicate.
-    pub fn all_in_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
+    pub(crate) fn all_in_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
         !self.any_in_row(row, |value| !f(value))
     }
 
     /// Returns the bounding rect of the contiguous 2d.
-    pub fn bounding_rect(&self) -> Option<Rect> {
+    pub(crate) fn bounding_rect(&self) -> Option<Rect> {
         if self.is_all_default() {
             return None;
         }
@@ -642,7 +603,10 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     ///
     /// `value` must be `None` if there is no update to do, and `Some` if there
     /// is an update to do.
-    pub fn new_from_opt_selection(selection: &A1Selection, value: Option<T>) -> Option<Self> {
+    pub(crate) fn new_from_opt_selection(
+        selection: &A1Selection,
+        value: Option<T>,
+    ) -> Option<Self> {
         Some(Self::new_from_selection(selection, Some(value?)))
     }
 
@@ -651,7 +615,9 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     /// coordinates are inclusive.
     ///
     /// `None` values are skipped.
-    pub fn to_rects(&self) -> impl '_ + Iterator<Item = (i64, i64, Option<i64>, Option<i64>, T)> {
+    pub(crate) fn to_rects(
+        &self,
+    ) -> impl '_ + Iterator<Item = (i64, i64, Option<i64>, Option<i64>, T)> {
         self.0
             .iter()
             .flat_map(|x_block| {
@@ -680,7 +646,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     /// bounds.
     ///
     /// `None` values are skipped.
-    pub fn to_rects_with_grid_bounds<'a>(
+    pub(crate) fn to_rects_with_grid_bounds<'a>(
         &'a self,
         sheet_bounds: impl 'a + Fn(bool) -> Option<Rect>,
         columns_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
@@ -703,7 +669,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
 
     /// Constructs an update for a selection, taking values from `self` at every
     /// location in the selection.
-    pub fn get_update_for_selection(
+    pub(crate) fn get_update_for_selection(
         &self,
         selection: &A1Selection,
     ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
@@ -732,7 +698,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     ///
     /// `clear_on_none` controls whether to clear the value if it is `None`.
     /// If `false`, the value will be left as is.
-    pub fn get_update_for_range(
+    pub(crate) fn get_update_for_range(
         &self,
         range: RefRangeBounds,
         clear_on_none: bool,
@@ -764,7 +730,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     ///
     /// `clear_on_none` controls whether to clear the value if it is `None`.
     /// If `false`, the value will be left as is.
-    pub fn get_update_for_rect(
+    pub(crate) fn get_update_for_rect(
         &self,
         rect: Rect,
         clear_on_none: bool,
@@ -773,7 +739,9 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     }
 
     /// Returns an iterator over the blocks in the contiguous 2d.
-    pub fn into_iter(&self) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
+    pub(crate) fn into_iter(
+        &self,
+    ) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
         self.0.iter().flat_map(|x_block| {
             let column = &x_block.value;
             let x1 = x_block.start;
@@ -787,7 +755,7 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
     }
 
     /// Returns the finite bounds of the contiguous 2d.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
         self.into_iter().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
@@ -1017,16 +985,6 @@ mod tests {
         c.remove_row(3);
         assert_eq!(c.get(Pos { x: 2, y: 10 }), None);
         assert_eq!(c.get(Pos { x: 2, y: 9 }), Some(true));
-    }
-
-    #[test]
-    fn test_rect_values() {
-        let mut c = Contiguous2D::<bool>::new();
-        c.set_rect(2, 2, Some(10), Some(10), true);
-        assert_eq!(
-            c.rect_values(Rect::test_a1("B2:J10")),
-            vec![Some(true); 9 * 9]
-        );
     }
 
     #[test]

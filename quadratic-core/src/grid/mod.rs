@@ -65,7 +65,7 @@ impl Grid {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.sheets.len() == 1
             && self
                 .sheets
@@ -77,14 +77,14 @@ impl Grid {
     }
 
     /// Creates a grid for testing.
-    pub fn test() -> Self {
+    pub(crate) fn test() -> Self {
         let mut ret = Grid::new_blank();
         let sheet = Sheet::test();
         ret.add_sheet(Some(sheet));
         ret
     }
 
-    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+    pub(crate) fn migration_retain_positive_non_default_offsets(&mut self) {
         self.sheets.iter_mut().for_each(|(_, sheet)| {
             sheet
                 .offsets
@@ -93,7 +93,7 @@ impl Grid {
     }
 
     #[cfg(test)]
-    pub fn from_array(base_pos: Pos, array: &Array) -> Self {
+    pub(crate) fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
         let sheet = ret.first_sheet_mut();
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
@@ -105,7 +105,7 @@ impl Grid {
     }
 
     #[cfg(test)]
-    pub fn origin_in_first_sheet(&self) -> crate::SheetPos {
+    pub(crate) fn origin_in_first_sheet(&self) -> crate::SheetPos {
         crate::Pos::ORIGIN.to_sheet_pos(self.sheets()[0].id)
     }
 }

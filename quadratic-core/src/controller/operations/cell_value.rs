@@ -12,7 +12,7 @@ use anyhow::{Error, Result, bail};
 
 impl GridController {
     /// Generate operations for a user-initiated change to a cell value
-    pub fn set_cell_values_operations(
+    pub(crate) fn set_cell_values_operations(
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
@@ -168,7 +168,7 @@ impl GridController {
     /// Does not commit the operations or create a transaction.
     ///
     /// If force_table_bounds is true, then the operations will be generated for the table bounds even if the selection is not within a table.
-    pub fn delete_cells_operations(
+    pub(crate) fn delete_cells_operations(
         &self,
         selection: &A1Selection,
         force_table_bounds: bool,
@@ -324,7 +324,7 @@ impl GridController {
         ops
     }
 
-    pub fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    pub(crate) fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
@@ -353,7 +353,7 @@ impl GridController {
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
-    pub fn delete_values_and_formatting_operations(
+    pub(crate) fn delete_values_and_formatting_operations(
         &mut self,
         selection: &A1Selection,
         force_table_bounds: bool,
@@ -369,7 +369,7 @@ impl GridController {
     //
     // If `delete_value` is true, then the values in `values` are
     // deleted from `cell_values`.
-    pub fn cell_values_operations(
+    pub(crate) fn cell_values_operations(
         &self,
         selection: Option<&A1Selection>,
         start_pos: SheetPos,

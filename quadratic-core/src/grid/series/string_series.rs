@@ -95,7 +95,7 @@ fn is_series_next_key(key: &str, existing_keys: &[&str], all_keys: &&[&str]) -> 
     Ok((index + 1) % all_keys.len() == index_next_key)
 }
 
-pub fn checked_mod(n: isize, m: isize) -> isize {
+pub(crate) fn checked_mod(n: isize, m: isize) -> isize {
     ((n % m) + m) % m
 }
 
@@ -119,7 +119,7 @@ fn get_series_next_key(last_key: &str, all_keys: &&[&str], negative: bool) -> Re
     Ok(next_key.to_string())
 }
 
-pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
+pub(crate) fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     let mut results: Vec<CellValue> = vec![];
     let SeriesOptions {
         series,

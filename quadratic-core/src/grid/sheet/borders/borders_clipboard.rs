@@ -9,7 +9,7 @@ impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///
     /// Returns `None` if there are no borders to copy.
-    pub fn to_clipboard(&self, selection: &A1Selection) -> Option<BordersUpdates> {
+    pub(crate) fn to_clipboard(&self, selection: &A1Selection) -> Option<BordersUpdates> {
         Some(BordersUpdates {
             left: Some(self.left.get_update_for_selection(selection)),
             right: Some(self.right.get_update_for_selection(selection)),

@@ -10,7 +10,7 @@ use crate::{
 
 /// Creates a Python code table with output of w x h cells with values 0, 1, ..., w * h - 1.
 #[cfg(test)]
-pub fn test_create_code_table(
+pub(crate) fn test_create_code_table(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -24,7 +24,7 @@ pub fn test_create_code_table(
 
 /// Creates a Python code table with output of w x h cells with values.
 #[cfg(test)]
-pub fn test_create_code_table_with_values(
+pub(crate) fn test_create_code_table_with_values(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -72,7 +72,7 @@ pub fn test_create_code_table_with_values(
 }
 
 #[cfg(test)]
-pub fn test_create_raw_data_table(
+pub(crate) fn test_create_raw_data_table(
     gc: &mut GridController,
     sheet_pos: SheetPos,
     data_table: DataTable,
@@ -88,7 +88,7 @@ pub fn test_create_raw_data_table(
 }
 
 #[cfg(test)]
-pub fn test_create_formula(
+pub(crate) fn test_create_formula(
     gc: &mut GridController,
     sheet_pos: SheetPos,
     formula: &str,

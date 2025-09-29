@@ -1,5 +1,7 @@
+#[cfg(test)]
+use crate::CopyFormats;
 use crate::{
-    CopyFormats, SheetPos, SheetRect,
+    SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{
         CodeRun, DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort,
@@ -10,7 +12,7 @@ use anyhow::Result;
 
 impl GridController {
     /// Gets a data table based on a sheet position.
-    pub fn data_table_at(&self, sheet_pos: SheetPos) -> Option<&DataTable> {
+    pub(crate) fn data_table_at(&self, sheet_pos: SheetPos) -> Option<&DataTable> {
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             sheet.data_table_at(&sheet_pos.into())
         } else {
@@ -19,16 +21,21 @@ impl GridController {
     }
 
     /// Gets a data table based on a sheet position.
-    pub fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
+    pub(crate) fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
         self.data_table_at(*sheet_pos).and_then(|dt| dt.code_run())
     }
 
-    pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>, is_ai: bool) {
+    pub(crate) fn flatten_data_table(
+        &mut self,
+        sheet_pos: SheetPos,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.flatten_data_table_operations(sheet_pos);
         self.start_user_ai_transaction(ops, cursor, TransactionName::FlattenDataTable, is_ai);
     }
 
-    pub fn code_data_table_to_data_table(
+    pub(crate) fn code_data_table_to_data_table(
         &mut self,
         sheet_pos: SheetPos,
         cursor: Option<String>,
@@ -40,7 +47,7 @@ impl GridController {
         Ok(())
     }
 
-    pub fn grid_to_data_table(
+    pub(crate) fn grid_to_data_table(
         &mut self,
         sheet_rect: SheetRect,
         table_name: Option<String>,
@@ -57,7 +64,7 @@ impl GridController {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn data_table_meta(
+    pub(crate) fn data_table_meta(
         &mut self,
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -80,7 +87,7 @@ impl GridController {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn data_table_mutations(
+    pub(crate) fn data_table_mutations(
         &mut self,
         sheet_pos: SheetPos,
         select_table: bool,
@@ -107,7 +114,8 @@ impl GridController {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn data_table_insert_columns(
+    #[cfg(test)]
+    pub(crate) fn data_table_insert_columns(
         &mut self,
         sheet_pos: SheetPos,
         columns: Vec<u32>,
@@ -128,7 +136,9 @@ impl GridController {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn data_table_insert_rows(
+    #[cfg(test)]
+    #[allow(unused)]
+    pub(crate) fn data_table_insert_rows(
         &mut self,
         sheet_pos: SheetPos,
         rows: Vec<u32>,
@@ -148,7 +158,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
     }
 
-    pub fn sort_data_table(
+    pub(crate) fn sort_data_table(
         &mut self,
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
@@ -159,7 +169,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::GridToDataTable, is_ai);
     }
 
-    pub fn data_table_first_row_as_header(
+    pub(crate) fn data_table_first_row_as_header(
         &mut self,
         sheet_pos: SheetPos,
         first_row_is_header: bool,
@@ -175,7 +185,7 @@ impl GridController {
         );
     }
 
-    pub fn add_data_table(
+    pub(crate) fn add_data_table(
         &mut self,
         sheet_pos: SheetPos,
         name: String,

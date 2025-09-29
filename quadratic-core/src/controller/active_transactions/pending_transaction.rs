@@ -157,7 +157,7 @@ impl Default for PendingTransaction {
 }
 
 impl PendingTransaction {
-    pub fn to_transaction(&self, sequence_num: Option<u64>) -> Transaction {
+    pub(crate) fn to_transaction(&self, sequence_num: Option<u64>) -> Transaction {
         Transaction {
             id: self.id,
             sequence_num,
@@ -167,7 +167,7 @@ impl PendingTransaction {
     }
 
     /// Creates a transaction to share in multiplayer
-    pub fn to_forward_transaction(&self) -> Transaction {
+    pub(crate) fn to_forward_transaction(&self) -> Transaction {
         Transaction {
             id: self.id,
             sequence_num: None,
@@ -177,7 +177,7 @@ impl PendingTransaction {
     }
 
     /// Creates a transaction to save to the Undo/Redo stack
-    pub fn to_undo_transaction(&self) -> Transaction {
+    pub(crate) fn to_undo_transaction(&self) -> Transaction {
         let mut operations = self.reverse_operations.clone();
         operations.reverse();
 
@@ -190,7 +190,7 @@ impl PendingTransaction {
     }
 
     /// Sends the transaction to the multiplayer server (if needed)
-    pub fn send_transaction(&self) {
+    pub(crate) fn send_transaction(&self) {
         if self.complete
             && self.is_user_ai_undo_redo()
             && (cfg!(target_family = "wasm") || cfg!(test))
@@ -220,7 +220,7 @@ impl PendingTransaction {
     }
 
     /// Returns whether the transaction is from the server.
-    pub fn is_server(&self) -> bool {
+    pub(crate) fn is_server(&self) -> bool {
         self.source == TransactionSource::Server
     }
 
@@ -231,11 +231,11 @@ impl PendingTransaction {
         self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
-    pub fn is_undo(&self) -> bool {
+    pub(crate) fn is_undo(&self) -> bool {
         self.source == TransactionSource::Undo || self.source == TransactionSource::UndoAI
     }
 
-    pub fn is_redo(&self) -> bool {
+    pub(crate) fn is_redo(&self) -> bool {
         self.source == TransactionSource::Redo || self.source == TransactionSource::RedoAI
     }
 
@@ -243,27 +243,28 @@ impl PendingTransaction {
         self.source == TransactionSource::AI
     }
 
-    pub fn is_user_ai(&self) -> bool {
+    pub(crate) fn is_user_ai(&self) -> bool {
         self.is_user() || self.is_ai()
     }
 
     /// Returns whether the transaction is from an undo/redo.
-    pub fn is_undo_redo(&self) -> bool {
+    pub(crate) fn is_undo_redo(&self) -> bool {
         self.is_undo() || self.is_redo()
     }
 
     /// Returns whether the transaction is from the local user, including
     /// undo/redo.
-    pub fn is_user_ai_undo_redo(&self) -> bool {
+    pub(crate) fn is_user_ai_undo_redo(&self) -> bool {
         self.is_user_ai() || self.is_undo_redo()
     }
 
     /// Returns whether the transaction is from another multiplayer user.
-    pub fn is_multiplayer(&self) -> bool {
+    pub(crate) fn is_multiplayer(&self) -> bool {
         self.source == TransactionSource::Multiplayer
     }
 
-    pub fn add_dirty_hashes_from_sheet_cell_positions(
+    #[cfg(test)]
+    pub(crate) fn add_dirty_hashes_from_sheet_cell_positions(
         &mut self,
         sheet_id: SheetId,
         positions: HashSet<Pos>,
@@ -287,7 +288,7 @@ impl PendingTransaction {
         self.add_content_cache(sheet_id);
     }
 
-    pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
+    pub(crate) fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -299,7 +300,7 @@ impl PendingTransaction {
         self.add_content_cache(sheet_rect.sheet_id);
     }
 
-    pub fn add_dirty_hashes_from_dirty_code_rects(
+    pub(crate) fn add_dirty_hashes_from_dirty_code_rects(
         &mut self,
         sheet: &Sheet,
         dirty_rects: HashSet<Rect>,
@@ -320,7 +321,7 @@ impl PendingTransaction {
     }
 
     // Adds dirty hashes for all hashes from col_start to col_end (goes to sheet bounds if not provided)
-    pub fn add_dirty_hashes_from_sheet_columns(
+    pub(crate) fn add_dirty_hashes_from_sheet_columns(
         &mut self,
         sheet: &Sheet,
         col_start: i64,
@@ -348,7 +349,7 @@ impl PendingTransaction {
     }
 
     // Adds dirty hashes for all hashes from row_start to row_end (goes to sheet bounds if not provided)
-    pub fn add_dirty_hashes_from_sheet_rows(
+    pub(crate) fn add_dirty_hashes_from_sheet_rows(
         &mut self,
         sheet: &Sheet,
         row_start: i64,
@@ -376,7 +377,7 @@ impl PendingTransaction {
     }
 
     /// Adds dirty hashes for all hashes from a list of selections.
-    pub fn add_dirty_hashes_from_selections(
+    pub(crate) fn add_dirty_hashes_from_selections(
         &mut self,
         sheet: &Sheet,
         a1_context: &A1Context,
@@ -396,7 +397,7 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell to the transaction
-    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+    pub(crate) fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
         self.code_cells_a1_context
             .entry(sheet_id)
             .or_default()
@@ -414,7 +415,7 @@ impl PendingTransaction {
     /// Adds a code cell, html cell and image cell to the transaction from a
     /// CodeRun. If the code_cell no longer exists, then it sends the empty code
     /// cell so the client can remove it.
-    pub fn add_from_code_run(
+    pub(crate) fn add_from_code_run(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -440,7 +441,7 @@ impl PendingTransaction {
     /// A1Selection that can be used to insert changed hashes (we cannot do that
     /// here b/c we need &Sheet, and cannot borrow &Sheet and Sheet.validations
     /// at the same time).
-    pub fn validation_changed(
+    pub(crate) fn validation_changed(
         &mut self,
         sheet_id: SheetId,
         validation: &Validation,
@@ -461,7 +462,11 @@ impl PendingTransaction {
         changed_selections
     }
 
-    pub fn validation_warning_added(&mut self, sheet_id: SheetId, warning: JsValidationWarning) {
+    pub(crate) fn validation_warning_added(
+        &mut self,
+        sheet_id: SheetId,
+        warning: JsValidationWarning,
+    ) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -472,7 +477,7 @@ impl PendingTransaction {
             .insert(warning.pos, warning);
     }
 
-    pub fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
+    pub(crate) fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -491,7 +496,7 @@ impl PendingTransaction {
     }
 
     /// Updates the offsets modified for a column or row.
-    pub fn offsets_modified(
+    pub(crate) fn offsets_modified(
         &mut self,
         sheet_id: SheetId,
         column: Option<i64>,
@@ -512,7 +517,7 @@ impl PendingTransaction {
     }
 
     /// Adds an updated selection to the transaction
-    pub fn add_update_selection(&mut self, selection: A1Selection) {
+    pub(crate) fn add_update_selection(&mut self, selection: A1Selection) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -523,7 +528,7 @@ impl PendingTransaction {
     }
 
     /// Adds a sheet id to the fill cells set.
-    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+    pub(crate) fn add_fill_cells(&mut self, sheet_id: SheetId) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -532,7 +537,7 @@ impl PendingTransaction {
     }
 
     /// Adds a sheet id to the borders set.
-    pub fn add_borders(&mut self, sheet_id: SheetId) {
+    pub(crate) fn add_borders(&mut self, sheet_id: SheetId) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
@@ -540,7 +545,7 @@ impl PendingTransaction {
         self.sheet_borders.insert(sheet_id);
     }
 
-    pub fn add_content_cache(&mut self, sheet_id: SheetId) {
+    pub(crate) fn add_content_cache(&mut self, sheet_id: SheetId) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }

@@ -7,7 +7,7 @@ use super::Validations;
 
 impl Validations {
     /// Copies validations to the clipboard for the Selection and translates them to the clipboard origin.
-    pub fn to_clipboard(
+    pub(crate) fn to_clipboard(
         &self,
         selection: &A1Selection,
         clipboard_origin: &ClipboardOrigin,

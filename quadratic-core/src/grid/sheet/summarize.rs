@@ -13,7 +13,7 @@ const MAX_SUMMARIZE_SELECTION_SIZE: i64 = 50000;
 impl Sheet {
     /// Returns the summary of values in the Grid. If there is there is less
     /// than two values, then returns None.
-    pub fn summarize_selection(
+    pub(crate) fn summarize_selection(
         &self,
         selection: A1Selection,
         max_decimals: i64,

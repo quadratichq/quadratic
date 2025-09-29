@@ -10,7 +10,7 @@ use super::*;
 impl TableRef {
     /// Returns any columns that have content in the TableRef that are between
     /// from and to.
-    pub fn selected_cols(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_cols(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut cols = vec![];
 
         if let Some(table) = a1_context.try_table(&self.table_name) {
@@ -55,12 +55,12 @@ impl TableRef {
     }
 
     /// Returns all columns that have content in the TableRef.
-    pub fn selected_cols_finite(&self, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_cols_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         // a table cannot be infinite, so we can just use UNBOUNDED
         self.selected_cols(1, UNBOUNDED, a1_context)
     }
 
-    pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         let mut rows = vec![];
 
         if let Some(table) = a1_context.try_table(&self.table_name) {
@@ -81,13 +81,13 @@ impl TableRef {
         rows
     }
 
-    pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         // a table cannot be infinite, so we can just use UNBOUNDED
         self.selected_rows(1, UNBOUNDED, a1_context)
     }
 
     /// Whether the TableRef has more than one cell.
-    pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
+    pub(crate) fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
         let Some(table_entry) = a1_context.try_table(&self.table_name) else {
             return false;
         };
@@ -126,7 +126,7 @@ impl TableRef {
                 + if table_entry.show_columns { 1 } else { 0 }
     }
 
-    pub fn to_largest_rect(&self, a1_context: &A1Context) -> Option<Rect> {
+    pub(crate) fn to_largest_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         let table = a1_context.try_table(&self.table_name)?;
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
@@ -183,7 +183,7 @@ impl TableRef {
     }
 
     /// Returns the cursor position from the last range.
-    pub fn cursor_pos_from_last_range(&self, a1_context: &A1Context) -> Pos {
+    pub(crate) fn cursor_pos_from_last_range(&self, a1_context: &A1Context) -> Pos {
         if let Some(table) = a1_context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
             let y = table.bounds.min.y
@@ -204,7 +204,7 @@ impl TableRef {
 
     /// Returns true if the table ref may be two-dimensional--ie, if it has
     /// unbounded ranges that may change.
-    pub fn is_two_dimensional(&self) -> bool {
+    pub(crate) fn is_two_dimensional(&self) -> bool {
         match &self.col_range {
             ColRange::All => true,
             ColRange::Col(_) => false,
@@ -214,13 +214,13 @@ impl TableRef {
     }
 
     /// Tries to convert the TableRef to a Pos.
-    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
+    pub(crate) fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         let range = self.convert_to_ref_range_bounds(false, a1_context, false, false)?;
         range.try_to_pos()
     }
 
     /// Returns the columns that are selected in the table.
-    pub fn table_column_selection(
+    pub(crate) fn table_column_selection(
         &self,
         table_name: &str,
         a1_context: &A1Context,

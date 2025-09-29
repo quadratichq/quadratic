@@ -1,13 +1,10 @@
-use crate::{
-    Pos, Rect,
-    a1::{A1Context, UNBOUNDED},
-};
+use crate::{Pos, Rect, a1::A1Context};
 
 use super::CellRefRange;
 
 impl CellRefRange {
     /// Range only contains a selection within a single column
-    pub fn contains_only_column(&self, column: i64) -> bool {
+    pub(crate) fn contains_only_column(&self, column: i64) -> bool {
         match self {
             Self::Sheet { range } => range.start.col() == column && range.end.col() == column,
             Self::Table { .. } => false,
@@ -15,49 +12,15 @@ impl CellRefRange {
     }
 
     /// Range only contains a selection within a single row
-    pub fn contains_only_row(&self, row: i64) -> bool {
+    pub(crate) fn contains_only_row(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.start.row() == row && range.end.row() == row,
             Self::Table { .. } => false,
         }
     }
 
-    /// Returns true if the range is a single column range.
-    pub fn only_column(&self, column: i64) -> bool {
-        match self {
-            Self::Sheet { range } => {
-                if range.start.col() != column || range.end.col() != column {
-                    return false;
-                }
-
-                if range.start.row() != 1 || range.end.row() != UNBOUNDED {
-                    return false;
-                }
-            }
-            Self::Table { .. } => return false,
-        }
-        true
-    }
-
-    /// Returns true if the range is a single row range.
-    pub fn only_row(&self, row: i64) -> bool {
-        match self {
-            Self::Sheet { range } => {
-                if range.start.row() != row || range.end.row() != row {
-                    return false;
-                }
-
-                if range.start.col() != 1 || range.end.col() != UNBOUNDED {
-                    return false;
-                }
-            }
-            Self::Table { .. } => return false,
-        }
-        true
-    }
-
     /// Returns true if the range is a single position or a range that contains the given position.
-    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) -> bool {
+    pub(crate) fn is_pos_range(&self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => {
                 if let Some(p2) = p2 {
@@ -81,7 +44,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a single column range.
-    pub fn is_col_range(&self) -> bool {
+    pub(crate) fn is_col_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_col_range(),
             Self::Table { .. } => false,
@@ -89,7 +52,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range contains the given column.
-    pub fn has_col_range(&self, col: i64) -> bool {
+    pub(crate) fn has_col_range(&self, col: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_col_range(col),
             Self::Table { .. } => false,
@@ -97,7 +60,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a single row range.
-    pub fn is_row_range(&self) -> bool {
+    pub(crate) fn is_row_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_row_range(),
             Self::Table { .. } => false,
@@ -105,7 +68,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range contains the given row.
-    pub fn has_row_range(&self, row: i64) -> bool {
+    pub(crate) fn has_row_range(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_row_range(row),
             Self::Table { .. } => false,
@@ -113,7 +76,7 @@ impl CellRefRange {
     }
 
     /// Returns the number of columns in the range.
-    pub fn col_range(&self) -> i64 {
+    pub(crate) fn col_range(&self) -> i64 {
         match self {
             Self::Sheet { range } => range.col_range(),
             Self::Table { .. } => 0,
@@ -121,7 +84,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a finite range.
-    pub fn is_finite(&self) -> bool {
+    pub(crate) fn is_finite(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_finite(),
             Self::Table { .. } => true,
@@ -129,7 +92,7 @@ impl CellRefRange {
     }
 
     /// Returns the largest finite rectangle that contains the range.
-    pub fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
+    pub(crate) fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => range.to_rect(),
             Self::Table { range } => range.to_largest_rect(a1_context),
@@ -137,7 +100,7 @@ impl CellRefRange {
     }
 
     /// Returns the largest rectangle that contains the range.
-    pub fn to_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
+    pub(crate) fn to_rect_unbounded(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => Some(range.to_rect_unbounded()),
             Self::Table { range } => range.to_largest_rect(a1_context),
@@ -145,7 +108,7 @@ impl CellRefRange {
     }
 
     /// Returns the selected finite columns in the range.
-    pub fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_columns_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
             Self::Table { range } => range.selected_cols_finite(a1_context),
@@ -153,7 +116,7 @@ impl CellRefRange {
     }
 
     /// Returns the selected columns in the range that fall between `from` and `to`.
-    pub fn selected_columns(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_columns(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
             Self::Table { range } => range.selected_cols(from, to, a1_context),
@@ -161,7 +124,7 @@ impl CellRefRange {
     }
 
     /// Returns the selected finite rows in the range.
-    pub fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_rows_finite(&self, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
             Self::Table { range } => range.selected_rows_finite(a1_context),
@@ -169,7 +132,7 @@ impl CellRefRange {
     }
 
     /// Returns the selected rows in the range that fall between `from` and `to`.
-    pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
+    pub(crate) fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
             Self::Table { range } => range.selected_rows(from, to, a1_context),
@@ -177,7 +140,7 @@ impl CellRefRange {
     }
 
     /// Returns the position if the range is a single cell.
-    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
+    pub(crate) fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
             Self::Table { range } => range.try_to_pos(a1_context),
@@ -185,22 +148,10 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a single cell.
-    pub fn is_single_cell(&self, a1_context: &A1Context) -> bool {
+    pub(crate) fn is_single_cell(&self, a1_context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
             Self::Table { range } => range.is_single_cell(a1_context),
-        }
-    }
-
-    /// Returns a list of selected columns in the table.
-    pub fn table_column_selection(
-        &self,
-        table_name: &str,
-        a1_context: &A1Context,
-    ) -> Option<Vec<i64>> {
-        match self {
-            Self::Table { range } => range.table_column_selection(table_name, a1_context),
-            _ => None,
         }
     }
 }
@@ -208,28 +159,6 @@ impl CellRefRange {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_only_column() {
-        assert!(CellRefRange::test_a1("A").only_column(1));
-        assert!(CellRefRange::test_a1("B").only_column(2));
-        assert!(!CellRefRange::test_a1("A2:A5").only_column(1));
-        assert!(!CellRefRange::test_a1("A").only_column(2));
-        assert!(!CellRefRange::test_a1("A:B").only_column(2));
-        assert!(!CellRefRange::test_a1("A1").only_column(2));
-        assert!(!CellRefRange::test_a1("A1:D1").only_column(1));
-    }
-
-    #[test]
-    fn test_only_row() {
-        assert!(CellRefRange::test_a1("2").only_row(2));
-        assert!(CellRefRange::test_a1("5").only_row(5));
-        assert!(!CellRefRange::test_a1("A2:D2").only_row(2));
-        assert!(!CellRefRange::test_a1("2").only_row(1));
-        assert!(!CellRefRange::test_a1("1:2").only_row(1));
-        assert!(!CellRefRange::test_a1("A2").only_row(1));
-        assert!(!CellRefRange::test_a1("A2:D2").only_row(1));
-    }
 
     #[test]
     fn test_is_pos_range() {

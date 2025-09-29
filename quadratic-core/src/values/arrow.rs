@@ -24,7 +24,7 @@ fn i64_naive_date(value: i64) -> NaiveDate {
     Date64Type::to_naive_date(value)
 }
 
-pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
+pub(crate) fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
     let data_type = array.data_type();
     let array_data = array.to_data();
 

@@ -32,7 +32,7 @@ impl GridController {
     /// final_range: the range of cells to expand to
     ///
     /// cursor: the cursor position for the undo/redo stack
-    pub fn autocomplete_operations(
+    pub(crate) fn autocomplete_operations(
         &mut self,
         sheet_id: SheetId,
         initial_range: Rect,

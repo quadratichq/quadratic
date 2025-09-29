@@ -18,16 +18,16 @@ pub struct Offsets {
     sizes: BTreeMap<i64, f64>,
 }
 impl Offsets {
-    pub fn import_columns(offsets: Vec<(i64, f64)>) -> Offsets {
+    pub(crate) fn import_columns(offsets: Vec<(i64, f64)>) -> Offsets {
         Offsets::from_iter(DEFAULT_COLUMN_WIDTH, offsets.iter().copied())
     }
 
-    pub fn import_rows(offsets: Vec<(i64, f64)>) -> Offsets {
+    pub(crate) fn import_rows(offsets: Vec<(i64, f64)>) -> Offsets {
         Offsets::from_iter(DEFAULT_ROW_HEIGHT, offsets.iter().copied())
     }
 
     /// Constructs an `Offsets` structure from an iterator over key-values pairs.
-    pub fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
+    pub(crate) fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
         Offsets {
             default,
             sizes: iter.into_iter().collect(),
@@ -35,7 +35,7 @@ impl Offsets {
     }
 
     /// gets the position of an entry
-    pub fn position(&self, mut column: i64) -> f64 {
+    pub(crate) fn position(&self, mut column: i64) -> f64 {
         if column <= 0 {
             column = 1;
         }
@@ -49,12 +49,12 @@ impl Offsets {
     }
 
     /// Returns the width/height of a column/row.
-    pub fn get_size(&self, index: i64) -> f64 {
+    pub(crate) fn get_size(&self, index: i64) -> f64 {
         *self.sizes.get(&index).unwrap_or(&self.default)
     }
 
     /// Iterates over the pixel positions of a range of columns/rows.
-    pub fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
+    pub(crate) fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
         let mut current_position = self.default * (index_range.start - 1) as f64
             + self
                 .sizes
@@ -70,7 +70,7 @@ impl Offsets {
 
     /// Returns screen position for a pixel using the cumulative sums to speed
     /// up the search.
-    pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
+    pub(crate) fn find_offset(&self, pixel: f64) -> (i64, f64) {
         let mut current_sum = 0.0;
         let mut current_index = 1;
         let mut current_size = self.get_size(current_index);

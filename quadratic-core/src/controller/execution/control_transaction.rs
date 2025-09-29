@@ -127,7 +127,7 @@ impl GridController {
         }
     }
 
-    pub fn start_user_ai_transaction(
+    pub(crate) fn start_user_ai_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
@@ -152,7 +152,7 @@ impl GridController {
         transaction_id
     }
 
-    pub fn start_undo_transaction(
+    pub(crate) fn start_undo_transaction(
         &mut self,
         transaction: Transaction,
         transaction_type: TransactionSource,
@@ -165,7 +165,7 @@ impl GridController {
     }
 
     /// Externally called when an async calculation completes
-    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
+    pub(crate) fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
         let transaction_id = Uuid::parse_str(&result.transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
         self.after_calculation_async(&mut transaction, result)?;
@@ -174,7 +174,7 @@ impl GridController {
     }
 
     /// Externally called when an async connection completes
-    pub fn connection_complete(
+    pub(crate) fn connection_complete(
         &mut self,
         transaction_id: String,
         data: Vec<u8>,
@@ -281,7 +281,8 @@ impl GridController {
 pub struct CellHash(String);
 
 impl CellHash {
-    pub fn get(&self) -> String {
+    #[cfg(test)]
+    pub(crate) fn get(&self) -> String {
         self.0.clone()
     }
 }

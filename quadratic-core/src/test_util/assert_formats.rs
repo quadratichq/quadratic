@@ -3,7 +3,7 @@ use crate::{Pos, controller::GridController, grid::SheetId};
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_format_bold_row(
+pub(crate) fn assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x_start: i64,
@@ -24,7 +24,7 @@ pub fn assert_cell_format_bold_row(
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_format_bold(
+pub(crate) fn assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -46,7 +46,7 @@ pub fn assert_cell_format_bold(
 // TODO(ddimaria): refactor all format assertions into a generic function
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_format_cell_fill_color_row(
+pub(crate) fn assert_cell_format_cell_fill_color_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x_start: i64,
@@ -67,7 +67,7 @@ pub fn assert_cell_format_cell_fill_color_row(
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_format_fill_color(
+pub(crate) fn assert_cell_format_fill_color(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,

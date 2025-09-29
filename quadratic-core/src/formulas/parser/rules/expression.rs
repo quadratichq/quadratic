@@ -26,7 +26,7 @@ impl OpPrecedence {
     }
     /// Returns the next-highest precedence level. Panics if given
     /// `OpPrecedence::Atom`.
-    pub fn next(self) -> Self {
+    pub(crate) fn next(self) -> Self {
         match self {
             Self::Comparison => Self::Concat,
             Self::Concat => Self::AddSub,
@@ -42,7 +42,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of binary operators at this precedence level.
-    pub fn binary_ops(self) -> &'static [Token] {
+    pub(crate) fn binary_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
             Self::Comparison => &[Eql, Neq, Lt, Gt, Lte, Gte],
@@ -59,7 +59,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of unary prefix operators at this precedence level.
-    pub fn prefix_ops(self) -> &'static [Token] {
+    pub(crate) fn prefix_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
             Self::Prefix => &[Plus, Minus],
@@ -68,7 +68,7 @@ impl OpPrecedence {
     }
 
     /// Returns a list of unary suffix operators at this precedence level.
-    pub fn suffix_ops(self) -> &'static [Token] {
+    pub(crate) fn suffix_ops(self) -> &'static [Token] {
         use Token::*;
         match self {
             Self::Suffix => &[Percent],
@@ -78,7 +78,7 @@ impl OpPrecedence {
 
     /// Returns whether the binary operators at this precedence level are
     /// right-associative.
-    pub fn is_right_associative(self) -> bool {
+    pub(crate) fn is_right_associative(self) -> bool {
         match self {
             OpPrecedence::Pow => true,
             _ => false,

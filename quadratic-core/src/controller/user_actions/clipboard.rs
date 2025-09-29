@@ -10,7 +10,7 @@ use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
 
 impl GridController {
     /// using a selection, cut the contents on the grid to the clipboard
-    pub fn cut_to_clipboard(
+    pub(crate) fn cut_to_clipboard(
         &mut self,
         selection: &A1Selection,
         include_display_values: bool,
@@ -77,7 +77,7 @@ impl GridController {
 
     /// move cells from source to dest
     /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
-    pub fn move_cells(
+    pub(crate) fn move_cells(
         &mut self,
         source: SheetRect,
         dest: SheetPos,
@@ -94,7 +94,7 @@ impl GridController {
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved up
     #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_vertically(
+    pub(crate) fn move_code_cell_vertically(
         &mut self,
         sheet_id: SheetId,
         x: i64,
@@ -141,7 +141,7 @@ impl GridController {
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved left
     #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_horizontally(
+    pub(crate) fn move_code_cell_horizontally(
         &mut self,
         sheet_id: SheetId,
         x: i64,

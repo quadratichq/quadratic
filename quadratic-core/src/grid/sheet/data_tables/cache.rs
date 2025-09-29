@@ -27,7 +27,7 @@ pub struct SheetDataTablesCache {
 
 impl SheetDataTablesCache {
     /// Returns the bounds of the column or None if the column is empty of content.
-    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+    pub(crate) fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
         let single_cell_min = self.single_cell_tables.col_min(column);
         let multi_cell_min = self.multi_cell_tables.col_min(column);
         let min = match (single_cell_min > 0, multi_cell_min > 0) {
@@ -50,7 +50,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the bounds of the row or None if the row is empty of content.
-    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+    pub(crate) fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         let single_cell_min = self.single_cell_tables.row_min(row);
         let multi_cell_min = self.multi_cell_tables.row_min(row);
         let min = match (single_cell_min > 0, multi_cell_min > 0) {
@@ -73,7 +73,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the finite bounds of the sheet data tables.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         match (
             self.single_cell_tables.finite_bounds(),
             self.multi_cell_tables.finite_bounds(),
@@ -88,7 +88,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
-    pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
+    pub(crate) fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
         if self.single_cell_tables.get(pos).is_some() {
             Some(pos)
         } else {
@@ -98,7 +98,7 @@ impl SheetDataTablesCache {
 
     /// Returns true if the cell has content, ignoring blank cells within a
     /// multi-cell data table.
-    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+    pub(crate) fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
         self.single_cell_tables.get(pos).is_some()
             || self
                 .multi_cell_tables
@@ -107,12 +107,12 @@ impl SheetDataTablesCache {
     }
 
     /// Returns true if the cell has an empty value
-    pub fn has_empty_value(&self, pos: Pos) -> bool {
+    pub(crate) fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables.has_empty_value(pos)
     }
 
     /// Returns whether there are any code cells within a selection
-    pub fn code_in_selection(&self, selection: &A1Selection, context: &A1Context) -> bool {
+    pub(crate) fn code_in_selection(&self, selection: &A1Selection, context: &A1Context) -> bool {
         let sheet_id = selection.sheet_id;
         for range in selection.ranges.iter() {
             if let Some(rect) = range.to_rect_unbounded(context) {
@@ -136,7 +136,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the unique table anchor positions in range
-    pub fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
+    pub(crate) fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
         self.single_cell_tables
             .nondefault_rects_in_range(range)
             .flat_map(|(rect, _)| {
@@ -152,7 +152,7 @@ impl SheetDataTablesCache {
     }
 
     /// Returns the rectangles that have some value in the given rectangle.
-    pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
+    pub(crate) fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
         self.single_cell_tables
             .nondefault_rects_in_rect(rect)
             .map(|(rect, _)| rect)
@@ -163,12 +163,12 @@ impl SheetDataTablesCache {
             )
     }
 
-    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+    pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content_in_rect(rect)
     }
 
     /// Checks for any tables in the rect except for the given position
-    pub fn has_content_except(&self, rect: Rect, except: Pos) -> bool {
+    pub(crate) fn has_content_except(&self, rect: Rect, except: Pos) -> bool {
         self.single_cell_tables
             .nondefault_rects_in_rect(rect)
             .any(|(rect, _)| rect.iter().any(|p| p != except))
@@ -193,19 +193,19 @@ pub struct MultiCellTablesCache {
 }
 
 impl MultiCellTablesCache {
-    pub fn new() -> Self {
-        Self {
-            multi_cell_tables: Contiguous2D::new(),
-            multi_cell_tables_empty: Contiguous2D::new(),
-        }
-    }
-
     /// Returns anchor position of the data table whose output rect contains the given position
-    pub fn get(&self, pos: Pos) -> Option<Pos> {
+    pub(crate) fn get(&self, pos: Pos) -> Option<Pos> {
         self.multi_cell_tables.get(pos)
     }
 
-    pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
+    pub(crate) fn set_rect(
+        &mut self,
+        x1: i64,
+        y1: i64,
+        x2: i64,
+        y2: i64,
+        data_table: Option<&DataTable>,
+    ) {
         if let Some(data_table) = data_table {
             // Update output rect
             self.multi_cell_tables
@@ -316,12 +316,12 @@ impl MultiCellTablesCache {
     }
 
     /// Returns true if all cells in the rect do not have a table output
-    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
+    pub(crate) fn is_all_default_in_rect(&self, rect: Rect) -> bool {
         self.multi_cell_tables.is_all_default_in_rect(rect)
     }
 
     /// Return rects which have table output
-    pub fn nondefault_rects_in_rect(
+    pub(crate) fn nondefault_rects_in_rect(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Option<Pos>)> {
@@ -329,46 +329,46 @@ impl MultiCellTablesCache {
     }
 
     /// Returns the unique table anchor positions in rect
-    pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<Option<Pos>> {
+    pub(crate) fn unique_values_in_rect(&self, rect: Rect) -> HashSet<Option<Pos>> {
         self.multi_cell_tables.unique_values_in_rect(rect)
     }
 
     /// Returns the unique table anchor positions in range
-    pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<Option<Pos>> {
+    pub(crate) fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<Option<Pos>> {
         self.multi_cell_tables.unique_values_in_range(range)
     }
 
     /// Returns the minimum column index of the multi-cell data tables
-    pub fn col_min(&self, column: i64) -> i64 {
+    pub(crate) fn col_min(&self, column: i64) -> i64 {
         self.multi_cell_tables.col_min(column)
     }
 
     /// Returns the maximum column index of the multi-cell data tables
-    pub fn col_max(&self, column: i64) -> i64 {
+    pub(crate) fn col_max(&self, column: i64) -> i64 {
         self.multi_cell_tables.col_max(column)
     }
 
     /// Returns the minimum row index of the multi-cell data tables
-    pub fn row_min(&self, row: i64) -> i64 {
+    pub(crate) fn row_min(&self, row: i64) -> i64 {
         self.multi_cell_tables.row_min(row)
     }
 
     /// Returns the maximum row index of the multi-cell data tables
-    pub fn row_max(&self, row: i64) -> i64 {
+    pub(crate) fn row_max(&self, row: i64) -> i64 {
         self.multi_cell_tables.row_max(row)
     }
 
     /// Returns the finite bounds of the multi-cell data tables
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         self.multi_cell_tables.finite_bounds()
     }
 
     /// Returns true if the cell has an empty value
-    pub fn has_empty_value(&self, pos: Pos) -> bool {
+    pub(crate) fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables_empty.get(pos).is_some()
     }
 
-    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+    pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.multi_cell_tables.intersects(rect)
     }
 }

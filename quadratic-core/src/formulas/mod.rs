@@ -30,13 +30,13 @@ pub use parser::*;
 use wildcards::wildcard_pattern_to_regex;
 
 /// Escapes a formula string.
-pub fn escape_string(s: &str) -> String {
+pub(crate) fn escape_string(s: &str) -> String {
     // TODO: update with https://github.com/quadratichq/quadratic/issues/511
     format!("{s:?}")
 }
 /// Parses and unescapes a formula string, returning `None` if the string
 /// literal is malformed.
-pub fn parse_string_literal(s: &str) -> Option<String> {
+pub(crate) fn parse_string_literal(s: &str) -> Option<String> {
     let mut string_contents = String::new();
     let mut chars = s.chars().peekable();
     let quote = chars.next()?;
@@ -60,7 +60,7 @@ pub fn parse_string_literal(s: &str) -> Option<String> {
 }
 
 /// Parses a sheet name from a string, returning the sheet name and the rest of the string
-pub fn parse_sheet_name(s: &str) -> (Option<String>, String) {
+pub(crate) fn parse_sheet_name(s: &str) -> (Option<String>, String) {
     let mut remaining = s;
 
     let sheet = s.rsplit_once('!').and_then(|(sheet_name, rest)| {

@@ -19,7 +19,7 @@ pub struct TableMap {
 }
 
 impl TableMap {
-    pub fn insert(&mut self, table_map_entry: TableMapEntry) {
+    pub(crate) fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
         let sheet_pos = table_map_entry
             .bounds
@@ -30,20 +30,22 @@ impl TableMap {
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
-    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
+    pub(crate) fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
         self.insert(table_map_entry);
     }
 
-    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
+    pub(crate) fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
         if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id))
             && let Some(table) = self.tables.get(&table_name)
-                && table.sheet_id == sheet_id && table.bounds.min == pos {
-                    self.tables.swap_remove(&table_name);
-                }
+            && table.sheet_id == sheet_id
+            && table.bounds.min == pos
+        {
+            self.tables.swap_remove(&table_name);
+        }
     }
 
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) {
+    pub(crate) fn remove_sheet(&mut self, sheet_id: SheetId) {
         self.sheet_pos_to_table.retain(|sheet_pos, name| {
             if sheet_pos.sheet_id == sheet_id {
                 self.tables.swap_remove(name);
@@ -54,25 +56,31 @@ impl TableMap {
         });
     }
 
-    pub fn sort(&mut self) {
+    pub(crate) fn sort(&mut self) {
         self.tables
             .sort_unstable_by(|k1, _, k2, _| k1.len().cmp(&k2.len()).then(k1.cmp(k2)));
     }
 
     /// Finds a table by name.
-    pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
+    pub(crate) fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         let table_name = case_fold_ascii(table_name);
         self.tables.get(&table_name)
     }
 
     /// Finds a table by name.
-    pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
+    #[cfg(test)]
+    pub(crate) fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
         let table_name = case_fold_ascii(table_name);
         self.tables.get_mut(&table_name)
     }
 
     /// Returns true if the table has a column with the given name.
-    pub fn table_has_column(&self, table_name: &str, column_name: &str, index: usize) -> bool {
+    pub(crate) fn table_has_column(
+        &self,
+        table_name: &str,
+        column_name: &str,
+        index: usize,
+    ) -> bool {
         let column_name_folded = case_fold_ascii(column_name);
         self.try_table(table_name)
             .map(|table| {
@@ -85,39 +93,18 @@ impl TableMap {
             .unwrap_or(false)
     }
 
-    /// Returns an iterator over the table names in the table map.
-    pub fn iter_table_names(&self) -> impl Iterator<Item = &String> {
-        self.tables.keys()
-    }
-
     /// Returns an iterator over the table names in the table map in reverse order.
-    pub fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
+    pub(crate) fn iter_rev_table_names(&self) -> impl Iterator<Item = &String> {
         self.tables.keys().rev()
     }
 
     /// Returns an iterator over the TableMapEntry in the table map.
-    pub fn iter_table_values(&self) -> impl Iterator<Item = &TableMapEntry> {
+    pub(crate) fn iter_table_values(&self) -> impl Iterator<Item = &TableMapEntry> {
         self.tables.values()
     }
 
-    /// Returns an iterator over the TableMapEntry in a sheet.
-    pub fn iter_table_values_in_sheet(
-        &self,
-        sheet_id: SheetId,
-    ) -> impl Iterator<Item = &TableMapEntry> {
-        self.sheet_pos_to_table
-            .iter()
-            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
-            .flat_map(|(_, table_name)| self.tables.get(table_name))
-    }
-
-    /// Returns a list of all table names in the table map.
-    pub fn table_names(&self) -> Vec<String> {
-        self.tables.values().map(|t| t.table_name.clone()).collect()
-    }
-
     /// Finds a table by position
-    pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+    pub(crate) fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
         if let Some(table_name) = self.sheet_pos_to_table.get(&sheet_pos) {
             self.tables.get(table_name)
         } else {
@@ -127,18 +114,7 @@ impl TableMap {
         }
     }
 
-    pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
-        if let Some(table) = self.try_table_mut(table_name)
-            && let Some(index) = table
-                .visible_columns
-                .iter()
-                .position(|col| col == column_name)
-            {
-                table.visible_columns.remove(index);
-            }
-    }
-
-    pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
+    pub(crate) fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
             if let Some(sheet_pos) = skip_sheet_pos {
@@ -152,7 +128,7 @@ impl TableMap {
     }
 
     /// Returns JsTableInfo for all non-formula tables.
-    pub fn expensive_table_info(&self) -> Vec<JsTableInfo> {
+    pub(crate) fn expensive_table_info(&self) -> Vec<JsTableInfo> {
         self.iter_table_values()
             .filter_map(|table| {
                 if table.language != CodeCellLanguage::Formula && table.bounds.len() > 1 {
@@ -170,7 +146,7 @@ impl TableMap {
     }
 
     /// Finds a table by position.
-    pub fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+    pub(crate) fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
         self.sheet_pos_to_table
             .get(&sheet_pos)
             .and_then(|table_name| self.tables.get(table_name))
@@ -180,7 +156,7 @@ impl TableMap {
     ///
     /// if all_columns is None, then it uses visible_columns.
     #[cfg(test)]
-    pub fn test_insert(
+    pub(crate) fn test_insert(
         &mut self,
         table_name: &str,
         visible_columns: &[&str],
@@ -199,7 +175,7 @@ impl TableMap {
 
     // shift_remove is expensive, so we should only use it for testing
     #[cfg(test)]
-    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
+    pub(crate) fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
         if let Some(table) = self.tables.shift_remove(&table_name_folded) {
             let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);

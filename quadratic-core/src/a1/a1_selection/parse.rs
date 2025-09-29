@@ -8,7 +8,7 @@ impl A1Selection {
     ///
     /// Returns an error if ranges refer to different sheets. Ranges without an
     /// explicit sheet use `default_sheet_id`.
-    pub fn parse_a1(
+    pub(crate) fn parse_a1(
         a1: &str,
         default_sheet_id: SheetId,
         a1_context: &A1Context,
@@ -23,7 +23,7 @@ impl A1Selection {
     ///
     /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
     /// `Some`, then A1 and RC notation are both accepted.
-    pub fn parse(
+    pub(crate) fn parse(
         s: &str,
         default_sheet_id: SheetId,
         a1_context: &A1Context,

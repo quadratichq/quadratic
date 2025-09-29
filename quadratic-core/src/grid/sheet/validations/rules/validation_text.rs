@@ -38,7 +38,7 @@ pub struct ValidationText {
 
 impl ValidationText {
     // Validate a CellValue against the validation rule.
-    pub fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
         if let Some(value) = value {
             match value {
                 CellValue::Text(text) => {

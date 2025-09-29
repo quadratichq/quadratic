@@ -4,7 +4,7 @@ use crate::controller::GridController;
 use super::SheetId;
 
 impl GridController {
-    pub fn a1_selection_from_string(
+    pub(crate) fn a1_selection_from_string(
         &self,
         a1: &str,
         default_sheet_id: SheetId,

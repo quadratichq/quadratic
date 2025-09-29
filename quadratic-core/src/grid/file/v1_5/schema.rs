@@ -206,7 +206,7 @@ pub enum CellValue {
     Image(String),
 }
 
-pub fn string_bool(s: String) -> bool {
+pub(crate) fn string_bool(s: String) -> bool {
     match s.to_ascii_lowercase().as_str() {
         "true" => true,
         _ => false,

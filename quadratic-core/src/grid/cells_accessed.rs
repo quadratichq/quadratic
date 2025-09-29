@@ -90,21 +90,15 @@ impl From<CellsAccessed> for Vec<JsCellsAccessed> {
 }
 
 impl CellsAccessed {
-    pub fn new() -> Self {
-        Self {
-            cells: HashMap::new(),
-        }
-    }
-
     /// Add a range to the set of cells accessed for a given sheet.
-    pub fn add(&mut self, sheet_id: SheetId, range: CellRefRange) {
+    pub(crate) fn add(&mut self, sheet_id: SheetId, range: CellRefRange) {
         self.cells.entry(sheet_id).or_default().insert(range);
     }
 
     /// Add a SheetPos to the set of cells accessed. This is a helper function
     /// that adds a relative Pos to teh set of cells accessed. This should be
     /// replaced with an A1Type and deprecated.
-    pub fn add_sheet_pos(&mut self, sheet_pos: SheetPos) {
+    pub(crate) fn add_sheet_pos(&mut self, sheet_pos: SheetPos) {
         let range = CellRefRange::new_relative_pos(sheet_pos.into());
         self.add(sheet_pos.sheet_id, range);
     }
@@ -112,13 +106,14 @@ impl CellsAccessed {
     /// Add a SheetRect to the set of cells accessed. This is a helper function
     /// that adds a relative Rect to the set of cells accessed. This should be
     /// replaced with an A1Type and deprecated (except for tests)
-    pub fn add_sheet_rect(&mut self, sheet_rect: SheetRect) {
+    pub(crate) fn add_sheet_rect(&mut self, sheet_rect: SheetRect) {
         let range = CellRefRange::new_relative_rect(sheet_rect.into());
         self.add(sheet_rect.sheet_id, range);
     }
 
     /// Whether the CellsAccessed intersects the SheetRect.
-    pub fn intersects(&self, sheet_rect: &SheetRect, a1_context: &A1Context) -> bool {
+    #[cfg(test)]
+    pub(crate) fn intersects(&self, sheet_rect: &SheetRect, a1_context: &A1Context) -> bool {
         let rect: Rect = (*sheet_rect).into();
         self.cells
             .iter()
@@ -137,7 +132,7 @@ impl CellsAccessed {
     }
 
     /// Whether this CellsAccessed contains the SheetPos.
-    pub fn contains(&self, pos: SheetPos, a1_context: &A1Context) -> bool {
+    pub(crate) fn contains(&self, pos: SheetPos, a1_context: &A1Context) -> bool {
         self.cells
             .iter()
             .filter_map(|(sheet_id, ranges)| {
@@ -155,20 +150,22 @@ impl CellsAccessed {
     }
 
     /// Clears the CellsAccessed.
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.cells.clear();
     }
 
     /// Returns the number of sheets that have been accessed.
-    pub fn len(&self, sheet_id: SheetId) -> Option<usize> {
+    #[cfg(test)]
+    pub(crate) fn len(&self, sheet_id: SheetId) -> Option<usize> {
         self.cells.get(&sheet_id).map(|ranges| ranges.len())
     }
 
-    pub fn sheet_iter(&self, sheet_id: SheetId) -> impl Iterator<Item = &CellRefRange> {
+    #[cfg(test)]
+    pub(crate) fn sheet_iter(&self, sheet_id: SheetId) -> impl Iterator<Item = &CellRefRange> {
         self.cells.get(&sheet_id).into_iter().flatten()
     }
 
-    pub fn iter_rects_unbounded(
+    pub(crate) fn iter_rects_unbounded(
         &self,
         a1_context: &A1Context,
     ) -> impl Iterator<Item = (SheetId, Rect)> {

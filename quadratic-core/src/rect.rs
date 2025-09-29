@@ -71,7 +71,7 @@ impl Rect {
     }
 
     /// Creates a rectangle from one x, y position and a width and height
-    pub fn from_numbers(x: i64, y: i64, w: i64, h: i64) -> Rect {
+    pub(crate) fn from_numbers(x: i64, y: i64, w: i64, h: i64) -> Rect {
         Rect {
             min: Pos { x, y },
             max: Pos {
@@ -82,12 +82,12 @@ impl Rect {
     }
 
     /// Constructs a new rectangle containing only a single cell.
-    pub fn single_pos(pos: Pos) -> Rect {
+    pub(crate) fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
     }
 
     /// Extends the rectangle enough to include a cell.
-    pub fn extend_to(&mut self, pos: Pos) {
+    pub(crate) fn extend_to(&mut self, pos: Pos) {
         self.min.x = std::cmp::min(self.min.x, pos.x);
         self.min.y = std::cmp::min(self.min.y, pos.y);
         self.max.x = std::cmp::max(self.max.x, pos.x);
@@ -95,7 +95,8 @@ impl Rect {
     }
 
     /// Constructs a rectangle from an X range and a Y range.
-    pub fn from_ranges(xs: RangeInclusive<i64>, ys: RangeInclusive<i64>) -> Rect {
+    #[cfg(test)]
+    pub(crate) fn from_ranges(xs: RangeInclusive<i64>, ys: RangeInclusive<i64>) -> Rect {
         Rect {
             min: Pos {
                 x: *xs.start(),
@@ -108,12 +109,12 @@ impl Rect {
         }
     }
 
-    pub fn size(self) -> ArraySize {
+    pub(crate) fn size(self) -> ArraySize {
         ArraySize::new(self.width(), self.height()).expect("empty rectangle has no size")
     }
 
     /// Constructs a rectangle from a top-left position and a size.
-    pub fn from_pos_and_size(top_left: Pos, size: ArraySize) -> Self {
+    pub(crate) fn from_pos_and_size(top_left: Pos, size: ArraySize) -> Self {
         Rect {
             min: top_left,
             max: Pos {
@@ -124,12 +125,12 @@ impl Rect {
     }
 
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(&self, pos: Pos) -> bool {
+    pub(crate) fn contains(&self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
     /// Returns whether other is fully contained within self
-    pub fn contains_rect(&self, other: &Rect) -> bool {
+    pub(crate) fn contains_rect(&self, other: &Rect) -> bool {
         self.x_range().contains(&other.min.x)
             && self.x_range().contains(&other.max.x)
             && self.y_range().contains(&other.min.y)
@@ -137,7 +138,7 @@ impl Rect {
     }
 
     /// Returns whether a rectangle intersects with the rectangle.
-    pub fn intersects(self, other: Rect) -> bool {
+    pub(crate) fn intersects(self, other: Rect) -> bool {
         !(other.max.x < self.min.x
             || other.min.x > self.max.x
             || other.max.y < self.min.y
@@ -145,51 +146,47 @@ impl Rect {
     }
 
     /// Returns the range of X values in the rectangle.
-    pub fn x_range(self) -> RangeInclusive<i64> {
+    pub(crate) fn x_range(self) -> RangeInclusive<i64> {
         self.min.x..=self.max.x
     }
 
     /// Returns the range of Y values in the rectangle.
-    pub fn y_range(self) -> RangeInclusive<i64> {
+    pub(crate) fn y_range(self) -> RangeInclusive<i64> {
         self.min.y..=self.max.y
     }
 
     /// Returns the width of the region.
-    pub fn width(&self) -> u32 {
+    pub(crate) fn width(&self) -> u32 {
         (self.max.x - self.min.x + 1) as u32
     }
     /// Returns the height of the region.
-    pub fn height(&self) -> u32 {
+    pub(crate) fn height(&self) -> u32 {
         (self.max.y - self.min.y + 1) as u32
     }
 
-    pub fn len(&self) -> u32 {
+    pub(crate) fn len(&self) -> u32 {
         self.width() * self.height()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.width() == 0 || self.height() == 0
-    }
-
-    pub fn translate(&self, x: i64, y: i64) -> Self {
+    pub(crate) fn translate(&self, x: i64, y: i64) -> Self {
         let mut rect = *self;
         rect.translate_in_place(x, y);
         rect
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         self.min.x += x;
         self.min.y += y;
         self.max.x += x;
         self.max.y += y;
     }
 
-    pub fn iter(self) -> impl Iterator<Item = Pos> {
+    pub(crate) fn iter(self) -> impl Iterator<Item = Pos> {
         let Rect { min, max } = self;
         (min.y..=max.y).flat_map(move |y| (min.x..=max.x).map(move |x| Pos { x, y }))
     }
 
-    pub fn union(&self, other: &Self) -> Self {
+    pub(crate) fn union(&self, other: &Self) -> Self {
         let min_x = std::cmp::min(self.min.x, other.min.x);
         let min_y = std::cmp::min(self.min.y, other.min.y);
         let max_x = std::cmp::max(self.max.x, other.max.x);
@@ -200,52 +197,23 @@ impl Rect {
         }
     }
 
-    pub fn union_in_place(&mut self, other: &Self) {
-        self.min.x = self.min.x.min(other.min.x);
-        self.min.y = self.min.y.min(other.min.y);
-        self.max.x = self.max.x.max(other.max.x);
-        self.max.y = self.max.y.max(other.max.y);
-    }
-
-    pub fn count(&self) -> usize {
+    pub(crate) fn count(&self) -> usize {
         self.width() as usize * self.height() as usize
     }
 
-    /// Creates a bounding rect from a list of positions
-    pub fn from_positions(positions: Vec<Pos>) -> Option<Rect> {
-        if positions.is_empty() {
-            return None;
-        }
-
-        let mut min_x = i64::MAX;
-        let mut min_y = i64::MAX;
-        let mut max_x = i64::MIN;
-        let mut max_y = i64::MIN;
-
-        for pos in positions {
-            min_x = min_x.min(pos.x);
-            min_y = min_y.min(pos.y);
-            max_x = max_x.max(pos.x);
-            max_y = max_y.max(pos.y);
-        }
-
-        Some(Rect {
-            min: Pos { x: min_x, y: min_y },
-            max: Pos { x: max_x, y: max_y },
-        })
-    }
-
-    pub fn extend_x(&mut self, x: i64) {
+    #[cfg(test)]
+    pub(crate) fn extend_x(&mut self, x: i64) {
         self.min.x = self.min.x.min(x);
         self.max.x = self.max.x.max(x);
     }
 
-    pub fn extend_y(&mut self, y: i64) {
+    #[cfg(test)]
+    pub(crate) fn extend_y(&mut self, y: i64) {
         self.min.y = self.min.y.min(y);
         self.max.y = self.max.y.max(y);
     }
 
-    pub fn to_hashes(&self) -> HashSet<Pos> {
+    pub(crate) fn to_hashes(&self) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         let min_hash = self.min.quadrant();
         let max_hash = self.max.quadrant();
@@ -257,12 +225,12 @@ impl Rect {
         hashes
     }
 
-    pub fn a1_string(&self) -> String {
+    pub(crate) fn a1_string(&self) -> String {
         format!("{}:{}", self.min.a1_string(), self.max.a1_string())
     }
 
     /// Finds the intersection of two rectangles.
-    pub fn intersection(&self, other: &Rect) -> Option<Rect> {
+    pub(crate) fn intersection(&self, other: &Rect) -> Option<Rect> {
         let x1 = self.min.x.max(other.min.x);
         let y1 = self.min.y.max(other.min.y);
         let x2 = self.max.x.min(other.max.x);
@@ -279,7 +247,7 @@ impl Rect {
     }
 
     /// Subtracts `other` from `self`. This will result in 0 to 4 rectangles.
-    pub fn subtract(self, other: Rect) -> SmallVec<[Rect; 4]> {
+    pub(crate) fn subtract(self, other: Rect) -> SmallVec<[Rect; 4]> {
         if self.intersection(&other).is_none() {
             smallvec![self]
         } else {
@@ -300,53 +268,9 @@ impl Rect {
         }
     }
 
-    // whether two rects can merge without leaving a gap (but allow overlap)
-    pub fn can_merge(&self, other: &Rect) -> bool {
-        // Check if the rectangles are adjacent or overlapping in either x or y direction
-        let x_merge = self.min.x <= other.max.x && other.min.x <= self.max.x;
-        let y_merge = self.min.y <= other.max.y && other.min.y <= self.max.y;
-
-        // Check if one rectangle fully contains the other
-        let contains = self.contains(other.min) && self.contains(other.max)
-            || other.contains(self.min) && other.contains(self.max);
-
-        // Check if the rectangles have the same height and can merge horizontally
-        let horizontal_merge = self.height() == other.height() && x_merge;
-
-        // Check if the rectangles have the same width and can merge vertically
-        let vertical_merge = self.width() == other.width() && y_merge;
-
-        // The rectangles can merge if they can merge horizontally, vertically, or if one contains the other
-        horizontal_merge || vertical_merge || contains
-    }
-
-    /// Returns whether a column is contained within the rectangle.
-    pub fn contains_col(&self, col: i64) -> bool {
-        col >= self.min.x && col <= self.max.x
-    }
-
-    /// Returns whether a row is contained within the rectangle.
-    pub fn contains_row(&self, row: i64) -> bool {
-        row >= self.min.y && row <= self.max.y
-    }
-
-    /// Returns intersection of a range of columns with the rectangle
-    pub fn cols_range(&self, from: i64, to: i64) -> Vec<i64> {
-        (self.min.x..=self.max.x)
-            .filter(|x| *x >= from && *x <= to)
-            .collect()
-    }
-
-    /// Returns intersection of a range of rows with the rectangle
-    pub fn rows_range(&self, from: i64, to: i64) -> Vec<i64> {
-        (self.min.y..=self.max.y)
-            .filter(|y| *y >= from && *y <= to)
-            .collect()
-    }
-
     #[cfg(test)]
     /// Creates a rectangle from a string like "A1:B2".
-    pub fn test_a1(s: &str) -> Self {
+    pub(crate) fn test_a1(s: &str) -> Self {
         use crate::a1::A1Context;
 
         crate::a1::CellRefRange::test_a1(s)
@@ -538,16 +462,6 @@ mod test {
     }
 
     #[test]
-    fn test_is_empty() {
-        let rect = Rect::from_ranges(1..=3, 2..=4);
-        assert!(!rect.is_empty());
-        let rect = Rect::from_numbers(0, 1, 1, 0);
-        assert!(rect.is_empty());
-        let rect = Rect::from_numbers(0, 1, 0, 1);
-        assert!(rect.is_empty());
-    }
-
-    #[test]
     fn test_translate_in_place() {
         let mut rect = Rect::from_ranges(1..=3, 2..=4);
         rect.translate_in_place(1, 2);
@@ -584,16 +498,6 @@ mod test {
     fn count() {
         let rect = Rect::from_numbers(1, 2, 3, 4);
         assert_eq!(rect.count(), 12);
-    }
-
-    #[test]
-    fn rect_from_positions() {
-        let positions = vec![Pos { x: 1, y: 1 }, Pos { x: 2, y: 2 }];
-        let bounds = Rect::from_positions(positions).unwrap();
-        assert_eq!(bounds.min.x, 1);
-        assert_eq!(bounds.min.y, 1);
-        assert_eq!(bounds.max.x, 2);
-        assert_eq!(bounds.max.y, 2);
     }
 
     #[test]
@@ -637,31 +541,6 @@ mod test {
         let rect3 = Rect::new(4, 5, 6, 7);
         assert!(rect1.intersection(&rect3).is_none());
         assert_eq!(rect2.intersection(&rect3).unwrap(), Rect::new(4, 5, 4, 5));
-    }
-
-    #[test]
-    fn can_merge() {
-        let rect = Rect::new(0, 0, 2, 2);
-
-        assert!(rect.can_merge(&Rect::new(2, 0, 4, 2)));
-        assert!(rect.can_merge(&Rect::new(0, 2, 2, 4)));
-        assert!(!rect.can_merge(&Rect::new(3, 3, 5, 5)));
-        assert!(rect.can_merge(&Rect::new(1, 1, 3, 3)));
-        assert!(rect.can_merge(&Rect::new(0, 0, 4, 4)));
-    }
-
-    #[test]
-    fn test_contains_col() {
-        let rect = Rect::from_ranges(1..=3, 2..=4);
-        assert!(rect.contains_col(2));
-        assert!(!rect.contains_col(8));
-    }
-
-    #[test]
-    fn test_contains_row() {
-        let rect = Rect::from_ranges(1..=3, 2..=4);
-        assert!(rect.contains_row(3));
-        assert!(!rect.contains_row(8));
     }
 
     proptest! {
@@ -712,13 +591,6 @@ mod test {
     }
 
     #[test]
-    fn test_union_in_place() {
-        let mut rect = Rect::new(0, 0, 1, 1);
-        rect.union_in_place(&Rect::new(1, 1, 2, 2));
-        assert_eq!(rect, Rect::new(0, 0, 2, 2));
-    }
-
-    #[test]
     fn test_test_a1() {
         let rect = Rect::test_a1("B2:D4");
         assert_eq!(rect.min, Pos { x: 2, y: 2 });
@@ -746,23 +618,5 @@ mod test {
         // Test non-sequential coordinates (should be normalized)
         let rect = Rect::new(5, 5, 2, 3); // will be normalized to (2,3) to (5,5)
         assert_eq!(rect.a1_string(), "B3:E5");
-    }
-
-    #[test]
-    fn test_cols_range() {
-        let rect = Rect::test_a1("B1:D4");
-        assert_eq!(rect.cols_range(1, 2), vec![2]);
-        assert_eq!(rect.cols_range(1, 5), vec![2, 3, 4]);
-        assert_eq!(rect.cols_range(3, 4), vec![3, 4]);
-        assert_eq!(rect.cols_range(6, 10), Vec::<i64>::new());
-    }
-
-    #[test]
-    fn test_rows_range() {
-        let rect = Rect::test_a1("A2:D4");
-        assert_eq!(rect.rows_range(1, 2), vec![2]);
-        assert_eq!(rect.rows_range(1, 5), vec![2, 3, 4]);
-        assert_eq!(rect.rows_range(3, 4), vec![3, 4]);
-        assert_eq!(rect.rows_range(6, 10), Vec::<i64>::new());
     }
 }

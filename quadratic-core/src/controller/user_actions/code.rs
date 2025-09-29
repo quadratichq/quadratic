@@ -7,7 +7,7 @@ use crate::{
 
 impl GridController {
     /// Starts a transaction to set a code_cell using user's code_string input
-    pub fn set_code_cell(
+    pub(crate) fn set_code_cell(
         &mut self,
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
@@ -21,13 +21,13 @@ impl GridController {
     }
 
     /// Reruns code cells in grid.
-    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> String {
+    pub(crate) fn rerun_all_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> String {
         let ops = self.rerun_all_code_cells_operations();
         self.start_user_ai_transaction(ops, cursor, TransactionName::RunCode, is_ai)
     }
 
     /// Reruns code cells in a sheet.
-    pub fn rerun_sheet_code_cells(
+    pub(crate) fn rerun_sheet_code_cells(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
@@ -38,7 +38,7 @@ impl GridController {
     }
 
     /// Reruns one code cell
-    pub fn rerun_code_cell(
+    pub(crate) fn rerun_code_cell(
         &mut self,
         selection: A1Selection,
         cursor: Option<String>,
@@ -48,7 +48,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::RunCode, is_ai)
     }
 
-    pub fn set_chart_size(
+    pub(crate) fn set_chart_size(
         &mut self,
         sheet_pos: SheetPos,
         columns: u32,

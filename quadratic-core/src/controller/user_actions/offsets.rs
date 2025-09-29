@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn resize_columns(
+    pub(crate) fn resize_columns(
         &mut self,
         sheet_id: SheetId,
         column_widths: Vec<JsColumnWidth>,
@@ -24,7 +24,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeColumns, is_ai);
     }
 
-    pub fn resize_rows(
+    pub(crate) fn resize_rows(
         &mut self,
         sheet_id: SheetId,
         row_heights: Vec<JsRowHeight>,
@@ -38,7 +38,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeRows, is_ai);
     }
 
-    pub fn resize_all_columns(
+    pub(crate) fn resize_all_columns(
         &mut self,
         sheet_id: SheetId,
         size: f64,
@@ -49,7 +49,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeColumns, is_ai);
     }
 
-    pub fn resize_all_rows(
+    pub(crate) fn resize_all_rows(
         &mut self,
         sheet_id: SheetId,
         size: f64,

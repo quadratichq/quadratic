@@ -64,7 +64,7 @@ impl GridController {
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
     #[allow(clippy::too_many_arguments)]
-    pub fn import_parquet(
+    pub(crate) fn import_parquet(
         &mut self,
         sheet_id: SheetId,
         file: Vec<u8>,

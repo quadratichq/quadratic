@@ -12,7 +12,7 @@ use super::sheet;
 
 /// Creates a JS chart at the given position with the given width and height (in cells).
 #[cfg(test)]
-pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos, w: u32, h: u32) {
+pub(crate) fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos, w: u32, h: u32) {
     use crate::controller::transaction_types::JsCellValueResult;
 
     gc.set_code_cell(
@@ -47,7 +47,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
 
 /// Creates a JS chart at the given position with the given width and height (in cells).
 #[cfg(test)]
-pub fn test_create_html_chart(
+pub(crate) fn test_create_html_chart(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,

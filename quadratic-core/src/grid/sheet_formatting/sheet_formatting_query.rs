@@ -8,40 +8,8 @@ use crate::{
 };
 
 impl SheetFormatting {
-    pub fn has_format_in_column(&self, column: i64) -> bool {
-        self.align.col_max(column) > 0
-            || self.vertical_align.col_max(column) > 0
-            || self.wrap.col_max(column) > 0
-            || self.numeric_format.col_max(column) > 0
-            || self.numeric_decimals.col_max(column) > 0
-            || self.numeric_commas.col_max(column) > 0
-            || self.bold.col_max(column) > 0
-            || self.italic.col_max(column) > 0
-            || self.text_color.col_max(column) > 0
-            || self.fill_color.col_max(column) > 0
-            || self.date_time.col_max(column) > 0
-            || self.underline.col_max(column) > 0
-            || self.strike_through.col_max(column) > 0
-    }
-
-    pub fn has_format_in_row(&self, row: i64) -> bool {
-        self.align.row_max(row) > 0
-            || self.vertical_align.row_max(row) > 0
-            || self.wrap.row_max(row) > 0
-            || self.numeric_format.row_max(row) > 0
-            || self.numeric_decimals.row_max(row) > 0
-            || self.numeric_commas.row_max(row) > 0
-            || self.bold.row_max(row) > 0
-            || self.italic.row_max(row) > 0
-            || self.text_color.row_max(row) > 0
-            || self.fill_color.row_max(row) > 0
-            || self.date_time.row_max(row) > 0
-            || self.underline.row_max(row) > 0
-            || self.strike_through.row_max(row) > 0
-    }
-
     /// Returns format for a cell or None if default.
-    pub fn try_format(&self, pos: Pos) -> Option<Format> {
+    pub(crate) fn try_format(&self, pos: Pos) -> Option<Format> {
         let format = self.format(pos);
         if format.is_default() {
             None
@@ -51,7 +19,7 @@ impl SheetFormatting {
     }
 
     /// Returns all formatting values for a cell.
-    pub fn format(&self, pos: Pos) -> Format {
+    pub(crate) fn format(&self, pos: Pos) -> Format {
         Format {
             align: self.align.get(pos),
             vertical_align: self.vertical_align.get(pos),
@@ -69,20 +37,8 @@ impl SheetFormatting {
         }
     }
 
-    pub fn column_has_fills(&self, column: i64) -> bool {
-        !self.fill_color.is_col_default(column)
-    }
-
-    pub fn row_has_fills(&self, row: i64) -> bool {
-        !self.fill_color.is_row_default(row)
-    }
-
-    pub fn row_has_wrap(&self, row: i64) -> bool {
-        !self.wrap.is_row_default(row)
-    }
-
     /// Returns the finite bounds of the formatting.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
         if let Some(rect) = self.align.finite_bounds() {
             bounds.add_rect(rect);
@@ -127,7 +83,7 @@ impl SheetFormatting {
     }
 
     /// Returns the minimum value in the column for which formatting exists.
-    pub fn col_min(&self, column: i64) -> Option<i64> {
+    pub(crate) fn col_min(&self, column: i64) -> Option<i64> {
         let col_mins = [
             self.align.col_min(column),
             self.vertical_align.col_min(column),
@@ -148,7 +104,7 @@ impl SheetFormatting {
     }
 
     /// Returns the maximum value in the column for which formatting exists.
-    pub fn col_max(&self, column: i64) -> Option<i64> {
+    pub(crate) fn col_max(&self, column: i64) -> Option<i64> {
         let col_maxes = [
             self.align.col_max(column),
             self.vertical_align.col_max(column),
@@ -168,7 +124,7 @@ impl SheetFormatting {
         if *max == 0 { None } else { Some(*max) }
     }
 
-    pub fn row_min(&self, row: i64) -> Option<i64> {
+    pub(crate) fn row_min(&self, row: i64) -> Option<i64> {
         let row_mins = [
             self.align.row_min(row),
             self.vertical_align.row_min(row),
@@ -189,7 +145,7 @@ impl SheetFormatting {
     }
 
     /// Returns the maximum value in the row for which formatting exists.
-    pub fn row_max(&self, row: i64) -> Option<i64> {
+    pub(crate) fn row_max(&self, row: i64) -> Option<i64> {
         let row_maxes = [
             self.align.row_max(row),
             self.vertical_align.row_max(row),
@@ -210,7 +166,7 @@ impl SheetFormatting {
     }
 
     /// Returns true if there is any formatting with a fill color.
-    pub fn has_fills(&self) -> bool {
+    pub(crate) fn has_fills(&self) -> bool {
         !self.fill_color.is_all_default()
     }
 }
@@ -256,50 +212,11 @@ mod tests {
     }
 
     #[test]
-    fn test_column_and_row_has_fills() {
-        let formatting = create_test_formatting();
-
-        assert!(formatting.column_has_fills(1));
-        assert!(!formatting.column_has_fills(2));
-
-        assert!(formatting.row_has_fills(2));
-        assert!(!formatting.row_has_fills(3));
-    }
-
-    #[test]
-    fn test_row_has_wrap() {
-        let formatting = create_test_formatting();
-
-        assert!(formatting.row_has_wrap(1));
-        assert!(!formatting.row_has_wrap(4));
-    }
-
-    #[test]
     fn test_row_min() {
         let formatting = create_test_formatting();
         assert_eq!(formatting.row_min(1), Some(1));
         assert_eq!(formatting.row_min(2), Some(1));
         assert_eq!(formatting.row_min(3), None);
-    }
-
-    #[test]
-    fn test_has_format_in_column() {
-        let formatting = create_test_formatting();
-
-        // Column A (1) has align formatting
-        assert!(formatting.has_format_in_column(1));
-        // Column C (3) has no formatting
-        assert!(!formatting.has_format_in_column(3));
-    }
-
-    #[test]
-    fn test_has_format_in_row() {
-        let formatting = create_test_formatting();
-
-        // Row 1 has align, bold, and wrap formatting
-        assert!(formatting.has_format_in_row(1));
-        // Row 3 has no formatting
-        assert!(!formatting.has_format_in_row(3));
     }
 
     #[test]

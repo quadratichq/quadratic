@@ -29,19 +29,20 @@ pub struct SheetRegionMap {
 
 impl SheetRegionMap {
     /// Constructs a new empty region map.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Associates `pos` with `region`. `Rect` may be unbounded.
-    pub fn insert(&mut self, pos: Pos, region: Rect) {
+    pub(crate) fn insert(&mut self, pos: Pos, region: Rect) {
         self.region_to_pos.insert(GeomWithData::new(region, pos));
         self.pos_to_region.entry(pos).or_default().push(region);
     }
 
     /// Removes all associations with `pos` and adds new ones. `Rect`s may be
     /// unbounded.
-    pub fn set_regions_for_pos(&mut self, pos: Pos, regions: Vec<Rect>) {
+    #[cfg(test)]
+    pub(crate) fn set_regions_for_pos(&mut self, pos: Pos, regions: Vec<Rect>) {
         self.remove_pos(pos);
         for region in regions {
             self.insert(pos, region);
@@ -49,7 +50,7 @@ impl SheetRegionMap {
     }
 
     /// Removes all associations with `pos`.
-    pub fn remove_pos(&mut self, pos: Pos) {
+    pub(crate) fn remove_pos(&mut self, pos: Pos) {
         // IIFE to mimic try_block
         (|| {
             let regions = self.pos_to_region.remove(&pos)?;
@@ -62,7 +63,7 @@ impl SheetRegionMap {
 
     /// Returns all cell positions associated with anything overlapping
     /// `region`.
-    pub fn get_positions_associated_with_region(&self, region: Rect) -> HashSet<Pos> {
+    pub(crate) fn get_positions_associated_with_region(&self, region: Rect) -> HashSet<Pos> {
         self.region_to_pos
             .locate_in_envelope_intersecting(&region.envelope())
             .map(|obj| obj.data)

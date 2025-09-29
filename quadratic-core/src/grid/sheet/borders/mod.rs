@@ -34,7 +34,7 @@ pub struct Borders {
 
 impl Borders {
     /// Returns the border style for the given position.
-    pub fn get_style_cell(&self, pos: Pos) -> BorderStyleCell {
+    pub(crate) fn get_style_cell(&self, pos: Pos) -> BorderStyleCell {
         BorderStyleCell {
             left: self.left.get(pos),
             right: self.right.get(pos),
@@ -47,7 +47,11 @@ impl Borders {
     /// clears the border if the new border style is None. If force_clear is
     /// true, then the border is set to BorderLineStyle::Clear, otherwise the
     /// border is set to Some(None) (ie, removed).
-    pub fn get_style_cell_override_border(&self, pos: Pos, force_clear: bool) -> BorderStyleCell {
+    pub(crate) fn get_style_cell_override_border(
+        &self,
+        pos: Pos,
+        force_clear: bool,
+    ) -> BorderStyleCell {
         let clear = if force_clear {
             Some(BorderStyleTimestamp::clear())
         } else {
@@ -62,7 +66,8 @@ impl Borders {
     }
 
     /// Returns the border style for the given side and position.
-    pub fn get_side(&self, side: BorderSide, pos: Pos) -> Option<BorderStyle> {
+    #[cfg(test)]
+    pub(crate) fn get_side(&self, side: BorderSide, pos: Pos) -> Option<BorderStyle> {
         match side {
             BorderSide::Top => self.top.get(pos).map(|b| b.into()),
             BorderSide::Bottom => self.bottom.get(pos).map(|b| b.into()),
@@ -71,14 +76,14 @@ impl Borders {
         }
     }
 
-    pub fn set_style_cell(&mut self, pos: Pos, style: BorderStyleCell) {
+    pub(crate) fn set_style_cell(&mut self, pos: Pos, style: BorderStyleCell) {
         self.top.set(pos, style.top);
         self.bottom.set(pos, style.bottom);
         self.left.set(pos, style.left);
         self.right.set(pos, style.right);
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         self.left.translate_in_place(x, y);
         self.right.translate_in_place(x, y);
         self.top.translate_in_place(x, y);
@@ -87,7 +92,7 @@ impl Borders {
 
     #[cfg(test)]
     /// Used to compare borders for testing, ignoring the timestamp.
-    pub fn compare_borders(borders: &Borders, other: &Borders) -> bool {
+    pub(crate) fn compare_borders(borders: &Borders, other: &Borders) -> bool {
         let left_1: Contiguous2D<Option<BorderStyle>> =
             borders.left.map_ref(|left| left.map(|left| left.into()));
         let left_2: Contiguous2D<Option<BorderStyle>> =
@@ -134,7 +139,7 @@ pub struct BordersUpdates {
 }
 
 impl BordersUpdates {
-    pub fn set_style_cell(&mut self, pos: Pos, style: BorderStyleCell) {
+    pub(crate) fn set_style_cell(&mut self, pos: Pos, style: BorderStyleCell) {
         if let Some(top) = style.top {
             self.top
                 .get_or_insert_with(Default::default)
@@ -158,14 +163,14 @@ impl BordersUpdates {
     }
 
     /// Returns true if there are no updates.
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.left.as_ref().is_none_or(|c| c.is_all_default())
             && self.right.as_ref().is_none_or(|c| c.is_all_default())
             && self.top.as_ref().is_none_or(|c| c.is_all_default())
             && self.bottom.as_ref().is_none_or(|c| c.is_all_default())
     }
 
-    pub fn intersects(&self, rect: Rect) -> bool {
+    pub(crate) fn intersects(&self, rect: Rect) -> bool {
         self.left.as_ref().is_some_and(|left| left.intersects(rect))
             || self
                 .right
@@ -178,7 +183,7 @@ impl BordersUpdates {
                 .is_some_and(|bottom| bottom.intersects(rect))
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64) {
         if let Some(left) = self.left.as_mut() {
             left.translate_in_place(x, y);
         }

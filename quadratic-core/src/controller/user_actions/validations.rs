@@ -17,26 +17,21 @@ use crate::{
 };
 
 impl GridController {
-    /// Gets a validation based on a validationId
-    pub fn validation(&self, sheet_id: SheetId, validation_id: Uuid) -> Option<&Validation> {
-        self.try_sheet(sheet_id)
-            .and_then(|sheet| sheet.validations.validation(validation_id))
-    }
-
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
+    #[cfg(test)]
+    pub(crate) fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
         self.try_sheet(selection.sheet_id)
             .and_then(|sheet| sheet.validations.validation_selection(selection))
     }
 
     /// Gets the validations for a sheet.
-    pub fn validations(&self, sheet_id: SheetId) -> Option<&Vec<Validation>> {
+    pub(crate) fn validations(&self, sheet_id: SheetId) -> Option<&Vec<Validation>> {
         let sheet = self.try_sheet(sheet_id)?;
         sheet.validations.validations()
     }
 
     /// Creates or updates a validation.
-    pub fn update_validation(
+    pub(crate) fn update_validation(
         &mut self,
         validation: ValidationUpdate,
         cursor: Option<String>,
@@ -69,7 +64,7 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
     }
 
-    pub fn remove_validation(
+    pub(crate) fn remove_validation(
         &mut self,
         sheet_id: SheetId,
         validation_id: Uuid,
@@ -83,7 +78,12 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
     }
 
-    pub fn remove_validations(&mut self, sheet_id: SheetId, cursor: Option<String>, is_ai: bool) {
+    pub(crate) fn remove_validations(
+        &mut self,
+        sheet_id: SheetId,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         if let Some(sheet) = self.try_sheet(sheet_id)
             && let Some(validations) = sheet.validations.validations()
         {
@@ -98,7 +98,7 @@ impl GridController {
         }
     }
 
-    pub fn remove_validation_selection(
+    pub(crate) fn remove_validation_selection(
         &mut self,
         sheet_id: SheetId,
         selection: A1Selection,
@@ -112,7 +112,11 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
     }
 
-    pub fn get_validation_from_pos(&self, sheet_id: SheetId, pos: Pos) -> Option<&Validation> {
+    pub(crate) fn get_validation_from_pos(
+        &self,
+        sheet_id: SheetId,
+        pos: Pos,
+    ) -> Option<&Validation> {
         self.try_sheet(sheet_id).and_then(|sheet| {
             sheet
                 .validations
@@ -121,7 +125,7 @@ impl GridController {
     }
 
     /// Gets a list of strings for a validation list (user defined or from a selection).
-    pub fn validation_list(&self, sheet_id: SheetId, x: i64, y: i64) -> Option<Vec<String>> {
+    pub(crate) fn validation_list(&self, sheet_id: SheetId, x: i64, y: i64) -> Option<Vec<String>> {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations
@@ -135,7 +139,7 @@ impl GridController {
     /// Returns whether an input is valid based on the validation rules. Note:
     /// this will only return the validation_id if STOP is defined as the error
     /// condition.
-    pub fn validate_input(&self, sheet_id: SheetId, pos: Pos, input: &str) -> Option<Uuid> {
+    pub(crate) fn validate_input(&self, sheet_id: SheetId, pos: Pos, input: &str) -> Option<Uuid> {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet
             .validations

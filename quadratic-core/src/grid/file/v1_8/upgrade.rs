@@ -93,7 +93,7 @@ fn upgrade_data_tables(
         .collect()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_9::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_9::SheetSchema {
     let data_tables = upgrade_data_tables(sheet.data_tables, &sheet.columns);
 
     v1_9::SheetSchema {

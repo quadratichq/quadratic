@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
@@ -11,7 +11,7 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::ids::SheetId;
-use super::js_types::{JsCellValue, JsCellValuePos};
+use super::js_types::JsCellValue;
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
@@ -85,7 +85,7 @@ pub struct Sheet {
 }
 impl Sheet {
     /// Constructs a new empty sheet.
-    pub fn new(id: SheetId, name: String, order: String) -> Self {
+    pub(crate) fn new(id: SheetId, name: String, order: String) -> Self {
         Sheet {
             id,
             name,
@@ -104,7 +104,7 @@ impl Sheet {
     }
 
     /// Creates a sheet for testing.
-    pub fn test() -> Self {
+    pub(crate) fn test() -> Self {
         Sheet::new(
             SheetId::TEST,
             format!("{}{}", SHEET_NAME.to_owned(), 1),
@@ -113,7 +113,7 @@ impl Sheet {
     }
 
     /// Returns an error if a sheet name would be invalid to add.
-    pub fn validate_sheet_name(
+    pub(crate) fn validate_sheet_name(
         name: &str,
         sheet_id: SheetId,
         a1_context: &A1Context,
@@ -139,7 +139,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a vertical edge of a table.
-    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
+    pub(crate) fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -155,7 +155,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
-    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
+    pub(crate) fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -198,28 +198,15 @@ impl Sheet {
     }
 
     /// Returns the JsCellValue at a position
-    pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
+    pub(crate) fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
         self.display_value(pos).map(|value| JsCellValue {
             value: value.to_string(),
             kind: value.into(),
         })
     }
 
-    /// Returns the JsCellValuePos at a position
-    pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
-        self.display_value(pos).map(|cell_value| match cell_value {
-            CellValue::Image(_) => {
-                CellValue::Image("Javascript chart code cell anchor".into()).to_cell_value_pos(pos)
-            }
-            CellValue::Html(_) => {
-                CellValue::Html("Python chart code cell anchor".into()).to_cell_value_pos(pos)
-            }
-            _ => cell_value.to_cell_value_pos(pos),
-        })
-    }
-
     /// Returns the first and last rows of visible cell values in a rect for ai context.
-    pub fn js_cell_value_description(
+    pub(crate) fn js_cell_value_description(
         &self,
         bounds: Rect,
         max_rows: Option<usize>,
@@ -265,25 +252,19 @@ impl Sheet {
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
-    pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
+    pub(crate) fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         self.get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y))
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+    pub(crate) fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.cell_value_ref(pos).cloned()
-    }
-
-    /// Returns the cell value at a position, or an error if the cell value is not found.
-    pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
-        self.cell_value(pos)
-            .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
     }
 
     /// Returns the cell value at a position using both `column.values` and
     /// `data_tables`, for use when a formula references a cell.
-    pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
+    pub(crate) fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
         let cell_value = self
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
@@ -311,7 +292,7 @@ impl Sheet {
     }
 
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
-    pub fn cell_format(&self, pos: Pos) -> Format {
+    pub(crate) fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
         if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos)
@@ -330,7 +311,7 @@ impl Sheet {
     }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
-    pub fn cell_format_numeric_kind(&self, pos: Pos) -> NumericFormatKind {
+    pub(crate) fn cell_format_numeric_kind(&self, pos: Pos) -> NumericFormatKind {
         self.cell_format(pos)
             .numeric_format
             .map(|nf| nf.kind)
@@ -338,7 +319,7 @@ impl Sheet {
     }
 
     /// Returns a string representation of the format of a cell for use by AI.
-    pub fn cell_text_format_as_string(&self, pos: Pos) -> Option<String> {
+    pub(crate) fn cell_text_format_as_string(&self, pos: Pos) -> Option<String> {
         let format = self.cell_format(pos);
         if format.is_default() {
             None
@@ -396,12 +377,16 @@ impl Sheet {
     }
 
     /// Returns the sheet id as a string.
-    pub fn id_to_string(&self) -> String {
+    pub(crate) fn id_to_string(&self) -> String {
         self.id.to_string()
     }
 
     /// get or calculate decimal places for a cell
-    pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
+    pub(crate) fn calculate_decimal_places(
+        &self,
+        pos: Pos,
+        kind: NumericFormatKind,
+    ) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.cell_format(pos).numeric_decimals {
             return Some(decimals);
@@ -441,7 +426,7 @@ impl Sheet {
     }
 
     /// Returns the rows with wrap formatting in a rect.
-    pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
+    pub(crate) fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
         self.formats
             .wrap
             .nondefault_rects_in_rect(rect)
@@ -477,7 +462,7 @@ impl Sheet {
     }
 
     /// Returns the rows with wrap formatting in a column.
-    pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
+    pub(crate) fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
         self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
 }
@@ -885,46 +870,6 @@ mod test {
             Some(JsCellValue {
                 value: "test".to_string(),
                 kind: JsCellValueKind::Text
-            })
-        );
-    }
-
-    #[test]
-    fn js_cell_value_pos() {
-        let mut sheet = Sheet::test();
-        let pos = pos![A1];
-        sheet.set_value(pos, "test");
-        let js_cell_value_pos = sheet.js_cell_value_pos(pos);
-        assert_eq!(
-            js_cell_value_pos,
-            Some(JsCellValuePos {
-                value: "test".to_string(),
-                kind: JsCellValueKind::Text,
-                pos: pos.a1_string(),
-            })
-        );
-
-        let pos = pos![B2];
-        sheet.set_value(pos, CellValue::Image("image string".to_string()));
-        let js_cell_value_pos = sheet.js_cell_value_pos(pos);
-        assert_eq!(
-            js_cell_value_pos,
-            Some(JsCellValuePos {
-                value: "Javascript chart code cell anchor".to_string(),
-                kind: JsCellValueKind::Image,
-                pos: pos.a1_string(),
-            })
-        );
-
-        let pos = pos![C3];
-        sheet.set_value(pos, CellValue::Html("html string".to_string()));
-        let js_cell_value_pos = sheet.js_cell_value_pos(pos);
-        assert_eq!(
-            js_cell_value_pos,
-            Some(JsCellValuePos {
-                value: "Python chart code cell anchor".to_string(),
-                kind: JsCellValueKind::Html,
-                pos: pos.a1_string(),
             })
         );
     }

@@ -5,7 +5,7 @@ use crate::grid::{DataTable, Sheet};
 use crate::{Array, cellvalue::Import, controller::GridController};
 
 #[cfg(test)]
-pub fn test_csv_values() -> Vec<Vec<&'static str>> {
+pub(crate) fn test_csv_values() -> Vec<Vec<&'static str>> {
     vec![
         vec!["city", "region", "country", "population"],
         vec!["Southborough", "MA", "United States", "1000"],
@@ -15,7 +15,7 @@ pub fn test_csv_values() -> Vec<Vec<&'static str>> {
 }
 
 #[cfg(test)]
-pub fn new_data_table() -> (Sheet, DataTable) {
+pub(crate) fn new_data_table() -> (Sheet, DataTable) {
     let gc = GridController::test();
     let grid = gc.grid();
     let sheet = grid.sheets()[0].clone();

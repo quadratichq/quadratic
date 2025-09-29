@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl SheetFormatting {
-    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         self.align.insert_column(column, copy_formats);
         self.vertical_align.insert_column(column, copy_formats);
         self.wrap.insert_column(column, copy_formats);
@@ -26,7 +26,7 @@ impl SheetFormatting {
         self.strike_through.insert_column(column, copy_formats);
     }
 
-    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
         self.align.insert_row(row, copy_formats);
         self.vertical_align.insert_row(row, copy_formats);
         self.wrap.insert_row(row, copy_formats);
@@ -53,7 +53,7 @@ impl SheetFormatting {
             .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
-    pub fn remove_column(&mut self, column: i64) -> SheetFormatUpdates {
+    pub(crate) fn remove_column(&mut self, column: i64) -> SheetFormatUpdates {
         SheetFormatUpdates {
             align: Self::remove_column_item(&mut self.align, column),
             vertical_align: Self::remove_column_item(&mut self.vertical_align, column),
@@ -79,7 +79,7 @@ impl SheetFormatting {
             .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
-    pub fn copy_column(&self, column: i64) -> Option<SheetFormatUpdates> {
+    pub(crate) fn copy_column(&self, column: i64) -> Option<SheetFormatUpdates> {
         let updates = SheetFormatUpdates {
             align: Self::copy_column_item(&self.align, column),
             vertical_align: Self::copy_column_item(&self.vertical_align, column),
@@ -111,7 +111,7 @@ impl SheetFormatting {
             .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
-    pub fn remove_row(&mut self, row: i64) -> SheetFormatUpdates {
+    pub(crate) fn remove_row(&mut self, row: i64) -> SheetFormatUpdates {
         SheetFormatUpdates {
             align: Self::remove_row_item(&mut self.align, row),
             vertical_align: Self::remove_row_item(&mut self.vertical_align, row),
@@ -137,7 +137,7 @@ impl SheetFormatting {
             .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
-    pub fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
+    pub(crate) fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
         let updates = SheetFormatUpdates {
             align: Self::copy_row_item(&self.align, row),
             vertical_align: Self::copy_row_item(&self.vertical_align, row),

@@ -1,8 +1,5 @@
 use std::fmt;
-use std::iter::Skip;
-use std::iter::StepBy;
 use std::num::NonZeroU32;
-use std::slice::Iter;
 
 use anyhow::{Result, bail};
 use itertools::Itertools;
@@ -192,12 +189,15 @@ impl From<CellValues> for Array {
 
 impl Array {
     /// Constructs an array of blank values.
-    pub fn new_empty(size: ArraySize) -> Self {
+    pub(crate) fn new_empty(size: ArraySize) -> Self {
         let values = smallvec![CellValue::Blank; size.len() ];
         Self::new_row_major(size, values).expect("error constructing empty array")
     }
     /// Constructs an array from a list of values in row-major order.
-    pub fn new_row_major(size: ArraySize, values: SmallVec<[CellValue; 1]>) -> CodeResult<Self> {
+    pub(crate) fn new_row_major(
+        size: ArraySize,
+        values: SmallVec<[CellValue; 1]>,
+    ) -> CodeResult<Self> {
         if values.len() == size.len() {
             let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
             Ok(Self {
@@ -214,7 +214,7 @@ impl Array {
         }
     }
     /// Returns a formula-source-code representation of the value.
-    pub fn repr(&self) -> String {
+    pub(crate) fn repr(&self) -> String {
         format!(
             "{{{}}}",
             self.rows()
@@ -225,7 +225,7 @@ impl Array {
 
     /// Iterates over rows (if `axis` is `Axis::Y`) or columns (if `axis` is
     /// `Axis::X`).
-    pub fn slices(&self, axis: Axis) -> impl Iterator<Item = Vec<&CellValue>> {
+    pub(crate) fn slices(&self, axis: Axis) -> impl Iterator<Item = Vec<&CellValue>> {
         (0..self.size()[axis].get()).map(move |i| {
             (0..self.size()[axis.other_axis()].get())
                 .filter_map(|j| match axis {
@@ -239,7 +239,7 @@ impl Array {
     /// `axis` is `Axis::X`). All rows/columns must have the same length, or
     /// else the result is undefined. Returns `None` if `slices` is empty or if
     /// each slice is empty.
-    pub fn from_slices<'a>(
+    pub(crate) fn from_slices<'a>(
         span: Span,
         axis: Axis,
         slices: impl IntoIterator<Item = Vec<&'a CellValue>>,
@@ -263,7 +263,7 @@ impl Array {
 
     /// Transposes an array (swaps rows and columns). This is an expensive
     /// operation for large arrays.
-    pub fn transpose(&self) -> Array {
+    pub(crate) fn transpose(&self) -> Array {
         let new_size = self.size.transpose();
         let values = new_size
             .iter()
@@ -271,40 +271,30 @@ impl Array {
             .collect();
         Self::new_row_major(new_size, values).unwrap()
     }
-    /// Flips an array horizontally. This is an expensive operation for large
-    /// arrays.
-    pub fn flip_horizontally(&self) -> Array {
-        Self::new_row_major(
-            self.size(),
-            self.rows()
-                .flat_map(|row| row.iter().rev().cloned())
-                .collect(),
-        )
-        .unwrap()
-    }
     /// Flips an array vertically. This is an expensive operation for large
     /// arrays.
-    pub fn flip_vertically(&self) -> Array {
+    #[cfg(test)]
+    pub(crate) fn flip_vertically(&self) -> Array {
         Self::new_row_major(self.size, self.rows().rev().flatten().cloned().collect()).unwrap()
     }
 
     /// Returns the width of an array.
-    pub fn width(&self) -> u32 {
+    pub(crate) fn width(&self) -> u32 {
         self.size.w.get()
     }
     /// Returns the height of an array.
-    pub fn height(&self) -> u32 {
+    pub(crate) fn height(&self) -> u32 {
         self.size.h.get()
     }
     /// Returns the width and height of an array.
-    pub fn size(&self) -> ArraySize {
+    pub(crate) fn size(&self) -> ArraySize {
         self.size
     }
     /// Returns an iterator over the rows of the array.
-    pub fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
+    pub(crate) fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
         self.values.chunks(self.width() as usize)
     }
-    pub fn into_rows(self) -> Vec<Vec<CellValue>> {
+    pub(crate) fn into_rows(self) -> Vec<Vec<CellValue>> {
         let width = self.width() as usize;
         let mut rows = Vec::new();
         let mut current_row = Vec::with_capacity(width);
@@ -319,32 +309,8 @@ impl Array {
 
         rows
     }
-    /// Returns an iterator over a single col of the array.
-    pub fn col(&self, index: usize) -> StepBy<Skip<Iter<'_, CellValue>>> {
-        self.values
-            .iter()
-            .skip(index)
-            .step_by(self.width() as usize)
-    }
-    /// Remove the first row of the array and return it.
-    pub fn shift(&mut self) -> Result<Vec<CellValue>> {
-        let width = (self.width() as usize).min(self.values.len());
-        let height = NonZeroU32::new(self.height() - 1);
-
-        match height {
-            Some(h) => {
-                self.size.h = h;
-                let first_row = self.values.drain(0..width).collect();
-                if let Some(cache) = self.empty_values_cache.as_mut() {
-                    cache.remove_row(&self.size, 0);
-                }
-                Ok(first_row)
-            }
-            None => bail!("Cannot shift a single row array"),
-        }
-    }
     /// Insert a new column at the given index.
-    pub fn insert_column(
+    pub(crate) fn insert_column(
         &mut self,
         insert_at_index: usize,
         values: Option<Vec<CellValue>>,
@@ -399,7 +365,7 @@ impl Array {
         Ok(())
     }
     /// Delete a column at the given index.
-    pub fn delete_column(&mut self, remove_at_index: usize) -> Result<()> {
+    pub(crate) fn delete_column(&mut self, remove_at_index: usize) -> Result<()> {
         let width = self.width();
         let new_width = width - 1;
         let new_size = ArraySize::new_or_err(new_width, self.height())?;
@@ -437,7 +403,7 @@ impl Array {
         Ok(())
     }
     /// Insert a new row at the given index.
-    pub fn insert_row(
+    pub(crate) fn insert_row(
         &mut self,
         insert_at_index: usize,
         values: Option<Vec<CellValue>>,
@@ -478,7 +444,7 @@ impl Array {
     }
 
     /// Delete a row at the given index.
-    pub fn delete_row(&mut self, remove_at_index: usize) -> Result<Vec<CellValue>> {
+    pub(crate) fn delete_row(&mut self, remove_at_index: usize) -> Result<Vec<CellValue>> {
         let values_len = self.values.len();
         let width = (self.width() as usize).min(values_len);
         let height = NonZeroU32::new(self.height() - 1);
@@ -505,7 +471,7 @@ impl Array {
 
     /// Returns the only cell value in a 1x1 array, or an error if this is not a
     /// 1x1 array.
-    pub fn into_cell_value(self) -> Result<CellValue, Self> {
+    pub(crate) fn into_cell_value(self) -> Result<CellValue, Self> {
         if self.values.len() == 1 {
             Ok(self.values.into_iter().next().unwrap())
         } else {
@@ -514,7 +480,7 @@ impl Array {
     }
     /// Returns a reference to the only cell value in a 1x1 array, or an error
     /// if this is not a 1x1 array.
-    pub fn cell_value(&self) -> Option<&CellValue> {
+    pub(crate) fn cell_value(&self) -> Option<&CellValue> {
         if self.values.len() == 1 {
             self.values.first()
         } else {
@@ -524,11 +490,11 @@ impl Array {
     /// Returns the value at a given 0-indexed position in an array. If the
     /// width is 1, then `x` is ignored. If the height is 1, then `y` is
     /// ignored. Otherwise, returns an error if a coordinate is out of bounds.
-    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
+    pub(crate) fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
     }
-    pub fn get_row(&self, index: usize) -> Result<&[CellValue], RunErrorMsg> {
+    pub(crate) fn get_row(&self, index: usize) -> Result<&[CellValue], RunErrorMsg> {
         let width = self.width() as usize;
         let start = index * width;
         let end = start + width;
@@ -537,7 +503,7 @@ impl Array {
     }
     /// Sets the value at a given 0-indexed position in an array. Returns an
     /// error if `x` or `y` is out of range.
-    pub fn set(
+    pub(crate) fn set(
         &mut self,
         x: u32,
         y: u32,
@@ -564,7 +530,11 @@ impl Array {
 
         Ok(())
     }
-    pub fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
+    pub(crate) fn set_row(
+        &mut self,
+        index: usize,
+        values: &[CellValue],
+    ) -> Result<(), RunErrorMsg> {
         let width = self.width() as usize;
         let start = index * width;
 
@@ -577,19 +547,19 @@ impl Array {
         Ok(())
     }
     /// Returns a flat slice of cell values in the array.
-    pub fn cell_values_slice(&self) -> &[CellValue] {
+    pub(crate) fn cell_values_slice(&self) -> &[CellValue] {
         &self.values
     }
-    pub fn cell_values_slice_mut(&mut self) -> &mut [CellValue] {
+    pub(crate) fn cell_values_slice_mut(&mut self) -> &mut [CellValue] {
         &mut self.values
     }
     /// Returns a flat `SmallVec` of cell values in the array.
-    pub fn into_cell_values_vec(self) -> SmallVec<[CellValue; 1]> {
+    pub(crate) fn into_cell_values_vec(self) -> SmallVec<[CellValue; 1]> {
         self.values
     }
 
     /// Returns a human-friendly string describing the type of value.
-    pub fn type_name(&self) -> &'static str {
+    pub(crate) fn type_name(&self) -> &'static str {
         match self.cell_value() {
             Some(v) => v.type_name(),
             None => "array",
@@ -597,7 +567,7 @@ impl Array {
     }
     /// Returns the unique length that fits all `values` along `axis`. See
     /// `common_array_size()` for more.
-    pub fn common_len<'a>(
+    pub(crate) fn common_len<'a>(
         axis: Axis,
         arrays: impl IntoIterator<Item = Spanned<&'a Array>>,
     ) -> CodeResult<NonZeroU32> {
@@ -624,16 +594,16 @@ impl Array {
     }
 
     /// Returns the first error in the array if there is one.
-    pub fn first_error(&self) -> Option<&RunError> {
+    pub(crate) fn first_error(&self) -> Option<&RunError> {
         self.values.iter().find_map(|v| v.error())
     }
     /// Iterates over errors in the array.
-    pub fn errors(&self) -> impl Iterator<Item = &RunError> {
+    pub(crate) fn errors(&self) -> impl Iterator<Item = &RunError> {
         self.values.iter().filter_map(|v| v.error())
     }
     /// Returns the first error in the array if there is one; otherwise returns
     /// the original array.
-    pub fn into_non_error_array(self) -> CodeResult<Self> {
+    pub(crate) fn into_non_error_array(self) -> CodeResult<Self> {
         match self.first_error() {
             Some(e) => Err(e.clone()),
             None => Ok(self),
@@ -641,7 +611,11 @@ impl Array {
     }
 
     // convert from a Vec<Vec<&str>> to an Array, auto-picking the type if selected
-    pub fn from_str_vec(array: Vec<Vec<&str>>, auto_pick_type: bool) -> anyhow::Result<Self> {
+    #[cfg(test)]
+    pub(crate) fn from_str_vec(
+        array: Vec<Vec<&str>>,
+        auto_pick_type: bool,
+    ) -> anyhow::Result<Self> {
         let w = array.iter().map(|row| row.len()).max().unwrap_or(0);
         let h = array.len();
         let size = ArraySize::new_or_err(w as u32, h as u32)?;
@@ -661,7 +635,7 @@ impl Array {
         })
     }
 
-    pub fn from_string_list(
+    pub(crate) fn from_string_list(
         start: Pos,
         sheet: &mut Sheet,
         v: Vec<Vec<JsCellValueResult>>,
@@ -704,11 +678,11 @@ impl Array {
         )
     }
 
-    pub fn update_empty_values_cache(&mut self) {
+    pub(crate) fn update_empty_values_cache(&mut self) {
         self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
     }
 
-    pub fn empty_values_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+    pub(crate) fn empty_values_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()
             .and_then(|cache| cache.get_cache_cloned())
@@ -718,7 +692,7 @@ impl Array {
 impl Spanned<Array> {
     /// Checks that an array is linear (width=1 or height=1), then returns which
     /// is the long axis. Returns `None` in the case of a 1x1 array.
-    pub fn array_linear_axis(&self) -> CodeResult<Option<Axis>> {
+    pub(crate) fn array_linear_axis(&self) -> CodeResult<Option<Axis>> {
         match (self.inner.width(), self.inner.height()) {
             (1, 1) => Ok(None),
             (_, 1) => Ok(Some(Axis::X)), // height = 1
@@ -726,22 +700,16 @@ impl Spanned<Array> {
             _ => Err(RunErrorMsg::NonLinearArray.with_span(self.span)),
         }
     }
-    /// Checks that an array is linear along a particular axis, then returns the
-    /// length along that axis.
-    pub fn array_linear_length(&self, axis: Axis) -> CodeResult<NonZeroU32> {
-        self.check_array_size_on(axis.other_axis(), 1)?;
-        Ok(self.inner.size()[axis])
-    }
     /// Checks that an array is linear (width=1 or height=1), then returns it if
     /// it is.
-    pub fn try_as_linear_array(&self) -> CodeResult<&[CellValue]> {
+    pub(crate) fn try_as_linear_array(&self) -> CodeResult<&[CellValue]> {
         self.array_linear_axis()?; // Check that the array is linear.
         Ok(&self.inner.values)
     }
 
     /// Checks the size of the array on one axis, returning an error if it does
     /// not match exactly.
-    pub fn check_array_size_on(&self, axis: Axis, len: u32) -> CodeResult<()> {
+    pub(crate) fn check_array_size_on(&self, axis: Axis, len: u32) -> CodeResult<()> {
         let expected = len;
         let got = self.inner.size()[axis].get();
         if expected == got {
@@ -758,7 +726,7 @@ impl Spanned<Array> {
 
     /// Checks the size of the array, returning an error if it does not match
     /// exactly.
-    pub fn check_array_size_exact(&self, size: ArraySize) -> CodeResult<()> {
+    pub(crate) fn check_array_size_exact(&self, size: ArraySize) -> CodeResult<()> {
         let expected = size;
         let got = self.inner.size();
         if expected == got {

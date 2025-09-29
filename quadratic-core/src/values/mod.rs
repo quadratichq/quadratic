@@ -69,7 +69,7 @@ impl From<RunError> for Value {
 impl Value {
     /// Returns the cell value for a single value or an array. Returns an error
     /// for an array with more than a single value, or for a tuple.
-    pub fn as_cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
+    pub(crate) fn as_cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
             Value::Array(a) => a.cell_value().ok_or_else(|| RunErrorMsg::Expected {
@@ -84,7 +84,7 @@ impl Value {
     }
     /// Returns the cell value for a single value or an array. Returns an error
     /// for an array with more than a single value, or for a tuple.
-    pub fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
+    pub(crate) fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
             Value::Array(a) => a.into_cell_value().map_err(|a| RunErrorMsg::Expected {
@@ -98,7 +98,7 @@ impl Value {
         }
     }
     /// Returns an array for a single value or array, or an error for a tuple.
-    pub fn into_array(self) -> Result<Array, RunErrorMsg> {
+    pub(crate) fn into_array(self) -> Result<Array, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(Array::from(value)),
             Value::Array(array) => Ok(array),
@@ -109,7 +109,7 @@ impl Value {
         }
     }
     /// Converts the value into one or more arrays.
-    pub fn into_arrays(self) -> Vec<Array> {
+    pub(crate) fn into_arrays(self) -> Vec<Array> {
         match self {
             Value::Single(value) => vec![Array::from(value)],
             Value::Array(array) => vec![array],
@@ -118,7 +118,8 @@ impl Value {
     }
     /// Returns a slice of values for a single value or an array. Returns an
     /// error for a tuple.
-    pub fn cell_values_slice(&self) -> Result<&[CellValue], RunErrorMsg> {
+    #[cfg(test)]
+    pub(crate) fn cell_values_slice(&self) -> Result<&[CellValue], RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(std::slice::from_ref(value)),
             Value::Array(array) => Ok(array.cell_values_slice()),
@@ -132,7 +133,7 @@ impl Value {
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
     /// internal error. Also returns an error for a tuple.
-    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
+    pub(crate) fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
             Value::Array(a) => a.get(x, y),
@@ -147,7 +148,8 @@ impl Value {
     }
 
     /// Returns a formula-source-code representation of the value.
-    pub fn repr(&self) -> String {
+    #[cfg(test)]
+    pub(crate) fn repr(&self) -> String {
         match self {
             Value::Single(value) => value.repr(),
             Value::Array(array) => array.repr(),
@@ -162,7 +164,7 @@ impl Value {
     /// - If there are multiple unequal sizes greater than one, returns an
     ///   error.
     /// - Both numbers returned are always nonzero.
-    pub fn common_array_size<'a>(
+    pub(crate) fn common_array_size<'a>(
         values: impl Copy + IntoIterator<Item = &'a Spanned<Value>>,
     ) -> CodeResult<ArraySize> {
         Ok(ArraySize {
@@ -172,7 +174,7 @@ impl Value {
     }
 
     /// Returns the size of the value.
-    pub fn size(&self) -> ArraySize {
+    pub(crate) fn size(&self) -> ArraySize {
         match self {
             Value::Single(_) => ArraySize::_1X1,
             Value::Array(array) => array.size(),
@@ -187,14 +189,14 @@ impl Value {
     /// error.
     #[cfg(test)]
     #[track_caller]
-    pub fn unwrap_err(self) -> crate::RunError {
+    pub(crate) fn unwrap_err(self) -> crate::RunError {
         match self.into_cell_value() {
             Ok(v) => v.unwrap_err(),
             other => panic!("expected error value; got {other:?}"),
         }
     }
     /// Returns a list of all errors in the value.
-    pub fn errors(&self) -> Vec<&crate::RunError> {
+    pub(crate) fn errors(&self) -> Vec<&crate::RunError> {
         match self {
             Value::Single(v) => v.error().into_iter().collect(),
             Value::Array(a) => a.errors().collect(),
@@ -203,10 +205,10 @@ impl Value {
     }
 }
 impl Spanned<Value> {
-    pub fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {
+    pub(crate) fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {
         self.inner.as_cell_value().with_span(self.span)
     }
-    pub fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
+    pub(crate) fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
         self.inner.into_cell_value().with_span(self.span)
     }
     /// Returns an array, or `None` if the value is only a single cell or a
@@ -225,21 +227,21 @@ impl Spanned<Value> {
         }
     }
     /// Returns an array for a single value or array, or an error for a tuple.
-    pub fn into_array(self) -> CodeResult<Spanned<Array>> {
+    pub(crate) fn into_array(self) -> CodeResult<Spanned<Array>> {
         self.inner.into_array().with_span(self.span)
     }
 
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
     /// internal error. Also returns an error for a tuple.
-    pub fn get(&self, x: u32, y: u32) -> CodeResult<Spanned<&CellValue>> {
+    pub(crate) fn get(&self, x: u32, y: u32) -> CodeResult<Spanned<&CellValue>> {
         self.inner.get(x, y).with_span(self.span)
     }
 
     /// Iterates over an array, converting values to a particular type. If a
     /// value cannot be converted, it is ignored.
     #[allow(clippy::should_implement_trait)]
-    pub fn into_iter<T>(self) -> impl Iterator<Item = CodeResult<Spanned<T>>>
+    pub(crate) fn into_iter<T>(self) -> impl Iterator<Item = CodeResult<Spanned<T>>>
     where
         CellValue: TryInto<T, Error = RunErrorMsg>,
     {
@@ -275,7 +277,9 @@ impl Spanned<Value> {
         )
     }
     /// Returns an iterator over cell values.
-    pub fn into_iter_cell_values(self) -> impl Iterator<Item = CodeResult<Spanned<CellValue>>> {
+    pub(crate) fn into_iter_cell_values(
+        self,
+    ) -> impl Iterator<Item = CodeResult<Spanned<CellValue>>> {
         let span = self.span;
 
         match self.inner {
@@ -296,7 +300,7 @@ impl Spanned<Value> {
 
     /// Returns the value if is an array or single value, or an error value if
     /// it is a tuple.
-    pub fn into_non_tuple(self) -> Self {
+    pub(crate) fn into_non_tuple(self) -> Self {
         let span = self.span;
         self.map(|v| {
             if matches!(v, Value::Tuple(_)) {
@@ -316,7 +320,7 @@ impl Spanned<Value> {
     /// error.
     #[cfg(test)]
     #[track_caller]
-    pub fn unwrap_err(self) -> crate::RunError {
+    pub(crate) fn unwrap_err(self) -> crate::RunError {
         self.inner.unwrap_err()
     }
 }

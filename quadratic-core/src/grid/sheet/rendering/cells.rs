@@ -8,12 +8,6 @@ use crate::{
 };
 
 impl Sheet {
-    /// checks columns for any column that has data that might render
-    pub fn has_render_cells(&self, rect: Rect) -> bool {
-        self.contains_value_within_rect(rect, None)
-            || self.contains_data_table_within_rect(rect, None)
-    }
-
     /// creates a render for a single cell
     fn get_render_cell(
         x: i64,
@@ -300,62 +294,14 @@ mod tests {
     use crate::grid::sheet::validations::validation::ValidationUpdate;
     use crate::test_util::*;
     use crate::{
-        SheetPos, Value,
+        SheetPos,
         a1::A1Selection,
         controller::GridController,
-        grid::{CellVerticalAlign, CellWrap, CodeRun, DataTableKind},
+        grid::{CellVerticalAlign, CellWrap},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
     use super::*;
-
-    #[test]
-    fn test_has_render_cells() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let rect = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 100, y: 100 },
-        };
-        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
-
-        gc.set_cell_value(pos![sheet_id!1,2], "test".into(), None, false);
-        assert!(gc.sheet(sheet_id).has_render_cells(rect));
-
-        gc.sheet_mut(sheet_id)
-            .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
-        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
-
-        let code_run = CodeRun {
-            language: CodeCellLanguage::Python,
-            code: "1 + 1".to_string(),
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("text".into()),
-            line_number: None,
-            output_type: None,
-        };
-        gc.sheet_mut(sheet_id).set_data_table(
-            Pos { x: 2, y: 3 },
-            Some(DataTable::new(
-                DataTableKind::CodeRun(code_run),
-                "Table 1",
-                Value::Single(CellValue::Text("hello".to_string())),
-                false,
-                Some(true),
-                Some(true),
-                None,
-            )),
-        );
-        assert!(gc.sheet(sheet_id).has_render_cells(rect));
-
-        let selection = A1Selection::from_xy(2, 3, sheet_id);
-        gc.delete_cells(&selection, None, false);
-        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
-    }
 
     #[test]
     fn test_get_render_cells() {

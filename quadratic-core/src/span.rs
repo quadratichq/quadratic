@@ -19,14 +19,14 @@ pub struct Span {
 }
 impl Span {
     /// Returns a 0-length span at the given index.
-    pub fn empty(idx: u32) -> Self {
+    pub(crate) fn empty(idx: u32) -> Self {
         Self {
             start: idx,
             end: idx,
         }
     }
     /// Returns the smallest contiguous span encompassing the two given spans.
-    pub fn merge<T: Into<Span>, U: Into<Span>>(span1: T, span2: U) -> Self {
+    pub(crate) fn merge<T: Into<Span>, U: Into<Span>>(span1: T, span2: U) -> Self {
         let span1: Span = span1.into();
         let span2: Span = span2.into();
         Self {
@@ -35,12 +35,13 @@ impl Span {
         }
     }
     /// Returns the substring with this span from a string.
-    pub fn of_str(self, s: &str) -> &str {
+    #[cfg(test)]
+    pub(crate) fn of_str(self, s: &str) -> &str {
         let range: Range<usize> = self.into();
         &s[range]
     }
     /// Returns the line number of the start of the span
-    pub fn line_number_of_str(self, s: &str) -> usize {
+    pub(crate) fn line_number_of_str(self, s: &str) -> usize {
         s[..self.start as usize].matches('\n').count() + 1
     }
 }
@@ -99,14 +100,15 @@ impl<T: fmt::Display> fmt::Display for Spanned<T> {
 }
 impl<T> Spanned<T> {
     /// Constructs a Spanned<T> spanning the given byte indices.
-    pub fn new(start: u32, end: u32, inner: T) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new(start: u32, end: u32, inner: T) -> Self {
         Self {
             span: Span { start, end },
             inner,
         }
     }
     /// Applies a function to the inside of a `Spanned<T>`.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
+    pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
         Spanned {
             span: self.span,
             inner: f(self.inner),
@@ -114,7 +116,7 @@ impl<T> Spanned<T> {
     }
     /// Applies a function to the inside of a `Spanned<T>` and returns the error
     /// if it fails.
-    pub fn try_map<U>(
+    pub(crate) fn try_map<U>(
         self,
         f: impl FnOnce(T) -> Result<U, crate::RunErrorMsg>,
     ) -> Result<Spanned<U>, crate::RunError> {
@@ -122,30 +124,10 @@ impl<T> Spanned<T> {
         f(inner).with_span(span)
     }
     /// Converts a `&Spanned<T>` to a `Spanned<&T>`.
-    pub fn as_ref(&self) -> Spanned<&T> {
+    pub(crate) fn as_ref(&self) -> Spanned<&T> {
         Spanned {
             span: self.span,
             inner: &self.inner,
-        }
-    }
-
-    /// Merges two spans using `Span::merge()` and merges the inner values using
-    /// the provided function.
-    pub fn merge<U, V>(a: Spanned<U>, b: Spanned<V>, merge: impl FnOnce(U, V) -> T) -> Spanned<T> {
-        Spanned {
-            span: Span::merge(a.span, b.span),
-            inner: merge(a.inner, b.inner),
-        }
-    }
-}
-impl<T, E> Spanned<Result<T, E>> {
-    /// Converts a `Spanned<Result<T, E>>` to a `Result<Spanned<T>, E>`, losing
-    /// the span information in the error case.
-    pub fn transpose(self) -> Result<Spanned<T>, E> {
-        let span = self.span;
-        match self.inner {
-            Ok(inner) => Ok(Spanned { span, inner }),
-            Err(e) => Err(e),
         }
     }
 }

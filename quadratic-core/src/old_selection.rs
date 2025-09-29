@@ -1,12 +1,12 @@
 //! The current selected cells in a sheet.
 
-use std::{collections::HashSet, str::FromStr};
+use std::collections::HashSet;
 
 use crate::{Pos, Rect, SheetPos, SheetRect, grid::SheetId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-mod selection_create;
+// mod selection_create;
 
 /// **Deprecated** Nov 2024 in favor of [`crate::A1Selection`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
@@ -124,19 +124,22 @@ impl OldSelection {
         }
 
         if let Some(columns) = self.columns.as_ref()
-            && columns.contains(&pos.x) {
-                return true;
-            }
+            && columns.contains(&pos.x)
+        {
+            return true;
+        }
 
         if let Some(rows) = self.rows.as_ref()
-            && rows.contains(&pos.y) {
-                return true;
-            }
+            && rows.contains(&pos.y)
+        {
+            return true;
+        }
 
         if let Some(rects) = self.rects.as_ref()
-            && rects.iter().any(|rect| rect.contains(pos)) {
-                return true;
-            }
+            && rects.iter().any(|rect| rect.contains(pos))
+        {
+            return true;
+        }
         false
     }
 
@@ -658,50 +661,6 @@ mod test {
 
         // all is always count = 1
         assert_eq!(selection.count(), 1);
-    }
-
-    #[test]
-    fn test_selection_columns() {
-        let sheet_id = SheetId::TEST;
-        let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
-        assert_eq!(
-            selection,
-            OldSelection {
-                sheet_id,
-                columns: Some(vec![1, 2, 3]),
-                ..Default::default()
-            }
-        );
-    }
-
-    #[test]
-    fn test_selection_rows() {
-        let sheet_id = SheetId::TEST;
-        let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
-        assert_eq!(
-            selection,
-            OldSelection {
-                sheet_id,
-                rows: Some(vec![1, 2, 3]),
-                ..Default::default()
-            }
-        );
-    }
-
-    #[test]
-    fn test_contains_column() {
-        let sheet_id = SheetId::TEST;
-        let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
-        assert!(selection.contains_column(1));
-        assert!(!selection.contains_column(4));
-    }
-
-    #[test]
-    fn test_contains_row() {
-        let sheet_id = SheetId::TEST;
-        let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
-        assert!(selection.contains_row(1));
-        assert!(!selection.contains_row(4));
     }
 
     #[test]

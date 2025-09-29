@@ -260,7 +260,7 @@ impl GridController {
     }
 
     /// continues the calculate cycle after an async call
-    pub fn after_calculation_async(
+    pub(crate) fn after_calculation_async(
         &mut self,
         transaction: &mut PendingTransaction,
         result: JsCodeResult,

@@ -9,7 +9,7 @@ impl GridController {
         self.grid.sheet_ids()
     }
 
-    pub fn sheets(&self) -> Vec<&Sheet> {
+    pub(crate) fn sheets(&self) -> Vec<&Sheet> {
         self.grid.sheets().values().collect()
     }
 
@@ -17,49 +17,41 @@ impl GridController {
         self.grid.try_sheet(sheet_id)
     }
 
-    pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
+    pub(crate) fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
         self.grid
             .try_sheet(sheet_id)
             .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
     }
 
-    pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
+    pub(crate) fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.grid.try_sheet_mut(sheet_id)
     }
 
-    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+    pub(crate) fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
         self.try_sheet_mut(sheet_id)
             .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
     }
 
-    pub fn try_sheet_from_name(&mut self, name: &str) -> Option<&Sheet> {
+    pub(crate) fn try_sheet_from_name(&mut self, name: &str) -> Option<&Sheet> {
         self.grid.try_sheet_from_name(name)
     }
 
-    pub fn try_sheet_mut_from_name(&mut self, name: &str) -> Option<&mut Sheet> {
-        self.grid.try_sheet_mut_from_name(name)
-    }
-
-    pub fn try_sheet_from_string_id(&self, id: &str) -> Option<&Sheet> {
+    pub(crate) fn try_sheet_from_string_id(&self, id: &str) -> Option<&Sheet> {
         self.grid.try_sheet_from_string_id(id)
     }
 
-    pub fn try_sheet_mut_from_string_id(&mut self, id: &str) -> Option<&mut Sheet> {
-        self.grid.try_sheet_mut_from_string_id(id)
-    }
-
     #[cfg(test)]
-    pub fn sheet(&self, sheet_id: SheetId) -> &Sheet {
+    pub(crate) fn sheet(&self, sheet_id: SheetId) -> &Sheet {
         self.try_sheet(sheet_id).unwrap()
     }
 
     #[cfg(test)]
-    pub fn sheet_index(&self, index: usize) -> &Sheet {
+    pub(crate) fn sheet_index(&self, index: usize) -> &Sheet {
         &self.grid.sheets()[index]
     }
 
     #[cfg(test)]
-    pub fn sheet_mut(&mut self, sheet_id: SheetId) -> &mut Sheet {
+    pub(crate) fn sheet_mut(&mut self, sheet_id: SheetId) -> &mut Sheet {
         self.try_sheet_mut(sheet_id).unwrap()
     }
 }
@@ -139,30 +131,6 @@ mod test {
         );
 
         assert_eq!(gc.try_sheet_from_name(&format!("{SHEET_NAME}3")), None);
-    }
-
-    #[test]
-    fn test_try_sheet_mut_from_name() {
-        let mut gc = GridController::test();
-        gc.add_sheet(None, None, None, false);
-
-        gc.try_sheet_mut_from_name(&format!("{SHEET_NAME}1"))
-            .unwrap()
-            .name = format!("{SHEET_NAME}1 modified");
-
-        gc.try_sheet_mut_from_name(&format!("{SHEET_NAME}2"))
-            .unwrap()
-            .name = format!("{SHEET_NAME}2 modified");
-
-        let sheet_ids = gc.sheet_ids();
-        assert_eq!(
-            gc.sheet(sheet_ids[0]).name,
-            format!("{SHEET_NAME}1 modified")
-        );
-        assert_eq!(
-            gc.sheet(sheet_ids[1]).name,
-            format!("{SHEET_NAME}2 modified")
-        );
     }
 
     #[test]

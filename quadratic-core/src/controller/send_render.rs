@@ -577,7 +577,7 @@ impl GridController {
     }
 
     /// Sends the content cache to the client.
-    pub fn send_content_cache(&self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_content_cache(&self, transaction: &mut PendingTransaction) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }

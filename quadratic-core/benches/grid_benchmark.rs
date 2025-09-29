@@ -324,7 +324,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 }
 
 #[allow(unused)]
-pub fn benchmark_grids(
+pub(crate) fn benchmark_grids(
     c: &mut Criterion,
     inputs: &[(&str, Grid)],
     group_name: impl Into<String>,

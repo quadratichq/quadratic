@@ -72,7 +72,7 @@ pub struct ClipboardOrigin {
     pub all: Option<(i64, i64)>,
 }
 impl ClipboardOrigin {
-    pub fn default(sheet_id: SheetId) -> Self {
+    pub(crate) fn default(sheet_id: SheetId) -> Self {
         Self {
             x: 0,
             y: 0,
@@ -140,7 +140,7 @@ pub static CLIPBOARD_COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::
 
 impl Clipboard {
     /// Decode the clipboard html and return a Clipboard struct.
-    pub fn decode(html: &str) -> Result<Self> {
+    pub(crate) fn decode(html: &str) -> Result<Self> {
         let error = |e, msg| Error::msg(format!("Clipboard decode {msg:?}: {e:?}"));
 
         // pull out the sub string
@@ -165,7 +165,7 @@ impl Clipboard {
     }
 
     /// Return the largest rect that contains the clipboard, with `insert_at` as the top left corner
-    pub fn to_rect(&self, insert_at: Pos) -> Rect {
+    pub(crate) fn to_rect(&self, insert_at: Pos) -> Rect {
         Rect::from_numbers(insert_at.x, insert_at.y, self.w as i64, self.h as i64)
     }
 }
@@ -352,7 +352,7 @@ impl From<Clipboard> for JsClipboard {
 }
 
 impl GridController {
-    pub fn cut_to_clipboard_operations(
+    pub(crate) fn cut_to_clipboard_operations(
         &mut self,
         selection: &A1Selection,
         include_display_values: bool,
@@ -754,7 +754,7 @@ impl GridController {
     }
 
     /// Collect the operations to paste the clipboard cells from plain text
-    pub fn paste_plain_text_operations(
+    pub(crate) fn paste_plain_text_operations(
         &mut self,
         start_pos: SheetPos,
         end_pos: Pos,
@@ -877,7 +877,7 @@ impl GridController {
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
-    pub fn paste_html_operations(
+    pub(crate) fn paste_html_operations(
         &mut self,
         insert_at: Pos,
         end_pos: Pos,
@@ -1096,7 +1096,7 @@ impl GridController {
         (max_x, max_y, cell_value_width, cell_value_height)
     }
 
-    pub fn move_cells_operations(
+    pub(crate) fn move_cells_operations(
         &mut self,
         source: SheetRect,
         dest: SheetPos,

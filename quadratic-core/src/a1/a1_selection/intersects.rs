@@ -4,7 +4,7 @@ use super::*;
 
 impl A1Selection {
     /// Finds intersection of two Selections.
-    pub fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
+    pub(crate) fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
         if self.sheet_id != other.sheet_id {
             return None;
         }
@@ -103,7 +103,7 @@ impl A1Selection {
     }
 
     /// Returns `true` if the two selections overlap.
-    pub fn overlaps_a1_selection(&self, other: &Self, a1_context: &A1Context) -> bool {
+    pub(crate) fn overlaps_a1_selection(&self, other: &Self, a1_context: &A1Context) -> bool {
         if self.sheet_id != other.sheet_id {
             return false;
         }

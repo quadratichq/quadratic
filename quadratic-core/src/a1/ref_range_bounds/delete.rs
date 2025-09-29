@@ -18,7 +18,7 @@ impl RefRangeBounds {
 
     /// Deletes the given range from the current range. Returns the remaining
     /// range or None if the current range is completely deleted.
-    pub fn delete(&self, range: &CellRefRange, a1_context: &A1Context) -> Vec<CellRefRange> {
+    pub(crate) fn delete(&self, range: &CellRefRange, a1_context: &A1Context) -> Vec<CellRefRange> {
         match range {
             CellRefRange::Sheet { range } => self.delete_ref_range_bounds(range),
             CellRefRange::Table { range } => {

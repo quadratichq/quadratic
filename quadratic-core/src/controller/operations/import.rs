@@ -106,7 +106,7 @@ impl GridController {
     }
 
     /// Imports a CSV file into the grid.
-    pub fn import_csv_operations(
+    pub(crate) fn import_csv_operations(
         &mut self,
         sheet_id: SheetId,
         file: &[u8],
@@ -217,7 +217,7 @@ impl GridController {
     }
 
     /// Imports an Excel file into the grid.
-    pub fn import_excel_operations(
+    pub(crate) fn import_excel_operations(
         &mut self,
         file: &[u8],
         file_name: &str,
@@ -550,7 +550,7 @@ impl GridController {
     }
 
     /// Imports a Parquet file into the grid.
-    pub fn import_parquet_operations(
+    pub(crate) fn import_parquet_operations(
         &mut self,
         sheet_id: SheetId,
         file: Vec<u8>,

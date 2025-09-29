@@ -94,7 +94,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumn {
             sheet_id,
             column,
@@ -113,7 +113,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumns {
             sheet_id,
             columns,
@@ -127,7 +127,7 @@ impl GridController {
     }
 
     #[allow(clippy::result_unit_err)]
-    pub fn handle_delete_rows(
+    pub(crate) fn handle_delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -174,7 +174,7 @@ impl GridController {
         Ok(())
     }
 
-    pub fn execute_delete_row(
+    pub(crate) fn execute_delete_row(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
@@ -200,7 +200,7 @@ impl GridController {
         bail!("Expected Operation::DeleteRow in execute_delete_row");
     }
 
-    pub fn execute_delete_rows(
+    pub(crate) fn execute_delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
@@ -220,7 +220,7 @@ impl GridController {
         bail!("Expected Operation::DeleteRows in execute_delete_rows");
     }
 
-    pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::InsertColumn {
             sheet_id,
             column,
@@ -262,7 +262,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_insert_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_insert_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::InsertRow {
             sheet_id,
             row,
@@ -305,7 +305,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_move_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_move_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::MoveColumns {
             sheet_id,
             col_start,
@@ -318,7 +318,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_move_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_move_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::MoveRows {
             sheet_id,
             row_start,

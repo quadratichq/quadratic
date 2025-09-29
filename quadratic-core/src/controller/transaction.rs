@@ -28,34 +28,29 @@ impl Default for TransactionHeader {
 }
 
 impl TransactionHeader {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             version: TransactionVersion::current().header.version,
         }
     }
 
-    pub fn new_from_version(version: &str) -> Self {
+    pub(crate) fn new_from_version(version: &str) -> Self {
         Self {
             version: version.into(),
         }
     }
 
-    pub fn new_serialized() -> Result<Vec<u8>> {
+    pub(crate) fn new_serialized() -> Result<Vec<u8>> {
         let transaction_header = TransactionHeader::new();
         transaction_header.serialize()
     }
 
-    pub fn serialize(&self) -> Result<Vec<u8>> {
+    pub(crate) fn serialize(&self) -> Result<Vec<u8>> {
         serialize(&HEADER_SERIALIZATION_FORMAT, self)
     }
 
-    pub fn parse(header: &[u8]) -> Result<TransactionHeader> {
+    pub(crate) fn parse(header: &[u8]) -> Result<TransactionHeader> {
         deserialize::<TransactionHeader>(&HEADER_SERIALIZATION_FORMAT, header)
-    }
-
-    pub fn parse_version(header: &[u8]) -> Result<String> {
-        let transaction_version = Self::parse(header)?;
-        Ok(transaction_version.version)
     }
 }
 
@@ -86,11 +81,11 @@ pub struct TransactionVersion {
 }
 
 impl TransactionVersion {
-    pub fn current() -> Self {
+    pub(crate) fn current() -> Self {
         Self::v3()
     }
 
-    pub fn v1() -> Self {
+    pub(crate) fn v1() -> Self {
         Self {
             header: TransactionHeader::from("1.0"),
             serialized_format: SerializationFormat::Json,
@@ -98,7 +93,7 @@ impl TransactionVersion {
         }
     }
 
-    pub fn v2() -> Self {
+    pub(crate) fn v2() -> Self {
         Self {
             header: TransactionHeader::from("2.0"),
             serialized_format: SerializationFormat::Json,
@@ -106,7 +101,7 @@ impl TransactionVersion {
         }
     }
 
-    pub fn v3() -> Self {
+    pub(crate) fn v3() -> Self {
         Self {
             header: TransactionHeader::from("3.0"),
             serialized_format: SerializationFormat::Json,
@@ -125,7 +120,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn to_undo_transaction(
+    pub(crate) fn to_undo_transaction(
         &self,
         transaction_type: TransactionSource,
         cursor: Option<String>,
@@ -246,32 +241,7 @@ impl TryInto<Transaction> for TransactionServer {
 
 impl GridController {
     /// Marks a transaction as sent by the multiplayer.ts server
-    pub fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
+    pub(crate) fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
         self.transactions.mark_transaction_sent(transaction_id);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::{
-        RunLengthEncoding,
-        grid::{SheetId, sheet::borders::borders_old::BorderStyleCellUpdate},
-        selection::OldSelection,
-    };
-
-    use super::*;
-
-    #[test]
-    fn serialize_and_compress_borders_selection() {
-        let operations = vec![Operation::SetBordersSelection {
-            selection: OldSelection::new_sheet_pos(1, 1, SheetId::TEST),
-            borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
-        }];
-
-        let compressed = Transaction::serialize_and_compress(operations.clone()).unwrap();
-        let decompressed =
-            Transaction::decompress_and_deserialize::<Vec<Operation>>(&compressed).unwrap();
-        assert_eq!(operations, decompressed);
     }
 }

@@ -116,7 +116,7 @@ impl CellRefCoord {
         }
     }
 
-    pub fn new_rel(coord: i64) -> Self {
+    pub(crate) fn new_rel(coord: i64) -> Self {
         let is_absolute = false;
         Self { coord, is_absolute }
     }
@@ -134,7 +134,7 @@ impl CellRefCoord {
     ///
     /// Returns an error if the result is out of bounds.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn adjust(self, relative_only: bool, delta: i64) -> Result<Self, RefError> {
+    pub(crate) fn adjust(self, relative_only: bool, delta: i64) -> Result<Self, RefError> {
         if (relative_only && self.is_absolute) || self.is_unbounded() {
             Ok(self)
         } else {
@@ -152,7 +152,7 @@ impl CellRefCoord {
     /// [`Self::adjust()`]. If the coordinate ends up out of range, it is
     /// clamped to A1.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, relative_only: bool, delta: i64) -> Self {
+    pub(crate) fn saturating_adjust(self, relative_only: bool, delta: i64) -> Self {
         self.adjust(relative_only, delta).unwrap_or(Self {
             coord: 1,
             is_absolute: self.is_absolute,
@@ -161,20 +161,20 @@ impl CellRefCoord {
 
     // TODO: remove this function when switching to u64
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate_unchecked(mut self, delta: i64) -> Self {
+    pub(crate) fn translate_unchecked(mut self, delta: i64) -> Self {
         if !self.is_unbounded() {
             self.coord = self.coord.saturating_add(delta);
         }
         self
     }
 
-    pub fn is_unbounded(&self) -> bool {
+    pub(crate) fn is_unbounded(&self) -> bool {
         self.coord == UNBOUNDED
     }
 
     /// Returns a new coordinate with the value bounded to the given position
     /// at the start of the range.
-    pub fn to_bounded_start(self, coord: i64) -> Self {
+    pub(crate) fn to_bounded_start(self, coord: i64) -> Self {
         Self {
             coord: self.coord.max(coord),
             is_absolute: self.is_absolute,
@@ -183,7 +183,7 @@ impl CellRefCoord {
 
     /// Returns a new coordinate with the value bounded to the given position
     /// at the end of the range.
-    pub fn to_bounded_end(self, coord: i64) -> Self {
+    pub(crate) fn to_bounded_end(self, coord: i64) -> Self {
         Self {
             coord: self.coord.min(coord),
             is_absolute: self.is_absolute,

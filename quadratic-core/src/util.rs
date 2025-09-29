@@ -1,5 +1,4 @@
 use std::fmt;
-use std::ops::Range;
 
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -23,7 +22,7 @@ pub(crate) mod btreemap_serde {
     use serde::ser::SerializeMap;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+    pub(crate) fn serialize<S: Serializer, K: Serialize, V: Serialize>(
         map: &BTreeMap<K, V>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
@@ -33,7 +32,7 @@ pub(crate) mod btreemap_serde {
         }
         m.end()
     }
-    pub fn deserialize<
+    pub(crate) fn deserialize<
         'de,
         D: Deserializer<'de>,
         K: for<'k> Deserialize<'k> + Ord,
@@ -56,7 +55,7 @@ pub(crate) mod indexmap_serde {
     use serde::ser::SerializeMap;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+    pub(crate) fn serialize<S: Serializer, K: Serialize, V: Serialize>(
         map: &IndexMap<K, V>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
@@ -68,7 +67,7 @@ pub(crate) mod indexmap_serde {
         }
         m.end()
     }
-    pub fn deserialize<
+    pub(crate) fn deserialize<
         'de,
         D: Deserializer<'de>,
         K: for<'k> Deserialize<'k> + Ord + Hash,
@@ -194,7 +193,7 @@ macro_rules! ref_range_bounds {
 
 /// Returns a human-friendly list of things, joined at the end by the given
 /// conjunction.
-pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
+pub(crate) fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
     match items {
         [] => "(none)".to_string(),
         [a] => format!("{a}"),
@@ -219,30 +218,7 @@ macro_rules! impl_display {
     };
 }
 
-/// Returns the minimum and maximum of two values, in that order.
-pub fn minmax<T: PartialOrd>(a: T, b: T) -> (T, T) {
-    if a > b { (b, a) } else { (a, b) }
-}
-/// Returns the minimum and maximum extent of two values, in that order. `None`
-/// is considered the largest possible possible.
-pub fn minmax_opt<T: PartialOrd>(a: T, b: Option<T>) -> (T, Option<T>) {
-    match b {
-        Some(b) => {
-            let (lo, hi) = minmax(a, b);
-            (lo, Some(hi))
-        }
-        None => (a, None),
-    }
-}
-
-pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
-    ranges
-        .into_iter()
-        .flatten()
-        .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
-}
-
-pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
+pub(crate) fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     let last_number: Option<usize> = already_used
         .iter()
         .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
@@ -260,7 +236,7 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
-pub fn unique_name<'a>(
+pub(crate) fn unique_name<'a>(
     name: &str,
     require_number: bool,
     check_name: impl Fn(&str) -> bool,
@@ -311,7 +287,7 @@ pub fn unique_name<'a>(
     name
 }
 
-pub fn maybe_reverse<I: DoubleEndedIterator>(
+pub(crate) fn maybe_reverse<I: DoubleEndedIterator>(
     iter: I,
     rev: bool,
 ) -> itertools::Either<I, std::iter::Rev<I>> {
@@ -322,7 +298,7 @@ pub fn maybe_reverse<I: DoubleEndedIterator>(
     }
 }
 
-pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
+pub(crate) fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
     if initial == UNBOUNDED {
         Ok(UNBOUNDED)
     } else {
@@ -335,7 +311,7 @@ pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
 
 /// For debugging both in tests and in the JS console
 #[track_caller]
-pub fn dbgjs(_val: impl fmt::Debug) {
+pub(crate) fn dbgjs(_val: impl fmt::Debug) {
     #[cfg(all(target_family = "wasm", feature = "dbgjs"))]
     crate::wasm_bindings::js::log(&(format!("{:?}", _val)));
 
@@ -368,32 +344,22 @@ macro_rules! jsTimeEnd {
     };
 }
 
-pub fn date_string() -> String {
-    let now = Utc::now();
-    now.format("%Y-%m-%d %H:%M:%S").to_string()
-}
-
-pub fn round(number: f64, precision: i64) -> f64 {
+pub(crate) fn round(number: f64, precision: i64) -> f64 {
     let y = 10i32.pow(precision as u32) as f64;
     (number * y).round() / y
 }
 
 /// Returns a string suitable for case-insensitive comparison.
-pub fn case_fold(s: &str) -> String {
+pub(crate) fn case_fold(s: &str) -> String {
     s.to_uppercase() // TODO: want proper Unicode case folding
 }
 
 /// Uppercase ascii-only string suitable for case-insensitive comparison.
-pub fn case_fold_ascii(s: &str) -> String {
+pub(crate) fn case_fold_ascii(s: &str) -> String {
     s.to_ascii_uppercase()
 }
 
-/// Uppercase ascii-only string suitable for case-insensitive comparison.
-pub fn case_fold_ascii_in_place(s: &mut str) {
-    s.make_ascii_uppercase();
-}
-
-pub fn set_panic_hook() {
+pub(crate) fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
     // we will get better error messages if our code ever panics.
@@ -405,7 +371,7 @@ pub fn set_panic_hook() {
 }
 
 // normalizes the bounds so that the first is always less than the second
-pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+pub(crate) fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
     match b {
         Some(b) if b < a => (b, Some(a)),
         _ => (a, b),
@@ -413,7 +379,7 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
 }
 
 // Returns the current UTC time.
-pub fn now() -> DateTime<Utc> {
+pub(crate) fn now() -> DateTime<Utc> {
     #[cfg(target_family = "wasm")]
     {
         DateTime::from_timestamp_millis(crate::wasm_bindings::js::jsTimestamp() as i64).unwrap()
@@ -425,6 +391,7 @@ pub fn now() -> DateTime<Utc> {
 }
 
 #[allow(unused)]
+#[cfg(test)]
 macro_rules! print_sheet {
     ($gc:expr, $sheet_id:expr) => {
         let sheet = $gc.try_sheet($sheet_id).unwrap();
@@ -433,6 +400,7 @@ macro_rules! print_sheet {
 }
 
 #[allow(unused)]
+#[cfg(test)]
 macro_rules! print_first_sheet {
     ($gc:expr) => {
         let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
@@ -467,11 +435,6 @@ mod tests {
         assert_eq!(pos![A2], crate::Pos { x: 1, y: 2 });
 
         assert_eq!(pos![C6], crate::Pos { x: 3, y: 6 });
-    }
-
-    #[test]
-    fn test_date_string() {
-        assert_eq!(date_string().len(), 19);
     }
 
     #[test]

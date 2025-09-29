@@ -18,7 +18,7 @@ impl Sheet {
     /// within a Time. To remove this formatting, we parse the format string and
     /// truncate (we assume date is first and time is second; although this can
     /// be changed to be arbitrary if necessary down the road).
-    pub fn value_date_time(value: &CellValue, date_time: Option<String>) -> String {
+    pub(crate) fn value_date_time(value: &CellValue, date_time: Option<String>) -> String {
         match value {
             CellValue::DateTime(dt) => date_time_to_date_time_string(*dt, date_time),
             CellValue::Date(d) => date_to_date_string(*d, date_time),

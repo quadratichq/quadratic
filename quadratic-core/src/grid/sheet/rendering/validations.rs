@@ -10,7 +10,7 @@ use crate::{
 
 impl Sheet {
     /// Sends all validations for this sheet to the client.
-    pub fn send_all_validations(&self) {
+    pub(crate) fn send_all_validations(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -26,7 +26,7 @@ impl Sheet {
     }
 
     /// Sends all validation warnings for this sheet to the client.
-    pub fn send_all_validation_warnings(&self) {
+    pub(crate) fn send_all_validation_warnings(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         };
@@ -41,7 +41,7 @@ impl Sheet {
 
     /// Sends validation warnings as a response from the request from the
     /// client. Note, the client always requests hash-sized rects.
-    pub fn send_validation_warnings_rect(&self, rect: Rect, rect_is_hash_rect: bool) {
+    pub(crate) fn send_validation_warnings_rect(&self, rect: Rect, rect_is_hash_rect: bool) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -51,7 +51,7 @@ impl Sheet {
     }
 
     /// Sends validation warnings to the client.
-    pub fn send_validation_warnings(&self, warnings: Vec<JsHashValidationWarnings>) {
+    pub(crate) fn send_validation_warnings(&self, warnings: Vec<JsHashValidationWarnings>) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -63,7 +63,7 @@ impl Sheet {
     }
 
     /// Sends validation warnings for a hashed region to the client.
-    pub fn get_validation_warnings_in_rect(
+    pub(crate) fn get_validation_warnings_in_rect(
         &self,
         rect: Rect,
         rect_is_hash_rect: bool,

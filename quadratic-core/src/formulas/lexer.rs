@@ -6,7 +6,7 @@ use strum_macros::Display;
 
 use crate::{Span, Spanned};
 
-pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
+pub(crate) fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
     let mut token_start = 0;
     std::iter::from_fn(move || {
         Token::consume_from_input(input_str, token_start).map(|(token, token_end)| {
@@ -450,7 +450,7 @@ impl Token {
 
     /// Returns whether this token is a comment or whitespace that should be
     /// skipped most of the time when parsing.
-    pub fn is_skip(self) -> bool {
+    pub(crate) fn is_skip(self) -> bool {
         matches!(self, Self::Comment | Self::Whitespace)
     }
 }

@@ -22,7 +22,8 @@ pub struct DataTableSort {
 
 impl DataTable {
     /// Sorts the data table by the given column index and direction.
-    pub fn sort_column(
+    #[cfg(test)]
+    pub(crate) fn sort_column(
         &mut self,
         column_index: usize,
         direction: SortDirection,
@@ -35,7 +36,7 @@ impl DataTable {
     }
 
     /// Sorts the data table by all the sort rules (`self.sort`).
-    pub fn sort_all(&mut self) -> Result<()> {
+    pub(crate) fn sort_all(&mut self) -> Result<()> {
         self.display_buffer = self.get_display_buffer()?;
         self.sort_dirty = false;
 
@@ -86,7 +87,8 @@ impl DataTable {
     }
 
     /// Prepends a sort rule to the sort rules (`self.sort`).
-    pub fn prepend_sort(
+    #[cfg(test)]
+    pub(crate) fn prepend_sort(
         &mut self,
         column_index: usize,
         direction: SortDirection,
@@ -113,7 +115,7 @@ impl DataTable {
     }
 
     /// Checks if the sort is dirty.
-    pub fn check_sort(&mut self) -> Result<()> {
+    pub(crate) fn check_sort(&mut self) -> Result<()> {
         if self.sort.as_ref().is_some_and(|sort| sort.is_empty()) {
             self.sort = None;
         }
@@ -127,7 +129,7 @@ impl DataTable {
     /// Returns true if the column is sorted.
     ///
     /// Note: This is the column_index, not the display_column_index.
-    pub fn is_column_sorted(&self, index: usize) -> bool {
+    pub(crate) fn is_column_sorted(&self, index: usize) -> bool {
         if let Some(sort) = self.sort.as_ref() {
             sort.iter().any(|s| s.column_index == index)
         } else {

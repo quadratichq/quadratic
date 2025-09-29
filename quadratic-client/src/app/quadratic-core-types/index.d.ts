@@ -75,7 +75,6 @@ export type JsCellValue = { value: string, kind: JsCellValueKind, };
 export type JsCellValueCode = { value: string, kind: JsCellValueKind, language: CodeCellLanguage | null, };
 export type JsCellValueSummary = { total_range: string, start_range: string | null, end_range: string | null, start_values: Array<Array<JsCellValueCode>> | null, end_values: Array<Array<JsCellValueCode>> | null, };
 export type JsCellValueKind = "Blank" | "Text" | "Number" | "Logical" | "DateTime" | "Date" | "Time" | "Duration" | "Error" | "Html" | "Image";
-export type JsCellValuePos = { value: string, kind: JsCellValueKind, pos: string, };
 export type JsCellValueRanges = { total_range: string, range: string, values: Array<Array<JsCellValueCode>> | null, };
 export type JsCellValueResult = [string, number];
 export type JsChartContext = { sheet_name: string, chart_name: string, bounds: string, intended_bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, };

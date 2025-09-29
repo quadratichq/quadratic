@@ -3,7 +3,7 @@ use anyhow::Result;
 use crate::grid::file::v1_11 as current;
 use crate::grid::file::v1_12;
 
-pub fn upgrade_cell_value(value: current::CellValueSchema) -> v1_12::CellValueSchema {
+pub(crate) fn upgrade_cell_value(value: current::CellValueSchema) -> v1_12::CellValueSchema {
     match value {
         current::CellValueSchema::Blank => v1_12::CellValueSchema::Blank,
         current::CellValueSchema::Text(s) => v1_12::CellValueSchema::Text(s),
@@ -24,21 +24,21 @@ pub fn upgrade_cell_value(value: current::CellValueSchema) -> v1_12::CellValueSc
     }
 }
 
-pub fn upgrade_column(column: current::ColumnSchema) -> v1_12::ColumnSchema {
+pub(crate) fn upgrade_column(column: current::ColumnSchema) -> v1_12::ColumnSchema {
     column
         .into_iter()
         .map(|(y, cell_value)| (y, upgrade_cell_value(cell_value)))
         .collect()
 }
 
-pub fn upgrade_columns(columns: current::ColumnsSchema) -> v1_12::ColumnsSchema {
+pub(crate) fn upgrade_columns(columns: current::ColumnsSchema) -> v1_12::ColumnsSchema {
     columns
         .into_iter()
         .map(|(x, column)| (x, upgrade_column(column)))
         .collect()
 }
 
-pub fn upgrade_table_columns(
+pub(crate) fn upgrade_table_columns(
     columns: current::DataTableColumnSchema,
 ) -> v1_12::DataTableColumnSchema {
     v1_12::DataTableColumnSchema {
@@ -55,7 +55,7 @@ fn upgrade_output_array_value(value: current::OutputArraySchema) -> v1_12::Outpu
     }
 }
 
-pub fn upgrade_output_value(value: current::OutputValueSchema) -> v1_12::OutputValueSchema {
+pub(crate) fn upgrade_output_value(value: current::OutputValueSchema) -> v1_12::OutputValueSchema {
     match value {
         current::OutputValueSchema::Single(value) => {
             v1_12::OutputValueSchema::Single(upgrade_cell_value(value))
@@ -66,7 +66,7 @@ pub fn upgrade_output_value(value: current::OutputValueSchema) -> v1_12::OutputV
     }
 }
 
-pub fn upgrade_table(table: current::DataTableSchema) -> v1_12::DataTableSchema {
+pub(crate) fn upgrade_table(table: current::DataTableSchema) -> v1_12::DataTableSchema {
     v1_12::DataTableSchema {
         kind: table.kind,
         name: table.name,
@@ -96,7 +96,7 @@ fn upgrade_tables(tables: current::DataTablesSchema) -> v1_12::DataTablesSchema 
         .collect()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
     v1_12::SheetSchema {
         id: sheet.id,
         name: sheet.name,

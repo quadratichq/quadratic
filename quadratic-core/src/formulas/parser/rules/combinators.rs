@@ -46,7 +46,7 @@ pub struct Surround<R> {
 }
 impl<R> Surround<R> {
     /// Wraps the rule in parentheses.
-    pub fn paren(inner: R) -> Self {
+    pub(crate) fn paren(inner: R) -> Self {
         Self {
             inner,
 

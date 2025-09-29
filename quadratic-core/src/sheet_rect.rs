@@ -21,7 +21,7 @@ pub struct SheetRect {
 }
 
 impl SheetRect {
-    pub fn new(x0: i64, y0: i64, x1: i64, y1: i64, sheet_id: SheetId) -> Self {
+    pub(crate) fn new(x0: i64, y0: i64, x1: i64, y1: i64, sheet_id: SheetId) -> Self {
         SheetRect {
             min: Pos { x: x0, y: y0 },
             max: Pos { x: x1, y: y1 },
@@ -29,7 +29,8 @@ impl SheetRect {
         }
     }
 
-    pub fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
+    #[cfg(test)]
+    pub(crate) fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
         SheetRect {
             min: sheet_pos.into(),
             max: sheet_pos.into(),
@@ -37,7 +38,8 @@ impl SheetRect {
         }
     }
 
-    pub fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
+    #[cfg(test)]
+    pub(crate) fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
         SheetRect {
             min: pos,
             max: pos,
@@ -45,16 +47,8 @@ impl SheetRect {
         }
     }
 
-    pub fn new_from_rect(rect: Rect, sheet_id: SheetId) -> SheetRect {
-        SheetRect {
-            min: rect.min,
-            max: rect.max,
-            sheet_id,
-        }
-    }
-
     /// Constructs a new SheetRect from two positions and a sheet id.
-    pub fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
+    pub(crate) fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
         use std::cmp::{max, min};
         SheetRect {
             min: Pos {
@@ -69,7 +63,7 @@ impl SheetRect {
         }
     }
 
-    pub fn from_numbers(x: i64, y: i64, w: i64, h: i64, sheet_id: SheetId) -> SheetRect {
+    pub(crate) fn from_numbers(x: i64, y: i64, w: i64, h: i64, sheet_id: SheetId) -> SheetRect {
         SheetRect {
             min: Pos { x, y },
             max: Pos {
@@ -84,55 +78,30 @@ impl SheetRect {
         SheetRect::new_pos_span(pos1.into(), pos2.into(), pos1.sheet_id)
     }
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(self, sheet_pos: SheetPos) -> bool {
+    pub(crate) fn contains(self, sheet_pos: SheetPos) -> bool {
         self.sheet_id == sheet_pos.sheet_id
             && self.x_range().contains(&sheet_pos.x)
             && self.y_range().contains(&sheet_pos.y)
     }
-    /// Returns whether a rectangle intersects with the rectangle.
-    pub fn intersects(self, other: SheetRect) -> bool {
-        // https://en.wikipedia.org/wiki/Hyperplane_separation_theorem#:~:text=the%20following%20form%3A-,Separating%20axis%20theorem,-%E2%80%94%C2%A0Two%20closed
-        self.sheet_id == other.sheet_id
-            && !(other.max.x < self.min.x
-                || other.min.x > self.max.x
-                || other.max.y < self.min.y
-                || other.min.y > self.max.y)
-    }
     /// Returns the range of X values in the rectangle.
-    pub fn x_range(self) -> Range<i64> {
+    pub(crate) fn x_range(self) -> Range<i64> {
         self.min.x..i64::checked_add(self.max.x, 1).unwrap_or(UNBOUNDED)
     }
     /// Returns the range of Y values in the rectangle.
-    pub fn y_range(self) -> Range<i64> {
+    pub(crate) fn y_range(self) -> Range<i64> {
         self.min.y..i64::checked_add(self.max.y, 1).unwrap_or(UNBOUNDED)
     }
-    pub fn width(&self) -> usize {
+    pub(crate) fn width(&self) -> usize {
         (self.max.x - self.min.x + 1) as usize
     }
-    pub fn height(&self) -> usize {
+    pub(crate) fn height(&self) -> usize {
         (self.max.y - self.min.y + 1) as usize
     }
-    pub fn len(&self) -> usize {
-        self.width() * self.height()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.width() == 0 || self.height() == 0
-    }
-    pub fn size(&self) -> ArraySize {
+    pub(crate) fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)
             .expect("empty rectangle has no size")
     }
-    pub fn iter(self) -> impl Iterator<Item = SheetPos> {
-        let SheetRect { min, max, .. } = self;
-        (min.y..=max.y).flat_map(move |y| {
-            (min.x..=max.x).map(move |x| SheetPos {
-                x,
-                y,
-                sheet_id: self.sheet_id,
-            })
-        })
-    }
-    pub fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> Self {
+    pub(crate) fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> Self {
         SheetRect {
             min: top_left.into(),
             max: Pos {
@@ -142,7 +111,7 @@ impl SheetRect {
             sheet_id: top_left.sheet_id,
         }
     }
-    pub fn union(&self, other: &Self) -> Self {
+    pub(crate) fn union(&self, other: &Self) -> Self {
         assert!(
             self.sheet_id == other.sheet_id,
             "Cannot union different sheets"
@@ -158,7 +127,8 @@ impl SheetRect {
         }
     }
 
-    pub fn top_left(&self) -> SheetPos {
+    #[cfg(test)]
+    pub(crate) fn top_left(&self) -> SheetPos {
         SheetPos {
             x: self.min.x,
             y: self.min.y,
@@ -168,7 +138,7 @@ impl SheetRect {
 
     /// Returns the position of the cell at the given offset (0-indexed) within
     /// the rectangle, or `None` if the coordinates are outside the rectangle.
-    pub fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
+    pub(crate) fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
         if (x as usize) < self.width() && (y as usize) < self.height() {
             Some(SheetPos {
                 x: self.min.x + x as i64,
@@ -180,7 +150,7 @@ impl SheetRect {
         }
     }
 
-    pub fn to_hashes(&self) -> HashSet<Pos> {
+    pub(crate) fn to_hashes(&self) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         let min_hash = self.min.quadrant();
         let max_hash = self.max.quadrant();
@@ -192,11 +162,11 @@ impl SheetRect {
         hashes
     }
 
-    pub fn to_rect(&self) -> Rect {
+    pub(crate) fn to_rect(&self) -> Rect {
         Rect::new_span(self.min, self.max)
     }
 
-    pub fn to_region(&self) -> (SheetId, Rect) {
+    pub(crate) fn to_region(&self) -> (SheetId, Rect) {
         (self.sheet_id.to_owned(), self.to_rect())
     }
 }

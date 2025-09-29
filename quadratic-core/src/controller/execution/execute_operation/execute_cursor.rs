@@ -20,7 +20,7 @@ impl GridController {
     }
 
     /// **Deprecated** Nov 2024 in favor of [`Self::execute_set_cursor_a1()`].
-    pub fn execute_set_cursor_selection(
+    pub(crate) fn execute_set_cursor_selection(
         &mut self,
         _transaction: &mut PendingTransaction,
         _op: Operation,
@@ -35,7 +35,7 @@ impl GridController {
     }
 
     /// Applies an [`Operation::SetCursorA1`] to `transaction`.
-    pub fn execute_set_cursor_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_set_cursor_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         unwrap_op!(let SetCursorA1 { selection } = op);
 
         // this op should only be called by a user transaction

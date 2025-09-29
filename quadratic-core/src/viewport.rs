@@ -46,11 +46,11 @@ unsafe impl Send for ViewportBuffer {}
 
 #[cfg(not(test))]
 impl ViewportBuffer {
-    pub fn get_buffer(&self) -> SharedArrayBuffer {
+    pub(crate) fn get_buffer(&self) -> SharedArrayBuffer {
         (*self.buffer).clone()
     }
 
-    pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
+    pub(crate) fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
         let array = Int32Array::new(&self.buffer);
 
         // Determine which slice is the reader slice, and lock it
@@ -125,11 +125,11 @@ impl Default for ViewportBuffer {
 
 #[cfg(test)]
 impl ViewportBuffer {
-    pub fn get_buffer(&self) -> [u8; 112] {
+    pub(crate) fn get_buffer(&self) -> [u8; 112] {
         *self.buffer
     }
 
-    pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
+    pub(crate) fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
         Some((Pos { x: -10, y: -10 }, Pos { x: 10, y: 10 }, SheetId::TEST))
     }
 }

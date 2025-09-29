@@ -14,7 +14,7 @@ pub struct CellValues {
 }
 
 impl CellValues {
-    pub fn new(w: u32, h: u32) -> Self {
+    pub(crate) fn new(w: u32, h: u32) -> Self {
         Self {
             columns: vec![BTreeMap::new(); w as usize],
             w,
@@ -22,7 +22,7 @@ impl CellValues {
         }
     }
 
-    pub fn new_blank(w: u32, h: u32) -> Self {
+    pub(crate) fn new_blank(w: u32, h: u32) -> Self {
         let mut columns = Vec::with_capacity(w as usize);
         let mut column = BTreeMap::new();
         for y in 0..h {
@@ -34,7 +34,8 @@ impl CellValues {
         Self { columns, w, h }
     }
 
-    pub fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
+    #[cfg(test)]
+    pub(crate) fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
         self.columns
             .get(x as usize)
             .and_then(|col| col.get(&(y as u64)))
@@ -47,24 +48,13 @@ impl CellValues {
             })
     }
 
-    pub fn get(&self, x: u32, y: u32) -> Option<&CellValue> {
+    pub(crate) fn get(&self, x: u32, y: u32) -> Option<&CellValue> {
         self.columns
             .get(x as usize)
             .and_then(|col| col.get(&(y as u64)))
     }
 
-    pub fn get_owned(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
-        let column = self
-            .columns
-            .get_mut(x as usize)
-            .ok_or_else(|| anyhow::anyhow!("No column found at {x}"))?;
-
-        column
-            .get_mut(&(y as u64))
-            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
-    }
-
-    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<Option<CellValue>>> {
+    pub(crate) fn get_rect(&mut self, rect: Rect) -> Vec<Vec<Option<CellValue>>> {
         let mut values = vec![vec![None; rect.height() as usize]; rect.width() as usize];
         for (x_index, x) in rect.x_range().enumerate() {
             for (y_index, y) in rect.y_range().enumerate() {
@@ -76,7 +66,7 @@ impl CellValues {
         values
     }
 
-    pub fn get_row(&self, row: u32) -> Result<Vec<CellValue>, anyhow::Error> {
+    pub(crate) fn get_row(&self, row: u32) -> Result<Vec<CellValue>, anyhow::Error> {
         if row >= self.h {
             anyhow::bail!("Row out of bounds: row={row}, h={}", self.h);
         }
@@ -87,7 +77,7 @@ impl CellValues {
         Ok(values)
     }
 
-    pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
+    pub(crate) fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
             self.h = y + 1;
         }
@@ -102,20 +92,20 @@ impl CellValues {
         self.columns[x as usize].insert(y as u64, value);
     }
 
-    pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
+    pub(crate) fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
         self.columns[x as usize].remove(&(y as u64))
     }
 
-    pub fn size(&self) -> u32 {
+    pub(crate) fn size(&self) -> u32 {
         self.w * self.h
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.size() == 0
     }
 
     /// Creates CellValues from a flat array of CellValue given a width and height
-    pub fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
+    pub(crate) fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (i, value) in values.into_iter().enumerate() {
             let x = (i as u32) % w;
@@ -127,21 +117,22 @@ impl CellValues {
         Self { columns, w, h }
     }
 
-    pub fn into_iter(&self) -> impl Iterator<Item = (u32, u32, &CellValue)> {
+    #[cfg(test)]
+    pub(crate) fn into_iter(&self) -> impl Iterator<Item = (u32, u32, &CellValue)> {
         self.columns.iter().enumerate().flat_map(|(x, col)| {
             col.iter()
                 .map(move |(y, value)| (x as u32, *y as u32, value))
         })
     }
 
-    pub fn into_owned_iter(self) -> impl Iterator<Item = (u32, u32, CellValue)> {
+    pub(crate) fn into_owned_iter(self) -> impl Iterator<Item = (u32, u32, CellValue)> {
         self.columns.into_iter().enumerate().flat_map(|(x, col)| {
             col.into_iter()
                 .map(move |(y, value)| (x as u32, y as u32, value))
         })
     }
 
-    pub fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
+    pub(crate) fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
         let mut vec = vec![vec![CellValue::Blank; self.w as usize]; self.h as usize];
         for (x, col) in self.columns.into_iter().enumerate() {
             for (y, value) in col.into_iter() {
