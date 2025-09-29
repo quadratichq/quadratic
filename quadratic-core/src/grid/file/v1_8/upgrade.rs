@@ -111,7 +111,7 @@ pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_9::SheetSchema {
     }
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_9::GridSchema> {
+pub(crate) fn upgrade(grid: current::GridSchema) -> Result<v1_9::GridSchema> {
     let new_grid = v1_9::GridSchema {
         version: Some("1.9".to_string()),
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),

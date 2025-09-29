@@ -7,84 +7,75 @@ mod sheet_offsets;
 mod upgrade;
 mod validations_schema;
 
-pub use a1_selection_schema::*;
-pub use borders_a1_schema::*;
-pub use cells_accessed_schema::*;
-pub use contiguous_2d_schema::*;
-pub use sheet_formatting_schema::*;
-pub use upgrade::*;
-pub use validations_schema::*;
+pub(crate) use a1_selection_schema::*;
+pub(crate) use borders_a1_schema::*;
+pub(crate) use cells_accessed_schema::*;
+pub(crate) use contiguous_2d_schema::*;
+pub(crate) use sheet_formatting_schema::*;
+pub(crate) use upgrade::*;
+pub(crate) use validations_schema::*;
 
 use crate::grid::file::v1_7::schema as v1_7;
 
 use serde::{Deserialize, Serialize};
 
-pub type IdSchema = v1_7::IdSchema;
-pub type PosSchema = v1_7::PosSchema;
-pub type RectSchema = v1_7::RectSchema;
-pub type SheetRectSchema = v1_7::SheetRectSchema;
-pub type OffsetsSchema = v1_7::OffsetsSchema;
-pub type RunErrorSchema = v1_7::RunErrorSchema;
-pub type ResizeSchema = v1_7::ResizeSchema;
-pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
-pub type OutputValueSchema = v1_7::OutputValueSchema;
-pub type OutputSizeSchema = v1_7::OutputSizeSchema;
-pub type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
-pub type NumericFormatSchema = v1_7::NumericFormatSchema;
-pub type CellValueSchema = v1_7::CellValueSchema;
-pub type CodeCellLanguageSchema = v1_7::CodeCellLanguageSchema;
-pub type ConnectionKindSchema = v1_7::ConnectionKindSchema;
-pub type CodeCellSchema = v1_7::CodeCellSchema;
-pub type CellAlignSchema = v1_7::CellAlignSchema;
-pub type CellVerticalAlignSchema = v1_7::CellVerticalAlignSchema;
-pub type CellWrapSchema = v1_7::CellWrapSchema;
-pub type CellBorderSchema = v1_7::CellBorderSchema;
-pub type ColumnRepeatSchema<T> = v1_7::ColumnRepeatSchema<T>;
-pub type RenderSizeSchema = v1_7::RenderSizeSchema;
-pub type RunErrorMsgSchema = v1_7::RunErrorMsgSchema;
-pub type ValidationStyleSchema = v1_7::ValidationStyleSchema;
-pub type ValidationMessageSchema = v1_7::ValidationMessageSchema;
-pub type ValidationErrorSchema = v1_7::ValidationErrorSchema;
-pub type ValidationDateTimeSchema = v1_7::ValidationDateTimeSchema;
-pub type ValidationNumberSchema = v1_7::ValidationNumberSchema;
-pub type ValidationTextSchema = v1_7::ValidationTextSchema;
-pub type ValidationLogicalSchema = v1_7::ValidationLogicalSchema;
-pub type TextMatchSchema = v1_7::TextMatchSchema;
-pub type TextCaseSchema = v1_7::TextCaseSchema;
-pub type DateTimeRangeSchema = v1_7::DateTimeRangeSchema;
-pub type NumberRangeSchema = v1_7::NumberRangeSchema;
-pub type RgbaSchema = v1_7::RgbaSchema;
-pub type CellBorderLineSchema = v1_7::CellBorderLineSchema;
-pub type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
-pub type BorderStyleCellSchema = v1_7::BorderStyleCellSchema;
-pub type AxisSchema = v1_7::AxisSchema;
-pub type SpanSchema = v1_7::SpanSchema;
-
-pub type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
-
-pub type CodeRunsSchema = Vec<(PosSchema, CodeRunSchema)>;
-
-pub type ColumnSchema = Vec<(i64, CellValueSchema)>;
-
-pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
+pub(crate) type IdSchema = v1_7::IdSchema;
+pub(crate) type PosSchema = v1_7::PosSchema;
+pub(crate) type OffsetsSchema = v1_7::OffsetsSchema;
+pub(crate) type RunErrorSchema = v1_7::RunErrorSchema;
+pub(crate) type ResizeSchema = v1_7::ResizeSchema;
+pub(crate) type CodeRunResultSchema = v1_7::CodeRunResultSchema;
+pub(crate) type OutputValueSchema = v1_7::OutputValueSchema;
+pub(crate) type OutputSizeSchema = v1_7::OutputSizeSchema;
+pub(crate) type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
+pub(crate) type NumericFormatSchema = v1_7::NumericFormatSchema;
+pub(crate) type CellValueSchema = v1_7::CellValueSchema;
+pub(crate) type CodeCellLanguageSchema = v1_7::CodeCellLanguageSchema;
+pub(crate) type ConnectionKindSchema = v1_7::ConnectionKindSchema;
+pub(crate) type CodeCellSchema = v1_7::CodeCellSchema;
+pub(crate) type CellAlignSchema = v1_7::CellAlignSchema;
+pub(crate) type CellVerticalAlignSchema = v1_7::CellVerticalAlignSchema;
+pub(crate) type CellWrapSchema = v1_7::CellWrapSchema;
+pub(crate) type RenderSizeSchema = v1_7::RenderSizeSchema;
+pub(crate) type RunErrorMsgSchema = v1_7::RunErrorMsgSchema;
+pub(crate) type ValidationStyleSchema = v1_7::ValidationStyleSchema;
+pub(crate) type ValidationMessageSchema = v1_7::ValidationMessageSchema;
+pub(crate) type ValidationErrorSchema = v1_7::ValidationErrorSchema;
+pub(crate) type ValidationDateTimeSchema = v1_7::ValidationDateTimeSchema;
+pub(crate) type ValidationNumberSchema = v1_7::ValidationNumberSchema;
+pub(crate) type ValidationTextSchema = v1_7::ValidationTextSchema;
+pub(crate) type ValidationLogicalSchema = v1_7::ValidationLogicalSchema;
+pub(crate) type TextMatchSchema = v1_7::TextMatchSchema;
+pub(crate) type TextCaseSchema = v1_7::TextCaseSchema;
+pub(crate) type DateTimeRangeSchema = v1_7::DateTimeRangeSchema;
+pub(crate) type NumberRangeSchema = v1_7::NumberRangeSchema;
+pub(crate) type RgbaSchema = v1_7::RgbaSchema;
+pub(crate) type CellBorderLineSchema = v1_7::CellBorderLineSchema;
+pub(crate) type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
+pub(crate) type AxisSchema = v1_7::AxisSchema;
+pub(crate) type SpanSchema = v1_7::SpanSchema;
+pub(crate) type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
+pub(crate) type CodeRunsSchema = Vec<(PosSchema, CodeRunSchema)>;
+pub(crate) type ColumnSchema = Vec<(i64, CellValueSchema)>;
+pub(crate) type ColumnsSchema = Vec<(i64, ColumnSchema)>;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct SheetSchema {
-    pub id: IdSchema,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
-    pub offsets: OffsetsSchema,
-    pub validations: ValidationsSchema,
-    pub rows_resize: RowsResizeSchema,
-    pub borders: BordersSchema,
-    pub formats: SheetFormattingSchema,
-    pub code_runs: CodeRunsSchema,
-    pub columns: ColumnsSchema,
+    pub(crate) id: IdSchema,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
+    pub(crate) offsets: OffsetsSchema,
+    pub(crate) validations: ValidationsSchema,
+    pub(crate) rows_resize: RowsResizeSchema,
+    pub(crate) borders: BordersSchema,
+    pub(crate) formats: SheetFormattingSchema,
+    pub(crate) code_runs: CodeRunsSchema,
+    pub(crate) columns: ColumnsSchema,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
-pub struct GridSchema {
-    pub version: String,
-    pub sheets: Vec<SheetSchema>,
+pub(crate) struct GridSchema {
+    pub(crate) version: String,
+    pub(crate) sheets: Vec<SheetSchema>,
 }

@@ -9,40 +9,40 @@ use uuid::Uuid;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GridSchema {
-    pub sheets: Vec<Sheet>,
-    pub version: Option<String>,
+pub(crate) struct GridSchema {
+    pub(crate) sheets: Vec<Sheet>,
+    pub(crate) version: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Pos {
-    pub x: i64,
-    pub y: i64,
+pub(crate) struct Pos {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
 }
 
-pub type Offsets = (Vec<(i64, f64)>, Vec<(i64, f64)>);
-pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
+pub(crate) type Offsets = (Vec<(i64, f64)>, Vec<(i64, f64)>);
+pub(crate) type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Sheet {
-    pub id: Id,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
-    pub offsets: Offsets,
-    pub columns: Vec<(i64, Column)>,
-    pub rows: Vec<(i64, Id)>,
-    pub borders: Borders,
+pub(crate) struct Sheet {
+    pub(crate) id: Id,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
+    pub(crate) offsets: Offsets,
+    pub(crate) columns: Vec<(i64, Column)>,
+    pub(crate) rows: Vec<(i64, Id)>,
+    pub(crate) borders: Borders,
     #[serde(rename = "code_cells")]
-    pub code_cells: Vec<(CellRef, CodeCellValue)>,
+    pub(crate) code_cells: Vec<(CellRef, CodeCellValue)>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Id {
-    pub id: String,
+pub(crate) struct Id {
+    pub(crate) id: String,
 }
 impl Id {
     pub(crate) fn new() -> Self {
@@ -64,10 +64,10 @@ impl Display for Id {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CellRef {
-    pub sheet: Id,
-    pub column: Id,
-    pub row: Id,
+pub(crate) struct CellRef {
+    pub(crate) sheet: Id,
+    pub(crate) column: Id,
+    pub(crate) row: Id,
 }
 impl Display for CellRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -77,30 +77,30 @@ impl Display for CellRef {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct CodeCellValue {
-    pub language: String,
-    pub code_string: String,
-    pub formatted_code_string: Option<String>,
-    pub last_modified: String,
-    pub output: Option<CodeCellRunOutput>,
+pub(crate) struct CodeCellValue {
+    pub(crate) language: String,
+    pub(crate) code_string: String,
+    pub(crate) formatted_code_string: Option<String>,
+    pub(crate) last_modified: String,
+    pub(crate) output: Option<CodeCellRunOutput>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CodeCellRunOutput {
-    pub std_out: Option<String>,
+pub(crate) struct CodeCellRunOutput {
+    pub(crate) std_out: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub std_err: Option<String>,
-    pub result: CodeCellRunResult,
+    pub(crate) std_err: Option<String>,
+    pub(crate) result: CodeCellRunResult,
 
     #[serde(default)]
-    pub spill: bool,
+    pub(crate) spill: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
-pub enum CodeCellRunResult {
+pub(crate) enum CodeCellRunResult {
     Ok {
         output_value: OutputValue,
         cells_accessed: Vec<CellRef>,
@@ -112,21 +112,21 @@ pub enum CodeCellRunResult {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
-pub enum OutputValue {
+pub(crate) enum OutputValue {
     Single(OutputValueValue),
     Array(OutputArray),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputArray {
-    pub size: OutputSize,
-    pub values: Vec<OutputValueValue>,
+pub(crate) struct OutputArray {
+    pub(crate) size: OutputSize,
+    pub(crate) values: Vec<OutputValueValue>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OutputSize {
-    pub w: i64,
-    pub h: i64,
+pub(crate) struct OutputSize {
+    pub(crate) w: i64,
+    pub(crate) h: i64,
 }
 impl From<(NonZeroU32, NonZeroU32)> for OutputSize {
     fn from((w, h): (NonZeroU32, NonZeroU32)) -> Self {
@@ -138,54 +138,54 @@ impl From<(NonZeroU32, NonZeroU32)> for OutputSize {
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RenderSize {
-    pub w: String,
-    pub h: String,
+pub(crate) struct RenderSize {
+    pub(crate) w: String,
+    pub(crate) h: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OutputValueValue {
+pub(crate) struct OutputValueValue {
     #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
+    pub(crate) type_field: String,
+    pub(crate) value: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Error {
-    pub span: Option<Span>,
-    pub msg: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Span {
-    pub start: u32,
-    pub end: u32,
+pub(crate) struct Error {
+    pub(crate) span: Option<Span>,
+    pub(crate) msg: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Column {
-    pub id: Id,
-    pub values: HashMap<String, ColumnValues>,
-    pub spills: HashMap<String, ColumnFormatType<String>>,
-    pub align: HashMap<String, ColumnFormatType<String>>,
-    pub wrap: HashMap<String, ColumnFormatType<String>>,
+pub(crate) struct Span {
+    pub(crate) start: u32,
+    pub(crate) end: u32,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Column {
+    pub(crate) id: Id,
+    pub(crate) values: HashMap<String, ColumnValues>,
+    pub(crate) spills: HashMap<String, ColumnFormatType<String>>,
+    pub(crate) align: HashMap<String, ColumnFormatType<String>>,
+    pub(crate) wrap: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "numeric_format")]
-    pub numeric_format: HashMap<String, ColumnFormatType<NumericFormat>>,
+    pub(crate) numeric_format: HashMap<String, ColumnFormatType<NumericFormat>>,
     #[serde(rename = "numeric_decimals")]
-    pub numeric_decimals: HashMap<String, ColumnFormatType<i16>>,
+    pub(crate) numeric_decimals: HashMap<String, ColumnFormatType<i16>>,
     #[serde(rename = "numeric_commas")]
-    pub numeric_commas: HashMap<String, ColumnFormatType<bool>>,
-    pub bold: HashMap<String, ColumnFormatType<bool>>,
-    pub italic: HashMap<String, ColumnFormatType<bool>>,
+    pub(crate) numeric_commas: HashMap<String, ColumnFormatType<bool>>,
+    pub(crate) bold: HashMap<String, ColumnFormatType<bool>>,
+    pub(crate) italic: HashMap<String, ColumnFormatType<bool>>,
     #[serde(rename = "text_color")]
-    pub text_color: HashMap<String, ColumnFormatType<String>>,
+    pub(crate) text_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "fill_color")]
-    pub fill_color: HashMap<String, ColumnFormatType<String>>,
+    pub(crate) fill_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(default)]
     #[serde(rename = "render_size")]
-    pub render_size: HashMap<String, ColumnFormatType<RenderSize>>,
+    pub(crate) render_size: HashMap<String, ColumnFormatType<RenderSize>>,
 }
 impl Column {
     pub(crate) fn with_id(id: Id) -> Self {
@@ -198,22 +198,22 @@ impl Column {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnValues {
-    pub y: i64,
-    pub content: ColumnContent,
+pub(crate) struct ColumnValues {
+    pub(crate) y: i64,
+    pub(crate) content: ColumnContent,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnContent {
+pub(crate) struct ColumnContent {
     #[serde(rename = "Values")]
-    pub values: Vec<ColumnValue>,
+    pub(crate) values: Vec<ColumnValue>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnValue {
+pub(crate) struct ColumnValue {
     #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
+    pub(crate) type_field: String,
+    pub(crate) value: String,
 }
 impl From<(i64, ColumnValue)> for ColumnValues {
     fn from((y, values): (i64, ColumnValue)) -> Self {
@@ -226,22 +226,22 @@ impl From<(i64, ColumnValue)> for ColumnValues {
     }
 }
 
-// pub enum ColumnFormat {
+// pub(crate) enum  ColumnFormat {
 //     Bool,
 //     String,
 // }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnFormatType<T> {
-    pub y: i64,
-    pub content: ColumnFormatContent<T>,
+pub(crate) struct ColumnFormatType<T> {
+    pub(crate) y: i64,
+    pub(crate) content: ColumnFormatContent<T>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnFormatContent<T> {
-    pub value: T,
-    pub len: i64,
+pub(crate) struct ColumnFormatContent<T> {
+    pub(crate) value: T,
+    pub(crate) len: i64,
 }
 impl<T> From<T> for ColumnFormatType<T> {
     fn from(value: T) -> Self {
@@ -300,29 +300,29 @@ impl From<(i64, CellRef)> for ColumnFormatType<String> {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NumericFormat {
+pub(crate) struct NumericFormat {
     #[serde(rename = "type")]
-    pub kind: String,
-    pub symbol: Option<String>,
+    pub(crate) kind: String,
+    pub(crate) symbol: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Row {
-    pub id: String,
+pub(crate) struct Row {
+    pub(crate) id: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CellBorder {
-    pub color: String,
-    pub line: String,
+pub(crate) struct CellBorder {
+    pub(crate) color: String,
+    pub(crate) line: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[repr(u8)]
-pub enum CellSide {
+pub(crate) enum CellSide {
     Left = 0,
     Top = 1,
     Right = 2,

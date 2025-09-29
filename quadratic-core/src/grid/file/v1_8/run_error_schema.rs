@@ -9,9 +9,9 @@ use std::{borrow::Cow, num::NonZeroU32};
 use super::schema::AxisSchema;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunErrorSchema {
-    pub span: Option<SpanSchema>,
-    pub msg: RunErrorMsgSchema,
+pub(crate) struct RunErrorSchema {
+    pub(crate) span: Option<SpanSchema>,
+    pub(crate) msg: RunErrorMsgSchema,
 }
 impl From<v1_7_1::RunErrorSchema> for RunErrorSchema {
     fn from(value: v1_7_1::RunErrorSchema) -> Self {
@@ -23,7 +23,7 @@ impl From<v1_7_1::RunErrorSchema> for RunErrorSchema {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum RunErrorMsgSchema {
+pub(crate) enum RunErrorMsgSchema {
     CodeRunError(Cow<'static, str>),
 
     Spill,

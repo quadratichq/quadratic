@@ -6,11 +6,11 @@ use crate::grid::file::{
 use super::{Contiguous2DUpgrade, schema::BorderStyleCellSchema};
 
 #[derive(Default)]
-pub struct BordersUpgrade {
-    pub left: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
-    pub right: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
-    pub top: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
-    pub bottom: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
+pub(crate) struct BordersUpgrade {
+    pub(crate) left: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
+    pub(crate) right: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
+    pub(crate) top: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
+    pub(crate) bottom: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
 }
 
 impl BordersUpgrade {

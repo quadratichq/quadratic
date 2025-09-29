@@ -5,19 +5,19 @@ use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, num::NonZeroU32};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunError {
-    pub span: Option<Span>,
-    pub msg: RunErrorMsg,
+pub(crate) struct RunError {
+    pub(crate) span: Option<Span>,
+    pub(crate) msg: RunErrorMsg,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum Axis {
+pub(crate) enum Axis {
     X = 0,
     Y = 1,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum RunErrorMsg {
+pub(crate) enum RunErrorMsg {
     PythonError(Cow<'static, str>),
 
     Spill,

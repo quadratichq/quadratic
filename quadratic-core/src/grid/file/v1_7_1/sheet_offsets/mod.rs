@@ -12,7 +12,7 @@ const DEFAULT_ROW_HEIGHT: f64 = 21.0;
 /// Data structure that tracks column widths or row heights in pixel units,
 /// optimized for converting between column/row indices and pixel units.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Offsets {
+pub(crate) struct Offsets {
     default: f64,
     #[serde(with = "crate::util::btreemap_serde")]
     sizes: BTreeMap<i64, f64>,

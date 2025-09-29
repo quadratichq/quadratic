@@ -13,7 +13,7 @@ use crate::{
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
-pub const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
+pub(crate) const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
 
 pub(crate) fn add_import_offset_to_contiguous_2d_rect(
     x1: i64,

@@ -1,4 +1,4 @@
-pub mod borders_upgrade;
-pub mod file;
-pub mod schema;
-pub mod schema_validation;
+pub(crate) mod borders_upgrade;
+pub(crate) mod file;
+pub(crate) mod schema;
+pub(crate) mod schema_validation;

@@ -4,17 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub use super::run_error::RunError;
-pub use super::run_error::RunErrorMsg;
+pub(crate) use super::run_error::RunError;
+pub(crate) use super::run_error::RunErrorMsg;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GridSchema {
-    pub sheets: Vec<Sheet>,
-    pub version: Option<String>,
+pub(crate) struct GridSchema {
+    pub(crate) sheets: Vec<Sheet>,
+    pub(crate) version: Option<String>,
 }
 
-pub type Id = v1_4::Id;
+pub(crate) type Id = v1_4::Id;
 
 impl From<SheetId> for Id {
     fn from(id: SheetId) -> Self {
@@ -28,7 +28,7 @@ impl From<Id> for SheetId {
     }
 }
 
-pub type Pos = v1_4::Pos;
+pub(crate) type Pos = v1_4::Pos;
 
 impl From<crate::Pos> for Pos {
     fn from(pos: crate::Pos) -> Self {
@@ -37,10 +37,10 @@ impl From<crate::Pos> for Pos {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetPos {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: Id,
+pub(crate) struct SheetPos {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
+    pub(crate) sheet_id: Id,
 }
 impl From<crate::SheetPos> for SheetPos {
     fn from(pos: crate::SheetPos) -> Self {
@@ -53,10 +53,10 @@ impl From<crate::SheetPos> for SheetPos {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetRect {
-    pub min: Pos,
-    pub max: Pos,
-    pub sheet_id: Id,
+pub(crate) struct SheetRect {
+    pub(crate) min: Pos,
+    pub(crate) max: Pos,
+    pub(crate) sheet_id: Id,
 }
 impl From<crate::SheetRect> for SheetRect {
     fn from(sheet_rect: crate::SheetRect) -> Self {
@@ -90,110 +90,110 @@ impl From<SheetRect> for crate::SheetRect {
     }
 }
 
-pub type Offsets = v1_4::Offsets;
+pub(crate) type Offsets = v1_4::Offsets;
 
-pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
+pub(crate) type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Format {
-    pub align: Option<CellAlign>,
-    pub vertical_align: Option<CellVerticalAlign>,
-    pub wrap: Option<CellWrap>,
-    pub numeric_format: Option<NumericFormat>,
-    pub numeric_decimals: Option<i16>,
-    pub numeric_commas: Option<bool>,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-    pub text_color: Option<String>,
-    pub fill_color: Option<String>,
-    pub render_size: Option<RenderSize>,
+pub(crate) struct Format {
+    pub(crate) align: Option<CellAlign>,
+    pub(crate) vertical_align: Option<CellVerticalAlign>,
+    pub(crate) wrap: Option<CellWrap>,
+    pub(crate) numeric_format: Option<NumericFormat>,
+    pub(crate) numeric_decimals: Option<i16>,
+    pub(crate) numeric_commas: Option<bool>,
+    pub(crate) bold: Option<bool>,
+    pub(crate) italic: Option<bool>,
+    pub(crate) text_color: Option<String>,
+    pub(crate) fill_color: Option<String>,
+    pub(crate) render_size: Option<RenderSize>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Sheet {
-    pub id: Id,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
-    pub offsets: Offsets,
-    pub columns: Vec<(i64, Column)>,
-    pub borders: Borders,
-    pub code_runs: Vec<(Pos, CodeRun)>,
+pub(crate) struct Sheet {
+    pub(crate) id: Id,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
+    pub(crate) offsets: Offsets,
+    pub(crate) columns: Vec<(i64, Column)>,
+    pub(crate) borders: Borders,
+    pub(crate) code_runs: Vec<(Pos, CodeRun)>,
 
     // The following skips are necessary since we're adding it mid-version. Next
     // version we should remove them.
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub formats_all: Option<Format>,
+    pub(crate) formats_all: Option<Format>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub formats_columns: Vec<(i64, (Format, i64))>,
+    pub(crate) formats_columns: Vec<(i64, (Format, i64))>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub formats_rows: Vec<(i64, (Format, i64))>,
+    pub(crate) formats_rows: Vec<(i64, (Format, i64))>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub rows_resize: Vec<(i64, Resize)>,
+    pub(crate) rows_resize: Vec<(i64, Resize)>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Resize {
+pub(crate) enum Resize {
     #[default]
     Auto,
     Manual,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CodeRun {
-    pub formatted_code_string: Option<String>,
-    pub std_out: Option<String>,
-    pub std_err: Option<String>,
-    pub cells_accessed: Vec<SheetRect>,
-    pub result: CodeRunResult,
-    pub return_type: Option<String>,
-    pub line_number: Option<u32>,
-    pub output_type: Option<String>,
-    pub spill_error: bool,
+pub(crate) struct CodeRun {
+    pub(crate) formatted_code_string: Option<String>,
+    pub(crate) std_out: Option<String>,
+    pub(crate) std_err: Option<String>,
+    pub(crate) cells_accessed: Vec<SheetRect>,
+    pub(crate) result: CodeRunResult,
+    pub(crate) return_type: Option<String>,
+    pub(crate) line_number: Option<u32>,
+    pub(crate) output_type: Option<String>,
+    pub(crate) spill_error: bool,
 
     // the Option is necessary to use serde
     #[serde(with = "ts_seconds_option")]
-    pub last_modified: Option<DateTime<Utc>>,
+    pub(crate) last_modified: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CodeRunResult {
+pub(crate) enum CodeRunResult {
     Ok(OutputValue),
     Err(RunError),
 }
 
-pub type OutputValue = v1_4::OutputValue;
-pub type OutputSize = v1_4::OutputSize;
-pub type Span = v1_4::Span;
-pub type RenderSize = v1_4::RenderSize;
+pub(crate) type OutputValue = v1_4::OutputValue;
+pub(crate) type OutputSize = v1_4::OutputSize;
+pub(crate) type Span = v1_4::Span;
+pub(crate) type RenderSize = v1_4::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Column {
-    pub values: HashMap<String, CellValue>,
-    pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+pub(crate) struct Column {
+    pub(crate) values: HashMap<String, CellValue>,
+    pub(crate) align: HashMap<String, ColumnRepeat<CellAlign>>,
 
     // This skip is necessary since we're adding it mid-version.
     // Next version we should remove them.
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
+    pub(crate) vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
 
-    pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
-    pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
-    pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
-    pub numeric_commas: HashMap<String, ColumnRepeat<bool>>,
-    pub bold: HashMap<String, ColumnRepeat<bool>>,
-    pub italic: HashMap<String, ColumnRepeat<bool>>,
-    pub text_color: HashMap<String, ColumnRepeat<String>>,
-    pub fill_color: HashMap<String, ColumnRepeat<String>>,
-    pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
+    pub(crate) wrap: HashMap<String, ColumnRepeat<CellWrap>>,
+    pub(crate) numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
+    pub(crate) numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
+    pub(crate) numeric_commas: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) bold: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) italic: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) text_color: HashMap<String, ColumnRepeat<String>>,
+    pub(crate) fill_color: HashMap<String, ColumnRepeat<String>>,
+    pub(crate) render_size: HashMap<String, ColumnRepeat<RenderSize>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellValue {
+pub(crate) enum CellValue {
     Blank,
     Text(String),
     Number(String),
@@ -214,13 +214,13 @@ pub(crate) fn string_bool(s: String) -> bool {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnRepeat<T> {
-    pub value: T,
-    pub len: u32,
+pub(crate) struct ColumnRepeat<T> {
+    pub(crate) value: T,
+    pub(crate) len: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NumericFormatKind {
+pub(crate) enum NumericFormatKind {
     #[default]
     Number,
     Currency,
@@ -229,16 +229,16 @@ pub enum NumericFormatKind {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct NumericFormat {
+pub(crate) struct NumericFormat {
     #[serde(rename = "type")]
-    pub kind: NumericFormatKind,
-    pub symbol: Option<String>,
+    pub(crate) kind: NumericFormatKind,
+    pub(crate) symbol: Option<String>,
 }
 
-pub type CellBorder = v1_4::CellBorder;
+pub(crate) type CellBorder = v1_4::CellBorder;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CodeCellLanguage {
+pub(crate) enum CodeCellLanguage {
     Python,
     Formula,
     Javascript,
@@ -246,33 +246,33 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum ConnectionKind {
+pub(crate) enum ConnectionKind {
     Postgres,
     Mysql,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CodeCell {
-    pub language: CodeCellLanguage,
-    pub code: String,
+pub(crate) struct CodeCell {
+    pub(crate) language: CodeCellLanguage,
+    pub(crate) code: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellAlign {
+pub(crate) enum CellAlign {
     Left,
     Center,
     Right,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellVerticalAlign {
+pub(crate) enum CellVerticalAlign {
     Top,
     Middle,
     Bottom,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellWrap {
+pub(crate) enum CellWrap {
     Overflow,
     Wrap,
     Clip,

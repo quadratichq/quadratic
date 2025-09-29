@@ -113,7 +113,7 @@ pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
 }
 
 // Removes CellValue::Code and CellValue::Import from the grid
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_12::GridSchema> {
+pub(crate) fn upgrade(grid: current::GridSchema) -> Result<v1_12::GridSchema> {
     let new_grid = v1_12::GridSchema {
         version: Some("1.12".to_string()),
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),

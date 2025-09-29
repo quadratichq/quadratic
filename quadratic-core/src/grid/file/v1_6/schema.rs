@@ -4,20 +4,20 @@ use std::collections::HashMap;
 use std::fmt::{self, Display};
 
 use super::schema_validation::Validations;
-pub use crate::grid::file::v1_5::run_error::Axis;
+pub(crate) use crate::grid::file::v1_5::run_error::Axis;
 use crate::grid::file::v1_5::schema as v1_5;
-pub use v1_5::RunErrorMsg;
-pub use v1_5::Span;
+pub(crate) use v1_5::RunErrorMsg;
+pub(crate) use v1_5::Span;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GridSchema {
-    pub sheets: Vec<Sheet>,
-    pub version: Option<String>,
+pub(crate) struct GridSchema {
+    pub(crate) sheets: Vec<Sheet>,
+    pub(crate) version: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
-pub struct Id {
-    pub id: String,
+pub(crate) struct Id {
+    pub(crate) id: String,
 }
 impl From<String> for Id {
     fn from(id: String) -> Self {
@@ -31,9 +31,9 @@ impl Display for Id {
 }
 
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct Pos {
-    pub x: i64,
-    pub y: i64,
+pub(crate) struct Pos {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
 }
 
 impl From<crate::Pos> for Pos {
@@ -43,9 +43,9 @@ impl From<crate::Pos> for Pos {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Rect {
-    pub min: Pos,
-    pub max: Pos,
+pub(crate) struct Rect {
+    pub(crate) min: Pos,
+    pub(crate) max: Pos,
 }
 
 impl From<&crate::Rect> for Rect {
@@ -78,140 +78,140 @@ impl From<&Rect> for crate::Rect {
     }
 }
 
-pub type SheetRect = v1_5::SheetRect;
-pub type Offsets = v1_5::Offsets;
-pub type Borders = v1_5::Borders;
-pub type RunError = v1_5::RunError;
+pub(crate) type SheetRect = v1_5::SheetRect;
+pub(crate) type Offsets = v1_5::Offsets;
+pub(crate) type Borders = v1_5::Borders;
+pub(crate) type RunError = v1_5::RunError;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Format {
-    pub align: Option<CellAlign>,
-    pub vertical_align: Option<CellVerticalAlign>,
-    pub wrap: Option<CellWrap>,
-    pub numeric_format: Option<NumericFormat>,
-    pub numeric_decimals: Option<i16>,
-    pub numeric_commas: Option<bool>,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-    pub text_color: Option<String>,
-    pub fill_color: Option<String>,
-    pub render_size: Option<RenderSize>,
+pub(crate) struct Format {
+    pub(crate) align: Option<CellAlign>,
+    pub(crate) vertical_align: Option<CellVerticalAlign>,
+    pub(crate) wrap: Option<CellWrap>,
+    pub(crate) numeric_format: Option<NumericFormat>,
+    pub(crate) numeric_decimals: Option<i16>,
+    pub(crate) numeric_commas: Option<bool>,
+    pub(crate) bold: Option<bool>,
+    pub(crate) italic: Option<bool>,
+    pub(crate) text_color: Option<String>,
+    pub(crate) fill_color: Option<String>,
+    pub(crate) render_size: Option<RenderSize>,
 
     #[serde(default)]
-    pub date_time: Option<String>,
+    pub(crate) date_time: Option<String>,
     #[serde(default)]
-    pub underline: Option<bool>,
+    pub(crate) underline: Option<bool>,
     #[serde(default)]
-    pub strike_through: Option<bool>,
+    pub(crate) strike_through: Option<bool>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sheet {
-    pub id: Id,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
-    pub offsets: Offsets,
-    pub columns: Vec<(i64, Column)>,
-    pub borders: Borders,
-    pub code_runs: Vec<(Pos, CodeRun)>,
-    pub formats_all: Option<Format>,
-    pub formats_columns: Vec<(i64, (Format, i64))>,
-    pub formats_rows: Vec<(i64, (Format, i64))>,
+    pub(crate) id: Id,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
+    pub(crate) offsets: Offsets,
+    pub(crate) columns: Vec<(i64, Column)>,
+    pub(crate) borders: Borders,
+    pub(crate) code_runs: Vec<(Pos, CodeRun)>,
+    pub(crate) formats_all: Option<Format>,
+    pub(crate) formats_columns: Vec<(i64, (Format, i64))>,
+    pub(crate) formats_rows: Vec<(i64, (Format, i64))>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub rows_resize: Vec<(i64, Resize)>,
+    pub(crate) rows_resize: Vec<(i64, Resize)>,
 
     #[serde(default)]
-    pub validations: Validations,
+    pub(crate) validations: Validations,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Resize {
+pub(crate) enum Resize {
     #[default]
     Auto,
     Manual,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CodeRun {
-    pub formatted_code_string: Option<String>,
-    pub std_out: Option<String>,
-    pub std_err: Option<String>,
-    pub cells_accessed: Vec<SheetRect>,
-    pub result: CodeRunResult,
-    pub return_type: Option<String>,
-    pub line_number: Option<u32>,
-    pub output_type: Option<String>,
-    pub spill_error: bool,
-    pub last_modified: Option<DateTime<Utc>>,
+pub(crate) struct CodeRun {
+    pub(crate) formatted_code_string: Option<String>,
+    pub(crate) std_out: Option<String>,
+    pub(crate) std_err: Option<String>,
+    pub(crate) cells_accessed: Vec<SheetRect>,
+    pub(crate) result: CodeRunResult,
+    pub(crate) return_type: Option<String>,
+    pub(crate) line_number: Option<u32>,
+    pub(crate) output_type: Option<String>,
+    pub(crate) spill_error: bool,
+    pub(crate) last_modified: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CodeRunResult {
+pub(crate) enum CodeRunResult {
     Ok(OutputValue),
     Err(RunError),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum OutputValue {
+pub(crate) enum OutputValue {
     Single(CellValue),
     Array(OutputArray),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputArray {
-    pub size: OutputSize,
-    pub values: Vec<CellValue>,
+pub(crate) struct OutputArray {
+    pub(crate) size: OutputSize,
+    pub(crate) values: Vec<CellValue>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputSize {
-    pub w: i64,
-    pub h: i64,
+pub(crate) struct OutputSize {
+    pub(crate) w: i64,
+    pub(crate) h: i64,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputValueValue {
-    pub type_field: String,
-    pub value: String,
+pub(crate) struct OutputValueValue {
+    pub(crate) type_field: String,
+    pub(crate) value: String,
 }
 
-pub type RenderSize = v1_5::RenderSize;
+pub(crate) type RenderSize = v1_5::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Column {
-    pub values: HashMap<String, CellValue>,
-    pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+pub(crate) struct Column {
+    pub(crate) values: HashMap<String, CellValue>,
+    pub(crate) align: HashMap<String, ColumnRepeat<CellAlign>>,
 
     // This skip is necessary since we're adding it mid-version.
     // Next version we should remove them.
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
+    pub(crate) vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
 
-    pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
-    pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
-    pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
-    pub numeric_commas: HashMap<String, ColumnRepeat<bool>>,
-    pub bold: HashMap<String, ColumnRepeat<bool>>,
-    pub italic: HashMap<String, ColumnRepeat<bool>>,
-    pub text_color: HashMap<String, ColumnRepeat<String>>,
-    pub fill_color: HashMap<String, ColumnRepeat<String>>,
-    pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
+    pub(crate) wrap: HashMap<String, ColumnRepeat<CellWrap>>,
+    pub(crate) numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
+    pub(crate) numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
+    pub(crate) numeric_commas: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) bold: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) italic: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) text_color: HashMap<String, ColumnRepeat<String>>,
+    pub(crate) fill_color: HashMap<String, ColumnRepeat<String>>,
+    pub(crate) render_size: HashMap<String, ColumnRepeat<RenderSize>>,
     #[serde(default)]
-    pub date_time: HashMap<String, ColumnRepeat<String>>,
+    pub(crate) date_time: HashMap<String, ColumnRepeat<String>>,
 
     // Same as comment for `vertical_align`
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub underline: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) underline: HashMap<String, ColumnRepeat<bool>>,
 
     // Same as comment for `vertical_align`
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub strike_through: HashMap<String, ColumnRepeat<bool>>,
+    pub(crate) strike_through: HashMap<String, ColumnRepeat<bool>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellValue {
+pub(crate) enum CellValue {
     Blank,
     Text(String),
     Number(String),
@@ -228,13 +228,13 @@ pub enum CellValue {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnRepeat<T> {
-    pub value: T,
-    pub len: u32,
+pub(crate) struct ColumnRepeat<T> {
+    pub(crate) value: T,
+    pub(crate) len: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NumericFormatKind {
+pub(crate) enum NumericFormatKind {
     #[default]
     Number,
     Currency,
@@ -243,15 +243,15 @@ pub enum NumericFormatKind {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct NumericFormat {
-    pub kind: NumericFormatKind,
-    pub symbol: Option<String>,
+pub(crate) struct NumericFormat {
+    pub(crate) kind: NumericFormatKind,
+    pub(crate) symbol: Option<String>,
 }
 
-pub type CellBorder = v1_5::CellBorder;
+pub(crate) type CellBorder = v1_5::CellBorder;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CodeCellLanguage {
+pub(crate) enum CodeCellLanguage {
     Python,
     Formula,
     Javascript,
@@ -260,7 +260,7 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum ConnectionKind {
+pub(crate) enum ConnectionKind {
     Postgres,
     Mysql,
     Mssql,
@@ -273,27 +273,27 @@ pub enum ConnectionKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CodeCell {
-    pub language: CodeCellLanguage,
-    pub code: String,
+pub(crate) struct CodeCell {
+    pub(crate) language: CodeCellLanguage,
+    pub(crate) code: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellAlign {
+pub(crate) enum CellAlign {
     Left,
     Center,
     Right,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellVerticalAlign {
+pub(crate) enum CellVerticalAlign {
     Top,
     Middle,
     Bottom,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellWrap {
+pub(crate) enum CellWrap {
     Overflow,
     Wrap,
     Clip,

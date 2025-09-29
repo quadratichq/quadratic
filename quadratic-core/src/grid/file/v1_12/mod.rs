@@ -1,3 +1,3 @@
 mod schema;
 
-pub use schema::*;
+pub(crate) use schema::*;

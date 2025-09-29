@@ -45,7 +45,7 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v1_10::DataTab
         .collect()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
     v1_10::SheetSchema {
         id: sheet.id,
         name: sheet.name,

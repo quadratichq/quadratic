@@ -1,5 +1,5 @@
 mod schema;
 mod upgrade;
 
-pub use schema::*;
-pub use upgrade::*;
+pub(crate) use schema::*;
+pub(crate) use upgrade::*;

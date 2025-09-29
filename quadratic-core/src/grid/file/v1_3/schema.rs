@@ -2,88 +2,88 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GridSchema {
-    pub borders: Vec<Border>,
-    pub cells: Vec<Cell>,
+pub(crate) struct GridSchema {
+    pub(crate) borders: Vec<Border>,
+    pub(crate) cells: Vec<Cell>,
     #[serde(rename = "cell_dependency")]
-    pub cell_dependency: String,
-    pub columns: Vec<Column>,
-    pub formats: Vec<Format>,
-    pub rows: Vec<Row>,
-    pub version: Option<String>,
+    pub(crate) cell_dependency: String,
+    pub(crate) columns: Vec<Column>,
+    pub(crate) formats: Vec<Format>,
+    pub(crate) rows: Vec<Row>,
+    pub(crate) version: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Cell {
-    pub x: i64,
-    pub y: i64,
+pub(crate) struct Cell {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
     #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
+    pub(crate) type_field: String,
+    pub(crate) value: String,
     #[serde(rename = "last_modified")]
-    pub last_modified: Option<String>,
+    pub(crate) last_modified: Option<String>,
     #[serde(rename = "array_cells")]
     #[serde(default)]
-    pub array_cells: Vec<Vec<i64>>,
+    pub(crate) array_cells: Vec<Vec<i64>>,
     #[serde(rename = "dependent_cells")]
     #[serde(default)]
-    pub dependent_cells: Vec<Vec<i64>>,
+    pub(crate) dependent_cells: Vec<Vec<i64>>,
     #[serde(rename = "evaluation_result")]
-    pub evaluation_result: Option<EvaluationResult>,
+    pub(crate) evaluation_result: Option<EvaluationResult>,
     #[serde(rename = "python_code")]
-    pub python_code: Option<String>,
+    pub(crate) python_code: Option<String>,
     #[serde(rename = "formula_code")]
-    pub formula_code: Option<String>,
+    pub(crate) formula_code: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Border {
-    pub x: i64,
-    pub y: i64,
-    pub horizontal: Option<CellBorder>,
-    pub vertical: Option<CellBorder>,
+pub(crate) struct Border {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
+    pub(crate) horizontal: Option<CellBorder>,
+    pub(crate) vertical: Option<CellBorder>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CellBorder {
-    pub color: Option<String>,
+pub(crate) struct CellBorder {
+    pub(crate) color: Option<String>,
     #[serde(rename = "type")]
-    pub border_type: Option<String>,
+    pub(crate) border_type: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EvaluationResult {
-    pub success: bool,
+pub(crate) struct EvaluationResult {
+    pub(crate) success: bool,
     #[serde(rename = "std_out")]
-    pub std_out: Option<String>,
+    pub(crate) std_out: Option<String>,
     #[serde(rename = "output_value")]
-    pub output_value: Option<String>,
+    pub(crate) output_value: Option<String>,
     #[serde(rename = "cells_accessed")]
-    pub cells_accessed: Vec<(i64, i64)>,
+    pub(crate) cells_accessed: Vec<(i64, i64)>,
     #[serde(rename = "formatted_code")]
-    pub formatted_code: String,
+    pub(crate) formatted_code: String,
     #[serde(rename = "error_span")]
-    pub error_span: Option<(u32, u32)>,
+    pub(crate) error_span: Option<(u32, u32)>,
     #[serde(rename = "array_output")]
-    pub array_output: Option<ArrayOutput>,
+    pub(crate) array_output: Option<ArrayOutput>,
     #[serde(rename = "std_err")]
-    pub std_err: Option<String>,
+    pub(crate) std_err: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ArrayOutput {
+pub(crate) enum ArrayOutput {
     Block(Vec<Vec<Option<Any>>>),
     Array(Vec<Option<Any>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Any {
+pub(crate) enum Any {
     Number(f64),
     String(String),
     Boolean(bool),
@@ -91,46 +91,46 @@ pub enum Any {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Value {
+pub(crate) struct Value {
     #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
+    pub(crate) type_field: String,
+    pub(crate) value: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Column {
-    pub id: i64,
-    pub size: f64,
+pub(crate) struct Column {
+    pub(crate) id: i64,
+    pub(crate) size: f64,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Row {
-    pub id: i64,
-    pub size: f64,
+pub(crate) struct Row {
+    pub(crate) id: i64,
+    pub(crate) size: f64,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Format {
-    pub x: i64,
-    pub y: i64,
-    pub alignment: Option<String>,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-    pub fill_color: Option<String>,
-    pub text_color: Option<String>,
-    pub text_format: Option<TextFormat>,
-    pub wrapping: Option<String>,
+pub(crate) struct Format {
+    pub(crate) x: i64,
+    pub(crate) y: i64,
+    pub(crate) alignment: Option<String>,
+    pub(crate) bold: Option<bool>,
+    pub(crate) italic: Option<bool>,
+    pub(crate) fill_color: Option<String>,
+    pub(crate) text_color: Option<String>,
+    pub(crate) text_format: Option<TextFormat>,
+    pub(crate) wrapping: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TextFormat {
+pub(crate) struct TextFormat {
     #[serde(rename = "type")]
-    pub type_field: String,
-    pub display: Option<String>,
-    pub symbol: Option<String>,
-    pub decimal_places: Option<i64>,
+    pub(crate) type_field: String,
+    pub(crate) display: Option<String>,
+    pub(crate) symbol: Option<String>,
+    pub(crate) decimal_places: Option<i64>,
 }

@@ -14,7 +14,7 @@ use crate::grid::file::v1_7_1::{BlockSchema, Contiguous2DSchema};
 ///
 /// Supports infinite blocks down, right, and down-right.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Contiguous2DUpgrade<T>(ContiguousBlocks<ContiguousBlocks<T>>);
+pub(crate) struct Contiguous2DUpgrade<T>(ContiguousBlocks<ContiguousBlocks<T>>);
 impl<T: Default> Default for Contiguous2DUpgrade<T> {
     fn default() -> Self {
         Self(ContiguousBlocks::default())

@@ -5,7 +5,7 @@ use itertools::Itertools;
 use sheets::{export_sheet, import_sheet};
 
 use crate::grid::Grid;
-pub use crate::grid::file::current;
+pub(crate) use crate::grid::file::current;
 
 use super::CURRENT_VERSION;
 
@@ -17,7 +17,7 @@ pub(crate) mod data_table;
 pub(crate) mod formats;
 pub(crate) mod row_resizes;
 pub(crate) mod selection;
-pub mod sheets;
+pub(crate) mod sheets;
 pub(crate) mod validations;
 
 pub(crate) fn import(file: current::GridSchema) -> Result<Grid> {
