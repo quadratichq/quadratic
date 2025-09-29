@@ -1,12 +1,14 @@
 import { ConnectionPreview } from '@/dashboard/connections/ConnectionPreview';
 import { ConnectionPreviewError } from '@/dashboard/connections/ConnectionPreviewError';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { RefreshIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLoaderData, useNavigation, type LoaderFunctionArgs } from 'react-router';
 // import { useLoaderData } from 'react-router';
 
@@ -33,6 +35,10 @@ export const Component = () => {
     uuid: connectionUuid,
     teamUuid,
   });
+
+  useEffect(() => {
+    setActiveTab('preview');
+  }, [connectionUuid]);
 
   console.log(navigation);
 
@@ -72,7 +78,21 @@ export const Component = () => {
           <ConnectionPreview teamUuid={teamUuid} connectionUuid={connectionUuid} connectionType={connectionType} />
         )}
       </TabsContent>
-      <TabsContent value="edit">Change your password here.</TabsContent>
+      <TabsContent value="edit" className="mt-0 h-full overflow-y-auto">
+        <div className="grid grid-cols-12 gap-8 p-3">
+          <div className="col-span-8">
+            <ConnectionFormEdit
+              connectionUuid={connectionUuid}
+              connectionType={connectionType}
+              handleNavigateToListView={() => setActiveTab('preview')}
+              teamUuid={teamUuid}
+            />
+          </div>
+          <div className="col-span-4">
+            <ConnectionsSidebar staticIps={['192.168.0.1']} sshPublicKey={'foobar'} />
+          </div>
+        </div>
+      </TabsContent>
     </Tabs>
   );
 };

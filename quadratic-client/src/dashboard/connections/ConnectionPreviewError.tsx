@@ -19,7 +19,7 @@ export function ConnectionPreviewError({
   handleNavigateToEdit: () => void;
 }) {
   return (
-    <div className="mx-auto my-2 flex h-full max-w-md flex-col items-center justify-center gap-2 justify-self-center pb-4 text-center text-sm text-muted-foreground">
+    <div className="mx-auto my-2 flex h-full max-w-md flex-col items-center justify-center gap-2 justify-self-center pb-4 text-center text-sm text-foreground">
       <EmptyState
         isError
         title="Error loading connection schema"
