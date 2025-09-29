@@ -728,23 +728,23 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "invalid".to_string(), None, false);
 
         let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
-        gc.set_cell_value(pos![sheet_id!A1], "".to_string(), None, false);
+        gc.sheet_mut(sheet_id)
+            .columns
+            .set_value(sheet_pos.into(), "".to_string());
 
         let mut transaction = PendingTransaction::default();
-        gc.check_validations(
-            &mut transaction,
-            SheetRect::single_sheet_pos(pos![sheet_id!A1]),
-        );
+        gc.check_validations(&mut transaction, SheetRect::single_sheet_pos(sheet_pos));
 
         assert_eq!(
             transaction.forward_operations,
             vec![Operation::SetValidationWarning {
-                sheet_pos: pos![sheet_id!A1],
+                sheet_pos,
                 validation_id: None,
             }]
         );
@@ -752,7 +752,7 @@ mod tests {
         assert_eq!(
             transaction.reverse_operations,
             vec![Operation::SetValidationWarning {
-                sheet_pos: pos![sheet_id!A1],
+                sheet_pos,
                 validation_id: Some(validation.id),
             }]
         );
