@@ -67,7 +67,8 @@ export function Search() {
           setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
           events.emit(
             'search',
-            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), 0)
+            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+            0
           );
           return;
         }
@@ -96,7 +97,8 @@ export function Search() {
         setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
         events.emit(
           'search',
-          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), currentLocal)
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+          currentLocal
         );
       } else {
         setResults([]);
@@ -117,7 +119,8 @@ export function Search() {
         if (next < 0) next = results.length - 1;
         events.emit(
           'search',
-          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), next)
+          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+          next
         );
         const result = results[next];
         setCursor({ x: result.x, y: result.y, sheet_id: { id: result.sheet_id } });
