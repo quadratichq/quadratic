@@ -545,8 +545,6 @@ impl GridController {
                 Some(values_sheet_rect.union(&data_table_rect)),
             );
 
-            self.check_deleted_data_tables(transaction, &values_sheet_rect);
-
             return Ok(());
         };
 
@@ -639,7 +637,7 @@ impl GridController {
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             // delete cell values and formats in rect on sheet
-            sheet.columns.delete_values(rect);
+            sheet.delete_values(rect);
             let sheet_format_update =
                 sheet
                     .formats
@@ -1105,15 +1103,11 @@ impl GridController {
                     });
 
                     // clear sheet values
-                    let old_sheet_values = sheet.columns.delete_values(values_rect);
+                    let old_sheet_values = sheet.delete_values(values_rect);
                     reverse_operations.push(Operation::SetCellValues {
                         sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
                         values: old_sheet_values.into(),
                     });
-                    self.check_deleted_data_tables(
-                        transaction,
-                        &values_rect.to_sheet_rect(sheet_id),
-                    );
                 }
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -1509,7 +1503,7 @@ impl GridController {
                     let sheet = self.try_sheet_mut_result(sheet_id)?;
 
                     // clear sheet values
-                    sheet.columns.delete_values(values_rect);
+                    sheet.delete_values(values_rect);
                     // clear sheet formats
                     sheet
                         .formats
@@ -1517,10 +1511,6 @@ impl GridController {
                             &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
                             FormatUpdate::cleared(),
                         ));
-                    self.check_deleted_data_tables(
-                        transaction,
-                        &values_rect.to_sheet_rect(sheet_id),
-                    );
                 }
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;

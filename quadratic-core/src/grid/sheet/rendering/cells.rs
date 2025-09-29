@@ -324,7 +324,6 @@ mod tests {
         assert!(gc.sheet(sheet_id).has_render_cells(rect));
 
         gc.sheet_mut(sheet_id)
-            .columns
             .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!gc.sheet(sheet_id).has_render_cells(rect));
 
@@ -386,17 +385,16 @@ mod tests {
             .set(pos![1, 3], Some(true));
 
         gc.sheet_mut(sheet_id)
-            .columns
             .set_value(pos![2, 4], CellValue::Html("html".to_string()));
         gc.set_cell_value(pos![sheet_id!2,5], "true".into(), None, false);
-        gc.sheet_mut(sheet_id).columns.set_value(
+        gc.sheet_mut(sheet_id).set_value(
             Pos { x: 2, y: 6 },
             CellValue::Error(Box::new(RunError {
                 span: None,
                 msg: RunErrorMsg::Spill,
             })),
         );
-        gc.sheet_mut(sheet_id).columns.set_value(
+        gc.sheet_mut(sheet_id).set_value(
             Pos { x: 3, y: 3 },
             CellValue::Error(Box::new(RunError {
                 span: None,

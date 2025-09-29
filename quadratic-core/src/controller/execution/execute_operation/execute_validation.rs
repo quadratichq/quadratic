@@ -735,7 +735,6 @@ mod tests {
 
         // hack changing the sheet without updating the validations
         gc.sheet_mut(sheet_id)
-            .columns
             .set_value(sheet_pos.into(), "".to_string());
 
         let mut transaction = PendingTransaction::default();

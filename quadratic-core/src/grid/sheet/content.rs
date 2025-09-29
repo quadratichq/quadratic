@@ -133,9 +133,7 @@ mod test {
         assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
 
         // Blank value should count as no content
-        gc.sheet_mut(sheet_id)
-            .columns
-            .set_value(pos, CellValue::Blank);
+        gc.sheet_mut(sheet_id).set_value(pos, CellValue::Blank);
         assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
 
         // Text content

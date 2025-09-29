@@ -330,7 +330,7 @@ impl GridController {
                     let sheet = gc
                         .try_sheet_mut(sheet_id)
                         .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
-                    sheet.columns.set_value(pos, cell_value);
+                    sheet.set_value(pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -761,7 +761,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                         excel_serial_to_date_time(f64_val, true, false, false)
                     };
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -791,7 +791,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 {
                     let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -814,7 +814,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, true, true);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_date_format(active_format) {
@@ -828,7 +828,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, false, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_time_format(active_format) {
@@ -842,7 +842,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, false, true, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else {
@@ -884,7 +884,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_date_format(format_string) {
@@ -897,7 +897,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_time_format(format_string) {
@@ -910,7 +910,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else {
@@ -2178,24 +2178,20 @@ mod test {
 
         // test date format detection
         let pos6 = pos![F1];
-        sheet
-            .columns
-            .set_value(pos6, CellValue::Number(44926.into())); // Excel serial date
+        sheet.set_value(pos6, CellValue::Number(44926.into())); // Excel serial date
         import_excel_number_format_string(sheet, pos6, "yyyy-mm-dd");
         assert!(sheet.formats.date_time.get(pos6).is_some());
         // The date format should be applied but the value might not be automatically converted in this context
 
         // test time format detection
         let pos7 = pos![G1];
-        sheet
-            .columns
-            .set_value(pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
+        sheet.set_value(pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
         import_excel_number_format_string(sheet, pos7, "hh:mm:ss");
         assert!(sheet.formats.date_time.get(pos7).is_some());
 
         // test datetime format detection
         let pos8 = pos![H1];
-        sheet.columns.set_value(
+        sheet.set_value(
             pos8,
             CellValue::Number(decimal_from_str("44926.5").unwrap()),
         );

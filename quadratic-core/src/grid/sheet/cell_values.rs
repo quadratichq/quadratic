@@ -49,7 +49,7 @@ impl Sheet {
                     (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => (),
                     // old is/isn't black and new isn't blank
                     (_, Some(value)) => {
-                        let old_value = self.columns.set_value(grid_pos, value.to_owned());
+                        let old_value = self.set_value(grid_pos, value.to_owned());
                         old.set(x, y, old_value.unwrap_or(CellValue::Blank));
                     }
                     _ => (),
@@ -171,10 +171,10 @@ mod test {
     #[test]
     fn merge_cell_values() {
         let mut sheet = Sheet::test();
-        sheet.columns.set_value(Pos { x: 2, y: 1 }, "old-a");
-        sheet.columns.set_value(Pos { x: 2, y: 2 }, "old-b");
-        sheet.columns.set_value(Pos { x: 3, y: 1 }, "old-c");
-        sheet.columns.set_value(Pos { x: 3, y: 2 }, "old-d");
+        sheet.set_value(Pos { x: 2, y: 1 }, "old-a");
+        sheet.set_value(Pos { x: 2, y: 2 }, "old-b");
+        sheet.set_value(Pos { x: 3, y: 1 }, "old-c");
+        sheet.set_value(Pos { x: 3, y: 2 }, "old-d");
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
         let mut transaction = PendingTransaction::default();
@@ -215,9 +215,7 @@ mod test {
     fn test_rendered_value() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
-        sheet
-            .columns
-            .set_value(pos, CellValue::Number(decimal_from_str("123.456").unwrap()));
+        sheet.set_value(pos, CellValue::Number(decimal_from_str("123.456").unwrap()));
 
         sheet.formats.numeric_format.set(
             pos,

@@ -817,9 +817,7 @@ mod tests {
 
         let mut duplicate_sheet =
             Sheet::new(SheetId::new(), "duplicate".to_string(), "a1".to_string());
-        duplicate_sheet
-            .columns
-            .set_value(pos![A1], "duplicate".to_string());
+        duplicate_sheet.set_value(pos![A1], "duplicate".to_string());
         let op = vec![Operation::ReplaceSheet {
             sheet_id: original_sheet_id,
             sheet: Box::new(duplicate_sheet),

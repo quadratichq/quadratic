@@ -42,7 +42,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
-        sheet.columns.migration_regenerate_has_cell_value();
+        sheet.migration_regenerate_has_cell_value();
 
         let mut x_shift = 0;
         let mut y_shift = 0;
@@ -145,7 +145,7 @@ impl Sheet {
         self.validations.migration_insert_column(column, a1_context);
         self.offsets.insert_column(column, copy_formats);
         self.migration_recalculate_bounds(a1_context);
-        self.columns.migration_regenerate_has_cell_value();
+        self.migration_regenerate_has_cell_value();
     }
     fn migration_adjust_insert_tables_columns(&mut self, column: i64) {
         let mut data_tables_to_move_right = Vec::new();
@@ -183,7 +183,7 @@ impl Sheet {
         self.validations.migration_row_column(row, a1_context);
         self.offsets.insert_row(row, copy_formats);
         self.migration_recalculate_bounds(a1_context);
-        self.columns.migration_regenerate_has_cell_value();
+        self.migration_regenerate_has_cell_value();
     }
     fn migration_adjust_insert_tables_rows(&mut self, row: i64) {
         let mut data_tables_to_move = Vec::new();
@@ -213,7 +213,7 @@ impl Sheet {
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        if let Some(rect) = self.columns.migration_finite_bounds() {
+        if let Some(rect) = self.migration_finite_bounds() {
             self.data_bounds.add_rect(rect);
         };
 

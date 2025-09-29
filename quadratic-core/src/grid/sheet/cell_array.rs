@@ -16,7 +16,7 @@ impl Sheet {
                 let new_value = values
                     .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
                     .unwrap_or(&CellValue::Blank);
-                let old_value = self.columns.set_value((x, y).into(), new_value.to_owned());
+                let old_value = self.set_value((x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
                     match old_values.set(
                         (x - rect.min.x) as u32,
@@ -161,33 +161,21 @@ mod tests {
     #[test]
     fn get_cells_response() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 2, y: 0 }, CellValue::Text("test".into()));
-        sheet.columns.set_value(
+        sheet.set_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        sheet.set_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
+        sheet.set_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
+        sheet.set_value(Pos { x: 2, y: 0 }, CellValue::Text("test".into()));
+        sheet.set_value(
             Pos { x: 3, y: 1 },
             CellValue::DateTime(NaiveDateTime::from_str("2024-08-15T01:20:00").unwrap()),
         );
-        sheet
-            .columns
-            .set_value(Pos { x: 2, y: 1 }, CellValue::Logical(true));
-        sheet.columns.set_value(
+        sheet.set_value(Pos { x: 2, y: 1 }, CellValue::Logical(true));
+        sheet.set_value(
             Pos { x: 2, y: 2 },
             CellValue::Date(NaiveDate::from_str("2024-08-15").unwrap()),
         );
-        sheet.columns.set_value(
+        sheet.set_value(
             Pos { x: 3, y: 0 },
             CellValue::Time(NaiveTime::from_str("01:20:00").unwrap()),
         );

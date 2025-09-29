@@ -22,7 +22,7 @@ impl Sheet {
                 let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new(1, (current_max - current_min) as u32 + 1);
 
-                if let Some(col) = self.columns.get_column(column) {
+                if let Some(col) = self.get_column(column) {
                     for y in current_min..=current_max {
                         if let Some(cell_value) = col.values.get(&y) {
                             values.set(0, (y - current_min) as u32, cell_value.clone());

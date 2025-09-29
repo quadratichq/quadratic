@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use validations::Validations;
 
 use super::bounds::GridBounds;
-use super::column::Column;
 use super::ids::SheetId;
 use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
@@ -43,10 +42,11 @@ pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
-#[cfg(test)]
-pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
+
+#[cfg(test)]
+pub mod sheet_test;
 
 const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
 lazy_static! {
@@ -281,11 +281,6 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
     }
 
-    /// Returns a mutable reference to the cell value at the Pos in column.values.
-    pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
-        self.columns.get_value_mut(&pos)
-    }
-
     /// Returns the cell value at a position using both `column.values` and
     /// `data_tables`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
@@ -398,11 +393,6 @@ impl Sheet {
 
             Some(values.join(", "))
         }
-    }
-
-    /// Returns a column of a sheet from the column index.
-    pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
-        self.columns.get_column(index)
     }
 
     /// Returns the sheet id as a string.
@@ -540,9 +530,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        sheet
-            .columns
-            .set_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
+        sheet.set_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -646,7 +634,7 @@ mod test {
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        sheet.columns.set_value(
+        sheet.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Text(String::from("abc")),
         );
@@ -661,7 +649,7 @@ mod test {
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        sheet.columns.set_value(
+        sheet.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Number(decimal_from_str("11.100000000000000000").unwrap()),
         );
@@ -828,7 +816,7 @@ mod test {
         let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 2).into());
         assert_eq!(format_summary.cell_type, Some(CellType::Date));
 
-        gc.sheet_mut(sheet_id).columns.set_value(
+        gc.sheet_mut(sheet_id).set_value(
             (2, 3).into(),
             CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
@@ -847,15 +835,15 @@ mod test {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
         assert_eq!(sheet.display_value(pos), None);
-        sheet.columns.set_value(pos, CellValue::Blank);
+        sheet.set_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
     }
 
     #[test]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
-        sheet.columns.set_value(pos![A1], "test");
-        sheet.columns.set_value(pos![A3], "test");
+        sheet.set_value(pos![A1], "test");
+        sheet.set_value(pos![A3], "test");
         assert_eq!(
             sheet.get_rows_with_wrap_in_column(1, false),
             Vec::<i64>::new()
@@ -870,8 +858,8 @@ mod test {
     #[test]
     fn test_get_rows_with_wrap_in_rect() {
         let mut sheet = Sheet::test();
-        sheet.columns.set_value(pos![A1], "test");
-        sheet.columns.set_value(pos![A3], "test");
+        sheet.set_value(pos![A1], "test");
+        sheet.set_value(pos![A3], "test");
         let rect = Rect {
             min: pos![A1],
             max: pos![A4],
@@ -890,7 +878,7 @@ mod test {
     #[test]
     fn js_cell_value() {
         let mut sheet = Sheet::test();
-        sheet.columns.set_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_value(Pos { x: 0, y: 0 }, "test");
         let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
         assert_eq!(
             js_cell_value,
@@ -905,7 +893,7 @@ mod test {
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
-        sheet.columns.set_value(pos, "test");
+        sheet.set_value(pos, "test");
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -917,9 +905,7 @@ mod test {
         );
 
         let pos = pos![B2];
-        sheet
-            .columns
-            .set_value(pos, CellValue::Image("image string".to_string()));
+        sheet.set_value(pos, CellValue::Image("image string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -931,9 +917,7 @@ mod test {
         );
 
         let pos = pos![C3];
-        sheet
-            .columns
-            .set_value(pos, CellValue::Html("html string".to_string()));
+        sheet.set_value(pos, CellValue::Html("html string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,

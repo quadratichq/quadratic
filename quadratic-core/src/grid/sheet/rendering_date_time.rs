@@ -85,7 +85,7 @@ mod tests {
             NaiveDateTime::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z")
                 .unwrap(),
         );
-        gc.sheet_mut(sheet_id).columns.set_value(pos, value);
+        gc.sheet_mut(sheet_id).set_value(pos, value);
         let sheet = gc.sheet(sheet_id);
         let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(rendering.len(), 1);

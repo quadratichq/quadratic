@@ -275,7 +275,7 @@ impl Sheet {
                     text.push(cell.to_string());
                 }
             }
-        } else if let Some(column) = self.columns.get_column(pos.x) {
+        } else if let Some(column) = self.get_column(pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
@@ -318,12 +318,8 @@ mod test {
     #[test]
     fn simple_search() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
         let results = sheet.search(&"hello".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(
@@ -352,12 +348,8 @@ mod test {
     #[test]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: -10, y: -11 }, CellValue::Text("HELLO".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: -10, y: -11 }, CellValue::Text("HELLO".into()));
         let results = sheet.search(
             &"hello".into(),
             &SearchOptions {
@@ -419,12 +411,8 @@ mod test {
     #[test]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("hello world".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("hello world".into()));
         let results = sheet.search(
             &"hello".into(),
             &SearchOptions {
@@ -501,10 +489,8 @@ mod test {
     #[test]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
-        sheet.columns.set_value(
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
+        sheet.set_value(
             Pos { x: -10, y: -11 },
             CellValue::Text("HELLO world".into()),
         );
@@ -561,12 +547,8 @@ mod test {
     #[test]
     fn search_numbers() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Number(1234.into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Number(1234.into()));
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(
@@ -897,15 +879,9 @@ mod test {
     #[test]
     fn neighbor_text_single_column() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
         assert_eq!(neighbors, vec!["A".to_string(), "C".to_string()]);
@@ -914,15 +890,9 @@ mod test {
     #[test]
     fn neighbor_text_with_gaps() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
         assert!(neighbors.iter().any(|t| t == &"A".to_string()));
@@ -932,9 +902,7 @@ mod test {
     #[test]
     fn neighbor_text_no_neighbors() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
         assert!(neighbors.is_empty());
@@ -943,18 +911,10 @@ mod test {
     #[test]
     fn neighbor_text_deduplication() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 4 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 4 }, CellValue::Text("B".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
         assert_eq!(neighbors, vec!["A".to_string(), "B".to_string()]);
@@ -963,18 +923,10 @@ mod test {
     #[test]
     fn neighbor_text_multiple_columns() {
         let mut sheet = Sheet::test();
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 2, y: 2 }, CellValue::Text("C".into()));
-        sheet
-            .columns
-            .set_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
         assert_eq!(neighbors, vec!["A".to_string(), "D".to_string()]);
@@ -991,9 +943,7 @@ mod test {
     fn max_neighbor_text() {
         let mut sheet = Sheet::test();
         for y in 0..MAX_NEIGHBOR_TEXT + 10 {
-            sheet
-                .columns
-                .set_value(Pos { x: 1, y: y as i64 }, CellValue::Text(y.to_string()));
+            sheet.set_value(Pos { x: 1, y: y as i64 }, CellValue::Text(y.to_string()));
         }
         let neighbors = sheet.neighbor_text(Pos {
             x: 1,
@@ -1007,9 +957,7 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet
-            .columns
-            .set_value(pos![E15], CellValue::Text("hello".into()));
+        sheet.set_value(pos![E15], CellValue::Text("hello".into()));
 
         let neighbors = sheet.neighbor_text(pos![E12]);
         assert_eq!(

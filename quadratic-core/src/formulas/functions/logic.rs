@@ -186,7 +186,7 @@ mod tests {
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 0/0)"));
 
-        g.sheet_mut(sheet_id).columns.set_value(
+        g.sheet_mut(sheet_id).set_value(
             pos![A6],
             CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         );
@@ -219,9 +219,7 @@ mod tests {
         g.set_cell_value(pos![sheet_id!A3], 30.to_string(), None, false);
         g.set_cell_value(pos![sheet_id!B1], "first".to_string(), None, false);
         g.set_cell_value(pos![sheet_id!B2], "second".to_string(), None, false);
-        g.sheet_mut(sheet_id)
-            .columns
-            .set_value(pos![B3], div_by_zero_error);
+        g.sheet_mut(sheet_id).set_value(pos![B3], div_by_zero_error);
 
         for (lookup_value, expected) in [
             (10, "first"),

@@ -156,7 +156,7 @@ impl Sheet {
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
         let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
-            true => self.columns.set_value(pos, CellValue::Blank),
+            true => self.set_value(pos, CellValue::Blank),
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
@@ -171,7 +171,7 @@ impl Sheet {
         mut data_table: DataTable,
     ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
         let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
-            true => self.columns.set_value(pos, CellValue::Blank),
+            true => self.set_value(pos, CellValue::Blank),
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
