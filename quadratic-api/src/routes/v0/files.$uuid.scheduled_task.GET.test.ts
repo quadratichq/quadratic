@@ -1,10 +1,11 @@
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
 
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
 import { app } from '../../app';
-import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
+import dbClient from '../../dbClient';
+import { clearDb, createFile, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 // Helper function to generate expected serialized Buffer format for HTTP responses
@@ -13,11 +14,8 @@ const expectSerializedBuffer = (data: any) => ({
   data: Array.from(Buffer.from(JSON.stringify(data))),
 });
 
-type ScheduledTasksResponse = ApiTypes['/v0/files/:uuid/scheduled_task.GET.response'];
-
-describe('GET /v0/files/:uuid/scheduled_task', () => {
+describe('GET /v0/files/:uuid/scheduled-tasks', () => {
   let testUser: any;
-  let otherUser: any;
   let testFile: any;
   let testTeam: any;
   let uniqueId: string;
@@ -35,7 +33,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .get('/v0/files/invalid-uuid/scheduled_task')
+        .get('/v0/files/invalid-uuid/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -73,7 +71,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   describe('Scheduled Tasks Retrieval', () => {
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .get('/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task')
+        .get('/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(404);
@@ -114,21 +112,21 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task1', type: 'hourly' })),
+        operations: Array.from(toUint8Array({ action: 'task1', type: 'hourly' })),
       });
 
       const task2 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task2', type: 'daily' })),
+        operations: Array.from(toUint8Array({ action: 'task2', type: 'daily' })),
       });
 
       const task3 = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 3 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task3', type: 'weekly' })),
+        operations: Array.from(toUint8Array({ action: 'task3', type: 'weekly' })),
       });
 
       const response = await request(app)
@@ -157,34 +155,34 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
 
     it('should not return deleted scheduled tasks', async () => {
       // Create tasks with different statuses
-      const activeTask = await createScheduledTask({
+      await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'active_task' })),
+        operations: Array.from(toUint8Array({ action: 'active_task' })),
       });
 
       const inactiveTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'inactive_task' })),
+        operations: Array.from(toUint8Array({ action: 'inactive_task' })),
       });
 
       const deletedTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 3 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'deleted_task' })),
+        operations: Array.from(toUint8Array({ action: 'deleted_task' })),
       });
 
       // Update statuses
-      await require('../../dbClient').default.scheduledTask.update({
+      await dbClient.scheduledTask.update({
         where: { id: inactiveTask.id },
         data: { status: 'INACTIVE' },
       });
 
-      await require('../../dbClient').default.scheduledTask.update({
+      await dbClient.scheduledTask.update({
         where: { id: deletedTask.id },
         data: { status: 'DELETED' },
       });
@@ -200,7 +198,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
 
   describe('Response Format Validation', () => {
     it('should return correctly formatted response with all required fields', async () => {
-      const testScheduledTask = await scheduledTask(testUser.id, testFile.id);
+      await scheduledTask(testUser.id, testFile.id);
 
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task`)
@@ -250,7 +248,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
     });
 
     it('should return valid date strings for date fields', async () => {
-      const testScheduledTask = await scheduledTask(testUser.id, testFile.id);
+      await scheduledTask(testUser.id, testFile.id);
 
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task`)
@@ -273,7 +271,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
 
   describe('Edge Cases', () => {
     it('should handle scheduled tasks with null lastRunTime', async () => {
-      const testScheduledTask = await scheduledTask(testUser.id, testFile.id);
+      await scheduledTask(testUser.id, testFile.id);
 
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task`)
@@ -298,7 +296,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
           userId: testUser.id,
           fileId: testFile.id,
           cronExpression: cron,
-          operations: Buffer.from(JSON.stringify({ action: 'test', cron })),
+          operations: Array.from(toUint8Array({ action: 'test', cron })),
         });
       }
 
@@ -326,18 +324,18 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 0 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'active_task' })),
+        operations: Array.from(toUint8Array({ action: 'active_task' })),
       });
 
       const inactiveTask = await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'inactive_task' })),
+        operations: Array.from(toUint8Array({ action: 'inactive_task' })),
       });
 
       // Update status to INACTIVE
-      await require('../../dbClient').default.scheduledTask.update({
+      await dbClient.scheduledTask.update({
         where: { id: inactiveTask.id },
         data: { status: 'INACTIVE' },
       });
@@ -360,7 +358,6 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   describe('Multiple Files Isolation', () => {
     it('should only return scheduled tasks for the requested file', async () => {
       // Create another file for the same user and team using the test data generator
-      const { createFile } = require('../../tests/testDataGenerator');
       const otherFile = await createFile({
         data: {
           name: 'Other Test File',
@@ -370,18 +367,18 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
       });
 
       // Create tasks for both files
-      const task1 = await createScheduledTask({
+      await createScheduledTask({
         userId: testUser.id,
         fileId: testFile.id,
         cronExpression: '0 1 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task_for_file1' })),
+        operations: Array.from(toUint8Array({ action: 'task_for_file1' })),
       });
 
-      const task2 = await createScheduledTask({
+      await createScheduledTask({
         userId: testUser.id,
         fileId: otherFile.id,
         cronExpression: '0 2 * * *',
-        operations: Buffer.from(JSON.stringify({ action: 'task_for_file2' })),
+        operations: Array.from(toUint8Array({ action: 'task_for_file2' })),
       });
 
       // Request tasks for first file
