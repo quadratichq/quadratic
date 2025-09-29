@@ -7,9 +7,11 @@ import { assertActiveSheetName, changeSheet, setValueInCell } from './helpers/sh
 // opening (see PR #3481)
 test('Find improperly changes sheets', async ({ page }) => {
   const fileName = 'Athletes_table';
-  await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
-  await cleanUpFiles(page, { fileName });
-  await uploadFile(page, { fileName, fileType: 'grid' });
+  const fileType = 'grid';
+
+  await logIn(page, { emailPrefix: `e2e_find_changes_sheets` });
+
+  await uploadFile(page, { fileName, fileType });
 
   // duplicate first sheet
   await page.keyboard.press('Control+P');
@@ -39,7 +41,6 @@ test('Search viewport updates when reverse searching', async ({ page }) => {
   const fileType = 'grid';
 
   await logIn(page, { emailPrefix: `e2e_search_viewport_updates_when_reverse_searching` });
-  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType });
 
   await page.keyboard.press('Control+F', { delay: 250 });
@@ -63,7 +64,7 @@ test('Search viewport updates when reverse searching', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Search refreshes on changes', async ({ page }) => {
+test.only('Search refreshes on changes', async ({ page }) => {
   const fileName = 'Athletes_table';
 
   // Log in
