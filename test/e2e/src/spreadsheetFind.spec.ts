@@ -64,7 +64,7 @@ test('Search viewport updates when reverse searching', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test.only('Search refreshes on changes', async ({ page }) => {
+test('Search refreshes on changes', async ({ page }) => {
   const fileName = 'Athletes_table';
 
   // Log in
@@ -77,5 +77,6 @@ test.only('Search refreshes on changes', async ({ page }) => {
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 2');
 
   await setValueInCell(page, 'A10', 'baseball');
+  await page.waitForTimeout(2000);
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3');
 });
