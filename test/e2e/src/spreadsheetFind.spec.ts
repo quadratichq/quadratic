@@ -5,9 +5,10 @@ import { assertActiveSheetName, changeSheet, setValueInCell } from './helpers/sh
 
 // ensures that find doesn't inappropriately change the active sheet when first
 // opening (see PR #3481)
-test('Find improperly changes sheets', async ({ page }) => {
+test.only('Find improperly changes sheets', async ({ page }) => {
   const fileName = 'Athletes_table';
   await logIn(page, { emailPrefix: `e2e_find_changes_sheets_pr_3481` });
+  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType: 'grid' });
 
   // duplicate first sheet
@@ -38,6 +39,7 @@ test('Search viewport updates when reverse searching', async ({ page }) => {
   const fileType = 'grid';
 
   await logIn(page, { emailPrefix: `e2e_search_viewport_updates_when_reverse_searching` });
+  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType });
 
   await page.keyboard.press('Control+F', { delay: 250 });
