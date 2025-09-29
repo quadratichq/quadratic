@@ -228,12 +228,11 @@ mod test {
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
-        let pos = Pos { x: 0, y: 0 };
-        sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "delete me".to_string(), None, false);
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id),
+            sheet_pos,
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
@@ -251,12 +250,7 @@ mod test {
             })
         );
 
-        assert_eq!(
-            operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-            }
-        );
+        assert_eq!(operations[1], Operation::ComputeCode { sheet_pos });
     }
 
     #[test]

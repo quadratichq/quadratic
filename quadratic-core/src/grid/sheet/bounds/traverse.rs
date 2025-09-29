@@ -176,8 +176,12 @@ mod test {
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_column(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_column(0, 0, false, true), None);
@@ -194,8 +198,12 @@ mod test {
         assert_eq!(sheet.find_next_column(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_column(1, 2, true, false), Some(0));
 
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 3, y: 2 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 3, y: 2 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_column(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_column(2, 2, false, false), Some(4));
@@ -207,8 +215,12 @@ mod test {
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_row(0, 0, false, true), None);
@@ -225,8 +237,12 @@ mod test {
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_row(1, 2, true, false), Some(0));
 
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 2, y: 3 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 3 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_row(2, 2, false, false), Some(4));

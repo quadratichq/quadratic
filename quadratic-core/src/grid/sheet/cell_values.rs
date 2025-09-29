@@ -49,7 +49,7 @@ impl Sheet {
                     (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => (),
                     // old is/isn't black and new isn't blank
                     (_, Some(value)) => {
-                        let old_value = self.columns.set_value(&grid_pos, value.to_owned());
+                        let old_value = self.columns.set_value(grid_pos, value.to_owned());
                         old.set(x, y, old_value.unwrap_or(CellValue::Blank));
                     }
                     _ => (),
@@ -171,17 +171,17 @@ mod test {
     #[test]
     fn merge_cell_values() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: -1, y: -2 }, "old-a");
-        sheet.set_cell_value(Pos { x: -1, y: -1 }, "old-b");
-        sheet.set_cell_value(Pos { x: 0, y: -2 }, "old-c");
-        sheet.set_cell_value(Pos { x: 0, y: -1 }, "old-d");
+        sheet.columns.set_value(Pos { x: 2, y: 1 }, "old-a");
+        sheet.columns.set_value(Pos { x: 2, y: 2 }, "old-b");
+        sheet.columns.set_value(Pos { x: 3, y: 1 }, "old-c");
+        sheet.columns.set_value(Pos { x: 3, y: 2 }, "old-d");
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
         let mut transaction = PendingTransaction::default();
         let a1_context = sheet.expensive_make_a1_context();
         let old = sheet.merge_cell_values(
             &mut transaction,
-            Pos { x: -1, y: -2 },
+            Pos { x: 2, y: 1 },
             &cell_values,
             &a1_context,
         );
@@ -189,19 +189,19 @@ mod test {
         assert_eq!(old.h, 2);
 
         assert_eq!(
-            sheet.cell_value(Pos { x: -1, y: -2 }),
+            sheet.cell_value(Pos { x: 2, y: 1 }),
             Some(CellValue::from("a"))
         );
         assert_eq!(
-            sheet.cell_value(Pos { x: -1, y: -1 }),
+            sheet.cell_value(Pos { x: 2, y: 2 }),
             Some(CellValue::from("b"))
         );
         assert_eq!(
-            sheet.cell_value(Pos { x: 0, y: -2 }),
+            sheet.cell_value(Pos { x: 3, y: 1 }),
             Some(CellValue::from("c"))
         );
         assert_eq!(
-            sheet.cell_value(Pos { x: 0, y: -1 }),
+            sheet.cell_value(Pos { x: 3, y: 2 }),
             Some(CellValue::from("d"))
         );
 
@@ -215,7 +215,9 @@ mod test {
     fn test_rendered_value() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
-        sheet.set_cell_value(pos, CellValue::Number(decimal_from_str("123.456").unwrap()));
+        sheet
+            .columns
+            .set_value(pos, CellValue::Number(decimal_from_str("123.456").unwrap()));
 
         sheet.formats.numeric_format.set(
             pos,

@@ -225,16 +225,6 @@ impl Grid {
 
         Ok(old_name)
     }
-
-    /// Sets the ID of the first sheet.
-    ///
-    /// This method is incredibly dubious and should only be used for testing.
-    #[cfg(test)]
-    pub fn set_first_sheet_id(&mut self, new_id: SheetId) {
-        let (_old_id, mut sheet) = self.sheets.swap_remove_index(0).expect("no first sheet");
-        sheet.id = new_id;
-        self.add_sheet(Some(sheet));
-    }
 }
 
 #[cfg(test)]

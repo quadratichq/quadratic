@@ -461,11 +461,15 @@ mod test {
         assert!(!sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         assert!(sheet.recalculate_bounds(&a1_context));
         assert!(!sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Blank);
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 1 }, CellValue::Blank);
         assert!(sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
     }
@@ -476,7 +480,9 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
@@ -504,11 +510,13 @@ mod test {
     #[test]
     fn column_bounds() {
         let mut sheet = Sheet::test();
-        let _ = sheet.set_cell_value(
+        sheet.columns.set_value(
             Pos { x: 100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .wrap
@@ -531,8 +539,12 @@ mod test {
     #[test]
     fn test_row_bounds() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
@@ -556,8 +568,12 @@ mod test {
     fn test_columns_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 100, y: 50 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 100, y: 50 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
@@ -585,8 +601,12 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
+        sheet
+            .columns
+            .set_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
@@ -612,19 +632,6 @@ mod test {
         assert_eq!(sheet.rows_bounds(1000, 1000, false), None);
     }
 
-    #[test]
-    fn test_read_write() {
-        let rect = Rect {
-            min: Pos { x: 1, y: 1 },
-            max: Pos { x: 49, y: 49 },
-        };
-        let mut sheet = Sheet::test();
-        let a1_context = sheet.expensive_make_a1_context();
-        sheet.random_numbers(&rect, &a1_context);
-        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
-        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
-    }
-
     proptest! {
         #[test]
         fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
@@ -639,7 +646,7 @@ mod test {
         let mut hashmap_of_truth = HashMap::new();
 
         for (pos, cell_value) in &writes {
-            let _ = sheet.set_cell_value(*pos, cell_value.clone());
+            sheet.columns.set_value(*pos, cell_value.clone());
             hashmap_of_truth.insert(*pos, cell_value);
         }
 

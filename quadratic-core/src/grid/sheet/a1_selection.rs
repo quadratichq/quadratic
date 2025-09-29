@@ -308,8 +308,12 @@ mod tests {
     fn test_cell_ref_range_to_rect() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
+        sheet
+            .columns
+            .set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet
+            .columns
+            .set_value(pos![E5], CellValue::Text("E5".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -338,8 +342,12 @@ mod tests {
     fn test_finitize_ref_range_bounds() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
+        sheet
+            .columns
+            .set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet
+            .columns
+            .set_value(pos![J10], CellValue::Text("J10".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -363,8 +371,12 @@ mod tests {
     fn test_finitize_selection() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
+        sheet
+            .columns
+            .set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet
+            .columns
+            .set_value(pos![J10], CellValue::Text("J10".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -394,8 +406,12 @@ mod tests {
         let mut sheet = Sheet::test();
 
         // Setup some data to establish sheet bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
+        sheet
+            .columns
+            .set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet
+            .columns
+            .set_value(pos![E5], CellValue::Text("E5".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 

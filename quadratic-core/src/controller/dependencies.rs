@@ -59,23 +59,15 @@ mod test {
     fn test_graph() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        let sheet_pos_11 = pos![sheet_id!1, 1];
+        let sheet_pos_12 = pos![sheet_id!1, 2];
+        gc.set_cell_value(sheet_pos_11, "1".to_string(), None, false);
+        gc.set_cell_value(sheet_pos_12, "2".to_string(), None, false);
         let mut cells_accessed = CellsAccessed::default();
-        let sheet_pos_00 = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-        let sheet_pos_01 = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+
         let sheet_rect = SheetRect {
-            min: sheet_pos_00.into(),
-            max: sheet_pos_01.into(),
+            min: sheet_pos_11.into(),
+            max: sheet_pos_12.into(),
             sheet_id,
         };
         cells_accessed.add_sheet_rect(sheet_rect);
@@ -91,16 +83,12 @@ mod test {
             cells_accessed: cells_accessed.clone(),
         };
 
-        let sheet_pos_02 = SheetPos {
-            x: 1,
-            y: 3,
-            sheet_id,
-        };
+        let sheet_pos_13 = pos![sheet_id!1, 3];
 
         let mut transaction = PendingTransaction::default();
         gc.finalize_data_table(
             &mut transaction,
-            sheet_pos_02,
+            sheet_pos_13,
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
@@ -115,26 +103,26 @@ mod test {
         );
 
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_11.into())
                 .unwrap()
                 .len(),
             1
         );
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_11.into())
                 .unwrap()
                 .iter()
                 .next(),
-            Some(&sheet_pos_02)
+            Some(&sheet_pos_13)
         );
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_01.into())
+            gc.get_dependent_code_cells(sheet_pos_12.into())
                 .unwrap()
                 .iter()
                 .next(),
-            Some(&sheet_pos_02)
+            Some(&sheet_pos_13)
         );
-        assert_eq!(gc.get_dependent_code_cells(sheet_pos_02.into()), None);
+        assert_eq!(gc.get_dependent_code_cells(sheet_pos_13.into()), None);
     }
 
     #[test]

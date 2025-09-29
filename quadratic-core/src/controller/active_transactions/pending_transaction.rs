@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.columns.set_value(pos![1, 1], "A1".to_string());
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -802,7 +802,7 @@ mod tests {
     #[test]
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.columns.set_value(pos![1, 1], "A1".to_string());
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 

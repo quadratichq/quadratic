@@ -108,35 +108,23 @@ mod test {
     fn test_multiple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
-        let sheet_pos = SheetPos {
-            x: 2,
-            y: 1,
-            sheet_id,
-        };
+        gc.set_cell_value(pos![sheet_id!A1], "10".into(), None, false);
         gc.set_code_cell(
-            sheet_pos,
+            pos![sheet_id!B1],
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
             None,
             false,
         );
-
-        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
+            gc.try_sheet(sheet_id).unwrap().display_value(pos![B1]),
             Some(CellValue::Number(11.into()))
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!C1],
             CodeCellLanguage::Formula,
             "B1 + 1".to_string(),
             None,
@@ -146,32 +134,23 @@ mod test {
 
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(11.into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 3, y: 1 }),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(12.into()))
         );
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            "1".into(),
-            None,
-            false,
-        );
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(2.into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 3, y: 1 }),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(3.into()))
         );
     }

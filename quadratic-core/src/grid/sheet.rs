@@ -490,41 +490,11 @@ impl Sheet {
     pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
         self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
-
-    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
-    /// and did not previously exist (so no change is needed).
-    #[cfg(test)]
-    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
-        self.columns.set_value(&pos, value)
-    }
-
-    /// Populates the current sheet with random values
-    /// Should only be used for testing (as it will not propagate in multiplayer)
-    #[cfg(test)]
-    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        use crate::number::decimal_from_str;
-        use rand::Rng;
-
-        self.columns.clear();
-        let mut rng = rand::rng();
-        for x in rect.x_range() {
-            for y in rect.y_range() {
-                let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value(
-                    (x, y).into(),
-                    CellValue::Number(decimal_from_str(&value).unwrap()),
-                );
-            }
-        }
-        self.recalculate_bounds(a1_context);
-    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use chrono::NaiveDateTime;
 
     use super::*;
     use crate::a1::A1Selection;
@@ -570,7 +540,9 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        let _ = sheet.set_cell_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
+        sheet
+            .columns
+            .set_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -674,7 +646,7 @@ mod test {
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        let _ = sheet.set_cell_value(
+        sheet.columns.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Text(String::from("abc")),
         );
@@ -689,7 +661,7 @@ mod test {
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        sheet.set_cell_value(
+        sheet.columns.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Number(decimal_from_str("11.100000000000000000").unwrap()),
         );
@@ -820,54 +792,53 @@ mod test {
 
     #[test]
     fn cell_format_summary() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
+        let (mut gc, sheet_id, _) = test_setup_basic();
 
-        let format_summary = sheet.cell_format_summary((2, 1).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
-        let value = sheet.cell_format_summary((2, 1).into());
+        gc.sheet_mut(sheet_id)
+            .formats
+            .bold
+            .set(Pos { x: 2, y: 1 }, Some(true));
+        let value = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
             ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 
-        let format_summary = sheet.cell_format_summary((2, 1).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
-        let value = sheet.cell_format_summary((2, 1).into());
+        gc.sheet_mut(sheet_id)
+            .formats
+            .italic
+            .set(Pos { x: 2, y: 1 }, Some(true));
+        let value = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into());
+        let existing_cell_format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
 
-        sheet.set_cell_value(
-            Pos { x: 0, y: 0 },
-            CellValue::Date(NaiveDate::from_str("2024-12-21").unwrap()),
-        );
-        let format_summary = sheet.cell_format_summary((0, 0).into());
+        gc.set_cell_value(pos![sheet_id!2,2], "2024-12-21".to_string(), None, false);
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 2).into());
         assert_eq!(format_summary.cell_type, Some(CellType::Date));
 
-        sheet.set_cell_value(
-            Pos { x: 1, y: 0 },
+        gc.sheet_mut(sheet_id).columns.set_value(
+            (2, 3).into(),
             CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
             ),
         );
-        let format_summary = sheet.cell_format_summary((1, 0).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 3).into());
         assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
 
-        sheet.set_cell_value(
-            Pos { x: 2, y: 0 },
-            CellValue::Time(NaiveTime::parse_from_str("1:23 pm", "%-I:%M %p").unwrap()),
-        );
-        let format_summary = sheet.cell_format_summary((2, 0).into());
+        gc.set_cell_value(pos![sheet_id!2,4], "1:23 pm".to_string(), None, false);
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 4).into());
         assert_eq!(format_summary.cell_type, None);
     }
 
@@ -876,15 +847,15 @@ mod test {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
         assert_eq!(sheet.display_value(pos), None);
-        sheet.set_cell_value(pos, CellValue::Blank);
+        sheet.columns.set_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
     }
 
     #[test]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
+        sheet.columns.set_value(pos![A1], "test");
+        sheet.columns.set_value(pos![A3], "test");
         assert_eq!(
             sheet.get_rows_with_wrap_in_column(1, false),
             Vec::<i64>::new()
@@ -899,8 +870,8 @@ mod test {
     #[test]
     fn test_get_rows_with_wrap_in_rect() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
+        sheet.columns.set_value(pos![A1], "test");
+        sheet.columns.set_value(pos![A3], "test");
         let rect = Rect {
             min: pos![A1],
             max: pos![A4],
@@ -919,7 +890,7 @@ mod test {
     #[test]
     fn js_cell_value() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.columns.set_value(Pos { x: 0, y: 0 }, "test");
         let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
         assert_eq!(
             js_cell_value,
@@ -934,7 +905,7 @@ mod test {
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
+        sheet.columns.set_value(pos, "test");
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -946,7 +917,9 @@ mod test {
         );
 
         let pos = pos![B2];
-        sheet.set_cell_value(pos, CellValue::Image("image string".to_string()));
+        sheet
+            .columns
+            .set_value(pos, CellValue::Image("image string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -958,7 +931,9 @@ mod test {
         );
 
         let pos = pos![C3];
-        sheet.set_cell_value(pos, CellValue::Html("html string".to_string()));
+        sheet
+            .columns
+            .set_value(pos, CellValue::Html("html string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,

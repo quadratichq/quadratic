@@ -22,7 +22,7 @@ impl Sheet {
             CellValue::Text(s.to_string())
         };
 
-        self.set_cell_value(Pos { x, y }, value);
+        self.columns.set_value(Pos { x, y }, value);
     }
 
     /// Sets values in a rectangle starting at (x, y) with width w and height h.

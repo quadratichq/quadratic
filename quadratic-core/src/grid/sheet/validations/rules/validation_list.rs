@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((1, 1).into(), "test");
+        sheet.columns.set_value((1, 1).into(), "test");
         let selection = A1Selection::test_a1("A1");
 
         let a1_context = sheet.expensive_make_a1_context();
@@ -173,8 +173,8 @@ mod tests {
     #[test]
     fn to_drop_down_values() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((1, 1).into(), "test");
-        sheet.set_cell_value((1, 2).into(), "test2");
+        sheet.columns.set_value((1, 1).into(), "test");
+        sheet.columns.set_value((1, 2).into(), "test2");
         let selection = A1Selection::test_a1("A1:A2");
 
         let list = ValidationList {

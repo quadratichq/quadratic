@@ -16,7 +16,7 @@ impl Sheet {
                 let new_value = values
                     .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
                     .unwrap_or(&CellValue::Blank);
-                let old_value = self.columns.set_value(&(x, y).into(), new_value.to_owned());
+                let old_value = self.columns.set_value((x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
                     match old_values.set(
                         (x - rect.min.x) as u32,
@@ -161,21 +161,33 @@ mod tests {
     #[test]
     fn get_cells_response() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
-        sheet.set_cell_value(Pos { x: 2, y: 0 }, CellValue::Text("test".into()));
-        sheet.set_cell_value(
+        sheet
+            .columns
+            .set_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
+        sheet
+            .columns
+            .set_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
+        sheet
+            .columns
+            .set_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 0 }, CellValue::Text("test".into()));
+        sheet.columns.set_value(
             Pos { x: 3, y: 1 },
             CellValue::DateTime(NaiveDateTime::from_str("2024-08-15T01:20:00").unwrap()),
         );
-        sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Logical(true));
-        sheet.set_cell_value(
+        sheet
+            .columns
+            .set_value(Pos { x: 2, y: 1 }, CellValue::Logical(true));
+        sheet.columns.set_value(
             Pos { x: 2, y: 2 },
             CellValue::Date(NaiveDate::from_str("2024-08-15").unwrap()),
         );
-        sheet.set_cell_value(
+        sheet.columns.set_value(
             Pos { x: 3, y: 0 },
             CellValue::Time(NaiveTime::from_str("01:20:00").unwrap()),
         );
@@ -290,8 +302,8 @@ mod tests {
     #[test]
     fn set_cell_values() {
         let mut sheet = Sheet::test();
-        let rect = Rect::from_numbers(0, 0, 2, 2);
-        let values = Array::from_random_floats(rect.size());
+        let rect = Rect::from_numbers(1, 1, 2, 2);
+        let values = Array::from(vec![vec!["1.0", "2.0"], vec!["3.0", "4.0"]]);
         let old_values = sheet.set_cell_values(rect, values.clone());
         for y in rect.y_range() {
             for x in rect.x_range() {
@@ -311,7 +323,7 @@ mod tests {
         }
 
         // replace old values with new values
-        let values_2 = Array::from_random_floats(rect.size());
+        let values_2 = Array::from(vec![vec!["11.0", "12.0"], vec!["13.0", "14.0"]]);
         let old_values = sheet.set_cell_values(rect, values_2.clone());
         for y in rect.y_range() {
             for x in rect.x_range() {

@@ -517,31 +517,9 @@ mod tests {
     fn test_undo_delete_sheet_code_rerun() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
-            "1".to_string(),
-            None,
-            false,
-        );
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 2,
-            },
-            "1".to_string(),
-            None,
-            false,
-        );
-        let sheet_pos = SheetPos {
-            sheet_id,
-            x: 2,
-            y: 1,
-        };
+        gc.set_cell_value(pos![sheet_id!A1], "1".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "1".to_string(), None, false);
+        let sheet_pos = pos![sheet_id!B1];
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
@@ -839,7 +817,9 @@ mod tests {
 
         let mut duplicate_sheet =
             Sheet::new(SheetId::new(), "duplicate".to_string(), "a1".to_string());
-        duplicate_sheet.set_cell_value(pos![A1], "duplicate".to_string());
+        duplicate_sheet
+            .columns
+            .set_value(pos![A1], "duplicate".to_string());
         let op = vec![Operation::ReplaceSheet {
             sheet_id: original_sheet_id,
             sheet: Box::new(duplicate_sheet),

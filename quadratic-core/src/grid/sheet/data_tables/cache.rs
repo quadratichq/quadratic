@@ -413,8 +413,6 @@ mod tests {
 
         print_first_sheet(&gc);
 
-        dbg!(sheet_data_tables_cache);
-
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
         assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 2]));

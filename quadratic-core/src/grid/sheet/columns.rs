@@ -117,7 +117,7 @@ impl SheetColumns {
     }
 
     /// Sets the value at the given position.
-    pub fn set_value(&mut self, pos: &Pos, value: impl Into<CellValue>) -> Option<CellValue> {
+    pub fn set_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
         let is_empty = value.is_blank_or_empty_string();
         let value: Option<CellValue> = if is_empty { None } else { Some(value) };
@@ -133,10 +133,10 @@ impl SheetColumns {
         };
 
         if let Some(value) = value {
-            self.has_cell_value.set(*pos, Some(true));
+            self.has_cell_value.set(pos, Some(true));
             column.values.insert(pos.y, value)
         } else {
-            self.has_cell_value.set(*pos, None);
+            self.has_cell_value.set(pos, None);
             column.values.remove(&pos.y)
         }
     }
@@ -274,12 +274,6 @@ impl SheetColumns {
         }
     }
 
-    /// Moves a cell value from one position to another.
-    pub fn move_cell_value(&mut self, old_pos: &Pos, new_pos: &Pos) {
-        let cell_value = self.set_value(old_pos, CellValue::Blank);
-        self.set_value(new_pos, cell_value);
-    }
-
     /// Returns an iterator over the columns
     pub fn expensive_iter(&self) -> btree_map::Iter<'_, i64, Column> {
         self.columns.iter()
@@ -347,16 +341,16 @@ mod test {
         let pos = Pos::new(1, 1);
 
         // Set and get a string value
-        columns.set_value(&pos, "test");
+        columns.set_value(pos, "test");
         assert_eq!(columns.get_value(&pos), Some(&CellValue::from("test")));
 
         // Set and get a number value
         let pos2 = Pos::new(2, 1);
-        columns.set_value(&pos2, 42.0);
+        columns.set_value(pos2, 42.0);
         assert_eq!(columns.get_value(&pos2), Some(&CellValue::from(42.0)));
 
         // Test empty value
-        columns.set_value(&pos, "");
+        columns.set_value(pos, "");
         assert_eq!(columns.get_value(&pos), None);
     }
 
@@ -365,10 +359,10 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up some test data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(1, 2), "A2");
-        columns.set_value(&Pos::new(2, 1), "B1");
-        columns.set_value(&Pos::new(2, 2), "B2");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![A2], "A2");
+        columns.set_value(pos![B1], "B1");
+        columns.set_value(pos![B2], "B2");
 
         let rect = Rect::new_span((1, 1).into(), (2, 2).into());
         let deleted = columns.delete_values(rect);
@@ -391,8 +385,8 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up initial data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(2, 1), "B1");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![B1], "B1");
 
         // Insert a column at position 1
         columns.insert_column(1);
@@ -427,8 +421,8 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up initial data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(1, 2), "A2");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![A2], "A2");
 
         // Insert a row at position 1
         columns.insert_row(1);
@@ -459,30 +453,12 @@ mod test {
     }
 
     #[test]
-    fn test_move_cell_value() {
-        let mut columns = SheetColumns::new();
-
-        let old_pos = Pos::new(1, 1);
-        let new_pos = Pos::new(2, 2);
-
-        // Set initial value
-        columns.set_value(&old_pos, "test");
-
-        // Move the value
-        columns.move_cell_value(&old_pos, &new_pos);
-
-        // Check that value moved correctly
-        assert_eq!(columns.get_value(&old_pos), None);
-        assert_eq!(columns.get_value(&new_pos), Some(&CellValue::from("test")));
-    }
-
-    #[test]
     fn test_clear() {
         let mut columns = SheetColumns::new();
 
         // Set up some test data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(2, 1), "B1");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![B1], "B1");
 
         // Clear all data
         columns.clear();
@@ -502,8 +478,8 @@ mod test {
         assert_eq!(columns.finite_bounds(), None);
 
         // Add some values
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(3, 4), "C4");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![C4], "C4");
 
         // Check bounds
         let bounds = columns.finite_bounds().unwrap();

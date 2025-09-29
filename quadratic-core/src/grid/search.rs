@@ -38,9 +38,15 @@ mod test {
         let sheet_id = grid.sheet_ids()[0];
 
         let sheet = grid.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, "hello".to_string());
-        sheet.set_cell_value(Pos { x: -10, y: -11 }, "world".to_string());
-        sheet.set_cell_value(Pos { x: 100, y: 200 }, "123".to_string());
+        sheet
+            .columns
+            .set_value(Pos { x: 0, y: 1 }, "hello".to_string());
+        sheet
+            .columns
+            .set_value(Pos { x: -10, y: -11 }, "world".to_string());
+        sheet
+            .columns
+            .set_value(Pos { x: 100, y: 200 }, "123".to_string());
 
         assert_eq!(
             sheet.cell_value(Pos { x: 0, y: 1 }),
@@ -100,10 +106,14 @@ mod test {
         let sheet_id2 = grid.add_sheet(None);
 
         let sheet1 = grid.try_sheet_mut(sheet_id1).unwrap();
-        sheet1.set_cell_value(Pos { x: 0, y: 1 }, "hello".to_string());
+        sheet1
+            .columns
+            .set_value(Pos { x: 0, y: 1 }, "hello".to_string());
 
         let sheet2 = grid.try_sheet_mut(sheet_id2).unwrap();
-        sheet2.set_cell_value(Pos { x: 0, y: 1 }, "hello2".to_string());
+        sheet2
+            .columns
+            .set_value(Pos { x: 0, y: 1 }, "hello2".to_string());
 
         let result = grid.search(&"hello".to_string(), SearchOptions::default());
         assert_eq!(result.len(), 2);

@@ -99,7 +99,7 @@ impl Grid {
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;
-            let _ = sheet.set_cell_value(Pos { x, y }, value.clone());
+            sheet.columns.set_value(Pos { x, y }, value.clone());
         }
         ret
     }

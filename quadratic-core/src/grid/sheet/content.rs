@@ -126,23 +126,25 @@ mod test {
     fn test_has_content_ignore_blank_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        let sheet = gc.sheet_mut(sheet_id);
         let pos = pos![A1];
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
 
         // Empty cell should have no content
-        assert!(!sheet.has_content_ignore_blank_table(pos));
-
-        // Text content
-        sheet.set_cell_value(pos, "test");
-        assert!(sheet.has_content_ignore_blank_table(pos));
+        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
 
         // Blank value should count as no content
-        sheet.set_cell_value(pos, CellValue::Blank);
-        assert!(!sheet.has_content_ignore_blank_table(pos));
+        gc.sheet_mut(sheet_id)
+            .columns
+            .set_value(pos, CellValue::Blank);
+        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
+
+        // Text content
+        gc.set_cell_value(sheet_pos, "test".into(), None, false);
+        assert!(gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
 
         // Empty string should count as no content
-        sheet.set_cell_value(pos, "");
-        assert!(!sheet.has_content_ignore_blank_table(pos));
+        gc.set_cell_value(sheet_pos, "".into(), None, false);
+        assert!(!gc.sheet(sheet_id).has_content_ignore_blank_table(pos));
 
         // Table with non-blank content
         let dt = DataTable::new(
@@ -154,6 +156,7 @@ mod test {
             Some(true),
             None,
         );
+        let sheet = gc.sheet_mut(sheet_id);
         sheet.data_table_insert_full(pos, dt.clone());
         assert!(sheet.has_content_ignore_blank_table(pos));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));

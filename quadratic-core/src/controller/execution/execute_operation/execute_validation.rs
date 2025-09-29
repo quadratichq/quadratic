@@ -75,16 +75,14 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: SheetRect,
     ) {
-        let validations: Vec<Validation>;
-        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
-            validations = sheet
+        let validations = match self.try_sheet(sheet_rect.sheet_id) {
+            Some(sheet) => sheet
                 .validations
                 .in_rect((sheet_rect).into(), self.a1_context())
                 .iter()
                 .map(|v| (*v).clone())
-                .collect();
-        } else {
-            validations = vec![];
+                .collect(),
+            None => vec![],
         };
 
         for validation in validations {
@@ -502,10 +500,10 @@ impl GridController {
 mod tests {
     use super::*;
 
+    use crate::a1::A1Selection;
     use crate::grid::js_types::JsHashValidationWarnings;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, a1::A1Selection};
     use crate::{Pos, test_util::*};
 
     #[test]
@@ -514,8 +512,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
         let validation = Validation {
             id: Uuid::new_v4(),
@@ -591,8 +588,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
         // set validation
         let validation = Validation {
@@ -737,8 +733,7 @@ mod tests {
         let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], "".to_string());
+        gc.set_cell_value(pos![sheet_id!A1], "".to_string(), None, false);
 
         let mut transaction = PendingTransaction::default();
         gc.check_validations(
@@ -819,8 +814,6 @@ mod tests {
                 .ranges,
             A1Selection::test_a1("A2:B2,B1").ranges
         );
-
-        dbg!(&gc.undo_stack);
 
         gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);

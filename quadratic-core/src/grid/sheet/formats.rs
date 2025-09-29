@@ -205,8 +205,12 @@ mod tests {
         let mut sheet = Sheet::test();
 
         // Add some data to create non-empty bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
-        sheet.set_cell_value(pos![E5], CellValue::Text("test".to_string()));
+        sheet
+            .columns
+            .set_value(pos![A1], CellValue::Text("test".to_string()));
+        sheet
+            .columns
+            .set_value(pos![E5], CellValue::Text("test".to_string()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
