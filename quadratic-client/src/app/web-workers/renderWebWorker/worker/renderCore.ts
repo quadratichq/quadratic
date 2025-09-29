@@ -8,7 +8,6 @@
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsRenderCell, SheetBounds } from '@/app/quadratic-core-types';
 import { type JsOffset, type SheetInfo } from '@/app/quadratic-core-types';
-import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
   CoreRenderMessage,
@@ -16,6 +15,7 @@ import type {
   RenderCoreResponseRowHeights,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { fromUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 class RenderCore {
   private renderCorePort?: MessagePort;

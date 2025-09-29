@@ -63,7 +63,6 @@ interface ScheduledTasksActions {
   deleteScheduledTask: (taskId: string) => void;
   show: boolean;
 }
-
 export const useScheduledTasks = (): ScheduledTasksActions => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);

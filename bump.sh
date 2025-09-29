@@ -36,6 +36,9 @@ RUST=(
   "quadratic-files/Cargo.toml"
   "quadratic-multiplayer/Cargo.toml"
   "quadratic-rust-shared/Cargo.toml"
+  "quadratic-core-cloud/Cargo.toml"
+  "quadratic-cloud-controller/Cargo.toml"
+  "quadratic-cloud-worker/Cargo.toml"
 )
 
 JAVASCRIPT=(

@@ -14,9 +14,9 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
-import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, type Point, type Rectangle } from 'pixi.js';
+import { fromUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;

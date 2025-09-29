@@ -175,6 +175,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
+
       <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {!isOnPaidPlan && !isSettingsPage && (
           <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
@@ -200,6 +201,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </Button>
           </div>
         )}
+
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -221,12 +223,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </Badge>
           </SidebarNavLink>
         )}
+
         {labFeatures.length > 0 && (
           <SidebarNavLink to="/labs">
             <LabsIcon className={classNameIcons} />
             Labs
           </SidebarNavLink>
         )}
+
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="relative flex min-w-0 flex-grow items-center gap-2 rounded bg-accent p-2 no-underline hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100">
@@ -254,6 +258,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
           <div className="flex flex-shrink-0 items-center">
             <ThemePickerMenu />
           </div>

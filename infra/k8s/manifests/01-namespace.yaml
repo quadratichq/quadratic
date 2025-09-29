@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quadratic-cloud
+  labels:
+    name: quadratic-cloud
+    app.kubernetes.io/name: quadratic-cloud
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    description: "Quadratic Cloud"

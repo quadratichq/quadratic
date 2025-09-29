@@ -5,7 +5,8 @@
 use http::HeaderMap;
 use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
 use jsonwebtoken::{
-    Algorithm, DecodingKey, Header, TokenData, Validation, decode, decode_header, jwk,
+    Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation, decode, decode_header,
+    encode, jwk,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,35 @@ pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub email: String,
+    pub sub: String,
+    pub iss: String,
+    pub iat: usize,
     pub exp: usize,
+}
+
+/// Generate a JWT token
+pub fn generate_jwt(
+    email: String,
+    sub: String,
+    iss: String,
+    encoding_key: &EncodingKey,
+    expiration_seconds: u64,
+) -> Result<String> {
+    let now = chrono::Utc::now();
+    let iat = now.timestamp() as usize;
+    let exp = (now + chrono::Duration::seconds(expiration_seconds as i64)).timestamp() as usize;
+
+    let claims = Claims {
+        email,
+        sub,
+        iss,
+        iat,
+        exp,
+    };
+
+    let header = Header::new(Algorithm::RS256);
+    encode(&header, &claims, encoding_key)
+        .map_err(|e| SharedError::Auth(Auth::Jwt(format!("Failed to encode worker JWT: {}", e))))
 }
 
 /// Get the constant JWKS for use throughout the application
@@ -103,6 +132,9 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
         header: Header::default(),
         claims: Claims {
             email: "m2m@quadratic.com".into(),
+            sub: "m2m".into(),
+            iss: "m2m".into(),
+            iat: 0,
             exp: 0,
         },
     })

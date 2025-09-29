@@ -50,7 +50,7 @@ serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 strum = "0.26.3"
 strum_macros = "0.25.3"
-thiserror = "1.0.50"
+thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
 tower = { version = "0.4.13", features = ["util"] }
 tower-http = { version = "0.5.0", features = [

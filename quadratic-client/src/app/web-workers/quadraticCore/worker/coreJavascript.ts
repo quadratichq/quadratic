@@ -1,11 +1,11 @@
 import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
 } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

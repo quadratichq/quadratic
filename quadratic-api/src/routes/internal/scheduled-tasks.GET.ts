@@ -7,7 +7,7 @@ import type { Request } from '../../types/Request';
 
 const router = express.Router();
 
-router.get('/scheduled_task', validateM2MAuth(), async (req: Request, res: Response) => {
+router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Response) => {
   // Validate request parameters
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -23,7 +23,12 @@ router.get('/scheduled_task', validateM2MAuth(), async (req: Request, res: Respo
       },
     },
     select: {
-      id: true,
+      file: {
+        select: {
+          uuid: true,
+        },
+      },
+      uuid: true,
       nextRunTime: true,
       operations: true,
     },
@@ -31,9 +36,10 @@ router.get('/scheduled_task', validateM2MAuth(), async (req: Request, res: Respo
 
   // Transform operations from Buffer to parsed JSON for consistency with other endpoints
   const transformedTasks = scheduledTasks.map((task) => ({
-    id: task.id,
+    fileId: task.file.uuid,
+    taskId: task.uuid,
     nextRunTime: task.nextRunTime,
-    operations: task.operations ? JSON.parse(task.operations.toString()) : null,
+    operations: Array.from(new Uint8Array(task.operations)),
   }));
 
   return res.status(200).json(transformedTasks);

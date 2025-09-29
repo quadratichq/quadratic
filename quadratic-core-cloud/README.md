@@ -1,4 +1,4 @@
-# Quadratic Cor Cloud
+# Quadratic Core Cloud
 
 Process Quadratic Core transactions in the cloud.
 

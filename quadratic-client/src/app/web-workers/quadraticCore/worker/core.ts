@@ -38,7 +38,6 @@ import type {
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -63,6 +62,7 @@ import {
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
+import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 
 class Core {
   gridController?: GridController;
