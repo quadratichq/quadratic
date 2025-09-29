@@ -560,11 +560,11 @@ impl GridController {
                 if is_table_being_deleted {
                     continue;
                 }
-
+                let mut formats = formats.clone();
                 let table_format_updates = data_table.transfer_formats_from_sheet_format_updates(
                     data_table_pos,
                     intersection_rect,
-                    formats,
+                    &mut formats,
                 );
 
                 if let Some(table_format_updates) = table_format_updates
@@ -636,15 +636,17 @@ impl GridController {
                     clipboard.h as i64,
                 );
 
-                let formats_ops = self.clipboard_formats_tables_operations(
-                    clipboard.selection.sheet_id,
-                    formats_rect,
-                    &clipboard.formats,
-                    Some(&clipboard.selection),
-                    delete_value,
-                );
+                if let Some(formats) = &clipboard.formats {
+                    let formats_ops = self.clipboard_formats_tables_operations(
+                        clipboard.selection.sheet_id,
+                        formats_rect,
+                        &formats,
+                        Some(&clipboard.selection),
+                        delete_value,
+                    );
 
-                ops.extend(formats_ops);
+                    ops.extend(formats_ops);
+                }
             }
         }
         ops
@@ -752,7 +754,7 @@ impl GridController {
         }
 
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
-            ops.extend(self.get_formats_ops(start_pos, formats, clipboard, special));
+            ops.extend(self.get_formats_ops(start_pos, formats, clipboard, special, delete_value));
 
             // // for formats and borders, we need to translate the clipboard to the start_pos
             // let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
