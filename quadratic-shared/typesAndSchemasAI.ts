@@ -19,7 +19,7 @@ const AIProvidersSchema = z.enum([
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
-const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4.5@20250929']);
+const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4-5@20250929']);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum(['us.anthropic.claude-sonnet-4-5-20250929-v1:0']);
@@ -68,8 +68,8 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
-  'vertexai-anthropic:claude-sonnet-4.5@20250929:thinking-toggle-off',
-  'vertexai-anthropic:claude-sonnet-4.5@20250929:thinking-toggle-on',
+  'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
+  'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
