@@ -640,7 +640,7 @@ impl GridController {
                     let formats_ops = self.clipboard_formats_tables_operations(
                         clipboard.selection.sheet_id,
                         formats_rect,
-                        &formats,
+                        formats,
                         Some(&clipboard.selection),
                         delete_value,
                     );
@@ -660,17 +660,15 @@ impl GridController {
         special: PasteSpecial,
     ) {
         // todo: this does not support tables (should be similar to get_formats_ops)
-        if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
-            if let Some(original_borders) = &clipboard.borders
-                && !borders.is_empty()
-            {
-                let mut new_borders = original_borders.clone();
-                let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
-                let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
-                new_borders
-                    .translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-                borders.merge(&new_borders);
-            }
+        if matches!(special, PasteSpecial::None | PasteSpecial::Formats)
+            && let Some(original_borders) = &clipboard.borders
+            && !borders.is_empty()
+        {
+            let mut new_borders = original_borders.clone();
+            let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+            let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
+            new_borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+            borders.merge(&new_borders);
         }
     }
 
@@ -875,7 +873,7 @@ impl GridController {
             ops.extend(self.clipboard_formats_tables_operations(
                 start_pos.sheet_id,
                 formats_rect,
-                &mut sheet_format_updates,
+                &sheet_format_updates,
                 Some(selection),
                 false, // we don't delete values for plain text
             ));

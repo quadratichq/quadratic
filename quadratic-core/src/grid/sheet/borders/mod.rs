@@ -197,22 +197,22 @@ impl BordersUpdates {
         if let Some(left) = other.left.as_ref() {
             self.left
                 .get_or_insert_with(Default::default)
-                .update_from(left, |value, new_value| value.replace(new_value.clone()));
+                .update_from(left, |value, new_value| value.replace(*new_value));
         }
         if let Some(right) = other.right.as_ref() {
             self.right
                 .get_or_insert_with(Default::default)
-                .update_from(right, |value, new_value| value.replace(new_value.clone()));
+                .update_from(right, |value, new_value| value.replace(*new_value));
         }
         if let Some(top) = other.top.as_ref() {
             self.top
                 .get_or_insert_with(Default::default)
-                .update_from(top, |value, new_value| value.replace(new_value.clone()));
+                .update_from(top, |value, new_value| value.replace(*new_value));
         }
         if let Some(bottom) = other.bottom.as_ref() {
             self.bottom
                 .get_or_insert_with(Default::default)
-                .update_from(bottom, |value, new_value| value.replace(new_value.clone()));
+                .update_from(bottom, |value, new_value| value.replace(*new_value));
         }
     }
 }
