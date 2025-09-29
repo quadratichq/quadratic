@@ -2526,4 +2526,37 @@ mod test {
         assert_fill_color(&gc, pos![sheet_id!B2], "red");
         assert_fill_color(&gc, pos![sheet_id!E5], "red");
     }
+
+    #[test]
+    fn paste_formatting() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_fill_color(
+            &A1Selection::test_a1("B2:B5"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("B2:B5"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("B10:B10"),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        assert_fill_color(&gc, pos![sheet_id!B10], "red");
+        dbg!(&gc.sheet(sheet_id).formats.fill_color);
+    }
 }
