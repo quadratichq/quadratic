@@ -626,9 +626,7 @@ impl GridController {
                 let mut copied_formats = copied_formats.clone();
                 copied_formats
                     .translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-                dbgjs!(&copied_formats.fill_color);
                 formats.merge(&copied_formats);
-                dbgjs!(&copied_formats.fill_color);
                 let formats_rect = Rect::from_numbers(
                     start_pos.x,
                     start_pos.y,
@@ -922,8 +920,8 @@ impl GridController {
 
         // collect all cell values, values and sheet format updates for a a single operation
         let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
-        let mut formats = clipboard.formats.to_owned().unwrap_or_default();
-        let mut borders = clipboard.borders.to_owned().unwrap_or_default();
+        let mut formats = SheetFormatUpdates::default();
+        let mut borders = BordersUpdates::default();
         let source_columns = clipboard.cells.columns;
 
         // collect information for growing data tables
