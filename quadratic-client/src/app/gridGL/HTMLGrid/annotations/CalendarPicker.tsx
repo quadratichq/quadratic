@@ -134,7 +134,7 @@ export const CalendarPicker = () => {
   if (!showCalendar || !date || !value) return null;
 
   return (
-    <div className="pointer-up-ignore pointer-events-auto border bg-white shadow">
+    <div className="pointer-up-ignore pointer-events-auto border bg-white shadow" data-testid="calendar-picker">
       <div className="px-1 pb-0 pt-1 text-right">
         <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
           <Close sx={{ padding: 0, width: 15, height: 15 }} />
@@ -143,7 +143,12 @@ export const CalendarPicker = () => {
       <Calendar mode="single" selected={date} defaultMonth={date} onSelect={changeDate} />
       {showTime && (
         <div className="flex w-full gap-2 p-3">
-          <ValidationInput value={formatTime(value)} onChange={changeTime} onEnter={finish} />
+          <ValidationInput
+            value={formatTime(value)}
+            onChange={changeTime}
+            onEnter={finish}
+            testId="calendar-picker-time"
+          />
           <TooltipPopover label="Set current date and time">
             <Button onClick={setCurrentDateTime} className="px-2">
               <CheckSharp fontSize="small" />

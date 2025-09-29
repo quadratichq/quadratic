@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { ErrorMarker } from '@/app/gridGL/cells/CellsSheet';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import type { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -18,7 +19,7 @@ interface Marker {
   symbol?: Sprite;
 }
 
-export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean): Sprite | undefined => {
+export const getLanguageSymbol = (language: CodeCellLanguage): Sprite | undefined => {
   const symbol = new Sprite();
   if (language === 'Python') {
     symbol.texture = Assets.get('icon-python');
@@ -118,5 +119,17 @@ export class CellsMarkers extends Container {
     console.log(
       `[CellsMarker] ${this.children.length} objects | ${this.children.filter((child) => child.visible).length} visible`
     );
+  }
+
+  adjustOffsets(sheetId: string): void {
+    const sheet = sheets.getById(sheetId);
+    if (!sheet) return;
+    this.markers.forEach((marker) => {
+      const bounds = sheet.getCellOffsets(marker.codeCell.x, marker.codeCell.y);
+      if (marker.triangle) {
+        marker.triangle.position.set(bounds.x + bounds.width, bounds.y);
+        marker.bounds = bounds;
+      }
+    });
   }
 }
