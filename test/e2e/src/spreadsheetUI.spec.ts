@@ -1001,6 +1001,12 @@ test('Right Click Actions', async ({ page }) => {
 
   expect(clipboardContainsPng).toBe(true); // Assert that the clipboard contains a PNG image
 
+  // ensure that the menu closes
+  // Take a screenshot to verify the UI state after copy as PNG
+  await expect(page).toHaveScreenshot('right-click-copy-as-png.png', {
+    maxDiffPixels: 1000,
+  });
+
   //--------------------------------
   // Download selection as CSV
   //--------------------------------
