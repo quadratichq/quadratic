@@ -528,6 +528,39 @@ export const ApiSchemas = {
     currentPeriodUsage: z.number().optional(),
   }),
 
+  /**
+   * ===========================================================================
+   * Team Files
+   * ===========================================================================
+   */
+  '/v0/teams/:uuid/files/deleted.GET.response': z.array(
+    z.object({
+      file: z.object({
+        uuid: z.string().uuid(),
+        name: z.string(),
+        createdDate: z.string().datetime(),
+        updatedDate: z.string().datetime(),
+        deletedDate: z.string().datetime(),
+        creatorId: z.number(),
+        ownerUserId: z.number().nullable(),
+        thumbnail: z.string().url().nullable(),
+      }),
+      userMakingRequest: TeamUserMakingRequestSchema,
+    })
+  ),
+  '/v0/teams/:uuid/files/:fileUuid.PATCH.request': z.object({
+    action: z.literal('undelete'),
+  }),
+  '/v0/teams/:uuid/files/:fileUuid.PATCH.response': z.object({
+    message: z.string(),
+    file: z.object({
+      uuid: z.string().uuid(),
+      name: z.string(),
+      deleted: z.boolean(),
+      deletedDate: z.string().datetime().nullable(),
+    }),
+  }),
+
   '/v0/auth/login-with-password.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     password: z.string(),

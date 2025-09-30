@@ -366,6 +366,20 @@ export const Component = () => {
               </div>
             </div>
           </SettingsRow>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              File recovery
+            </Type>
+            <div>
+              <p className="mb-2 pt-2 text-sm">
+                You can recover public or private files that have been deleted on this team. Deleted files are kept for
+                30 days.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to={`../files/deleted`}>View deleted files</Link>
+              </Button>
+            </div>
+          </SettingsRow>
         </>
       </div>
     </>

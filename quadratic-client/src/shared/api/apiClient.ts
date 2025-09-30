@@ -82,7 +82,24 @@ export const apiClient = {
         return data;
       },
     },
-
+    files: {
+      deleted: {
+        list(teamUuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${teamUuid}/files/deleted`,
+            { method: 'GET' },
+            ApiSchemas['/v0/teams/:uuid/files/deleted.GET.response']
+          );
+        },
+        undelete(teamUuid: string, fileUuid: string) {
+          return fetchFromApi(
+            `/v0/teams/${teamUuid}/files/${fileUuid}`,
+            { method: 'PATCH', body: JSON.stringify({ action: 'undelete' }) },
+            ApiSchemas['/v0/teams/:uuid/files/:fileUuid.PATCH.response']
+          );
+        },
+      },
+    },
     invites: {
       create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
