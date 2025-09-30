@@ -70,6 +70,7 @@ export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
+  'vertexai-anthropic:claude-sonnet-4-5@20250929',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
@@ -87,7 +88,6 @@ export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
-  'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
