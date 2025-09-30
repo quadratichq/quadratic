@@ -5,6 +5,7 @@ import type {
   AIToolArgsPrimitive,
   ModelMode,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
 // This provides a list of AI Tools in the order that they will be sent to the
@@ -253,9 +254,7 @@ export const AIToolsArgsSchema = {
     connection_kind: z
       .string()
       .transform((val) => val.toUpperCase())
-      .pipe(
-        z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE', 'BIGQUERY', 'COCKROACHDB', 'MARIADB', 'SUPABASE', 'NEON'])
-      ),
+      .pipe(ConnectionTypeSchema),
     code_cell_position: z.string(),
     sql_code_string: z.string(),
     connection_id: z.string().uuid(),
@@ -533,7 +532,7 @@ export type AIToolSpecRecord = {
 export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
-  claude: 'vertexai-anthropic:claude-sonnet-4@20250514',
+  claude: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
   '4.1': 'azure-openai:gpt-4.1',
 };
 

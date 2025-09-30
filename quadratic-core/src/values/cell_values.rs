@@ -8,9 +8,9 @@ use std::collections::BTreeMap;
 /// Sparsely-populated rectangle of [`CellValue`]s.
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
-    pub columns: Vec<BTreeMap<u64, CellValue>>,
-    pub w: u32,
-    pub h: u32,
+    pub(crate) columns: Vec<BTreeMap<u64, CellValue>>,
+    pub(crate) w: u32,
+    pub(crate) h: u32,
 }
 
 impl CellValues {

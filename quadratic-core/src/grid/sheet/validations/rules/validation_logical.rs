@@ -11,7 +11,7 @@ pub struct ValidationLogical {
 
 impl ValidationLogical {
     // Validate a CellValue against the validation rule.
-    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<CellValue>) -> bool {
         if let Some(value) = value {
             match value {
                 CellValue::Logical(_) => true,
@@ -32,10 +32,10 @@ mod tests {
     #[test]
     fn validate_logical() {
         let logical = ValidationLogical::default();
-        assert!(logical.validate(Some(&CellValue::Logical(true))));
-        assert!(logical.validate(Some(&CellValue::Logical(false))));
-        assert!(!logical.validate(Some(&CellValue::Number(1.into()))));
-        assert!(!logical.validate(Some(&CellValue::Text("test".to_string()))));
+        assert!(logical.validate(Some(CellValue::Logical(true))));
+        assert!(logical.validate(Some(CellValue::Logical(false))));
+        assert!(!logical.validate(Some(CellValue::Number(1.into()))));
+        assert!(!logical.validate(Some(CellValue::Text("test".to_string()))));
         assert!(!logical.validate(None));
     }
 
@@ -46,10 +46,10 @@ mod tests {
             ..Default::default()
         };
         assert!(logical.validate(None));
-        assert!(logical.validate(Some(&CellValue::Logical(true))));
-        assert!(logical.validate(Some(&CellValue::Logical(false))));
-        assert!(!logical.validate(Some(&CellValue::Number(1.into()))));
-        assert!(!logical.validate(Some(&CellValue::Text("test".to_string()))));
+        assert!(logical.validate(Some(CellValue::Logical(true))));
+        assert!(logical.validate(Some(CellValue::Logical(false))));
+        assert!(!logical.validate(Some(CellValue::Number(1.into()))));
+        assert!(!logical.validate(Some(CellValue::Text("test".to_string()))));
     }
 
     #[test]
@@ -60,6 +60,6 @@ mod tests {
             ignore_blank: true,
             ..Default::default()
         };
-        assert!(logical.validate(Some(&CellValue::Text("".to_string()))));
+        assert!(logical.validate(Some(CellValue::Text("".to_string()))));
     }
 }

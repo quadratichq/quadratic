@@ -31,7 +31,7 @@ pub struct ValidationDateTime {
 
 impl ValidationDateTime {
     // Validate a CellValue against the validation rule.
-    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<CellValue>) -> bool {
         if let Some(value) = value {
             let (date, time) = match value {
                 CellValue::DateTime(dt) => {
@@ -44,7 +44,7 @@ impl ValidationDateTime {
                     if self.prohibit_date || self.require_time {
                         return false;
                     }
-                    let Some(date_i64) = naive_date_to_i64(*d) else {
+                    let Some(date_i64) = naive_date_to_i64(d) else {
                         return false;
                     };
                     (date_i64, 0)
@@ -53,7 +53,7 @@ impl ValidationDateTime {
                     if self.require_date || self.prohibit_time {
                         return false;
                     }
-                    (0, naive_time_to_i32(*t))
+                    (0, naive_time_to_i32(t))
                 }
                 _ => return false,
             };
@@ -68,26 +68,30 @@ impl ValidationDateTime {
                 DateTimeRange::DateNotEqual(not_equal) => not_equal.iter().all(|v| date != *v),
                 DateTimeRange::DateRange(min, max) => {
                     if let Some(min) = min.as_ref()
-                        && date < *min {
-                            return false;
-                        }
+                        && date < *min
+                    {
+                        return false;
+                    }
                     if let Some(max) = max.as_ref()
-                        && date > *max {
-                            return false;
-                        }
+                        && date > *max
+                    {
+                        return false;
+                    }
                     true
                 }
 
                 DateTimeRange::TimeEqual(equal) => equal.contains(&time),
                 DateTimeRange::TimeRange(min, max) => {
                     if let Some(min) = min.as_ref()
-                        && time < *min {
-                            return false;
-                        }
+                        && time < *min
+                    {
+                        return false;
+                    }
                     if let Some(max) = max.as_ref()
-                        && time > *max {
-                            return false;
-                        }
+                        && time > *max
+                    {
+                        return false;
+                    }
                     true
                 }
                 DateTimeRange::TimeNotEqual(not_equal) => not_equal.iter().all(|v| time != *v),
@@ -117,7 +121,7 @@ mod tests {
             ..Default::default()
         };
         assert!(!rule.validate(None));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -128,13 +132,13 @@ mod tests {
             prohibit_time: true,
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
 
@@ -143,26 +147,26 @@ mod tests {
             require_time: true,
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
 
         let rule = ValidationDateTime {
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
 
@@ -170,13 +174,13 @@ mod tests {
             prohibit_date: true,
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
 
@@ -184,13 +188,13 @@ mod tests {
             prohibit_time: true,
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
     }
@@ -202,22 +206,22 @@ mod tests {
             ranges: vec![DateTimeRange::DateEqual(vec![1612137600])],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
 
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-02-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
 
         // this one fails b/c there are no relevant rules. I think this is the correct approach.
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
     }
@@ -228,16 +232,16 @@ mod tests {
             ranges: vec![DateTimeRange::DateNotEqual(vec![1612137600])],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:10:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -248,16 +252,16 @@ mod tests {
             ranges: vec![DateTimeRange::DateRange(Some(1612137600), Some(1612137600))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:10:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -269,22 +273,22 @@ mod tests {
             ranges: vec![DateTimeRange::DateRange(Some(1612137600), Some(1612224600))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-02", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-02T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-03T00:10:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -296,22 +300,22 @@ mod tests {
             ranges: vec![DateTimeRange::DateRange(Some(1612137600), None)],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-02", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-02T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-03T00:10:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -323,16 +327,16 @@ mod tests {
             ranges: vec![DateTimeRange::DateRange(None, Some(1612137600))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Date(
+        assert!(!rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-02-02", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Date(
+        assert!(rule.validate(Some(CellValue::Date(
             NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -343,16 +347,16 @@ mod tests {
             ranges: vec![DateTimeRange::TimeEqual(vec![0])],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:01", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -363,16 +367,16 @@ mod tests {
             ranges: vec![DateTimeRange::TimeNotEqual(vec![0])],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:01", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
     }
@@ -383,16 +387,16 @@ mod tests {
             ranges: vec![DateTimeRange::TimeRange(Some(0), Some(0))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::DateTime(
+        assert!(rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::DateTime(
+        assert!(!rule.validate(Some(CellValue::DateTime(
             NaiveDateTime::parse_from_str("2021-01-01T00:00:01", "%Y-%m-%dT%H:%M:%S").unwrap()
         ))));
 
@@ -400,13 +404,13 @@ mod tests {
             ranges: vec![DateTimeRange::TimeRange(Some(0), Some(1))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:02", "%H:%M:%S").unwrap()
         ))));
     }
@@ -417,16 +421,16 @@ mod tests {
             ranges: vec![DateTimeRange::TimeRange(Some(1), None)],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:02", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
         ))));
     }
@@ -437,13 +441,13 @@ mod tests {
             ranges: vec![DateTimeRange::TimeRange(None, Some(1))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(rule.validate(Some(&CellValue::Time(
+        assert!(rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
-        assert!(!rule.validate(Some(&CellValue::Time(
+        assert!(!rule.validate(Some(CellValue::Time(
             NaiveTime::parse_from_str("00:00:02", "%H:%M:%S").unwrap()
         ))));
     }

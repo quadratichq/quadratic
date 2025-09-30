@@ -38,7 +38,7 @@ pub struct ValidationText {
 
 impl ValidationText {
     // Validate a CellValue against the validation rule.
-    pub(crate) fn validate(&self, value: Option<&CellValue>) -> bool {
+    pub(crate) fn validate(&self, value: Option<CellValue>) -> bool {
         if let Some(value) = value {
             match value {
                 CellValue::Text(text) => {
@@ -55,7 +55,7 @@ impl ValidationText {
                                 }
                             }
                             TextMatch::Exactly(TextCase::CaseSensitive(cases)) => {
-                                if cases.iter().any(|case| case == text) {
+                                if cases.iter().any(|case| case == &text) {
                                     continue;
                                 } else {
                                     return false;
@@ -98,13 +98,15 @@ impl ValidationText {
                             TextMatch::TextLength { min, max } => {
                                 let text_len = text.len();
                                 if let Some(min) = min
-                                    && text_len < *min as usize {
-                                        return false;
-                                    }
+                                    && text_len < *min as usize
+                                {
+                                    return false;
+                                }
                                 if let Some(max) = max
-                                    && text_len > *max as usize {
-                                        return false;
-                                    }
+                                    && text_len > *max as usize
+                                {
+                                    return false;
+                                }
                                 return true;
                             }
                         }
@@ -139,10 +141,10 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("World".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("World".to_string()))));
         assert!(!v.validate(None));
 
         let v = ValidationText {
@@ -152,11 +154,11 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("World".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("not in list".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("World".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("not in list".to_string()))));
         assert!(!v.validate(None));
     }
 
@@ -175,12 +177,12 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("hello worldly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("wide world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("World".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello worldly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("wide world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("World".to_string()))));
         assert!(!v.validate(None));
 
         let v = ValidationText {
@@ -190,13 +192,13 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("Hello worldly".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("World".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("not in list".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("Hello worldly".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("World".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("not in list".to_string()))));
         assert!(!v.validate(None));
     }
 
@@ -215,12 +217,12 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(!v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("hello worldly".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("wide world".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("World".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("hello worldly".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("wide world".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("World".to_string()))));
         assert!(!v.validate(None));
 
         let v = ValidationText {
@@ -230,13 +232,13 @@ mod tests {
                 "world".to_string(),
             ]))],
         };
-        assert!(!v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello worldly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("World".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("not in list".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello worldly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("World".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("not in list".to_string()))));
         assert!(!v.validate(None));
     }
 
@@ -255,13 +257,13 @@ mod tests {
                 TextMatch::NotContains(TextCase::CaseSensitive(vec!["world".to_string()])),
             ],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("hello dolly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("hello worldly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("wide world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("World".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello dolly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("hello worldly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("wide world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("World".to_string()))));
         assert!(!v.validate(None));
 
         let v = ValidationText {
@@ -271,14 +273,14 @@ mod tests {
                 TextMatch::NotContains(TextCase::CaseInsensitive(vec!["world".to_string()])),
             ],
         };
-        assert!(v.validate(Some(&CellValue::Text("hello".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("hello there".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("Hello".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello worldly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("Hello Worldly".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("world".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("World".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("not in list".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("hello there".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("Hello".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello worldly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("Hello Worldly".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("world".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("World".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("not in list".to_string()))));
         assert!(!v.validate(None));
     }
 
@@ -297,11 +299,11 @@ mod tests {
                 max: Some(10),
             }],
         };
-        assert!(!v.validate(Some(&CellValue::Text("".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("1234".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("12345".to_string()))));
-        assert!(v.validate(Some(&CellValue::Text("1234567890".to_string()))));
-        assert!(!v.validate(Some(&CellValue::Text("12345678901".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("1234".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("12345".to_string()))));
+        assert!(v.validate(Some(CellValue::Text("1234567890".to_string()))));
+        assert!(!v.validate(Some(CellValue::Text("12345678901".to_string()))));
         assert!(!v.validate(None));
     }
 }

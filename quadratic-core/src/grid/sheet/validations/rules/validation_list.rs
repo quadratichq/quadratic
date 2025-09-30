@@ -26,12 +26,12 @@ impl ValidationList {
     fn validate_selection(
         sheet: &Sheet,
         selection: &A1Selection,
-        value: &CellValue,
+        value: CellValue,
         a1_context: &A1Context,
     ) -> bool {
         if let Some(values) = sheet.selection_values(selection, None, false, true, true, a1_context)
         {
-            values.iter().any(|(_, search)| *search == value)
+            values.iter().any(|(_, search)| *search == &value)
         } else {
             false
         }
@@ -41,12 +41,12 @@ impl ValidationList {
     pub(crate) fn validate(
         &self,
         sheet: &Sheet,
-        value: Option<&CellValue>,
+        value: Option<CellValue>,
         a1_context: &A1Context,
     ) -> bool {
         if let Some(value) = value {
             // handle cases of blank text
-            match value {
+            match &value {
                 CellValue::Blank => return self.ignore_blank,
                 CellValue::Text(text) => {
                     if text.is_empty() && self.ignore_blank {
@@ -68,7 +68,11 @@ impl ValidationList {
     }
 
     /// Gets the drop down list.
-    pub(crate) fn to_drop_down(&self, sheet: &Sheet, a1_context: &A1Context) -> Option<Vec<String>> {
+    pub(crate) fn to_drop_down(
+        &self,
+        sheet: &Sheet,
+        a1_context: &A1Context,
+    ) -> Option<Vec<String>> {
         if !self.drop_down {
             return None;
         }
@@ -106,12 +110,12 @@ mod tests {
 
         assert!(list.validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
         assert!(!list.validate(
             &sheet,
-            Some(&CellValue::Text("test2".to_string())),
+            Some(CellValue::Text("test2".to_string())),
             &a1_context
         ));
         assert!(list.validate(&sheet, None, &a1_context));
@@ -128,14 +132,14 @@ mod tests {
         assert!(ValidationList::validate_selection(
             &sheet,
             &selection,
-            &CellValue::Text("test".to_string()),
+            CellValue::Text("test".to_string()),
             &a1_context
         ));
 
         assert!(!ValidationList::validate_selection(
             &sheet,
             &selection,
-            &CellValue::Text("test2".to_string()),
+            CellValue::Text("test2".to_string()),
             &a1_context
         ));
 
@@ -203,8 +207,8 @@ mod tests {
         let a1_context = sheet.expensive_make_a1_context();
 
         // Test with ignore_blank = true
-        assert!(list.validate(&sheet, Some(&CellValue::Blank), &a1_context));
-        assert!(list.validate(&sheet, Some(&CellValue::Text("".to_string())), &a1_context));
+        assert!(list.validate(&sheet, Some(CellValue::Blank), &a1_context));
+        assert!(list.validate(&sheet, Some(CellValue::Text("".to_string())), &a1_context));
         assert!(list.validate(&sheet, None, &a1_context));
 
         // Test with ignore_blank = false
@@ -214,10 +218,10 @@ mod tests {
             drop_down: true,
         };
 
-        assert!(!list_no_ignore.validate(&sheet, Some(&CellValue::Blank), &a1_context));
+        assert!(!list_no_ignore.validate(&sheet, Some(CellValue::Blank), &a1_context));
         assert!(!list_no_ignore.validate(
             &sheet,
-            Some(&CellValue::Text("".to_string())),
+            Some(CellValue::Text("".to_string())),
             &a1_context
         ));
         assert!(!list_no_ignore.validate(&sheet, None, &a1_context));

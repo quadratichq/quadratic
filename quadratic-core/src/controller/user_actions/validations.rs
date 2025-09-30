@@ -150,7 +150,7 @@ impl GridController {
         let cell_value = CellValue::parse_from_str(input);
         if validation
             .rule
-            .validate(sheet, Some(&cell_value), &self.a1_context)
+            .validate(sheet, Some(cell_value), &self.a1_context)
         {
             None
         } else {

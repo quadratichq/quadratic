@@ -38,7 +38,6 @@ impl SheetRect {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
         SheetRect {
             min: pos,
@@ -123,15 +122,6 @@ impl SheetRect {
         SheetRect {
             min: Pos { x: min_x, y: min_y },
             max: Pos { x: max_x, y: max_y },
-            sheet_id: self.sheet_id,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn top_left(&self) -> SheetPos {
-        SheetPos {
-            x: self.min.x,
-            y: self.min.y,
             sheet_id: self.sheet_id,
         }
     }
@@ -256,20 +246,6 @@ mod test {
         let rect1 = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
         let rect2 = SheetRect::from_numbers(2, 3, 4, 5, SheetId::new());
         let _ = rect1.union(&rect2);
-    }
-
-    #[test]
-    fn test_top_left() {
-        let sheet_id = SheetId::new();
-        let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
-        assert_eq!(
-            rect.top_left(),
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id
-            }
-        );
     }
 
     #[test]

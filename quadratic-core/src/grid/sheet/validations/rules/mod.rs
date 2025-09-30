@@ -34,7 +34,7 @@ impl ValidationRule {
     pub(crate) fn validate(
         &self,
         sheet: &Sheet,
-        value: Option<&CellValue>,
+        value: Option<CellValue>,
         a1_context: &A1Context,
     ) -> bool {
         match &self {
@@ -91,12 +91,12 @@ mod tests {
 
         assert!(ValidationRule::List(list.clone()).validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
         assert!(!ValidationRule::List(list).validate(
             &sheet,
-            Some(&CellValue::Text("test2".to_string())),
+            Some(CellValue::Text("test2".to_string())),
             &a1_context
         ));
     }
@@ -118,12 +118,12 @@ mod tests {
 
         assert!(rule.validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
         assert!(!rule.validate(
             &sheet,
-            Some(&CellValue::Text("test2".to_string())),
+            Some(CellValue::Text("test2".to_string())),
             &a1_context
         ));
     }
@@ -136,7 +136,7 @@ mod tests {
 
         assert!(rule.validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
     }

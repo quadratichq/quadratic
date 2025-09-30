@@ -1,5 +1,6 @@
 use crate::{
-    Rect, SheetPos, SheetRect,
+    Rect, SheetRect,
+    controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{SheetId, formats::SheetFormatUpdates, sheet::borders::BordersUpdates},
 };
 
@@ -9,21 +10,18 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `sheet_rect`. If this method returns `true`, then updates in
     /// `sheet_rect` must force the thumbnail to update.
-    pub(crate) fn thumbnail_dirty_sheet_pos(&self, sheet_pos: SheetPos) -> bool {
-        self.thumbnail_dirty_sheet_rect(sheet_pos.into())
-    }
-
-    /// Returns whether the thumbnail contains any intersection with
-    /// `sheet_rect`. If this method returns `true`, then updates in
-    /// `sheet_rect` must force the thumbnail to update.
-    pub(crate) fn thumbnail_dirty_sheet_rect(&self, sheet_rect: SheetRect) -> bool {
-        if sheet_rect.sheet_id != self.grid().first_sheet_id() {
-            return false;
+    pub(crate) fn thumbnail_dirty_sheet_rect(
+        &self,
+        transaction: &mut PendingTransaction,
+        sheet_rect: SheetRect,
+    ) {
+        if transaction.is_user_ai_undo_redo()
+            && sheet_rect.sheet_id == self.grid().first_sheet_id()
+            && let Some(sheet) = self.try_sheet(sheet_rect.sheet_id)
+            && Rect::from(sheet_rect).intersects(sheet.offsets.thumbnail())
+        {
+            transaction.generate_thumbnail = true;
         }
-        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
-            return false;
-        };
-        Rect::from(sheet_rect).intersects(sheet.offsets.thumbnail())
     }
 
     /// Returns whether the thumbnail contains any intersection with
@@ -64,8 +62,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
-        controller::GridController,
+        Pos, Rect, SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+        controller::{
+            GridController, active_transactions::pending_transaction::PendingTransaction,
+        },
         grid::{
             SheetId,
             formats::{FormatUpdate, SheetFormatUpdates},
@@ -74,29 +74,55 @@ mod test {
     };
 
     #[test]
-    fn test_thumbnail_dirty_pos() {
+    fn test_thumbnail_dirty_sheet_rect() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(gc.thumbnail_dirty_sheet_pos(SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id
-        }));
-        assert!(!gc.thumbnail_dirty_sheet_pos(SheetPos {
-            x: (THUMBNAIL_WIDTH as i64) + 1i64,
-            y: 0,
-            sheet_id
-        }));
-        assert!(!gc.thumbnail_dirty_sheet_pos(SheetPos {
-            x: 0,
-            y: (THUMBNAIL_HEIGHT as i64) + 1i64,
-            sheet_id
-        }));
-        assert!(!gc.thumbnail_dirty_sheet_pos(SheetPos {
-            x: THUMBNAIL_WIDTH as i64,
-            y: THUMBNAIL_HEIGHT as i64,
-            sheet_id
-        }));
+
+        let mut transaction = PendingTransaction::default();
+        gc.thumbnail_dirty_sheet_rect(
+            &mut transaction,
+            SheetRect::single_pos(Pos { x: 1, y: 1 }, sheet_id),
+        );
+        assert!(transaction.generate_thumbnail);
+
+        let mut transaction = PendingTransaction::default();
+        gc.thumbnail_dirty_sheet_rect(
+            &mut transaction,
+            SheetRect::single_pos(
+                Pos {
+                    x: (THUMBNAIL_WIDTH as i64) + 1i64,
+                    y: 1,
+                },
+                sheet_id,
+            ),
+        );
+        assert!(!transaction.generate_thumbnail);
+
+        let mut transaction = PendingTransaction::default();
+        gc.thumbnail_dirty_sheet_rect(
+            &mut transaction,
+            SheetRect::single_pos(
+                Pos {
+                    x: 1,
+                    y: (THUMBNAIL_HEIGHT as i64) + 1i64,
+                },
+                sheet_id,
+            ),
+        );
+        assert!(!transaction.generate_thumbnail);
+
+        let mut transaction = PendingTransaction::default();
+        gc.thumbnail_dirty_sheet_rect(
+            &mut transaction,
+            SheetRect::single_pos(
+                Pos {
+                    x: THUMBNAIL_WIDTH as i64,
+                    y: THUMBNAIL_HEIGHT as i64,
+                },
+                sheet_id,
+            ),
+        );
+        assert!(!transaction.generate_thumbnail);
     }
 
     #[test]

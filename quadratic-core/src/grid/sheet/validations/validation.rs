@@ -3,8 +3,9 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::{A1Selection, CellRefRange},
-    grid::js_types::JsRenderCellSpecial,
+    Pos,
+    a1::{A1Context, A1Selection, CellRefRange},
+    grid::{Sheet, js_types::JsRenderCellSpecial},
 };
 
 use super::rules::ValidationRule;
@@ -114,6 +115,12 @@ impl Validation {
             }
             _ => None,
         }
+    }
+
+    pub(crate) fn validate(&self, sheet: &Sheet, pos: Pos, a1_context: &A1Context) -> bool {
+        let value = sheet.display_value(pos);
+        self.selection.might_contain_pos(pos, a1_context)
+            && !self.rule.validate(sheet, value, a1_context)
     }
 }
 

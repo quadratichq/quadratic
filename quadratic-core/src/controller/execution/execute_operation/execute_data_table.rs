@@ -49,11 +49,10 @@ impl GridController {
             return Ok(());
         }
 
-        if transaction.is_user_ai_undo_redo() {
-            let data_table_rect =
-                data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false);
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(data_table_rect);
-        }
+        self.thumbnail_dirty_sheet_rect(
+            transaction,
+            data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false),
+        );
 
         Ok(())
     }
@@ -70,15 +69,11 @@ impl GridController {
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.extend(forward_operations);
             transaction.reverse_operations.extend(reverse_operations);
+        }
 
-            let Some(sheet_rect) = sheet_rect_for_compute_and_spills else {
-                return;
-            };
-
-            if transaction.is_user_ai() {
-                self.check_validations(transaction, sheet_rect);
-                self.add_compute_operations(transaction, sheet_rect, None);
-            }
+        if let Some(sheet_rect) = sheet_rect_for_compute_and_spills {
+            self.check_validations(transaction, sheet_rect);
+            self.add_compute_operations(transaction, sheet_rect, None);
         }
     }
 

@@ -26,11 +26,11 @@ pub mod warnings;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Validations {
-    #[serde(default)]
-    pub validations: Vec<Validation>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub(crate) validations: Vec<Validation>,
 
-    #[serde(default)]
-    pub warnings: HashMap<Pos, Uuid>,
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub(crate) warnings: HashMap<Pos, Uuid>,
 }
 
 impl Validations {
@@ -172,14 +172,13 @@ impl Validations {
         pos: Pos,
         a1_context: &A1Context,
     ) -> Option<&Validation> {
-        self.validations.iter().rev().find(|v| {
-            v.selection.might_contain_pos(pos, a1_context)
-                && !v
-                    .rule
-                    .validate(sheet, sheet.display_value(pos).as_ref(), a1_context)
-        })
+        self.validations
+            .iter()
+            .rev()
+            .find(|validation| validation.validate(sheet, pos, a1_context))
     }
 
+    /// Returns validations that intersect with a rect.
     pub(crate) fn in_rect_unbounded(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
@@ -189,20 +188,6 @@ impl Validations {
                     .ranges
                     .iter()
                     .any(|range| range.might_intersect_rect(rect, a1_context))
-            })
-            .collect()
-    }
-
-    /// Returns validations that intersect with a rect.
-    pub(crate) fn in_rect(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
-        self.validations
-            .iter()
-            .filter(|validation| {
-                validation
-                    .selection
-                    .ranges
-                    .iter()
-                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, a1_context))
             })
             .collect()
     }

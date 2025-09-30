@@ -119,7 +119,16 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-
+            self.thumbnail_dirty_sheet_rect(
+                transaction,
+                SheetRect::from_numbers(
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    w as i64,
+                    h as i64,
+                    sheet_pos.sheet_id,
+                ),
+            );
             if transaction.is_user_ai_undo_redo() {
                 transaction.forward_operations.push(op);
 
@@ -130,15 +139,6 @@ impl GridController {
                         w: original.map(|(w, _)| w).unwrap_or(w),
                         h: original.map(|(_, h)| h).unwrap_or(h),
                     });
-
-                let sheet_rect = SheetRect::from_numbers(
-                    sheet_pos.x,
-                    sheet_pos.y,
-                    w as i64,
-                    h as i64,
-                    sheet_pos.sheet_id,
-                );
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
             }
         }
 

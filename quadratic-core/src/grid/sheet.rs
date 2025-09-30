@@ -57,21 +57,21 @@ lazy_static! {
 /// Sheet in a file.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
-    pub id: SheetId,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
+    pub(crate) id: SheetId,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
 
-    pub offsets: SheetOffsets,
+    pub(crate) offsets: SheetOffsets,
 
-    pub columns: SheetColumns,
+    pub(crate) columns: SheetColumns,
 
-    pub data_tables: SheetDataTables,
+    pub(crate) data_tables: SheetDataTables,
 
     /// Formatting for the entire sheet.
-    pub formats: SheetFormatting,
+    pub(crate) formats: SheetFormatting,
 
-    pub validations: Validations,
+    pub(crate) validations: Validations,
 
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
@@ -81,7 +81,7 @@ pub struct Sheet {
 
     pub(super) rows_resize: ResizeMap,
 
-    pub borders: Borders,
+    pub(crate) borders: Borders,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
