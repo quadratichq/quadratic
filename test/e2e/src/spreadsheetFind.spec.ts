@@ -76,7 +76,6 @@ test('Search refreshes on changes', async ({ page }) => {
 
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 2');
 
-  await setValueInCell(page, 'A10', 'baseball');
-  await page.waitForTimeout(2000);
+  await setValueInCell(page, 'A20', 'baseball');
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3');
 });
