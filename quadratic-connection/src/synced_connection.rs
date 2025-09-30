@@ -73,7 +73,7 @@ pub(crate) async fn process_mixpanel_connection(
     connection_id: Uuid,
 ) -> Result<()> {
     if !can_process_connection(state.clone(), connection_id).await? {
-        tracing::info!("Skipping Mixpanel connection {}d", connection_id);
+        tracing::info!("Skipping Mixpanel connection {}", connection_id);
         return Ok(());
     }
 
@@ -92,43 +92,80 @@ pub(crate) async fn process_mixpanel_connection(
     } = connection;
     let client = MixpanelClient::new(api_secret, project_id);
 
+    // split the date range into chunks
+    let chunks = chunk_date_range(start_date, end_date, 30);
+    let total_chunks = chunks.len();
+
     tracing::info!(
-        "Exporting Mixpanel events from {} to {}...",
+        "Exporting Mixpanel events from {} to {} in {} weekly chunks...",
         start_date,
-        end_date
+        end_date,
+        total_chunks
     );
 
-    update_connection_status(
-        state.clone(),
-        connection_id,
-        SyncedConnectionKind::Mixpanel,
-        SyncedConnectionStatus::ApiRequest,
-    )
-    .await;
+    let mut total_files_processed = 0;
 
-    let params = ExportParams::new(start_date, end_date);
-    let parquet_data = client
-        .export_events(params)
-        .await
-        .map_err(|e| ConnectionError::Synced(format!("Failed to export events: {}", e)))?;
+    // Process each weekly chunk
+    for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().enumerate() {
+        tracing::info!(
+            "Processing chunk {}/{}: {} to {}",
+            chunk_index + 1,
+            total_chunks,
+            chunk_start,
+            chunk_end
+        );
 
-    update_connection_status(
-        state.clone(),
-        connection_id,
-        SyncedConnectionKind::Mixpanel,
-        SyncedConnectionStatus::Upload,
-    )
-    .await;
+        update_connection_status(
+            state.clone(),
+            connection_id,
+            SyncedConnectionKind::Mixpanel,
+            SyncedConnectionStatus::ApiRequest,
+        )
+        .await;
 
-    let num_files = upload(&object_store, &prefix, parquet_data)
-        .await
-        .map_err(|e| ConnectionError::Synced(format!("Failed to upload events: {}", e)))?;
+        let params = ExportParams::new(chunk_start, chunk_end);
+        let parquet_data = client.export_events_streaming(params).await.map_err(|e| {
+            ConnectionError::Synced(format!(
+                "Failed to export events for chunk {}: {}",
+                chunk_index + 1,
+                e
+            ))
+        })?;
+
+        update_connection_status(
+            state.clone(),
+            connection_id,
+            SyncedConnectionKind::Mixpanel,
+            SyncedConnectionStatus::Upload,
+        )
+        .await;
+
+        let num_files = upload(&object_store, &prefix, parquet_data)
+            .await
+            .map_err(|e| {
+                ConnectionError::Synced(format!(
+                    "Failed to upload events for chunk {}: {}",
+                    chunk_index + 1,
+                    e
+                ))
+            })?;
+
+        total_files_processed += num_files;
+
+        tracing::info!(
+            "Completed chunk {}/{}: processed {} files",
+            chunk_index + 1,
+            total_chunks,
+            num_files
+        );
+    }
 
     complete_connection_status(state.clone(), connection_id).await;
 
     tracing::info!(
-        "Processed {} Mixpanel files in {:?}",
-        num_files,
+        "Processed {} Mixpanel files across {} chunks in {:?}",
+        total_files_processed,
+        total_chunks,
         start_time.elapsed()
     );
 
@@ -151,6 +188,27 @@ async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (Nai
     };
 
     (start_date, end_date)
+}
+
+/// Split a date range into weekly chunks.
+fn chunk_date_range(
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    chunk_size: u32,
+) -> Vec<(NaiveDate, NaiveDate)> {
+    let mut chunks = Vec::new();
+    let mut current_start = start_date;
+
+    while current_start <= end_date {
+        let current_end = std::cmp::min(
+            current_start + chrono::Duration::days(chunk_size as i64 - 1),
+            end_date,
+        );
+        chunks.push((current_start, current_end));
+        current_start = current_end + chrono::Duration::days(1);
+    }
+
+    chunks
 }
 
 /// Get the object store path for a table
@@ -304,5 +362,73 @@ mod tests {
 
         assert_eq!(end_date, today);
         assert_eq!(start_date, expected_start);
+    }
+
+    #[test]
+    fn test_split_date_range_into_weeks() {
+        use chrono::NaiveDate;
+
+        // Test a simple 2-week range
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 14).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 7).unwrap()
+            )
+        );
+        assert_eq!(
+            chunks[1],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 8).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()
+            )
+        );
+
+        // Test a partial week
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 3).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 3).unwrap()
+            )
+        );
+
+        // Test single day
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+            )
+        );
+
+        // Test exactly 7 days
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 7).expect("Valid date");
+        let chunks = chunk_date_range(start_date, end_date, 7);
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 7).unwrap()
+            )
+        );
     }
 }

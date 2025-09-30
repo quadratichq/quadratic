@@ -2,6 +2,7 @@
 
 use bytes::Bytes;
 use chrono::{DateTime, NaiveDate, Utc};
+use futures_util::StreamExt;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -52,8 +53,16 @@ impl Default for ExportParams {
 }
 
 impl MixpanelClient {
-    /// Export raw event data using arrow-json for consistent schema handling
+    /// Export raw event data using arrow-json for consistent schema handling with streaming
     pub async fn export_events(&self, params: ExportParams) -> Result<HashMap<String, Bytes>> {
+        self.export_events_streaming(params).await
+    }
+
+    /// Export raw event data using streaming to reduce memory usage
+    pub async fn export_events_streaming(
+        &self,
+        params: ExportParams,
+    ) -> Result<HashMap<String, Bytes>> {
         let url = format!("{}/export", self.data_export_url());
 
         // gather params
@@ -91,45 +100,96 @@ impl MixpanelClient {
             )));
         }
 
-        let text = response
-            .text()
-            .await
-            .map_err(|e| SharedError::Synced(format!("Failed to get response text: {}", e)))?;
-
-        // group JSON lines by date and flatten the structure using parallel processing
+        // Stream the response instead of loading all text into memory
+        let mut stream = response.bytes_stream();
+        let mut buffer = String::new();
         let grouped_json = Mutex::new(HashMap::<String, Vec<String>>::new());
 
-        // process lines in parallel
-        let results: Vec<Result<Option<(String, String)>>> = text
-            .lines()
-            .collect::<Vec<&str>>()
-            .par_iter()
-            .filter(|line| !line.trim().is_empty())
-            .map(|line| {
-                // parse and flatten the Mixpanel event structure
-                let event: Event = serde_json::from_str(line)?;
+        // Process the stream chunk by chunk
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result.map_err(|e| {
+                SharedError::Synced(format!("Failed to read response chunk: {}", e))
+            })?;
 
-                if let Some(time_value) = event.properties.get("time")
-                    && let Some(timestamp) = time_value.as_i64()
-                {
-                    let datetime = DateTime::<Utc>::from_timestamp(timestamp, 0)
-                        .ok_or_else(|| SharedError::Synced("Invalid timestamp".to_string()))?;
-                    let date_key = datetime.format(DATE_FORMAT).to_string();
+            // Convert bytes to string and add to buffer
+            let chunk_str = std::str::from_utf8(&chunk)
+                .map_err(|e| SharedError::Synced(format!("Invalid UTF-8 in response: {}", e)))?;
+            buffer.push_str(chunk_str);
 
-                    // flatten the event into a single JSON object
-                    let flattened_event = Self::flatten_mixpanel_event(&event);
-                    let flattened_json = serde_json::to_string(&flattened_event)?;
-
-                    return Ok(Some((date_key, flattened_json)));
+            // Process complete lines from the buffer
+            let lines_to_process = if buffer.ends_with('\n') {
+                // All lines are complete, process all and clear buffer
+                let lines: Vec<String> = buffer.lines().map(|s| s.to_string()).collect();
+                buffer.clear();
+                lines
+            } else {
+                // Last line might be incomplete, keep it in buffer
+                let mut lines: Vec<&str> = buffer.lines().collect();
+                if lines.is_empty() {
+                    Vec::new()
+                } else {
+                    let last_line = lines.pop().unwrap_or("");
+                    let complete_lines: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
+                    buffer = last_line.to_string();
+                    complete_lines
                 }
-                Ok(None)
-            })
-            .collect();
+            };
 
-        // collect results and handle any errors
-        for result in results {
-            // skip events without timestamps
-            if let Some((date_key, flattened_json)) = result? {
+            // Process complete lines in parallel
+            if !lines_to_process.is_empty() {
+                let results: Vec<Result<Option<(String, String)>>> = lines_to_process
+                    .par_iter()
+                    .filter(|line| !line.trim().is_empty())
+                    .map(|line| {
+                        // parse and flatten the Mixpanel event structure
+                        let event: Event = serde_json::from_str(line)?;
+
+                        if let Some(time_value) = event.properties.get("time")
+                            && let Some(timestamp) = time_value.as_i64()
+                        {
+                            let datetime = DateTime::<Utc>::from_timestamp(timestamp, 0)
+                                .ok_or_else(|| {
+                                    SharedError::Synced("Invalid timestamp".to_string())
+                                })?;
+                            let date_key = datetime.format(DATE_FORMAT).to_string();
+
+                            // flatten the event into a single JSON object
+                            let flattened_event = Self::flatten_mixpanel_event(&event);
+                            let flattened_json = serde_json::to_string(&flattened_event)?;
+
+                            return Ok(Some((date_key, flattened_json)));
+                        }
+                        Ok(None)
+                    })
+                    .collect();
+
+                // collect results and handle any errors
+                for result in results {
+                    // skip events without timestamps
+                    if let Some((date_key, flattened_json)) = result? {
+                        grouped_json
+                            .lock()?
+                            .entry(date_key)
+                            .or_default()
+                            .push(flattened_json);
+                    }
+                }
+            }
+        }
+
+        // Process any remaining data in buffer
+        if !buffer.trim().is_empty() {
+            let event: Event = serde_json::from_str(&buffer)?;
+            if let Some(time_value) = event.properties.get("time")
+                && let Some(timestamp) = time_value.as_i64()
+            {
+                let datetime = DateTime::<Utc>::from_timestamp(timestamp, 0)
+                    .ok_or_else(|| SharedError::Synced("Invalid timestamp".to_string()))?;
+                let date_key = datetime.format(DATE_FORMAT).to_string();
+
+                let flattened_event = Self::flatten_mixpanel_event(&event);
+                let flattened_json = serde_json::to_string(&flattened_event)?;
+
                 grouped_json
                     .lock()?
                     .entry(date_key)
