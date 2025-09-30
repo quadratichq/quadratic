@@ -26,6 +26,7 @@
    1. Modify the variables in docker-compose.yml
    1. Merge PR into `main` as preview branches always pull from the main branch
 1. If this is an existing PR, close and open the PR to trigger a new infrastructure deployment
+1. Add a message to Slack in the `#engineering` channel about the changes
 1. For `preview`:
    1. Log into the `Quadratic Development` AWS account (`us-west-2`)
    1. Navigate to the `Paramater Store` service
@@ -51,7 +52,7 @@
 1. Enter `docker ps` to see the running docker containers
 1. There will be a container for every service, note the `CONTAINER ID` for each
 1. Commands:
-  1. View all logs: docker logs `CONTAINER ID`
-  1. View live logs: docker logs -f `CONTAINER ID`
-  1. View live tail logs: docker logs -f --tail 100 `CONTAINER ID`
-  1. Enter into the container: docker exec -it `CONTAINER ID` bash
+   1. View all logs: docker logs `CONTAINER ID`
+   1. View live logs: docker logs -f `CONTAINER ID`
+   1. View live tail logs: docker logs -f --tail 100 `CONTAINER ID`
+   1. Enter into the container: docker exec -it `CONTAINER ID` bash
