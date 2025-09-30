@@ -1,9 +1,7 @@
 use crate::{
     CellValue, Pos, Rect,
-    a1::A1Context,
     cell_values::CellValues,
-    controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::js_types::{JsCellValueCode, JsCellValueKind, JsValidationWarning},
+    grid::js_types::{JsCellValueCode, JsCellValueKind},
 };
 
 use super::Sheet;
@@ -26,51 +24,24 @@ impl Sheet {
     /// Replace cell_values with CellValues.
     ///
     /// Returns the old CellValues.
-    pub fn merge_cell_values(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        pos: Pos,
-        cell_values: &CellValues,
-        a1_context: &A1Context,
-    ) -> CellValues {
+    pub fn merge_cell_values(&mut self, pos: Pos, cell_values: &CellValues) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
 
         for x in 0..cell_values.w {
-            let grid_x = pos.x + x as i64;
-
             for y in 0..cell_values.h {
-                let grid_y = pos.y + y as i64;
-
-                let grid_pos = (grid_x, grid_y).into();
+                let value_pos = Pos::new(pos.x + x as i64, pos.y + y as i64);
 
                 // set value in columns
-                match (self.columns.get_value(&grid_pos), cell_values.get(x, y)) {
+                match (self.columns.get_value(&value_pos), cell_values.get(x, y)) {
                     // old is blank and new is blank
                     (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => (),
                     // old is/isn't black and new isn't blank
                     (_, Some(value)) => {
-                        let old_value = self.set_value(grid_pos, value.to_owned());
+                        let old_value = self.set_value(value_pos, value.to_owned());
                         old.set(x, y, old_value.unwrap_or(CellValue::Blank));
                     }
                     _ => (),
                 };
-
-                // check for validation warnings
-                let sheet_pos = grid_pos.to_sheet_pos(self.id);
-                if let Some(validation) = self.validations.validate(self, grid_pos, a1_context) {
-                    transaction.validation_warning_added(
-                        self.id,
-                        JsValidationWarning {
-                            pos: grid_pos,
-                            validation: Some(validation.id),
-                            style: Some(validation.error.style.clone()),
-                        },
-                    );
-                    self.validations.set_warning(sheet_pos, Some(validation.id));
-                } else if self.validations.has_warning(grid_pos) {
-                    transaction.validation_warning_deleted(self.id, grid_pos);
-                    self.validations.set_warning(sheet_pos, None);
-                }
             }
         }
 
@@ -157,7 +128,7 @@ mod test {
         first_sheet_id,
         grid::{
             NumericFormat,
-            js_types::JsHashValidationWarnings,
+            js_types::{JsHashValidationWarnings, JsValidationWarning},
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
         number::decimal_from_str,
@@ -177,14 +148,7 @@ mod test {
         sheet.set_value(Pos { x: 3, y: 2 }, "old-d");
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
-        let mut transaction = PendingTransaction::default();
-        let a1_context = sheet.expensive_make_a1_context();
-        let old = sheet.merge_cell_values(
-            &mut transaction,
-            Pos { x: 2, y: 1 },
-            &cell_values,
-            &a1_context,
-        );
+        let old = sheet.merge_cell_values(Pos { x: 2, y: 1 }, &cell_values);
         assert_eq!(old.w, 2);
         assert_eq!(old.h, 2);
 

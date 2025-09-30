@@ -206,9 +206,11 @@ impl GridController {
                 )
             };
 
-            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_pos.sheet_id);
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+            };
+            self.thumbnail_dirty_sheet_rect(transaction, sheet_rect);
 
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && transaction.is_user_ai()
