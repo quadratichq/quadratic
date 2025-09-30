@@ -43,20 +43,6 @@ impl CellRefRange {
         }
     }
 
-    /// Translates the range by the given delta, clamping the result within the
-    /// sheet bounds. Returns a new CellRefRange.
-    pub(crate) fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
-        match self {
-            CellRefRange::Sheet { range } => {
-                let adjust = RefAdjust::new_translate(dx, dy);
-                range
-                    .saturating_adjust(adjust)
-                    .map(|new_range| Self::Sheet { range: new_range })
-            }
-            other => Some(other),
-        }
-    }
-
     /// Replaces a table name in the range.
     pub(crate) fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         match self {
@@ -175,43 +161,5 @@ mod tests {
         let translated = cell.translate(-1, -2).unwrap();
         assert_eq!(translated.to_string(), "B1");
         assert_eq!(translated, CellRefRange::test_a1("B1"));
-    }
-
-    #[test]
-    fn test_saturating_translate() {
-        // Test single cell translation
-        let cell = CellRefRange::test_a1("A1");
-        let translated = cell.saturating_translate(1, 2).unwrap();
-        assert_eq!(translated.to_string(), "B3");
-        assert_eq!(translated, CellRefRange::test_a1("B3"));
-
-        // Test range translation
-        let range = CellRefRange::test_a1("A1:B2");
-        let translated = range.saturating_translate(2, 1).unwrap();
-        assert_eq!(translated.to_string(), "C2:D3");
-        assert_eq!(translated, CellRefRange::test_a1("C2:D3"));
-
-        // Test column range translation doesn't change
-        let col_range = CellRefRange::test_a1("A:B");
-        let translated = col_range.saturating_translate(1, 0).unwrap();
-        assert_eq!(translated.to_string(), "A:B");
-        assert_eq!(translated, CellRefRange::test_a1("A:B"));
-
-        // Test row range translation doesn't change
-        let row_range = CellRefRange::test_a1("1:2");
-        let translated = row_range.saturating_translate(0, 2).unwrap();
-        assert_eq!(translated.to_string(), "1:2");
-        assert_eq!(translated, CellRefRange::test_a1("1:2"));
-
-        // Test negative translation
-        let cell = CellRefRange::test_a1("C3");
-        let translated = cell.saturating_translate(-1, -2).unwrap();
-        assert_eq!(translated.to_string(), "B1");
-        assert_eq!(translated, CellRefRange::test_a1("B1"));
-
-        // Test translation that would go out of bounds
-        let cell = CellRefRange::test_a1("A1");
-        let translated = cell.saturating_translate(-10, -10);
-        assert!(translated.is_none());
     }
 }

@@ -68,7 +68,7 @@ pub(crate) fn test_create_code_table_with_values(
         None,
     );
 
-    test_create_raw_data_table(gc, pos.to_sheet_pos(sheet_id), data_table)
+    test_create_raw_data_table(gc, pos.as_sheet_pos(sheet_id), data_table)
 }
 
 #[cfg(test)]

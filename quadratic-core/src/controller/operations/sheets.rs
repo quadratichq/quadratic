@@ -9,7 +9,11 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
-    pub(crate) fn set_sheet_name_operations(&mut self, sheet_id: SheetId, name: String) -> Vec<Operation> {
+    pub(crate) fn set_sheet_name_operations(
+        &mut self,
+        sheet_id: SheetId,
+        name: String,
+    ) -> Vec<Operation> {
         let old_sheet_name = self.try_sheet(sheet_id).map(|sheet| sheet.name.clone());
         vec![Operation::SetSheetName {
             sheet_id,
@@ -255,7 +259,7 @@ mod test {
 
         for (pos, data_table) in data_tables.into_iter() {
             let name = data_table.name().to_string();
-            let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
+            let sheet_pos = pos.as_sheet_pos(duplicate_sheet_id);
             gc.grid
                 .update_data_table_name(sheet_pos, &name, &name, &context, false)
                 .unwrap();

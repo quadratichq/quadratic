@@ -469,7 +469,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         gc.test_data_table_update_meta(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             None,
             Some(true),
             Some(true),

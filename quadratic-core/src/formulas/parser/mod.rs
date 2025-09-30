@@ -116,7 +116,7 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, controller::GridController, grid::SheetId};
 ///
 /// let g = GridController::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
+/// let pos = Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
@@ -136,7 +136,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, controller::GridController, grid::SheetId};
 ///
 /// let g = GridController::new();
-/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]);
+/// let pos = Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]);
 /// let replaced = convert_a1_to_rc("SUM(B$3)", g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
@@ -467,7 +467,7 @@ mod tests {
     #[test]
     fn test_replace_xy_no_shift() {
         let ctx = A1Context::test(&[], &[]);
-        let pos = pos![A1].to_sheet_pos(SheetId::new());
+        let pos = pos![A1].as_sheet_pos(SheetId::new());
         let src: &str = "A1 + 1";
         let adj_base = RefAdjust {
             sheet_id: None,
@@ -507,7 +507,7 @@ mod tests {
     #[test]
     fn test_replace_xy_shift() {
         let ctx = A1Context::test(&[], &[]);
-        let pos = pos![C6].to_sheet_pos(SheetId::new());
+        let pos = pos![C6].as_sheet_pos(SheetId::new());
 
         let adj = RefAdjust {
             sheet_id: None,

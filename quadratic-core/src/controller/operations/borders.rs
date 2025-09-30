@@ -493,7 +493,7 @@ impl GridController {
         for (table_sheet_pos, table_borders) in tables_borders {
             if !table_borders.is_empty() {
                 ops.push(Operation::DataTableBorders {
-                    sheet_pos: table_sheet_pos.to_sheet_pos(selection.sheet_id),
+                    sheet_pos: table_sheet_pos.as_sheet_pos(selection.sheet_id),
                     borders: table_borders,
                 });
             }

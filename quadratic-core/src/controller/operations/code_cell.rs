@@ -116,7 +116,7 @@ impl GridController {
                     .get_code_runs_in_rect(*rect, false)
                     .for_each(|(_, pos, _)| {
                         ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
+                            sheet_pos: pos.as_sheet_pos(sheet_id),
                         });
                     });
             });
@@ -125,7 +125,12 @@ impl GridController {
         ops
     }
 
-    pub(crate) fn set_chart_size_operations(&self, sheet_pos: SheetPos, w: u32, h: u32) -> Vec<Operation> {
+    pub(crate) fn set_chart_size_operations(
+        &self,
+        sheet_pos: SheetPos,
+        w: u32,
+        h: u32,
+    ) -> Vec<Operation> {
         vec![Operation::SetChartCellSize { sheet_pos, w, h }]
     }
 
@@ -134,7 +139,7 @@ impl GridController {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+                code_cell_positions.push(pos.as_sheet_pos(*sheet_id));
             }
         }
 
@@ -148,7 +153,7 @@ impl GridController {
         };
         let mut code_cell_positions = Vec::new();
         for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+            code_cell_positions.push(pos.as_sheet_pos(sheet_id));
         }
 
         self.get_code_run_ops_from_positions(code_cell_positions)
@@ -202,7 +207,7 @@ impl GridController {
         {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
+                    let sheet_pos = pos.as_sheet_pos(sheet_id);
                     if !seen.contains(&sheet_pos) {
                         parent_nodes.push(sheet_pos);
                     }

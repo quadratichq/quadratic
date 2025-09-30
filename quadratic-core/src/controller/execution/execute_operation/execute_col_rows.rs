@@ -20,7 +20,7 @@ impl GridController {
         for sheet in self.grid.sheets().values() {
             for (data_table_pos, data_table) in sheet.data_tables.expensive_iter() {
                 if let Some(code_run) = data_table.code_run() {
-                    let sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
+                    let sheet_pos = data_table_pos.as_sheet_pos(sheet.id);
                     let mut new_code_run = code_run.clone();
                     for &adj in adjustments {
                         new_code_run.adjust_references(

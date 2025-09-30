@@ -77,6 +77,7 @@ impl Grid {
     }
 
     /// Creates a grid for testing.
+    #[cfg(test)]
     pub(crate) fn test() -> Self {
         let mut ret = Grid::new_blank();
         let sheet = Sheet::test();
@@ -106,7 +107,7 @@ impl Grid {
 
     #[cfg(test)]
     pub(crate) fn origin_in_first_sheet(&self) -> crate::SheetPos {
-        crate::Pos::ORIGIN.to_sheet_pos(self.sheets()[0].id)
+        crate::Pos::ORIGIN.as_sheet_pos(self.sheets()[0].id)
     }
 }
 

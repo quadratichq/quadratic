@@ -309,7 +309,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let pos = pos![1, 2];
-        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "test".into(), None, false);
+        gc.set_cell_value(pos.as_sheet_pos(sheet_id), "test".into(), None, false);
         gc.sheet_mut(sheet_id).formats.bold.set(pos, Some(true));
         gc.sheet_mut(sheet_id)
             .formats

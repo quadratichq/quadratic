@@ -227,7 +227,7 @@ mod tests {
 
         // set a data table at E2 that's 3x3 and show_header is true
         gc.test_set_data_table(
-            pos!(E2).to_sheet_pos(sheet_id),
+            pos!(E2).as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -294,7 +294,7 @@ mod tests {
 
         // set a data table at E2 that's 3x3 and show_header is true
         gc.test_set_data_table(
-            pos!(E2).to_sheet_pos(sheet_id),
+            pos!(E2).as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -488,7 +488,7 @@ mod tests {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -537,7 +537,7 @@ mod tests {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,

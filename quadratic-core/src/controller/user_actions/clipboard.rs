@@ -65,7 +65,7 @@ impl GridController {
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
-            insert_at.to_sheet_pos(selection.sheet_id),
+            insert_at.as_sheet_pos(selection.sheet_id),
             end_pos,
             selection,
             js_clipboard.plain_text,
@@ -1185,7 +1185,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1194,7 +1194,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,
@@ -1249,7 +1249,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1259,7 +1259,7 @@ mod test {
         mock_calculation_complete(&mut gc);
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,

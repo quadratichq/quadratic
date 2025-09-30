@@ -12,7 +12,7 @@ pub(crate) fn table_at<'a>(
     context: &'a A1Context,
 ) -> Option<&'a TableMapEntry> {
     let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
-        Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
+        Some(pos) => pos.as_sheet_pos(sheet_pos.sheet_id),
         None if table_cache
             .single_cell_tables
             .get(sheet_pos.into())

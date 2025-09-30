@@ -108,7 +108,7 @@ impl Serialize for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect_vec();
@@ -154,7 +154,7 @@ impl PartialEq for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect();
@@ -166,7 +166,7 @@ impl PartialEq for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect();

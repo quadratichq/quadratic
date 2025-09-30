@@ -12,7 +12,7 @@ pub struct JsA1Context {
 }
 
 impl JsA1Context {
-    pub fn get_context(&self) -> &A1Context {
+    pub(crate) fn get_context(&self) -> &A1Context {
         &self.context
     }
 }

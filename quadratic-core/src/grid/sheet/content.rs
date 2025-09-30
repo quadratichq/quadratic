@@ -60,20 +60,20 @@ mod test {
         assert!(!first_sheet(&gc).has_content_at_pos(pos));
 
         // Text content
-        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "test".into(), None, false);
+        gc.set_cell_value(pos.as_sheet_pos(sheet_id), "test".into(), None, false);
         assert!(first_sheet(&gc).has_content_at_pos(pos));
 
         // Empty string should count as no content
-        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "".into(), None, false);
+        gc.set_cell_value(pos.as_sheet_pos(sheet_id), "".into(), None, false);
         assert!(!first_sheet(&gc).has_content_at_pos(pos));
 
         // Number content
-        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "1".into(), None, false);
+        gc.set_cell_value(pos.as_sheet_pos(sheet_id), "1".into(), None, false);
         assert!(first_sheet(&gc).has_content_at_pos(pos));
 
         // Table content
         gc.add_data_table(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             "test".into(),
             vec![vec!["test".into(), "test".into()]],
             false,
@@ -86,7 +86,7 @@ mod test {
 
         let pos2 = Pos { x: 10, y: 10 };
         gc.set_code_cell(
-            pos2.to_sheet_pos(sheet_id),
+            pos2.as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('test')".into(),
             None,

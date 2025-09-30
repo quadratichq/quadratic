@@ -38,7 +38,7 @@ impl Pos {
         Self { x, y }
     }
 
-    pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
+    pub fn as_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
         SheetPos {
             x: self.x,
             y: self.y,
@@ -47,7 +47,7 @@ impl Pos {
     }
 
     /// Returns which quadrant the cell position is in.
-    pub fn quadrant(self) -> (i64, i64) {
+    pub(crate) fn quadrant(self) -> (i64, i64) {
         (
             self.x.div_euclid(CELL_SHEET_WIDTH as _),
             self.y.div_euclid(CELL_SHEET_HEIGHT as _),
@@ -55,19 +55,19 @@ impl Pos {
     }
 
     /// Converts from a Pos to a quadrant Pos.
-    pub fn to_quadrant(&mut self) {
+    pub(crate) fn as_quadrant(&mut self) {
         self.x = self.x.div_euclid(CELL_SHEET_WIDTH as _);
         self.y = self.y.div_euclid(CELL_SHEET_HEIGHT as _);
     }
 
     /// Returns an A1-style relative reference to the cell position.
-    pub fn a1_string(self) -> String {
+    pub(crate) fn a1_string(self) -> String {
         let col = crate::a1::column_name(self.x);
         let row = self.y;
         format!("{col}{row}")
     }
 
-    pub fn try_a1_string(a1: &str) -> Option<Self> {
+    pub(crate) fn try_a1_string(a1: &str) -> Option<Self> {
         if let Ok(end) = CellRefRangeEnd::parse_end(a1, None) {
             if end.is_unbounded() {
                 return None;
@@ -81,24 +81,17 @@ impl Pos {
     }
 
     /// Translates the pos in place by the given delta, clamping the result to the given min.
-    pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
+    pub(crate) fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
         self.x = (self.x + x).max(min_x);
         self.y = (self.y + y).max(min_y);
     }
 
     /// Returns a new Pos translated by the given delta, clamping the result to the given min.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
+    pub(crate) fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
         pos
-    }
-
-    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
-    /// bounds. Returns a new Pos.
-    pub fn saturating_translate(&self, dx: i64, dy: i64) -> Self {
-        let adjust = RefAdjust::new_translate(dx, dy);
-        self.saturating_adjust(adjust)
     }
 
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
@@ -107,7 +100,7 @@ impl Pos {
     /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
     /// this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+    pub(crate) fn saturating_adjust(self, adjust: RefAdjust) -> Self {
         let x_start = adjust.x_start;
         let dx = if self.x < x_start { 0 } else { adjust.dx };
 
@@ -117,22 +110,6 @@ impl Pos {
         Self {
             x: self.x.saturating_add(dx).max(1),
             y: self.y.saturating_add(dy).max(1),
-        }
-    }
-
-    /// Returns a new Pos with the minimum x and y values.
-    pub fn min(self, other: Self) -> Self {
-        Pos {
-            x: self.x.min(other.x),
-            y: self.y.min(other.y),
-        }
-    }
-
-    /// Returns a new Pos with the maximum x and y values.
-    pub fn max(self, other: Self) -> Self {
-        Pos {
-            x: self.x.max(other.x),
-            y: self.y.max(other.y),
         }
     }
 }
@@ -231,14 +208,8 @@ pub struct SheetPos {
 }
 
 impl SheetPos {
-    /// Replace the pos with a new pos
-    pub fn replace_pos(&mut self, pos: Pos) {
-        self.x = pos.x;
-        self.y = pos.y;
-    }
-
     #[cfg(test)]
-    pub fn test() -> Self {
+    pub(crate) fn test() -> Self {
         Self {
             x: 1,
             y: 1,
@@ -284,7 +255,7 @@ impl fmt::Debug for Pos {
 }
 
 impl SheetPos {
-    pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
+    pub(crate) fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
     }
 }
@@ -292,7 +263,7 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
-        Pos, RefAdjust, SheetPos, SheetRect,
+        Pos, RefAdjust, SheetPos,
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     };
@@ -302,7 +273,7 @@ mod test {
         let pos = Pos { x: 1, y: 2 };
         let sheet_id = SheetId::new();
         assert_eq!(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             SheetPos {
                 x: 1,
                 y: 2,
@@ -374,23 +345,6 @@ mod test {
     }
 
     #[test]
-    fn test_sheet_rect_new_pos_span() {
-        let pos1 = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::new(),
-        };
-        let pos2 = SheetPos {
-            x: 3,
-            y: 4,
-            sheet_id: SheetId::new(),
-        };
-        let rect = SheetRect::new_span(pos1, pos2);
-        assert_eq!(rect.min, Pos { x: 1, y: 2 });
-        assert_eq!(rect.max, Pos { x: 3, y: 4 });
-    }
-
-    #[test]
     fn sheet_pos_from_str() {
         let sheet_id = SheetId::new();
         let sheet_pos = SheetPos {
@@ -404,23 +358,23 @@ mod test {
     }
 
     #[test]
-    fn to_quadrant() {
+    fn as_quadrant() {
         let mut pos = Pos { x: 1, y: 2 };
-        pos.to_quadrant();
+        pos.as_quadrant();
         assert_eq!(pos, Pos { x: 0, y: 0 });
 
         let mut pos = Pos {
             x: CELL_SHEET_WIDTH as _,
             y: CELL_SHEET_HEIGHT as _,
         };
-        pos.to_quadrant();
+        pos.as_quadrant();
         assert_eq!(pos, Pos { x: 1, y: 1 });
 
         let mut pos = Pos {
             x: -2 * CELL_SHEET_WIDTH as i64,
             y: -2 * CELL_SHEET_HEIGHT as i64,
         };
-        pos.to_quadrant();
+        pos.as_quadrant();
         assert_eq!(pos, Pos { x: -2, y: -2 });
     }
 
@@ -487,52 +441,6 @@ mod test {
         let translated = pos.translate(-5, -5, 2, 3);
         assert_eq!(translated, Pos::new(2, 3));
         assert_eq!(pos, Pos::new(2, 3)); // Original unchanged
-    }
-
-    #[test]
-    fn test_min() {
-        // Basic case where first pos has smaller values
-        let pos1 = Pos::new(1, 2);
-        let pos2 = Pos::new(3, 4);
-        assert_eq!(pos1.min(pos2), Pos::new(1, 2));
-
-        // Mixed cases where each pos has one smaller value
-        let pos1 = Pos::new(1, 5);
-        let pos2 = Pos::new(3, 2);
-        assert_eq!(pos1.min(pos2), Pos::new(1, 2));
-
-        // Negative numbers
-        let pos1 = Pos::new(-5, -2);
-        let pos2 = Pos::new(-3, -4);
-        assert_eq!(pos1.min(pos2), Pos::new(-5, -4));
-
-        // Equal values
-        let pos1 = Pos::new(3, 3);
-        let pos2 = Pos::new(3, 3);
-        assert_eq!(pos1.min(pos2), Pos::new(3, 3));
-    }
-
-    #[test]
-    fn test_max() {
-        // Basic case where second pos has larger values
-        let pos1 = Pos::new(1, 2);
-        let pos2 = Pos::new(3, 4);
-        assert_eq!(pos1.max(pos2), Pos::new(3, 4));
-
-        // Mixed cases where each pos has one larger value
-        let pos1 = Pos::new(5, 2);
-        let pos2 = Pos::new(3, 4);
-        assert_eq!(pos1.max(pos2), Pos::new(5, 4));
-
-        // Negative numbers
-        let pos1 = Pos::new(-5, -2);
-        let pos2 = Pos::new(-3, -4);
-        assert_eq!(pos1.max(pos2), Pos::new(-3, -2));
-
-        // Equal values
-        let pos1 = Pos::new(3, 3);
-        let pos2 = Pos::new(3, 3);
-        assert_eq!(pos1.max(pos2), Pos::new(3, 3));
     }
 
     #[test]

@@ -563,7 +563,7 @@ mod tests {
 
         // Add some data
         gc_1.set_cell_value(
-            pos.to_sheet_pos(sheet_id_1),
+            pos.as_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
             false,
@@ -575,7 +575,7 @@ mod tests {
 
         // Add borders to the cell
         gc_1.set_borders(
-            A1Selection::from_single_cell(pos.to_sheet_pos(sheet_id_1)),
+            A1Selection::from_single_cell(pos.as_sheet_pos(sheet_id_1)),
             BorderSelection::All,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -617,7 +617,7 @@ mod tests {
 
         // Add some data
         gc_1.set_cell_value(
-            pos.to_sheet_pos(sheet_id_1),
+            pos.as_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
             false,

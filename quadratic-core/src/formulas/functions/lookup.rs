@@ -676,14 +676,14 @@ mod tests {
         let mut g = GridController::new();
         let ctx: &crate::a1::A1Context = g.a1_context();
         let sheet_id = g.sheet_ids()[0];
-        let pos = pos![B2].to_sheet_pos(sheet_id);
+        let pos = pos![B2].as_sheet_pos(sheet_id);
         let form = parse_formula("INDIRECT(\"D5\")", ctx, pos).unwrap();
 
         g.set_cell_value(pos![sheet_id!D5], 35.to_string(), None, false);
         g.set_cell_value(pos![sheet_id!D6], 36.to_string(), None, false);
         g.set_cell_value(pos![sheet_id!D7], 37.to_string(), None, false);
 
-        let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![D5].as_sheet_pos(sheet_id));
         assert_eq!(
             RunErrorMsg::CircularReference,
             form.eval(&mut ctx).unwrap_err().msg,

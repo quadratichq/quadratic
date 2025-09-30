@@ -141,7 +141,7 @@ pub fn convert_table_to_sheet_pos(
     context: &JsA1Context,
 ) -> Result<JsValue, String> {
     if let Some(table) = context.get_context().try_table(table_name) {
-        serde_wasm_bindgen::to_value(&(table.bounds.min.to_sheet_pos(table.sheet_id)))
+        serde_wasm_bindgen::to_value(&(table.bounds.min.as_sheet_pos(table.sheet_id)))
             .map_err(|e| e.to_string())
     } else {
         Err("Table not found".to_string())

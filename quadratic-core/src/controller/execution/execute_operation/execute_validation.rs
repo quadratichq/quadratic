@@ -118,7 +118,7 @@ impl GridController {
 
             sheet
                 .validations
-                .set_warning(value_pos.to_sheet_pos(sheet.id), Some(validation.id));
+                .set_warning(value_pos.as_sheet_pos(sheet.id), Some(validation.id));
         }
 
         for value_pos in validations_warning_deleted {
@@ -126,7 +126,7 @@ impl GridController {
 
             sheet
                 .validations
-                .set_warning(value_pos.to_sheet_pos(sheet.id), None);
+                .set_warning(value_pos.as_sheet_pos(sheet.id), None);
         }
     }
 
@@ -146,14 +146,14 @@ impl GridController {
                         transaction
                             .reverse_operations
                             .push(Operation::SetValidationWarning {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 validation_id: Some(validation_id),
                             });
 
                         transaction
                             .forward_operations
                             .push(Operation::SetValidationWarning {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 validation_id: None,
                             });
                     }
@@ -204,7 +204,7 @@ impl GridController {
         };
 
         warnings.iter().for_each(|(pos, validation_id)| {
-            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let sheet_pos = pos.as_sheet_pos(sheet_id);
             let old = sheet
                 .validations
                 .set_warning(sheet_pos, Some(*validation_id));
@@ -235,7 +235,7 @@ impl GridController {
         });
 
         remove_warnings.iter().for_each(|pos| {
-            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let sheet_pos = pos.as_sheet_pos(sheet_id);
             let old = sheet.validations.set_warning(sheet_pos, None);
             transaction.validation_warning_deleted(sheet_id, *pos);
 

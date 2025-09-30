@@ -16,7 +16,7 @@ pub(crate) fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, p
     use crate::controller::transaction_types::JsCellValueResult;
 
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         CodeCellLanguage::Javascript,
         "code".to_string(),
         None,
@@ -55,7 +55,7 @@ pub(crate) fn test_create_html_chart(
     h: u32,
 ) -> DataTable {
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
         "<html></html>".to_string(),
         None,
@@ -107,12 +107,12 @@ mod tests {
         // Verify code cell was created
         assert_code_language(
             &gc,
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             "code".to_string(),
         );
         assert!(
-            gc.data_table_at(pos.to_sheet_pos(sheet_id))
+            gc.data_table_at(pos.as_sheet_pos(sheet_id))
                 .unwrap()
                 .is_image()
         );
@@ -134,7 +134,7 @@ mod tests {
         let sheet = sheet(&gc, sheet_id);
         assert_code_language(
             &gc,
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
         );

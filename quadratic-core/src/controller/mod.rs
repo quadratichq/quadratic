@@ -169,7 +169,8 @@ impl GridController {
     }
 
     /// Creates a grid controller for testing purposes in both Rust and TS
-    pub fn test() -> Self {
+    #[cfg(test)]
+    pub(crate) fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }
 

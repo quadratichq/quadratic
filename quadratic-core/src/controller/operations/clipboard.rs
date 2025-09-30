@@ -459,13 +459,13 @@ impl GridController {
                         ClipboardOperation::Cut => adjusted_code_run.adjust_references(
                             start_pos.sheet_id,
                             &self.a1_context,
-                            source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                            source_pos.as_sheet_pos(clipboard.origin.sheet_id),
                             RefAdjust::NO_OP,
                         ),
                         ClipboardOperation::Copy => adjusted_code_run.adjust_references(
                             start_pos.sheet_id,
                             &self.a1_context,
-                            target_pos.to_sheet_pos(start_pos.sheet_id),
+                            target_pos.as_sheet_pos(start_pos.sheet_id),
                             RefAdjust {
                                 sheet_id: None,
                                 dx: target_pos.x - pos.x,
@@ -492,7 +492,7 @@ impl GridController {
                 };
 
                 ops.push(Operation::SetDataTable {
-                    sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                    sheet_pos: target_pos.as_sheet_pos(start_pos.sheet_id),
                     data_table: Some(data_table),
                     index: usize::MAX,
                     ignore_old_data_table: true,
@@ -506,7 +506,7 @@ impl GridController {
 
                 if should_rerun {
                     ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                        sheet_pos: target_pos.as_sheet_pos(start_pos.sheet_id),
                     });
                 }
             }
@@ -593,7 +593,7 @@ impl GridController {
                     && !table_format_updates.is_default()
                 {
                     ops.push(Operation::DataTableFormats {
-                        sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                        sheet_pos: data_table_pos.as_sheet_pos(sheet_id),
                         formats: table_format_updates,
                     });
                 }
@@ -681,7 +681,7 @@ impl GridController {
                 if !cells.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
-                        start_pos.to_sheet_pos(selection.sheet_id),
+                        start_pos.as_sheet_pos(selection.sheet_id),
                         cell_value_pos,
                         cell_values,
                         cells,
@@ -691,13 +691,13 @@ impl GridController {
                 }
 
                 code_ops.extend(self.clipboard_code_operations(
-                    start_pos.to_sheet_pos(selection.sheet_id),
+                    start_pos.as_sheet_pos(selection.sheet_id),
                     clipboard,
                 )?);
 
                 let validations_ops = self.clipboard_validations_operations(
                     &clipboard.validations,
-                    start_pos.to_sheet_pos(selection.sheet_id),
+                    start_pos.as_sheet_pos(selection.sheet_id),
                 );
                 ops.extend(validations_ops);
             }
@@ -707,7 +707,7 @@ impl GridController {
                 if !values.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
-                        start_pos.to_sheet_pos(selection.sheet_id),
+                        start_pos.as_sheet_pos(selection.sheet_id),
                         cell_value_pos,
                         cell_values,
                         values,
@@ -920,7 +920,7 @@ impl GridController {
                 })
                 .for_each(|pos| {
                     ops.push(Operation::DeleteDataTable {
-                        sheet_pos: pos.to_sheet_pos(sheet_id),
+                        sheet_pos: pos.as_sheet_pos(sheet_id),
                     });
                 });
         }
@@ -1031,7 +1031,7 @@ impl GridController {
 
             if !cell_values.is_empty() {
                 ops.push(Operation::SetCellValues {
-                    sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+                    sheet_pos: insert_at.as_sheet_pos(selection.sheet_id),
                     values: cell_values,
                 });
             }
@@ -1597,7 +1597,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
-        // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        // let cursor = A1Selection::table(pos![J2].as_sheet_pos(sheet_id), "simple.csv1");
         // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
@@ -1631,7 +1631,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
-        // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        // let cursor = A1Selection::table(pos![J2].as_sheet_pos(sheet_id), "simple.csv1");
         // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
@@ -1665,7 +1665,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
-        // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        // let cursor = A1Selection::table(pos![J2].as_sheet_pos(sheet_id), "simple.csv1");
         // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
@@ -1716,7 +1716,7 @@ mod test {
     //     assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
     //     assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
 
-    //     // let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+    //     // let cursor = A1Selection::table(pos![J2].as_sheet_pos(sheet_id), "simple.csv1");
     //     // expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     // }
 
@@ -1726,7 +1726,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id),
+            pos![C3].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
             None,
@@ -1830,7 +1830,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id),
+            pos![C3].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
@@ -1867,7 +1867,7 @@ mod test {
         let (mut gc, sheet_id, _, _) = simple_csv_at(pos![A1]);
 
         gc.set_code_cell(
-            pos![J1].to_sheet_pos(sheet_id),
+            pos![J1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return "test";"#.to_string(),
             None,
@@ -1914,25 +1914,25 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![E2]);
 
         gc.set_cell_value(
-            pos![B2].to_sheet_pos(sheet_id),
+            pos![B2].as_sheet_pos(sheet_id),
             "1".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![C2].to_sheet_pos(sheet_id),
+            pos![C2].as_sheet_pos(sheet_id),
             "123,456".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![B3].to_sheet_pos(sheet_id),
+            pos![B3].as_sheet_pos(sheet_id),
             "654,321".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![C3].to_sheet_pos(sheet_id),
+            pos![C3].as_sheet_pos(sheet_id),
             "4".to_string(),
             None,
             false,
@@ -1943,7 +1943,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -2021,7 +2021,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -2073,25 +2073,25 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![E2]);
 
         gc.set_cell_value(
-            pos![B2].to_sheet_pos(sheet_id),
+            pos![B2].as_sheet_pos(sheet_id),
             "1".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![C2].to_sheet_pos(sheet_id),
+            pos![C2].as_sheet_pos(sheet_id),
             "123,456".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![B3].to_sheet_pos(sheet_id),
+            pos![B3].as_sheet_pos(sheet_id),
             "654,321".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![C3].to_sheet_pos(sheet_id),
+            pos![C3].as_sheet_pos(sheet_id),
             "4".to_string(),
             None,
             false,
@@ -2102,7 +2102,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -2168,7 +2168,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -2335,7 +2335,7 @@ mod test {
         let should_rerun = gc.clipboard_code_operations_should_rerun(
             &clipboard,
             pos![A2],
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
         );
         assert!(should_rerun);
 
@@ -2346,7 +2346,7 @@ mod test {
         let should_rerun = gc.clipboard_code_operations_should_rerun(
             &clipboard,
             pos![A2],
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
         );
         assert!(!should_rerun);
 
@@ -2360,7 +2360,7 @@ mod test {
         let should_rerun = gc.clipboard_code_operations_should_rerun(
             &clipboard,
             pos![A2],
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
         );
         assert!(should_rerun);
     }

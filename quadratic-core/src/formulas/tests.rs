@@ -38,7 +38,7 @@ pub(crate) fn eval_at(grid_controller: &GridController, pos: SheetPos, s: &str) 
 pub(crate) fn eval(grid_controller: &GridController, s: &str) -> Value {
     eval_at(
         grid_controller,
-        Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
+        Pos::ORIGIN.as_sheet_pos(grid_controller.grid().sheets()[0].id),
         s,
     )
 }
@@ -129,7 +129,7 @@ fn test_formula_cell_ref() {
 fn test_formula_circular_array_ref() {
     let g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
-    let pos = pos![B3].to_sheet_pos(sheet_id);
+    let pos = pos![B3].as_sheet_pos(sheet_id);
     let form = parse_formula("$B$1:$C$4", g.a1_context(), pos).unwrap();
     let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
@@ -373,7 +373,7 @@ fn test_find_cell_references() {
         ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
+    let pos = Pos::ORIGIN.as_sheet_pos(sheet1);
     let cell_references_found = find_cell_references(&formula_string, g.a1_context(), pos)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
@@ -403,8 +403,8 @@ fn test_sheet_references() {
     g.set_cell_value(pos![id2!A3], "7".into(), None, false);
     g.set_cell_value(pos![id2!A4], "70".into(), None, false);
 
-    let pos1 = Pos::ORIGIN.to_sheet_pos(id1);
-    let pos2 = Pos::ORIGIN.to_sheet_pos(id2);
+    let pos1 = Pos::ORIGIN.as_sheet_pos(id1);
+    let pos2 = Pos::ORIGIN.as_sheet_pos(id2);
 
     assert_eq!("426", eval_to_string_at(&g, pos1, "MySheet!A1 & A3"));
     assert_eq!("427", eval_to_string_at(&g, pos2, "MySheet!A1 & A3"));

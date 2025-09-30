@@ -79,24 +79,6 @@ impl GridBounds {
         }
     }
 
-    #[cfg(test)]
-    pub(crate) fn extend_x(&mut self, x: i64) {
-        match self {
-            // we cannot extend x to an empty bounds
-            GridBounds::Empty => (),
-            GridBounds::NonEmpty(rect) => rect.extend_x(x),
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn extend_y(&mut self, y: i64) {
-        match self {
-            // we cannot extend y to an empty bounds
-            GridBounds::Empty => (),
-            GridBounds::NonEmpty(rect) => rect.extend_y(y),
-        }
-    }
-
     pub(crate) fn first_column(&self) -> Option<i64> {
         self.as_bounds_rect().map(|rect| rect.x)
     }
@@ -136,20 +118,6 @@ mod test {
     fn test_bounds_rect_empty() {
         let grid_bounds = GridBounds::Empty;
         assert_eq!(grid_bounds.as_bounds_rect(), None);
-    }
-
-    #[test]
-    fn test_bounds_rect_extend_x() {
-        let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
-        grid_bounds.extend_x(5);
-        assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 5, 4)));
-    }
-
-    #[test]
-    fn test_bounds_rect_extend_y() {
-        let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
-        grid_bounds.extend_y(5);
-        assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 3, 5)));
     }
 
     #[test]

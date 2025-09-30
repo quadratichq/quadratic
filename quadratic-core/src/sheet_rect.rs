@@ -73,9 +73,6 @@ impl SheetRect {
         }
     }
 
-    pub fn new_span(pos1: SheetPos, pos2: SheetPos) -> SheetRect {
-        SheetRect::new_pos_span(pos1.into(), pos2.into(), pos1.sheet_id)
-    }
     /// Returns whether a position is contained within the rectangle.
     pub(crate) fn contains(self, sheet_pos: SheetPos) -> bool {
         self.sheet_id == sheet_pos.sheet_id

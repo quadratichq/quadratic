@@ -400,7 +400,7 @@ mod tests {
         );
         assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
 
-        let sheet_pos = pos.to_sheet_pos(sheet_id);
+        let sheet_pos = pos.as_sheet_pos(sheet_id);
 
         gc.data_table_mutations(
             sheet_pos,

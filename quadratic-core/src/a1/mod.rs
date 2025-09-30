@@ -15,7 +15,7 @@ pub use a1_selection::*;
 pub use cell_ref_coord::*;
 pub use cell_ref_end::*;
 pub use cell_ref_range::*;
-pub use column_names::{column_from_name, column_name};
+pub(crate) use column_names::{column_from_name, column_name};
 pub use error::*;
 pub use ref_range_bounds::*;
 pub use sheet_cell_ref_range::*;

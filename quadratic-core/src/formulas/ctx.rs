@@ -40,7 +40,7 @@ impl<'ctx> Ctx<'ctx> {
     pub(crate) fn new_for_syntax_check(grid_controller: &'ctx GridController) -> Self {
         Ctx {
             grid_controller,
-            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid_controller.grid().sheets()[0].id),
+            sheet_pos: Pos::ORIGIN.as_sheet_pos(grid_controller.grid().sheets()[0].id),
             cells_accessed: Default::default(),
             skip_computation: true,
         }
@@ -112,7 +112,11 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell array at `rect`, or returns an error in
     /// the case of a circular reference.
-    pub(crate) fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
+    pub(crate) fn get_cell_array(
+        &mut self,
+        rect: SheetRect,
+        span: Span,
+    ) -> CodeResult<Spanned<Array>> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }

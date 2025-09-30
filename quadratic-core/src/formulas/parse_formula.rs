@@ -79,7 +79,7 @@ pub(crate) fn parse_formula_results(
 ) -> JsFormulaParseResult {
     let x = x as i64;
     let y = y as i64;
-    let code_cell_pos = Pos { x, y }.to_sheet_pos(sheet_id);
+    let code_cell_pos = Pos { x, y }.as_sheet_pos(sheet_id);
 
     let parse_error = parse_formula(formula_string, ctx, code_cell_pos).err();
 

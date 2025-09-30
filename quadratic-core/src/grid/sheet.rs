@@ -15,11 +15,13 @@ use super::js_types::JsCellValue;
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
-use crate::constants::SHEET_NAME;
 use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
+
+#[cfg(test)]
+use crate::constants::SHEET_NAME;
 
 pub mod a1_context;
 pub mod a1_selection;
@@ -104,6 +106,7 @@ impl Sheet {
     }
 
     /// Creates a sheet for testing.
+    #[cfg(test)]
     pub(crate) fn test() -> Self {
         Sheet::new(
             SheetId::TEST,

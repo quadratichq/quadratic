@@ -226,30 +226,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         )
     });
 
-    benchmark_grids(c, &inputs, "clear_formatting", |b, grid| {
-        b.iter_batched(
-            || {
-                // Setup
-                let gc = GridController::from_grid(grid.clone(), 0);
-                let sheet_id = gc.sheet_ids()[0];
-                let sheet_rect = SheetRect {
-                    min: Pos {
-                        x: -10000,
-                        y: -10000,
-                    },
-                    max: Pos { x: 10000, y: 10000 },
-                    sheet_id,
-                };
-                (gc, sheet_rect)
-            },
-            |(mut gc, sheet_rect)| {
-                // Test
-                gc.clear_formatting(&A1Selection::from_rect(sheet_rect), None, false);
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
-
     benchmark_grids(c, &inputs, "delete_sheet", |b, grid| {
         b.iter_batched(
             || {

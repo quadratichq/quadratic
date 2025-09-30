@@ -24,7 +24,7 @@ impl TableMap {
         let sheet_pos = table_map_entry
             .bounds
             .min
-            .to_sheet_pos(table_map_entry.sheet_id);
+            .as_sheet_pos(table_map_entry.sheet_id);
         self.sheet_pos_to_table
             .insert(sheet_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
@@ -36,7 +36,7 @@ impl TableMap {
     }
 
     pub(crate) fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id))
+        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.as_sheet_pos(sheet_id))
             && let Some(table) = self.tables.get(&table_name)
             && table.sheet_id == sheet_id
             && table.bounds.min == pos
@@ -178,7 +178,7 @@ impl TableMap {
     pub(crate) fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
         if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+            let sheet_pos = table.bounds.min.as_sheet_pos(table.sheet_id);
             self.sheet_pos_to_table.remove(&sheet_pos);
             Some(table)
         } else {

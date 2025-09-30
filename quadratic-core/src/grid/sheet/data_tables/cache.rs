@@ -123,7 +123,7 @@ impl SheetDataTablesCache {
                 if !tables.is_empty() {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
-                            context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                            context.table_from_pos(table_pos.as_sheet_pos(sheet_id))
                             && table.language != CodeCellLanguage::Import
                         {
                             return true;

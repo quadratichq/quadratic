@@ -529,19 +529,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "12".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             "34".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![A3].as_sheet_pos(sheet_id),
             "56".to_string(),
             None,
             false,
@@ -622,19 +622,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "12".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             "34".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![A3].as_sheet_pos(sheet_id),
             "56".to_string(),
             None,
             false,

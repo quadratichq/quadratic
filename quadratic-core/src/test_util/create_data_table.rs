@@ -44,7 +44,7 @@ pub(crate) fn test_create_data_table_no_ui(
     let v_refs: Vec<&str> = v.iter().map(|s| s.as_str()).collect();
     let dt = test_create_data_table_with_values(gc, sheet_id, pos, width, height, &v_refs);
     gc.data_table_meta(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         None,
         None,
         None,
@@ -82,7 +82,7 @@ pub(crate) fn test_create_data_table_with_values(
     }
 
     gc.add_data_table(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         "test_table".to_string(),
         v,
         false,

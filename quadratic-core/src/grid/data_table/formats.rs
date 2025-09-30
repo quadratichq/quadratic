@@ -275,7 +275,7 @@ mod test {
     fn test_try_format_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), false);
 
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
@@ -307,7 +307,7 @@ mod test {
     fn test_try_format_data_table_first_row_header_and_show_ui() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), false);
 
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
@@ -318,7 +318,7 @@ mod test {
         .unwrap();
 
         // first row is header
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), true);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), true);
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
 
@@ -348,7 +348,7 @@ mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show name
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, Some(false), None);
+        gc.test_data_table_update_meta(pos.as_sheet_pos(sheet_id), None, Some(false), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -367,7 +367,7 @@ mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
-        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false));
+        gc.test_data_table_update_meta(pos.as_sheet_pos(sheet_id), None, None, Some(false));
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -386,7 +386,7 @@ mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // first row is header
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), false);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -414,7 +414,7 @@ mod test {
     fn test_try_format_data_table_with_hidden_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), false);
 
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
@@ -429,7 +429,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -460,7 +460,7 @@ mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // add new bold formats with first column hidden
-        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+        gc.test_data_table_first_row_as_header(pos.as_sheet_pos(sheet_id), false);
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("F10,G12:J12", sheet_id),
             Some(true),
@@ -492,7 +492,7 @@ mod test {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,

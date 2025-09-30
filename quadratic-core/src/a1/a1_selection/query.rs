@@ -166,7 +166,7 @@ impl A1Selection {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         let mut pos = Pos { x, y };
-                        pos.to_quadrant();
+                        pos.as_quadrant();
                         hashes.insert(pos);
                     }
                 }
@@ -483,7 +483,7 @@ impl A1Selection {
 
     #[cfg(test)]
     pub(crate) fn to_cursor_sheet_pos(&self) -> SheetPos {
-        self.cursor.to_sheet_pos(self.sheet_id)
+        self.cursor.as_sheet_pos(self.sheet_id)
     }
 
     /// Tries to convert the selection to a single position. This works only if
@@ -534,7 +534,7 @@ impl A1Selection {
     pub(crate) fn cursor_is_on_html_image(&self, a1_context: &A1Context) -> bool {
         let table = a1_context
             .iter_tables()
-            .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
+            .find(|table| table.contains(self.cursor.as_sheet_pos(self.sheet_id)));
         table.is_some_and(|table| table.is_html_image)
     }
 
@@ -582,7 +582,7 @@ impl A1Selection {
                     .for_each(|table_pos| {
                         if let Some(table) = context
                             .table_map
-                            .table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                            .table_from_pos(table_pos.as_sheet_pos(sheet_id))
                         {
                             // ensure the table name is intersected by the range
                             if table.bounds.len() == 1

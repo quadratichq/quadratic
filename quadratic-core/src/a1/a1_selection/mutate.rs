@@ -1,7 +1,5 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-#[cfg(test)]
-use crate::RefError;
 use crate::{
     a1::A1Context,
     grid::{RefAdjust, SheetId},
@@ -85,46 +83,6 @@ impl A1Selection {
         self.update_cursor(a1_context);
 
         changed
-    }
-
-    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
-    /// of bounds.
-    #[must_use = "this method returns a new value instead of modifying its input"]
-    #[cfg(test)]
-    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
-        if adjust.affects_sheet(self.sheet_id) {
-            Ok(Self {
-                sheet_id: self.sheet_id,
-                cursor: self.cursor.saturating_adjust(adjust),
-                ranges: self
-                    .ranges
-                    .into_iter()
-                    .map(|r| r.adjust(adjust))
-                    .collect::<Result<Vec<_>, RefError>>()?,
-            })
-        } else {
-            Ok(self)
-        }
-    }
-
-    /// Translates the selection, clamping the result within the sheet bounds.
-    /// Returns `None` if the whole selection becomes empty.
-    #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate(self, dx: i64, dy: i64) -> Option<Self> {
-        let ranges = self
-            .ranges
-            .into_iter()
-            .filter_map(|r| r.saturating_translate(dx, dy))
-            .collect::<Vec<_>>();
-        if ranges.is_empty() {
-            None
-        } else {
-            Some(Self {
-                sheet_id: self.sheet_id,
-                cursor: self.cursor.saturating_translate(dx, dy),
-                ranges,
-            })
-        }
     }
 
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
@@ -495,12 +453,6 @@ mod tests {
             .saturating_adjust(RefAdjust::new_translate(1, 1))
             .unwrap();
         assert_eq!(res, A1Selection::test_a1("B2"));
-
-        // Test negative translation capping
-        let selection = A1Selection::test_a1("A1");
-        selection
-            .adjust(RefAdjust::new_translate(-10, -10))
-            .unwrap_err();
     }
 
     #[test]

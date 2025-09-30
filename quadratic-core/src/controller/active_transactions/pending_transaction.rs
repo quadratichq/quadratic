@@ -339,7 +339,7 @@ impl PendingTransaction {
                 let start = start.div_euclid(CELL_SHEET_HEIGHT as _) * CELL_SHEET_HEIGHT as i64;
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
                     let mut pos = Pos { x: col, y };
-                    pos.to_quadrant();
+                    pos.as_quadrant();
                     dirty_hashes.insert(pos);
                 }
             }
@@ -367,7 +367,7 @@ impl PendingTransaction {
                 let start = start.div_euclid(CELL_SHEET_WIDTH as _) * CELL_SHEET_WIDTH as i64;
                 for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
                     let mut pos = Pos { x, y: row };
-                    pos.to_quadrant();
+                    pos.as_quadrant();
                     dirty_hashes.insert(pos);
                 }
             }

@@ -15,7 +15,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.flatten_data_table(pos.to_sheet_pos(sheet_id), cursor, is_ai);
+        self.flatten_data_table(pos.as_sheet_pos(sheet_id), cursor, is_ai);
 
         Ok(())
     }
@@ -58,7 +58,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor, is_ai)
+        self.code_data_table_to_data_table(pos.as_sheet_pos(sheet_id), cursor, is_ai)
             .map_err(|e| e.to_string())?;
 
         Ok(())
@@ -81,7 +81,7 @@ impl GridController {
             .map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s).map_err(|e| e.to_string()))
             .transpose()?;
 
-        self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor, is_ai);
+        self.sort_data_table(pos.as_sheet_pos(sheet_id), sort, cursor, is_ai);
 
         Ok(())
     }
@@ -103,7 +103,7 @@ impl GridController {
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
 
             self.data_table_first_row_as_header(
-                pos.to_sheet_pos(sheet_id),
+                pos.as_sheet_pos(sheet_id),
                 first_row_is_header,
                 cursor,
                 is_ai,
@@ -142,7 +142,7 @@ impl GridController {
                 .transpose()?;
 
             self.data_table_meta(
-                pos.to_sheet_pos(sheet_id),
+                pos.as_sheet_pos(sheet_id),
                 name,
                 alternating_colors,
                 columns,
@@ -179,7 +179,7 @@ impl GridController {
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
 
             self.data_table_mutations(
-                pos.to_sheet_pos(sheet_id),
+                pos.as_sheet_pos(sheet_id),
                 select_table,
                 columns_to_add,
                 columns_to_remove,
@@ -214,7 +214,7 @@ impl GridController {
             .map_err(|_| JsValue::from_str("Invalid values"))?;
 
         self.add_data_table(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             name,
             values,
             first_row_is_header,

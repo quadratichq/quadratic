@@ -356,7 +356,7 @@ impl GridController {
                             x: formulas_insert_at.x + x as i64,
                             y: formulas_insert_at.y + y as i64,
                         };
-                        let sheet_pos = pos.to_sheet_pos(sheet_id);
+                        let sheet_pos = pos.as_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
                         sheet.data_table_insert_full(
                             sheet_pos.into(),

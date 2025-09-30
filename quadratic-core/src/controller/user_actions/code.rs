@@ -73,7 +73,7 @@ mod tests {
         let sheet_id = g.sheet_ids()[0];
 
         g.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "=2 / {1;2;0}".to_owned(),
             None,
@@ -81,7 +81,7 @@ mod tests {
             false,
         );
         g.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "=A1:A3".to_owned(),
             None,
@@ -89,7 +89,7 @@ mod tests {
             false,
         );
         g.set_cell_value(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             "meow".to_string(),
             None,
             false,
@@ -120,7 +120,7 @@ mod tests {
 
         // Set a code cell with a table name
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "=SUM(1, 2)".to_owned(),
             Some("MyCode".to_string()),
@@ -133,7 +133,7 @@ mod tests {
 
         // Set a code cell with a table name
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "=SUM(1, 2)".to_owned(),
             Some("NameShouldNotChange".to_string()),

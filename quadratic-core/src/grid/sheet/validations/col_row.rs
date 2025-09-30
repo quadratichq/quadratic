@@ -60,7 +60,7 @@ impl Validations {
                 transaction.validation_warning_deleted(sheet_id, pos);
 
                 reverse_operations.push(Operation::SetValidationWarning {
-                    sheet_pos: pos.to_sheet_pos(sheet_id),
+                    sheet_pos: pos.as_sheet_pos(sheet_id),
                     validation_id: Some(uuid),
                 });
             }
@@ -131,7 +131,7 @@ impl Validations {
                 transaction.validation_warning_deleted(sheet_id, pos);
 
                 reverse_operations.push(Operation::SetValidationWarning {
-                    sheet_pos: pos.to_sheet_pos(sheet_id),
+                    sheet_pos: pos.as_sheet_pos(sheet_id),
                     validation_id: Some(uuid),
                 });
             }

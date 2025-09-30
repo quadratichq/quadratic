@@ -67,7 +67,7 @@ impl GridController {
                             && !table_format_updates.is_default()
                         {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.as_sheet_pos(selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -117,7 +117,7 @@ impl GridController {
 
                         if !table_format_updates.is_default() {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.as_sheet_pos(selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -924,7 +924,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_data_table(
-            pos!(E5).to_sheet_pos(sheet_id),
+            pos!(E5).as_sheet_pos(sheet_id),
             3,
             3,
             false,

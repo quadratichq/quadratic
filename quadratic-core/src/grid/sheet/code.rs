@@ -115,7 +115,7 @@ impl Sheet {
 
             // replace internal cell references with a1 notation
             if matches!(code_run.language, CodeCellLanguage::Formula) {
-                let replaced = convert_rc_to_a1(&code, a1_context, code_pos.to_sheet_pos(self.id));
+                let replaced = convert_rc_to_a1(&code, a1_context, code_pos.as_sheet_pos(self.id));
                 code = replaced;
             }
 

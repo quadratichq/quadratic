@@ -588,7 +588,7 @@ impl GridController {
             spaces: (final_range.width() * final_range.height()) as i32,
             negative,
         });
-        let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
+        let sheet_pos = final_range.min.as_sheet_pos(sheet_id);
         let mut cells = CellValues::default();
         let cell_values_ops = self.cell_values_operations(
             None,
@@ -635,7 +635,7 @@ impl GridController {
                         code_run.adjust_references(
                             sheet_id,
                             context,
-                            original_pos.to_sheet_pos(sheet_id),
+                            original_pos.as_sheet_pos(sheet_id),
                             RefAdjust {
                                 sheet_id: None,
                                 relative_only: true,
@@ -646,12 +646,12 @@ impl GridController {
                             },
                         );
                         compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                            sheet_pos: final_pos.as_sheet_pos(sheet_id),
                         });
                     }
 
                     data_table_ops.push(Operation::SetDataTable {
-                        sheet_pos: final_pos.to_sheet_pos(sheet_id),
+                        sheet_pos: final_pos.as_sheet_pos(sheet_id),
                         data_table: Some(data_table),
                         index: usize::MAX,
                         ignore_old_data_table: true,

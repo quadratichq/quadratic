@@ -44,7 +44,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
+        let sheet_pos = pos![A1].as_sheet_pos(sheet_id);
         let code = "print('test')".to_string();
         gc.set_code_cell(
             sheet_pos,
@@ -94,7 +94,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('hello world')".into(),
             None,
@@ -129,11 +129,11 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set A1 = 9
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None, false);
+        gc.set_cell_value(pos![A1].as_sheet_pos(sheet_id), "9".into(), None, false);
 
         // create a python program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -197,11 +197,11 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // set A1 = 9
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None, false);
+        gc.set_cell_value(pos![A1].as_sheet_pos(sheet_id), "9".into(), None, false);
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -224,7 +224,7 @@ mod tests {
         .unwrap();
 
         // replace the value in A1 to trigger the python calculation
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None, false);
+        gc.set_cell_value(pos![A1].as_sheet_pos(sheet_id), "10".into(), None, false);
         assert_eq!(gc.async_transactions().len(), 1);
 
         let transaction_id = gc.async_transactions()[0].id;
@@ -287,7 +287,7 @@ mod tests {
 
         // creates a python program that outputs an array of length 10 from A1 -> C1
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "create an array output".into(),
             None,
@@ -338,7 +338,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "dummy calculation".into(),
             None,
@@ -375,7 +375,7 @@ mod tests {
 
         // creates a python program that outputs a string
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('original output')".into(),
             None,
@@ -404,7 +404,7 @@ mod tests {
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output')".into(),
             None,
@@ -439,7 +439,7 @@ mod tests {
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output second time')".into(),
             None,
@@ -485,13 +485,13 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "1".to_string(),
             None,
             false,
         );
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -523,7 +523,7 @@ mod tests {
         // assert!(result.ok().unwrap().generate_thumbnail);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('B2') + 1".into(),
             None,
