@@ -1,0 +1,38 @@
+<!-- omit in toc -->
+# DevOps Playbook
+
+- [Deploying QA](#deploying-qa)
+- [Adding/Modifying Environment Variables](#addingmodifying-environment-variables)
+
+
+## Deploying QA
+1. Run the bump script (`./bump.sh patch`) and create a PR
+1. Merge the bump PR
+1. Manually validate functionality
+1. Verify CI has passed, including e2e tests
+1. Have at least 2 people involved: Ops and QA
+1. Merge `qa` into `main`, which will trigger the infrastructure deployment
+1. Monitor the deployment within the Github Actions
+1. Manually validate the basic features are working: dashboard, grid, connections, multiplayer, files
+1. Merge `main` back into `qa`
+
+## Adding/Modifying Environment Variables
+
+1. Modify environment variables
+1. Modify the relevant variables in .env.example and .env.test as well
+1. Modify the environment variables in the [self hosting repo](https://github.com/quadratichq/quadratic-selfhost). 
+   1. Create a PR, modify the environment variables in .env.aws, .env.aws-preview, .env.local
+   1. Modify the variables in docker-compose.yml
+   1. Merge PR into `main` as preview branches always pull from the main branch
+1. If this is an existing PR, close and open the PR to trigger a new infrastructure deployment
+1. For `preview`:
+   1. Log into the `Quadratic Development` AWS account
+   1. Navigate to the `Paramater Store` service
+   1. Create or locate the environment variable (e.g. `/quadratic-development/ANTHROPIC_API_KEY`)
+   1. Set the value and save
+1. For `qa` and `prod`:
+   1. Log into Pulumi (likely through the Github SSO)
+   1. Click on the `Environments` link in the left-hand sidebar
+   1. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
+   1. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
+   1. Click on the `Save` button
