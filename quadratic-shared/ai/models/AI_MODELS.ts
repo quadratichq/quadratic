@@ -45,7 +45,7 @@ export const MODELS_CONFIGURATION: {
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
     displayName: 'claude sonnet 4.5',
     temperature: 1,
     max_tokens: 64000,
@@ -61,7 +61,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off': {
     model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-off',
+    backupModelKey: 'anthropic:claude-sonnet-4-5:thinking-toggle-off',
     displayName: 'claude sonnet 4.5',
     temperature: 0.1,
     max_tokens: 64000,
@@ -77,7 +77,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on': {
     model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
+    backupModelKey: 'anthropic:claude-sonnet-4-5:thinking-toggle-on',
     displayName: 'claude sonnet 4.5',
     temperature: 1,
     max_tokens: 64000,
@@ -93,7 +93,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929': {
     model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
+    backupModelKey: 'anthropic:claude-sonnet-4-5:thinking-toggle-on',
     displayName: 'claude sonnet 4.5',
     temperature: 1,
     max_tokens: 64000,
@@ -233,7 +233,7 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
+  'anthropic:claude-sonnet-4-5:thinking-toggle-off': {
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
     displayName: 'claude sonnet 4.5',
@@ -249,7 +249,7 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
-  'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
+  'anthropic:claude-sonnet-4-5:thinking-toggle-on': {
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
     displayName: 'claude sonnet 4.5',
