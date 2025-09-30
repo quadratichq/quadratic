@@ -29,19 +29,15 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        CellValue, Pos, SheetPos, SheetRect,
+        Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
         controller::user_actions::import::tests::simple_csv,
         grid::{
-            CodeCellLanguage, CodeCellValue,
+            CodeCellLanguage, CodeRun,
             sheet::borders::{BorderSelection, BorderStyle},
         },
-        test_util::{
-            assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
-            assert_cell_value_row, assert_code_cell_value, assert_display_cell_value,
-            print_table_from_grid,
-        },
+        test_util::*,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -73,7 +69,7 @@ mod tests {
         vals: &[&str],
         bolds: &[bool],
         fill_colors: &[&str],
-        code_cells: &[CodeCellValue],
+        code_cells: &[CodeRun],
     ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -144,15 +140,17 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 });
-        let code_1 = CodeCellValue {
+        let selected: Rect = Rect::test_a1("A1:A2");
+        let range: Rect = Rect::test_a1("A1:J10");
+        let code_1 = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "SUM(A1)".into(),
+            ..Default::default()
         };
-        let code_2 = CodeCellValue {
+        let code_2 = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "ABS(A2)".into(),
+            ..Default::default()
         };
         let (mut grid, sheet_id) =
             test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
@@ -790,10 +788,13 @@ mod tests {
         let base = r#"q.cells("A1:B2", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
-        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
         let expected = r#"q.cells("B1:C2", first_row_header=True)"#;
-        let expected = CellValue::Code(CodeCellValue::new_python(expected.to_string()));
-        assert_eq!(value, expected);
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D3],
+            CodeCellLanguage::Python,
+            expected.to_string(),
+        );
 
         // start over
         gc.undo(2, None, false);
@@ -802,9 +803,12 @@ mod tests {
         let base = r#"q.cells("$A:$B", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
-        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
-        let expected = CellValue::Code(CodeCellValue::new_python(base.to_string()));
-        assert_eq!(value, expected);
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D3],
+            CodeCellLanguage::Python,
+            base.to_string(),
+        );
 
         // start over
         gc.undo(2, None, false);
@@ -815,9 +819,12 @@ mod tests {
         let base = r#"q.cells("A:B", first_row_header=True)"#;
         set_code_cell(&mut gc, base);
         autocomplete(&mut gc);
-        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
-        let expected = CellValue::Code(CodeCellValue::new_python(base.to_string()));
-        assert_eq!(value, expected);
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D3],
+            CodeCellLanguage::Python,
+            base.to_string(),
+        );
     }
 
     #[test]
@@ -826,7 +833,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C4].to_sheet_pos(sheet_id),
+            pos![sheet_id!C4],
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
@@ -843,13 +850,12 @@ mod tests {
         )
         .unwrap();
 
-        let sheet = gc.sheet(sheet_id);
-        match sheet.cell_value(pos![D4]) {
-            Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, r#"return q.cells("B1:C2");"#);
-            }
-            _ => panic!("expected code cell"),
-        }
+        assert_code_language(
+            &gc,
+            pos![sheet_id!D4],
+            CodeCellLanguage::Javascript,
+            r#"return q.cells("B1:C2");"#.to_string(),
+        );
     }
 
     #[test]

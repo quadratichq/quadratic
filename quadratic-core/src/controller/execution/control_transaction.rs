@@ -10,7 +10,7 @@ use crate::error_core::Result;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_array;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
+use crate::{Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -191,7 +191,8 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
                 // if code cell exists, proceed with processing the connection result
                 // code cell may not exist if deleted by user or multiplayer during the async call
-                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into())
+                if let Some(data_table) = sheet.data_table_at(&(current_sheet_pos.into()))
+                    && let DataTableKind::CodeRun(code) = &data_table.kind
                 {
                     let name = match code.language {
                         CodeCellLanguage::Connection { kind, .. } => match kind {

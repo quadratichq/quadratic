@@ -164,7 +164,7 @@ impl Sheet {
                 self.data_tables.shift_remove_full(&old_pos)
             {
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
-                self.data_tables.insert_before(index, &new_pos, data_table);
+                self.data_tables.insert_before(index, new_pos, data_table);
             }
         }
     }
@@ -202,7 +202,7 @@ impl Sheet {
                 self.data_tables.shift_remove_full(&old_pos)
             {
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
-                self.data_tables.insert_before(index, &new_pos, data_table);
+                self.data_tables.insert_before(index, new_pos, data_table);
             }
         }
     }
@@ -230,10 +230,10 @@ impl Sheet {
             if validation.render_special().is_some()
                 && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+            {
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
+            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
