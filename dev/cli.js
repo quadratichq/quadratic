@@ -13,6 +13,7 @@ export class CLI {
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-n, --connection", "Watch the quadratic-connection directory")
             .option("-s, --shared", "Watch the quadratic-shared directory")
+            .option("-w, --cloudworker", "Watch the quadratic-cloud-worker directory")
             .option("-y, --python", "Watch the quadratic-kernels/python-wasm directory")
             .option("-l, --all", "Watch all directories")
             .option("-t, --skipTypes", "Skip WASM types compilation")
@@ -28,6 +29,7 @@ export class CLI {
             .option("-Y, --hidePython", "Hide Python output")
             .option("-E, --hideRustClient", "Hide RustClient")
             .option("-S, --hideShared", "Hide Shared output")
+            .option("-W, --hideCloudworker", "Hide CloudWorker output")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
             .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
@@ -42,6 +44,7 @@ export class CLI {
             this.options.connection = true;
             this.options.python = true;
             this.options.shared = true;
+            this.options.cloudworker = true;
         }
     }
 }

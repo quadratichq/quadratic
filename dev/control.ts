@@ -24,6 +24,7 @@ export class Control {
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
   shared?: ChildProcessWithoutNullStreams;
+  cloudworker?: ChildProcessWithoutNullStreams;
 
   signals: Record<string, AbortController> = {};
 
@@ -41,6 +42,7 @@ export class Control {
     postgres: false,
     redis: false,
     shared: false,
+    cloudworker: false,
   };
 
   constructor(cli: CLI) {
@@ -61,6 +63,7 @@ export class Control {
       this.kill("connection"),
       this.kill("python"),
       this.kill("shared"),
+      this.kill("cloudworker"),
     ]);
     process.exit(0);
   }
@@ -177,6 +180,9 @@ export class Control {
             }
             if (this.status.connection !== "killed" && !this.connection) {
               this.runConnection();
+            }
+            if (this.status.cloudworker !== "killed" && !this.cloudworker) {
+              this.runCloudworker();
             }
           }
         },
@@ -501,6 +507,53 @@ export class Control {
         this.ui.print("shared", "killed", "red");
       }
       this.status.shared = "killed";
+    }
+  }
+
+  async runCloudworker() {
+    if (this.quitting) return;
+    if (this.status.cloudworker === "killed") return;
+    this.status.cloudworker = false;
+    this.ui.print("cloudworker");
+    await this.kill("cloudworker");
+
+    this.signals.cloudworker = new AbortController();
+    this.cloudworker = spawn(
+      "cargo",
+      this.cli.options.cloudworker
+        ? ["watch", "-x", "run --bin simple"]
+        : ["run", "--bin", "simple"],
+      {
+        signal: this.signals.cloudworker.signal,
+        cwd: "quadratic-cloud-worker",
+        env: { ...process.env, RUST_LOG: "info" },
+      },
+    );
+    this.ui.printOutput("cloudworker", (data) => {
+      this.handleResponse("cloudworker", data, {
+        success: ["Finished ", "Running "],
+        error: ["error[", "npm ERR!"],
+        start: "    Compiling",
+      });
+    });
+  }
+
+  async restartCloudworker() {
+    this.cli.options.cloudworker = !this.cli.options.cloudworker;
+    this.runCloudworker();
+  }
+
+  async killCloudworker() {
+    if (this.status.cloudworker === "killed") {
+      this.status.cloudworker = false;
+      this.ui.print("cloudworker", "restarting...");
+      this.runCloudworker();
+    } else {
+      if (this.cloudworker) {
+        await this.kill("cloudworker");
+        this.ui.print("cloudworker", "killed", "red");
+      }
+      this.status.cloudworker = "killed";
     }
   }
   async runConnection() {
