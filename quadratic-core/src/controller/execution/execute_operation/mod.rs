@@ -40,14 +40,14 @@ mod execute_values;
 
 impl GridController {
     #[track_caller]
-    pub fn handle_execution_operation_result(result: anyhow::Result<()>) {
+    pub(crate) fn handle_execution_operation_result(result: anyhow::Result<()>) {
         if let Err(error) = result {
             dbgjs!(&format!("Error in execute_operation: {:?}", &error));
         }
     }
 
     /// Removes the first operation from a transaction and executes it.
-    pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
+    pub(crate) fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
             #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {op:?}"));
@@ -231,7 +231,7 @@ impl GridController {
 }
 
 #[cfg(test)]
-pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
+pub(crate) fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
     use super::TransactionSource;
 
     let undo_transaction = transaction.to_undo_transaction();
@@ -239,7 +239,7 @@ pub fn execute_reverse_operations(gc: &mut GridController, transaction: &Pending
 }
 
 #[cfg(test)]
-pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
+pub(crate) fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
     use super::TransactionSource;
 
     let redo_transaction = transaction.to_forward_transaction();

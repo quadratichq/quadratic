@@ -1,7 +1,7 @@
 /// Asserts that two vectors are equal, ignoring order.
 #[cfg(test)]
 #[track_caller]
-pub fn assert_vec_eq_unordered<T: PartialEq + std::fmt::Debug>(a: &[T], b: &[T]) {
+pub(crate) fn assert_vec_eq_unordered<T: PartialEq + std::fmt::Debug>(a: &[T], b: &[T]) {
     if a.len() != b.len() {
         panic!("Vectors have different lengths");
     }

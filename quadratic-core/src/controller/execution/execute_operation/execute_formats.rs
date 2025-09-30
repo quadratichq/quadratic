@@ -3,7 +3,7 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 
 impl GridController {
-    pub fn execute_set_cell_formats_a1(
+    pub(crate) fn execute_set_cell_formats_a1(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,

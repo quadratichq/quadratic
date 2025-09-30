@@ -10,7 +10,7 @@ use crate::{
 use anyhow::Result;
 impl GridController {
     /// Adds operations to compute cells that are dependents within a SheetRect
-    pub fn add_compute_operations(
+    pub(crate) fn add_compute_operations(
         &mut self,
         transaction: &mut PendingTransaction,
         output: SheetRect,

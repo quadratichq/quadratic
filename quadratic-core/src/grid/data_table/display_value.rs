@@ -17,7 +17,7 @@ use super::DataTable;
 
 impl DataTable {
     /// Get the display value from the display buffer.
-    pub fn display_value_from_buffer(
+    pub(crate) fn display_value_from_buffer(
         &self,
         display_buffer: &[u64],
         include_hidden_columns: bool,
@@ -45,7 +45,7 @@ impl DataTable {
     }
 
     /// Get the display value from the display buffer at a given position.
-    pub fn display_value_from_buffer_at(
+    pub(crate) fn display_value_from_buffer_at(
         &self,
         display_buffer: &[u64],
         pos: Pos,
@@ -60,7 +60,7 @@ impl DataTable {
     }
 
     /// Get the display value from the source value.
-    pub fn display_value_from_value(&self, include_hidden_columns: bool) -> Result<Value> {
+    pub(crate) fn display_value_from_value(&self, include_hidden_columns: bool) -> Result<Value> {
         let columns_to_show = if include_hidden_columns {
             (0..self.width()).collect::<Vec<_>>()
         } else {
@@ -80,7 +80,7 @@ impl DataTable {
     }
 
     /// Get the display value from the source value at a given position.
-    pub fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
+    pub(crate) fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
         let output_size = self.output_size();
         let mut x = pos.x as u32;
         let y = pos.y as u32;
@@ -100,7 +100,7 @@ impl DataTable {
 
     /// Get the display value from the display buffer, falling back to the
     /// source value if the display buffer is not set.
-    pub fn display_value(&self, include_hidden_columns: bool) -> Result<Value> {
+    pub(crate) fn display_value(&self, include_hidden_columns: bool) -> Result<Value> {
         match self.display_buffer {
             Some(ref display_buffer) => {
                 self.display_value_from_buffer(display_buffer, include_hidden_columns)
@@ -110,7 +110,7 @@ impl DataTable {
     }
 
     /// Get the display value at a given position.
-    pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
+    pub(crate) fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
         // the source cell is HTML or image, then display the first cell or blank
         if self.is_html_or_image() {
             return Ok(if pos.x == 0 && pos.y == 0 {
@@ -147,7 +147,7 @@ impl DataTable {
     }
 
     /// Get the indices of the columns to show.
-    pub fn columns_to_show(&self) -> Vec<usize> {
+    pub(crate) fn columns_to_show(&self) -> Vec<usize> {
         let result = self
             .column_headers
             .to_owned()
@@ -164,7 +164,7 @@ impl DataTable {
 
     /// Gets the visible columns by name. This is used to map it to a grid
     /// location in the selection.
-    pub fn columns_map(&self, show_all: bool) -> Vec<String> {
+    pub(crate) fn columns_map(&self, show_all: bool) -> Vec<String> {
         self.column_headers
             .to_owned()
             .unwrap_or_else(|| self.default_header(None))
@@ -176,7 +176,7 @@ impl DataTable {
     }
 
     /// For a given row of CellValues, return only the columns that should be displayed
-    pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
+    pub(crate) fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
         row.iter()
             .cloned()
             .enumerate()
@@ -186,7 +186,7 @@ impl DataTable {
     }
 
     /// Transmute an index from the display buffer to the source index.
-    pub fn get_row_index_from_display_index(&self, index: u64) -> u64 {
+    pub(crate) fn get_row_index_from_display_index(&self, index: u64) -> u64 {
         match self.display_buffer {
             Some(ref display_buffer) => *display_buffer.get(index as usize).unwrap_or(&index),
             None => index,
@@ -194,7 +194,7 @@ impl DataTable {
     }
 
     /// Get the reverse lookup display buffer.
-    pub fn get_reverse_display_buffer(&self) -> Option<Vec<u64>> {
+    pub(crate) fn get_reverse_display_buffer(&self) -> Option<Vec<u64>> {
         self.display_buffer.as_ref().and_then(|display_buffer| {
             let max_row_idx = display_buffer.iter().max().copied().unwrap_or(0);
             if max_row_idx == 0 {
@@ -210,7 +210,7 @@ impl DataTable {
     }
 
     /// Get the display index from the reverse display buffer.
-    pub fn get_display_index_from_reverse_display_buffer(
+    pub(crate) fn get_display_index_from_reverse_display_buffer(
         &self,
         index: u64,
         reverse_display_buffer: Option<&Vec<u64>>,

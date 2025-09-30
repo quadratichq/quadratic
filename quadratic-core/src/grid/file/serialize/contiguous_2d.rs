@@ -12,7 +12,7 @@ pub(crate) fn opt_fn<T, U>(f: impl Fn(T) -> U) -> impl Fn(Option<T>) -> Option<U
     move |x| x.map(&f)
 }
 
-pub fn import_contiguous_2d<C: Clone, F, T: Default + Clone + PartialEq + Debug>(
+pub(crate) fn import_contiguous_2d<C: Clone, F, T: Default + Clone + PartialEq + Debug>(
     blocks: current::Contiguous2DSchema<C>,
     f: F,
 ) -> Contiguous2D<T>

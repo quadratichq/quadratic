@@ -62,20 +62,20 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
 }
 
 impl EmptyValuesCache {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Returns a clone of the cache, this needs to be translated to sheet coordinates
     /// before can be applied to the SheetDataTablesCache
     /// Hidden columns and sorted rows are handled in the SheetDataTablesCache
-    pub fn get_cache_cloned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+    pub(crate) fn get_cache_cloned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.cache.clone()
     }
 
     /// Updates cache for a single value change in array
     /// Checks and removes the cache if all cells are non-empty
-    pub fn set_value(&mut self, array_size: &ArraySize, pos: Pos, blank: bool) {
+    pub(crate) fn set_value(&mut self, array_size: &ArraySize, pos: Pos, blank: bool) {
         // required only in app for client side interactions
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             self.cache = None;
@@ -104,7 +104,7 @@ impl EmptyValuesCache {
 
     /// Removes a row from the cache
     /// Checks and removes the cache if all cells are non-empty
-    pub fn remove_row(&mut self, array_size: &ArraySize, row: i64) {
+    pub(crate) fn remove_row(&mut self, array_size: &ArraySize, row: i64) {
         // required only in app for client side interactions
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             self.cache = None;

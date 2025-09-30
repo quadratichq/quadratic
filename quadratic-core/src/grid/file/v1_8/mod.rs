@@ -3,7 +3,7 @@ mod schema;
 mod sheet_formatting_schema;
 mod upgrade;
 
-pub use run_error_schema::*;
-pub use schema::*;
-pub use sheet_formatting_schema::*;
-pub use upgrade::*;
+pub(crate) use run_error_schema::*;
+pub(crate) use schema::*;
+pub(crate) use sheet_formatting_schema::*;
+pub(crate) use upgrade::*;

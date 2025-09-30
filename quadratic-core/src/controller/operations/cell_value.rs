@@ -12,7 +12,7 @@ use anyhow::{Error, Result, bail};
 
 impl GridController {
     /// Generate operations for a user-initiated change to a cell value
-    pub fn set_cell_values_operations(
+    pub(crate) fn set_cell_values_operations(
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
@@ -68,7 +68,7 @@ impl GridController {
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
                     if let Some(value) = value.strip_prefix("=") {
                         ops.extend(self.set_code_cell_operations(
-                            pos.to_sheet_pos(sheet.id),
+                            pos.as_sheet_pos(sheet.id),
                             CodeCellLanguage::Formula,
                             value.to_string(),
                             None,
@@ -95,7 +95,7 @@ impl GridController {
                         data_table_cell_values[x][y] = Some(cell_value);
                         if !format_update.is_default() {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                sheet_pos: data_table_pos.as_sheet_pos(sheet_pos.sheet_id),
                                 formats: sheet.to_sheet_format_updates(
                                     sheet_pos,
                                     data_table_pos,
@@ -168,7 +168,7 @@ impl GridController {
     /// Does not commit the operations or create a transaction.
     ///
     /// If force_table_bounds is true, then the operations will be generated for the table bounds even if the selection is not within a table.
-    pub fn delete_cells_operations(
+    pub(crate) fn delete_cells_operations(
         &self,
         selection: &A1Selection,
         force_table_bounds: bool,
@@ -250,7 +250,7 @@ impl GridController {
                             .rev()
                             .collect();
                         ops.push(Operation::DeleteDataTableColumns {
-                            sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                            sheet_pos: data_table_pos.as_sheet_pos(selection.sheet_id),
                             columns,
                             flatten: false,
                             select_table: false,
@@ -259,7 +259,7 @@ impl GridController {
                         // find the intersection of the selection rect and the data table rect
                         if let Some(intersection) = rect.intersection(&data_table_rect) {
                             ops.push(Operation::SetDataTableAt {
-                                sheet_pos: intersection.min.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: intersection.min.as_sheet_pos(selection.sheet_id),
                                 values: CellValues::new_blank(
                                     intersection.width(),
                                     intersection.height(),
@@ -304,7 +304,7 @@ impl GridController {
 
                 delete_data_tables.iter().for_each(|data_table_pos| {
                     ops.push(Operation::DeleteDataTable {
-                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                        sheet_pos: data_table_pos.as_sheet_pos(selection.sheet_id),
                     });
                 });
 
@@ -324,7 +324,7 @@ impl GridController {
         ops
     }
 
-    pub fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    pub(crate) fn delete_validations_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
@@ -353,7 +353,7 @@ impl GridController {
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
-    pub fn delete_values_and_formatting_operations(
+    pub(crate) fn delete_values_and_formatting_operations(
         &mut self,
         selection: &A1Selection,
         force_table_bounds: bool,
@@ -369,7 +369,7 @@ impl GridController {
     //
     // If `delete_value` is true, then the values in `values` are
     // deleted from `cell_values`.
-    pub fn cell_values_operations(
+    pub(crate) fn cell_values_operations(
         &self,
         selection: Option<&A1Selection>,
         start_pos: SheetPos,
@@ -491,7 +491,7 @@ impl GridController {
                         }
                     }
 
-                    let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    let sheet_pos = output_rect.min.as_sheet_pos(start_pos.sheet_id);
                     ops.push(Operation::DataTableOptionMeta {
                         sheet_pos,
                         name: None,
@@ -502,7 +502,7 @@ impl GridController {
                     });
                 }
 
-                let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                let sheet_pos = intersection_rect.min.as_sheet_pos(start_pos.sheet_id);
                 ops.push(Operation::SetDataTableAt {
                     sheet_pos,
                     values: CellValues::from(data_table_cell_values),
@@ -510,7 +510,7 @@ impl GridController {
             }
         }
 
-        for (x, y, value) in values.into_owned_iter() {
+        for (x, y, value) in values.into_iter() {
             cell_values.set(
                 cell_value_pos.x as u32 + x,
                 cell_value_pos.y as u32 + y,

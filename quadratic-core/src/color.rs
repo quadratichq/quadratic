@@ -24,7 +24,7 @@ impl Default for Rgba {
 }
 
 impl Rgba {
-    pub fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
+    pub(crate) fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
         Self {
             red,
             green,
@@ -33,7 +33,7 @@ impl Rgba {
         }
     }
 
-    pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
+    pub(crate) fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
 
@@ -53,7 +53,7 @@ impl Rgba {
         })
     }
 
-    pub fn from_css_str(css: &str) -> Result<Self> {
+    pub(crate) fn from_css_str(css: &str) -> Result<Self> {
         let colors = css
             .trim_start_matches("rgb(")
             .trim_end_matches(')')
@@ -72,7 +72,7 @@ impl Rgba {
             alpha: 255,
         })
     }
-    pub fn as_string(&self) -> String {
+    pub(crate) fn as_string(&self) -> String {
         let mut s = String::with_capacity(1 + 4 * 2);
         write!(&mut s, "#").unwrap();
         write!(&mut s, "{:02x}", self.red).unwrap();
@@ -81,7 +81,7 @@ impl Rgba {
         write!(&mut s, "{:02x}", self.alpha).unwrap();
         s
     }
-    pub fn as_rgb_hex(&self) -> String {
+    pub(crate) fn as_rgb_hex(&self) -> String {
         let s = self.as_string();
         if s.len() < 8 { s } else { s[0..7].to_string() }
     }

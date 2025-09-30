@@ -1,11 +1,11 @@
 mod borders_a1_upgrade;
 mod contiguous_2d_upgrade;
-pub mod run_error_schema;
-pub mod schema;
+pub(crate) mod run_error_schema;
+pub(crate) mod schema;
 mod sheet_formatting_upgrade;
-pub mod upgrade;
+pub(crate) mod upgrade;
 
-pub use borders_a1_upgrade::*;
-pub use contiguous_2d_upgrade::*;
-pub use sheet_formatting_upgrade::*;
-pub use upgrade::*;
+pub(crate) use borders_a1_upgrade::*;
+pub(crate) use contiguous_2d_upgrade::*;
+pub(crate) use sheet_formatting_upgrade::*;
+pub(crate) use upgrade::*;

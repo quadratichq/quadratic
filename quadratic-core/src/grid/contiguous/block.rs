@@ -1,7 +1,6 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use smallvec::{SmallVec, smallvec};
 
 /// Block of contiguous values in a specific range.
 ///
@@ -26,7 +25,7 @@ impl<T: fmt::Debug> fmt::Debug for Block<T> {
 }
 impl<T> Block<T> {
     /// Return a block that covers the entire space
-    pub fn new_total(value: T) -> Self {
+    pub(crate) fn new_total(value: T) -> Self {
         Self {
             start: 1,
             end: u64::MAX,
@@ -36,21 +35,21 @@ impl<T> Block<T> {
 }
 impl<T> Block<T> {
     /// Returns the length of the block, or `None` if it is unbounded.
-    pub fn len(&self) -> Option<u64> {
+    pub(crate) fn len(&self) -> Option<u64> {
         (self.end < u64::MAX || self.start == self.end)
             .then_some(self.end.saturating_sub(self.start))
     }
     /// Returns whether the block is empty (length 0).
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.len() == Some(0)
     }
     /// Returns the block if it is nonempty, or `None` if it is empty.
-    pub fn if_nonempty(self) -> Option<Self> {
+    pub(crate) fn if_nonempty(self) -> Option<Self> {
         (!self.is_empty()).then_some(self)
     }
 
     /// Returns whether the block contains a coordinate.
-    pub fn contains(&self, coordinate: u64) -> bool {
+    pub(crate) fn contains(&self, coordinate: u64) -> bool {
         self.start <= coordinate && (coordinate < self.end || self.end == u64::MAX)
     }
     /// Clamps a coordinate to `self`. Both endpoints are allowed.
@@ -60,7 +59,7 @@ impl<T> Block<T> {
 
     /// Returns the lat coordinate in the block (i.e., `end - 1`) if it is a
     /// finite block, or the start of the block if it is infinite.
-    pub fn finite_max(&self) -> u64 {
+    pub(crate) fn finite_max(&self) -> u64 {
         if self.end == u64::MAX {
             self.start
         } else {
@@ -69,7 +68,7 @@ impl<T> Block<T> {
     }
 
     /// Applies a function to the value in the block.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Block<U> {
+    pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Block<U> {
         Block {
             start: self.start,
             end: self.end,
@@ -77,7 +76,7 @@ impl<T> Block<T> {
         }
     }
     /// Applies a function to the value in the block.
-    pub fn map_ref<'a, U>(&'a self, f: impl FnOnce(&'a T) -> U) -> Block<U> {
+    pub(crate) fn map_ref<'a, U>(&'a self, f: impl FnOnce(&'a T) -> U) -> Block<U> {
         Block {
             start: self.start,
             end: self.end,
@@ -85,13 +84,13 @@ impl<T> Block<T> {
         }
     }
     /// Converts a `&Block<T>` to a `Block<&T>`.
-    pub fn as_ref(&self) -> Block<&T> {
+    pub(crate) fn as_ref(&self) -> Block<&T> {
         self.map_ref(|value| value)
     }
 }
 impl<T: Clone + PartialEq> Block<T> {
     /// Splits the block at `coordinate`, returning the halves before and after.
-    pub fn split(self, coordinate: u64) -> [Option<Self>; 2] {
+    pub(crate) fn split(self, coordinate: u64) -> [Option<Self>; 2] {
         let clamped_coordinate = self.clamp(coordinate);
         [
             Block {
@@ -112,7 +111,7 @@ impl<T: Clone + PartialEq> Block<T> {
     /// - the portion of the block before `start` (if any)
     /// - and the portion of the block between `start` and `end` (if any).
     /// - the portion of the block after `end` (if any)
-    pub fn split_twice(self, start: u64, end: u64) -> [Option<Self>; 3] {
+    pub(crate) fn split_twice(self, start: u64, end: u64) -> [Option<Self>; 3] {
         let [before, middle_after] = self.split(start);
         let [middle, after] = match middle_after {
             Some(block) => block.split(end),
@@ -125,7 +124,7 @@ impl<T: Clone + PartialEq> Block<T> {
     /// Offsets a block by the given positive delta.
     ///
     /// Returns `None` if the block becomes empty.
-    pub fn add_offset(self, delta: u64) -> Option<Self> {
+    pub(crate) fn add_offset(self, delta: u64) -> Option<Self> {
         Block {
             start: self.start.saturating_add(delta),
             end: self.end.saturating_add(delta),
@@ -137,7 +136,7 @@ impl<T: Clone + PartialEq> Block<T> {
     /// goes below 1.
     ///
     /// Returns `None` if the block becomes empty.
-    pub fn subtract_offset(self, delta: u64) -> Option<Self> {
+    pub(crate) fn subtract_offset(self, delta: u64) -> Option<Self> {
         Block {
             start: self.start.saturating_sub(delta).max(1),
             end: if self.end == u64::MAX {
@@ -149,47 +148,15 @@ impl<T: Clone + PartialEq> Block<T> {
         }
         .if_nonempty()
     }
-
-    /// Attempts to merge two blocks, which are assumed to be non-overlapping.
-    /// Returns one block if the merge was successful, or two blocks if it was
-    /// not.
-    ///
-    /// Blocks can be merged if they are contiguous and have the same value.
-    pub fn try_merge(self, other: Self) -> SmallVec<[Self; 2]> {
-        let (start, end) = if self.end == other.start {
-            (self.start, other.end)
-        } else if other.end == self.start {
-            (other.start, self.end)
-        } else {
-            return smallvec![self, other];
-        };
-
-        if self.value == other.value {
-            smallvec![Block {
-                start,
-                end,
-                value: self.value
-            }]
-        } else {
-            smallvec![self, other]
-        }
-    }
 }
 impl<T> Block<Option<T>> {
     /// Transposes a `Block<Option<T>>` into an `Option<Block<T>>`.
-    pub fn into_some(self) -> Option<Block<T>> {
+    #[cfg(test)]
+    pub(crate) fn into_some(self) -> Option<Block<T>> {
         Some(Block {
             start: self.start,
             end: self.end,
             value: self.value?,
-        })
-    }
-    /// Transposes a `&Block<Option<T>>` into an `Option<Block<&T>>`.
-    pub fn as_some(&self) -> Option<Block<&T>> {
-        Some(Block {
-            start: self.start,
-            end: self.end,
-            value: self.value.as_ref()?,
         })
     }
 }

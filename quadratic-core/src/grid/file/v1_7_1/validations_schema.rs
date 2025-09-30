@@ -7,14 +7,14 @@ use super::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationListSchema {
-    pub source: ValidationListSourceSchema,
-    pub ignore_blank: bool,
-    pub drop_down: bool,
+pub(crate) struct ValidationListSchema {
+    pub(crate) source: ValidationListSourceSchema,
+    pub(crate) ignore_blank: bool,
+    pub(crate) drop_down: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum ValidationRuleSchema {
+pub(crate) enum ValidationRuleSchema {
     None,
     List(ValidationListSchema),
     Logical(ValidationLogicalSchema),
@@ -24,25 +24,25 @@ pub enum ValidationRuleSchema {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum ValidationListSourceSchema {
+pub(crate) enum ValidationListSourceSchema {
     Selection(A1SelectionSchema),
     List(Vec<String>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationSchema {
-    pub selection: A1SelectionSchema,
-    pub id: Uuid,
-    pub rule: ValidationRuleSchema,
-    pub message: ValidationMessageSchema,
-    pub error: ValidationErrorSchema,
+pub(crate) struct ValidationSchema {
+    pub(crate) selection: A1SelectionSchema,
+    pub(crate) id: Uuid,
+    pub(crate) rule: ValidationRuleSchema,
+    pub(crate) message: ValidationMessageSchema,
+    pub(crate) error: ValidationErrorSchema,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
-pub struct ValidationsSchema {
+pub(crate) struct ValidationsSchema {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub validations: Vec<ValidationSchema>,
+    pub(crate) validations: Vec<ValidationSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub warnings: Vec<(PosSchema, Uuid)>,
+    pub(crate) warnings: Vec<(PosSchema, Uuid)>,
 }

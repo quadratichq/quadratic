@@ -3,20 +3,21 @@ use crate::grid::resize::Resize;
 use super::Sheet;
 
 impl Sheet {
-    pub fn get_row_resize(&self, row: i64) -> Resize {
+    pub(crate) fn get_row_resize(&self, row: i64) -> Resize {
         self.rows_resize.get_resize(row)
     }
 
-    pub fn set_row_resize(&mut self, row: i64, value: Resize) -> Resize {
+    pub(crate) fn set_row_resize(&mut self, row: i64, value: Resize) -> Resize {
         self.rows_resize.set_resize(row, value)
     }
 
-    pub fn iter_row_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
+    #[cfg(test)]
+    pub(crate) fn iter_row_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
         self.rows_resize.iter_resize()
     }
 
     // return old_client_resized
-    pub fn update_row_resize(&mut self, row: i64, client_resized: bool) -> bool {
+    pub(crate) fn update_row_resize(&mut self, row: i64, client_resized: bool) -> bool {
         let resize = if client_resized {
             Resize::Manual
         } else {
@@ -26,7 +27,7 @@ impl Sheet {
         old_resize == Resize::Manual
     }
 
-    pub fn get_auto_resize_rows(&self, rows: Vec<i64>) -> Vec<i64> {
+    pub(crate) fn get_auto_resize_rows(&self, rows: Vec<i64>) -> Vec<i64> {
         rows.into_iter()
             .filter(|&row| self.get_row_resize(row) == Resize::Auto)
             .collect()

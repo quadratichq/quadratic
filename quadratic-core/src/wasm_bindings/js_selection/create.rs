@@ -10,13 +10,13 @@ impl Default for JsSelection {
     /// is used as a way to avoid unwraps in new.
     fn default() -> Self {
         JsSelection {
-            selection: A1Selection::from_xy(1, 1, SheetId::TEST),
+            selection: A1Selection::from_xy(1, 1, SheetId::default()),
         }
     }
 }
 
 impl JsSelection {
-    pub fn new_with_selection(selection: A1Selection) -> Self {
+    pub(crate) fn new_with_selection(selection: A1Selection) -> Self {
         JsSelection { selection }
     }
 }

@@ -23,13 +23,13 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
     "console_error_panic_hook",
     "js",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "auth",
     "environment",
     "protobuf",
     "pubsub",
     "quadratic-api",
-    "storage" 
+    "storage",
 ] }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
@@ -51,8 +51,6 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
-[dev-dependencies]
-fake = { version = "4.0.0", features = ["derive"] }
 
 [features]
 default = ["files"]

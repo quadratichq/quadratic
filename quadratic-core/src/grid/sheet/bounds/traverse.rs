@@ -8,7 +8,7 @@ impl Sheet {
     /// For charts, is uses the chart's bounds for intersection test (since charts are considered a single cell)
     ///
     /// Returns the found column matching the criteria of with_content
-    pub fn find_next_column(
+    pub(crate) fn find_next_column(
         &self,
         column_start: i64,
         row: i64,
@@ -91,7 +91,7 @@ impl Sheet {
     /// content
     ///
     /// Returns the found row matching the criteria of with_content
-    pub fn find_next_row(
+    pub(crate) fn find_next_row(
         &self,
         row_start: i64,
         column: i64,

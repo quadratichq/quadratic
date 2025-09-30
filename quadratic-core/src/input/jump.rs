@@ -24,7 +24,7 @@ use crate::{
 };
 
 /// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
-pub fn jump_cursor(
+pub(crate) fn jump_cursor(
     current: SheetPos,
     direction: Direction,
     content_cache: &SheetContentCache,
@@ -286,7 +286,7 @@ fn jump_left(
     Pos { x: prev_x, y }
 }
 
-pub fn jump_right(
+pub(crate) fn jump_right(
     current: SheetPos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,

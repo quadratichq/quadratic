@@ -6,7 +6,7 @@ use super::*;
 
 impl TableRef {
     /// Returns true if the table reference is the default table reference.
-    pub fn is_default(&self) -> bool {
+    pub(crate) fn is_default(&self) -> bool {
         self.data && !self.headers && !self.totals && self.col_range == ColRange::All
     }
 }

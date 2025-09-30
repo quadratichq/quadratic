@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use lazy_static::lazy_static;
 
-pub fn is_valid_excel_function(name: &str) -> bool {
+pub(crate) fn is_valid_excel_function(name: &str) -> bool {
     ALL_EXCEL_FUNCTIONS.contains(
         remove_excel_function_prefix(name)
             .to_ascii_uppercase()
@@ -10,7 +10,7 @@ pub fn is_valid_excel_function(name: &str) -> bool {
     )
 }
 
-pub fn remove_excel_function_prefix(name: &str) -> String {
+pub(crate) fn remove_excel_function_prefix(name: &str) -> String {
     PREFIX_RE.replace(name, "").to_string()
 }
 

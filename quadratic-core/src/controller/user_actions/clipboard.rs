@@ -10,7 +10,7 @@ use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
 
 impl GridController {
     /// using a selection, cut the contents on the grid to the clipboard
-    pub fn cut_to_clipboard(
+    pub(crate) fn cut_to_clipboard(
         &mut self,
         selection: &A1Selection,
         include_display_values: bool,
@@ -65,7 +65,7 @@ impl GridController {
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
-            insert_at.to_sheet_pos(selection.sheet_id),
+            insert_at.as_sheet_pos(selection.sheet_id),
             end_pos,
             selection,
             js_clipboard.plain_text,
@@ -77,7 +77,7 @@ impl GridController {
 
     /// move cells from source to dest
     /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
-    pub fn move_cells(
+    pub(crate) fn move_cells(
         &mut self,
         source: SheetRect,
         dest: SheetPos,
@@ -94,7 +94,7 @@ impl GridController {
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved up
     #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_vertically(
+    pub(crate) fn move_code_cell_vertically(
         &mut self,
         sheet_id: SheetId,
         x: i64,
@@ -141,7 +141,7 @@ impl GridController {
     /// sheet_end is true if the code cell is at the end of the sheet
     /// reverse is true if the code cell should be moved left
     #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_horizontally(
+    pub(crate) fn move_code_cell_horizontally(
         &mut self,
         sheet_id: SheetId,
         x: i64,
@@ -1185,7 +1185,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1194,7 +1194,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,
@@ -1249,7 +1249,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1259,7 +1259,7 @@ mod test {
         mock_calculation_complete(&mut gc);
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,

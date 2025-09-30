@@ -24,7 +24,7 @@ impl Sheet {
     ///
     /// Note: if the Code has an error, then it will not be part of the result
     /// (for now).
-    pub fn selection_values(
+    pub(crate) fn selection_values(
         &self,
         selection: &A1Selection,
         max_count: Option<i64>,
@@ -98,7 +98,7 @@ impl Sheet {
 
     ///   Gets a selection of CellValues. This is useful for dealing with a
     ///   rectangular selection. It sorts the results by y and then x.
-    pub fn selection_sorted_vec(
+    pub(crate) fn selection_sorted_vec(
         &self,
         selection: &A1Selection,
         skip_code_runs: bool,
@@ -133,7 +133,7 @@ impl Sheet {
     ///
     /// See `convert_to_ref_range_bounds()` for a description of the boolean
     /// parameters.
-    pub fn table_ref_to_rect(
+    pub(crate) fn table_ref_to_rect(
         &self,
         range: &TableRef,
         force_columns: bool,
@@ -144,12 +144,12 @@ impl Sheet {
 
         range
             .convert_to_ref_range_bounds(false, a1_context, force_columns, force_table_bounds)
-            .and_then(|range| range.to_rect())
+            .and_then(|range| range.as_rect())
     }
 
     /// Converts a cell reference range to a minimal rectangle covering the data
     /// on the sheet.
-    pub fn ref_range_bounds_to_rect(
+    pub(crate) fn ref_range_bounds_to_rect(
         &self,
         range: &RefRangeBounds,
         ignore_formatting: bool,
@@ -211,7 +211,7 @@ impl Sheet {
     /// Resolves a selection to a union of rectangles. This is important for
     /// ensuring that all clients agree on the exact rectangles a transaction
     /// applies to.
-    pub fn selection_to_rects(
+    pub(crate) fn selection_to_rects(
         &self,
         selection: &A1Selection,
         force_columns: bool,
@@ -242,7 +242,7 @@ impl Sheet {
 
     /// Returns the smallest rect that contains all the ranges in the selection.
     /// Infinite selections are clamped at sheet data bounds.
-    pub fn selection_bounds(
+    pub(crate) fn selection_bounds(
         &self,
         selection: &A1Selection,
         force_columns: bool,
@@ -266,7 +266,7 @@ impl Sheet {
 
     /// Converts unbounded regions in a selection to finite rectangular regions.
     /// Bounded regions are unmodified.
-    pub fn finitize_selection(
+    pub(crate) fn finitize_selection(
         &self,
         selection: &A1Selection,
         force_columns: bool,
@@ -469,7 +469,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         gc.test_data_table_update_meta(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             None,
             Some(true),
             Some(true),

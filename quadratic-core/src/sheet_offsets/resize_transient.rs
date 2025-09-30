@@ -2,7 +2,7 @@ use super::SheetOffsets;
 use serde::{Deserialize, Serialize};
 
 impl SheetOffsets {
-    pub fn resize_column_transiently(&mut self, column: i64, size: Option<f64>) {
+    pub(crate) fn resize_column_transiently(&mut self, column: i64, size: Option<f64>) {
         let size = size.unwrap_or(crate::DEFAULT_COLUMN_WIDTH);
         let old_size = self.resize_column_internal(column, size);
         match &mut self.transient_resize {
@@ -20,7 +20,7 @@ impl SheetOffsets {
             }
         }
     }
-    pub fn resize_row_transiently(&mut self, row: i64, size: Option<f64>) {
+    pub(crate) fn resize_row_transiently(&mut self, row: i64, size: Option<f64>) {
         let size = size.unwrap_or(crate::DEFAULT_ROW_HEIGHT);
         let old_size = self.resize_row_internal(row, size);
         match &mut self.transient_resize {
@@ -39,7 +39,7 @@ impl SheetOffsets {
         }
     }
 
-    pub fn cancel_resize(&mut self) {
+    pub(crate) fn cancel_resize(&mut self) {
         if let Some(resize) = self.transient_resize {
             if let Some(column) = resize.column {
                 self.resize_column_transiently(column, Some(resize.old_size));
@@ -60,7 +60,7 @@ impl SheetOffsets {
     }
 
     /// Removes and returns the transient_resize.
-    pub fn pop_local_transient_resize(&mut self) -> Option<TransientResize> {
+    pub(crate) fn pop_local_transient_resize(&mut self) -> Option<TransientResize> {
         if let Some(transient_resize) = self.transient_resize {
             self.transient_resize = None;
             Some(transient_resize)
@@ -80,7 +80,7 @@ pub struct TransientResize {
 }
 
 impl TransientResize {
-    pub fn column(column: i64, old_size: f64, new_size: f64) -> Self {
+    pub(crate) fn column(column: i64, old_size: f64, new_size: f64) -> Self {
         TransientResize {
             row: None,
             column: Some(column),
@@ -89,7 +89,7 @@ impl TransientResize {
         }
     }
 
-    pub fn row(row: i64, old_size: f64, new_size: f64) -> Self {
+    pub(crate) fn row(row: i64, old_size: f64, new_size: f64) -> Self {
         TransientResize {
             row: Some(row),
             column: None,

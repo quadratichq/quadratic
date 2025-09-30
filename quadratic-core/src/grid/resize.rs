@@ -25,11 +25,11 @@ pub struct ResizeMap {
 }
 
 impl ResizeMap {
-    pub fn get_resize(&self, index: i64) -> Resize {
+    pub(crate) fn get_resize(&self, index: i64) -> Resize {
         *self.resize_map.get(&index).unwrap_or(&self.default)
     }
 
-    pub fn set_resize(&mut self, index: i64, value: Resize) -> Resize {
+    pub(crate) fn set_resize(&mut self, index: i64, value: Resize) -> Resize {
         if value == self.default {
             self.resize_map.remove(&index)
         } else {
@@ -38,15 +38,17 @@ impl ResizeMap {
         .unwrap_or(self.default)
     }
 
-    pub fn reset(&mut self, index: i64) -> Resize {
+    #[cfg(test)]
+    pub(crate) fn reset(&mut self, index: i64) -> Resize {
         self.resize_map.remove(&index).unwrap_or(self.default)
     }
 
-    pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
+    #[cfg(test)]
+    pub(crate) fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
         self.resize_map.iter().map(|(&k, &v)| (k, v))
     }
 
-    pub fn into_iter_resize(self) -> impl Iterator<Item = (i64, Resize)> {
+    pub(crate) fn into_iter_resize(self) -> impl Iterator<Item = (i64, Resize)> {
         self.resize_map.into_iter()
     }
 }

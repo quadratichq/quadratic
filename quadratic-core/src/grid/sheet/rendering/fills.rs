@@ -3,17 +3,17 @@
 //! rects. All data_table fills are sent as JsRenderFill since they are finite
 //! (even if defined as infinite).
 
-use crate::{
-    Pos,
-    grid::{
-        Sheet,
-        js_types::{JsRenderFill, JsSheetFill},
-    },
+#[cfg(test)]
+use crate::Pos;
+use crate::grid::{
+    Sheet,
+    js_types::{JsRenderFill, JsSheetFill},
 };
 
 impl Sheet {
     /// Returns true if the table has any fills.
-    pub fn table_has_fills(&self, pos: Pos) -> bool {
+    #[cfg(test)]
+    pub(crate) fn table_has_fills(&self, pos: Pos) -> bool {
         self.data_table_at(&pos).is_some_and(|dt| {
             !dt.formats
                 .as_ref()
@@ -22,7 +22,7 @@ impl Sheet {
     }
 
     /// Returns all data for rendering cell fill color.
-    pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
+    pub(crate) fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         self.formats
             .fill_color
             .to_rects()
@@ -110,7 +110,7 @@ impl Sheet {
 
     /// Returns all fills for the rows, columns, and sheet. This does not return
     /// individual cell formats.
-    pub fn get_all_sheet_fills(&self) -> Vec<JsSheetFill> {
+    pub(crate) fn get_all_sheet_fills(&self) -> Vec<JsSheetFill> {
         self.formats
             .fill_color
             .to_rects()
@@ -227,7 +227,7 @@ mod tests {
 
         // set a data table at E2 that's 3x3 and show_header is true
         gc.test_set_data_table(
-            pos!(E2).to_sheet_pos(sheet_id),
+            pos!(E2).as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -294,7 +294,7 @@ mod tests {
 
         // set a data table at E2 that's 3x3 and show_header is true
         gc.test_set_data_table(
-            pos!(E2).to_sheet_pos(sheet_id),
+            pos!(E2).as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -488,7 +488,7 @@ mod tests {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,
@@ -537,7 +537,7 @@ mod tests {
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
         gc.test_data_table_update_meta(
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             Some(column_headers),
             None,
             None,

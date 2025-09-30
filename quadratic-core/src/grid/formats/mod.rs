@@ -22,20 +22,6 @@ pub struct Formats {
     pub formats: RunLengthEncoding<FormatUpdate>,
 }
 
-impl Formats {
-    pub fn new() -> Self {
-        Self {
-            formats: RunLengthEncoding::new(),
-        }
-    }
-
-    pub fn repeat(update: FormatUpdate, count: usize) -> Self {
-        let mut formats = Formats::default();
-        formats.push_n(update, count);
-        formats
-    }
-}
-
 impl Deref for Formats {
     type Target = RunLengthEncoding<FormatUpdate>;
 
@@ -47,20 +33,5 @@ impl Deref for Formats {
 impl DerefMut for Formats {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.formats
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn repeat() {
-        let update = FormatUpdate::default();
-        let formats = Formats::repeat(update.clone(), 3);
-        assert_eq!(formats.size(), 3);
-        assert_eq!(formats.get_at(0), Some(&update));
-        assert_eq!(formats.get_at(1), Some(&update));
-        assert_eq!(formats.get_at(2), Some(&update));
     }
 }

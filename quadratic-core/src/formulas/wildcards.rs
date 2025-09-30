@@ -2,7 +2,7 @@ use regex::{Regex, RegexBuilder};
 
 use crate::{RunError, RunErrorMsg};
 
-pub fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, RunError> {
+pub(crate) fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, RunError> {
     let mut chars = s.chars();
     let mut regex_string = String::new();
     regex_string.push('^'); // Match whole string using `^...$`.

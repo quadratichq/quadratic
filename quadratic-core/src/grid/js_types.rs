@@ -34,20 +34,6 @@ pub struct JsNumber {
     pub format: Option<NumericFormat>,
 }
 
-impl JsNumber {
-    /// Create a JsNumber for dollars with 2 decimal places.
-    #[cfg(test)]
-    pub fn dollars() -> Self {
-        JsNumber {
-            format: Some(NumericFormat {
-                kind: crate::grid::NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }),
-            ..Default::default()
-        }
-    }
-}
-
 impl From<&Format> for JsNumber {
     fn from(format: &Format) -> Self {
         JsNumber {
@@ -97,13 +83,6 @@ impl From<CellValue> for JsCellValueKind {
 pub struct JsCellValue {
     pub value: String,
     pub kind: JsCellValueKind,
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellValuePos {
-    pub value: String,
-    pub kind: JsCellValueKind,
-    pub pos: String,
 }
 
 #[derive(Serialize, Debug, PartialEq, TS)]
@@ -210,7 +189,7 @@ pub struct JsRenderCell {
 
 #[cfg(test)]
 impl JsRenderCell {
-    pub fn new_number(
+    pub(crate) fn new_number(
         x: i64,
         y: i64,
         value: isize,

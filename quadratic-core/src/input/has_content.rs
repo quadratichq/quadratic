@@ -6,13 +6,13 @@ use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
 use crate::{Pos, Rect, SheetPos};
 
 /// Gets the Table that intersects a given position.
-pub fn table_at<'a>(
+pub(crate) fn table_at<'a>(
     sheet_pos: SheetPos,
     table_cache: &SheetDataTablesCache,
     context: &'a A1Context,
 ) -> Option<&'a TableMapEntry> {
     let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
-        Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
+        Some(pos) => pos.as_sheet_pos(sheet_pos.sheet_id),
         None if table_cache
             .single_cell_tables
             .get(sheet_pos.into())
@@ -27,7 +27,7 @@ pub fn table_at<'a>(
 }
 
 /// Determine whether there is a chart at a given position.
-pub fn chart_at(
+pub(crate) fn chart_at(
     sheet_pos: SheetPos,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
@@ -41,7 +41,7 @@ pub fn chart_at(
 }
 
 /// Returns the bounds of the table header at a given position.
-pub fn table_header_at(
+pub(crate) fn table_header_at(
     sheet_pos: SheetPos,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,

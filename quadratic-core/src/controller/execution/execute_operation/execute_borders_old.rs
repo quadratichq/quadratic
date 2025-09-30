@@ -50,7 +50,7 @@ impl GridController {
     }
 
     /// **Deprecated** Nov 2024 in favor of [`Self::execute_set_borders_a1()`].
-    pub fn execute_set_borders_selection(
+    pub(crate) fn execute_set_borders_selection(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,

@@ -7,22 +7,22 @@ use crate::{Pos, SheetPos, controller::operations::operation::Operation};
 use super::Validations;
 
 impl Validations {
-    pub fn get_warning(&self, pos: Pos) -> Option<&Uuid> {
-        self.warnings.get(&pos)
-    }
-
-    pub fn has_warning(&self, pos: Pos) -> bool {
+    pub(crate) fn has_warning(&self, pos: Pos) -> bool {
         self.warnings.contains_key(&pos)
     }
 
-    pub fn has_warning_for_validation(&self, pos: Pos, validation_id: Uuid) -> bool {
+    pub(crate) fn has_warning_for_validation(&self, pos: Pos, validation_id: Uuid) -> bool {
         self.warnings
             .iter()
             .any(|(warning_pos, id)| *warning_pos == pos && *id == validation_id)
     }
 
     /// Sets a validation warning. Removes the validation if None is passed.
-    pub fn set_warning(&mut self, sheet_pos: SheetPos, validation_id: Option<Uuid>) -> Operation {
+    pub(crate) fn set_warning(
+        &mut self,
+        sheet_pos: SheetPos,
+        validation_id: Option<Uuid>,
+    ) -> Operation {
         let old = if let Some(validation_id) = validation_id {
             self.warnings.insert(sheet_pos.into(), validation_id)
         } else {

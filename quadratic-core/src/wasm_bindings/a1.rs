@@ -38,7 +38,7 @@ fn selection_to_sheet_rect(
 
     // we don't really need the context here, but we need to pass something
     let rect = range
-        .to_rect(context.get_context())
+        .as_rect(context.get_context())
         .ok_or("Invalid selection: not a rectangle")?;
     Ok(rect.to_sheet_rect(sheet_id))
 }
@@ -141,7 +141,7 @@ pub fn convert_table_to_sheet_pos(
     context: &JsA1Context,
 ) -> Result<JsValue, String> {
     if let Some(table) = context.get_context().try_table(table_name) {
-        serde_wasm_bindgen::to_value(&(table.bounds.min.to_sheet_pos(table.sheet_id)))
+        serde_wasm_bindgen::to_value(&(table.bounds.min.as_sheet_pos(table.sheet_id)))
             .map_err(|e| e.to_string())
     } else {
         Err("Table not found".to_string())

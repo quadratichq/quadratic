@@ -8,7 +8,7 @@ use crate::grid::SheetId;
 use crate::grid::js_types::JsRowHeight;
 
 impl GridController {
-    pub fn start_auto_resize_row_heights(
+    pub(crate) fn start_auto_resize_row_heights(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -56,7 +56,7 @@ impl GridController {
         }
     }
 
-    pub fn complete_auto_resize_row_heights(
+    pub(crate) fn complete_auto_resize_row_heights(
         &mut self,
         transaction_id: Uuid,
         sheet_id: SheetId,
@@ -797,7 +797,7 @@ mod tests {
 
         // should trigger auto resize row heights for wrap
         let ops = vec![Operation::DataTableFormats {
-            sheet_pos: pos.to_sheet_pos(sheet_id),
+            sheet_pos: pos.as_sheet_pos(sheet_id),
             formats: SheetFormatUpdates::from_selection(
                 &A1Selection::test_a1_sheet_id("A2", sheet_id),
                 FormatUpdate {
@@ -837,7 +837,7 @@ mod tests {
 
         // should trigger auto resize row heights for setting value at cell having wrap
         let ops = vec![Operation::SetDataTableAt {
-            sheet_pos: pos![M22].to_sheet_pos(sheet_id),
+            sheet_pos: pos![M22].as_sheet_pos(sheet_id),
             values: vec![vec!["value"]].into(),
         }];
         let row_heights = vec![JsRowHeight {
@@ -871,7 +871,7 @@ mod tests {
 
         // should trigger auto resize row heights for setting value at cell having wrap
         let ops = vec![Operation::SetDataTableAt {
-            sheet_pos: pos![M22].to_sheet_pos(sheet_id),
+            sheet_pos: pos![M22].as_sheet_pos(sheet_id),
             values: vec![vec!["value"]].into(),
         }];
         let row_heights = vec![JsRowHeight {
@@ -890,7 +890,7 @@ mod tests {
 
         // should trigger auto resize row heights for deleting table having wrap
         let ops = vec![Operation::DeleteDataTable {
-            sheet_pos: pos.to_sheet_pos(sheet_id),
+            sheet_pos: pos.as_sheet_pos(sheet_id),
         }];
         let row_heights = vec![JsRowHeight {
             row: 22,

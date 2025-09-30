@@ -11,7 +11,7 @@ pub(crate) struct Sides {
 // todo: remove this
 #[allow(dead_code)]
 impl Sides {
-    pub fn all() -> Self {
+    pub(crate) fn all() -> Self {
         Self {
             left: true,
             right: true,
@@ -20,25 +20,25 @@ impl Sides {
         }
     }
 
-    pub fn left() -> Self {
+    pub(crate) fn left() -> Self {
         Self {
             left: true,
             ..Default::default()
         }
     }
-    pub fn right() -> Self {
+    pub(crate) fn right() -> Self {
         Self {
             right: true,
             ..Default::default()
         }
     }
-    pub fn top() -> Self {
+    pub(crate) fn top() -> Self {
         Self {
             top: true,
             ..Default::default()
         }
     }
-    pub fn bottom() -> Self {
+    pub(crate) fn bottom() -> Self {
         Self {
             bottom: true,
             ..Default::default()

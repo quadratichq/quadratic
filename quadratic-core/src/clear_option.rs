@@ -31,7 +31,7 @@ impl<T> From<Option<T>> for ClearOption<T> {
 
 impl<T> ClearOption<T> {
     #[cfg(test)]
-    pub fn unwrap(self) -> T {
+    pub(crate) fn unwrap(self) -> T {
         match self {
             ClearOption::Some(value) => value,
             ClearOption::Clear => panic!("ClearOption is Clear"),

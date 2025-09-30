@@ -23,7 +23,7 @@ pub struct TablesContext {
 }
 
 impl Sheet {
-    pub fn get_ai_selection_context(
+    pub(crate) fn get_ai_selection_context(
         &self,
         selection: A1Selection,
         max_rows: Option<usize>,
@@ -47,7 +47,7 @@ impl Sheet {
         summary
     }
 
-    /// Returns tabular data rects of JsCellValuePos in a1 selection
+    /// Returns JsCellValueSummary in a1 selection
     fn get_data_rects_in_selection(
         &self,
         selection: &A1Selection,
@@ -191,7 +191,7 @@ impl Sheet {
     }
 
     /// Returns all code cells with errors or spills in all sheets.
-    pub fn get_ai_code_errors(&self, max_errors: usize) -> Vec<JsCodeErrorContext> {
+    pub(crate) fn get_ai_code_errors(&self, max_errors: usize) -> Vec<JsCodeErrorContext> {
         let mut errors = vec![];
 
         for (pos, table) in self.data_tables.expensive_iter() {

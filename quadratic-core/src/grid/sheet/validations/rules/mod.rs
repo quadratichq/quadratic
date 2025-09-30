@@ -31,10 +31,10 @@ pub enum ValidationRule {
 
 impl ValidationRule {
     /// Validate a CellValue against the validation rule.
-    pub fn validate(
+    pub(crate) fn validate(
         &self,
         sheet: &Sheet,
-        value: Option<&CellValue>,
+        value: Option<CellValue>,
         a1_context: &A1Context,
     ) -> bool {
         match &self {
@@ -48,32 +48,24 @@ impl ValidationRule {
     }
 
     // Is this a list validation rule
-    pub fn is_list(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_list(&self) -> bool {
         matches!(self, ValidationRule::List(_))
     }
 
     // Is this a logical validation rule
-    pub fn is_logical(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_logical(&self) -> bool {
         matches!(self, ValidationRule::Logical(_))
     }
 
     /// Returns true if the validation rule has a UI element.
-    pub fn has_ui(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn has_ui(&self) -> bool {
         match self {
             ValidationRule::List(list) => list.drop_down,
             ValidationRule::Logical(logical) => logical.show_checkbox,
             _ => false,
-        }
-    }
-
-    pub fn allow_blank(&self) -> bool {
-        match self {
-            ValidationRule::List(list) => list.ignore_blank,
-            ValidationRule::Logical(_) => true,
-            ValidationRule::Text(text) => text.ignore_blank,
-            ValidationRule::Number(number) => number.ignore_blank,
-            ValidationRule::DateTime(dt) => dt.ignore_blank,
-            ValidationRule::None => true,
         }
     }
 }
@@ -99,12 +91,12 @@ mod tests {
 
         assert!(ValidationRule::List(list.clone()).validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
         assert!(!ValidationRule::List(list).validate(
             &sheet,
-            Some(&CellValue::Text("test2".to_string())),
+            Some(CellValue::Text("test2".to_string())),
             &a1_context
         ));
     }
@@ -126,12 +118,12 @@ mod tests {
 
         assert!(rule.validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
         assert!(!rule.validate(
             &sheet,
-            Some(&CellValue::Text("test2".to_string())),
+            Some(CellValue::Text("test2".to_string())),
             &a1_context
         ));
     }
@@ -144,7 +136,7 @@ mod tests {
 
         assert!(rule.validate(
             &sheet,
-            Some(&CellValue::Text("test".to_string())),
+            Some(CellValue::Text("test".to_string())),
             &a1_context
         ));
     }

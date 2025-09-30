@@ -89,7 +89,7 @@ fn export_hash_map_border_style_cell(
         .collect()
 }
 
-pub fn export_borders(borders: OldBorders) -> v1_7::schema::BordersSchema {
+pub(crate) fn export_borders(borders: OldBorders) -> v1_7::schema::BordersSchema {
     v1_7::schema::BordersSchema {
         all: export_border_style_cell(borders.all),
         columns: export_hash_map_border_style_cell(borders.columns),

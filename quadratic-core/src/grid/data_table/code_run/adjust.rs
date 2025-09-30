@@ -81,7 +81,7 @@ impl CodeRun {
     /// `pos` is the position from which to parse the formula, while
     /// `new_default_sheet_id` is used to determine whether a reference needs an
     /// explicit sheet name.
-    pub fn adjust_references(
+    pub(crate) fn adjust_references(
         &mut self,
         new_default_sheet_id: SheetId,
         a1_context: &A1Context,
@@ -114,7 +114,7 @@ impl CodeRun {
     }
 
     /// Replaces the sheet name in the code cell references.
-    pub fn replace_sheet_name_in_cell_references(
+    pub(crate) fn replace_sheet_name_in_cell_references(
         &mut self,
         old_a1_context: &A1Context,
         new_a1_context: &A1Context,
@@ -139,7 +139,7 @@ impl CodeRun {
     }
 
     /// Replaces a table name in the code cell references.
-    pub fn replace_table_name_in_cell_references(
+    pub(crate) fn replace_table_name_in_cell_references(
         &mut self,
         a1_context: &A1Context,
         pos: SheetPos,
@@ -166,7 +166,7 @@ impl CodeRun {
     }
 
     /// Replaces column names in the code cell references.
-    pub fn replace_column_name_in_cell_references(
+    pub(crate) fn replace_column_name_in_cell_references(
         &mut self,
         a1_context: &A1Context,
         pos: SheetPos,
@@ -237,34 +237,34 @@ impl RefAdjust {
     };
 
     /// Returns whether the adjustment has no effect.
-    pub fn is_no_op(self) -> bool {
+    pub(crate) fn is_no_op(self) -> bool {
         self.dx == 0 && self.dy == 0
     }
 
     /// Returns whether the adjustment affects a sheet.
-    pub fn affects_sheet(self, sheet_id: SheetId) -> bool {
+    pub(crate) fn affects_sheet(self, sheet_id: SheetId) -> bool {
         self.sheet_id.is_none_or(|id| id == sheet_id)
     }
 
     /// Constructs an adjustment for inserting a column.
-    pub fn new_insert_column(sheet_id: SheetId, column: i64) -> Self {
+    pub(crate) fn new_insert_column(sheet_id: SheetId, column: i64) -> Self {
         Self::new_insert_columns(sheet_id, column..=column)
     }
     /// Constructs an adjustment for deleting a column.
-    pub fn new_delete_column(sheet_id: SheetId, column: i64) -> Self {
+    pub(crate) fn new_delete_column(sheet_id: SheetId, column: i64) -> Self {
         Self::new_delete_columns(sheet_id, column..=column)
     }
     /// Constructs an adjustment for inserting a row.
-    pub fn new_insert_row(sheet_id: SheetId, row: i64) -> Self {
+    pub(crate) fn new_insert_row(sheet_id: SheetId, row: i64) -> Self {
         Self::new_insert_rows(sheet_id, row..=row)
     }
     /// Constructs an adjustment for deleting a row.
-    pub fn new_delete_row(sheet_id: SheetId, row: i64) -> Self {
+    pub(crate) fn new_delete_row(sheet_id: SheetId, row: i64) -> Self {
         Self::new_delete_rows(sheet_id, row..=row)
     }
 
     /// Constructs an adjustment for inserting multiple columns at once.
-    pub fn new_insert_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+    pub(crate) fn new_insert_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
             sheet_id: Some(sheet_id),
             relative_only: false,
@@ -274,7 +274,7 @@ impl RefAdjust {
         }
     }
     /// Constructs an adjustment for deleting multiple columns at once.
-    pub fn new_delete_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+    pub(crate) fn new_delete_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
             sheet_id: Some(sheet_id),
             relative_only: false,
@@ -284,7 +284,7 @@ impl RefAdjust {
         }
     }
     /// Constructs an adjustment for inserting multiple rows at once.
-    pub fn new_insert_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+    pub(crate) fn new_insert_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
             sheet_id: Some(sheet_id),
             relative_only: false,
@@ -294,7 +294,7 @@ impl RefAdjust {
         }
     }
     /// Constructs an adjustment for deleting multiple rows at once.
-    pub fn new_delete_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+    pub(crate) fn new_delete_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
             sheet_id: Some(sheet_id),
             relative_only: false,
@@ -305,7 +305,7 @@ impl RefAdjust {
     }
 
     /// Constructs a simple translation that applies to all non -ve references.
-    pub fn new_translate(dx: i64, dy: i64) -> Self {
+    pub(crate) fn new_translate(dx: i64, dy: i64) -> Self {
         Self {
             relative_only: false,
             dx,
@@ -315,7 +315,7 @@ impl RefAdjust {
     }
 
     /// Constructs a simple translation that applies to all references greater than or equal to the start.
-    pub fn new_translate_with_start(dx: i64, dy: i64, x_start: i64, y_start: i64) -> Self {
+    pub(crate) fn new_translate_with_start(dx: i64, dy: i64, x_start: i64, y_start: i64) -> Self {
         Self {
             sheet_id: None,
             relative_only: false,

@@ -22,13 +22,13 @@ use super::{
 #[cfg(test)]
 impl GridController {
     // create a new gc for testing purposes with a viewport buffer
-    pub fn test_with_viewport_buffer() -> Self {
+    pub(crate) fn test_with_viewport_buffer() -> Self {
         let mut gc = Self::from_grid(Grid::test(), 0);
         gc.viewport_buffer = Some(ViewportBuffer::default());
         gc
     }
 
-    pub fn test_set_code_run_array_2d(
+    pub(crate) fn test_set_code_run_array_2d(
         &mut self,
         sheet_id: SheetId,
         x: i64,
@@ -81,7 +81,7 @@ impl GridController {
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
-    pub fn test_set_data_table(
+    pub(crate) fn test_set_data_table(
         &mut self,
         sheet_pos: SheetPos,
         w: u32,
@@ -112,7 +112,7 @@ impl GridController {
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
-    pub fn test_data_table_first_row_as_header(
+    pub(crate) fn test_data_table_first_row_as_header(
         &mut self,
         sheet_pos: SheetPos,
         first_row_is_header: bool,
@@ -124,7 +124,7 @@ impl GridController {
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
-    pub fn test_data_table_update_meta(
+    pub(crate) fn test_data_table_update_meta(
         &mut self,
         sheet_pos: SheetPos,
         columns: Option<Vec<DataTableColumnHeader>>,

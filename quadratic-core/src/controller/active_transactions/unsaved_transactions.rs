@@ -26,7 +26,8 @@ impl UnsavedTransactions {
     /// Finds a the forward transaction by its transaction_id.
     ///
     /// Returns `(index, transaction)`.
-    pub fn find_forward(&self, transaction_id: Uuid) -> Option<(usize, &Transaction)> {
+    #[cfg(test)]
+    pub(crate) fn find_forward(&self, transaction_id: Uuid) -> Option<(usize, &Transaction)> {
         self.transactions
             .iter()
             .enumerate()
@@ -34,20 +35,20 @@ impl UnsavedTransactions {
             .map(|(index, unsaved_transaction)| (index, &unsaved_transaction.forward))
     }
 
-    pub fn find(&self, transaction_id: Uuid) -> Option<&UnsavedTransaction> {
+    pub(crate) fn find(&self, transaction_id: Uuid) -> Option<&UnsavedTransaction> {
         self.transactions
             .iter()
             .find(|unsaved_transaction| unsaved_transaction.id() == transaction_id)
     }
 
     /// Finds the index of the UnsavedTransaction by its transaction_id.
-    pub fn find_index(&self, transaction_id: Uuid) -> Option<usize> {
+    pub(crate) fn find_index(&self, transaction_id: Uuid) -> Option<usize> {
         self.iter()
             .position(|unsaved_transaction| unsaved_transaction.id() == transaction_id)
     }
 
     /// Inserts or replaces a `PendingTransaction``.
-    pub fn insert_or_replace(&mut self, pending: &PendingTransaction, send: bool) {
+    pub(crate) fn insert_or_replace(&mut self, pending: &PendingTransaction, send: bool) {
         let forward = pending.to_forward_transaction();
         let reverse = pending.to_undo_transaction();
         match self
@@ -60,33 +61,37 @@ impl UnsavedTransactions {
                     reverse,
                     sent_to_server: false,
                 };
-                if cfg!(target_family = "wasm") && send
-                    && let Ok(stringified) = serde_json::to_string(&transaction) {
-                        crate::wasm_bindings::js::addUnsentTransaction(
-                            transaction.forward.id.to_string(),
-                            stringified,
-                            transaction.forward.operations.len() as u32,
-                        );
-                    }
+                if cfg!(target_family = "wasm")
+                    && send
+                    && let Ok(stringified) = serde_json::to_string(&transaction)
+                {
+                    crate::wasm_bindings::js::addUnsentTransaction(
+                        transaction.forward.id.to_string(),
+                        stringified,
+                        transaction.forward.operations.len() as u32,
+                    );
+                }
                 self.transactions.push(transaction);
             }
             Some(unsaved_transaction) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
-                if cfg!(target_family = "wasm") && send
-                    && let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
-                        crate::wasm_bindings::js::addUnsentTransaction(
-                            unsaved_transaction.forward.id.to_string(),
-                            stringified,
-                            unsaved_transaction.forward.operations.len() as u32,
-                        );
-                    }
+                if cfg!(target_family = "wasm")
+                    && send
+                    && let Ok(stringified) = serde_json::to_string(&unsaved_transaction)
+                {
+                    crate::wasm_bindings::js::addUnsentTransaction(
+                        unsaved_transaction.forward.id.to_string(),
+                        stringified,
+                        unsaved_transaction.forward.operations.len() as u32,
+                    );
+                }
             }
         };
     }
 
     /// Marks a transaction as sent to the server (called by TS after multiplayer.ts successfully sends the transaction)
-    pub fn mark_transaction_sent(&mut self, transaction_id: &Uuid) {
+    pub(crate) fn mark_transaction_sent(&mut self, transaction_id: &Uuid) {
         if let Some((index, _)) = self
             .iter()
             .enumerate()

@@ -28,7 +28,7 @@ impl Borders {
 
         let mut horizontal_rects = self
             .top
-            .into_iter()
+            .iter_blocks()
             .map(|(x1, y1, x2, y2, border)| {
                 if let Some((_table, table_rect)) = table {
                     let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
@@ -53,7 +53,7 @@ impl Borders {
                     (x1, y1, x2, y2, border)
                 }
             })
-            .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
+            .chain(self.bottom.iter_blocks().map(|(x1, y1, x2, y2, border)| {
                 if let Some((_, table_rect)) = table {
                     let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
                     let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
@@ -116,39 +116,41 @@ impl Borders {
             });
 
         let mut horizontal_vec = vec![];
-        horizontal.into_iter().for_each(|(x1, y1, x2, y2, border)| {
-            if y2.is_some_and(|y2| y2 == y1) {
-                horizontal_vec.push(JsBorderHorizontal {
-                    color: border.color,
-                    line: border.line,
-                    x: x1 as i64,
-                    y: y1 as i64,
-                    width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
-                    unbounded: false,
-                });
-            } else if let Some(y2) = y2 {
-                for y in y1..=y2 {
+        horizontal
+            .iter_blocks()
+            .for_each(|(x1, y1, x2, y2, border)| {
+                if y2.is_some_and(|y2| y2 == y1) {
                     horizontal_vec.push(JsBorderHorizontal {
                         color: border.color,
                         line: border.line,
                         x: x1 as i64,
-                        y: y as i64,
+                        y: y1 as i64,
                         width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
                         unbounded: false,
                     });
+                } else if let Some(y2) = y2 {
+                    for y in y1..=y2 {
+                        horizontal_vec.push(JsBorderHorizontal {
+                            color: border.color,
+                            line: border.line,
+                            x: x1 as i64,
+                            y: y as i64,
+                            width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
+                            unbounded: false,
+                        });
+                    }
+                } else {
+                    // handle infinite horizontal
+                    horizontal_vec.push(JsBorderHorizontal {
+                        color: border.color,
+                        line: border.line,
+                        x: x1 as i64,
+                        y: y1 as i64,
+                        width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
+                        unbounded: y2.is_none(),
+                    });
                 }
-            } else {
-                // handle infinite horizontal
-                horizontal_vec.push(JsBorderHorizontal {
-                    color: border.color,
-                    line: border.line,
-                    x: x1 as i64,
-                    y: y1 as i64,
-                    width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
-                    unbounded: y2.is_none(),
-                });
-            }
-        });
+            });
         if horizontal_vec.is_empty() {
             None
         } else {
@@ -175,7 +177,7 @@ impl Borders {
 
         let mut vertical_rects = self
             .left
-            .into_iter()
+            .iter_blocks()
             .map(|(x1, y1, x2, y2, border)| {
                 if let Some((_, table_rect)) = table {
                     let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
@@ -200,7 +202,7 @@ impl Borders {
                     (x1, y1, x2, y2, border)
                 }
             })
-            .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
+            .chain(self.right.iter_blocks().map(|(x1, y1, x2, y2, border)| {
                 if let Some((_, table_rect)) = table {
                     let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x);
                     let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
@@ -261,7 +263,7 @@ impl Borders {
         });
 
         let mut vertical_vec = vec![];
-        vertical.into_iter().for_each(|(x1, y1, x2, y2, border)| {
+        vertical.iter_blocks().for_each(|(x1, y1, x2, y2, border)| {
             if x2.is_some_and(|x2| x2 == x1) {
                 vertical_vec.push(JsBorderVertical {
                     color: border.color,

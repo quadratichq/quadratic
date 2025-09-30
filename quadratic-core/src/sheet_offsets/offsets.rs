@@ -29,7 +29,7 @@ pub struct Offsets {
 }
 impl Offsets {
     /// Constructs an empty `Offsets` structure.
-    pub fn new(default: f64) -> Self {
+    pub(crate) fn new(default: f64) -> Self {
         Offsets {
             default,
             sizes: BTreeMap::new(),
@@ -37,40 +37,20 @@ impl Offsets {
     }
 
     /// Constructs an `Offsets` structure from an iterator over key-values pairs.
-    pub fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
+    pub(crate) fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
         Offsets {
             default,
             sizes: iter.into_iter().collect(),
         }
     }
 
-    /// Moves the column/row from `from_index` to `to_index`, shifting the ones
-    /// between.
-    pub fn move_elem(&mut self, from_index: i64, to_index: i64) {
-        let value_to_move = self.sizes.remove(&from_index);
-
-        let range = std::cmp::min(from_index, to_index)..=std::cmp::max(from_index, to_index);
-        let delta = if from_index < to_index { -1 } else { 1 };
-        let key_value_pairs = self.sizes.range(range).map(|(&k, &v)| (k, v)).collect_vec();
-        for (k, _v) in &key_value_pairs {
-            self.sizes.remove(k);
-        }
-        for (k, v) in key_value_pairs {
-            self.sizes.insert(k + delta, v);
-        }
-
-        if let Some(value) = value_to_move {
-            self.sizes.insert(to_index, value);
-        }
-    }
-
     /// Returns the width/height of a column/row.
-    pub fn get_size(&self, index: i64) -> f64 {
+    pub(crate) fn get_size(&self, index: i64) -> f64 {
         *self.sizes.get(&index).unwrap_or(&self.default)
     }
 
     /// Sets the width/height of a column/row.
-    pub fn set_size(&mut self, index: i64, value: f64) -> f64 {
+    pub(crate) fn set_size(&mut self, index: i64, value: f64) -> f64 {
         if value == self.default {
             self.sizes.remove(&index)
         } else {
@@ -79,13 +59,8 @@ impl Offsets {
         .unwrap_or(self.default)
     }
 
-    /// Resets the width/height of a column/row to the default value.
-    pub fn reset(&mut self, index: i64) -> f64 {
-        self.sizes.remove(&index).unwrap_or(self.default)
-    }
-
     /// Iterates over the pixel positions of a range of columns/rows.
-    pub fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
+    pub(crate) fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
         let mut current_position = self.default * (index_range.start - 1) as f64
             + self
                 .sizes
@@ -101,7 +76,7 @@ impl Offsets {
 
     /// Returns screen position for a pixel using the cumulative sums to speed
     /// up the search.
-    pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
+    pub(crate) fn find_offset(&self, pixel: f64) -> (i64, f64) {
         let mut current_sum = 0.0;
         let mut current_index = 1i64;
 
@@ -157,12 +132,12 @@ impl Offsets {
     }
 
     /// Iterates over the sizes of all columns/rows.
-    pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+    pub(crate) fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
     }
 
     /// Iterates over the sizes of all columns/rows - owned.
-    pub fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
+    pub(crate) fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
         self.sizes
             .into_iter()
             .filter(move |(index, size)| *index > 0 && *size != self.default)
@@ -174,7 +149,7 @@ impl Offsets {
     ///
     /// Returns a vector of changes made to the offsets structure, where each
     /// change is represented as a tuple (index, new_size).
-    pub fn insert(&mut self, index: i64, source_width: Option<f64>) -> Vec<(i64, f64)> {
+    pub(crate) fn insert(&mut self, index: i64, source_width: Option<f64>) -> Vec<(i64, f64)> {
         let mut sizes = BTreeMap::new();
         let mut keys = self.sizes.keys().collect_vec();
 
@@ -233,7 +208,7 @@ impl Offsets {
     /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>) where the Vec contains
     /// the changes made to the offsets structure, and the Option<f64> is the
     /// old size of the removed offset, if it existed.
-    pub fn delete(&mut self, index: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+    pub(crate) fn delete(&mut self, index: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         let mut changed = HashMap::new();
         let mut old: Option<f64> = None;
         let keys = self.sizes.keys().sorted_unstable();
@@ -267,14 +242,14 @@ impl Offsets {
     }
 
     /// Changes the default size
-    pub fn set_default(&mut self, size: f64) -> f64 {
+    pub(crate) fn set_default(&mut self, size: f64) -> f64 {
         let current = self.default;
         self.default = size;
         current
     }
 
     /// Clears all sizes and resets to the default.
-    pub fn clear(&mut self) -> Vec<(i64, f64)> {
+    pub(crate) fn clear(&mut self) -> Vec<(i64, f64)> {
         let changed: Vec<(i64, f64)> = self
             .sizes
             .iter()
@@ -285,7 +260,7 @@ impl Offsets {
     }
 
     /// Retains only positive non-default sizes.
-    pub fn migration_retain_positive_non_default_offsets(&mut self) {
+    pub(crate) fn migration_retain_positive_non_default_offsets(&mut self) {
         self.sizes
             .retain(|&index, size| index > 0 && size != &self.default);
     }
@@ -314,25 +289,6 @@ mod tests {
             offsets.iter_offsets(1..5).collect_vec(),
             vec![0.0, 100.0, 110.0, 1110.0],
         );
-    }
-
-    #[test]
-    fn test_offsets_move() {
-        let mut offsets = Offsets::new(10.0);
-        for i in 0..10 {
-            offsets.set_size(i, i as f64);
-        }
-        offsets.move_elem(3, 6);
-        assert_eq!(offsets.get_size(2), 2.0);
-        assert_eq!(offsets.get_size(3), 4.0);
-        assert_eq!(offsets.get_size(4), 5.0);
-        assert_eq!(offsets.get_size(5), 6.0);
-        assert_eq!(offsets.get_size(6), 3.0);
-        assert_eq!(offsets.get_size(7), 7.0);
-        offsets.move_elem(6, 3);
-        for i in 0..10 {
-            assert_eq!(offsets.get_size(i), i as f64);
-        }
     }
 
     #[test]
@@ -418,17 +374,6 @@ mod tests {
         assert_eq!(offsets.find_offset(30.0), (3, 30.0));
         assert_eq!(offsets.find_offset(55.0), (3, 30.0));
         assert_eq!(offsets.find_offset(62.0), (4, 60.0));
-    }
-
-    #[test]
-    fn test_reset() {
-        let mut offsets = Offsets::new(10.0);
-        offsets.set_size(1, 20.0);
-        offsets.set_size(2, 30.0);
-
-        assert_eq!(offsets.reset(1), 20.0);
-        assert_eq!(offsets.get_size(1), 10.0);
-        assert_eq!(offsets.reset(3), 10.0); // Resetting non-existent entry
     }
 
     #[test]

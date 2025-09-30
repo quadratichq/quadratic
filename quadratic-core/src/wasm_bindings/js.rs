@@ -28,10 +28,10 @@ extern "C" {
     module = "/../quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts"
 )]
 extern "C" {
-    pub fn jsTime(name: String);
-    pub fn jsTimeEnd(name: String);
+    pub(crate) fn jsTime(name: String);
+    pub(crate) fn jsTimeEnd(name: String);
 
-    pub fn jsRunPython(
+    pub(crate) fn jsRunPython(
         transactionId: String,
         x: i32,
         y: i32,
@@ -39,7 +39,7 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
-    pub fn jsRunJavascript(
+    pub(crate) fn jsRunJavascript(
         transactionId: String,
         x: i32,
         y: i32,
@@ -47,42 +47,46 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
-    pub fn jsHashesRenderCells(render_cells: Vec<u8> /*Vec<JsHashRenderCells>*/);
-    pub fn jsHashesDirty(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
+    pub(crate) fn jsHashesRenderCells(render_cells: Vec<u8> /*Vec<JsHashRenderCells>*/);
+    pub(crate) fn jsHashesDirty(dirty_hashes: Vec<u8> /* Vec<JsHashesDirty> */);
 
-    pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool);
-    pub fn jsDeleteSheet(sheetId: String, user: bool);
-    pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */);
-    pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
+    pub(crate) fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool);
+    pub(crate) fn jsDeleteSheet(sheetId: String, user: bool);
+    pub(crate) fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */);
+    pub(crate) fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */);
 
     // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
-    pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */);
-    pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */);
+    pub(crate) fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */);
+    pub(crate) fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */);
 
-    pub fn jsRequestTransactions(sequence_num: u64);
-    pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsRenderCodeCell> */);
-    pub fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /* Vec<JsOffset> */);
-    pub fn jsSetCursor(cursor: String);
-    pub fn jsHtmlOutput(html: Vec<u8> /* Vec<JsHtmlOutput> */);
-    pub fn jsUpdateHtml(html: Vec<u8> /* JsHtmlOutput */);
-    pub fn jsGenerateThumbnail();
-    pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */);
-    pub fn jsSheetCodeCells(
+    pub(crate) fn jsRequestTransactions(sequence_num: u64);
+    pub(crate) fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsRenderCodeCell> */);
+    pub(crate) fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /* Vec<JsOffset> */);
+    pub(crate) fn jsSetCursor(cursor: String);
+    pub(crate) fn jsHtmlOutput(html: Vec<u8> /* Vec<JsHtmlOutput> */);
+    pub(crate) fn jsUpdateHtml(html: Vec<u8> /* JsHtmlOutput */);
+    pub(crate) fn jsGenerateThumbnail();
+    pub(crate) fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */);
+    pub(crate) fn jsSheetCodeCells(
         sheet_id: String,
         render_code_cells: Vec<u8>, /* Vec<JsRenderCodeCell> */
     );
-    pub fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
+    pub(crate) fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
 
-    pub fn jsImportProgress(file_name: &str, current: u32, total: u32);
-    pub fn jsTransactionStart(transaction_id: String, name: String);
-    pub fn jsTransactionEnd(transaction_id: String, name: String);
+    pub(crate) fn jsImportProgress(file_name: &str, current: u32, total: u32);
+    pub(crate) fn jsTransactionStart(transaction_id: String, name: String);
+    pub(crate) fn jsTransactionEnd(transaction_id: String, name: String);
 
-    pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
-    pub fn jsSendTransaction(transaction_id: String, transaction: Vec<u8>);
+    pub(crate) fn addUnsentTransaction(
+        transaction_id: String,
+        transaction: String,
+        operations: u32,
+    );
+    pub(crate) fn jsSendTransaction(transaction_id: String, transaction: Vec<u8>);
 
-    pub fn jsUndoRedo(undo: bool, redo: bool);
+    pub(crate) fn jsUndoRedo(undo: bool, redo: bool);
 
-    pub fn jsConnection(
+    pub(crate) fn jsConnection(
         transactionId: String,
         x: i32,
         y: i32,
@@ -92,30 +96,40 @@ extern "C" {
         connection_id: String,
     );
 
-    pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>);
+    pub(crate) fn jsSendImage(
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+        image: Option<String>,
+    );
 
     // rows: Vec<i64>
-    pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
+    pub(crate) fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
 
-    pub fn jsSheetValidations(
+    pub(crate) fn jsSheetValidations(
         sheet_id: String,
         sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
 
-    pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
+    pub(crate) fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
-    pub fn jsMultiplayerSynced();
+    pub(crate) fn jsMultiplayerSynced();
 
-    pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
+    pub(crate) fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
-    pub fn jsClientMessage(message: String, error: String);
+    pub(crate) fn jsClientMessage(message: String, error: String);
 
-    pub fn jsA1Context(context: Vec<u8> /* A1Context */);
+    pub(crate) fn jsA1Context(context: Vec<u8> /* A1Context */);
 
-    pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
-    pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
+    pub(crate) fn jsSendDataTablesCache(
+        sheet_id: String,
+        cache: Vec<u8>, /* SheetDataTablesCache */
+    );
+    pub(crate) fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 
-    pub fn jsTimestamp() -> u64;
+    pub(crate) fn jsTimestamp() -> u64;
 }
 
 #[cfg(test)]
@@ -137,7 +151,8 @@ fn js_call(s: &str, args: String) {
 }
 
 #[cfg(test)]
-pub fn print_js_calls() {
+#[allow(unused)]
+pub(crate) fn print_js_calls() {
     JS_CALLS.with(|js_calls| {
         let js_calls = js_calls.lock().unwrap();
         println!("JS calls:");
@@ -149,7 +164,7 @@ pub fn print_js_calls() {
 
 #[cfg(test)]
 #[track_caller]
-pub fn expect_js_call(name: &str, args: String, clear: bool) {
+pub(crate) fn expect_js_call(name: &str, args: String, clear: bool) {
     JS_CALLS.with(|js_calls| {
         let mut js_calls = js_calls.lock().unwrap();
         let result = TestFunction {
@@ -174,7 +189,7 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
 
 #[cfg(test)]
 #[track_caller]
-pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
+pub(crate) fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     JS_CALLS.with(|js_calls| {
         let mut js_calls = js_calls.lock().unwrap();
         let mut found = 0;
@@ -200,7 +215,7 @@ use std::collections::HashMap;
 
 #[cfg(test)]
 #[track_caller]
-pub fn expect_js_offsets(
+pub(crate) fn expect_js_offsets(
     sheet_id: SheetId,
     offsets: HashMap<(Option<i64>, Option<i64>), f64>,
     clear: bool,
@@ -225,7 +240,7 @@ pub fn expect_js_offsets(
 }
 
 #[cfg(test)]
-pub fn clear_js_calls() {
+pub(crate) fn clear_js_calls() {
     JS_CALLS.with(|js_calls| js_calls.lock().unwrap().clear());
 }
 
@@ -238,7 +253,7 @@ pub struct TestFunction {
 
 #[cfg(test)]
 impl TestFunction {
-    pub fn new(name: &str, args: String) -> Self {
+    pub(crate) fn new(name: &str, args: String) -> Self {
         Self {
             name: name.to_string(),
             args,
@@ -248,19 +263,21 @@ impl TestFunction {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTime(name: String) {
+#[allow(unused)]
+pub(crate) fn jsTime(name: String) {
     js_call("jsTime", name);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTimeEnd(name: String) {
+#[allow(unused)]
+pub(crate) fn jsTimeEnd(name: String) {
     js_call("jsTimeEnd", name);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRunPython(
+pub(crate) fn jsRunPython(
     transactionId: String,
     x: i32,
     y: i32,
@@ -276,7 +293,7 @@ pub fn jsRunPython(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRunJavascript(
+pub(crate) fn jsRunJavascript(
     transactionId: String,
     x: i32,
     y: i32,
@@ -292,104 +309,104 @@ pub fn jsRunJavascript(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
+pub(crate) fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
     // we use a hash of cells to avoid storing too large test data
     js_call("jsHashesRenderCells", format!("{render_cells:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
+pub(crate) fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
     js_call("jsHashesDirty", format!("{dirty_hashes:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool) {
+pub(crate) fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool) {
     js_call("jsAddSheet", format!("{sheetInfo:?},{user}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsDeleteSheet(sheetId: String, user: bool) {
+pub(crate) fn jsDeleteSheet(sheetId: String, user: bool) {
     js_call("jsDeleteSheet", format!("{sheetId},{user}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */) {
+pub(crate) fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */) {
     js_call("jsSheetInfo", format!("{sheets_info:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
+pub(crate) fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
     js_call("jsSheetInfoUpdate", format!("{sheet_info:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */) {
+pub(crate) fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */) {
     js_call("jsSheetFills", format!("{sheet_id},{fills:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */) {
+pub(crate) fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */) {
     js_call("jsSheetMetaFills", format!("{sheet_id},{fills:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRequestTransactions(sequence_num: u64) {
+pub(crate) fn jsRequestTransactions(sequence_num: u64) {
     js_call("jsRequestTransactions", sequence_num.to_string());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsUpdateCodeCell> */) {
+pub(crate) fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsUpdateCodeCell> */) {
     js_call("jsUpdateCodeCells", format!("{update_code_cells:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /*Vec<JsOffset>*/) {
+pub(crate) fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /*Vec<JsOffset>*/) {
     js_call("jsOffsetsModified", format!("{sheet_id},{offsets:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSetCursor(cursor: String) {
+pub(crate) fn jsSetCursor(cursor: String) {
     js_call("jsSetCursor", cursor);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHtmlOutput(html: Vec<u8> /*Vec<JsHtmlOutput>*/) {
+pub(crate) fn jsHtmlOutput(html: Vec<u8> /*Vec<JsHtmlOutput>*/) {
     js_call("jsHtmlOutput", format!("{html:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUpdateHtml(html: Vec<u8> /*JsHtmlOutput*/) {
+pub(crate) fn jsUpdateHtml(html: Vec<u8> /*JsHtmlOutput*/) {
     js_call("jsUpdateHtml", format!("{html:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsGenerateThumbnail() {
+pub(crate) fn jsGenerateThumbnail() {
     js_call("jsGenerateThumbnail", "".to_string());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */) {
+pub(crate) fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */) {
     js_call("jsBordersSheet", format!("{sheet_id},{borders:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
+pub(crate) fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
     js_call(
         "jsSheetCodeCells",
         format!("{sheet_id},{render_code_cells:?}"),
@@ -398,31 +415,31 @@ pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
+pub(crate) fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
     js_call("jsSheetBoundsUpdate", format!("{bounds:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsImportProgress(file_name: &str, current: u32, total: u32) {
+pub(crate) fn jsImportProgress(file_name: &str, current: u32, total: u32) {
     js_call("jsImportProgress", format!("{file_name},{current},{total}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTransactionStart(transaction_id: String, name: String) {
+pub(crate) fn jsTransactionStart(transaction_id: String, name: String) {
     js_call("jsTransactionStart", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTransactionEnd(transaction_id: String, name: String) {
+pub(crate) fn jsTransactionEnd(transaction_id: String, name: String) {
     js_call("jsTransactionEnd", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32) {
+pub(crate) fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32) {
     js_call(
         "addUnsentTransaction",
         format!("{transaction_id},{transaction},{operations}"),
@@ -431,7 +448,7 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
+pub(crate) fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
     // We do not include the actual transaction as we don't want to save that in
     // the TEST_ARRAY because of its potential size.
     js_call("jsSendTransaction", transaction_id.to_string());
@@ -439,13 +456,13 @@ pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsUndoRedo(undo: bool, redo: bool) {
+pub(crate) fn jsUndoRedo(undo: bool, redo: bool) {
     js_call("jsUndoRedo", format!("{undo},{redo}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsConnection(
+pub(crate) fn jsConnection(
     transactionId: String,
     x: i32,
     y: i32,
@@ -464,7 +481,7 @@ pub fn jsConnection(
 #[cfg(test)]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)]
-pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>) {
+pub(crate) fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>) {
     js_call(
         "jsSendImage",
         format!(
@@ -481,7 +498,10 @@ pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Opti
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Validation> */) {
+pub(crate) fn jsSheetValidations(
+    sheet_id: String,
+    sheet_validations: Vec<u8>, /* Vec<Validation> */
+) {
     js_call(
         "jsSheetValidations",
         format!("{sheet_id},{sheet_validations:?}"),
@@ -490,7 +510,7 @@ pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Va
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRequestRowHeights(
+pub(crate) fn jsRequestRowHeights(
     transaction_id: String,
     sheet_id: String,
     rows: String, /*Vec<i64>*/
@@ -503,49 +523,52 @@ pub fn jsRequestRowHeights(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */) {
+pub(crate) fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */) {
     js_call("jsValidationWarnings", format!("{warnings:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsMultiplayerSynced() {
+pub(crate) fn jsMultiplayerSynced() {
     js_call("jsMultiplayerSynced", "".into());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
+pub(crate) fn jsSendViewportBuffer(buffer: [u8; 112]) {
     js_call("jsSendViewportBuffer", format!("{buffer:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsClientMessage(message: String, severity: String) {
+pub(crate) fn jsClientMessage(message: String, severity: String) {
     js_call("jsClientMessage", format!("{message},{severity}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
+pub(crate) fn jsA1Context(context: Vec<u8> /* A1Context */) {
     js_call("jsA1Context", format!("{context:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */) {
+pub(crate) fn jsSendDataTablesCache(
+    sheet_id: String,
+    cache: Vec<u8>, /* SheetDataTablesCache */
+) {
     js_call("jsSendDataTablesCache", format!("{sheet_id},{cache:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
+pub(crate) fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
     js_call("jsSendContentCache", format!("{sheet_id},{cache:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTimestamp() -> u64 {
+pub(crate) fn jsTimestamp() -> u64 {
     // Return a fixed timestamp for deterministic tests
     1234567890000 // Jan 13, 2009 23:31:30 GMT
 }

@@ -12,11 +12,11 @@ use super::sheet;
 
 /// Creates a JS chart at the given position with the given width and height (in cells).
 #[cfg(test)]
-pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos, w: u32, h: u32) {
+pub(crate) fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos, w: u32, h: u32) {
     use crate::controller::transaction_types::JsCellValueResult;
 
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         CodeCellLanguage::Javascript,
         "code".to_string(),
         None,
@@ -47,7 +47,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
 
 /// Creates a JS chart at the given position with the given width and height (in cells).
 #[cfg(test)]
-pub fn test_create_html_chart(
+pub(crate) fn test_create_html_chart(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -55,7 +55,7 @@ pub fn test_create_html_chart(
     h: u32,
 ) -> DataTable {
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         CodeCellLanguage::Python,
         "<html></html>".to_string(),
         None,
@@ -107,12 +107,12 @@ mod tests {
         // Verify code cell was created
         assert_code_language(
             &gc,
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             "code".to_string(),
         );
         assert!(
-            gc.data_table_at(pos.to_sheet_pos(sheet_id))
+            gc.data_table_at(pos.as_sheet_pos(sheet_id))
                 .unwrap()
                 .is_image()
         );
@@ -134,7 +134,7 @@ mod tests {
         let sheet = sheet(&gc, sheet_id);
         assert_code_language(
             &gc,
-            pos.to_sheet_pos(sheet_id),
+            pos.as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
         );

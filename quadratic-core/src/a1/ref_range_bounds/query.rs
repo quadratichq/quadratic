@@ -4,27 +4,27 @@ use super::*;
 
 impl RefRangeBounds {
     /// Returns whether `self` is a single column or a column range.
-    pub fn is_col_range(&self) -> bool {
+    pub(crate) fn is_col_range(&self) -> bool {
         self.start.row() == 1 && self.end.row() == UNBOUNDED
     }
 
     /// Returns the number of columns in the range.
-    pub fn col_range(&self) -> i64 {
+    pub(crate) fn col_range(&self) -> i64 {
         self.end.row() - self.start.row()
     }
 
     /// Returns whether `self` is a multi-cursor.
-    pub fn is_multi_cursor(&self) -> bool {
+    pub(crate) fn is_multi_cursor(&self) -> bool {
         self.start != self.end
     }
 
     /// Returns whether `self` is the entire range.
-    pub fn is_all(&self) -> bool {
+    pub(crate) fn is_all(&self) -> bool {
         self == &Self::ALL
     }
 
     /// Returns whether `self` contains the column `col` in its column range.
-    pub fn has_col_range(&self, col: i64) -> bool {
+    pub(crate) fn has_col_range(&self, col: i64) -> bool {
         if !self.is_col_range() {
             return false;
         }
@@ -38,12 +38,12 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` is a single row or a row range.
-    pub fn is_row_range(&self) -> bool {
+    pub(crate) fn is_row_range(&self) -> bool {
         self.start.col() == 1 && self.end.col() == UNBOUNDED
     }
 
     /// Returns whether `self` contains the row `row` in its row range.
-    pub fn has_row_range(&self, row: i64) -> bool {
+    pub(crate) fn has_row_range(&self, row: i64) -> bool {
         if !self.is_row_range() {
             return false;
         }
@@ -57,7 +57,7 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` is a finite range.
-    pub fn is_finite(&self) -> bool {
+    pub(crate) fn is_finite(&self) -> bool {
         self.start.col() != UNBOUNDED
             && self.start.row() != UNBOUNDED
             && self.end.col() != UNBOUNDED
@@ -65,13 +65,13 @@ impl RefRangeBounds {
     }
 
     /// Returns true if the range is a single cell.
-    pub fn is_single_cell(&self) -> bool {
+    pub(crate) fn is_single_cell(&self) -> bool {
         self.start == self.end && !self.start.col.is_unbounded() && !self.start.row.is_unbounded()
     }
 
     /// Tries to convert the range to a single cell position. This will only
     /// return Some if the range is a single cell.
-    pub fn try_to_pos(&self) -> Option<Pos> {
+    pub(crate) fn try_to_pos(&self) -> Option<Pos> {
         if self.is_single_cell() {
             Some(Pos {
                 x: self.start.col(),
@@ -83,7 +83,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a rectangle that may contain an unbounded range.
-    pub fn to_rect_unbounded(&self) -> Rect {
+    pub(crate) fn as_rect_unbounded(&self) -> Rect {
         Rect::new(
             self.start.col(),
             self.start.row(),
@@ -93,7 +93,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a rectangle that bounds a finite range.
-    pub fn to_rect(&self) -> Option<Rect> {
+    pub(crate) fn as_rect(&self) -> Option<Rect> {
         if self.is_finite() {
             Some(Rect::new(
                 self.start.col(),
@@ -107,7 +107,7 @@ impl RefRangeBounds {
     }
 
     /// Returns only the finite columns in the range.
-    pub fn selected_columns_finite(&self) -> Vec<i64> {
+    pub(crate) fn selected_columns_finite(&self) -> Vec<i64> {
         let mut columns = vec![];
         if !self.end.col.is_unbounded() {
             let min = self.start.col().min(self.end.col());
@@ -118,7 +118,7 @@ impl RefRangeBounds {
     }
 
     /// Returns the selected columns in the range that fall between `from` and `to`.
-    pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
+    pub(crate) fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         let mut columns = vec![];
         let min = self.start.col().min(self.end.col()).max(from);
         let max = self.start.col().max(self.end.col()).min(to);
@@ -129,7 +129,7 @@ impl RefRangeBounds {
     }
 
     /// Returns only the finite rows in the range.
-    pub fn selected_rows_finite(&self) -> Vec<i64> {
+    pub(crate) fn selected_rows_finite(&self) -> Vec<i64> {
         let mut rows = vec![];
         if !self.end.row.is_unbounded() {
             let min = self.start.row().min(self.end.row());
@@ -140,7 +140,7 @@ impl RefRangeBounds {
     }
 
     /// Returns the selected rows in the range that fall between `from` and `to`.
-    pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
+    pub(crate) fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         let mut rows = vec![];
         let min = self.start.row().min(self.end.row()).max(from);
         let max = self.start.row().max(self.end.row()).min(to);
@@ -151,7 +151,7 @@ impl RefRangeBounds {
     }
 
     /// Converts the CellRefRange to coordinates to be used in Contiguous2D.
-    pub fn to_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
+    pub(crate) fn as_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
         let (x1, y1, x2, y2) = (
             if self.start.col.is_unbounded() {
                 1
@@ -180,16 +180,10 @@ impl RefRangeBounds {
     }
 
     /// Returns the cursor position from the last range.
-    pub fn cursor_pos_from_last_range(&self) -> Pos {
+    pub(crate) fn cursor_pos_from_last_range(&self) -> Pos {
         let x = self.start.col();
         let y = self.start.row();
         Pos { x, y }
-    }
-
-    /// Returns true if the range overlaps with the given rectangle.
-    pub fn contains_rect(&self, other: Rect) -> bool {
-        let rect = self.to_rect_unbounded();
-        rect.contains_rect(&other)
     }
 }
 
@@ -211,18 +205,18 @@ mod tests {
     #[test]
     fn test_to_rect() {
         assert_eq!(
-            RefRangeBounds::test_a1("A1").to_rect(),
+            RefRangeBounds::test_a1("A1").as_rect(),
             Some(Rect::new(1, 1, 1, 1))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:B2").to_rect(),
+            RefRangeBounds::test_a1("A1:B2").as_rect(),
             Some(Rect::new(1, 1, 2, 2))
         );
-        assert_eq!(RefRangeBounds::test_a1("A:B").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("1:2").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("A1:C").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("C3:A").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("*").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A:B").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("1:2").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A1:C").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("C3:A").as_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("*").as_rect(), None);
     }
 
     #[test]
@@ -505,29 +499,29 @@ mod tests {
     }
 
     #[test]
-    fn test_to_contiguous2d_coords() {
+    fn test_as_contiguous2d_coords() {
         assert_eq!(
-            RefRangeBounds::test_a1("A1").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("A1").as_contiguous2d_coords(),
             (1, 1, Some(1), Some(1))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:B2").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("A1:B2").as_contiguous2d_coords(),
             (1, 1, Some(2), Some(2))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("B1:C").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("B1:C").as_contiguous2d_coords(),
             (2, 1, Some(3), None)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("2").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("2").as_contiguous2d_coords(),
             (1, 2, None, Some(2))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("*").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("*").as_contiguous2d_coords(),
             (1, 1, None, None)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("E:G").to_contiguous2d_coords(),
+            RefRangeBounds::test_a1("E:G").as_contiguous2d_coords(),
             (5, 1, Some(7), None)
         );
     }
@@ -535,19 +529,19 @@ mod tests {
     #[test]
     fn test_to_rect_unbounded() {
         assert_eq!(
-            RefRangeBounds::test_a1("*").to_rect_unbounded(),
+            RefRangeBounds::test_a1("*").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("A1:").to_rect_unbounded(),
+            RefRangeBounds::test_a1("A1:").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("1:").to_rect_unbounded(),
+            RefRangeBounds::test_a1("1:").as_rect_unbounded(),
             Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
         );
         assert_eq!(
-            RefRangeBounds::test_a1("B3:D5").to_rect_unbounded(),
+            RefRangeBounds::test_a1("B3:D5").as_rect_unbounded(),
             Rect::test_a1("B3:D5")
         );
     }
@@ -562,41 +556,5 @@ mod tests {
             RefRangeBounds::test_a1("A1:B2").cursor_pos_from_last_range(),
             pos![A1]
         );
-    }
-
-    #[test]
-    fn test_contains_rect() {
-        // Single cell range
-        assert!(RefRangeBounds::test_a1("A1").contains_rect(Rect::new(1, 1, 1, 1)));
-        assert!(!RefRangeBounds::test_a1("A1").contains_rect(Rect::new(2, 1, 2, 1)));
-        assert!(!RefRangeBounds::test_a1("A1").contains_rect(Rect::new(1, 2, 1, 2)));
-
-        // Rectangle range
-        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 1, 2, 2)));
-        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 1, 1, 1)));
-        assert!(RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(2, 2, 2, 2)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(3, 1, 3, 1)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 3, 1, 3)));
-
-        // Column range
-        assert!(RefRangeBounds::test_a1("A").contains_rect(Rect::new(1, 1, 1, 5)));
-        assert!(RefRangeBounds::test_a1("A").contains_rect(Rect::new(1, 10, 1, 15)));
-        assert!(!RefRangeBounds::test_a1("A").contains_rect(Rect::new(2, 1, 2, 5)));
-
-        // Row range
-        assert!(RefRangeBounds::test_a1("1").contains_rect(Rect::new(1, 1, 5, 1)));
-        assert!(RefRangeBounds::test_a1("1").contains_rect(Rect::new(10, 1, 15, 1)));
-        assert!(!RefRangeBounds::test_a1("1").contains_rect(Rect::new(1, 2, 5, 2)));
-
-        // Unbounded ranges
-        assert!(RefRangeBounds::test_a1("*").contains_rect(Rect::new(1, 1, 5, 5)));
-        assert!(RefRangeBounds::test_a1("*").contains_rect(Rect::new(10, 10, 15, 15)));
-        assert!(RefRangeBounds::test_a1("A1:").contains_rect(Rect::new(1, 1, 5, 5)));
-        assert!(RefRangeBounds::test_a1("A1:").contains_rect(Rect::new(10, 10, 15, 15)));
-
-        // Partial overlap cases
-        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(2, 2, 3, 3)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(1, 2, 2, 3)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").contains_rect(Rect::new(3, 3, 4, 4)));
     }
 }

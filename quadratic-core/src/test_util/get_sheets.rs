@@ -4,38 +4,38 @@ use crate::controller::GridController;
 use crate::grid::{Sheet, SheetId};
 
 #[cfg(test)]
-pub fn test_create_gc() -> GridController {
+pub(crate) fn test_create_gc() -> GridController {
     GridController::test()
 }
 
 /// Gets the first sheet from a grid controller
 #[cfg(test)]
-pub fn first_sheet(gc: &GridController) -> &Sheet {
+pub(crate) fn first_sheet(gc: &GridController) -> &Sheet {
     gc.sheet(gc.sheet_ids()[0])
 }
 
 /// Gets a sheet from a grid controller by id
 #[cfg(test)]
-pub fn sheet(gc: &GridController, id: SheetId) -> &Sheet {
+pub(crate) fn sheet(gc: &GridController, id: SheetId) -> &Sheet {
     gc.try_sheet(id)
         .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets a sheet from a grid controller by id
 #[cfg(test)]
-pub fn sheet_mut(gc: &mut GridController, id: SheetId) -> &mut Sheet {
+pub(crate) fn sheet_mut(gc: &mut GridController, id: SheetId) -> &mut Sheet {
     gc.try_sheet_mut(id)
         .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets the first sheet id from a grid controller
 #[cfg(test)]
-pub fn first_sheet_id(gc: &GridController) -> SheetId {
+pub(crate) fn first_sheet_id(gc: &GridController) -> SheetId {
     gc.sheet_ids()[0]
 }
 
 #[cfg(test)]
-pub fn test_export_and_import(gc: &GridController) -> GridController {
+pub(crate) fn test_export_and_import(gc: &GridController) -> GridController {
     use crate::grid::file::{export, import};
 
     let exported = export(gc.grid().clone()).unwrap();

@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn execute_resize_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_resize_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeColumn {
             sheet_id,
             column,
@@ -75,7 +75,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_resize_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_resize_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeRow {
             sheet_id,
             row,
@@ -131,7 +131,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeRows {
             sheet_id,
             mut row_heights,
@@ -193,7 +193,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_resize_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_resize_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeColumns {
             sheet_id,
             column_widths,
@@ -270,7 +270,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_default_column_size(
+    pub(crate) fn execute_default_column_size(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
@@ -324,7 +324,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_default_row_size(
+    pub(crate) fn execute_default_row_size(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,

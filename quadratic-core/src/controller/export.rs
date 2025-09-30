@@ -55,7 +55,7 @@ impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
+    pub(crate) fn export_csv_selection(&self, selection: &mut A1Selection) -> Result<String> {
         let sheet = self
             .grid
             .try_sheet(selection.sheet_id)
@@ -100,7 +100,7 @@ impl GridController {
     /// Only preserves formulas, everything else is flattened.
     ///
     /// Returns a [`Vec<u8>`].
-    pub fn export_excel(&self) -> Result<Vec<u8>> {
+    pub(crate) fn export_excel(&self) -> Result<Vec<u8>> {
         let mut workbook = Workbook::new();
         let error = |e: XlsxError| anyhow!("Error exporting excel file: {}", e);
 
@@ -563,7 +563,7 @@ mod tests {
 
         // Add some data
         gc_1.set_cell_value(
-            pos.to_sheet_pos(sheet_id_1),
+            pos.as_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
             false,
@@ -575,7 +575,7 @@ mod tests {
 
         // Add borders to the cell
         gc_1.set_borders(
-            A1Selection::from_single_cell(pos.to_sheet_pos(sheet_id_1)),
+            A1Selection::from_single_cell(pos.as_sheet_pos(sheet_id_1)),
             BorderSelection::All,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -617,7 +617,7 @@ mod tests {
 
         // Add some data
         gc_1.set_cell_value(
-            pos.to_sheet_pos(sheet_id_1),
+            pos.as_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
             false,

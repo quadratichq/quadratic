@@ -15,7 +15,7 @@ impl RefRangeBounds {
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+    pub(crate) fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         let (start, end) = match self.is_any_unbounded() {
             true => (self.start, self.end),
             false => (self.start.adjust(adjust)?, self.end.adjust(adjust)?),
@@ -28,7 +28,7 @@ impl RefRangeBounds {
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+    pub(crate) fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         // If both X coordinates or both Y coordinates end up out of range then
         // the whole range becomes empty.
         let (x1, y1) = self.start.try_adjust_xy(adjust);
@@ -50,7 +50,7 @@ impl RefRangeBounds {
 
     // TODO: remove this function when switching to u64
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate_unchecked(self, x: i64, y: i64) -> Self {
+    pub(crate) fn translate_unchecked(self, x: i64, y: i64) -> Self {
         if self.is_all() {
             return self;
         }

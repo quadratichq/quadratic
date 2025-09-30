@@ -66,7 +66,7 @@ impl SheetDataTables {
     }
 
     /// Returns the data table at the given position, if it exists.
-    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
+    pub(crate) fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
     }
 
@@ -445,7 +445,7 @@ impl SheetDataTables {
             .filter_map(|(data_table_pos, data_table)| {
                 data_table
                     .code_run_mut()
-                    .map(|code_run| (data_table_pos.to_sheet_pos(sheet_id), code_run))
+                    .map(|code_run| (data_table_pos.as_sheet_pos(sheet_id), code_run))
             })
             .for_each(|(data_table_sheet_pos, data_table)| {
                 func(data_table, data_table_sheet_pos);

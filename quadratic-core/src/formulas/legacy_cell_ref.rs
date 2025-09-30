@@ -57,24 +57,6 @@ impl From<CellRef> for RangeRef {
         RangeRef::Cell { pos }
     }
 }
-impl RangeRef {
-    /// Returns the human-friendly string representing this range reference in
-    /// A1-style notation.
-    pub fn a1_string(self, base: Pos) -> String {
-        match self {
-            RangeRef::RowRange { start, end, .. } => {
-                format!("{}:{}", start.row_string(base.y), end.row_string(base.y))
-            }
-            RangeRef::ColRange { start, end, .. } => {
-                format!("{}:{}", start.col_string(base.x), end.col_string(base.x))
-            }
-            RangeRef::CellRange { start, end } => {
-                format!("{}:{}", start.a1_string(base), end.a1_string(base))
-            }
-            RangeRef::Cell { pos } => pos.a1_string(base),
-        }
-    }
-}
 
 /// A reference to a single cell.
 ///
@@ -126,15 +108,6 @@ impl FromStr for CellRef {
 }
 
 impl CellRef {
-    /// Constructs an absolute cell reference.
-    pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {
-        Self {
-            sheet,
-            x: CellRefCoord::Absolute(pos.x),
-            y: CellRefCoord::Absolute(pos.y),
-        }
-    }
-
     /// Resolves the reference to a absolute coordinates, given the cell
     /// coordinate where evaluation is taking place.
     pub fn resolve_from(&self, base: Pos) -> Pos {
@@ -142,18 +115,6 @@ impl CellRef {
             x: self.x.resolve_from(base.x),
             y: self.y.resolve_from(base.y),
         }
-    }
-    /// Returns the human-friendly string representing this cell reference in
-    /// A1-style notation.
-    pub fn a1_string(&self, base: Pos) -> String {
-        let sheet_str = match &self.sheet {
-            Some(sheet_name) => format!("{}!", escape_string(sheet_name)),
-            None => String::new(),
-        };
-        let col = self.x.col_string(base.x);
-        let row = self.y.row_string(base.y);
-
-        format!("{sheet_str}{col}{row}")
     }
 
     /// Parses an A1-style cell reference relative to a given location.
@@ -204,18 +165,6 @@ impl CellRef {
             y: row_ref,
         })
     }
-
-    // replace unbounded values with the given value
-    pub fn replace_unbounded(&mut self, value: i64, pos: Pos) {
-        // TODO(ddimaria): the -1 is a hack, replace after testing
-        if self.x.get_value(pos.x) == UNBOUNDED {
-            self.x.replace_value(value);
-        }
-        // TODO(ddimaria): the -1 is a hack, replace after testing
-        if self.y.get_value(pos.y) == UNBOUNDED {
-            self.y.replace_value(value);
-        }
-    }
 }
 
 /// A reference to an x or y value within a CellRef
@@ -262,68 +211,13 @@ impl FromStr for CellRefCoord {
     }
 }
 impl CellRefCoord {
-    pub fn to_a1_cell_ref_coord(self, base: i64) -> crate::a1::CellRefCoord {
-        match self {
-            Self::Relative(delta) => crate::a1::CellRefCoord::new_rel(base.saturating_add(delta)),
-            Self::Absolute(coord) => crate::a1::CellRefCoord::new_abs(coord),
-        }
-    }
-    pub fn from_a1_cell_ref_coord(base: i64, value: crate::a1::CellRefCoord) -> Self {
-        match value.is_absolute {
-            true => Self::Relative(value.coord.saturating_sub(base)),
-            false => Self::Absolute(value.coord),
-        }
-    }
-
     /// Resolves the reference to an absolute coordinate, given the cell
     /// coordinate where evaluation is taking place.
-    pub fn resolve_from(self, base: i64) -> i64 {
+    pub(crate) fn resolve_from(self, base: i64) -> i64 {
         match self {
             CellRefCoord::Relative(delta) => i64::checked_add(base, delta).unwrap_or(UNBOUNDED),
             CellRefCoord::Absolute(coord) => coord,
         }
-    }
-    /// Returns the `$` prefix if this is an absolute reference, or the empty
-    /// string if it is a relative reference.
-    fn prefix(self) -> &'static str {
-        match self {
-            CellRefCoord::Relative(_) => "",
-            CellRefCoord::Absolute(_) => "$",
-        }
-    }
-    /// Returns the human-friendly string representing this coordinate, if it is
-    /// a column coordinate.
-    fn col_string(self, base: i64) -> String {
-        let resolved = self.resolve_from(base);
-        let col = match resolved {
-            UNBOUNDED => "".to_string(),
-            _ => crate::a1::column_name(resolved),
-        };
-
-        format!("{}{col}", self.prefix())
-    }
-    /// Returns the human-friendly string representing this coordinate, if it is
-    /// a row coordinate.
-    fn row_string(self, base: i64) -> String {
-        let resolved = self.resolve_from(base);
-        let row = match resolved {
-            UNBOUNDED => "".to_string(),
-            _ => resolved.to_string(),
-        };
-
-        format!("{}{row}", self.prefix())
-    }
-    pub fn get_value(self, base: i64) -> i64 {
-        match self {
-            CellRefCoord::Relative(delta) => delta.saturating_add(base),
-            CellRefCoord::Absolute(coord) => coord,
-        }
-    }
-    pub fn replace_value(&mut self, value: i64) {
-        *self = match self {
-            CellRefCoord::Relative(_) => Self::Absolute(value),
-            CellRefCoord::Absolute(_) => Self::Absolute(value),
-        };
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).

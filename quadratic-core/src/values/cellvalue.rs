@@ -10,9 +10,9 @@ use super::number::decimal_from_str;
 use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
 use crate::{
-    CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
+    CodeResult, RunError, RunErrorMsg, Span, Spanned,
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
+    grid::{NumericFormat, NumericFormatKind},
 };
 
 // todo: fill this out
@@ -36,7 +36,7 @@ impl Display for Import {
 }
 
 impl Import {
-    pub fn new(file_name: String) -> Self {
+    pub(crate) fn new(file_name: String) -> Self {
         Self { file_name }
     }
 }
@@ -109,7 +109,7 @@ impl AsRef<CellValue> for CellValue {
 
 impl CellValue {
     /// Returns a human-friendly string describing the type of value.
-    pub fn type_name(&self) -> &'static str {
+    pub(crate) fn type_name(&self) -> &'static str {
         match self {
             CellValue::Blank => "blank",
             CellValue::Text(_) => "text",
@@ -127,7 +127,7 @@ impl CellValue {
     }
 
     // Returns the type of the value as a u8 id, keep in sync quadratic_py/utils.py and javascript/runner/javascriptLibrary.ts
-    pub fn type_u8(&self) -> u8 {
+    pub(crate) fn type_u8(&self) -> u8 {
         match self {
             CellValue::Blank => 0,
             CellValue::Text(_) => 1,
@@ -144,7 +144,7 @@ impl CellValue {
     }
 
     /// Returns a formula-source-code representation of the value.
-    pub fn repr(&self) -> String {
+    pub(crate) fn repr(&self) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => format!("{s:?}"),
@@ -188,7 +188,7 @@ impl CellValue {
         if negative { format!("-{n}") } else { n }
     }
 
-    pub fn to_display(&self) -> String {
+    pub(crate) fn to_display(&self) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
@@ -208,7 +208,7 @@ impl CellValue {
         }
     }
 
-    pub fn to_number_display(
+    pub(crate) fn to_number_display(
         &self,
         numeric_format: Option<NumericFormat>,
         numeric_decimals: Option<i16>,
@@ -288,7 +288,7 @@ impl CellValue {
         }
     }
 
-    pub fn to_edit(&self) -> String {
+    pub(crate) fn to_edit(&self) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
@@ -312,7 +312,7 @@ impl CellValue {
     }
 
     /// Returns the value as a string that can be used by get_cells in languages
-    pub fn to_get_cells(&self) -> String {
+    pub(crate) fn to_get_cells(&self) -> String {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
@@ -332,15 +332,7 @@ impl CellValue {
         }
     }
 
-    pub fn to_cell_value_pos(self, pos: Pos) -> JsCellValuePos {
-        JsCellValuePos {
-            value: self.to_string(),
-            kind: self.into(),
-            pos: pos.a1_string(),
-        }
-    }
-
-    pub fn unpack_percentage(s: &str) -> Option<Decimal> {
+    pub(crate) fn unpack_percentage(s: &str) -> Option<Decimal> {
         if s.is_empty() {
             return None;
         }
@@ -355,7 +347,7 @@ impl CellValue {
         None
     }
 
-    pub fn unpack_boolean(s: &str) -> Option<CellValue> {
+    pub(crate) fn unpack_boolean(s: &str) -> Option<CellValue> {
         match s.to_ascii_lowercase().as_str() {
             "true" => Some(CellValue::Logical(true)),
             "false" => Some(CellValue::Logical(false)),
@@ -413,7 +405,7 @@ impl CellValue {
         }
     }
 
-    pub fn unpack_currency(s: &str) -> Option<(String, Decimal)> {
+    pub(crate) fn unpack_currency(s: &str) -> Option<(String, Decimal)> {
         if s.is_empty() {
             return None;
         }
@@ -444,29 +436,29 @@ impl CellValue {
         None
     }
 
-    pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
+    pub(crate) fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
         decimal_from_str(value).map_or_else(|_| default, CellValue::Number)
     }
 
-    pub fn is_blank_or_empty_string(&self) -> bool {
+    pub(crate) fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
     /// Returns the contained error, if this is an error value.
-    pub fn error(&self) -> Option<&RunError> {
+    pub(crate) fn error(&self) -> Option<&RunError> {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,
         }
     }
     /// Converts an error value into an actual error.
-    pub fn into_non_error_value(self) -> CodeResult<Self> {
+    pub(crate) fn into_non_error_value(self) -> CodeResult<Self> {
         match self {
             CellValue::Error(e) => Err(*e),
             other => Ok(other),
         }
     }
     /// Converts an error value into an actual error.
-    pub fn as_non_error_value(&self) -> CodeResult<&Self> {
+    pub(crate) fn as_non_error_value(&self) -> CodeResult<&Self> {
         match self {
             CellValue::Error(e) => Err((**e).clone()),
             other => Ok(other),
@@ -475,7 +467,7 @@ impl CellValue {
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is `None`.
-    pub fn coerce_nonblank<'a, T>(&'a self) -> Option<T>
+    pub(crate) fn coerce_nonblank<'a, T>(&'a self) -> Option<T>
     where
         &'a CellValue: TryInto<T>,
     {
@@ -488,7 +480,7 @@ impl CellValue {
     /// Returns the sort order of a value, based on the results of Excel's
     /// `SORT()` function. The comparison operators are the same, except that
     /// blank coerces to `0`, `FALSE`, or `""` before comparison.
-    pub fn type_id(&self) -> u8 {
+    pub(crate) fn type_id(&self) -> u8 {
         match self {
             CellValue::Number(_) => 0,
             CellValue::Text(_) => 1,
@@ -507,7 +499,7 @@ impl CellValue {
     /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
-    pub fn partial_cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+    pub(crate) fn partial_cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
         if self.is_blank() && other.eq_blank() || other.is_blank() && self.eq_blank() {
             return Ok(std::cmp::Ordering::Equal);
         }
@@ -530,7 +522,7 @@ impl CellValue {
 
     /// Compares two values according to the total sort order, with no coercion
     /// and no errors.
-    pub fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
+    pub(crate) fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
         match (self, other) {
             (CellValue::Text(a), CellValue::Text(b)) => {
                 let a = crate::util::case_fold(a);
@@ -551,7 +543,7 @@ impl CellValue {
     /// blank-coercing comparison.
     ///
     /// Returns an error if either argument is [`CellValue::Error`].
-    pub fn eq(&self, other: &Self) -> CodeResult<bool> {
+    pub(crate) fn eq(&self, other: &Self) -> CodeResult<bool> {
         Ok(self.partial_cmp(other)? == std::cmp::Ordering::Equal)
     }
     /// Returns whether blank can coerce to this cell value.
@@ -565,22 +557,22 @@ impl CellValue {
         }
     }
     /// Returns whether `self < other` using `CellValue::cmp()`.
-    pub fn lt(&self, other: &Self) -> CodeResult<bool> {
+    pub(crate) fn lt(&self, other: &Self) -> CodeResult<bool> {
         Ok(self.partial_cmp(other)? == std::cmp::Ordering::Less)
     }
     /// Returns whether `self > other` using `CellValue::cmp()`.
-    pub fn gt(&self, other: &Self) -> CodeResult<bool> {
+    pub(crate) fn gt(&self, other: &Self) -> CodeResult<bool> {
         Ok(self.partial_cmp(other)? == std::cmp::Ordering::Greater)
     }
     /// Returns whether `self <= other` using `CellValue::cmp()`.
-    pub fn lte(&self, other: &Self) -> CodeResult<bool> {
+    pub(crate) fn lte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
             self.partial_cmp(other)?,
             std::cmp::Ordering::Less | std::cmp::Ordering::Equal,
         ))
     }
     /// Returns whether `self >= other` using `CellValue::cmp()`.
-    pub fn gte(&self, other: &Self) -> CodeResult<bool> {
+    pub(crate) fn gte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
             self.partial_cmp(other)?,
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
@@ -590,7 +582,7 @@ impl CellValue {
     /// Generic conversion from &str to CellValue
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
-    pub fn parse_from_str(value: &str) -> CellValue {
+    pub(crate) fn parse_from_str(value: &str) -> CellValue {
         if let Some(duration) = CellValue::unpack_duration(value) {
             return duration;
         }
@@ -623,7 +615,7 @@ impl CellValue {
     }
 
     /// Convert string to a cell_value and generate necessary operations
-    pub fn string_to_cell_value(
+    pub(crate) fn string_to_cell_value(
         value: &str,
         user_entered_percent: bool,
     ) -> (CellValue, FormatUpdate) {
@@ -693,18 +685,18 @@ impl CellValue {
         (cell_value, format_update)
     }
 
-    pub fn is_html(&self) -> bool {
+    pub(crate) fn is_html(&self) -> bool {
         matches!(self, CellValue::Html(_))
     }
 
-    pub fn is_image(&self) -> bool {
+    pub(crate) fn is_image(&self) -> bool {
         matches!(self, CellValue::Image(_))
     }
 
     /// Returns the contained error, or panics the value is not an error.
     #[cfg(test)]
     #[track_caller]
-    pub fn unwrap_err(self) -> RunError {
+    pub(crate) fn unwrap_err(self) -> RunError {
         match self {
             CellValue::Error(e) => *e,
             other => panic!("expected error value; got {other:?}"),
@@ -713,7 +705,7 @@ impl CellValue {
 
     /// Returns a hashable value that is unique per-value for most common types,
     /// but may not always be unique.
-    pub fn hash(&self) -> CellValueHash {
+    pub(crate) fn hash(&self) -> CellValueHash {
         match self {
             CellValue::Blank => CellValueHash::Blank,
             CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
@@ -748,7 +740,7 @@ impl CellValue {
     }
 
     /// Adds two values, casting them as needed.
-    pub fn add(
+    pub(crate) fn add(
         span: Span,
         lhs: Spanned<&CellValue>,
         rhs: Spanned<&CellValue>,
@@ -833,7 +825,7 @@ impl CellValue {
     }
 
     /// Subtracts two values, casting them as needed.
-    pub fn sub(
+    pub(crate) fn sub(
         span: Span,
         lhs: Spanned<&CellValue>,
         rhs: Spanned<&CellValue>,
@@ -938,7 +930,7 @@ impl CellValue {
     }
 
     /// Negates a value.
-    pub fn neg(value: Spanned<&CellValue>) -> CodeResult<Spanned<CellValue>> {
+    pub(crate) fn neg(value: Spanned<&CellValue>) -> CodeResult<Spanned<CellValue>> {
         let span = value.span;
 
         let v = match value.inner.to_numeric()? {
@@ -951,7 +943,7 @@ impl CellValue {
     }
 
     // Multiplies two values.
-    pub fn mul(
+    pub(crate) fn mul(
         span: Span,
         lhs: Spanned<&CellValue>,
         rhs: Spanned<&CellValue>,
@@ -982,7 +974,7 @@ impl CellValue {
     }
 
     // Divides two values, returning an error in case of division by zero.
-    pub fn checked_div(
+    pub(crate) fn checked_div(
         span: Span,
         lhs: Spanned<&CellValue>,
         rhs: Spanned<&CellValue>,
@@ -1022,7 +1014,7 @@ impl CellValue {
 
     /// Returns the arithmetic mean of a sequence of values, or an error if
     /// there are no values. Ignores blank values.
-    pub fn average(
+    pub(crate) fn average(
         span: Span,
         values: impl IntoIterator<Item = CodeResult<f64>>,
     ) -> CodeResult<f64> {

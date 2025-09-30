@@ -41,7 +41,7 @@ mod test_util;
 
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).
-pub fn unique_data_table_name(
+pub(crate) fn unique_data_table_name(
     name: &str,
     require_number: bool,
     sheet_pos: Option<SheetPos>,
@@ -57,12 +57,12 @@ pub fn unique_data_table_name(
 
 impl Grid {
     /// Returns the data table at the given position.
-    pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
+    pub(crate) fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
     }
 
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
-    pub fn update_data_table_name(
+    pub(crate) fn update_data_table_name(
         &mut self,
         sheet_pos: SheetPos,
         old_name: &str,
@@ -92,7 +92,7 @@ impl Grid {
     }
 
     /// Updates the column name in all code cells that reference the old name in all sheets in the grid.
-    pub fn update_data_table_column_name(
+    pub(crate) fn update_data_table_column_name(
         &mut self,
         table_name: &str,
         old_name: &str,
@@ -107,7 +107,7 @@ impl Grid {
     }
 
     /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+    pub(crate) fn next_data_table_name(&self, a1_context: &A1Context) -> String {
         unique_data_table_name("Table", true, None, a1_context)
     }
 }
@@ -236,7 +236,7 @@ impl DataTable {
     /// with the ability to lift the first row as column headings.
     /// This handles the most common use cases.  Use `new_raw` for more control.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub(crate) fn new(
         kind: DataTableKind,
         name: &str,
         value: Value,
@@ -275,7 +275,7 @@ impl DataTable {
         data_table
     }
 
-    pub fn clone_without_values(&self) -> Self {
+    pub(crate) fn clone_without_values(&self) -> Self {
         Self {
             kind: self.kind.clone(),
             name: self.name.clone(),
@@ -298,7 +298,7 @@ impl DataTable {
         }
     }
 
-    pub fn get_language(&self) -> CodeCellLanguage {
+    pub(crate) fn get_language(&self) -> CodeCellLanguage {
         match &self.kind {
             DataTableKind::CodeRun(code_run) => code_run.language.to_owned(),
             DataTableKind::Import(_) => CodeCellLanguage::Import,
@@ -306,25 +306,29 @@ impl DataTable {
     }
 
     /// Apply a new last modified date to the DataTable.
-    pub fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
+    #[cfg(test)]
+    pub(crate) fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
         self.last_modified = last_modified;
         self
     }
 
     /// Adds column headers to the DataTable.
-    pub fn with_column_headers(mut self, column_headers: Vec<DataTableColumnHeader>) -> Self {
+    pub(crate) fn with_column_headers(
+        mut self,
+        column_headers: Vec<DataTableColumnHeader>,
+    ) -> Self {
         self.column_headers = Some(column_headers);
         self
     }
 
-    pub fn is_code(&self) -> bool {
+    pub(crate) fn is_code(&self) -> bool {
         match &self.kind {
             DataTableKind::CodeRun(_) => true,
             DataTableKind::Import(_) => false,
         }
     }
 
-    pub fn get_show_name(&self) -> bool {
+    pub(crate) fn get_show_name(&self) -> bool {
         // always show table name for charts
         if self.is_html_or_image() {
             return true;
@@ -353,7 +357,7 @@ impl DataTable {
         true
     }
 
-    pub fn get_show_columns(&self) -> bool {
+    pub(crate) fn get_show_columns(&self) -> bool {
         // always hide column headers for charts
         if self.is_html_or_image() {
             return false;
@@ -390,7 +394,7 @@ impl DataTable {
         self.column_headers.is_some()
     }
 
-    pub fn name(&self) -> &str {
+    pub(crate) fn name(&self) -> &str {
         match &self.name {
             CellValue::Text(s) => s,
             _ => "",
@@ -403,7 +407,7 @@ impl DataTable {
     /// Table name must be between 1 and 255 characters Table name cannot be a
     /// single 'R' or 'C' Table name cannot be a cell reference Table name
     /// cannot contain invalid characters Table name must be unique
-    pub fn validate_table_name(
+    pub(crate) fn validate_table_name(
         name: &str,
         sheet_pos: SheetPos,
         a1_context: &A1Context,
@@ -443,7 +447,7 @@ impl DataTable {
     /// Column name must be between 1 and 255 characters
     /// Column name cannot contain invalid characters
     /// Column name must be unique
-    pub fn validate_column_name(
+    pub(crate) fn validate_column_name(
         table_name: &str,
         index: usize,
         column_name: &str,
@@ -471,7 +475,7 @@ impl DataTable {
     }
 
     /// Returns a reference to the values in the data table.
-    pub fn value_ref(&self) -> Result<Vec<&CellValue>> {
+    pub(crate) fn value_ref(&self) -> Result<Vec<&CellValue>> {
         match &self.value {
             Value::Single(value) => Ok(vec![value]),
             Value::Array(array) => Ok(array.cell_values_slice().iter().collect()),
@@ -480,7 +484,7 @@ impl DataTable {
     }
 
     /// Returns the width of the data table.
-    pub fn width(&self) -> usize {
+    pub(crate) fn width(&self) -> usize {
         match &self.value {
             Value::Single(_) => 1,
             Value::Array(array) => array.width() as usize,
@@ -492,7 +496,7 @@ impl DataTable {
     /// will return the actual height of the table, including any UI elements.
     /// If false, it includes the array height, which may contain the column
     /// header row if header_is_first_row is true.
-    pub fn height(&self, force_table_bounds: bool) -> usize {
+    pub(crate) fn height(&self, force_table_bounds: bool) -> usize {
         if self.is_html_or_image() {
             if let Some((_, h)) = self.chart_output {
                 (h + (if force_table_bounds { 0 } else { 1 })) as usize
@@ -516,7 +520,7 @@ impl DataTable {
 
     /// Helper function to get the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun.
-    pub fn code_run(&self) -> Option<&CodeRun> {
+    pub(crate) fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => Some(code_run),
             _ => None,
@@ -525,7 +529,7 @@ impl DataTable {
 
     /// Helper function to get the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun.
-    pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
+    pub(crate) fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
             DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
@@ -533,13 +537,13 @@ impl DataTable {
     }
 
     /// Helper function to determine if the DataTable has an spill error.
-    pub fn has_spill(&self) -> bool {
+    pub(crate) fn has_spill(&self) -> bool {
         self.spill_value || self.spill_data_table
     }
 
     /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
-    pub fn has_error(&self) -> bool {
+    pub(crate) fn has_error(&self) -> bool {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => code_run.error.is_some(),
             _ => false,
@@ -548,7 +552,7 @@ impl DataTable {
 
     /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
-    pub fn has_error_include_single_formula_error(&self) -> bool {
+    pub(crate) fn has_error_include_single_formula_error(&self) -> bool {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => {
                 if code_run.error.is_some() {
@@ -578,14 +582,14 @@ impl DataTable {
 
     /// Helper function to get the error in the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
-    pub fn get_error(&self) -> Option<RunError> {
+    pub(crate) fn get_error(&self) -> Option<RunError> {
         self.code_run()
             .and_then(|code_run| code_run.error.to_owned())
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
+    pub(crate) fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.has_spill() || self.has_error() {
             Some(CellValue::Blank)
         } else {
@@ -595,7 +599,7 @@ impl DataTable {
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
+    pub(crate) fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
             None
         } else {
@@ -605,7 +609,7 @@ impl DataTable {
 
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
-    pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
+    pub(crate) fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
         if self.has_spill() {
             CellValue::Blank
         } else {
@@ -627,7 +631,7 @@ impl DataTable {
 
     /// Sets the cell value at a relative location (0-indexed) into the code.
     /// Returns `false` if the value cannot be set.
-    pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
+    pub(crate) fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
         if !self.has_spill() && !self.has_error() {
             match self.value {
                 Value::Single(_) => {
@@ -653,7 +657,7 @@ impl DataTable {
     /// output, including any the table name and column names, if visible.
     ///
     /// Note: this does not take spill_error into account.
-    pub fn output_size(&self) -> ArraySize {
+    pub(crate) fn output_size(&self) -> ArraySize {
         if self.is_html_or_image() {
             match self.chart_output {
                 Some((w, h)) => {
@@ -695,7 +699,7 @@ impl DataTable {
     }
 
     /// Returns true if the data table is an html.
-    pub fn is_html(&self) -> bool {
+    pub(crate) fn is_html(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Html(_))
         } else {
@@ -704,7 +708,7 @@ impl DataTable {
     }
 
     /// Returns true if the data table is an image.
-    pub fn is_image(&self) -> bool {
+    pub(crate) fn is_image(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Image(_))
         } else {
@@ -712,7 +716,7 @@ impl DataTable {
         }
     }
 
-    pub fn is_html_or_image(&self) -> bool {
+    pub(crate) fn is_html_or_image(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Html(_) | CellValue::Image(_))
         } else {
@@ -722,7 +726,11 @@ impl DataTable {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill_error: bool) -> SheetRect {
+    pub(crate) fn output_sheet_rect(
+        &self,
+        sheet_pos: SheetPos,
+        ignore_spill_error: bool,
+    ) -> SheetRect {
         if !ignore_spill_error && (self.has_spill() || self.has_error()) {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
@@ -732,7 +740,7 @@ impl DataTable {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_rect(&self, pos: Pos, ignore_spill_error: bool) -> Rect {
+    pub(crate) fn output_rect(&self, pos: Pos, ignore_spill_error: bool) -> Rect {
         if !ignore_spill_error && (self.has_spill() || self.has_error()) {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
@@ -741,7 +749,8 @@ impl DataTable {
     }
 
     /// Returns the value as an array.
-    pub fn value_as_array(&self) -> Result<&Array> {
+    #[cfg(test)]
+    pub(crate) fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),
@@ -749,7 +758,7 @@ impl DataTable {
     }
 
     /// Returns a mutable reference to the value as an array.
-    pub fn mut_value_as_array(&mut self) -> Result<&mut Array> {
+    pub(crate) fn mut_value_as_array(&mut self) -> Result<&mut Array> {
         match &mut self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),
@@ -757,7 +766,7 @@ impl DataTable {
     }
 
     /// Returns the cells accessed by the data table.
-    pub fn cells_accessed(&self, sheet_id: SheetId) -> Option<Vec<&CellRefRange>> {
+    pub(crate) fn cells_accessed(&self, sheet_id: SheetId) -> Option<Vec<&CellRefRange>> {
         self.code_run()
             .and_then(|code_run| code_run.cells_accessed.cells.get(&sheet_id))
             .map(|ranges| ranges.iter().collect::<Vec<_>>())
@@ -765,7 +774,7 @@ impl DataTable {
 
     /// Returns the y adjustment for the data table to account for the UI
     /// elements
-    pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
+    pub(crate) fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
         if self.get_show_name() {
@@ -784,7 +793,7 @@ impl DataTable {
     }
 
     /// Returns true if the data table is a single value (ie, not an array)
-    pub fn is_single_value(&self) -> bool {
+    pub(crate) fn is_single_value(&self) -> bool {
         if self.is_html_or_image() {
             return false;
         }
@@ -795,20 +804,8 @@ impl DataTable {
         }
     }
 
-    /// Returns true if the data table is a single column (ie, not an array), or
-    /// if it's an html or image.
-    pub fn is_single_column(&self) -> bool {
-        if self.is_html_or_image() {
-            return true;
-        }
-        match &self.value {
-            Value::Array(a) => a.width() == 1,
-            _ => false,
-        }
-    }
-
     /// Returns true if the data table is a pandas DataFrame
-    pub fn is_dataframe(&self) -> bool {
+    pub(crate) fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
         } else {
@@ -817,7 +814,7 @@ impl DataTable {
     }
 
     /// Returns true if the data table is a pandas Series
-    pub fn is_series(&self) -> bool {
+    pub(crate) fn is_series(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("Series".into())
         } else {
@@ -826,7 +823,7 @@ impl DataTable {
     }
 
     /// Returns true if the data table is a list
-    pub fn is_list(&self) -> bool {
+    pub(crate) fn is_list(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("list".into())
         } else {
@@ -835,7 +832,7 @@ impl DataTable {
     }
 
     /// Returns the rows that are part of the data table's UI.
-    pub fn ui_rows(&self, pos: Pos) -> Vec<i64> {
+    pub(crate) fn ui_rows(&self, pos: Pos) -> Vec<i64> {
         let mut rows = vec![];
         let show_name = self.get_show_name();
         if show_name || self.is_html_or_image() {
@@ -854,13 +851,8 @@ impl DataTable {
         rows
     }
 
-    /// Returns true if the data table is a formula table
-    pub fn is_formula_table(&self) -> bool {
-        matches!(self.get_language(), CodeCellLanguage::Formula)
-    }
-
     /// Converts a DataTable to a string of its kind.
-    pub fn kind_as_string(&self) -> String {
+    pub(crate) fn kind_as_string(&self) -> String {
         match &self.kind {
             DataTableKind::CodeRun(code_run) => code_run.language.as_string(),
             DataTableKind::Import(..) => "Data Table".into(),
@@ -1025,72 +1017,6 @@ mod test {
     fn test_y_adjustment() {
         let (_, data_table) = new_data_table();
         assert_eq!(data_table.y_adjustment(true), 2);
-    }
-
-    #[test]
-    fn test_is_single_column() {
-        let code_run = CodeRun {
-            language: CodeCellLanguage::Python,
-            code: "Table 1".to_string(),
-            std_out: None,
-            std_err: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-
-        // Test single value (not a single column)
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run.clone()),
-            "Table 1",
-            Value::Single(CellValue::Number(1.into())),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        assert!(!data_table.is_single_column());
-
-        // Test single column array
-        let single_column = Array::new_empty(ArraySize::new(1, 3).unwrap());
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run.clone()),
-            "Table 1",
-            single_column.into(),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        assert!(data_table.is_single_column());
-
-        // Test multi-column array
-        let multi_column = Array::new_empty(ArraySize::new(2, 3).unwrap());
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            multi_column.into(),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        assert!(!data_table.is_single_column());
-
-        // Test HTML content (should be single column so data_table.show_columns
-        // is false)
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "Table 1",
-            Value::Single(CellValue::Html("test".into())),
-            false,
-            Some(true),
-            Some(true),
-            None,
-        );
-        assert!(data_table.is_single_column());
     }
 
     #[test]

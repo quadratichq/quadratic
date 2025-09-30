@@ -11,7 +11,7 @@ impl GridController {
     /// range: the range of cells to expand to
     ///
     /// cursor: the cursor position for the undo/redo stack
-    pub fn autocomplete(
+    pub(crate) fn autocomplete(
         &mut self,
         sheet_id: SheetId,
         initial_range: Rect,
@@ -762,7 +762,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let pos = pos![C3];
-        let sheet_pos = pos.to_sheet_pos(sheet_id);
+        let sheet_pos = pos.as_sheet_pos(sheet_id);
         let set_code_cell = |gc: &mut GridController, code: &str| {
             gc.set_code_cell(
                 sheet_pos,

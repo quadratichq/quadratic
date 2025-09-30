@@ -11,7 +11,7 @@ impl Borders {
     }
 
     /// Sets the borders for a selection.
-    pub fn set_borders_a1(&mut self, borders: &BordersUpdates) -> BordersUpdates {
+    pub(crate) fn set_borders_a1(&mut self, borders: &BordersUpdates) -> BordersUpdates {
         BordersUpdates {
             left: Self::set_borders_item(&borders.left, &mut self.left),
             right: Self::set_borders_item(&borders.right, &mut self.right),
@@ -21,7 +21,7 @@ impl Borders {
     }
 
     /// Applies the updates to the borders and returns an update to undo the changes.
-    pub fn apply_updates(&mut self, updates: &BordersUpdates) -> BordersUpdates {
+    pub(crate) fn apply_updates(&mut self, updates: &BordersUpdates) -> BordersUpdates {
         BordersUpdates {
             left: Self::set_borders_item(&updates.left, &mut self.left),
             right: Self::set_borders_item(&updates.right, &mut self.right),

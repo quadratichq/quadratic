@@ -53,7 +53,7 @@ impl GridController {
     }
 
     /// Returns the rendered values of the cells in a given rect.
-    pub fn get_ai_cells(
+    pub(crate) fn get_ai_cells(
         &self,
         selection: A1Selection,
         mut page: u32,
@@ -67,7 +67,7 @@ impl GridController {
         {
             let total_range = selection.to_string(None, self.a1_context());
             for range in &selection.ranges {
-                if let Some(rect) = range.to_rect(self.a1_context())
+                if let Some(rect) = range.as_rect(self.a1_context())
                     && let Some(rect) = rect.intersection(&bounds)
                 {
                     let (rects, new_count) =
@@ -105,7 +105,7 @@ impl GridController {
     }
 
     /// Returns the rendered formats of the cells in a given rect.
-    pub fn get_ai_cell_formats(
+    pub(crate) fn get_ai_cell_formats(
         &self,
         selection: A1Selection,
         page: u32,
@@ -118,7 +118,7 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // we use the bounds to limit the number of cells we need to check
                 if let Some(bounds) = sheet.format_bounds().into()
-                    && let Some(rect) = range.to_rect(self.a1_context())
+                    && let Some(rect) = range.as_rect(self.a1_context())
                     && let Some(rect) = rect.intersection(&bounds)
                 {
                     let (rects, new_count) =

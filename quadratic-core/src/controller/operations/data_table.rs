@@ -15,11 +15,11 @@ use crate::{
 use anyhow::Result;
 
 impl GridController {
-    pub fn flatten_data_table_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
+    pub(crate) fn flatten_data_table_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
         vec![Operation::FlattenDataTable { sheet_pos }]
     }
 
-    pub fn code_data_table_to_data_table_operations(
+    pub(crate) fn code_data_table_to_data_table_operations(
         &self,
         sheet_pos: SheetPos,
     ) -> Result<Vec<Operation>> {
@@ -31,7 +31,7 @@ impl GridController {
 
     /// Collects all operations that would be needed to convert a grid to a data table.
     /// If a data table is found within the sheet_rect, it will not be added to the operations.
-    pub fn grid_to_data_table_operations(
+    pub(crate) fn grid_to_data_table_operations(
         &self,
         sheet_rect: SheetRect,
         table_name: Option<String>,
@@ -67,7 +67,7 @@ impl GridController {
         Ok(ops)
     }
 
-    pub fn data_table_meta_operations(
+    pub(crate) fn data_table_meta_operations(
         &self,
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -94,6 +94,7 @@ impl GridController {
         sheet_pos: SheetPos,
         columns: Vec<u32>,
         swallow: bool,
+        select_table: bool,
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
     ) -> Vec<Operation> {
@@ -104,7 +105,7 @@ impl GridController {
                 .map(|index| (index, None, None))
                 .collect(),
             swallow,
-            select_table: false,
+            select_table,
             copy_formats_from,
             copy_formats,
         }]
@@ -118,6 +119,7 @@ impl GridController {
         sheet_pos: SheetPos,
         rows: Vec<u32>,
         swallow: bool,
+        select_table: bool,
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
     ) -> Vec<Operation> {
@@ -125,14 +127,14 @@ impl GridController {
             sheet_pos,
             rows: rows.into_iter().map(|index| (index, None)).collect(),
             swallow,
-            select_table: false,
+            select_table,
             copy_formats_from,
             copy_formats,
         }]
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn data_table_mutations_operations(
+    pub(crate) fn data_table_mutations_operations(
         &self,
         sheet_pos: SheetPos,
         select_table: bool,
@@ -148,17 +150,14 @@ impl GridController {
         if let Some(columns_to_add) = columns_to_add
             && !columns_to_add.is_empty()
         {
-            ops.push(Operation::InsertDataTableColumns {
+            ops.extend(self.data_table_insert_columns_operations(
                 sheet_pos,
-                columns: columns_to_add
-                    .into_iter()
-                    .map(|index| (index, None, None))
-                    .collect(),
-                swallow: swallow_on_insert.unwrap_or(false),
+                columns_to_add,
+                swallow_on_insert.unwrap_or(false),
                 select_table,
-                copy_formats_from: None,
-                copy_formats: None,
-            });
+                None,
+                None,
+            ));
         }
 
         if let Some(columns_to_remove) = columns_to_remove
@@ -175,14 +174,14 @@ impl GridController {
         if let Some(rows_to_add) = rows_to_add
             && !rows_to_add.is_empty()
         {
-            ops.push(Operation::InsertDataTableRows {
+            ops.extend(self.data_table_insert_rows_operations(
                 sheet_pos,
-                rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
-                swallow: swallow_on_insert.unwrap_or(false),
+                rows_to_add,
+                swallow_on_insert.unwrap_or(false),
                 select_table,
-                copy_formats_from: None,
-                copy_formats: None,
-            });
+                None,
+                None,
+            ));
         }
 
         if let Some(rows_to_remove) = rows_to_remove
@@ -199,7 +198,7 @@ impl GridController {
         ops
     }
 
-    pub fn sort_data_table_operations(
+    pub(crate) fn sort_data_table_operations(
         &self,
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
@@ -211,7 +210,7 @@ impl GridController {
         }]
     }
 
-    pub fn data_table_first_row_as_header_operations(
+    pub(crate) fn data_table_first_row_as_header_operations(
         &self,
         sheet_pos: SheetPos,
         first_row_is_header: bool,
@@ -232,7 +231,7 @@ impl GridController {
         ]
     }
 
-    pub fn add_data_table_operations(
+    pub(crate) fn add_data_table_operations(
         &self,
         sheet_pos: SheetPos,
         name: String,
@@ -312,7 +311,7 @@ impl GridController {
 
     /// Expands a data table to the right or bottom if the cell value is
     /// touching the right or bottom edge.
-    pub fn grow_data_table(
+    pub(crate) fn grow_data_table(
         sheet: &Sheet,
         data_tables: &mut [Rect],
         data_table_columns: &mut HashMap<SheetPos, Vec<u32>>,
@@ -374,7 +373,7 @@ impl GridController {
 
     /// Returns operations to grow a data table to the right or bottom if the
     /// cell value is touching the right or bottom edge.
-    pub fn grow_data_table_operations(
+    pub(crate) fn grow_data_table_operations(
         data_table_columns: HashMap<SheetPos, Vec<u32>>,
         data_table_rows: HashMap<SheetPos, Vec<u32>>,
     ) -> Vec<Operation> {

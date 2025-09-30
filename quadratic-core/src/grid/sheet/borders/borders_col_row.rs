@@ -6,14 +6,14 @@ use crate::CopyFormats;
 use super::{Borders, BordersType, BordersUpdates, BordersUpdatesType};
 
 impl Borders {
-    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         self.left.insert_column(column, copy_formats);
         self.right.insert_column(column, copy_formats);
         self.top.insert_column(column, copy_formats);
         self.bottom.insert_column(column, copy_formats);
     }
 
-    pub fn remove_column(&mut self, column: i64) -> BordersUpdates {
+    pub(crate) fn remove_column(&mut self, column: i64) -> BordersUpdates {
         let remove_column_item = |item: &mut BordersType| -> BordersUpdatesType {
             item.remove_column(column)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
@@ -27,7 +27,7 @@ impl Borders {
         }
     }
 
-    pub fn copy_column(&self, column: i64) -> Option<BordersUpdates> {
+    pub(crate) fn copy_column(&self, column: i64) -> Option<BordersUpdates> {
         let copy_column_item = |item: &BordersType| -> BordersUpdatesType {
             item.copy_column(column)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
@@ -47,14 +47,14 @@ impl Borders {
         }
     }
 
-    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
+    pub(crate) fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
         self.left.insert_row(row, copy_formats);
         self.right.insert_row(row, copy_formats);
         self.top.insert_row(row, copy_formats);
         self.bottom.insert_row(row, copy_formats);
     }
 
-    pub fn remove_row(&mut self, row: i64) -> BordersUpdates {
+    pub(crate) fn remove_row(&mut self, row: i64) -> BordersUpdates {
         let remove_row_item = |item: &mut BordersType| -> BordersUpdatesType {
             item.remove_row(row)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
@@ -68,7 +68,7 @@ impl Borders {
         }
     }
 
-    pub fn copy_row(&self, row: i64) -> Option<BordersUpdates> {
+    pub(crate) fn copy_row(&self, row: i64) -> Option<BordersUpdates> {
         let copy_row_item = |item: &BordersType| -> BordersUpdatesType {
             item.copy_row(row).map(|c| c.map_ref(|c| c.map(Into::into)))
         };
@@ -529,19 +529,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "12".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             "34".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![A3].as_sheet_pos(sheet_id),
             "56".to_string(),
             None,
             false,
@@ -622,19 +622,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "12".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![A2].as_sheet_pos(sheet_id),
             "34".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![A3].as_sheet_pos(sheet_id),
             "56".to_string(),
             None,
             false,

@@ -27,7 +27,11 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `formats`. If this method returns `true`, then updates in `formats`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_formats(&self, sheet_id: SheetId, formats: &SheetFormatUpdates) -> bool {
+    pub(crate) fn thumbnail_dirty_formats(
+        &self,
+        sheet_id: SheetId,
+        formats: &SheetFormatUpdates,
+    ) -> bool {
         if sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -40,7 +44,11 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `borders`. If this method returns `true`, then updates in `borders`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_borders(&self, sheet_id: SheetId, borders: &BordersUpdates) -> bool {
+    pub(crate) fn thumbnail_dirty_borders(
+        &self,
+        sheet_id: SheetId,
+        borders: &BordersUpdates,
+    ) -> bool {
         if sheet_id != self.grid().first_sheet_id() {
             return false;
         }

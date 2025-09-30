@@ -39,13 +39,13 @@ lazy_static! {
         .collect();
 }
 
-pub fn provide_completion_items() -> CompletionList<'static> {
+pub(crate) fn provide_completion_items() -> CompletionList<'static> {
     CompletionList {
         suggestions: &FUNCTION_COMPLETION_ITEMS,
     }
 }
 
-pub fn provide_hover(partial_function_name: &str) -> Option<Hover> {
+pub(crate) fn provide_hover(partial_function_name: &str) -> Option<Hover> {
     let function = functions::lookup_function(partial_function_name)?;
     Some(Hover {
         contents: vec![MarkdownString {

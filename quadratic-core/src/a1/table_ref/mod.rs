@@ -73,7 +73,7 @@ pub struct TableRef {
 }
 
 impl TableRef {
-    pub fn new(table_name: &str) -> Self {
+    pub(crate) fn new(table_name: &str) -> Self {
         Self {
             table_name: table_name.to_string(),
             data: true,
@@ -84,21 +84,21 @@ impl TableRef {
     }
 
     /// Replaces a table name in the range.
-    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         if self.table_name == old_name {
             self.table_name = new_name.to_string();
         }
     }
 
     /// Replaces a table column name in the range.
-    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         if self.table_name == table_name && old_name != new_name {
             self.col_range.replace_column_name(old_name, new_name);
         }
     }
 
     /// Returns true if the table reference is a single cell.
-    pub fn is_single_cell(&self, a1_context: &A1Context) -> bool {
+    pub(crate) fn is_single_cell(&self, a1_context: &A1Context) -> bool {
         a1_context
             .try_table(&self.table_name)
             .is_some_and(|table| table.bounds.size() == ArraySize::_1X1)

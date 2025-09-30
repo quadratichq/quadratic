@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Returns a new Pos after pressing an arrow key.
-pub fn move_cursor(
+pub(crate) fn move_cursor(
     pos: SheetPos,
     direction: Direction,
     table_cache: &SheetDataTablesCache,

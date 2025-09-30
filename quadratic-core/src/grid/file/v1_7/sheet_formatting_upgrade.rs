@@ -1,32 +1,33 @@
-use crate::grid::file::v1_7_1::{
-    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema,
-    RenderSizeSchema, SheetFormattingSchema,
+use crate::grid::file::{
+    shift_negative_offsets::add_import_offset_to_contiguous_2d_rect,
+    v1_7_1::{
+        CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema,
+        RenderSizeSchema, SheetFormattingSchema,
+    },
 };
 
 use super::{Contiguous2DUpgrade, schema::FormatSchema};
 
-use crate::grid::file::add_import_offset_to_contiguous_2d_rect;
-
 #[derive(Default)]
-pub struct SheetFormattingUpgrade {
-    pub align: Contiguous2DUpgrade<Option<CellAlignSchema>>,
-    pub vertical_align: Contiguous2DUpgrade<Option<CellVerticalAlignSchema>>,
-    pub wrap: Contiguous2DUpgrade<Option<CellWrapSchema>>,
-    pub numeric_format: Contiguous2DUpgrade<Option<NumericFormatSchema>>,
-    pub numeric_decimals: Contiguous2DUpgrade<Option<i16>>,
-    pub numeric_commas: Contiguous2DUpgrade<Option<bool>>,
-    pub bold: Contiguous2DUpgrade<Option<bool>>,
-    pub italic: Contiguous2DUpgrade<Option<bool>>,
-    pub text_color: Contiguous2DUpgrade<Option<String>>,
-    pub fill_color: Contiguous2DUpgrade<Option<String>>,
-    pub render_size: Contiguous2DUpgrade<Option<RenderSizeSchema>>,
-    pub date_time: Contiguous2DUpgrade<Option<String>>,
-    pub underline: Contiguous2DUpgrade<Option<bool>>,
-    pub strike_through: Contiguous2DUpgrade<Option<bool>>,
+pub(crate) struct SheetFormattingUpgrade {
+    pub(crate) align: Contiguous2DUpgrade<Option<CellAlignSchema>>,
+    pub(crate) vertical_align: Contiguous2DUpgrade<Option<CellVerticalAlignSchema>>,
+    pub(crate) wrap: Contiguous2DUpgrade<Option<CellWrapSchema>>,
+    pub(crate) numeric_format: Contiguous2DUpgrade<Option<NumericFormatSchema>>,
+    pub(crate) numeric_decimals: Contiguous2DUpgrade<Option<i16>>,
+    pub(crate) numeric_commas: Contiguous2DUpgrade<Option<bool>>,
+    pub(crate) bold: Contiguous2DUpgrade<Option<bool>>,
+    pub(crate) italic: Contiguous2DUpgrade<Option<bool>>,
+    pub(crate) text_color: Contiguous2DUpgrade<Option<String>>,
+    pub(crate) fill_color: Contiguous2DUpgrade<Option<String>>,
+    pub(crate) render_size: Contiguous2DUpgrade<Option<RenderSizeSchema>>,
+    pub(crate) date_time: Contiguous2DUpgrade<Option<String>>,
+    pub(crate) underline: Contiguous2DUpgrade<Option<bool>>,
+    pub(crate) strike_through: Contiguous2DUpgrade<Option<bool>>,
 }
 
 impl SheetFormattingUpgrade {
-    pub fn apply_format(
+    pub(crate) fn apply_format(
         &mut self,
         x1: i64,
         y1: i64,
@@ -85,7 +86,7 @@ impl SheetFormattingUpgrade {
         }
     }
 
-    pub fn upgrade_schema(self) -> SheetFormattingSchema {
+    pub(crate) fn upgrade_schema(self) -> SheetFormattingSchema {
         SheetFormattingSchema {
             align: self.align.upgrade_schema(),
             vertical_align: self.vertical_align.upgrade_schema(),

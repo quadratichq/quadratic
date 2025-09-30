@@ -41,15 +41,17 @@ impl CellRefRangeEnd {
         let row = CellRefCoord::new_rel(y);
         CellRefRangeEnd { col, row }
     }
-    pub fn new_relative_pos(pos: Pos) -> Self {
+    pub(crate) fn new_relative_pos(pos: Pos) -> Self {
         Self::new_relative_xy(pos.x, pos.y)
     }
 
-    pub fn new_infinite_col_end(x: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_col_end(x: i64) -> Self {
         Self::new_relative_xy(x, UNBOUNDED)
     }
 
-    pub fn new_infinite_row_end(y: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_row_end(y: i64) -> Self {
         Self::new_relative_xy(UNBOUNDED, y)
     }
 
@@ -58,7 +60,7 @@ impl CellRefRangeEnd {
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+    pub(crate) fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if self.affected_by_adjustment(adjust) {
             Ok(Self {
                 col: self.col.adjust(adjust.relative_only, adjust.dx)?,
@@ -73,7 +75,7 @@ impl CellRefRangeEnd {
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+    pub(crate) fn saturating_adjust(self, adjust: RefAdjust) -> Self {
         if self.affected_by_adjustment(adjust) {
             Self {
                 col: self.col.saturating_adjust(adjust.relative_only, adjust.dx),
@@ -86,7 +88,7 @@ impl CellRefRangeEnd {
 
     /// Adjusts X and Y coordinates independently, and returns them as separate
     /// [`Result`]s.
-    pub fn try_adjust_xy(
+    pub(crate) fn try_adjust_xy(
         self,
         adjust: RefAdjust,
     ) -> (
@@ -109,7 +111,7 @@ impl CellRefRangeEnd {
 
     // TODO: remove this function when switching to u64
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
+    pub(crate) fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
             col: self.col.translate_unchecked(delta_x),
             row: self.row.translate_unchecked(delta_y),
@@ -117,23 +119,23 @@ impl CellRefRangeEnd {
     }
 
     // TODO: `impl PartialEq<Pos> for CellRefRangeEnd`
-    pub fn is_pos(self, pos: Pos) -> bool {
+    pub(crate) fn is_pos(self, pos: Pos) -> bool {
         self.col.coord == pos.x && self.row.coord == pos.y
     }
 
     /// Unpacks the x coordinate
-    pub fn col(self) -> i64 {
+    pub(crate) fn col(self) -> i64 {
         self.col.coord
     }
 
     /// Unpacks the y coordinate
-    pub fn row(self) -> i64 {
+    pub(crate) fn row(self) -> i64 {
         self.row.coord
     }
 
     /// Returns a new range end with the column and row bounded to the given
     /// position at the start of the range.
-    pub fn to_bounded_start(self, pos: Pos) -> Self {
+    pub(crate) fn to_bounded_start(self, pos: Pos) -> Self {
         CellRefRangeEnd {
             col: self.col.to_bounded_start(pos.x),
             row: self.row.to_bounded_start(pos.y),
@@ -142,7 +144,7 @@ impl CellRefRangeEnd {
 
     /// Returns a new range end with the column and row bounded to the given
     /// position at the end of the range.
-    pub fn to_bounded_end(self, pos: Pos) -> Self {
+    pub(crate) fn to_bounded_end(self, pos: Pos) -> Self {
         CellRefRangeEnd {
             col: self.col.to_bounded_end(pos.x),
             row: self.row.to_bounded_end(pos.y),
@@ -219,9 +221,10 @@ impl CellRefRangeEnd {
         }
 
         if col.is_some_and(|c| c != UNBOUNDED && c > OUT_OF_BOUNDS)
-            && let Some(c) = col {
-                return Err(A1Error::InvalidColumn(column_name(c)));
-            }
+            && let Some(c) = col
+        {
+            return Err(A1Error::InvalidColumn(column_name(c)));
+        }
         if row.is_some_and(|r| r != UNBOUNDED && r > OUT_OF_BOUNDS) {
             return Err(A1Error::InvalidRow(row.unwrap_or(1).to_string()));
         }
@@ -307,7 +310,7 @@ impl CellRefRangeEnd {
     ///
     /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
     /// `Some`, then A1 and RC notation are both accepted.
-    pub fn parse_start(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
+    pub(crate) fn parse_start(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
         let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s, base_pos)?;
         Ok(CellRefRangeEnd {
             col: CellRefCoord {
@@ -325,7 +328,7 @@ impl CellRefRangeEnd {
     ///
     /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
     /// `Some`, then A1 and RC notation are both accepted.
-    pub fn parse_end(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
+    pub(crate) fn parse_end(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
         let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s, base_pos)?;
         Ok(CellRefRangeEnd {
             col: CellRefCoord {
@@ -339,17 +342,12 @@ impl CellRefRangeEnd {
         })
     }
 
-    pub fn is_unbounded(self) -> bool {
+    pub(crate) fn is_unbounded(self) -> bool {
         self.col.coord == UNBOUNDED || self.row.coord == UNBOUNDED
     }
 
-    /// Returns whether the range end is missing a row or column number.
-    pub fn is_multi_range(self) -> bool {
-        self.col.is_unbounded() || self.row.is_unbounded()
-    }
-
     /// Toggles the absolute status of the range end.
-    pub fn toggle_absolute(&mut self) {
+    pub(crate) fn toggle_absolute(&mut self) {
         let col_abs = self.col.is_absolute;
         let row_abs = self.row.is_absolute;
 

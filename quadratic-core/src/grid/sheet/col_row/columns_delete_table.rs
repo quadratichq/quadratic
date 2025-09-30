@@ -51,7 +51,7 @@ impl Sheet {
                 transaction
                     .reverse_operations
                     .push(Operation::SetDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
+                        sheet_pos: pos.as_sheet_pos(self.id),
                         data_table: Some(old_dt),
                         index,
                         ignore_old_data_table: true,
@@ -114,7 +114,7 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
+                    sheet_pos: pos.as_sheet_pos(self.id),
                     data_table: Some(old_dt),
                     index,
                     ignore_old_data_table: true,
@@ -122,7 +122,7 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .push(Operation::DeleteDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
+                    sheet_pos: pos.as_sheet_pos(self.id),
                 });
         }
     }
@@ -232,8 +232,8 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .push(Operation::MoveDataTable {
-                    old_sheet_pos: new_pos.to_sheet_pos(self.id),
-                    new_sheet_pos: pos.to_sheet_pos(self.id),
+                    old_sheet_pos: new_pos.as_sheet_pos(self.id),
+                    new_sheet_pos: pos.as_sheet_pos(self.id),
                 });
         }
     }

@@ -6,7 +6,7 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 
 impl GridController {
     /// Checks data tables for spill changes in sheet_rect.
-    pub fn update_spills_in_sheet_rect(
+    pub(crate) fn update_spills_in_sheet_rect(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,

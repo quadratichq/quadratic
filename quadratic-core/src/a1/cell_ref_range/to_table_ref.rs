@@ -9,7 +9,7 @@ use super::*;
 impl CellRefRange {
     /// Checks if a CellRefRange::Sheet can be converted to a
     /// CellRefRange::Table. If it can, then it returns the TableRef.
-    pub fn check_for_table_ref(
+    pub(crate) fn check_for_table_ref(
         &self,
         sheet_id: SheetId,
         a1_context: &A1Context,

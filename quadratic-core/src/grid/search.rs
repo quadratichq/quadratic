@@ -5,7 +5,7 @@ use crate::grid::js_types::JsSheetPosText;
 use super::{Grid, SheetId, sheet::search::SearchOptions};
 
 impl Grid {
-    pub fn search(&self, query: &String, options: SearchOptions) -> Vec<JsSheetPosText> {
+    pub(crate) fn search(&self, query: &String, options: SearchOptions) -> Vec<JsSheetPosText> {
         let mut result = Vec::new();
         if let Some(sheet_id) = options
             .sheet_id

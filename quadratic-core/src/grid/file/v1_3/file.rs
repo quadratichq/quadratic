@@ -19,7 +19,7 @@ pub(crate) fn upgrade(schema: GridSchema) -> Result<v1_4::GridSchema> {
     Ok(converted)
 }
 
-pub fn language_conversion(language: &str) -> String {
+pub(crate) fn language_conversion(language: &str) -> String {
     match language.to_lowercase().as_str() {
         "python" => "Python".into(),
         "formula" => "Formula".into(),

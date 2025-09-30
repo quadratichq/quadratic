@@ -38,23 +38,23 @@ impl Default for SmallTimestamp {
 }
 
 impl SmallTimestamp {
-    pub fn new(value: u32) -> Self {
+    pub(crate) fn new(value: u32) -> Self {
         Self(value)
     }
 
-    pub fn now() -> Self {
+    pub(crate) fn now() -> Self {
         let now = Utc::now();
         let duration = now.signed_duration_since(*BASE_DATE);
         let seconds = duration.num_seconds() as u32;
         Self(seconds)
     }
 
-    pub fn value(&self) -> u32 {
+    pub(crate) fn value(&self) -> u32 {
         self.0
     }
 
     #[cfg(test)]
-    pub fn set(date: DateTime<Utc>) -> Self {
+    pub(crate) fn set(date: DateTime<Utc>) -> Self {
         let duration = date.signed_duration_since(*BASE_DATE);
         let seconds = duration.num_seconds() as u32;
         Self(seconds)

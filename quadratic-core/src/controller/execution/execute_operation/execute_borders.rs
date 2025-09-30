@@ -4,7 +4,7 @@ use crate::controller::{
 };
 
 impl GridController {
-    pub fn execute_set_borders_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_set_borders_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         unwrap_op!(let SetBordersA1 { sheet_id, borders } = op);
 
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {

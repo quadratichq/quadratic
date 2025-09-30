@@ -4,7 +4,7 @@ use super::*;
 
 impl A1Selection {
     /// Finds intersection of two Selections.
-    pub fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
+    pub(crate) fn intersection(&self, other: &Self, a1_context: &A1Context) -> Option<Self> {
         if self.sheet_id != other.sheet_id {
             return None;
         }
@@ -27,11 +27,11 @@ impl A1Selection {
                             if let Some(rect) = other_range.to_largest_rect(a1_context)
                                 && let Some(intersection) =
                                     RefRangeBounds::new_relative_rect(rect).intersection(range)
-                                {
-                                    ranges.push(CellRefRange::Sheet {
-                                        range: intersection,
-                                    });
-                                }
+                            {
+                                ranges.push(CellRefRange::Sheet {
+                                    range: intersection,
+                                });
+                            }
                         }
                     });
             }
@@ -94,7 +94,7 @@ impl A1Selection {
         other_range: &TableRef,
         a1_context: &A1Context,
     ) -> bool {
-        let rect = range.to_rect_unbounded();
+        let rect = range.as_rect_unbounded();
         if let Some(other_rect) = other_range.to_largest_rect(a1_context) {
             rect.intersects(other_rect)
         } else {
@@ -103,7 +103,7 @@ impl A1Selection {
     }
 
     /// Returns `true` if the two selections overlap.
-    pub fn overlaps_a1_selection(&self, other: &Self, a1_context: &A1Context) -> bool {
+    pub(crate) fn overlaps_a1_selection(&self, other: &Self, a1_context: &A1Context) -> bool {
         if self.sheet_id != other.sheet_id {
             return false;
         }

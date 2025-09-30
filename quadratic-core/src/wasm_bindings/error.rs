@@ -5,7 +5,7 @@
 //    self.autocomplete(sheet_id, initial_range, final_range, cursor)?;
 // });
 
-pub fn handle_core_result<F>(f: F)
+pub(crate) fn handle_core_result<F>(f: F)
 where
     F: FnOnce() -> Result<(), String>,
 {

@@ -22,7 +22,7 @@ pub enum ColRange {
 }
 
 impl ColRange {
-    pub fn has_col(&self, col: i64, table: &TableMapEntry) -> bool {
+    pub(crate) fn has_col(&self, col: i64, table: &TableMapEntry) -> bool {
         match self {
             ColRange::All => return true,
             ColRange::Col(table_col) => {
@@ -44,7 +44,7 @@ impl ColRange {
         false
     }
 
-    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+    pub(crate) fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
         match self {
             ColRange::Col(col) => {
                 if col.eq_ignore_ascii_case(old_name) {
@@ -70,7 +70,7 @@ impl ColRange {
     }
 
     /// Returns the number of columns in the range.
-    pub fn col_count(&self, table: &TableMapEntry) -> usize {
+    pub(crate) fn col_count(&self, table: &TableMapEntry) -> usize {
         match self {
             ColRange::All => table.visible_columns.len(),
             ColRange::Col(name) => {

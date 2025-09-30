@@ -11,7 +11,7 @@ use super::{
     data_table::{export_cell_ref_range, import_cell_ref_range},
 };
 
-pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
+pub(crate) fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
     A1Selection {
         // todo: handle error more gracefully
         sheet_id: SheetId::from_str(&selection.sheet_id.to_string()).unwrap(),
@@ -27,7 +27,7 @@ pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
     }
 }
 
-pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
+pub(crate) fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
     current::A1SelectionSchema {
         sheet_id: selection.sheet_id.to_string().into(),
         cursor: current::PosSchema {
