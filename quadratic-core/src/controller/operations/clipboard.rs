@@ -637,7 +637,7 @@ impl GridController {
                 let formats_ops = self.clipboard_formats_tables_operations(
                     start_pos.sheet_id,
                     formats_rect,
-                    clipboard_formats,
+                    &copied_formats,
                     Some(&clipboard.selection),
                     delete_value,
                 );
