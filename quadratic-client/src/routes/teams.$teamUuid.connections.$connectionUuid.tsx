@@ -1,15 +1,19 @@
 import { ConnectionPreview } from '@/dashboard/connections/ConnectionPreview';
 import { ConnectionPreviewError } from '@/dashboard/connections/ConnectionPreviewError';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { getDeleteConnectionAction } from '@/routes/api.connections';
+import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
-import { RefreshIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { RefreshIcon } from '@/shared/components/Icons';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
+import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
-import { useLoaderData, useNavigation, type LoaderFunctionArgs } from 'react-router';
+import { useLoaderData, useNavigate, useSubmit, type LoaderFunctionArgs } from 'react-router';
 // import { useLoaderData } from 'react-router';
 
 type ActiveTab = 'preview' | 'edit';
@@ -23,27 +27,28 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
 export const Component = () => {
   const { connectionUuid, teamUuid } = useLoaderData<typeof loader>();
-  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
   const {
     activeTeam: { connections },
   } = useDashboardRouteLoaderData();
-
   const connectionType = connections.find((connection) => connection.uuid === connectionUuid)?.type || 'MYSQL';
+
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({
     type: connectionType,
     uuid: connectionUuid,
     teamUuid,
   });
 
+  const confirmFn = useConfirmDialog('deleteConnection', undefined);
+  const submit = useSubmit();
+  const navigate = useNavigate();
+
   useEffect(() => {
     setActiveTab('preview');
   }, [connectionUuid]);
 
-  console.log(navigation);
-
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className="h-full">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className={cn('h-full')}>
       <TabsList className="h-12 w-full justify-start border-b border-border">
         <TabsTrigger value="preview" className="h-12">
           Preview
@@ -55,17 +60,15 @@ export const Component = () => {
         {activeTab === 'preview' && (
           <div className="ml-auto mr-2 flex items-center gap-2">
             <Button size="icon" variant="ghost" onClick={reloadSchema}>
-              <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+              <RefreshIcon className={cn(isLoading && 'animate-spin text-primary')} />
             </Button>
             <Button className="">New file from data</Button>
           </div>
         )}
       </TabsList>
-      <TabsContent value="preview" className="mt-0 h-full">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <SpinnerIcon />
-          </div>
+      <TabsContent value="preview" className={cn('mt-0 h-full', isLoading && 'pointer-events-none opacity-50')}>
+        {data ? (
+          <ConnectionPreview teamUuid={teamUuid} connectionUuid={connectionUuid} connectionType={connectionType} />
         ) : data === null ? (
           <ConnectionPreviewError
             reloadSchema={reloadSchema}
@@ -74,24 +77,55 @@ export const Component = () => {
             type={connectionType}
             handleNavigateToEdit={() => setActiveTab('edit')}
           />
-        ) : (
-          <ConnectionPreview teamUuid={teamUuid} connectionUuid={connectionUuid} connectionType={connectionType} />
-        )}
+        ) : null}
       </TabsContent>
       <TabsContent value="edit" className="mt-0 h-full overflow-y-auto">
-        <div className="grid grid-cols-12 gap-8 p-3">
-          <div className="col-span-8">
-            <ConnectionFormEdit
-              connectionUuid={connectionUuid}
-              connectionType={connectionType}
-              handleNavigateToListView={() => setActiveTab('preview')}
-              teamUuid={teamUuid}
+        {connectionUuid === '00000000-0000-0000-0000-000000000000' ? (
+          <div className="flex h-full items-center justify-center">
+            <EmptyState
+              title="Connection not editable"
+              description={
+                'This is a demo connection managed by the Quadratic team. If you don’t want to see it in your team, delete it.'
+              }
+              actions={
+                <Button
+                  type="button"
+                  variant="outline-destructive"
+                  className="flex-shrink-0"
+                  onClick={async () => {
+                    if (await confirmFn()) {
+                      // TODO: handle new a new [Connections] events for ones from the dashboard vs. in-app
+                      // trackEvent('[Connections].delete', { type: connectionType });
+                      const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
+                      submit(json, {
+                        ...options,
+                        navigate: false,
+                      });
+                      navigate('../');
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              }
+              Icon={QuestionMarkCircledIcon}
             />
           </div>
-          <div className="col-span-4">
-            <ConnectionsSidebar staticIps={['192.168.0.1']} sshPublicKey={'foobar'} />
+        ) : (
+          <div className="grid grid-cols-12 gap-8 p-3">
+            <div className="col-span-8">
+              <ConnectionFormEdit
+                connectionUuid={connectionUuid}
+                connectionType={connectionType}
+                handleNavigateToListView={() => setActiveTab('preview')}
+                teamUuid={teamUuid}
+              />
+            </div>
+            <div className="col-span-4">
+              <ConnectionsSidebar staticIps={['192.168.0.1']} sshPublicKey={'foobar'} />
+            </div>
           </div>
-        </div>
+        )}
       </TabsContent>
     </Tabs>
   );
