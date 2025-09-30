@@ -2028,6 +2028,9 @@ mod test {
                 ..Default::default()
             }
         );
+        dbg!(&sheet.cell_format(pos![F13]));
+        dbg!(&sheet.cell_format(pos![G13]));
+        // maybe it shouldn't adjust it when you merge the table? just translate the formats
         assert_eq!(
             sheet.cell_format(pos![E14]),
             Format {
