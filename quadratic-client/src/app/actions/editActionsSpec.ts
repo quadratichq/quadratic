@@ -145,6 +145,7 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       copySelectionToPNG();
     },
   },

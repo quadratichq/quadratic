@@ -4,16 +4,6 @@ use crate::CellValue;
 
 use super::SeriesOptions;
 
-const ALPHABET_LOWER: [&str; 26] = [
-    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
-    "t", "u", "v", "w", "x", "y", "z",
-];
-
-const ALPHABET_UPPER: [&str; 26] = [
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
-    "T", "U", "V", "W", "X", "Y", "Z",
-];
-
 const MONTHS_SHORT: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
@@ -127,8 +117,6 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
         negative,
     } = options;
     let text_series: &[&[&str]] = &[
-        &ALPHABET_LOWER,
-        &ALPHABET_UPPER,
         &MONTHS_SHORT,
         &MONTHS_SHORT_UPPER,
         &MONTHS_FULL,
@@ -215,51 +203,6 @@ mod tests {
     use crate::grid::series::{cell_value_text, find_auto_complete};
 
     use super::*;
-
-    #[test]
-    fn find_a_text_series_lowercase_letters() {
-        let options = SeriesOptions {
-            series: cell_value_text(vec!["a", "b", "c"]),
-            spaces: 4,
-            negative: false,
-        };
-        let results = find_auto_complete(options);
-        assert_eq!(results, cell_value_text(vec!["d", "e", "f", "g"]));
-    }
-
-    #[test]
-    fn find_a_text_series_uppercase_letters() {
-        let options = SeriesOptions {
-            series: cell_value_text(vec!["A", "B", "C"]),
-            spaces: 4,
-            negative: false,
-        };
-        let results = find_auto_complete(options);
-        assert_eq!(results, cell_value_text(vec!["D", "E", "F", "G"]));
-    }
-
-    #[test]
-    fn find_a_text_series_uppercase_letters_with_wrap() {
-        let options = SeriesOptions {
-            series: cell_value_text(vec!["X", "Y", "Z"]),
-            spaces: 4,
-            negative: false,
-        };
-        let results = find_auto_complete(options);
-        assert_eq!(results, cell_value_text(vec!["A", "B", "C", "D"]));
-    }
-
-    #[test]
-    fn find_a_text_series_uppercase_letters_with_wrap_negative() {
-        let options = SeriesOptions {
-            series: cell_value_text(vec!["A", "B", "C"]),
-            spaces: 4,
-            negative: true,
-        };
-        let results = find_auto_complete(options);
-        assert_eq!(results, cell_value_text(vec!["W", "X", "Y", "Z"]));
-    }
-
     #[test]
     fn find_a_text_series_short_month() {
         let options = SeriesOptions {
