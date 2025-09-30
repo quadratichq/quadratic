@@ -73,13 +73,13 @@ ${
 
 ${
   files.length > 0
-    ? ` - User has attached ${files.length} chat files. These can be PDF or image files. PDF files need to be extracted using pdf_import tool, image files can be referenced or also extracted without using a dedicated tool. These files are attached here for generating the prompt suggestions.`
+    ? ` - User has attached ${files.length} chat files. These can be PDF or image files. PDF files need to be extracted using pdf_import tool, image files can be referenced or also extracted without using a dedicated tool. The file names and mime types are attached here for generating the prompt suggestions: ${files.map((file) => `${file.fileName} (${file.mimeType})`).join(', ')}`
     : ''
 }
 
 ${
   importFiles.length > 0
-    ? ` - User has attached ${importFiles.length} data files. These can be CSV, Excel, or Parquet files. These will be imported into the sheet before executing the prompt. First few rows of data from these files are attached here for generating the prompt suggestions.`
+    ? ` - User has attached ${importFiles.length} data files. These can be CSV, Excel, or Parquet files. These will be imported into the sheet before executing the prompt. The file names are attached here for generating the prompt suggestions: ${importFiles.map((file) => file.name).join(', ')}`
     : ''
 }
                 `
