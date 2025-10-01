@@ -49,7 +49,6 @@ export const Component = () => {
     setActiveTab('preview');
   }, [connectionUuid]);
 
-
   useEffect(() => {
     if (data) {
       setCurrentQuery(`SELECT * FROM ${data.tables[0].schema}.${data.tables[0].name} LIMIT 100`);
