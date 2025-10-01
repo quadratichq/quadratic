@@ -85,16 +85,16 @@ export function Search() {
       const found = await quadraticCore.search(inputEl?.value, searchOptions);
       if (found) {
         setResults(found);
-        let currentLocal = 0;
+        const currentLocal = current > found.length - 1 ? 0 : current;
         setCurrent((current) => {
-          if (current > found.length - 1) {
-            currentLocal = 0;
-            return 0;
-          }
-          currentLocal = current;
+          if (current > found.length - 1) return 0;
           return current;
         });
-        setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
+        setCursor({
+          x: found[currentLocal].x,
+          y: found[currentLocal].y,
+          sheet_id: { id: found[currentLocal].sheet_id },
+        });
         events.emit(
           'search',
           found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
