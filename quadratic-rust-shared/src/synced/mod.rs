@@ -97,7 +97,7 @@ pub async fn get_missing_dates(
         if !existing_dates.contains(&current_date) {
             missing_dates.push(current_date);
         }
-        current_date = current_date + chrono::Duration::days(1);
+        current_date += chrono::Duration::days(1);
     }
 
     Ok(missing_dates)
