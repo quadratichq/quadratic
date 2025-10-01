@@ -12,16 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   pkg-config \
   libssl-dev \
-  llvm \
-  clang \
-  python3 \
-  python3-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
 
 # Copy rust-toolchain file first so rustup can read it
-COPY rust-toolchain.toml .
+COPY --link rust-toolchain.toml .
 
 # Install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -32,13 +28,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
-COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY ./quadratic-core-cloud/. ./quadratic-core-cloud/
-COPY ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
+COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
 
-WORKDIR /quadratic/quadratic-cloud-worker
+WORKDIR /quadratic/quadratic-cloud-controller
 
 RUN cargo build --release
 
@@ -52,10 +45,8 @@ FROM ubuntu:24.04 AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \  
   ca-certificates \
-  python3 \
-  libpython3.12 \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /quadratic/quadratic-cloud-worker/target/release/quadratic-cloud-worker .
+COPY --from=builder /quadratic/quadratic-cloud-controller/target/release/quadratic-cloud-controller .
 
-CMD ["./quadratic-cloud-worker"]
+CMD ["./quadratic-cloud-controller"]
