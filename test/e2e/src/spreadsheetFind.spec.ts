@@ -10,6 +10,7 @@ test('Find improperly changes sheets', async ({ page }) => {
   const fileType = 'grid';
 
   await logIn(page, { emailPrefix: `e2e_find_changes_sheets` });
+  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType });
 
   // duplicate first sheet
@@ -40,6 +41,7 @@ test('Search viewport updates when reverse searching', async ({ page }) => {
   const fileType = 'grid';
 
   await logIn(page, { emailPrefix: `e2e_search_viewport_updates_when_reverse_searching` });
+  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType });
 
   await page.keyboard.press('Control+F', { delay: 250 });
@@ -68,6 +70,7 @@ test('Search refreshes on changes', async ({ page }) => {
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_search_refreshes_on_changes` });
+  await cleanUpFiles(page, { fileName });
   await uploadFile(page, { fileName, fileType: 'grid' });
 
   await page.keyboard.press('Control+F');
@@ -77,4 +80,8 @@ test('Search refreshes on changes', async ({ page }) => {
 
   await setValueInCell(page, 'A20', 'baseball');
   await expect(page.locator('[data-testid="search-results-count"]')).toHaveText('1 of 3');
+
+  // Cleanup newly created files
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(page, { fileName });
 });
