@@ -5,6 +5,7 @@ import { cleanUpFiles, createFile } from './helpers/file.helpers';
 test('Tile paste formatting', async ({ page }) => {
   const fileName = 'Tile_Paste_Formatting';
   await logIn(page, { emailPrefix: `e2e_tile_paste_formatting`, createAccount: true });
+  await cleanUpFiles(page, { fileName });
   await createFile(page, { fileName });
 
   await page.keyboard.press('Shift+ArrowDown', { delay: 250 });
