@@ -28,7 +28,8 @@ use crate::{
     },
 };
 
-const MAX_DAYS_TO_EXPORT: i64 = 180;
+const MAX_DAYS_TO_EXPORT: i64 = 90;
+const CHUNK_SIZE: u32 = 7; // 7 days
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MixpanelConnection {
@@ -93,20 +94,21 @@ pub(crate) async fn process_mixpanel_connection(
     let client = MixpanelClient::new(api_secret, project_id);
 
     // split the date range into chunks
-    let chunks = chunk_date_range(start_date, end_date, 30);
+    let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
     let total_chunks = chunks.len();
 
     tracing::info!(
-        "Exporting Mixpanel events from {} to {} in {} weekly chunks...",
+        "Exporting Mixpanel events from {} to {} in {} {}-day chunks...",
         start_date,
         end_date,
-        total_chunks
+        total_chunks,
+        CHUNK_SIZE
     );
 
     let mut total_files_processed = 0;
 
-    // Process each weekly chunk
-    for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().enumerate() {
+    // Process each chunk in reverse order (most recent first)
+    for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
         tracing::info!(
             "Processing chunk {}/{}: {} to {}",
             chunk_index + 1,
@@ -180,7 +182,7 @@ async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (Nai
     let today = chrono::Utc::now().date_naive();
     let prefix = object_store_path(connection_id, table_name);
     let end_date = today;
-    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
+    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT - 1);
 
     // if we have any objects, use the last date processed
     if let Ok(Some(new_start_date)) = get_last_date_processed(&object_store, Some(&prefix)).await {
@@ -358,7 +360,7 @@ mod tests {
         let table_name = "events";
         let (start_date, end_date) = dates(state, connection_id, table_name).await;
         let today = chrono::Utc::now().date_naive();
-        let expected_start = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT);
+        let expected_start = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT - 1);
 
         assert_eq!(end_date, today);
         assert_eq!(start_date, expected_start);
@@ -372,7 +374,7 @@ mod tests {
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).expect("Valid date");
         let end_date = NaiveDate::from_ymd_opt(2024, 1, 14).expect("Valid date");
         let chunks = chunk_date_range(start_date, end_date, 7);
-
+        println!("chunks: {:?}", chunks);
         assert_eq!(chunks.len(), 2);
         assert_eq!(
             chunks[0],
