@@ -8,12 +8,13 @@ import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsS
 import { EmptyState } from '@/shared/components/EmptyState';
 import { RefreshIcon } from '@/shared/components/Icons';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
-import { useLoaderData, useNavigate, useSubmit, type LoaderFunctionArgs } from 'react-router';
+import { Link, useLoaderData, useNavigate, useSubmit, type LoaderFunctionArgs } from 'react-router';
 // import { useLoaderData } from 'react-router';
 
 type ActiveTab = 'preview' | 'edit';
@@ -28,6 +29,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 export const Component = () => {
   const { connectionUuid, teamUuid } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
+  const [currentQuery, setCurrentQuery] = useState<string>('');
   const {
     activeTeam: { connections },
   } = useDashboardRouteLoaderData();
@@ -47,6 +49,13 @@ export const Component = () => {
     setActiveTab('preview');
   }, [connectionUuid]);
 
+
+  useEffect(() => {
+    if (data) {
+      setCurrentQuery(`SELECT * FROM ${data.tables[0].schema}.${data.tables[0].name} LIMIT 100`);
+    }
+  }, [data]);
+
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className={cn('h-full')}>
       <TabsList className="h-12 w-full justify-start border-b border-border">
@@ -62,7 +71,20 @@ export const Component = () => {
             <Button size="icon" variant="ghost" onClick={reloadSchema}>
               <RefreshIcon className={cn(isLoading && 'animate-spin text-primary')} />
             </Button>
-            <Button className="">New file from data</Button>
+            <Button className="" asChild>
+              <Link
+                to={newNewFileFromStateConnection({
+                  connectionType,
+                  connectionUuid,
+                  teamUuid,
+                  isPrivate: true,
+                  query: currentQuery,
+                })}
+                reloadDocument
+              >
+                New file from data
+              </Link>
+            </Button>
           </div>
         )}
       </TabsList>
