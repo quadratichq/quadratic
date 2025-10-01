@@ -114,3 +114,21 @@ export const getCellLocation = (
     height: CELL_HEIGHT,
   };
 };
+
+export const copyToClipboard = async (page: Page, a1?: string) => {
+  if (a1) {
+    await gotoCells(page, { a1 });
+  }
+  // Copy the text in the cells
+  await page.keyboard.press('Control+C', { delay: 250 });
+  await page.waitForTimeout(5 * 1000);
+};
+
+export const pasteFromClipboard = async (page: Page, a1?: string) => {
+  if (a1) {
+    await gotoCells(page, { a1 });
+  }
+  // Paste the text in the cells
+  await page.keyboard.press('Control+V', { delay: 250 });
+  await page.waitForTimeout(5 * 1000);
+};
