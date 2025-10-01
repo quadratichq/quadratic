@@ -94,7 +94,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="destructive" size="sm">
-          Fix <ArrowDropDownIcon className="-mr-1" />
+          Fix overlap <ArrowDropDownIcon className="-mr-1" />
         </Button>
       </DropdownMenuTrigger>
 
