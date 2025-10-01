@@ -20,11 +20,11 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
-  Exclude<ModelMode, 'disabled'>,
+  Exclude<ModelMode, 'disabled' | 'others'>,
   { label: string; description: string }
 > = {
   fast: { label: 'Default', description: 'Good for everyday tasks' },
@@ -107,9 +107,16 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     },
     [modelConfigs, setSelectedModel, thinkingToggle]
   );
+
+  const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
+
+  const [isOthersExpanded, setIsOthersExpanded] = useState(false);
+
   const selectedModelLabel = useMemo(
-    () => MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode].label,
-    [selectedModelMode]
+    () =>
+      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ??
+      selectedModelConfig.displayName,
+    [selectedModelMode, selectedModelConfig]
   );
 
   const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
@@ -199,7 +206,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 setKnowsAboutModelPicker(true);
               }}
             >
-              Model: {selectedModelLabel}
+              {selectedModelLabel}
               <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
             </PopoverTrigger>
 
@@ -213,7 +220,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               </div>
 
               <form className="flex flex-col gap-1 rounded border border-border text-sm">
-                <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
+                <RadioGroup
+                  value={selectedModelConfig.mode === 'others' ? selectedModel : selectedModelMode}
+                  className="flex flex-col gap-0"
+                >
                   {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
                     <Label
                       className={cn(
@@ -228,6 +238,36 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                       <span className="ml-auto font-normal">{description}</span>
                     </Label>
                   ))}
+
+                  {/* Others section */}
+                  <div className="border-t border-border">
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer items-center px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-accent"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsOthersExpanded(!isOthersExpanded);
+                      }}
+                    >
+                      <CaretDownIcon className={cn('mr-1 transition-transform', isOthersExpanded && 'rotate-180')} />
+                      Others (experimental)
+                    </button>
+                    {isOthersExpanded &&
+                      othersModels.map(([modelKey, modelConfig]) => (
+                        <Label
+                          className="flex cursor-pointer items-center px-4 py-2 pl-6 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
+                          key={modelKey}
+                          onPointerDown={() => {
+                            trackEvent('[AI].model.change', { model: modelConfig.model });
+                            setSelectedModel(modelKey);
+                          }}
+                        >
+                          <RadioGroupItem value={modelKey} className="mr-2" />
+                          <span>{modelConfig.displayName}</span>
+                        </Label>
+                      ))}
+                  </div>
                 </RadioGroup>
               </form>
             </PopoverContent>

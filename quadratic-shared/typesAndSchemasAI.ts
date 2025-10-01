@@ -20,7 +20,7 @@ const AIProvidersSchema = z.enum([
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4-5@20250929']);
-const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite']);
+const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum(['us.anthropic.claude-sonnet-4-5-20250929-v1:0']);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
@@ -79,6 +79,7 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
+  'vertexai:gemini-2.5-pro',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
@@ -155,7 +156,7 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
-const ModelModeSchema = z.enum(['disabled', 'fast', 'max']);
+const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({
