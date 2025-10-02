@@ -84,6 +84,7 @@ export const AIAnalystUserMessageForm = memo(
           maxHeight="275px"
           filesSupportedText="PDF, Image, CSV, Excel and Parquet"
           enableMentions={true}
+          uiContext="analyst"
         />
 
         <AIAnalystEmptyStateWaypoint />

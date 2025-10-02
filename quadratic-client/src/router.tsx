@@ -37,8 +37,6 @@ export const router = createBrowserRouter(
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
         <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
-        <Route path={ROUTES.SEND_MAGIC_AUTH_CODE} lazy={() => import('./routes/send-magic-auth-code')} />
-        <Route path={ROUTES.MAGIC_AUTH_CODE} lazy={() => import('./routes/magic-auth-code')} />
         <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
         <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
       </Route>

@@ -318,3 +318,13 @@ This is only required if the `quadratic-community` Auth0 account does not work.
 5. add the action to `quadraticClient/../aiToolsActions.ts`
 
 Note: you may need to restart node dev occasionally if it doesn't pick up your changes.
+
+## E2E Testing
+
+1. All machines types to locally run E2E tests from /quadratic/test/e2e/:
+   * `npm run test` to run all tests
+   * `npm run teste:ui` to open UI that runs tests
+   * (Only Linux): `npm run test:update` will update images--normally, you will use test.only(...) in front of the desired test so you only update that test
+2. To generate images on Mac or Windows, run e2e /quadratic:
+   * `npm run test` will run all tests in docker
+   * `npm run test:update` will update screenshots in tests, similar to above (use test.only to limit the updates)

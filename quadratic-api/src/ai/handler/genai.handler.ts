@@ -1,23 +1,22 @@
 import type { GenerateContentParameters, GoogleGenAI } from '@google/genai';
-import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type {
-  AIRequestHelperArgs,
-  GeminiAIModelKey,
-  ParsedAIResponse,
-  VertexAIModelKey,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { GeminiAIModelKey, ParsedAIResponse, VertexAIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { getGenAIApiArgs, parseGenAIResponse, parseGenAIStream } from '../helpers/genai.helper';
+import type { HandleAIRequestArgs } from './ai.handler';
 
-export const handleGenAIRequest = async (
-  modelKey: VertexAIModelKey | GeminiAIModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  genai: GoogleGenAI,
-  response?: Response,
-  signal?: AbortSignal
-): Promise<ParsedAIResponse | undefined> => {
+interface HandleGenAIRequestArgs extends Omit<HandleAIRequestArgs, 'modelKey'> {
+  modelKey: VertexAIModelKey | GeminiAIModelKey;
+  genai: GoogleGenAI;
+}
+export const handleGenAIRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+  genai,
+}: HandleGenAIRequestArgs): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getGenAIApiArgs(args, options.aiModelMode);

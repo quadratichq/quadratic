@@ -79,7 +79,7 @@ export class TableName extends Container {
       this.symbol = undefined;
     }
     if (this.table.codeCell.language !== 'Import') {
-      this.symbol = getLanguageSymbol(this.table.codeCell.language, false);
+      this.symbol = getLanguageSymbol(this.table.codeCell.language);
       if (this.symbol) {
         this.addChild(this.symbol);
         this.symbol.width = CELL_HEIGHT * SYMBOL_SCALE;

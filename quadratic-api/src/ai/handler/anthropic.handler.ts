@@ -6,26 +6,29 @@ import type {
   ThinkingConfigParam,
 } from '@anthropic-ai/sdk/resources';
 import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
-import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AIRequestHelperArgs,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
+import type { HandleAIRequestArgs } from './ai.handler';
 
-export const handleAnthropicRequest = async (
-  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  anthropic: AnthropicVertex | AnthropicBedrock | Anthropic,
-  response?: Response,
-  signal?: AbortSignal
-): Promise<ParsedAIResponse | undefined> => {
+interface HandleAnthropicRequestArgs extends Omit<HandleAIRequestArgs, 'modelKey'> {
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey;
+  anthropic: AnthropicVertex | AnthropicBedrock | Anthropic;
+}
+export const handleAnthropicRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+  anthropic,
+}: HandleAnthropicRequestArgs): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(

@@ -17,7 +17,7 @@ export const SheetBarButton = memo(({ children, buttonRef, tooltip, className, n
 
   return (
     <TooltipPopover label={tooltip ?? ''}>
-      <Button variant="ghost" size="icon-sm" data-testid="sheet-bar-button" {...buttonProps}>
+      <Button variant="ghost" size="icon-sm" {...buttonProps}>
         {children}
       </Button>
     </TooltipPopover>

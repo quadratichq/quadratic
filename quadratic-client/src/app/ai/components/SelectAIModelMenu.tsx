@@ -1,7 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
-
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
@@ -29,7 +28,7 @@ const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   { label: string; description: string }
 > = {
   fast: { label: 'Default', description: 'Good for everyday tasks' },
-  max: { label: 'Max', description: 'Very slow, but most capable' },
+  max: { label: 'Max', description: 'Smartest and most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -190,7 +189,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           open={!loading && isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
-          description="Default is our fastest model. Max is max intelligence but extremely slow."
+          description="Default is our fastest model. Max is the smartest and most capable."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}

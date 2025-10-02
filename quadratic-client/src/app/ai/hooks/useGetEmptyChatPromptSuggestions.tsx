@@ -1,15 +1,14 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { getConnectionMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
-import { aiAnalystFailingSqlConnectionsAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
-import { useEffect, useRef } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type z from 'zod';
 
@@ -19,15 +18,7 @@ export type EmptyChatPromptSuggestions = z.infer<
 
 export const useGetEmptyChatPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { connections } = useConnectionsFetcher();
-  const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (aiAnalystLoading) {
-      abortControllerRef.current?.abort();
-    }
-  }, [abortControllerRef, aiAnalystLoading]);
+  const { connections, isLoading: isConnectionsLoading } = useConnectionsFetcher();
 
   const getEmptyChatPromptSuggestions = useRecoilCallback(
     ({ snapshot }) =>
@@ -35,27 +26,32 @@ export const useGetEmptyChatPromptSuggestions = () => {
         context,
         files,
         importFiles,
+        abortController,
       }: {
         context: Context;
         files: FileContent[];
         importFiles: ImportFile[];
+        abortController: AbortController;
       }): Promise<EmptyChatPromptSuggestions | undefined> => {
         try {
-          abortControllerRef.current?.abort();
-          abortControllerRef.current = new AbortController();
+          if (isConnectionsLoading) {
+            return;
+          }
 
           const connection = connections.find((connection) => connection.uuid === context.connection?.id);
           if (!connection && files.length === 0 && importFiles.length === 0) {
             return;
           }
 
-          let connectionMarkdown: string = '';
+          let connectionSchemaMarkdown: string = '';
           const failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
           if (!!connection && !failingSqlConnections.uuids.includes(connection.uuid)) {
             try {
               const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
               const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
-              connectionMarkdown = getConnectionMarkdown(connectionTableInfo);
+              connectionSchemaMarkdown = !connectionTableInfo.error
+                ? getConnectionSchemaMarkdown(connectionTableInfo)
+                : '';
             } catch (error) {
               console.warn('[useGetEmptyChatPromptSuggestions] error: ', error);
             }
@@ -69,21 +65,21 @@ export const useGetEmptyChatPromptSuggestions = () => {
                 createTextContent(
                   `Use empty_chat_prompt_suggestions tool to provide three prompt suggestions for the user based on:\n
 ${
-  !!context.connection && !!connectionMarkdown
+  !!context.connection && !!connectionSchemaMarkdown
     ? ` - User has selected a ${context.connection.type} connection named ${context.connection.name} with id ${context.connection.id}. Details of this connection are as follows for generating the prompt suggestions:
-  ${connectionMarkdown}`
+  ${connectionSchemaMarkdown}`
     : ''
 }
 
 ${
   files.length > 0
-    ? ` - User has attached ${files.length} chat files. These can be PDF or image files. PDF files need to be extracted using pdf_import tool, image files can be referenced or also extracted without using a dedicated tool. These files are attached here for generating the prompt suggestions.`
+    ? ` - User has attached ${files.length} chat files. These can be PDF or image files. PDF files need to be extracted using pdf_import tool, image files can be referenced or also extracted without using a dedicated tool. The file names and mime types are attached here for generating the prompt suggestions: ${files.map((file) => `${file.fileName} (${file.mimeType})`).join(', ')}`
     : ''
 }
 
 ${
   importFiles.length > 0
-    ? ` - User has attached ${importFiles.length} data files. These can be CSV, Excel, or Parquet files. These will be imported into the sheet before executing the prompt. First few rows of data from these files are attached here for generating the prompt suggestions.`
+    ? ` - User has attached ${importFiles.length} data files. These can be CSV, Excel, or Parquet files. These will be imported into the sheet before executing the prompt. The file names are attached here for generating the prompt suggestions: ${importFiles.map((file) => file.name).join(', ')}`
     : ''
 }
                 `
@@ -99,7 +95,7 @@ ${
             messageSource: 'GetEmptyChatPromptSuggestions',
             modelKey: DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL,
             messages,
-            signal: abortControllerRef.current.signal,
+            signal: abortController.signal,
             useStream: false,
             toolName: AITool.EmptyChatPromptSuggestions,
             useToolsPrompt: false,
@@ -119,7 +115,7 @@ ${
           console.error('[useGetEmptyChatPromptSuggestions] error: ', error);
         }
       },
-    [connections, handleAIRequestToAPI, abortControllerRef]
+    [handleAIRequestToAPI, connections, isConnectionsLoading]
   );
 
   return { getEmptyChatPromptSuggestions };

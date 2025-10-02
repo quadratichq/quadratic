@@ -542,7 +542,7 @@ export type AIToolSpecRecord = {
 export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
-  claude: 'vertexai-anthropic:claude-sonnet-4@20250514',
+  claude: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
   '4.1': 'azure-openai:gpt-4.1',
 };
 
