@@ -71,7 +71,6 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   maxHeight?: string;
   waitingOnMessageIndex?: number;
   filesSupportedText: string;
-  enableMentions?: boolean;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -98,7 +97,6 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
       waitingOnMessageIndex,
       filesSupportedText,
-      enableMentions,
       uiContext,
     } = props;
 
@@ -347,7 +345,7 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={enableMentions ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        placeholder={uiContext === 'analyst' ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
@@ -412,7 +410,7 @@ export const AIUserMessageForm = memo(
 
           {/* TODO(ayush): replace textarea with custom editor that supports 
               highlighting/styling mentions */}
-          {enableMentions ? (
+          {uiContext === 'analyst' ? (
             <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
             </MentionsTextarea>
@@ -438,7 +436,7 @@ export const AIUserMessageForm = memo(
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            handleClickMention={enableMentions ? handleClickMention : undefined}
+            handleClickMention={uiContext === 'analyst' ? handleClickMention : undefined}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
