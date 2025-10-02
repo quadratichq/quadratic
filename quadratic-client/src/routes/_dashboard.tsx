@@ -102,6 +102,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       });
 
       // We accessed the team successfully, so set it as the active team
+      // and remove the redirecting flag
+      window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
 
       return data;
@@ -114,6 +116,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       // the app will figure out what their team is from the server (either by
       // using the team the server returns, or by automatically creating a new one)
       if (window.localStorage.getItem(REDIRECTING_FLAG_KEY)) {
+        window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
         setActiveTeam('');
         throw redirect('/');
       }
@@ -125,9 +128,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       const { status } = error;
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;
-    })
-    .finally(() => {
-      window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
     });
 
   registerEventAnalyticsData({
