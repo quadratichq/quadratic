@@ -27,11 +27,10 @@ test('Tile paste formatting', async ({ page }) => {
   await pasteFromClipboard(page);
   await page.keyboard.press('Escape', { delay: 250 });
 
-  await page.waitForTimeout(5 * 1000);
+  // this is not correct in the screenshot--needs to be updated
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`tile_paste_formatting.png`, {
     maxDiffPixelRatio: 0.01,
   });
-  await page.waitForTimeout(2000);
 
   // Cleanup newly created files
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
