@@ -3,7 +3,6 @@ import { AUTH_TYPE } from '../../env-vars';
 import { getUsersFromOry, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
-  authenticateWithMagicCodeWorkos,
   authenticateWithRefreshTokenWorkos,
   clearCookiesWorkos,
   getUsersFromWorkos,
@@ -11,7 +10,6 @@ import {
   loginWithPasswordWorkos,
   logoutSessionWorkos,
   resetPasswordWorkos,
-  sendMagicAuthCodeWorkos,
   sendResetPasswordWorkos,
   signupWithPasswordWorkos,
   verifyEmailWorkos,
@@ -134,24 +132,6 @@ export const resetPassword = async (args: { token: string; password: string; res
       return await resetPasswordWorkos(args);
     default:
       throw new Error(`Unsupported auth type in resetPassword(): ${AUTH_TYPE}`);
-  }
-};
-
-export const sendMagicAuthCode = async (args: { email: string; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await sendMagicAuthCodeWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in sendMagicAuthCode(): ${AUTH_TYPE}`);
-  }
-};
-
-export const authenticateWithMagicCode = async (args: { email: string; code: string; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await authenticateWithMagicCodeWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in authenticateWithMagicCode(): ${AUTH_TYPE}`);
   }
 };
 

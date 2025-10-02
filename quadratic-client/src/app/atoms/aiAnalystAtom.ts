@@ -6,7 +6,11 @@ import {
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  isAIPromptMessage,
+  isToolResultMessage,
+  isUserPromptMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -33,8 +37,11 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     loading: boolean;
   };
+  importFilesToGrid: {
+    loading: boolean;
+  };
   waitingOnMessageIndex?: number;
-  delaySeconds: number;
+  failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -61,8 +68,11 @@ export const defaultAIAnalystState: AIAnalystState = {
     abortController: undefined,
     loading: false,
   },
+  importFilesToGrid: {
+    loading: false,
+  },
   waitingOnMessageIndex: undefined,
-  delaySeconds: 0,
+  failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
 };
 
 export let aiAnalystInitialized = false;
@@ -163,10 +173,7 @@ export const aiAnalystLoadingAtom = selector<boolean>({
         }
       }
 
-      return {
-        ...prev,
-        loading: newValue,
-      };
+      return { ...prev, loading: newValue };
     });
   },
 });
@@ -227,10 +234,7 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
               messages: [],
             }
           : prev.currentChat,
-        promptSuggestions: {
-          abortController: undefined,
-          suggestions: [],
-        },
+        promptSuggestions: { abortController: undefined, suggestions: [] },
       };
     });
   },
@@ -262,7 +266,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
       const lastMessage = newValue.messages.at(-1);
       const secondToLastMessage = newValue.messages.at(-2);
       const lastAIMessage = !!lastMessage && isToolResultMessage(lastMessage) ? secondToLastMessage : lastMessage;
-      if (lastAIMessage?.role === 'assistant' && lastAIMessage.contextType === 'userPrompt') {
+      if (!!lastAIMessage && isAIPromptMessage(lastAIMessage)) {
         const promptSuggestions = lastAIMessage.toolCalls
           .filter(
             (toolCall) =>
@@ -284,10 +288,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         showChatHistory: false,
         chats,
         currentChat: newValue,
-        promptSuggestions: {
-          abortController: undefined,
-          suggestions,
-        },
+        promptSuggestions: { abortController: undefined, suggestions },
       };
     });
   },
@@ -317,11 +318,7 @@ export const aiAnalystCurrentChatNameAtom = selector<string>({
         console.error('[AIAnalystOfflineChats]: ', error);
       });
 
-      return {
-        ...prev,
-        chats,
-        currentChat,
-      };
+      return { ...prev, chats, currentChat };
     });
   },
 });
@@ -348,11 +345,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
       // update chats
       const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
 
-      return {
-        ...prev,
-        chats,
-        currentChat,
-      };
+      return { ...prev, chats, currentChat };
     });
   },
 });
@@ -364,10 +357,7 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
 
 export const aiAnalystCurrentChatUserMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatUserMessagesCountAtom',
-  get: ({ get }) =>
-    get(aiAnalystCurrentChatAtom).messages.filter(
-      (message) => message.role === 'user' && message.contextType === 'userPrompt'
-    ).length,
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.filter((message) => isUserPromptMessage(message)).length,
 });
 
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
@@ -392,6 +382,12 @@ export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
   get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
 });
 
+export const aiAnalystImportFilesToGridAtom = createSelector('importFilesToGrid');
+export const aiAnalystImportFilesToGridLoadingAtom = selector<boolean>({
+  key: 'aiAnalystImportFilesToGridLoadingAtom',
+  get: ({ get }) => get(aiAnalystImportFilesToGridAtom).loading,
+});
+
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
   key: 'aiAnalystWaitingOnMessageIndexAtom',
   get: ({ get }) => get(aiAnalystAtom).waitingOnMessageIndex,
@@ -401,10 +397,21 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
         return prev;
       }
 
-      return {
-        ...prev,
-        waitingOnMessageIndex: newValue,
-      };
+      return { ...prev, waitingOnMessageIndex: newValue };
+    });
+  },
+});
+
+export const aiAnalystFailingSqlConnectionsAtom = selector<{ uuids: string[]; lastResetTimestamp: number }>({
+  key: 'aiAnalystFailingSqlConnectionsAtom',
+  get: ({ get }) => get(aiAnalystAtom).failingSqlConnections,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return { ...prev, failingSqlConnections: newValue };
     });
   },
 });

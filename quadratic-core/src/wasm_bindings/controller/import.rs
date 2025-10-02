@@ -32,6 +32,7 @@ impl GridController {
                 None,
                 delimiter,
                 header_is_first_row,
+                false,
             )
             .map_err(|e| e.to_string())?;
 
@@ -52,21 +53,29 @@ impl GridController {
         cursor: Option<String>,
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
-    ) -> Result<(), JsValue> {
-        let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-        let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
-        self.import_csv(
-            sheet_id,
-            file,
-            file_name,
-            insert_at,
-            cursor,
-            delimiter,
-            header_is_first_row,
-        )
-        .map_err(|e| e.to_string())?;
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(sheet_id).map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let insert_at = serde_json::from_str::<Pos>(insert_at)
+                .map_err(|e| format!("Unable to parse Pos: {e}"))?;
 
-        Ok(())
+            let response_prompt = self
+                .import_csv(
+                    sheet_id,
+                    file,
+                    file_name,
+                    insert_at,
+                    cursor,
+                    delimiter,
+                    header_is_first_row,
+                    is_ai,
+                )
+                .map_err(|e| format!("Error importing CSV file: {file_name:?}, error: {e:?}"))?;
+
+            Ok(Some(JsValue::from_str(&response_prompt)))
+        })
     }
 }
 
@@ -77,7 +86,7 @@ impl GridController {
         let grid = Grid::new_blank();
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
-            .import_excel(&file, file_name, None)
+            .import_excel(&file, file_name, None, false)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -92,14 +101,14 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
-        capture_core_error(|| match self.import_excel(&file, file_name, cursor) {
-            Ok(_) => Ok(None),
-            Err(e) => {
-                let error = format!("Error importing Excel file: {file_name:?}, error: {e:?}");
-                dbgjs!(&error);
-                Err(error)
-            }
+        capture_core_error(|| {
+            let response_prompt = self
+                .import_excel(&file, file_name, cursor, is_ai)
+                .map_err(|e| format!("Error importing Excel file: {file_name:?}, error: {e:?}"))?;
+
+            Ok(Some(JsValue::from_str(&response_prompt)))
         })
     }
 }
@@ -115,7 +124,7 @@ impl GridController {
         let updater = Some(jsImportProgress);
 
         grid_controller
-            .import_parquet(sheet_id, file, file_name, insert_at, None, updater)
+            .import_parquet(sheet_id, file, file_name, insert_at, None, updater, false)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -132,14 +141,23 @@ impl GridController {
         sheet_id: &str,
         insert_at: &str,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-        let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
-        let updater = Some(jsImportProgress);
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(sheet_id).map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let insert_at = serde_json::from_str::<Pos>(insert_at)
+                .map_err(|e| format!("Unable to parse Pos: {e}"))?;
 
-        self.import_parquet(sheet_id, file, file_name, insert_at, cursor, updater)
-            .map_err(|e| e.to_string())?;
+            let updater = Some(jsImportProgress);
 
-        Ok(())
+            let response_prompt = self
+                .import_parquet(sheet_id, file, file_name, insert_at, cursor, updater, is_ai)
+                .map_err(|e| {
+                    format!("Error importing Parquet file: {file_name:?}, error: {e:?}")
+                })?;
+
+            Ok(Some(JsValue::from_str(&response_prompt)))
+        })
     }
 }

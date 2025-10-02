@@ -4,11 +4,11 @@ import type {
   AIResponseContent,
   AIResponseThinkingContent,
   ChatMessage,
-  ConnectionContent,
   Content,
   GoogleSearchContent,
   GoogleSearchGroundingMetadata,
   ImageContent,
+  ImportFilesToGridContent,
   InternalMessage,
   OpenAIReasoningContent,
   PdfFileContent,
@@ -59,7 +59,41 @@ const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => 
 };
 
 export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
-  return getPromptMessagesWithoutPDF(messages);
+  const messagesWithoutPDF = getPromptMessagesWithoutPDF(messages);
+  const messagesWithoutInternal = messagesWithoutPDF.filter((message) => !isInternalMessage(message));
+  const messagesWithUserContext = messagesWithoutInternal.map((message) => {
+    if (!isUserPromptMessage(message)) {
+      return { ...message };
+    }
+
+    const userMessage = { ...message };
+    if (message.context?.connection) {
+      userMessage.content = [
+        createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
+User has selected a connection and want to focus on it:
+
+Connection Details: 
+type: ${message.context.connection.type}
+id: ${message.context.connection.id}
+name: ${message.context.connection.name}
+`),
+        ...userMessage.content,
+      ];
+    }
+
+    if (message.context?.importFiles?.prompt) {
+      userMessage.content = [
+        createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
+User attached files with this prompt and they were imported as:
+${message.context.importFiles.prompt} 
+`),
+        ...userMessage.content,
+      ];
+    }
+
+    return userMessage;
+  });
+  return messagesWithUserContext;
 };
 
 export const getPromptMessagesForAI = (
@@ -103,9 +137,13 @@ const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
   return getPromptMessages(messages).filter((message): message is AIMessagePrompt => message.role === 'assistant');
 };
 
+export const getLastUserMessage = (messages: ChatMessage[]): UserMessagePrompt | ToolResultMessage => {
+  const userMessages = getUserMessages(messages);
+  return userMessages[userMessages.length - 1];
+};
+
 export const getLastUserMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
-  const userPromptMessage = getUserMessages(messages);
-  return userPromptMessage[userPromptMessage.length - 1].contextType;
+  return getLastUserMessage(messages).contextType;
 };
 
 export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => {
@@ -138,6 +176,10 @@ export const getSystemPromptMessages = (
 
 export const isUserPromptMessage = (message: ChatMessage): message is UserMessagePrompt => {
   return message.role === 'user' && message.contextType === 'userPrompt';
+};
+
+export const isAIPromptMessage = (message: ChatMessage): message is AIMessagePrompt => {
+  return message.role === 'assistant' && message.contextType === 'userPrompt';
 };
 
 export const isToolResultMessage = (message: ChatMessage): message is ToolResultMessage => {
@@ -178,26 +220,26 @@ export const isContentTextFile = (content: Content[number] | AIResponseContent[n
   return content.type === 'data' && content.mimeType === 'text/plain';
 };
 
-export const isContentConnection = (
+export const isContentFile = (
   content: Content[number] | AIResponseContent[number]
-): content is ConnectionContent => {
-  return content.type === 'connection';
+): content is ImageContent | PdfFileContent | TextFileContent => {
+  return isContentImage(content) || isContentPdfFile(content) || isContentTextFile(content);
 };
 
 export const isContentGoogleSearchInternal = (content: InternalMessage['content']): content is GoogleSearchContent => {
   return content.source === 'google_search';
 };
 
+export const isContentImportFilesToGridInternal = (
+  content: InternalMessage['content']
+): content is ImportFilesToGridContent => {
+  return content.source === 'import_files_to_grid';
+};
+
 export const isContentGoogleSearchGroundingMetadata = (
   content: Content[number] | AIResponseContent[number]
 ): content is GoogleSearchGroundingMetadata => {
   return content.type === 'google_search_grounding_metadata';
-};
-
-export const isContentFile = (
-  content: Content[number] | AIResponseContent[number]
-): content is ImageContent | PdfFileContent | TextFileContent => {
-  return isContentImage(content) || isContentPdfFile(content) || isContentTextFile(content);
 };
 
 export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {
@@ -218,17 +260,20 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
   return filterPdfFilesInChatMessages(messages).find((content) => content.fileName === fileName);
 };
 
-export const getConnectionFromChatMessages = (messages: ChatMessage[]): ConnectionContent | undefined => {
-  return getUserMessages(messages)
-    .filter((message) => message.contextType === 'userPrompt')
-    .flatMap((message) => message.content)
-    .filter(isContentConnection)[0];
-};
-
 export const createTextContent = (text: string): TextContent => {
   return {
     type: 'text' as const,
     text,
+  };
+};
+
+export const createInternalImportFilesContent = (
+  importFilesToGridContent: ImportFilesToGridContent
+): InternalMessage => {
+  return {
+    role: 'internal' as const,
+    contextType: 'importFilesToGrid' as const,
+    content: { ...importFilesToGridContent },
   };
 };
 

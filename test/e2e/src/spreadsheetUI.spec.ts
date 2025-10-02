@@ -1001,6 +1001,12 @@ test('Right Click Actions', async ({ page }) => {
 
   expect(clipboardContainsPng).toBe(true); // Assert that the clipboard contains a PNG image
 
+  // ensure that the menu closes
+  // Take a screenshot to verify the UI state after copy as PNG
+  await expect(page).toHaveScreenshot('right-click-copy-as-png.png', {
+    maxDiffPixels: 1000,
+  });
+
   //--------------------------------
   // Download selection as CSV
   //--------------------------------
@@ -1384,7 +1390,7 @@ test('Sheet Actions', async ({ page }) => {
   await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
   // assert that the new sheet has been created with name "Sheet 2"
-  await expect(page.getByText(`Sheet 2arrow_drop_down`)).toBeVisible();
+  await expect(page.getByText(`Sheet2arrow_drop_down`)).toBeVisible();
 
   //--------------------------------
   // Rename Sheet
@@ -1463,7 +1469,7 @@ test('Sheet Actions', async ({ page }) => {
 
   // assert that the sheet has moved one to the right
   await expect(page.locator('[data-actual-order="2"]')).toHaveText(`${sheetName}arrow_drop_down`);
-  await expect(page.locator('[data-actual-order="4"]')).toHaveText('Sheet 1arrow_drop_down');
+  await expect(page.locator('[data-actual-order="4"]')).toHaveText('Sheet1arrow_drop_down');
   await expect(page.locator('[data-actual-order="6"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
 
   // Screenshot assertion
@@ -1480,7 +1486,7 @@ test('Sheet Actions', async ({ page }) => {
   await page.locator('[role="menuitem"]:has-text("Move left")').click({ timeout: 60 * 1000 });
 
   // assert that the sheet has moved one to the left
-  await expect(page.locator('[data-actual-order="2"]')).toHaveText('Sheet 1arrow_drop_down');
+  await expect(page.locator('[data-actual-order="2"]')).toHaveText('Sheet1arrow_drop_down');
   await expect(page.locator('[data-actual-order="4"]')).toHaveText(`${sheetName}arrow_drop_down`);
   await expect(page.locator('[data-actual-order="6"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
 

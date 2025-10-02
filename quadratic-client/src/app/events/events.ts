@@ -166,13 +166,13 @@ interface EventTypes {
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
-  resizeAIAnalystPanel: () => void;
-
   debugFlags: () => void;
 
   startupTimer: (name: TimerNames, data: { start?: number; end?: number }) => void;
 
   setDirty: (dirty: DirtyObject) => void;
+
+  aiAnalystDroppedFiles: (files: FileList | File[]) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

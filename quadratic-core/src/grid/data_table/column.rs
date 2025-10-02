@@ -106,15 +106,16 @@ impl DataTable {
         }
 
         if self.display_buffer.is_some()
-            && let Some(cell_values) = values {
-                let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
+            && let Some(cell_values) = values
+        {
+            let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
 
-                for (index, cell_value) in cell_values.into_iter().enumerate() {
-                    let actual_index = self.get_row_index_from_display_index(index as u64);
-                    sorted_cell_values[actual_index as usize] = cell_value;
-                }
-                values = Some(sorted_cell_values);
+            for (index, cell_value) in cell_values.into_iter().enumerate() {
+                let actual_index = self.get_row_index_from_display_index(index as u64);
+                sorted_cell_values[actual_index as usize] = cell_value;
             }
+            values = Some(sorted_cell_values);
+        }
 
         self.insert_column(column_index, column_header, values)?;
 
@@ -203,9 +204,10 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
     use crate::{
-        ArraySize, CellValue, grid::test::new_data_table, test_util::pretty_print_data_table,
+        ArraySize, CellValue, grid::data_table::test_util::new_data_table,
+        test_util::pretty_print_data_table,
     };
 
     #[test]

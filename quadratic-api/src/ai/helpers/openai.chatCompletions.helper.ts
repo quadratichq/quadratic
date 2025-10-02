@@ -12,6 +12,7 @@ import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
   isContentImage,
   isContentText,
   isInternalMessage,
@@ -82,11 +83,11 @@ export function getOpenAIChatCompletionsApiArgs(
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content
-          .filter((content) => content.type === 'text' && !!content.text.trim())
+          .filter((content) => isContentText(content) && !!content.text.trim())
           .map((content) => createTextContent(content.text.trim())),
         tool_calls:
           message.toolCalls.length > 0
@@ -271,7 +272,7 @@ export async function parseOpenAIChatCompletionsStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -326,7 +327,7 @@ export function parseOpenAIChatCompletionsResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   response?.json(responseMessage);

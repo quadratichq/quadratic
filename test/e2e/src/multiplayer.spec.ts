@@ -974,17 +974,11 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // User 2 to make Sheet2
   await userPage2.bringToFront();
-  await userPage2
-    .getByRole(`button`, { name: `add` })
-    .nth(2)
-    .click({ timeout: 60 * 1000 });
+  await userPage2.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
   // User 3 to make Sheet3
   await userPage3.bringToFront();
-  await userPage3
-    .getByRole(`button`, { name: `add` })
-    .nth(2)
-    .click({ timeout: 60 * 1000 });
+  await userPage3.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -992,86 +986,86 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await userPage1.bringToFront();
   await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 60 * 1000 });
   await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
-  await expect(userPage1.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage1.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage1.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
 
   // Switch to second user's page, assert that squares are present in Sheet1 and Sheet3
   await userPage2.bringToFront();
-  await expect(userPage2.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage2.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage2.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
 
   // Switch to third user's page, assert that squares are present in Sheet1 and Sheet2
   await userPage3.bringToFront();
-  await expect(userPage3.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage3.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage3.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
 
   // User 1 clicks on Sheet2
   await userPage1.bringToFront();
-  await userPage1.locator(`[data-title='Sheet 2']`).click({ timeout: 60 * 1000 });
+  await userPage1.locator(`[data-title='Sheet2']`).click({ timeout: 60 * 1000 });
 
   // Sheet1 square is not visible
-  await expect(userPage1.locator(`[data-title='Sheet 1'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet1'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage1.locator(`[data-title='Sheet 2'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet2'] + div  [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage1.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage1.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
 
   // Switch to second user
   await userPage2.bringToFront();
-  await expect(userPage2.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage2.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage2.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
+  await expect(userPage2.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).toBeVisible({
     timeout: 60 * 1000,
   });
 
   // Switch to third user
   await userPage3.bringToFront();
-  await expect(userPage3.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(userPage3.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`)).toHaveCount(2);
-  await expect(userPage3.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`)).toHaveCount(2);
+  await expect(userPage3.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
 
   // Switch to third user's page, third user enters Sheet2.
-  await userPage3.locator(`[data-title='Sheet 2']`).click({ timeout: 60 * 1000 });
-  await expect(userPage3.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await userPage3.locator(`[data-title='Sheet2']`).click({ timeout: 60 * 1000 });
+  await expect(userPage3.locator(`[data-title='Sheet1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
-  await expect(
-    userPage3.locator(`[data-title='Sheet 2'] + div [style*='width: 5px; height: 5px']`).first()
-  ).toBeVisible({ timeout: 60 * 1000 });
-  await expect(userPage3.locator(`[data-title='Sheet 3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
+  await expect(userPage3.locator(`[data-title='Sheet2'] + div [style*='width: 5px; height: 5px']`).first()).toBeVisible(
+    { timeout: 60 * 1000 }
+  );
+  await expect(userPage3.locator(`[data-title='Sheet3'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 60 * 1000,
   });
 

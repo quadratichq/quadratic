@@ -4,6 +4,8 @@ use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use rust_decimal::prelude::ToPrimitive;
 
+use crate::SheetRect;
+use crate::a1::A1Selection;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
 use crate::{
@@ -112,7 +114,7 @@ impl GridController {
         insert_at: Pos,
         delimiter: Option<u8>,
         create_table: Option<bool>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -169,6 +171,7 @@ impl GridController {
         }
 
         let mut ops = vec![];
+        let response_prompt;
 
         let apply_first_row_as_header = match create_table {
             Some(true) => true,
@@ -195,6 +198,13 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
+            let output_rect = data_table.output_rect(sheet_pos.into(), true);
+            let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+            response_prompt = format!(
+                "Imported {} as a data table at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
             ops.push(Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -203,6 +213,18 @@ impl GridController {
             });
             drop(sheet_format_updates);
         } else {
+            let a1_selection = A1Selection::from_rect(SheetRect::from_numbers(
+                sheet_pos.x,
+                sheet_pos.y,
+                cell_values.w as i64,
+                cell_values.h as i64,
+                sheet_id,
+            ));
+            response_prompt = format!(
+                "Imported {} as a flat data in sheet at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
             ops.push(Operation::SetCellValues {
                 sheet_pos,
                 values: cell_values,
@@ -214,7 +236,7 @@ impl GridController {
             });
         }
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 
     /// Imports an Excel file into the grid.
@@ -222,9 +244,14 @@ impl GridController {
         &mut self,
         file: &[u8],
         file_name: &str,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let mut ops: Vec<Operation> = vec![];
+        let mut response_prompt = format!("Imported {} as sheets - ", file_name);
         let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
+        let xlsx_range_to_pos = |(row, col)| Pos {
+            x: col as i64 + 1,
+            y: row as i64 + 1,
+        };
 
         // detect file extension
         let path = Path::new(file_name);
@@ -244,17 +271,6 @@ impl GridController {
         };
 
         let sheets = workbook.sheet_names().to_owned();
-
-        for new_sheet_name in sheets.iter() {
-            if self.try_sheet_from_name(new_sheet_name).is_some() {
-                bail!("Sheet with name \"{new_sheet_name}\" already exists");
-            }
-        }
-
-        let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64 + 1,
-            y: row as i64 + 1,
-        };
 
         // total rows for calculating import progress
         let total_rows = sheets
@@ -278,14 +294,14 @@ impl GridController {
         let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
 
         // add data from excel file to grid
-        for sheet_name in sheets {
+        for sheet_name in sheets.iter() {
             let sheet = gc
-                .try_sheet_from_name(&sheet_name)
+                .try_sheet_from_name(sheet_name)
                 .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
             let sheet_id = sheet.id;
 
             // values
-            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_range(sheet_name).map_err(error)?;
             let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -355,7 +371,7 @@ impl GridController {
             }
 
             // formulas
-            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
+            let formula = workbook.worksheet_formula(sheet_name).map_err(error)?;
             let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -402,7 +418,7 @@ impl GridController {
             }
 
             // styles
-            let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
+            let range = workbook.worksheet_style(sheet_name).map_err(error)?;
             let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
@@ -493,7 +509,7 @@ impl GridController {
             }
 
             // layout
-            let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
+            let layout = workbook.worksheet_layout(sheet_name).map_err(error)?;
             let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
             for column_width in layout.column_widths.iter() {
@@ -515,13 +531,42 @@ impl GridController {
         let compute_ops = gc.rerun_all_code_cells_operations();
         gc.server_apply_transaction(compute_ops, None);
 
-        for sheet in gc.grid.sheets.into_values() {
-            ops.push(Operation::AddSheet {
-                sheet: Box::new(sheet),
-            });
+        // handle sheet name duplicates from excel files
+        let mut gc_duplicate_name = GridController::new_blank();
+        for sheet_name in self.sheet_names() {
+            gc_duplicate_name.server_add_sheet_with_name(sheet_name.to_owned());
+        }
+        for new_sheet_name in sheets.iter() {
+            let unique_sheet_name = gc_duplicate_name.grid.unique_sheet_name(new_sheet_name);
+            let sheet_id = gc
+                .try_sheet_from_name(new_sheet_name)
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?
+                .id;
+            gc.grid.update_sheet_name(sheet_id, &unique_sheet_name)?;
+            gc_duplicate_name.server_add_sheet_with_name(unique_sheet_name);
         }
 
-        Ok(ops)
+        for (index, sheet) in gc.grid.sheets.into_values().enumerate() {
+            if index == 0 {
+                response_prompt += &sheet.name;
+            } else {
+                response_prompt += &format!(", {}", sheet.name);
+            }
+
+            // replace the first sheet if the grid is empty
+            if index == 0 && self.grid.is_empty() {
+                ops.push(Operation::ReplaceSheet {
+                    sheet_id: self.grid.first_sheet_id(),
+                    sheet: Box::new(sheet),
+                });
+            } else {
+                ops.push(Operation::AddSheet {
+                    sheet: Box::new(sheet),
+                });
+            }
+        }
+
+        Ok((ops, response_prompt))
     }
 
     /// Imports a Parquet file into the grid.
@@ -532,12 +577,20 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         updater: Option<impl Fn(&str, u32, u32)>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
+
+        let output_rect = data_table.output_rect(insert_at, true);
+        let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+        let response_prompt = format!(
+            "Imported {} as a data table at {}",
+            file_name,
+            a1_selection.to_string(None, self.a1_context())
+        );
 
         let ops = vec![Operation::AddDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
@@ -546,7 +599,7 @@ impl GridController {
             index: None,
         }];
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 }
 
@@ -598,29 +651,30 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 // for general format, excel displays significant decimal places.
                 // excel shows full precision up to about 15 significant digits.
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        // check if this is not a whole number
-                        if f64_val.fract() != 0.0 {
-                            // use high precision formatting to capture all significant digits
-                            let num_str = format!("{f64_val:.15}");
-                            if let Some(decimal_pos) = num_str.find('.') {
-                                let after_decimal = &num_str[decimal_pos + 1..];
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    // check if this is not a whole number
+                    if f64_val.fract() != 0.0 {
+                        // use high precision formatting to capture all significant digits
+                        let num_str = format!("{f64_val:.15}");
+                        if let Some(decimal_pos) = num_str.find('.') {
+                            let after_decimal = &num_str[decimal_pos + 1..];
 
-                                // for general format, excel typically preserves trailing zeros when they
-                                // represent the actual precision of the stored number. we'll use the full
-                                // precision available in the f64 representation.
-                                let decimal_places = after_decimal.len();
+                            // for general format, excel typically preserves trailing zeros when they
+                            // represent the actual precision of the stored number. we'll use the full
+                            // precision available in the f64 representation.
+                            let decimal_places = after_decimal.len();
 
-                                // excel's general format shows meaningful precision up to 15 digits
-                                if decimal_places > 0 {
-                                    sheet
-                                        .formats
-                                        .numeric_decimals
-                                        .set(pos, Some(decimal_places as i16));
-                                }
+                            // excel's general format shows meaningful precision up to 15 digits
+                            if decimal_places > 0 {
+                                sheet
+                                    .formats
+                                    .numeric_decimals
+                                    .set(pos, Some(decimal_places as i16));
                             }
                         }
                     }
+                }
             }
 
             // number formats (1-4, 37-40)
@@ -726,17 +780,18 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                 // convert numeric value to date/time if needed
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        let is_datetime = format_id == 22; // m/d/yy h:mm
-                        let converted_value = if is_datetime {
-                            excel_serial_to_date_time(f64_val, true, true, true)
-                        } else {
-                            excel_serial_to_date_time(f64_val, true, false, false)
-                        };
-                        if let Some(new_value) = converted_value {
-                            sheet.columns.set_value(&pos, new_value);
-                        }
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    let is_datetime = format_id == 22; // m/d/yy h:mm
+                    let converted_value = if is_datetime {
+                        excel_serial_to_date_time(f64_val, true, true, true)
+                    } else {
+                        excel_serial_to_date_time(f64_val, true, false, false)
+                    };
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
                     }
+                }
             }
 
             // time formats
@@ -760,13 +815,13 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                 // convert numeric value to time if needed
                 if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                    && let Some(f64_val) = n.to_f64() {
-                        let converted_value =
-                            excel_serial_to_date_time(f64_val, false, true, false);
-                        if let Some(new_value) = converted_value {
-                            sheet.columns.set_value(&pos, new_value);
-                        }
+                    && let Some(f64_val) = n.to_f64()
+                {
+                    let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
                     }
+                }
             }
 
             // text format, noop
@@ -782,39 +837,42 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
                         // convert numeric value to datetime if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, true, true, true);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, true, true, true);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else if is_excel_date_format(active_format) {
                         let chrono_format = excel_to_chrono_format(active_format);
                         sheet.formats.date_time.set(pos, Some(chrono_format));
 
                         // convert numeric value to date if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, true, false, false);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, true, false, false);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else if is_excel_time_format(active_format) {
                         let chrono_format = excel_to_chrono_format(active_format);
                         sheet.formats.date_time.set(pos, Some(chrono_format));
 
                         // convert numeric value to time if needed
                         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-                            && let Some(f64_val) = n.to_f64() {
-                                let converted_value =
-                                    excel_serial_to_date_time(f64_val, false, true, false);
-                                if let Some(new_value) = converted_value {
-                                    sheet.columns.set_value(&pos, new_value);
-                                }
+                            && let Some(f64_val) = n.to_f64()
+                        {
+                            let converted_value =
+                                excel_serial_to_date_time(f64_val, false, true, false);
+                            if let Some(new_value) = converted_value {
+                                sheet.columns.set_value(&pos, new_value);
                             }
+                        }
                     } else {
                         import_excel_number_format_string(sheet, pos, active_format);
                     }
@@ -850,36 +908,39 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
 
         // convert numeric value to datetime if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else if is_excel_date_format(format_string) {
         let chrono_format = excel_to_chrono_format(format_string);
         sheet.formats.date_time.set(pos, Some(chrono_format));
 
         // convert numeric value to date if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else if is_excel_time_format(format_string) {
         let chrono_format = excel_to_chrono_format(format_string);
         sheet.formats.date_time.set(pos, Some(chrono_format));
 
         // convert numeric value to time if needed
         if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos)
-            && let Some(f64_val) = n.to_f64() {
-                let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
-                if let Some(new_value) = converted_value {
-                    sheet.columns.set_value(&pos, new_value);
-                }
+            && let Some(f64_val) = n.to_f64()
+        {
+            let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
+            if let Some(new_value) = converted_value {
+                sheet.columns.set_value(&pos, new_value);
             }
+        }
     } else {
         // handle numeric formats
         if format_string.contains('%') {
@@ -1202,18 +1263,19 @@ fn excel_serial_to_date_time(
         let time_fraction = adjusted_serial.fract();
 
         if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30)
-            && let Some(date) = base_date.checked_add_days(chrono::Days::new(days as u64)) {
-                let total_seconds = (time_fraction * 86400.0) as i64;
-                let hours = total_seconds / 3600;
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+            && let Some(date) = base_date.checked_add_days(chrono::Days::new(days as u64))
+        {
+            let total_seconds = (time_fraction * 86400.0) as i64;
+            let hours = total_seconds / 3600;
+            let minutes = (total_seconds % 3600) / 60;
+            let seconds = total_seconds % 60;
 
-                if let Some(time) =
-                    NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32)
-                {
-                    return Some(CellValue::DateTime(date.and_time(time)));
-                }
+            if let Some(time) =
+                NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32)
+            {
+                return Some(CellValue::DateTime(date.and_time(time)));
             }
+        }
     } else if is_time && !is_date {
         // Pure time format - fractional part represents time
         let total_seconds = (serial.fract() * 86400.0) as i64;
@@ -1233,9 +1295,9 @@ fn excel_serial_to_date_time(
         if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30)
             && let Some(date) =
                 base_date.checked_add_days(chrono::Days::new(adjusted_serial as u64))
-            {
-                return Some(CellValue::Date(date));
-            }
+        {
+            return Some(CellValue::Date(date));
+        }
     }
 
     None
@@ -1329,7 +1391,7 @@ mod test {
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 SIMPLE_CSV.as_bytes(),
@@ -1380,7 +1442,7 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 csv.as_bytes(),
@@ -1422,6 +1484,7 @@ mod test {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -1446,7 +1509,8 @@ mod test {
     fn import_xlsx() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xlsx", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -1474,7 +1538,8 @@ mod test {
     fn import_xls() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xls");
-        gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xls", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -1489,7 +1554,7 @@ mod test {
     fn import_excel_invalid() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
+        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None, false);
         assert!(result.is_err());
     }
 
@@ -1506,6 +1571,7 @@ mod test {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
         )
         .unwrap();
 
@@ -1586,7 +1652,7 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+        gc.import_excel(file.as_ref(), "date_time.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -1697,6 +1763,7 @@ mod test {
             None,
             Some(b','),
             Some(true),
+            false,
         )
         .unwrap();
 
@@ -1725,7 +1792,7 @@ mod test {
     fn import_excel_dependent_formulas() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -1799,6 +1866,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1816,6 +1884,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1833,6 +1902,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -1841,7 +1911,8 @@ mod test {
     fn import_xlsx_styles() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/styles.xlsx");
-        gc.import_excel(file.as_ref(), "styles.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "styles.xlsx", None, false)
+            .unwrap();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
 
@@ -1876,7 +1947,7 @@ mod test {
     fn import_xlsx_number_format_edge_cases() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None, false)
             .unwrap();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
@@ -1971,7 +2042,7 @@ mod test {
     fn import_excel_borders() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/borders.xlsx");
-        gc.import_excel(file.as_ref(), "borders.xlsx", None)
+        gc.import_excel(file.as_ref(), "borders.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;

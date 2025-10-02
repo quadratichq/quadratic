@@ -16,9 +16,10 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
-  isContentConnection,
+  isAIPromptMessage,
   isContentImage,
   isContentPdfFile,
+  isContentText,
   isContentTextFile,
   isInternalMessage,
   isToolResultMessage,
@@ -45,26 +46,25 @@ function convertContent(content: Content): ContentBlock[] {
       if (isContentImage(content)) {
         const image: ImageBlock = {
           format: content.mimeType.split('/')[1] as ImageFormat,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { image };
       } else if (isContentPdfFile(content) || isContentTextFile(content)) {
         const document: DocumentBlock = {
           format: content.mimeType.split('/')[1] as DocumentFormat,
           name: content.fileName,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { document };
-      } else if (isContentConnection(content)) {
-        return {
-          text: `The selected connection is "${content.name}" and its ID is ${content.uuid}.`,
-        };
-      } else {
+      } else if (isContentText(content)) {
         return {
           text: content.text.trim(),
         };
+      } else {
+        return undefined;
       }
-    });
+    })
+    .filter((content) => content !== undefined);
 }
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
@@ -74,7 +74,7 @@ function convertToolResultContent(content: ToolResultContent): ToolResultContent
       if (isContentImage(content)) {
         const image: ImageBlock = {
           format: content.mimeType.split('/')[1] as ImageFormat,
-          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+          source: { bytes: Uint8Array.from(Buffer.from(content.data, 'base64')) },
         };
         return { image };
       } else {
@@ -101,7 +101,7 @@ export function getBedrockApiArgs(
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -271,7 +271,7 @@ export async function parseBedrockStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -322,7 +322,7 @@ export function parseBedrockResponse(
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push(createTextContent('Please try again.'));
+    throw new Error('Empty response');
   }
 
   response?.json(responseMessage);

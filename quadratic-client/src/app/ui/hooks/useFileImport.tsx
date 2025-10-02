@@ -68,7 +68,7 @@ export function useFileImport() {
         location: createNewFile ? 'Dashboard' : 'In sheet',
       });
 
-      if (!createNewFile && firstFileType === 'grid') {
+      if (!createNewFile && firstFileType === 'Grid') {
         addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
           severity: 'warning',
         });
@@ -78,10 +78,10 @@ export function useFileImport() {
 
       // Only one file can be imported at a time (except for excel), inside a existing file
       if (!createNewFile && files.length > 1) {
-        if (firstFileType === 'excel') {
+        if (firstFileType === 'Excel') {
           // importing into a existing file, use only excel files
           files = files.filter((file) => {
-            if (getFileType(file) === 'excel') {
+            if (getFileType(file) === 'Excel') {
               return true;
             } else {
               addGlobalSnackbar(`Error importing ${file.name}: Cannot import multiple types files at once`, {
@@ -91,7 +91,7 @@ export function useFileImport() {
             }
           });
         } else {
-          // csv or parquet file
+          // CSV or Parquet file
           // importing into a existing file, use only the first file
           for (let i = 1; i < files.length; i++) {
             addGlobalSnackbar(
@@ -163,9 +163,9 @@ export function useFileImport() {
 
           let result: { contents?: ArrayBufferLike; version?: string; error?: string } | undefined = undefined;
 
-          if (fileType === 'grid') {
+          if (fileType === 'Grid') {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
-          } else if (fileType === 'excel' || fileType === 'csv' || fileType === 'parquet') {
+          } else if (fileType === 'Excel' || fileType === 'CSV' || fileType === 'Parquet') {
             result = await quadraticCore.importFile({
               file: arrayBuffer,
               fileName,
@@ -173,6 +173,7 @@ export function useFileImport() {
               cursor,
               sheetId,
               location: insertAt,
+              isAi: false,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

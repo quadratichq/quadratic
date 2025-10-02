@@ -208,13 +208,13 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
 
     use super::*;
     use crate::{
         Array, Pos,
         cellvalue::Import,
-        grid::{DataTableKind, Sheet, test::new_data_table},
+        grid::{DataTableKind, Sheet, data_table::test_util::new_data_table},
     };
     use chrono::Utc;
 

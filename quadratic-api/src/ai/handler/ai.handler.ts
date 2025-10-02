@@ -32,13 +32,13 @@ import {
   azureOpenAI,
   baseten,
   bedrock,
-  bedrock_anthropic,
+  bedrockAnthropic,
   fireworks,
   geminiai,
-  open_router,
   openai,
-  vertex_anthropic,
+  openRouter,
   vertexai,
+  vertexAnthropic,
   xai,
 } from '../providers';
 import { handleAnthropicRequest } from './anthropic.handler';
@@ -47,110 +47,145 @@ import { handleGenAIRequest } from './genai.handler';
 import { handleOpenAIChatCompletionsRequest } from './openai.chatCompletions.handler';
 import { handleOpenAIResponsesRequest } from './openai.responses.handler';
 
-export const handleAIRequest = async (
-  modelKey: AIModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  response?: Response
-): Promise<ParsedAIResponse | undefined> => {
+export interface HandleAIRequestArgs {
+  modelKey: AIModelKey;
+  args: AIRequestHelperArgs;
+  isOnPaidPlan: boolean;
+  exceededBillingLimit: boolean;
+  response?: Response;
+  signal?: AbortSignal;
+}
+export const handleAIRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  response,
+  signal,
+}: HandleAIRequestArgs): Promise<ParsedAIResponse | undefined> => {
   try {
     let parsedResponse: ParsedAIResponse | undefined;
 
     if (isVertexAIAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        vertex_anthropic,
-        response
-      );
+        response,
+        signal,
+        anthropic: vertexAnthropic,
+      });
     } else if (isBedrockAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        bedrock_anthropic,
-        response
-      );
+        response,
+        signal,
+        anthropic: bedrockAnthropic,
+      });
     } else if (isAnthropicModel(modelKey)) {
-      parsedResponse = await handleAnthropicRequest(
+      parsedResponse = await handleAnthropicRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
         anthropic,
-        response
-      );
+      });
     } else if (isOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIResponsesRequest(
+      parsedResponse = await handleOpenAIResponsesRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
         openai,
-        response
-      );
+      });
     } else if (isAzureOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIResponsesRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        azureOpenAI,
-        response
-      );
+        response,
+        signal,
+        openai: azureOpenAI,
+      });
     } else if (isXAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        xai,
-        response
-      );
+        response,
+        signal,
+        openai: xai,
+      });
     } else if (isBasetenModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        baseten,
-        response
-      );
+        response,
+        signal,
+        openai: baseten,
+      });
     } else if (isFireworksModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        fireworks,
-        response
-      );
+        response,
+        signal,
+        openai: fireworks,
+      });
     } else if (isOpenRouterModel(modelKey)) {
-      parsedResponse = await handleOpenAIChatCompletionsRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
-        open_router,
-        response
-      );
+        response,
+        signal,
+        openai: openRouter,
+      });
     } else if (isVertexAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, vertexai, response);
-    } else if (isGenAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, geminiai, response);
-    } else if (isBedrockModel(modelKey)) {
-      parsedResponse = await handleBedrockRequest(
+      parsedResponse = await handleGenAIRequest({
         modelKey,
         args,
         isOnPaidPlan,
         exceededBillingLimit,
+        response,
+        signal,
+        genai: vertexai,
+      });
+    } else if (isGenAIModel(modelKey)) {
+      parsedResponse = await handleGenAIRequest({
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        response,
+
+        genai: geminiai,
+      });
+    } else if (isBedrockModel(modelKey)) {
+      parsedResponse = await handleBedrockRequest({
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        response,
+        signal,
         bedrock,
-        response
-      );
+      });
     } else {
       throw new Error(`Model not supported: ${modelKey}`);
     }
@@ -168,7 +203,12 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    logger.error(`Error in handleAIRequest ${modelKey}`, error);
+    if (signal?.aborted) {
+      logger.info(`[handleAIRequest] AI request aborted by client`);
+      return;
+    }
+
+    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
@@ -181,12 +221,20 @@ export const handleAIRequest = async (
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
       const options = getModelOptions(modelKey, args);
 
-      const backupModelKey = options.thinking
-        ? DEFAULT_BACKUP_MODEL_THINKING
-        : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
+      // Prefer a model-specific backup when provided; otherwise use the global defaults
+      const configuredBackup = MODELS_CONFIGURATION[modelKey].backupModelKey;
+      const fallbackDefault = options.thinking ? DEFAULT_BACKUP_MODEL_THINKING : DEFAULT_BACKUP_MODEL;
+      const backupModelKey = configuredBackup ?? fallbackDefault;
 
       if (modelKey !== backupModelKey) {
-        return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);
+        return handleAIRequest({
+          modelKey: backupModelKey,
+          args,
+          isOnPaidPlan,
+          exceededBillingLimit,
+          response,
+          signal,
+        });
       }
     }
 

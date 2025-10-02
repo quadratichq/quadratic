@@ -4,7 +4,7 @@ import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
-import { AzureOpenAI, OpenAI } from 'openai';
+import { OpenAI } from 'openai';
 import {
   ANTHROPIC_API_KEY,
   AWS_S3_ACCESS_KEY_ID,
@@ -35,7 +35,7 @@ const googleAuthOptions = {
 };
 
 // anthropic-sdk for gcp
-export const vertex_anthropic = new AnthropicVertex({
+export const vertexAnthropic = new AnthropicVertex({
   projectId: GCP_PROJECT_ID,
   region: GCP_REGION_ANTHROPIC,
   googleAuth: new GoogleAuth(googleAuthOptions),
@@ -55,7 +55,7 @@ export const geminiai = new GoogleGenAI({
 });
 
 // anthropic-sdk for bedrock
-export const bedrock_anthropic = new AnthropicBedrock({
+export const bedrockAnthropic = new AnthropicBedrock({
   awsSecretKey: AWS_S3_SECRET_ACCESS_KEY,
   awsAccessKey: AWS_S3_ACCESS_KEY_ID,
   awsRegion: AWS_S3_REGION,
@@ -75,10 +75,9 @@ export const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
-export const azureOpenAI = new AzureOpenAI({
+export const azureOpenAI = new OpenAI({
   apiKey: AZURE_OPENAI_API_KEY,
-  endpoint: AZURE_OPENAI_ENDPOINT,
-  apiVersion: '2024-10-21',
+  baseURL: AZURE_OPENAI_ENDPOINT,
 });
 
 export const xai = new OpenAI({
@@ -96,7 +95,7 @@ export const fireworks = new OpenAI({
   baseURL: 'https://api.fireworks.ai/inference/v1',
 });
 
-export const open_router = new OpenAI({
+export const openRouter = new OpenAI({
   apiKey: OPEN_ROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
   defaultHeaders: {

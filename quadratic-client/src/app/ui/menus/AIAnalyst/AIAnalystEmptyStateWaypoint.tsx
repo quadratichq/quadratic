@@ -1,8 +1,17 @@
+import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { memo } from 'react';
+import { useRecoilValue } from 'recoil';
 
-export function AIAnalystEmptyStateWaypoint() {
+export const AIAnalystEmptyStateWaypoint = memo(() => {
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+
+  if (messagesCount > 0) {
+    return null;
+  }
+
   return (
-    <div className="relative">
+    <div className="relative select-none text-muted-foreground">
       <div className="ml-2.5 flex flex-col">
         <svg
           width="16"
@@ -17,8 +26,8 @@ export function AIAnalystEmptyStateWaypoint() {
             fill="currentColor"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium">Upload a file</h3>
-        <p className="text-xs text-muted-foreground">CSV, Excel, PDF, or Parquet</p>
+        <h3 className="mt-2 text-sm">Upload a file</h3>
+        <p className="hidden text-xs">PDF, Image, CSV, Excel, or Parquet</p>
       </div>
       <div className="absolute left-11 top-0 flex flex-row gap-2.5">
         <svg
@@ -35,15 +44,15 @@ export function AIAnalystEmptyStateWaypoint() {
           />
         </svg>
         <div className="mt-4 flex flex-col">
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 opacity-50 grayscale">
             <LanguageIcon language="postgres" />
             <LanguageIcon language="mysql" />
             <LanguageIcon language="mssql" />
           </div>
-          <h3 className="mt-2 text-sm font-medium">Chat with your data</h3>
-          <p className="text-xs text-muted-foreground">Support for Postgres, MySQL, MSSQL, & more.</p>
+          <h3 className="mt-2 text-sm">Chat with a connection</h3>
+          <p className="hidden text-xs">Support for Postgres, MySQL, MSSQL, & more.</p>
         </div>
       </div>
     </div>
   );
-}
+});

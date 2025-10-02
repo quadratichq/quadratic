@@ -279,16 +279,17 @@ model AnalyticsAIChat {
 }
 
 enum AIChatSource {
-    AIAssistant              @map("ai_assistant")
-    AIAnalyst                @map("ai_analyst")
-    AIResearcher             @map("ai_researcher")
-    GetChatName              @map("get_chat_name")
-    GetFileName              @map("get_file_name")
-    CodeEditorCompletions    @map("code_editor_completions")
-    GetUserPromptSuggestions @map("get_user_prompt_suggestions")
-    PDFImport                @map("pdf_import")
-    ModelRouter              @map("model_router")
-    WebSearch                @map("web_search")
+    AIAssistant                   @map("ai_assistant")
+    AIAnalyst                     @map("ai_analyst")
+    AIResearcher                  @map("ai_researcher")
+    GetChatName                   @map("get_chat_name")
+    GetFileName                   @map("get_file_name")
+    CodeEditorCompletions         @map("code_editor_completions")
+    GetUserPromptSuggestions      @map("get_user_prompt_suggestions")
+    GetEmptyChatPromptSuggestions @map("get_empty_chat_prompt_suggestions")
+    PDFImport                     @map("pdf_import")
+    ModelRouter                   @map("model_router")
+    WebSearch                     @map("web_search")
 }
 
 enum AIChatMessageType {

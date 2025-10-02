@@ -13,8 +13,6 @@ export const ROUTES = {
   SIGNUP_WITH_REDIRECT: (href?: string) =>
     `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(href ?? window.location.pathname)}`,
   VERIFY_EMAIL: '/verify-email',
-  SEND_MAGIC_AUTH_CODE: '/send-magic-auth-code',
-  MAGIC_AUTH_CODE: '/magic-auth-code',
   SEND_RESET_PASSWORD: '/send-reset-password',
   RESET_PASSWORD: '/reset-password',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
@@ -22,6 +20,7 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
+  FILES_CREATE: '/files/create',
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {

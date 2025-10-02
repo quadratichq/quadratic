@@ -72,12 +72,12 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
             <QColorPicker
               onChangeComplete={(change: ColorResult) => {
                 const color = convertReactColorToString(change);
-                sheets.sheet.setColor(color);
+                sheets.sheet.setColor(color, false);
                 handleClose();
                 focusGrid();
               }}
               onClear={() => {
-                sheets.sheet.setColor(undefined);
+                sheets.sheet.setColor(undefined, false);
                 handleClose();
                 focusGrid();
               }}

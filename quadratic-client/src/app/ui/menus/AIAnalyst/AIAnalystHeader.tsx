@@ -21,14 +21,13 @@ import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec'
 import { memo, useMemo } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-type AIAnalystHeaderProps = {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-};
-
 const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
   ? parseInt(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD || '15', 10)
   : 15;
 
+interface AIAnalystHeaderProps {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+}
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const { debugFlags } = useDebugFlags();
   const debugAIAnalystChatEditing = useMemo(
@@ -81,7 +80,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
   return (
     <div className="flex flex-col">
-      <div className="flex h-12 items-center justify-between px-4">
+      <div className="flex items-center justify-between px-4 py-2">
         <span className="flex items-center text-sm font-bold">
           {viewActionsSpec[Action.ToggleAIAnalyst].label()}
           {showChatHistory && ' history'}

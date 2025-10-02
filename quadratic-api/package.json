@@ -1,6 +1,6 @@
 {
   "name": "quadratic-api",
-  "version": "0.18.1",
+  "version": "0.20.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -33,19 +33,19 @@
   },
   "author": "David Kircos",
   "dependencies": {
-    "@anthropic-ai/bedrock-sdk": "0.24.0",
-    "@anthropic-ai/sdk": "0.60.0",
-    "@anthropic-ai/vertex-sdk": "0.13.1",
+    "@anthropic-ai/bedrock-sdk": "0.25.0",
+    "@anthropic-ai/sdk": "0.65.0",
+    "@anthropic-ai/vertex-sdk": "0.14.0",
     "@aws-sdk/client-bedrock-runtime": "3.830.0",
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
     "@google/genai": "1.5.1",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@ory/kratos-client": "^1.2.1",
-    "@prisma/client": "^4.12.0",
+    "@prisma/client": "^6.16.2",
     "@sendgrid/mail": "^8.1.0",
-    "@sentry/node": "^9.6.1",
-    "@workos-inc/node": "7.69.2",
+    "@sentry/node": "^10.10.0",
+    "@workos-inc/node": "7.70.0",
     "axios": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -62,7 +62,8 @@
     "mixpanel": "^0.18.1",
     "multer": "^2.0.0",
     "multer-s3": "^3.0.1",
-    "openai": "5.12.2",
+    "openai": "5.23.0",
+    "raindrop-ai": "^0.0.59",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
     "winston": "^3.17.0",
@@ -86,10 +87,10 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
-    "prisma": "^5.5.2",
+    "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": "24.x"
