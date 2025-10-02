@@ -1,4 +1,5 @@
 use anyhow::Result;
+use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
 use serde::Deserialize;
 
@@ -25,9 +26,16 @@ pub(crate) struct Config {
 
 impl Config {
     pub(crate) fn new() -> Result<Config> {
-        let config =
-            envy::from_env::<Config>().map_err(|e| ControllerError::Config(e.to_string()))?;
+        let filename = if cfg!(test) { ".env.test" } else { ".env" };
 
+        dotenv::from_filename(filename).ok();
+        dotenv().ok();
+
+        // Try prefixed first, fall back to non-prefixed if that fails
+        let config = envy::prefixed("FILES__")
+            .from_env::<Config>()
+            .or_else(|_| envy::from_env::<Config>())
+            .map_err(|e| ControllerError::Config(e.to_string()))?;
         Ok(config)
     }
 }

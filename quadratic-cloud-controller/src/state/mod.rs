@@ -10,21 +10,29 @@ mod settings;
 use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
-use kube::client::Client as KubeClient;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::config::Config;
+#[cfg(feature = "kubernetes")]
+use kube::client::Client as KubeClient;
+#[cfg(feature = "docker")]
+use quadratic_rust_shared::docker::cluster::Cluster;
 
 use self::pubsub::PubSub;
 use self::settings::Settings;
+use crate::config::Config;
 
 pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) pubsub: Mutex<PubSub>,
-    pub(crate) kube_client: KubeClient,
+
+    #[cfg(feature = "docker")]
+    pub(crate) client: quadratic_rust_shared::docker::cluster::Cluster,
+
+    #[cfg(feature = "kubernetes")]
+    pub(crate) client: kube::client::Client,
     pub(crate) worker_ephemeral_tokens: Mutex<HashMap<Uuid, Uuid>>,
     pub(crate) creating_workers: Mutex<HashSet<Uuid>>,
 }
@@ -38,18 +46,36 @@ impl State {
         });
 
         // Configure kube client with extended timeout for local dev
-        let mut kube_config = kube::Config::infer().await?;
-        kube_config.connect_timeout = Some(std::time::Duration::from_secs(30));
-        kube_config.read_timeout = Some(std::time::Duration::from_secs(30));
-        let kube_client = KubeClient::try_from(kube_config)?;
 
         Ok(State {
             settings: Settings::new(config).await?,
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
-            kube_client,
+            client: Self::init_client().await?,
             worker_ephemeral_tokens: Mutex::new(HashMap::new()),
             creating_workers: Mutex::new(HashSet::new()),
         })
+    }
+
+    #[cfg(feature = "docker")]
+    async fn init_client() -> Result<Cluster> {
+        let client = Cluster::try_new().await?;
+
+        Ok(client)
+    }
+
+    #[cfg(feature = "kubernetes")]
+    fn init_client() -> Result<KubeClient> {
+        let mut kube_config = kube::Config::infer().await?;
+        kube_config.connect_timeout = Some(std::time::Duration::from_secs(30));
+        kube_config.read_timeout = Some(std::time::Duration::from_secs(30));
+        let client = KubeClient::try_from(kube_config)?;
+
+        Ok(client)
+    }
+
+    #[cfg(feature = "kubernetes")]
+    fn get_client(&self) -> &KubeClient {
+        &self.client
     }
 
     pub(crate) async fn generate_worker_ephemeral_token(&self, file_id: &Uuid) -> Uuid {

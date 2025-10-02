@@ -13,6 +13,9 @@ pub mod cache;
 #[cfg(feature = "crypto")]
 pub mod crypto;
 
+#[cfg(feature = "docker")]
+pub mod docker;
+
 #[cfg(feature = "environment")]
 pub mod environment;
 
