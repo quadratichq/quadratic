@@ -223,7 +223,7 @@ function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: 
 }
 
 function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
-  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
+  return toolName === undefined ? { type: 'auto', disable_parallel_tool_use: true } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(

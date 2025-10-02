@@ -43,6 +43,7 @@ export const handleOpenAIResponsesRequest = async ({
     stream: options.stream,
     tools,
     tool_choice,
+    parallel_tool_calls: false,
     ...(options.supportsReasoning
       ? {
           reasoning: {
