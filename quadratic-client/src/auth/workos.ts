@@ -232,17 +232,6 @@ export const workosClient: AuthClient = {
     await apiClient.auth.resetPassword(args);
     await disposeClient();
   },
-
-  async sendMagicAuthCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode(args);
-    await handlePendingAuthenticationToken(pendingAuthenticationToken);
-  },
-
-  async authenticateWithMagicCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithMagicCode(args);
-    await handlePendingAuthenticationToken(pendingAuthenticationToken);
-    await handleRedirectTo();
-  },
 };
 
 const disposeClient = async () => {
