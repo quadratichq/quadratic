@@ -1,8 +1,9 @@
-import { ChevronRightIcon, CloseIcon } from '@/shared/components/Icons';
+import { AddIcon, ChevronRightIcon, CloseIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -52,6 +53,25 @@ export const ConnectionSchemaBrowser = ({
   return (
     <div className={cn('h-full overflow-auto px-3 text-sm')}>
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background pt-3">
+        <div className="mr-2 flex w-full items-center gap-2">
+          <Button className="flex-grow" asChild>
+            <Link
+              to={newNewFileFromStateConnection({
+                connectionType: type,
+                connectionUuid: uuid,
+                teamUuid,
+                isPrivate: true,
+                query: getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data?.type || '' }),
+              })}
+              reloadDocument
+            >
+              <AddIcon className="mr-1" /> New file from selected data
+            </Link>
+          </Button>
+          <Button size="icon" variant="ghost" onClick={reloadSchema} className="hidden text-muted-foreground">
+            <RefreshIcon className={cn(isLoading && 'animate-spin text-primary')} />
+          </Button>
+        </div>
         <div className="relative">
           <Input
             ref={inputRef}

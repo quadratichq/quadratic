@@ -7,10 +7,11 @@ import { ConnectionFormEdit } from '@/shared/components/connections/ConnectionFo
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { RefreshIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
-import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
@@ -29,7 +30,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 export const Component = () => {
   const { connectionUuid, teamUuid } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
-  const [currentQuery, setCurrentQuery] = useState<string>('');
+
   const {
     activeTeam: { connections },
   } = useDashboardRouteLoaderData();
@@ -49,38 +50,29 @@ export const Component = () => {
     setActiveTab('preview');
   }, [connectionUuid]);
 
-  useEffect(() => {
-    if (data) {
-      setCurrentQuery(`SELECT * FROM ${data.tables[0].schema}.${data.tables[0].name} LIMIT 100`);
-    }
-  }, [data]);
-
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className={cn('h-full')}>
-      <TabsList className="h-12 w-full justify-start border-b border-border">
+      <TabsList className="h-12 w-full justify-start border-b border-border px-3">
+        <div className="mr-auto flex hidden items-center gap-2">
+          <LanguageIcon language={data?.type} />
+          <p className="text-lg font-medium text-foreground">{data?.name}</p>
+        </div>
         <TabsTrigger value="preview" className="h-12">
           Preview
         </TabsTrigger>
         <TabsTrigger value="edit" className="h-12">
           Edit
         </TabsTrigger>
-
-        {activeTab === 'preview' && (
+        <TabsTrigger value="chat" className="h-12">
+          Chat
+        </TabsTrigger>
+        {activeTab === 'preview' && false && (
           <div className="ml-auto mr-2 flex items-center gap-2">
             <Button size="icon" variant="ghost" onClick={reloadSchema}>
               <RefreshIcon className={cn(isLoading && 'animate-spin text-primary')} />
             </Button>
             <Button className="" asChild>
-              <Link
-                to={newNewFileFromStateConnection({
-                  connectionType,
-                  connectionUuid,
-                  teamUuid,
-                  isPrivate: true,
-                  query: currentQuery,
-                })}
-                reloadDocument
-              >
+              <Link to={'/files/create'} reloadDocument>
                 New file from data
               </Link>
             </Button>
@@ -147,6 +139,16 @@ export const Component = () => {
             </div>
           </div>
         )}
+      </TabsContent>
+      <TabsContent value="chat" className="mt-0 flex h-full justify-center overflow-y-auto">
+        <div className="mt-4 flex w-full max-w-lg flex-col gap-2">
+          <Textarea
+            className="min-h-40 w-full max-w-lg bg-accent py-3 shadow-sm"
+            autoFocus
+            placeholder="Ask a question about your data..."
+          />
+          <Button className="ml-auto">New file with chat</Button>
+        </div>
       </TabsContent>
     </Tabs>
   );
