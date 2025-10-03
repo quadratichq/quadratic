@@ -1,6 +1,6 @@
 import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
-import { ConnectionTypeSchema } from './typesAndSchemasConnections';
 
 const AIProvidersSchema = z.enum([
   'quadratic',
@@ -218,10 +218,11 @@ const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Impor
     }),
   })
 );
+const ImportFileSchema = z.object({
+  name: z.string(),
+  size: z.number(),
+});
 const ContextSchema = z.object({
-  sheets: z.array(z.string()),
-  currentSheet: z.string(),
-  selection: z.string().optional(),
   codeCell: z
     .object({
       sheetId: z.string(),
@@ -240,6 +241,19 @@ const ContextSchema = z.object({
           }
           return val;
         }),
+    })
+    .optional(),
+  connection: z
+    .object({
+      type: ConnectionTypeSchema,
+      id: z.string(),
+      name: z.string(),
+    })
+    .optional(),
+  importFiles: z
+    .object({
+      prompt: z.string(),
+      files: z.array(ImportFileSchema),
     })
     .optional(),
 });
@@ -422,8 +436,6 @@ const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');
-export type InternalWebSearchContextType = z.infer<typeof InternalWebSearchContextTypeSchema>;
-
 const GoogleSearchContentSchema = z.object({
   source: z.literal('google_search'),
   query: z.string(),
@@ -431,11 +443,33 @@ const GoogleSearchContentSchema = z.object({
 });
 export type GoogleSearchContent = z.infer<typeof GoogleSearchContentSchema>;
 
-const InternalMessageSchema = z.object({
-  role: z.literal('internal'),
-  contextType: InternalWebSearchContextTypeSchema,
-  content: GoogleSearchContentSchema,
+const InternalImportFilesToGridTypeSchema = z.literal('importFilesToGrid');
+const InternalImportFileSchema = z.object({
+  fileName: z.string(),
+  loading: z.boolean(),
+  error: z.string().optional(),
 });
+export type InternalImportFile = z.infer<typeof InternalImportFileSchema>;
+
+const ImportFilesToGridContentSchema = z.object({
+  source: z.literal('import_files_to_grid'),
+  files: z.array(InternalImportFileSchema),
+});
+export type ImportFilesToGridContent = z.infer<typeof ImportFilesToGridContentSchema>;
+
+const InternalMessageSchema = z
+  .object({
+    role: z.literal('internal'),
+    contextType: InternalWebSearchContextTypeSchema,
+    content: GoogleSearchContentSchema,
+  })
+  .or(
+    z.object({
+      role: z.literal('internal'),
+      contextType: InternalImportFilesToGridTypeSchema,
+      content: ImportFilesToGridContentSchema,
+    })
+  );
 export type InternalMessage = z.infer<typeof InternalMessageSchema>;
 
 const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
@@ -495,6 +529,7 @@ const AISourceSchema = z.enum([
   'GetFileName',
   'CodeEditorCompletions',
   'GetUserPromptSuggestions',
+  'GetEmptyChatPromptSuggestions',
   'PDFImport',
   'ModelRouter',
   'WebSearch',

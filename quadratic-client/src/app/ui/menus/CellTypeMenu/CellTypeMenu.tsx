@@ -21,10 +21,10 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
-export interface CellTypeOption {
+interface CellTypeOption {
   name: string;
   searchStrings?: string[];
   mode: CodeCellLanguage;
@@ -32,7 +32,6 @@ export interface CellTypeOption {
   disabled?: boolean;
   experimental?: boolean;
 }
-
 let CELL_TYPE_OPTIONS: CellTypeOption[] = [
   {
     name: 'Python',
@@ -54,7 +53,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
   },
 ];
 
-export default function CellTypeMenu() {
+export const CellTypeMenu = memo(() => {
   const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
@@ -157,44 +156,46 @@ export default function CellTypeMenu() {
       </CommandList>
     </CommandDialog>
   );
-}
+});
 
-function CommandItemWrapper({
-  disabled,
-  icon,
-  name,
-  badge,
-  value,
-  onSelect,
-}: {
-  disabled?: boolean;
-  icon: React.ReactNode;
-  name: string;
-  badge?: React.ReactNode;
-  value?: string;
-  onSelect: () => void;
-}) {
-  return (
-    <CommandItem
-      disabled={disabled}
-      onSelect={onSelect}
-      value={value ? value : name}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-    >
-      <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
-      <div className="flex flex-col truncate">
-        <span className="flex items-center">
-          {name}{' '}
-          {badge && (
-            <Badge variant="outline" className="ml-2">
-              {badge}
-            </Badge>
-          )}
-        </span>
-      </div>
-    </CommandItem>
-  );
-}
+const CommandItemWrapper = memo(
+  ({
+    disabled,
+    icon,
+    name,
+    badge,
+    value,
+    onSelect,
+  }: {
+    disabled?: boolean;
+    icon: React.ReactNode;
+    name: string;
+    badge?: React.ReactNode;
+    value?: string;
+    onSelect: () => void;
+  }) => {
+    return (
+      <CommandItem
+        disabled={disabled}
+        onSelect={onSelect}
+        value={value ? value : name}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
+        <div className="flex flex-col truncate">
+          <span className="flex items-center">
+            {name}{' '}
+            {badge && (
+              <Badge variant="outline" className="ml-2">
+                {badge}
+              </Badge>
+            )}
+          </span>
+        </div>
+      </CommandItem>
+    );
+  }
+);
