@@ -28,12 +28,7 @@ export function CodeEditorHeaderLabel() {
 
     const updateTableName = () => {
       if (!codeCellState.sheetId) return;
-      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
-        codeCellState.sheetId,
-        codeCellState.pos.x,
-        codeCellState.pos.y,
-        sheets.jsA1Context
-      );
+      const tableName = sheets.sheet.cursor.getTableNameFromPos(codeCellState);
       setTableName(tableName);
     };
 
@@ -48,7 +43,7 @@ export function CodeEditorHeaderLabel() {
       events.off('sheetInfoUpdate', updateCellRef);
       events.off('a1ContextUpdated', updateTableName);
     };
-  }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+  }, [codeCellState]);
 
   const focusCellRef = useCallback(() => {
     try {

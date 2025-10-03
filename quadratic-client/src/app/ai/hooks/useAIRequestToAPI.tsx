@@ -42,7 +42,7 @@ export function useAIRequestToAPI() {
           isOnPaidPlan,
           exceededBillingLimit: false,
         };
-        setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
+        setMessages?.((prev) => [...prev, { ...responseMessage }]);
 
         const { source, modelKey, useStream } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);

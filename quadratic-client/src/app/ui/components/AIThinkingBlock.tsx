@@ -5,16 +5,15 @@ import type { AIResponseContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 // Props for the thinking block
-interface ThinkingBlockProps {
+interface AIThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
   thinkingContent: AIResponseContent[number];
   expandedDefault: boolean;
   onContentChange?: (content: AIResponseContent[number]) => void;
 }
-
-export const ThinkingBlock = memo(
-  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: ThinkingBlockProps) => {
+export const AIThinkingBlock = memo(
+  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: AIThinkingBlockProps) => {
     // Each thinking block tracks its own expanded state
     const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage && expandedDefault);
     // Track whether this is the first load completion

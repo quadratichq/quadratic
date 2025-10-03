@@ -4,6 +4,7 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
+  ONBOARDING: '/onboarding',
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_WITH_REDIRECT: (href?: string) =>
@@ -20,6 +21,7 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
+  FILES_CREATE: '/files/create',
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {

@@ -199,7 +199,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 setKnowsAboutModelPicker(true);
               }}
             >
-              Model: {selectedModelLabel}
+              {selectedModelLabel}
               <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
             </PopoverTrigger>
 
