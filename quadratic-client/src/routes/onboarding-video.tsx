@@ -74,6 +74,7 @@ export const Component = () => {
             trackEvent('[OnboardingVideo].completedPlaying');
           }}
           controls
+          crossOrigin="anonymous"
           width={800}
           height={450}
           style={{ width: '100%', height: 'auto' }}
