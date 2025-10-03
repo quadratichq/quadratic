@@ -87,7 +87,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute bottom-full left-0 mb-1 flex w-full flex-row flex-wrap gap-1">
+      <div className="absolute bottom-full left-0 mb-2 flex w-full flex-row flex-wrap gap-2">
         <div className="absolute bottom-full left-6 mb-2 flex flex-col text-muted-foreground">
           <h3 className="text-sm">Try a suggestion</h3>
           <p className="hidden text-xs">See what’s possible based on your sheet.</p>
