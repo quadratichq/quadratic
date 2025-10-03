@@ -30,8 +30,6 @@ export interface AuthClient {
   verifyEmail(args: { pendingAuthenticationToken: string; code: string }): Promise<void>;
   sendResetPassword(args: { email: string }): Promise<void>;
   resetPassword(args: { token: string; password: string }): Promise<void>;
-  sendMagicAuthCode(args: { email: string }): Promise<void>;
-  authenticateWithMagicCode(args: { email: string; code: string }): Promise<void>;
 }
 
 const getAuthClient = (): AuthClient => {
@@ -94,14 +92,6 @@ export const authClient: AuthClient = {
   async resetPassword(args: { token: string; password: string }) {
     const client = getAuthClient();
     return client.resetPassword(args);
-  },
-  async sendMagicAuthCode(args: { email: string }) {
-    const client = getAuthClient();
-    return client.sendMagicAuthCode(args);
-  },
-  async authenticateWithMagicCode(args: { email: string; code: string }) {
-    const client = getAuthClient();
-    return client.authenticateWithMagicCode(args);
   },
 };
 

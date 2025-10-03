@@ -181,9 +181,10 @@ export const handleAIRequest = async (
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
       const options = getModelOptions(modelKey, args);
 
-      const backupModelKey = options.thinking
-        ? DEFAULT_BACKUP_MODEL_THINKING
-        : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
+      // Prefer a model-specific backup when provided; otherwise use the global defaults
+      const configuredBackup = MODELS_CONFIGURATION[modelKey].backupModelKey;
+      const fallbackDefault = options.thinking ? DEFAULT_BACKUP_MODEL_THINKING : DEFAULT_BACKUP_MODEL;
+      const backupModelKey = configuredBackup ?? fallbackDefault;
 
       if (modelKey !== backupModelKey) {
         return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);

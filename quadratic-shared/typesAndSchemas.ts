@@ -578,24 +578,6 @@ export const ApiSchemas = {
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
   }),
-
-  '/v0/auth/send-magic-auth-code.POST.request': z.object({
-    email: z.string().email('Must be a valid email address.'),
-  }),
-  '/v0/auth/send-magic-auth-code.POST.response': z.object({
-    message: z.string(),
-    email: z.string().email('Must be a valid email address.').optional(),
-    pendingAuthenticationToken: z.string().optional(),
-  }),
-
-  '/v0/auth/authenticate-with-magic-code.POST.request': z.object({
-    email: z.string().email('Must be a valid email address.'),
-    code: z.string(),
-  }),
-  '/v0/auth/authenticate-with-magic-code.POST.response': z.object({
-    message: z.string(),
-    pendingAuthenticationToken: z.string().optional(),
-  }),
 };
 
 /**
