@@ -1485,7 +1485,7 @@ Always maintain strong correlation between the context, the files, the connectio
     },
     responseSchema: AIToolsArgsSchema[AITool.EmptyChatPromptSuggestions],
     prompt: `
-This tool provides prompt suggestions for the user for an empty chat when user attaches a file or adds a connection or code cell to context, requires an array of three prompt suggestions.\n
+This tool provides prompt suggestions for the user when they attach a file or add a connection to an empty chat. It requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
 The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
