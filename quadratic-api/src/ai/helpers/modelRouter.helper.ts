@@ -22,9 +22,13 @@ export const getModelKey = async (
   modelKey: AIModelKey,
   inputArgs: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean
+  exceededBillingLimit: boolean,
+  restrictedCountry: boolean
 ): Promise<AIModelKey> => {
   try {
+    // Log the user's country for analytics/debugging
+    logger.info('getModelKey called', { restrictedCountry, source: inputArgs.source });
+
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
       return modelKey;
     }
@@ -64,6 +68,11 @@ export const getModelKey = async (
 
     if (!userTextPrompt) {
       return DEFAULT_BACKUP_MODEL;
+    }
+
+    // Restricted country that uses default router model
+    if (restrictedCountry) {
+      return DEFAULT_MODEL_ROUTER_MODEL;
     }
 
     const args: AIRequestHelperArgs = {

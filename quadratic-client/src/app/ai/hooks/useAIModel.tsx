@@ -7,7 +7,6 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 import { useEffect, useMemo } from 'react';
 
 const MODEL_LOCAL_STORAGE_KEY = 'aiModel';
-const THINKING_TOGGLE_LOCAL_STORAGE_KEY = 'aiThinkingToggle';
 const MODEL_VERSION_LOCAL_STORAGE_KEY = 'aiModelVersion';
 
 export const useAIModel = (): {
@@ -15,17 +14,13 @@ export const useAIModel = (): {
   modelKey: AIModelKey;
   setModelKey: SetValue<AIModelKey>;
   modelConfig: AIModelConfig;
-  thinkingToggle: boolean;
-  setThinkingToggle: SetValue<boolean>;
 } => {
   // Clear older versions of the model and thinking toggle from local storage
   useEffect(() => {
     window.localStorage.removeItem(MODEL_LOCAL_STORAGE_KEY);
-    window.localStorage.removeItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY);
     window.localStorage.removeItem(MODEL_VERSION_LOCAL_STORAGE_KEY);
     for (let i = 0; i < DEFAULT_MODEL_VERSION; i++) {
       window.localStorage.removeItem(`${MODEL_LOCAL_STORAGE_KEY}-${i}`);
-      window.localStorage.removeItem(`${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${i}`);
     }
   }, []);
 
@@ -42,11 +37,6 @@ export const useAIModel = (): {
   const defaultModelKey = useMemo(() => DEFAULT_MODEL, []);
   const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(modelLocalStorageKey, defaultModelKey);
 
-  const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(
-    `${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${DEFAULT_MODEL_VERSION}`,
-    !!defaultConfig.thinkingToggle
-  );
-
   const modelConfig = useMemo(() => MODELS_CONFIGURATION[modelKey], [modelKey]);
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
@@ -54,11 +44,8 @@ export const useAIModel = (): {
     if (debug) return;
     if (!modelConfig || modelConfig.mode === 'disabled') {
       setModelKey(DEFAULT_MODEL);
-      if ('thinkingToggle' in defaultConfig) {
-        setThinkingToggle(!!defaultConfig.thinkingToggle);
-      }
     }
-  }, [debug, defaultConfig, modelConfig, setModelKey, setThinkingToggle]);
+  }, [debug, defaultConfig, modelConfig, setModelKey]);
 
   if (!modelConfig) {
     return {
@@ -66,10 +53,8 @@ export const useAIModel = (): {
       modelKey: DEFAULT_MODEL,
       setModelKey,
       modelConfig: defaultConfig,
-      thinkingToggle,
-      setThinkingToggle,
     };
   }
 
-  return { isOnPaidPlan, modelKey, setModelKey, modelConfig, thinkingToggle, setThinkingToggle };
+  return { isOnPaidPlan, modelKey, setModelKey, modelConfig };
 };
