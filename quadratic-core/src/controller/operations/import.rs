@@ -103,6 +103,29 @@ impl GridController {
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
+    /// Overwrites meta information of the new data table based on the original data table.
+    fn overwrite_data_table(self: &GridController, pos: SheetPos, dt: &mut DataTable) {
+        dbgjs!(&pos);
+        if let Some(sheet) = self.try_sheet(pos.sheet_id)
+            && let Some(original) = sheet.data_table_at(&pos.into())
+        {
+            dbgjs!(&original.name);
+            dt.name = original.name.clone();
+            dt.alternating_colors = original.alternating_colors;
+            dt.formats = original.formats.clone();
+            dt.borders = original.borders.clone();
+            dt.show_name = original.show_name.clone();
+            dt.show_columns = original.show_columns.clone();
+            dt.sort = original.sort.clone();
+
+            // only copy the column headers and display buffer if the lengths are the same
+            if dt.column_headers_len() == original.column_headers_len() {
+                dt.column_headers = original.column_headers.clone();
+                dt.display_buffer = original.display_buffer.clone();
+            }
+        }
+    }
+
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
@@ -112,6 +135,7 @@ impl GridController {
         insert_at: Pos,
         delimiter: Option<u8>,
         create_table: Option<bool>,
+        is_overwrite_table: bool,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
@@ -195,6 +219,10 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
+
+            if is_overwrite_table {
+                self.overwrite_data_table(sheet_pos, &mut data_table);
+            }
             ops.push(Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -548,12 +576,17 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         updater: Option<impl Fn(&str, u32, u32)>,
+        is_overwrite_table: bool,
     ) -> Result<Vec<Operation>> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
+
+        if is_overwrite_table {
+            self.overwrite_data_table(SheetPos::from((insert_at, sheet_id)), &mut data_table);
+        }
 
         let ops = vec![Operation::AddDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
@@ -1362,6 +1395,7 @@ mod test {
                 pos,
                 Some(b','),
                 Some(true),
+                false,
             )
             .unwrap();
 
@@ -1413,6 +1447,7 @@ mod test {
                 pos,
                 Some(b','),
                 Some(true),
+                false,
             )
             .unwrap();
 
@@ -1447,6 +1482,7 @@ mod test {
             None,
             Some(b','),
             Some(false),
+            false,
             false,
         )
         .unwrap();
@@ -1534,6 +1570,7 @@ mod test {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
             false,
         )
         .unwrap();
@@ -1727,6 +1764,7 @@ mod test {
             Some(b','),
             Some(true),
             false,
+            false,
         )
         .unwrap();
 
@@ -1830,6 +1868,7 @@ mod test {
             None,
             Some(true),
             false,
+            false,
         )
         .unwrap();
     }
@@ -1848,6 +1887,7 @@ mod test {
             None,
             Some(true),
             false,
+            false,
         )
         .unwrap();
     }
@@ -1865,6 +1905,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
             false,
         )
         .unwrap();

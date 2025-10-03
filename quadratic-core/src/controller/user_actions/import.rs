@@ -21,6 +21,7 @@ impl GridController {
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
         is_ai: bool,
+        is_overwrite_table: bool,
     ) -> Result<()> {
         let ops = self.import_csv_operations(
             sheet_id,
@@ -29,6 +30,7 @@ impl GridController {
             insert_at,
             delimiter,
             header_is_first_row,
+            is_overwrite_table,
         )?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
@@ -73,8 +75,16 @@ impl GridController {
         cursor: Option<String>,
         updater: Option<impl Fn(&str, u32, u32)>,
         is_ai: bool,
+        is_overwrite_table: bool,
     ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
+        let ops = self.import_parquet_operations(
+            sheet_id,
+            file,
+            file_name,
+            insert_at,
+            updater,
+            is_overwrite_table,
+        )?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
@@ -136,6 +146,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(true),
+            false,
             false,
         )
         .unwrap();
@@ -258,6 +269,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         );
         assert!(result.is_err());
     }
@@ -285,6 +297,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -303,6 +316,7 @@ pub(crate) mod tests {
                 Pos { x: 0, y: 0 },
                 Some(b','),
                 Some(false),
+                false,
             )
             .unwrap();
         let op = &ops[0];
@@ -457,6 +471,7 @@ pub(crate) mod tests {
             None,
             None::<fn(&str, u32, u32)>,
             false,
+            false,
         );
 
         assert_cell_value_row(
@@ -565,6 +580,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -594,6 +610,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -621,6 +638,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             None,
+            false,
             false,
         )
         .unwrap();
@@ -681,6 +699,7 @@ pub(crate) mod tests {
             None,
             None,
             false,
+            false,
         )
         .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
@@ -703,6 +722,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            false,
             false,
         )
         .unwrap();
@@ -733,6 +753,7 @@ pub(crate) mod tests {
             None,
             None::<fn(&str, u32, u32)>,
             false,
+            false,
         );
 
         print_table_from_grid(
@@ -759,6 +780,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            false,
             false,
         )
         .unwrap();

@@ -164,7 +164,7 @@ export function useFileImport() {
           }
 
           let result: { contents?: ArrayBufferLike; version?: string; error?: string } | undefined = undefined;
-
+          console.log({ isOverwrite });
           if (fileType === 'grid') {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
           } else if (fileType === 'excel' || fileType === 'csv' || fileType === 'parquet') {
@@ -176,6 +176,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               isAi: false,
+              isOverwrite,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);
