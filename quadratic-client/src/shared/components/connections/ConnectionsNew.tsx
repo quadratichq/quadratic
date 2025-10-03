@@ -16,7 +16,7 @@ export const ConnectionsNew = ({
   handleNavigateToCreatePotentialView: NavigateToCreatePotentialView;
 }) => {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       {Object.entries(connectionsByType).map(([type, { Logo }]) => (
         <Button
           data-testid={`new-connection-${type}`}
