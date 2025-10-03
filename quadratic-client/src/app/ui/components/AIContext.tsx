@@ -122,7 +122,7 @@ const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }:
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
       <span className="flex items-center gap-1">
         {primaryIcon}
-        <span className="max-w-40 truncate">{primary}</span>
+        <span className="max-w-48 truncate">{primary}</span>
       </span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
