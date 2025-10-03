@@ -27,6 +27,7 @@ import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
+import { isRestrictedModelCountry } from '../../utils/geolocation';
 import logger from '../../utils/logger';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
@@ -104,7 +105,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   const source = args.source;
-  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+  const restrictedCountry = isRestrictedModelCountry(req);
+  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit, restrictedCountry);
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
     throw new ApiError(400, 'User message not found');

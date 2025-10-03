@@ -47,6 +47,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     setThinkingToggle,
   } = useAIModel();
 
+  console.log(selectedModelConfig);
+
   const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
   const canToggleThinking = useMemo(
     () => selectedModelConfig.thinkingToggle !== undefined,
@@ -94,7 +96,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelConfig.mode]
   );
   const setModelMode = useCallback(
-    (mode: ModelMode) => {
+    (mode: ModelMode, closePopover: boolean = true) => {
+      debugger;
       const nextModel = modelConfigs.find(
         ([_, modelConfig]) =>
           modelConfig.mode === mode &&
@@ -103,6 +106,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
       if (nextModel) {
         setSelectedModel(nextModel[0]);
+        if (closePopover) {
+          setIsPopoverOpen(false);
+        }
       }
     },
     [modelConfigs, setSelectedModel, thinkingToggle]
@@ -110,7 +116,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
 
-  const [isOthersExpanded, setIsOthersExpanded] = useState(false);
+  const isOthersSelected = useMemo(() => selectedModelConfig.mode === 'others', [selectedModelConfig.mode]);
 
   const selectedModelLabel = useMemo(
     () =>
@@ -121,6 +127,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
   const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+
   // If they've already seen the popover, don't show it.
   // Otherwise, only show it to them when they've used the AI a bit.
   const isOpenDidYouKnowDialog = useMemo(
@@ -128,31 +135,36 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [knowsAboutModelPicker, userMessagesCount]
   );
 
-  return (
-    <>
-      {canToggleThinking ? (
-        <TooltipPopover label="Extended thinking for complex prompts">
-          <Toggle
-            aria-label="Extended thinking"
-            size="sm"
-            disabled={loading}
-            onClick={() => handleThinkingToggle(!thinking)}
-            className={cn(
-              thinking && '!bg-border !text-primary',
-              !thinking && 'w-7 hover:text-foreground',
-              'mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal'
-            )}
-          >
-            <LightbulbIcon />
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-            {thinking && <span className="mr-1">Think</span>}
-          </Toggle>
-        </TooltipPopover>
-      ) : (
-        <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
-      )}
+  const ThinkingToggleMenu = useMemo(() => {
+    return canToggleThinking ? (
+      <TooltipPopover label="Extended thinking for complex prompts">
+        <Toggle
+          aria-label="Extended thinking"
+          size="sm"
+          disabled={loading}
+          onClick={() => handleThinkingToggle(!thinking)}
+          className={cn(
+            thinking && '!bg-border !text-primary',
+            !thinking && 'w-7 hover:text-foreground',
+            'mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal'
+          )}
+        >
+          <LightbulbIcon />
 
-      {debugShowAIModelMenu ? (
+          {thinking && <span className="mr-1">Think</span>}
+        </Toggle>
+      </TooltipPopover>
+    ) : (
+      <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
+    );
+  }, [canToggleThinking, loading, handleThinkingToggle, thinking]);
+
+  if (debugShowAIModelMenu) {
+    return (
+      <div className="w-full">
+        {ThinkingToggleMenu}
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -191,89 +203,117 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : (
-        <DidYouKnowPopover
-          open={!loading && isOpenDidYouKnowDialog}
-          setOpen={() => setKnowsAboutModelPicker(true)}
-          title="AI model choices"
-          description="Default is our fastest model. Max is the smartest and most capable."
-        >
-          <Popover>
-            {/* Needs a min-width or it shifts as the popover closes */}
-            <PopoverTrigger
-              className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
-              onClick={() => {
-                setKnowsAboutModelPicker(true);
-              }}
-            >
-              {selectedModelLabel}
-              <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
-            </PopoverTrigger>
+      </div>
+    );
+  }
 
-            <PopoverContent className="flex w-80 flex-col gap-2">
-              <div className="mt-2 flex flex-col items-center">
-                <AIIcon className="mb-2 text-primary" size="lg" />
+  return (
+    <>
+      {ThinkingToggleMenu}
+      <DidYouKnowPopover
+        open={!loading && isOpenDidYouKnowDialog}
+        setOpen={() => setKnowsAboutModelPicker(true)}
+        title="AI model choices"
+        description="Default is our fastest model. Max is the smartest and most capable."
+      >
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+          {/* Needs a min-width or it shifts as the popover closes */}
+          <PopoverTrigger
+            className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+            onClick={() => {
+              setKnowsAboutModelPicker(true);
+            }}
+          >
+            {selectedModelLabel}
+            <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+          </PopoverTrigger>
 
-                <h4 className="text-lg font-semibold">AI models</h4>
+          <PopoverContent className="flex w-80 flex-col gap-2">
+            <div className="mt-2 flex flex-col items-center">
+              <AIIcon className="mb-2 text-primary" size="lg" />
 
-                <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
-              </div>
+              <h4 className="text-lg font-semibold">AI models</h4>
 
-              <form className="flex flex-col gap-1 rounded border border-border text-sm">
-                <RadioGroup
-                  value={selectedModelConfig.mode === 'others' ? selectedModel : selectedModelMode}
-                  className="flex flex-col gap-0"
-                >
-                  {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
-                    <Label
-                      className={cn(
-                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                        i !== 0 && 'border-t border-border'
-                      )}
-                      key={mode}
-                      onPointerDown={() => setModelMode(mode as ModelMode)}
-                    >
-                      <RadioGroupItem value={mode} className="mr-2" />
-                      <strong className="font-bold">{label}</strong>
-                      <span className="ml-auto font-normal">{description}</span>
-                    </Label>
-                  ))}
+              <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
+            </div>
 
-                  {/* Others section */}
-                  <div className="border-t border-border">
-                    <button
-                      type="button"
-                      className="flex w-full cursor-pointer items-center px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-accent"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsOthersExpanded(!isOthersExpanded);
-                      }}
-                    >
-                      <CaretDownIcon className={cn('mr-1 transition-transform', isOthersExpanded && 'rotate-180')} />
-                      Others (experimental)
-                    </button>
-                    {isOthersExpanded &&
-                      othersModels.map(([modelKey, modelConfig]) => (
-                        <Label
-                          className="flex cursor-pointer items-center px-4 py-2 pl-6 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
-                          key={modelKey}
-                          onPointerDown={() => {
+            <form className="flex flex-col gap-1 rounded border border-border text-sm">
+              <RadioGroup
+                value={selectedModelConfig.mode === 'others' ? 'others' : selectedModelMode}
+                className="flex flex-col gap-0"
+                onValueChange={(value) => {
+                  if (value === 'others') {
+                    // Don't close popover when selecting "others", just select first others model
+                    if (othersModels.length > 0) {
+                      const [firstOthersKey, firstOthersConfig] = othersModels[0];
+                      trackEvent('[AI].model.change', { model: firstOthersConfig.model });
+                      setSelectedModel(firstOthersKey);
+                    }
+                  } else {
+                    // For fast/max, close the popover
+                    setModelMode(value as ModelMode, true);
+                  }
+                }}
+              >
+                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
+                  <Label
+                    className={cn(
+                      'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
+                      i !== 0 && 'border-t border-border'
+                    )}
+                    key={mode}
+                    htmlFor={`radio-${mode}`}
+                  >
+                    <RadioGroupItem value={mode} className="mr-2" id={`radio-${mode}`} />
+                    <strong className="font-bold">{label}</strong>
+                    <span className="ml-auto font-normal">{description}</span>
+                  </Label>
+                ))}
+
+                {/* Others section */}
+                <div className="border-t border-border">
+                  <Label
+                    className="flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
+                    htmlFor="radio-others"
+                  >
+                    <RadioGroupItem value="others" className="mr-2" id="radio-others" />
+                    <strong className="font-bold">Others</strong>
+                    <span className="ml-auto font-normal">Experimental models</span>
+                  </Label>
+                  {isOthersSelected && (
+                    <div className="px-4 py-2">
+                      <RadioGroup
+                        value={selectedModel}
+                        className="flex flex-col gap-1"
+                        onValueChange={(value) => {
+                          const modelEntry = othersModels.find(([key]) => key === value);
+                          if (modelEntry) {
+                            const [modelKey, modelConfig] = modelEntry;
                             trackEvent('[AI].model.change', { model: modelConfig.model });
                             setSelectedModel(modelKey);
-                          }}
-                        >
-                          <RadioGroupItem value={modelKey} className="mr-2" />
-                          <span>{modelConfig.displayName}</span>
-                        </Label>
-                      ))}
-                  </div>
-                </RadioGroup>
-              </form>
-            </PopoverContent>
-          </Popover>
-        </DidYouKnowPopover>
-      )}
+                            setIsPopoverOpen(false);
+                          }
+                        }}
+                      >
+                        {othersModels.map(([modelKey, modelConfig]) => (
+                          <Label
+                            className="flex cursor-pointer items-center px-2 py-1.5 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
+                            key={modelKey}
+                            htmlFor={`radio-${modelKey}`}
+                          >
+                            <RadioGroupItem value={modelKey} className="mr-2" id={`radio-${modelKey}`} />
+                            <span>{modelConfig.displayName}</span>
+                          </Label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+                </div>
+              </RadioGroup>
+            </form>
+          </PopoverContent>
+        </Popover>
+      </DidYouKnowPopover>
     </>
   );
 });

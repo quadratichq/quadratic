@@ -143,6 +143,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
+
     if (
       !isVersionHistoryPreview &&
       !data.file.thumbnail &&
