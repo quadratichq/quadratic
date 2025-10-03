@@ -37,7 +37,7 @@ interface SelectAIModelMenuProps {
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { userMakingRequest } = useFileRouteLoaderData();
-  const restrictedModel = true || userMakingRequest.restrictedModel;
+  const restrictedModel = userMakingRequest.restrictedModel;
 
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
