@@ -423,29 +423,30 @@ const AIUserMessageFormFooter = memo(
         >
           <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
 
-          <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
-
-          <div className="flex items-center gap-3">
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                  {children as React.ReactElement}
-                </TooltipPopover>
-              )}
-            >
-              <Button
-                size="icon-sm"
-                className="rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submitPrompt();
-                }}
-                disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+          <div className="flex">
+            <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
+            <div className="flex items-center gap-3">
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                    {children as React.ReactElement}
+                  </TooltipPopover>
+                )}
               >
-                <ArrowUpwardIcon />
-              </Button>
-            </ConditionalWrapper>
+                <Button
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    submitPrompt();
+                  }}
+                  disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+                >
+                  <ArrowUpwardIcon />
+                </Button>
+              </ConditionalWrapper>
+            </div>
           </div>
         </div>
 

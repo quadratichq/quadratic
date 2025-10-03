@@ -3,7 +3,7 @@ import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
+import { AIIcon, ArrowDropDownIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,8 +13,6 @@ import {
 import { Label } from '@/shared/shadcn/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
-import { Toggle } from '@/shared/shadcn/ui/toggle';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
@@ -36,24 +34,12 @@ interface SelectAIModelMenuProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
-  const {
-    modelKey: selectedModel,
-    setModelKey: setSelectedModel,
-    modelConfig: selectedModelConfig,
-    thinkingToggle,
-    setThinkingToggle,
-  } = useAIModel();
-
-  console.log(selectedModelConfig);
-
-  const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
-  const canToggleThinking = useMemo(
-    () => selectedModelConfig.thinkingToggle !== undefined,
-    [selectedModelConfig.thinkingToggle]
-  );
+  const { modelKey: selectedModel, setModelKey: setSelectedModel, modelConfig: selectedModelConfig } = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
@@ -61,48 +47,18 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   }, [debugShowAIModelMenu]);
 
   const dropdownModels = useMemo(
-    () =>
-      modelConfigs
-        .filter(
-          ([, modelConfig]) =>
-            modelConfig.thinkingToggle === undefined ||
-            (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
-            selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
-        )
-        .sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
-    [modelConfigs, selectedModelConfig.thinkingToggle, thinkingToggle]
-  );
-
-  const handleThinkingToggle = useCallback(
-    (nextThinkingToggle: boolean) => {
-      const nextModelKey = nextThinkingToggle
-        ? selectedModel.replace(':thinking-toggle-off', ':thinking-toggle-on')
-        : selectedModel.replace(':thinking-toggle-on', ':thinking-toggle-off');
-
-      const nextModel = modelConfigs.find(
-        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === nextThinkingToggle
-      );
-
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-        setThinkingToggle(nextThinkingToggle);
-      }
-    },
-    [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
+    () => modelConfigs.sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
+    [modelConfigs]
   );
 
   const selectedModelMode = useMemo(
     () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
     [selectedModelConfig.mode]
   );
+
   const setModelMode = useCallback(
     (mode: ModelMode, closePopover: boolean = true) => {
-      debugger;
-      const nextModel = modelConfigs.find(
-        ([_, modelConfig]) =>
-          modelConfig.mode === mode &&
-          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
-      );
+      const nextModel = modelConfigs.find(([_, modelConfig]) => modelConfig.mode === mode);
 
       if (nextModel) {
         setSelectedModel(nextModel[0]);
@@ -111,7 +67,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         }
       }
     },
-    [modelConfigs, setSelectedModel, thinkingToggle]
+    [modelConfigs, setSelectedModel]
   );
 
   const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
@@ -135,36 +91,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [knowsAboutModelPicker, userMessagesCount]
   );
 
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
-  const ThinkingToggleMenu = useMemo(() => {
-    return canToggleThinking ? (
-      <TooltipPopover label="Extended thinking for complex prompts">
-        <Toggle
-          aria-label="Extended thinking"
-          size="sm"
-          disabled={loading}
-          onClick={() => handleThinkingToggle(!thinking)}
-          className={cn(
-            thinking && '!bg-border !text-primary',
-            !thinking && 'w-7 hover:text-foreground',
-            'mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal'
-          )}
-        >
-          <LightbulbIcon />
-
-          {thinking && <span className="mr-1">Think</span>}
-        </Toggle>
-      </TooltipPopover>
-    ) : (
-      <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
-    );
-  }, [canToggleThinking, loading, handleThinkingToggle, thinking]);
-
   if (debugShowAIModelMenu) {
     return (
-      <div className="w-full">
-        {ThinkingToggleMenu}
+      <>
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -188,7 +117,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 key={key}
                 checked={selectedModel === key}
                 onCheckedChange={() => {
-                  trackEvent('[AI].model.change', { model: modelConfig.model });
                   setSelectedModel(key);
                 }}
               >
@@ -203,20 +131,29 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </>
     );
   }
 
   return (
     <>
-      {ThinkingToggleMenu}
       <DidYouKnowPopover
         open={!loading && isOpenDidYouKnowDialog}
         setOpen={() => setKnowsAboutModelPicker(true)}
         title="AI model choices"
         description="Default is our fastest model. Max is the smartest and most capable."
       >
-        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        <Popover
+          open={isPopoverOpen}
+          onOpenChange={(open) => {
+            // Don't close if we just selected "others" and the popover is being asked to close
+            // This prevents the popover from closing when clicking "Others" before selecting a model
+            if (isOthersSelected) {
+              return;
+            }
+            setIsPopoverOpen(open);
+          }}
+        >
           {/* Needs a min-width or it shifts as the popover closes */}
           <PopoverTrigger
             className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
@@ -243,12 +180,13 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 className="flex flex-col gap-0"
                 onValueChange={(value) => {
                   if (value === 'others') {
-                    // Don't close popover when selecting "others", just select first others model
-                    if (othersModels.length > 0) {
-                      const [firstOthersKey, firstOthersConfig] = othersModels[0];
-                      trackEvent('[AI].model.change', { model: firstOthersConfig.model });
-                      setSelectedModel(firstOthersKey);
-                    }
+                    setModelMode('others', false);
+                    // // Don't close popover when selecting "others", just select first others model
+                    // if (othersModels.length > 0) {
+                    //   const [firstOthersKey, firstOthersConfig] = othersModels[0];
+                    //   trackEvent('[AI].model.change', { model: firstOthersConfig.model });
+                    //   setSelectedModel(firstOthersKey);
+                    // }
                   } else {
                     // For fast/max, close the popover
                     setModelMode(value as ModelMode, true);
