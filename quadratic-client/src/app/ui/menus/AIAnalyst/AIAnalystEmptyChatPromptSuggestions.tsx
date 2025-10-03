@@ -4,8 +4,8 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
-import { SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -111,20 +111,16 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
             disabled={loading}
             variant="secondary"
             size="sm"
-            className={cn('relative flex h-6 items-center px-2 text-sm font-normal')}
+            className="relative flex h-6 items-center px-2 text-sm font-normal"
             onClick={() => {
               trackEvent('[AIAnalyst].submitExamplePrompt');
               submit(prompt);
             }}
           >
-            {label}
+            {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
+            <span className={cn(loading && 'opacity-0')}>{label}</span>
           </Button>
         ))}
-        {loading && (
-          <span className="absolute bottom-0 right-0 z-10 flex h-6 items-center bg-background px-1">
-            <SpinnerIcon className="text-primary" />
-          </span>
-        )}
       </div>
     );
   }
