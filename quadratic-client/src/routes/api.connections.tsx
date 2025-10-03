@@ -2,6 +2,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -48,6 +49,27 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
   return { ok: true, connection };
 }
 
+async function syncConnection(teamUuid: string, connectionUuid: string, type: ConnectionType) {
+  const syncTypes = ['mixpanel'] as const;
+  const syncType = syncTypes.find((syncType) => syncType === type.toLowerCase());
+
+  try {
+    if (syncType) {
+      try {
+        await connectionClient.sync.get(syncType, connectionUuid, teamUuid);
+        console.log(`Successfully synced ${syncType} connection`);
+      } catch (syncError) {
+        console.error(`Failed to sync ${syncType} connection:`, syncError);
+      }
+    }
+
+    return { ok: true };
+  } catch (e) {
+    console.error(e);
+    return { ok: false };
+  }
+}
+
 /**
  *
  * Action
@@ -63,6 +85,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const { teamUuid, body } = data as CreateConnectionAction;
     try {
       const result = await apiClient.connections.create({ teamUuid, body });
+
+      await syncConnection(teamUuid, result.uuid, body.type);
+
       return { ok: true, connectionUuid: result.uuid };
     } catch (e) {
       console.error(e);
@@ -73,7 +98,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (data.action === 'update-connection') {
     try {
       const { connectionUuid, teamUuid, body } = data as UpdateConnectionAction;
+
       await apiClient.connections.update({ teamUuid, connectionUuid, body });
+
+      await syncConnection(teamUuid, connectionUuid, body.type);
+
       return { ok: true };
     } catch (e) {
       console.error(e);
@@ -126,7 +155,7 @@ export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction
 export const getUpdateConnectionAction = (
   connectionUuid: string,
   teamUuid: string,
-  body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request']
+  body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'] & { type: ConnectionType }
 ) => {
   return {
     json: {

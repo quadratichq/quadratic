@@ -66,7 +66,8 @@ pub(crate) async fn handle_message(
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =
-                    get_file_perms(base_url, jwt, file_id).await?;
+                    get_file_perms(base_url, jwt, file_id, pre_connection.m2m_token.as_deref())
+                        .await?;
 
                 tracing::trace!("permissions: {:?}", permissions);
 
@@ -440,9 +441,14 @@ pub(crate) mod tests {
             .socket
             .unwrap();
 
-        let handled = handle_message(request, state.clone(), stream, PreConnection::new(None))
-            .await
-            .unwrap();
+        let handled = handle_message(
+            request,
+            state.clone(),
+            stream,
+            PreConnection::new(None, None),
+        )
+        .await
+        .unwrap();
         assert_eq!(handled, response);
 
         if let Some(broadcast_response) = broadcast_response {

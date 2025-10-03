@@ -7,13 +7,15 @@ use crate::state::State;
 pub(crate) struct PreConnection {
     pub(crate) id: Uuid,
     pub(crate) jwt: Option<String>,
+    pub(crate) m2m_token: Option<String>,
 }
 
 impl PreConnection {
-    pub(crate) fn new(jwt: Option<String>) -> Self {
+    pub(crate) fn new(jwt: Option<String>, m2m_token: Option<String>) -> Self {
         Self {
             id: Uuid::new_v4(),
             jwt,
+            m2m_token,
         }
     }
 }

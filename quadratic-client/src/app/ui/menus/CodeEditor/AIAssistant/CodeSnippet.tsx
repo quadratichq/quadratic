@@ -35,7 +35,8 @@ export const CodeSnippet = memo(({ code, language = 'plaintext' }: CodeSnippetPr
       lowerCaseLanguage === 'bigquery' ||
       lowerCaseLanguage === 'mariadb' ||
       lowerCaseLanguage === 'supabase' ||
-      lowerCaseLanguage === 'neon'
+      lowerCaseLanguage === 'neon' ||
+      lowerCaseLanguage === 'mixpanel'
     ) {
       return 'sql';
     }

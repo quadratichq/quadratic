@@ -117,6 +117,16 @@ where
         self.cache.get(key).map(|(_, v)| v)
     }
 
+    /// Update a value in the cache
+    ///
+    /// If the key does not exist, the None is returned.
+    async fn update(&mut self, key: &K, value: V) -> Option<&mut V> {
+        self.get_mut(key).await.map(|v| {
+            *v = value;
+            v
+        })
+    }
+
     /// Delete a value from the cache
     ///
     /// Returns `None` if the key does not exist.
@@ -183,6 +193,11 @@ mod tests {
                 .await,
             Some(&value)
         );
+
+        // update an entry
+        let new_value = "new_value".to_string();
+        cache.update(&key, new_value.clone()).await;
+        assert_eq!(cache.get(&key).await, Some(&new_value));
 
         // expiration
         assert_eq!(cache.is_expired(&key).await, Some(false));

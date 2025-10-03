@@ -33,6 +33,10 @@ impl Environment {
     pub fn is_test(&self) -> bool {
         self == &Environment::Test
     }
+
+    pub fn is_local_or_docker(&self) -> bool {
+        self == &Environment::Local || self == &Environment::Docker
+    }
 }
 
 #[cfg(test)]
