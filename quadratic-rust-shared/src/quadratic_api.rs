@@ -1,5 +1,6 @@
 //! Interacting with the Quadratic API
 
+use chrono::{DateTime, Utc};
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
@@ -7,6 +8,8 @@ use urlencoding::encode;
 use uuid::Uuid;
 
 use crate::error::{Result, SharedError};
+
+pub const ADMIN_PERMS: &[FilePermRole] = &[FilePermRole::FileView, FilePermRole::FileEdit];
 
 // This is only a partial mapping as permission is all that is needed from the
 // incoming json struct.
@@ -81,9 +84,27 @@ pub async fn get_file_perms(
     base_url: &str,
     jwt: String,
     file_id: Uuid,
+    m2m_token: Option<&str>,
 ) -> Result<(Vec<FilePermRole>, u64)> {
-    let url = format!("{base_url}/v0/files/{file_id}");
-    let client = get_client(&url, &jwt);
+    let (permissions, sequence_num) = match m2m_token {
+        Some(token) => {
+            let checkpoint = get_file_checkpoint(base_url, token, &file_id).await?;
+            (ADMIN_PERMS.to_vec(), checkpoint.sequence_number)
+        }
+        None => get_user_file_perms(base_url, jwt, file_id).await?,
+    };
+
+    Ok((permissions, sequence_num))
+}
+
+/// Retrieve user file perms from the quadratic API server.
+pub async fn get_user_file_perms(
+    base_url: &str,
+    jwt: String,
+    file_id: Uuid,
+) -> Result<(Vec<FilePermRole>, u64)> {
+    let file_url = format!("{base_url}/v0/files/{file_id}");
+    let client = get_client(&file_url, &jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;
@@ -159,11 +180,17 @@ pub async fn get_connection<T: DeserializeOwned>(
     email: &str,
     connection_id: &Uuid,
     team_id: &Uuid,
+    is_internal: bool,
 ) -> Result<Connection<T>> {
-    let encoded_email = encode(email);
-    let url = format!(
-        "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
-    );
+    let url = if is_internal {
+        format!("{base_url}/v0/internal/connection/{connection_id}")
+    } else {
+        let encoded_email = encode(email);
+        format!(
+            "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
+        )
+    };
+
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
@@ -217,6 +244,62 @@ pub fn can_view(role: &[FilePermRole]) -> bool {
 /// Validate that role allows editing a file
 pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetFileInitDataResponse {
+    pub team_id: Uuid,
+    pub sequence_number: u32,
+    pub presigned_url: String,
+}
+pub async fn get_file_init_data(
+    base_url: &str,
+    jwt: &str,
+    file_id: Uuid,
+) -> Result<GetFileInitDataResponse> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/init-data");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    let file_init_data = response
+        .json::<GetFileInitDataResponse>()
+        .await
+        .map_err(|e| SharedError::QuadraticApi(format!("Error getting file init data: {e}")))?;
+
+    Ok(file_init_data)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Task {
+    pub file_id: Uuid,
+    pub task_id: Uuid,
+    pub next_run_time: Option<DateTime<Utc>>,
+    pub operations: Vec<u8>,
+}
+impl Task {
+    pub fn as_bytes(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        serde_json::from_slice(bytes).map_err(|e| SharedError::Serialization(e.to_string()))
+    }
+}
+
+pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>> {
+    let url = format!("{base_url}/v0/internal/scheduled-tasks");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    handle_response(&response)?;
+
+    let tasks = response.json::<Vec<Task>>().await?;
+
+    Ok(tasks)
 }
 
 #[cfg(test)]

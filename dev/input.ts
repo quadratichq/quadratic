@@ -61,6 +61,12 @@ export class Input {
         }
         this.control.restartShared();
         break;
+      case "w": // toggle cloudworker
+        if (this.control.status.cloudworker === "killed") {
+          this.control.status.cloudworker = false;
+        }
+        this.control.restartCloudworker();
+        break;
       case "n": // toggle connection
         if (this.control.status.connection === "killed") {
           this.control.status.connection = false;
@@ -104,6 +110,10 @@ export class Input {
           this.cli.options.python = true;
           this.control.restartPython();
         }
+        if (this.cli.options.cloudworker != true) {
+          this.cli.options.cloudworker = true;
+          this.control.restartCloudworker();
+        }
         break;
       case "A": // toggle showing API
         this.cli.options.hideAPI = !this.cli.options.hideAPI;
@@ -125,6 +135,9 @@ export class Input {
         break;
       case "R": // toggle showing React
         this.cli.options.hideReact = !this.cli.options.hideReact;
+        break;
+      case "W": // toggle showing CloudWorker
+        this.cli.options.hideCloudworker = !this.cli.options.hideCloudworker;
         break;
       case "d": // toggle dark theme
         this.cli.options.dark = !this.cli.options.dark;

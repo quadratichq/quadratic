@@ -379,6 +379,10 @@ export class Sheets {
       }
     }
 
+    if (jsSelection.outOfRange()) {
+      console.error('Selection is out of range to set');
+      return;
+    }
     const cursor = this.sheet.cursor;
     cursor.loadFromSelection(jsSelection);
     cursor.checkForTableRef();

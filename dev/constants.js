@@ -59,6 +59,12 @@ export const COMPONENTS = {
         shortcut: "s",
         name: "Shared",
     },
+    cloudworker: {
+        color: "magentaBright",
+        dark: "magentaBright",
+        name: "CloudWorker",
+        shortcut: "w",
+    },
 };
 export const SPACE = "     ";
 export const DONE = "✓";

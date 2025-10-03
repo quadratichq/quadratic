@@ -1,0 +1,25 @@
+mod config;
+
+#[cfg(feature = "docker")]
+mod controller_docker;
+#[cfg(feature = "docker")]
+use controller_docker as controller;
+
+#[cfg(feature = "kubernetes")]
+mod controller_kubernetes;
+#[cfg(feature = "kubernetes")]
+use controller_kubernetes as controller;
+
+mod error;
+mod health;
+mod server;
+mod state;
+mod test_util;
+mod worker;
+
+use anyhow::Result;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    server::serve().await
+}
