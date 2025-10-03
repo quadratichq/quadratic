@@ -45,7 +45,7 @@ export const ConnectionsList = ({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
+        <div className="flex hidden gap-2">
           <form
             className="grid flex-grow gap-4"
             onSubmit={(e) => {
@@ -184,15 +184,15 @@ function ListItems({
                   <LanguageIcon language={type} />
                 </div>
 
-                <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                <div className="flex w-full min-w-0 flex-grow flex-row justify-between text-left">
                   <span data-testid={`connection-name-${name}`} className="truncate text-sm">
                     {name}
                   </span>
 
                   {isDemo ? (
-                    <span className="hidden text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                    <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
                   ) : (
-                    <time dateTime={createdDate} className="hidden text-xs text-muted-foreground">
+                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
                       Created {timeAgo(createdDate)}
                     </time>
                   )}

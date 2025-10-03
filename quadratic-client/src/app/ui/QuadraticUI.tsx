@@ -3,6 +3,7 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -52,6 +53,7 @@ export default function QuadraticUI() {
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const showConnectionsMenu = useRecoilValue(editorInteractionStateShowConnectionsMenuAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
@@ -114,7 +116,7 @@ export default function QuadraticUI() {
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && !isEmbed && <Toolbar />}
-
+        {showConnectionsMenu && <ConnectionsMenu />}
         <div
           style={{
             width: '100%',
@@ -125,6 +127,7 @@ export default function QuadraticUI() {
           }}
         >
           {canEditFile && isAuthenticated && <AIAnalyst />}
+
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
@@ -149,7 +152,6 @@ export default function QuadraticUI() {
           value={name}
         />
       )}
-      <ConnectionsMenu />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
