@@ -125,7 +125,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
               </Button>
             </HoverCardTrigger>
             <HoverCardContent>
-              <p className="text-sm">“{prompt}”</p>
+              <p className="text-sm">{prompt}</p>
             </HoverCardContent>
           </HoverCard>
         ))}
