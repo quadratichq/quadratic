@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
@@ -17,16 +18,15 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useMemo, useState } from 'react';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
-  Exclude<ModelMode, 'disabled' | 'others'>,
-  { label: string; description: string }
-> = {
-  fast: { label: 'Default', description: 'Good for everyday tasks' },
+type UIModels = 'default' | 'max' | 'others';
+const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
+  default: { label: 'Default', description: 'Good for everyday tasks' },
   max: { label: 'Max', description: 'Smartest and most capable' },
+  others: { label: 'Others', description: 'Experimental models' },
 };
 
 interface SelectAIModelMenuProps {
@@ -41,6 +41,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const { modelKey: selectedModel, setModelKey: setSelectedModel, modelConfig: selectedModelConfig } = useAIModel();
 
+  // model shown in the UI (for others, we show the displayName of the model below)
+  const [uiModel, setUiModel] = useState<UIModels>(selectedModelConfig.mode as UIModels);
+
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
     return debugShowAIModelMenu ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
@@ -51,35 +54,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [modelConfigs]
   );
 
-  const selectedModelMode = useMemo(
-    () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
-    [selectedModelConfig.mode]
-  );
-
-  const setModelMode = useCallback(
-    (mode: ModelMode, closePopover: boolean = true) => {
-      const nextModel = modelConfigs.find(([_, modelConfig]) => modelConfig.mode === mode);
-
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-        if (closePopover) {
-          setIsPopoverOpen(false);
-        }
-      }
-    },
-    [modelConfigs, setSelectedModel]
-  );
-
   const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
-
-  const isOthersSelected = useMemo(() => selectedModelConfig.mode === 'others', [selectedModelConfig.mode]);
-
-  const selectedModelLabel = useMemo(
-    () =>
-      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ??
-      selectedModelConfig.displayName,
-    [selectedModelMode, selectedModelConfig]
-  );
 
   const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
   const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
@@ -91,6 +66,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [knowsAboutModelPicker, userMessagesCount]
   );
 
+  // Debug mode where any non-disabled model is shown
   if (debugShowAIModelMenu) {
     return (
       <>
@@ -104,14 +80,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             <CaretDownIcon />
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent
-            align="start"
-            alignOffset={-4}
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              textareaRef.current?.focus();
-            }}
-          >
+          <DropdownMenuContent align="start" alignOffset={-4}>
             {dropdownModels.map(([key, modelConfig]) => (
               <DropdownMenuCheckboxItem
                 key={key}
@@ -143,25 +112,16 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         title="AI model choices"
         description="Default is our fastest model. Max is the smartest and most capable."
       >
-        <Popover
-          open={isPopoverOpen}
-          onOpenChange={(open) => {
-            // Don't close if we just selected "others" and the popover is being asked to close
-            // This prevents the popover from closing when clicking "Others" before selecting a model
-            if (isOthersSelected) {
-              return;
-            }
-            setIsPopoverOpen(open);
-          }}
-        >
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
           {/* Needs a min-width or it shifts as the popover closes */}
           <PopoverTrigger
             className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
-            onClick={() => {
+            onClick={(e) => {
               setKnowsAboutModelPicker(true);
+              e.stopPropagation();
             }}
           >
-            {selectedModelLabel}
+            {uiModel === 'others' ? selectedModelConfig.displayName : uiModel === 'default' ? 'Default' : 'Max'}
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
@@ -176,37 +136,31 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
             <form className="flex flex-col gap-1 rounded border border-border text-sm">
               <RadioGroup
-                value={selectedModelConfig.mode === 'others' ? 'others' : selectedModelMode}
+                value={uiModel}
                 className="flex flex-col gap-0"
                 onValueChange={(value) => {
-                  if (value === 'others') {
-                    setModelMode('others', false);
-                    // // Don't close popover when selecting "others", just select first others model
-                    // if (othersModels.length > 0) {
-                    //   const [firstOthersKey, firstOthersConfig] = othersModels[0];
-                    //   trackEvent('[AI].model.change', { model: firstOthersConfig.model });
-                    //   setSelectedModel(firstOthersKey);
-                    // }
-                  } else {
-                    // For fast/max, close the popover
-                    setModelMode(value as ModelMode, true);
+                  setUiModel(value as UIModels);
+                  if (value !== 'others') {
+                    setIsPopoverOpen(false);
                   }
                 }}
               >
-                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
-                  <Label
-                    className={cn(
-                      'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                      i !== 0 && 'border-t border-border'
-                    )}
-                    key={mode}
-                    htmlFor={`radio-${mode}`}
-                  >
-                    <RadioGroupItem value={mode} className="mr-2" id={`radio-${mode}`} />
-                    <strong className="font-bold">{label}</strong>
-                    <span className="ml-auto font-normal">{description}</span>
-                  </Label>
-                ))}
+                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
+                  .filter(([mode]) => mode !== 'others')
+                  .map(([mode, { label, description }], i) => (
+                    <Label
+                      className={cn(
+                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
+                        i !== 0 && 'border-t border-border'
+                      )}
+                      key={mode}
+                      htmlFor={`radio-${mode}`}
+                    >
+                      <RadioGroupItem value={mode} className="mr-2" id={`radio-${mode}`} />
+                      <strong className="font-bold">{label}</strong>
+                      <span className="ml-auto font-normal">{description}</span>
+                    </Label>
+                  ))}
 
                 {/* Others section */}
                 <div className="border-t border-border">
@@ -218,7 +172,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                     <strong className="font-bold">Others</strong>
                     <span className="ml-auto font-normal">Experimental models</span>
                   </Label>
-                  {isOthersSelected && (
+                  {uiModel === 'others' && (
                     <div className="px-4 py-2">
                       <RadioGroup
                         value={selectedModel}

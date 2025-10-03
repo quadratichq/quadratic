@@ -107,12 +107,6 @@ export const AIUserMessageForm = memo(
       [props.messageIndex, waitingOnMessageIndex]
     );
 
-    const handleClickForm = useCallback(() => {
-      if (editingOrDebugEditing) {
-        textareaRef.current?.focus();
-      }
-    }, [editingOrDebugEditing]);
-
     const submit = useCallback(
       (prompt: string) => {
         const trimmedPrompt = prompt.trim();
@@ -154,7 +148,6 @@ export const AIUserMessageForm = memo(
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         event.stopPropagation();
-
         if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
           event.preventDefault();
           if (loading || waitingOnMessageIndex !== undefined) return;
@@ -256,7 +249,6 @@ export const AIUserMessageForm = memo(
           editingOrDebugEditing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}
-        onClick={handleClickForm}
         onPaste={handlePasteOrDrop}
         onDrop={handlePasteOrDrop}
       >
