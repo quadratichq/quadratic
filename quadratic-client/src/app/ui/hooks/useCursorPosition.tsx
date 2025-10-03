@@ -22,5 +22,5 @@ export const useCursorPosition = () => {
     };
   }, []);
 
-  return { cursorString };
+  return { cursorString, cursorStringWithSheetName: `${sheets.sheet.name}!${cursorString}` };
 };

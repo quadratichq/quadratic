@@ -1,3 +1,4 @@
+import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
@@ -6,7 +7,7 @@ import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } fro
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
+import { AIIcon, CodeIcon, GoToIcon } from '@/shared/components/Icons';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -30,7 +31,12 @@ type ViewActionSpec = Pick<
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
   | Action.ToggleAIAnalyst
+  | Action.StartChatInAIAnalyst
 >;
+
+export type ViewActionArgs = {
+  [Action.StartChatInAIAnalyst]: string | undefined;
+};
 
 export const viewActionsSpec: ViewActionSpec = {
   [Action.CmdClick]: {
@@ -180,6 +186,30 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
+    },
+  },
+  [Action.StartChatInAIAnalyst]: {
+    label: () => 'Reference in chat',
+    Icon: AIIcon,
+    // Only show if AI analyst is not visible at the moment
+    isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+    run: (reference: ViewActionArgs[Action.StartChatInAIAnalyst]) => {
+      // TODO:
+      // We want to keep track of the last focused prompt input in the AI analyst and
+      // when the user uses this action via the grid, we want to (open if closed)
+      // insert/append a reference to the selection in the last focused prompt input.
+      console.log('TODO(ayush): pass reference to AI analyst chat');
+      if (!pixiAppSettings.setAIAnalystState) return;
+      pixiAppSettings.setAIAnalystState((prev) => {
+        const newState = {
+          ...prev,
+          showAIAnalyst: true,
+          initialPrompt: reference ? `@${reference} ` : '',
+          currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
+        };
+        return newState;
+      });
+      pixiAppSettings.setContextMenu?.({});
     },
   },
 };
