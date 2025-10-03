@@ -5,6 +5,7 @@ import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalyst
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { AIIcon, ArrowDropDownIcon } from '@/shared/components/Icons';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,6 +36,8 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { userMakingRequest } = useFileRouteLoaderData();
+  const restrictedModel = true || userMakingRequest.restrictedModel;
 
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
@@ -104,6 +107,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     );
   }
 
+  if (restrictedModel) {
+    return null;
+  }
+
   return (
     <>
       <DidYouKnowPopover
@@ -125,7 +132,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
-          <PopoverContent className="flex w-80 flex-col gap-2">
+          <PopoverContent className="flex w-80 flex-col gap-2" id="ai-model-popover-content">
             <div className="mt-2 flex flex-col items-center">
               <AIIcon className="mb-2 text-primary" size="lg" />
 

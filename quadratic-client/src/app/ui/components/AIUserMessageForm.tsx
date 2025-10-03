@@ -107,6 +107,16 @@ export const AIUserMessageForm = memo(
       [props.messageIndex, waitingOnMessageIndex]
     );
 
+    const handleClickForm = useCallback(
+      (e: React.MouseEvent<HTMLFormElement>) => {
+        // Don't focus if clicking the model selector popover (hack)
+        if (editingOrDebugEditing && !(e.target as HTMLElement).closest('#ai-model-popover-content')) {
+          textareaRef.current?.focus();
+        }
+      },
+      [editingOrDebugEditing]
+    );
+
     const submit = useCallback(
       (prompt: string) => {
         const trimmedPrompt = prompt.trim();
@@ -249,6 +259,7 @@ export const AIUserMessageForm = memo(
           editingOrDebugEditing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}
+        onClick={handleClickForm}
         onPaste={handlePasteOrDrop}
         onDrop={handlePasteOrDrop}
       >
