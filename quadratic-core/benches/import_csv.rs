@@ -42,6 +42,7 @@ fn execute(file: &[u8], file_name: &str) {
         None,
         None,
         false,
+        false,
     )
     .unwrap();
     let file = file::export(gc.into_grid()).unwrap();

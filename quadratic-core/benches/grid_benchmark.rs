@@ -316,6 +316,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     Some(b','),
                     Some(false),
                     false,
+                    false,
                 );
             },
             criterion::BatchSize::SmallInput,

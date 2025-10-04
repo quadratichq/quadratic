@@ -424,6 +424,7 @@ export interface ClientCoreImportFile {
   cursor?: string;
   csvDelimiter?: number;
   hasHeading?: boolean;
+  isOverwrite?: boolean;
   isAi: boolean;
 }
 
