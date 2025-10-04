@@ -39,14 +39,6 @@ impl Sheet {
         // we use a IndexMap to maintain the order of the cells
         let mut cells = IndexMap::new();
 
-        // This checks whether we should skip a CellValue::Code. We skip the
-        // code cell if `skip_code_runs`` is true. For example, when running
-        // summarize, we want the values of the code run, not the actual code
-        // cell. Conversely, when we're deleting a cell, we want the code cell,
-        // not the code run.
-        let check_code =
-            |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
-
         for range in selection.ranges.iter() {
             let rect = match range {
                 CellRefRange::Sheet { range } => {
@@ -60,9 +52,7 @@ impl Sheet {
                 for x in rect.x_range() {
                     for y in rect.y_range() {
                         if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
-                            if (include_blanks || !matches!(entry, &CellValue::Blank))
-                                && check_code(entry)
-                            {
+                            if include_blanks || !matches!(entry, &CellValue::Blank) {
                                 count += 1;
                                 if count >= max_count {
                                     return None;
@@ -87,13 +77,14 @@ impl Sheet {
                                 for y in intersection.y_range() {
                                     if let Some(entry) = data_table
                                         .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                        && !matches!(entry, &CellValue::Blank) {
-                                            count += 1;
-                                            if count >= max_count {
-                                                return None;
-                                            }
-                                            cells.insert(Pos { x, y }, entry);
+                                        && !matches!(entry, &CellValue::Blank)
+                                    {
+                                        count += 1;
+                                        if count >= max_count {
+                                            return None;
                                         }
+                                        cells.insert(Pos { x, y }, entry);
+                                    }
                                 }
                             }
                         }
@@ -317,8 +308,8 @@ mod tests {
     fn test_cell_ref_range_to_rect() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
+        sheet.set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_value(pos![E5], CellValue::Text("E5".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -347,8 +338,8 @@ mod tests {
     fn test_finitize_ref_range_bounds() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
+        sheet.set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_value(pos![J10], CellValue::Text("J10".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -372,8 +363,8 @@ mod tests {
     fn test_finitize_selection() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
+        sheet.set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_value(pos![J10], CellValue::Text("J10".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -403,8 +394,8 @@ mod tests {
         let mut sheet = Sheet::test();
 
         // Setup some data to establish sheet bounds
-        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
-        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
+        sheet.set_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_value(pos![E5], CellValue::Text("E5".into()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 

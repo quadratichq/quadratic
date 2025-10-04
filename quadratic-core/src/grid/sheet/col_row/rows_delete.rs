@@ -88,7 +88,7 @@ impl Sheet {
         }
     }
 
-    pub(crate) fn delete_row(
+    fn delete_row(
         &mut self,
         transaction: &mut PendingTransaction,
         row: i64,
@@ -142,6 +142,7 @@ impl Sheet {
                 sheet_id: self.id,
                 row,
                 copy_formats: CopyFormats::None,
+                ignore_tables: true,
             });
         }
 
@@ -158,6 +159,7 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         rows: Vec<i64>,
+        ignore_tables: bool,
         _copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) -> Result<()> {
@@ -179,13 +181,15 @@ impl Sheet {
             bail!(e);
         }
 
-        self.delete_tables_with_all_rows(transaction, &rows);
-        self.delete_table_rows(transaction, &rows);
-        self.delete_chart_rows(transaction, &rows);
-        self.move_tables_upwards(transaction, &rows);
+        for row in rows.iter() {
+            self.delete_row(transaction, *row, a1_context);
+        }
 
-        for row in rows {
-            self.delete_row(transaction, row, a1_context);
+        if !ignore_tables {
+            self.delete_tables_with_all_rows(transaction, &rows);
+            self.delete_table_rows(transaction, &rows);
+            self.delete_chart_rows(transaction, &rows);
+            self.move_tables_upwards(transaction, &rows);
         }
 
         Ok(())
@@ -219,7 +223,7 @@ mod test {
     }
 
     #[test]
-    fn test_delete_row() {
+    fn test_delete_row_with_formatting() {
         // will delete row 1
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -267,10 +271,11 @@ mod test {
         let _ = sheet.delete_rows(
             &mut transaction,
             Vec::from(&[1]),
+            false,
             CopyFormats::None,
             &a1_context,
         );
-        assert_eq!(transaction.reverse_operations.len(), 3);
+        assert_eq!(transaction.reverse_operations.len(), 5);
 
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),

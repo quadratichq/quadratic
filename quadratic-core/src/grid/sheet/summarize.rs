@@ -37,7 +37,6 @@ impl Sheet {
                 count += 1;
             }
             CellValue::Blank => {}
-            CellValue::Code(_) => {}
             _ => {
                 count += 1;
             }

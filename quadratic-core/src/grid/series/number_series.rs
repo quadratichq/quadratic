@@ -22,7 +22,7 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
     let zero = Decimal::zero();
     let numbers = series
         .iter()
-        .map(|(s, _)| match s {
+        .map(|s| match s {
             CellValue::Number(number) => number,
             _ => &zero,
         })
@@ -36,9 +36,10 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
         if index == 0 {
             addition = Some(difference);
         } else if let Some(add) = &addition
-            && &difference != add {
-                addition = None;
-            }
+            && &difference != add
+        {
+            addition = None;
+        }
 
         // no divide by zero
         if numbers[number - 1] == &Decimal::zero() {
@@ -49,9 +50,10 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
             if index == 0 {
                 multiplication = Some(quotient);
             } else if let Some(bd) = &multiplication
-                && &quotient != bd {
-                    multiplication = None;
-                }
+                && &quotient != bd
+            {
+                multiplication = None;
+            }
         }
     });
 

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, btree_map};
 
 use crate::{
     Array, CellValue, CopyFormats, Pos, Rect,
-    grid::{Column, Contiguous2D},
+    grid::{Column, Contiguous2D, Sheet},
 };
 
 // all fields are private intentionally, only use functions on this
@@ -45,43 +45,20 @@ impl From<(BTreeMap<i64, Column>, Contiguous2D<Option<bool>>)> for SheetColumns 
 
 impl SheetColumns {
     /// Creates a new instance of `SheetColumns` with empty columns and has_cell_value.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             columns: BTreeMap::new(),
             has_cell_value: Contiguous2D::new(),
         }
     }
 
-    /// Returns true if there are no columns in the sheet.
-    pub fn is_empty(&self) -> bool {
-        self.columns.is_empty()
-    }
-
-    /// Returns the number of columns in the sheet.
-    pub fn len(&self) -> usize {
-        self.columns.len()
-    }
-
     /// Returns the column at the given index.
-    pub fn get_column(&self, column: i64) -> Option<&Column> {
+    fn get_column(&self, column: i64) -> Option<&Column> {
         self.columns.get(&column)
     }
 
-    /// Returns the bounds of the column at the given index.
-    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
-        if self.has_cell_value.is_col_default(column) {
-            return None;
-        }
-
-        (
-            self.has_cell_value.col_min(column),
-            self.has_cell_value.col_max(column),
-        )
-            .into()
-    }
-
     /// Returns the bounds of the row at the given index.
-    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+    pub(crate) fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         if self.has_cell_value.is_row_default(row) {
             return None;
         }
@@ -94,22 +71,17 @@ impl SheetColumns {
     }
 
     /// Returns the finite bounds of the sheet columns.
-    pub fn finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn finite_bounds(&self) -> Option<Rect> {
         self.has_cell_value.finite_bounds()
     }
 
     /// Returns the value at the given position.
-    pub fn get_value(&self, pos: &Pos) -> Option<&CellValue> {
+    pub(crate) fn get_value(&self, pos: &Pos) -> Option<&CellValue> {
         self.columns.get(&pos.x)?.values.get(&pos.y)
     }
 
-    /// Returns a mutable reference to the value at the given position.
-    pub fn get_value_mut(&mut self, pos: &Pos) -> Option<&mut CellValue> {
-        self.columns.get_mut(&pos.x)?.values.get_mut(&pos.y)
-    }
-
     /// Returns the rectangles that have some value in the given rectangle.
-    pub fn get_nondefault_rects_in_rect(
+    pub(crate) fn get_nondefault_rects_in_rect(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Option<bool>)> {
@@ -117,7 +89,7 @@ impl SheetColumns {
     }
 
     /// Sets the value at the given position.
-    pub fn set_value(&mut self, pos: &Pos, value: impl Into<CellValue>) -> Option<CellValue> {
+    fn set_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
         let is_empty = value.is_blank_or_empty_string();
         let value: Option<CellValue> = if is_empty { None } else { Some(value) };
@@ -133,16 +105,16 @@ impl SheetColumns {
         };
 
         if let Some(value) = value {
-            self.has_cell_value.set(*pos, Some(true));
+            self.has_cell_value.set(pos, Some(true));
             column.values.insert(pos.y, value)
         } else {
-            self.has_cell_value.set(*pos, None);
+            self.has_cell_value.set(pos, None);
             column.values.remove(&pos.y)
         }
     }
 
     /// Deletes the values in the given rectangle.
-    pub fn delete_values(&mut self, rect: Rect) -> Array {
+    fn delete_values(&mut self, rect: Rect) -> Array {
         self.has_cell_value.set_rect(
             rect.min.x,
             rect.min.y,
@@ -178,14 +150,8 @@ impl SheetColumns {
         old_cell_values_array
     }
 
-    /// Clears the sheet columns.
-    pub fn clear(&mut self) {
-        self.has_cell_value.set_rect(1, 1, None, None, None);
-        self.columns.clear();
-    }
-
     /// Inserts a column at the given index, shifting the existing columns to the right.
-    pub fn insert_column(&mut self, column: i64) {
+    pub(crate) fn insert_column(&mut self, column: i64) {
         self.has_cell_value.insert_column(column, CopyFormats::None);
 
         // update the indices of all columns impacted by the insertion
@@ -205,7 +171,7 @@ impl SheetColumns {
     }
 
     /// Inserts a row at the given index, shifting the existing rows down.
-    pub fn insert_row(&mut self, row: i64) {
+    pub(crate) fn insert_row(&mut self, row: i64) {
         self.has_cell_value.insert_row(row, CopyFormats::None);
 
         for column in self.columns.values_mut() {
@@ -228,7 +194,7 @@ impl SheetColumns {
     }
 
     /// Removes the column at the given index, shifting the existing columns to the left.
-    pub fn remove_column(&mut self, column: i64) {
+    pub(crate) fn remove_column(&mut self, column: i64) {
         self.has_cell_value.remove_column(column);
 
         self.columns.remove(&column);
@@ -250,7 +216,7 @@ impl SheetColumns {
     }
 
     /// Removes the row at the given index, shifting the existing rows up.
-    pub fn remove_row(&mut self, row: i64) {
+    pub(crate) fn remove_row(&mut self, row: i64) {
         self.has_cell_value.remove_row(row);
 
         for column in self.columns.values_mut() {
@@ -274,22 +240,41 @@ impl SheetColumns {
         }
     }
 
-    /// Moves a cell value from one position to another.
-    pub fn move_cell_value(&mut self, old_pos: &Pos, new_pos: &Pos) {
-        let cell_value = self.set_value(old_pos, CellValue::Blank);
-        self.set_value(new_pos, cell_value);
+    /// Returns an iterator over the columns
+    pub(crate) fn expensive_iter(&self) -> btree_map::Iter<'_, i64, Column> {
+        self.columns.iter()
     }
 
-    /// Returns an iterator over the columns
-    pub fn expensive_iter(&self) -> btree_map::Iter<'_, i64, Column> {
-        self.columns.iter()
+    /// Returns a reference to has_cell_value cache to send to the client.
+    pub(crate) fn has_cell_value_ref(&self) -> &Contiguous2D<Option<bool>> {
+        &self.has_cell_value
+    }
+
+    /// Returns true if the given rectangle has any content.
+    pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
+        self.has_cell_value.intersects(rect)
+    }
+}
+
+impl Sheet {
+    pub(crate) fn set_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
+        self.columns.set_value(pos, value)
+    }
+
+    pub(crate) fn delete_values(&mut self, rect: Rect) -> Array {
+        self.columns.delete_values(rect)
+    }
+
+    /// Returns a column of a sheet from the column index.
+    pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
+        self.columns.get_column(index)
     }
 
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     /// and Contiguous2d cache does not work for -ve coordinates
-    pub fn migration_finite_bounds(&self) -> Option<Rect> {
+    pub(crate) fn migration_finite_bounds(&self) -> Option<Rect> {
         let mut bounds: Option<Rect> = None;
-        for (&x, column) in &self.columns {
+        for (&x, column) in &self.columns.columns {
             if let Some(data_range) = column.range() {
                 let column_bound = Rect::new(x, data_range.start, x, data_range.end - 1);
                 bounds = bounds.map_or(Some(column_bound), |bounds| {
@@ -302,27 +287,17 @@ impl SheetColumns {
 
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     /// and Contiguous2d cache does not work for -ve coordinates
-    pub fn migration_regenerate_has_cell_value(&mut self) {
-        self.has_cell_value.set_rect(1, 1, None, None, None);
-        for (&x, column) in &self.columns {
+    pub(crate) fn migration_regenerate_has_cell_value(&mut self) {
+        self.columns.has_cell_value.set_rect(1, 1, None, None, None);
+        for (&x, column) in &self.columns.columns {
             if let Some(range) = column.range() {
                 for y in range {
                     if column.has_data_in_row(y) {
-                        self.has_cell_value.set((x, y).into(), Some(true));
+                        self.columns.has_cell_value.set((x, y).into(), Some(true));
                     }
                 }
             }
         }
-    }
-
-    /// Returns a reference to has_cell_value cache to send to the client.
-    pub fn has_cell_value_ref(&self) -> &Contiguous2D<Option<bool>> {
-        &self.has_cell_value
-    }
-
-    /// Returns true if the given rectangle has any content.
-    pub fn has_content(&self, rect: Rect) -> bool {
-        self.has_cell_value.intersects(rect)
     }
 }
 
@@ -331,32 +306,21 @@ mod test {
     use crate::{CellValue, Pos, Rect, grid::sheet::columns::SheetColumns};
 
     #[test]
-    fn test_new_and_default() {
-        let columns = SheetColumns::new();
-        assert!(columns.is_empty());
-        assert_eq!(columns.len(), 0);
-
-        let default_columns = SheetColumns::default();
-        assert!(default_columns.is_empty());
-        assert_eq!(default_columns.len(), 0);
-    }
-
-    #[test]
     fn test_set_and_get_value() {
         let mut columns = SheetColumns::new();
         let pos = Pos::new(1, 1);
 
         // Set and get a string value
-        columns.set_value(&pos, "test");
+        columns.set_value(pos, "test");
         assert_eq!(columns.get_value(&pos), Some(&CellValue::from("test")));
 
         // Set and get a number value
         let pos2 = Pos::new(2, 1);
-        columns.set_value(&pos2, 42.0);
+        columns.set_value(pos2, 42.0);
         assert_eq!(columns.get_value(&pos2), Some(&CellValue::from(42.0)));
 
         // Test empty value
-        columns.set_value(&pos, "");
+        columns.set_value(pos, "");
         assert_eq!(columns.get_value(&pos), None);
     }
 
@@ -365,10 +329,10 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up some test data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(1, 2), "A2");
-        columns.set_value(&Pos::new(2, 1), "B1");
-        columns.set_value(&Pos::new(2, 2), "B2");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![A2], "A2");
+        columns.set_value(pos![B1], "B1");
+        columns.set_value(pos![B2], "B2");
 
         let rect = Rect::new_span((1, 1).into(), (2, 2).into());
         let deleted = columns.delete_values(rect);
@@ -391,8 +355,8 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up initial data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(2, 1), "B1");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![B1], "B1");
 
         // Insert a column at position 1
         columns.insert_column(1);
@@ -427,8 +391,8 @@ mod test {
         let mut columns = SheetColumns::new();
 
         // Set up initial data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(1, 2), "A2");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![A2], "A2");
 
         // Insert a row at position 1
         columns.insert_row(1);
@@ -459,42 +423,6 @@ mod test {
     }
 
     #[test]
-    fn test_move_cell_value() {
-        let mut columns = SheetColumns::new();
-
-        let old_pos = Pos::new(1, 1);
-        let new_pos = Pos::new(2, 2);
-
-        // Set initial value
-        columns.set_value(&old_pos, "test");
-
-        // Move the value
-        columns.move_cell_value(&old_pos, &new_pos);
-
-        // Check that value moved correctly
-        assert_eq!(columns.get_value(&old_pos), None);
-        assert_eq!(columns.get_value(&new_pos), Some(&CellValue::from("test")));
-    }
-
-    #[test]
-    fn test_clear() {
-        let mut columns = SheetColumns::new();
-
-        // Set up some test data
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(2, 1), "B1");
-
-        // Clear all data
-        columns.clear();
-
-        // Check that all data was cleared
-        assert!(columns.is_empty());
-        assert_eq!(columns.len(), 0);
-        assert_eq!(columns.get_value(&Pos::new(1, 1)), None);
-        assert_eq!(columns.get_value(&Pos::new(2, 1)), None);
-    }
-
-    #[test]
     fn test_finite_bounds() {
         let mut columns = SheetColumns::new();
 
@@ -502,8 +430,8 @@ mod test {
         assert_eq!(columns.finite_bounds(), None);
 
         // Add some values
-        columns.set_value(&Pos::new(1, 1), "A1");
-        columns.set_value(&Pos::new(3, 4), "C4");
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![C4], "C4");
 
         // Check bounds
         let bounds = columns.finite_bounds().unwrap();

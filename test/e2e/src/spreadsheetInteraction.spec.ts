@@ -4144,6 +4144,12 @@ test('Spill Auto-Fix', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix_pre.png`);
+
+  //--------------------------------
   // Spill_Auto_Fix
   //--------------------------------
 
@@ -4164,15 +4170,13 @@ test('Spill Auto-Fix', async ({ page }) => {
     .click({ timeout: 60 * 1000 });
 
   // Wait a moment for auto-fix spill to apply
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(2 * 1000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`);
 
   //--------------------------------
   // Clean up:

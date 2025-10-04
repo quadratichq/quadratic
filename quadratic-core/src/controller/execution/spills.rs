@@ -28,7 +28,7 @@ mod tests {
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
-    use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
+    use crate::{Array, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
@@ -61,19 +61,13 @@ mod tests {
     }
 
     #[test]
-    fn test_check_spills() {
+    fn test_check_spill_single_value() {
         let mut gc = GridController::test();
-
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
+        gc.set_cell_value(pos![sheet_id!A1], "1".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "2".to_string(), None, false);
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -82,38 +76,24 @@ mod tests {
         );
 
         // manually set a cell value and see if spill is changed
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "3".into(),
-            None,
-            false,
-        );
+        gc.set_cell_value(pos![sheet_id!B2], "3".into(), None, false);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(sheet.data_tables.get_at_index(0).unwrap().1.has_spill());
+        assert!(sheet.data_table_at(&pos![B1]).unwrap().has_spill());
     }
 
     #[test]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
         // sets 1,1=1 and 1,2=2
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
+        gc.set_cell_value(pos![sheet_id!A1], "1".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "2".to_string(), None, false);
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -127,31 +107,13 @@ mod tests {
         assert!(!sheet.data_tables.get_at_index(0).unwrap().1.has_spill());
 
         // manually set a cell value and see if the spill error changed
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "3".into(),
-            None,
-            false,
-        );
+        gc.set_cell_value(pos![sheet_id!B2], "3".into(), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.data_tables.get_at_index(0).unwrap().1.has_spill());
 
         // remove the cell causing the spill error
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "".into(),
-            None,
-            false,
-        );
+        gc.set_cell_value(pos![sheet_id!B2], "".into(), None, false);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.cell_value(Pos { x: 2, y: 2 }), None);
 
@@ -245,23 +207,15 @@ mod tests {
 
         // values to copy
         gc.set_cell_values(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
             false,
         );
 
-        // value to cause the spill
+        // copied values
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A1],
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -270,38 +224,32 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
+        let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
         assert_eq!(
             render_cells,
             output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
+        let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
+        clear_js_calls();
+        // this is no longer possible after the removal of CellValue::Code
+        // instead, this code fails
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            pos![sheet_id!A2],
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
             None,
             false,
         );
+        expect_js_call_count("jsClientMessage", 1, true);
 
-        // should be spilled because of the code_cell
-        let sheet = gc.sheet(sheet_id);
-        let render_cells =
-            sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }), gc.a1_context());
-        assert_eq!(render_cells, output_spill_error(1, 1),);
+        assert!(gc.sheet(sheet_id).data_table_at(&pos![A2]).is_none());
     }
 
     #[test]
-    fn test_check_spills_over_code_array() {
+    fn test_check_spills_code_array() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
 

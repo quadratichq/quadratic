@@ -95,8 +95,8 @@ const BedrockModelKeySchema = z.enum(['bedrock:us.deepseek.r1-v1:0']);
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
-  'anthropic:claude-sonnet-4.5:thinking-toggle-off',
-  'anthropic:claude-sonnet-4.5:thinking-toggle-on',
+  'anthropic:claude-sonnet-4-5:thinking-toggle-off',
+  'anthropic:claude-sonnet-4-5:thinking-toggle-on',
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 

@@ -257,8 +257,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
-            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_value(pos![A2], b);
 
             for formula_str in ["=A1+A2", "=A2+A1"] {
                 match expected {
@@ -275,15 +275,14 @@ mod tests {
         let sheet_id = g.sheet_ids()[0];
 
         // Test error message formatting
+        g.sheet_mut(sheet_id).set_value(pos![A1], val("41y6mo4h"));
         g.sheet_mut(sheet_id)
-            .set_cell_value(pos![A1], val("41y6mo4h"));
-        g.sheet_mut(sheet_id)
-            .set_cell_value(pos![A2], date("1983-09-26"));
+            .set_value(pos![A2], date("1983-09-26"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
             "Cannot subtract duration and date",
         );
-        g.sheet_mut(sheet_id).set_cell_value(pos![A1], time("1:30"));
+        g.sheet_mut(sheet_id).set_value(pos![A1], time("1:30"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
             "Cannot subtract time and date; use a duration such as '1y 5d 12h 30m' instead",
@@ -347,8 +346,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
-            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_value(pos![A2], b);
 
             match expected {
                 Ok(s) => assert_eq!(eval_to_string(&g, "=A1-A2"), s),
@@ -389,8 +388,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
-            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_value(pos![A2], b);
 
             for formula_str in ["=A1*A2", "=A2*A1"] {
                 match expected {
@@ -454,8 +453,8 @@ mod tests {
         ] {
             println!("A1 = {a}");
             println!("A2 = {b}");
-            g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
-            g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
+            g.sheet_mut(sheet_id).set_value(pos![A1], a);
+            g.sheet_mut(sheet_id).set_value(pos![A2], b);
 
             match expected {
                 Ok(s) => assert_eq!(eval_to_string(&g, "=A1/A2"), s),
@@ -468,8 +467,8 @@ mod tests {
         let b = val("0");
         println!("A1 = {a}");
         println!("A2 = {b}");
-        g.sheet_mut(sheet_id).set_cell_value(pos![A1], a);
-        g.sheet_mut(sheet_id).set_cell_value(pos![A2], b);
+        g.sheet_mut(sheet_id).set_value(pos![A1], a);
+        g.sheet_mut(sheet_id).set_value(pos![A2], b);
         assert_eq!(eval_to_err(&g, "=A1/A2").msg, RunErrorMsg::DivideByZero);
     }
 

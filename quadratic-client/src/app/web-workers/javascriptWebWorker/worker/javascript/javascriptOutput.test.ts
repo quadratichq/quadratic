@@ -57,13 +57,13 @@ describe('javascriptConvertOutputType', () => {
 
     expect(javascriptConvertOutputType(message, [], 0, 0)).toEqual({
       displayType: 'empty array',
-      output: ['', CellValueType.Code],
+      output: ['', CellValueType.Blank],
     });
     expect(message.length).toBe(0);
 
     expect(javascriptConvertOutputType(message, [[], [], []], 0, 0)).toEqual({
       displayType: 'empty array',
-      output: ['', CellValueType.Code],
+      output: ['', CellValueType.Blank],
     });
     expect(message.length).toBe(0);
   });

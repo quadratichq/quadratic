@@ -122,15 +122,14 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Pos, controller::GridController, formulas::tests::*};
+    use crate::{controller::GridController, formulas::tests::*};
 
     #[test]
     fn test_formula_if() {
         let mut g = GridController::new();
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, "q");
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, "w");
+        g.set_cell_value(pos![sheet_id!1,2], "q".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!2,2], "w".to_string(), None, false);
 
         let s = "IF(A2='q', 'yep', 'nope')";
         assert_eq!("yep", eval_to_string(&g, s));
@@ -183,11 +182,11 @@ mod tests {
 
         let sheet_id = g.sheet_ids()[0];
 
-        g.sheet_mut(sheet_id).set_cell_value(pos![A6], "happy");
+        g.set_cell_value(pos![sheet_id!A6], "happy".into(), None, false);
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 0/0)"));
 
-        g.sheet_mut(sheet_id).set_cell_value(
+        g.sheet_mut(sheet_id).set_value(
             pos![A6],
             CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         );
@@ -215,13 +214,12 @@ mod tests {
 
         let div_by_zero_error = eval(&g, "0/0").into_cell_value().unwrap();
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], 10);
-        sheet.set_cell_value(pos![A2], 20);
-        sheet.set_cell_value(pos![A3], 30);
-        sheet.set_cell_value(pos![B1], "first");
-        sheet.set_cell_value(pos![B2], "second");
-        sheet.set_cell_value(pos![B3], div_by_zero_error);
+        g.set_cell_value(pos![sheet_id!A1], 10.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!A2], 20.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!A3], 30.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B1], "first".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!B2], "second".to_string(), None, false);
+        g.sheet_mut(sheet_id).set_value(pos![B3], div_by_zero_error);
 
         for (lookup_value, expected) in [
             (10, "first"),

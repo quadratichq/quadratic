@@ -218,20 +218,12 @@ impl Grid {
         let old_name = std::mem::replace(&mut sheet.name, new_name.to_owned());
 
         for sheet in self.sheets.values_mut() {
-            sheet.replace_sheet_name_in_code_cells(&old_name, new_name);
+            sheet
+                .data_tables
+                .replace_sheet_name_in_code_cells(sheet.id, &old_name, new_name);
         }
 
         Ok(old_name)
-    }
-
-    /// Sets the ID of the first sheet.
-    ///
-    /// This method is incredibly dubious and should only be used for testing.
-    #[cfg(test)]
-    pub fn set_first_sheet_id(&mut self, new_id: SheetId) {
-        let (_old_id, mut sheet) = self.sheets.swap_remove_index(0).expect("no first sheet");
-        sheet.id = new_id;
-        self.add_sheet(Some(sheet));
     }
 }
 

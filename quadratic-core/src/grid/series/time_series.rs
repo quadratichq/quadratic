@@ -50,12 +50,12 @@ pub(crate) fn find_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>
     let diff = if options.series.len() == 1 {
         Duration::hours(1)
     } else {
-        let (first, second) = unwrap_times(&options.series[0].0, &options.series[1].0)?;
+        let (first, second) = unwrap_times(&options.series[0], &options.series[1])?;
 
         let diff = time_diff(first, second);
 
         for i in 2..options.series.len() {
-            let (first, second) = unwrap_times(&options.series[i - 1].0, &options.series[i].0)?;
+            let (first, second) = unwrap_times(&options.series[i - 1], &options.series[i])?;
 
             if time_diff(first, second) != diff {
                 return None;
@@ -64,12 +64,12 @@ pub(crate) fn find_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>
         diff
     };
     let last = if options.negative {
-        &options.series[0]
+        options.series[0].to_owned()
     } else {
-        &options.series[options.series.len() - 1]
+        options.series[options.series.len() - 1].to_owned()
     };
 
-    let CellValue::Time(mut last) = last.0 else {
+    let CellValue::Time(mut last) = last else {
         return None;
     };
 
@@ -87,7 +87,7 @@ pub(crate) fn find_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>
 
 #[cfg(test)]
 mod test {
-    use crate::{Pos, grid::series::find_auto_complete};
+    use crate::grid::series::find_auto_complete;
 
     use super::*;
 
@@ -95,8 +95,8 @@ mod test {
         NaiveTime::from_hms_opt(hour, minute, second).unwrap()
     }
 
-    fn cell_value_time(hour: u32, minute: u32, second: u32) -> (CellValue, Option<Pos>) {
-        (CellValue::Time(naked_time(hour, minute, second)), None)
+    fn cell_value_time(hour: u32, minute: u32, second: u32) -> CellValue {
+        CellValue::Time(naked_time(hour, minute, second))
     }
 
     #[test]
