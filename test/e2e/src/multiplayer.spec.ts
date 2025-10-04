@@ -974,17 +974,11 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // User 2 to make Sheet2
   await userPage2.bringToFront();
-  await userPage2
-    .getByRole(`button`, { name: `add` })
-    .nth(2)
-    .click({ timeout: 60 * 1000 });
+  await userPage2.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
   // User 3 to make Sheet3
   await userPage3.bringToFront();
-  await userPage3
-    .getByRole(`button`, { name: `add` })
-    .nth(2)
-    .click({ timeout: 60 * 1000 });
+  await userPage3.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------

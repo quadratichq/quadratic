@@ -22,7 +22,8 @@ export const getModelKey = async (
   modelKey: AIModelKey,
   inputArgs: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean
+  exceededBillingLimit: boolean,
+  signal: AbortSignal
 ): Promise<AIModelKey> => {
   try {
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
@@ -226,7 +227,13 @@ ${userTextPrompt}
       useQuadraticContext: false,
     };
 
-    const parsedResponse = await handleAIRequest(DEFAULT_MODEL_ROUTER_MODEL, args, isOnPaidPlan, exceededBillingLimit);
+    const parsedResponse = await handleAIRequest({
+      modelKey: DEFAULT_MODEL_ROUTER_MODEL,
+      args,
+      isOnPaidPlan,
+      exceededBillingLimit,
+      signal,
+    });
 
     const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
       (toolCall) => toolCall.name === AITool.SetAIModel
@@ -237,7 +244,11 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    logger.error('Error in getModelKey', error);
+    if (signal?.aborted) {
+      logger.info('[getModelKey] AI request aborted by client');
+    } else {
+      logger.error('Error in getModelKey', error);
+    }
   }
 
   return DEFAULT_BACKUP_MODEL;
