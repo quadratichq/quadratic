@@ -176,6 +176,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               isAi: false,
+              isOverwrite,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

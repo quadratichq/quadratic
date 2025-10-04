@@ -468,7 +468,8 @@ class Core {
               cursor,
               csvDelimiter,
               hasHeading,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
           case 'Parquet':
@@ -481,7 +482,8 @@ class Core {
               sheetId,
               posToPos(location.x, location.y),
               cursor,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
           default:

@@ -113,8 +113,9 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
         const mimeType = e.dataTransfer.items[0].type;
         if (isExcelMimeType(mimeType)) {
           setScreenUserMessage('Dropped Excel file(s) will be imported as new sheet(s) in this file.');
-        } else if (e.dataTransfer.items.length > 1) {
-          setScreenUserMessage('Dropped multiple files will be imported as new sheets in this file.');
+          // todo: add support for multiple files
+          // } else if (e.dataTransfer.items.length > 1) {
+          //   setScreenUserMessage('Dropped multiple files will be imported as new sheets in this file.');
         } else {
           setScreenUserMessage(undefined);
           if (!isSupportedPdfMimeType(mimeType) && !isSupportedImageMimeType(mimeType)) {
@@ -149,6 +150,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
           column = userMessage.table.x;
           row = userMessage.table.y;
         }
+        console.log({ column, row });
         const insertAt = { x: column, y: row } as JsCoordinate;
         handleFileImport({ files: Array.from(files), insertAt, sheetId, cursor, isOverwrite: !!userMessage?.table });
       }
