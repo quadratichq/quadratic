@@ -3,7 +3,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
 import { copyToClipboard, pasteFromClipboard } from './helpers/sheet.helper';
 
-test('Tile paste formatting', async ({ page }) => {
+test.only('Tile paste formatting', async ({ page }) => {
   const fileName = 'Tile_Paste_Formatting';
   await logIn(page, { emailPrefix: `e2e_tile_paste_formatting` });
   await cleanUpFiles(page, { fileName });
@@ -27,7 +27,6 @@ test('Tile paste formatting', async ({ page }) => {
   await pasteFromClipboard(page);
   await page.keyboard.press('Escape', { delay: 250 });
 
-  // this is not correct in the screenshot--needs to be updated
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`tile_paste_formatting.png`, {
     maxDiffPixelRatio: 0.01,
   });
