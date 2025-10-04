@@ -7,6 +7,9 @@ export const DEFAULT_MODEL_VERSION = 30;
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
+// used when `restrictedCountry` is true, in model router
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-on';
+
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';

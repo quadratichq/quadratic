@@ -12,6 +12,7 @@ import {
   DEFAULT_MODEL_ROUTER_MODEL,
   DEFAULT_MODEL_WITH_IMAGE,
   MODELS_CONFIGURATION,
+  RESTRICTED_MODEL_ROUTER_MODEL,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
@@ -72,7 +73,7 @@ export const getModelKey = async (
 
     // Restricted country that uses default router model
     if (restrictedCountry) {
-      return DEFAULT_MODEL_ROUTER_MODEL;
+      return RESTRICTED_MODEL_ROUTER_MODEL;
     }
 
     const args: AIRequestHelperArgs = {
