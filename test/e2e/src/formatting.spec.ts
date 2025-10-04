@@ -3,7 +3,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
 import { copyToClipboard, pasteFromClipboard } from './helpers/sheet.helper';
 
-test.only('Tile paste formatting', async ({ page }) => {
+test('Tile paste formatting', async ({ page }) => {
   const fileName = 'Tile_Paste_Formatting';
   await logIn(page, { emailPrefix: `e2e_tile_paste_formatting` });
   await cleanUpFiles(page, { fileName });
