@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn test_formula_average() {
         let parse_ctx = A1Context::test(&[], &[]);
-        let pos = pos![A10].to_sheet_pos(SheetId::TEST);
+        let pos = pos![A10].as_sheet_pos(SheetId::TEST);
         let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos).unwrap();
 
         let mut g = GridController::new();
@@ -222,7 +222,7 @@ mod tests {
             }
         }
 
-        let mut ctx = Ctx::new(&g, pos![A10].to_sheet_pos(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![A10].as_sheet_pos(sheet_id));
         assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
 
         assert_eq!(
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "AVERAGE".into(),
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn test_count() {
         let g = GridController::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNT".into(),
@@ -331,7 +331,7 @@ mod tests {
     #[test]
     fn test_counta() {
         let g = GridController::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNTA".into(),

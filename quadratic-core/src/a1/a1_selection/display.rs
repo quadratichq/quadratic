@@ -9,7 +9,7 @@ impl A1Selection {
     /// from the ID of the sheet containing the range.
     ///
     /// The cursor position has no effect on the output.
-    pub fn to_string(&self, default_sheet_id: Option<SheetId>, a1_context: &A1Context) -> String {
+    pub(crate) fn to_string(&self, default_sheet_id: Option<SheetId>, a1_context: &A1Context) -> String {
         self.to_string_force_sheet_name(default_sheet_id, a1_context, false)
     }
 
@@ -19,7 +19,7 @@ impl A1Selection {
     /// true.
     ///
     /// The cursor position has no effect on the output.
-    pub fn to_string_force_sheet_name(
+    pub(crate) fn to_string_force_sheet_name(
         &self,
         default_sheet_id: Option<SheetId>,
         a1_context: &A1Context,
@@ -40,14 +40,14 @@ impl A1Selection {
             .join(",")
     }
 
-    pub fn to_cursor_a1(&self) -> String {
+    pub(crate) fn to_cursor_a1(&self) -> String {
         self.cursor.a1_string()
     }
 
     /// Returns an A1-style string describing the selection with default
     /// SheetId.
     #[cfg(test)]
-    pub fn test_to_string(&self) -> String {
+    pub(crate) fn test_to_string(&self) -> String {
         self.to_string(Some(SheetId::TEST), &A1Context::default())
     }
 }

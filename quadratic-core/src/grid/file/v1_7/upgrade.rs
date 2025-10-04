@@ -619,7 +619,7 @@ fn upgrade_columns_formats(
     (columns, formats)
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
     let current::SheetSchema {
         id,
         name,
@@ -655,7 +655,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
     }
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_7_1::GridSchema> {
+pub(crate) fn upgrade(grid: current::GridSchema) -> Result<v1_7_1::GridSchema> {
     let new_grid = v1_7_1::GridSchema {
         version: "1.7.1".to_string(),
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),

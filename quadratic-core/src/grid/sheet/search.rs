@@ -217,7 +217,7 @@ impl Sheet {
     /// Returns the resulting SheetPos sorted by x and then y.
     ///
     /// Returns `Vec<SheetPos>` for all cells that match.
-    pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<JsSheetPosText> {
+    pub(crate) fn search(&self, query: &String, options: &SearchOptions) -> Vec<JsSheetPosText> {
         let case_sensitive = options.case_sensitive.unwrap_or(false);
         let query = if case_sensitive {
             query.to_owned()
@@ -245,7 +245,7 @@ impl Sheet {
     /// This is called only one time to return all neighboring values. If we
     /// move to readers, rust can handle the comparisons by passing in the
     /// current input value.
-    pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
+    pub(crate) fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
         if let Some((data_table_pos, data_table)) = self.data_table_that_contains(pos) {
             let Ok(display_column_index) = u32::try_from(pos.x - data_table_pos.x) else {

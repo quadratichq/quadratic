@@ -13,7 +13,7 @@ use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Finds the remaining rectangles after excluding the given rectangle from a range.
-    pub fn find_excluded_rects(mut range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
+    pub(crate) fn find_excluded_rects(mut range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
         range.normalize_in_place();
 
         let mut ranges = Vec::new();
@@ -118,7 +118,7 @@ impl A1Selection {
     }
 
     /// Excludes the given cells from the selection.
-    pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) {
+    pub(crate) fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>, a1_context: &A1Context) {
         // normalize p1 and p2
         let (p1, p2) = if let Some(p2) = p2 {
             (

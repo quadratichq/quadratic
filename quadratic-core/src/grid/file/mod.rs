@@ -2,6 +2,7 @@ use crate::compression::{
     CompressionFormat, SerializationFormat, add_header, decompress_and_deserialize, deserialize,
     remove_header, serialize, serialize_and_compress,
 };
+use crate::grid::file::shift_negative_offsets::shift_negative_offsets;
 
 use super::Grid;
 use anyhow::{Result, anyhow};
@@ -10,19 +11,18 @@ use migrate_code_cell_references::{
 };
 use migrate_data_table_spills::migrate_all_data_table_spills;
 use serde::{Deserialize, Serialize};
-pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_12 as current;
+pub(crate) use v1_12 as current;
 
 mod migrate_code_cell_references;
 mod migrate_data_table_spills;
-pub mod serialize;
-pub mod sheet_schema;
+pub(crate) mod serialize;
+pub(crate) mod sheet_schema;
 mod shift_negative_offsets;
 mod v1_10;
 mod v1_11;
-pub mod v1_12;
+pub(crate) mod v1_12;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -34,15 +34,15 @@ mod v1_9;
 
 // Default values serialization and compression formats (current version)
 pub static CURRENT_VERSION: &str = "1.12";
-pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
-pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
+pub(crate) static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
+pub(crate) static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
 
 // Header serialization format, this should remain unchanged.
-pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
+pub(crate) static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileVersion {
-    pub version: String,
+pub(crate) struct FileVersion {
+    pub(crate) version: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

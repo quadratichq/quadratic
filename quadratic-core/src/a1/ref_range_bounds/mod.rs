@@ -74,7 +74,7 @@ impl RefRangeBounds {
     };
 
     /// Creates a new range bounds from relative coordinates.
-    pub fn new_relative(start_col: i64, start_row: i64, end_col: i64, end_row: i64) -> Self {
+    pub(crate) fn new_relative(start_col: i64, start_row: i64, end_col: i64, end_row: i64) -> Self {
         Self {
             start: CellRefRangeEnd::new_relative_xy(start_col, start_row),
             end: CellRefRangeEnd::new_relative_xy(end_col, end_row),
@@ -82,14 +82,16 @@ impl RefRangeBounds {
     }
 
     /// Creates a new infinite row.
-    pub fn new_infinite_row(row: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_row(row: i64) -> Self {
         Self {
             start: CellRefRangeEnd::new_relative_xy(1, row),
             end: CellRefRangeEnd::new_infinite_row_end(row),
         }
     }
 
-    pub fn new_infinite_rows(start_row: i64, end_row: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_rows(start_row: i64, end_row: i64) -> Self {
         Self {
             start: CellRefRangeEnd::new_relative_xy(1, start_row),
             end: CellRefRangeEnd::new_infinite_row_end(end_row),
@@ -97,14 +99,16 @@ impl RefRangeBounds {
     }
 
     /// Creates a new infinite column.
-    pub fn new_infinite_col(col: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_col(col: i64) -> Self {
         Self {
             start: CellRefRangeEnd::new_relative_xy(col, 1),
             end: CellRefRangeEnd::new_infinite_col_end(col),
         }
     }
 
-    pub fn new_infinite_cols(start_col: i64, end_col: i64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn new_infinite_cols(start_col: i64, end_col: i64) -> Self {
         Self {
             start: CellRefRangeEnd::new_relative_xy(start_col, 1),
             end: CellRefRangeEnd::new_infinite_col_end(end_col),
@@ -112,7 +116,7 @@ impl RefRangeBounds {
     }
 
     /// Returns the smallest range that includes both `a` and `b`.
-    pub fn combined_bounding_box(a: Self, b: Self) -> Self {
+    pub(crate) fn combined_bounding_box(a: Self, b: Self) -> Self {
         Self {
             start: CellRefRangeEnd {
                 col: std::cmp::min(a.start.col, b.start.col),
@@ -126,7 +130,7 @@ impl RefRangeBounds {
     }
 
     /// Returns a new range bounded by the given rect.
-    pub fn to_bounded(&self, rect: &Rect) -> Self {
+    pub(crate) fn as_bounded(&self, rect: &Rect) -> Self {
         Self {
             start: self.start.to_bounded_start(rect.min),
             end: self.end.to_bounded_end(rect.max),
@@ -134,11 +138,11 @@ impl RefRangeBounds {
     }
 
     /// Returns an R[1]C[1]-style reference relative to the given position.
-    pub fn to_rc_string(&self, base_pos: Pos) -> String {
-        let start_col = self.start.col.to_rc_string(base_pos.x);
-        let start_row = self.start.row.to_rc_string(base_pos.y);
-        let end_col = self.end.col.to_rc_string(base_pos.x);
-        let end_row = self.end.row.to_rc_string(base_pos.y);
+    pub(crate) fn as_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.as_rc_string(base_pos.x);
+        let start_row = self.start.row.as_rc_string(base_pos.y);
+        let end_col = self.end.col.as_rc_string(base_pos.x);
+        let end_row = self.end.row.as_rc_string(base_pos.y);
         if *self == Self::ALL {
             "*".to_string()
         } else if self.is_col_range() {
@@ -182,7 +186,7 @@ mod tests {
                 assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
             }
 
-            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_rc_string(base_pos), Some(base_pos)).unwrap());
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.as_rc_string(base_pos), Some(base_pos)).unwrap());
         }
     }
 

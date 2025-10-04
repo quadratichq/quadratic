@@ -61,7 +61,7 @@ macro_rules! check_format {
 
 impl Sheet {
     /// Returns a summary of formatting for a cell.
-    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
+    pub(crate) fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
         let format = self.cell_format(pos);
         let cell_type = self
             .display_value(pos)
@@ -89,7 +89,7 @@ impl Sheet {
 
     /// Gets the common formatting for a selection. Note: this does not pass any
     /// information about date or time.
-    pub fn format_selection(
+    pub(crate) fn format_selection(
         &self,
         selection: &A1Selection,
         context: &A1Context,
@@ -139,7 +139,7 @@ impl Sheet {
             check_format!(underline, self.formats.underline, range);
             check_format!(strike_through, self.formats.strike_through, range);
 
-            if let Some(rect) = range.to_rect() {
+            if let Some(rect) = range.as_rect() {
                 self.data_tables_intersect_rect_sorted(rect)
                     .for_each(|(_, pos, data_table)| {
                         // adjust the range by the data table position and

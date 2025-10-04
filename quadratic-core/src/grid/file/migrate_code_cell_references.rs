@@ -49,7 +49,7 @@ lazy_static! {
         Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
 }
 
-pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+pub(crate) fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
         for (pos, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
@@ -64,7 +64,7 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     }
 }
 
-pub fn migrate_code_cell_references(
+pub(crate) fn migrate_code_cell_references(
     grid: &mut Grid,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {

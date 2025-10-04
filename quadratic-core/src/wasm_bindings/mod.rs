@@ -25,7 +25,9 @@ pub fn hello() {
     js::log("[WASM/Rust] quadratic-core ready");
 }
 
-pub fn capture_core_error(func: impl FnOnce() -> Result<Option<JsValue>, String>) -> JsValue {
+pub(crate) fn capture_core_error(
+    func: impl FnOnce() -> Result<Option<JsValue>, String>,
+) -> JsValue {
     match func() {
         Ok(response) => match response {
             Some(response) => response,

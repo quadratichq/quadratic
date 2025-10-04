@@ -44,42 +44,42 @@ impl std::fmt::Display for A1Context {
 
 impl A1Context {
     /// Returns whether a table exists with the given name.
-    pub fn has_table(&self, table_name: &str) -> bool {
+    pub(crate) fn has_table(&self, table_name: &str) -> bool {
         self.try_table(table_name).is_some()
     }
 
     /// Finds a table by the table name.
-    pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
+    pub(crate) fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         self.table_map.try_table(table_name)
     }
 
     /// Finds a sheetId using a sheet name.
-    pub fn try_sheet_name(&self, sheet_name: &str) -> Option<SheetId> {
+    pub(crate) fn try_sheet_name(&self, sheet_name: &str) -> Option<SheetId> {
         self.sheet_map.try_sheet_name(sheet_name)
     }
 
     /// Finds a sheetId using a sheet name.
-    pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
+    pub(crate) fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
         self.sheet_map.try_sheet_id(sheet_id)
     }
 
     /// Returns an iterator over all the tables in the context.
-    pub fn iter_tables(&self) -> impl Iterator<Item = &TableMapEntry> {
+    pub(crate) fn iter_tables(&self) -> impl Iterator<Item = &TableMapEntry> {
         self.table_map.iter_table_values()
     }
 
     /// Returns a list of all table names in the context except for formulas.
-    pub fn table_info(&self) -> Vec<JsTableInfo> {
+    pub(crate) fn table_info(&self) -> Vec<JsTableInfo> {
         self.table_map.expensive_table_info()
     }
 
     /// Returns any table that intersects with the given sheet position.
-    pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+    pub(crate) fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
         self.table_map.table_from_pos(sheet_pos)
     }
 
     /// Converts a table name reference to an A1 range.
-    pub fn convert_table_to_range(
+    pub(crate) fn convert_table_to_range(
         &self,
         table_name: &str,
         current_sheet_id: SheetId,
@@ -100,16 +100,15 @@ impl A1Context {
         }
     }
 
-    pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
-        self.table_map.hide_column(table_name, column_name);
-    }
-
     /// Creates an A1Context for testing.
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>
     /// tables: Vec<(table_name: &str, column_names: Vec<&str>, bounds: Rect)>
     #[cfg(test)]
-    pub fn test(sheets: &[(&str, SheetId)], tables: &[(&str, &[&str], crate::Rect)]) -> Self {
+    pub(crate) fn test(
+        sheets: &[(&str, SheetId)],
+        tables: &[(&str, &[&str], crate::Rect)],
+    ) -> Self {
         let mut sheet_map = SheetMap::default();
         for (name, id) in sheets {
             sheet_map.insert_parts(name, *id);
@@ -133,12 +132,12 @@ impl A1Context {
     }
 
     #[cfg(test)]
-    pub fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
+    pub(crate) fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
         self.table_map.try_table_mut(table_name)
     }
 
     /// Constructs an A1 context with only a single sheet.
-    pub fn with_single_sheet(sheet_name: &str, sheet_id: SheetId) -> Self {
+    pub(crate) fn with_single_sheet(sheet_name: &str, sheet_id: SheetId) -> Self {
         let mut ret = Self::default();
         ret.sheet_map.insert_parts(sheet_name, sheet_id);
         ret

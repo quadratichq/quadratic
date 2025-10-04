@@ -27,7 +27,7 @@ impl Sheet {
                 .to_rects_with_grid_bounds(&sheet_bounds, &columns_bounds, &rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
                     let rect = Rect::new(x1, y1, x2, y2);
-                    dirty_hashes.extend(rect.to_hashes());
+                    dirty_hashes.extend(rect.as_hashes());
                     if needs_resize {
                         let rows = self.get_rows_with_wrap_in_rect(rect, false);
                         rows_to_resize.extend(rows);
@@ -54,7 +54,7 @@ impl Sheet {
             wrap.to_rects_with_grid_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, value)| {
                     let rect = Rect::new(x1, y1, x2, y2);
-                    dirty_hashes.extend(rect.to_hashes());
+                    dirty_hashes.extend(rect.as_hashes());
 
                     // check if new formats is wrap
                     if value == ClearOption::Some(CellWrap::Wrap) {
@@ -168,7 +168,7 @@ impl Sheet {
     /// Sets formats using SheetFormatUpdates.
     ///
     /// Returns (reverse_operations, dirty_hashes, rows_to_resize)
-    pub fn set_formats_a1(
+    pub(crate) fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {

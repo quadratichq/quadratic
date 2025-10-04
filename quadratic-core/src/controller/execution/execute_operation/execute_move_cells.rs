@@ -8,7 +8,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn execute_move_cells(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+    pub(crate) fn execute_move_cells(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::MoveCells {
             source,
             dest,

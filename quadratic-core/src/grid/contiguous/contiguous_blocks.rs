@@ -47,20 +47,20 @@ impl<'a, T> IntoIterator for &'a ContiguousBlocks<T> {
 }
 impl<T> ContiguousBlocks<T> {
     /// Iterates over all the blocks.
-    pub fn iter(&self) -> btree_map::Values<'_, u64, Block<T>> {
+    pub(crate) fn iter(&self) -> btree_map::Values<'_, u64, Block<T>> {
         self.0.values()
     }
 }
 impl<T: Default> ContiguousBlocks<T> {
     /// Constructs a mapping with all infinitely many values initialized to
     /// `T::default()`.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 }
 impl<T: Default + PartialEq> ContiguousBlocks<T> {
     /// Constructs a map with only a single non-default block.
-    pub fn from_block(block: Block<T>) -> Self
+    pub(crate) fn from_block(block: Block<T>) -> Self
     where
         T: Clone,
     {
@@ -72,13 +72,13 @@ impl<T: Default + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Returns whether the contiguous blocks are all default values.
-    pub fn is_all_default(&self) -> bool {
+    pub(crate) fn is_all_default(&self) -> bool {
         let default = T::default();
         self.0.values().all(|block| block.value == default)
     }
 
     /// Returns whether the values in the range `start..end` are all default.
-    pub fn is_all_default_in_range(&self, start: u64, end: u64) -> bool
+    pub(crate) fn is_all_default_in_range(&self, start: u64, end: u64) -> bool
     where
         T: Clone,
     {
@@ -125,7 +125,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Constructs a new [`ContiguousBlocks`] by applying a pure function to
     /// every value.
-    pub fn map<U: Clone + PartialEq>(self, f: impl Fn(T) -> U) -> ContiguousBlocks<U> {
+    pub(crate) fn map<U: Clone + PartialEq>(self, f: impl Fn(T) -> U) -> ContiguousBlocks<U> {
         let mut ret = ContiguousBlocks(
             self.into_iter()
                 .map(|block| (block.start, block.map(&f)))
@@ -137,7 +137,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Constructs a new [`ContiguousBlocks`] by applying a pure function to
     /// every value.
-    pub fn map_ref<U: Clone + PartialEq>(&self, f: impl Fn(&T) -> U) -> ContiguousBlocks<U> {
+    pub(crate) fn map_ref<U: Clone + PartialEq>(&self, f: impl Fn(&T) -> U) -> ContiguousBlocks<U> {
         let mut ret = ContiguousBlocks(
             self.iter()
                 .map(|block| (block.start, block.map_ref(&f)))
@@ -150,7 +150,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Returns the coordinate of the last non-default value. If the infinite
     /// block at the end is non-default, then its starting coordinate is
     /// returned. If all values are default, then `0` is returned.
-    pub fn finite_max(&self) -> u64
+    pub(crate) fn finite_max(&self) -> u64
     where
         T: Default,
     {
@@ -160,17 +160,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             .unwrap_or(0)
     }
 
-    /// Returns the maximum coordinate with a value, or `None` if there is an
-    /// infinite block. Returns 0 if there are no values.
-    pub fn max(&self) -> Option<u64> {
-        match self.0.last_key_value() {
-            Some((_, block)) => (block.end < u64::MAX).then_some(block.end.saturating_sub(1)),
-            None => Some(0), // no values
-        }
-    }
-
     /// Returns the lower bound on the finite regions. Returns 0 if there are no
-    pub fn min(&self) -> Option<u64>
+    pub(crate) fn min(&self) -> Option<u64>
     where
         T: Default,
     {
@@ -252,7 +243,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Returns an exact set of blocks representing the values in the range from
     /// `start..end`.
-    pub fn blocks_for_range(&self, start: u64, end: u64) -> impl Iterator<Item = Block<&T>> {
+    pub(crate) fn blocks_for_range(&self, start: u64, end: u64) -> impl Iterator<Item = Block<&T>> {
         self.blocks_touching_range(start, end)
             .map(move |block| Block {
                 start: u64::max(block.start, start),
@@ -275,7 +266,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         block_starts.into_iter().filter_map(|y| self.0.remove(&y))
     }
     /// Returns the value at `coordinate`, or `None` if `coordinate == 0`.
-    pub fn get(&self, coordinate: u64) -> Option<&T> {
+    pub(crate) fn get(&self, coordinate: u64) -> Option<&T> {
         self.get_block_containing(coordinate)
             .map(|block| &block.value)
     }
@@ -339,7 +330,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Sets values from `other`, and returns the blocks to set to undo it.
-    pub fn set_blocks(
+    #[cfg(test)]
+    pub(crate) fn set_blocks(
         &mut self,
         other: ContiguousBlocks<Option<T>>,
     ) -> ContiguousBlocks<Option<T>> {
@@ -355,7 +347,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Sets the value at `coordinate` and returns the old value. Returns `None`
     /// if `coordinate == 0`.
-    pub fn set(&mut self, coordinate: u64, value: T) -> Option<T> {
+    pub(crate) fn set(&mut self, coordinate: u64, value: T) -> Option<T> {
         let reverse_blocks = self.set_block(Block {
             start: coordinate,
             end: coordinate.saturating_add(1),
@@ -368,7 +360,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// the reverse operation. Returns `None` if `coordinate == 0`.
     ///
     /// - `R` is the data required to perform the reverse operation.
-    pub fn update<R>(&mut self, coordinate: u64, f: impl FnOnce(&mut T) -> R) -> Option<R> {
+    pub(crate) fn update<R>(&mut self, coordinate: u64, f: impl FnOnce(&mut T) -> R) -> Option<R> {
         let mut value = self.get(coordinate)?.clone();
         let ret = f(&mut value);
         self.set(coordinate, value);
@@ -417,7 +409,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     ///
     /// - `U` is the data required to update the value.
     /// - `R` is the data required to perform the reverse operation.
-    pub fn update_non_default_from<U: Default + PartialEq, R: Clone + PartialEq>(
+    pub(crate) fn update_non_default_from<U: Default + PartialEq, R: Clone + PartialEq>(
         &mut self,
         other: &ContiguousBlocks<U>,
         update_fn: impl Fn(&mut T, &U) -> Option<R>,
@@ -436,7 +428,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     ///
     /// - `U` is the data required to update the value.
     /// - `R` is the data required to perform the reverse operation.
-    pub fn update_all<R: Clone + PartialEq>(
+    pub(crate) fn update_all<R: Clone + PartialEq>(
         &mut self,
         update_fn: impl Fn(&mut T) -> Option<R>,
     ) -> ContiguousBlocks<R> {
@@ -468,7 +460,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// For each non-default value in `other`, calls `predicate` with the
     /// corresponding values in `self` and `other`. Returns `true` if **any**
     /// invocation of `predicate` returns true.
-    pub fn zip_any<U: Default + PartialEq>(
+    pub(crate) fn zip_any<U: Default + PartialEq>(
         &self,
         other: &ContiguousBlocks<U>,
         predicate: impl Fn(&T, &U) -> bool,
@@ -516,7 +508,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Shifts everything from `start` onwards by `end-start` and then sets the
     /// values `start..end`.
-    pub fn shift_insert(&mut self, start: u64, end: u64, value: T) {
+    pub(crate) fn shift_insert(&mut self, start: u64, end: u64, value: T) {
         let start = start.max(1);
         let end = end.max(1);
         let Some(offset) = end.checked_sub(start) else {
@@ -531,7 +523,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
     /// Removes the values `start..end` and shifts everything from `end` onwards
     /// by `start-end`.
-    pub fn shift_remove(&mut self, start: u64, end: u64) {
+    pub(crate) fn shift_remove(&mut self, start: u64, end: u64) {
         let start = start.max(1);
         let end = end.max(1);
         let Some(offset) = end.checked_sub(start) else {
@@ -548,7 +540,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Translates all non-default values.
     ///
     /// Values before position 1 are truncated.
-    pub fn translate_in_place(&mut self, delta: i64)
+    pub(crate) fn translate_in_place(&mut self, delta: i64)
     where
         T: Default,
     {
@@ -559,7 +551,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         }
     }
 
-    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut Block<T>> {
+    pub(crate) fn values_mut(&mut self) -> impl Iterator<Item = &mut Block<T>> {
         self.0.values_mut()
     }
 }

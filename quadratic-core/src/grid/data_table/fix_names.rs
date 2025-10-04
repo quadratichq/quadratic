@@ -6,7 +6,7 @@ use crate::grid::{
 };
 
 /// Validates and fixes table names.
-pub fn sanitize_table_name(name: String) -> String {
+pub(crate) fn sanitize_table_name(name: String) -> String {
     let name = name
         .trim()
         .chars()
@@ -45,7 +45,7 @@ pub fn sanitize_table_name(name: String) -> String {
 }
 
 /// Validates and fixes column names.
-pub fn sanitize_column_name(name: String) -> String {
+pub(crate) fn sanitize_column_name(name: String) -> String {
     let name = name
         .trim()
         .chars()

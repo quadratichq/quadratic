@@ -5,7 +5,7 @@ use super::{Validations, validation::Validation};
 impl Validations {
     /// Transfers the validations from a table to the sheet (during a flatten).
     /// Returns the reverse operations.
-    pub fn transfer_to_sheet(
+    pub(crate) fn transfer_to_sheet(
         &mut self,
         table_name: &String,
         context: &A1Context,

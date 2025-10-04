@@ -8,7 +8,7 @@ use crate::{
 
 impl DataTable {
     /// Get the values of a row (does not include the header)
-    pub fn get_row(&self, row_index: usize) -> Result<Vec<CellValue>> {
+    pub(crate) fn get_row(&self, row_index: usize) -> Result<Vec<CellValue>> {
         let data_row_index = usize::try_from(row_index as i64 - self.y_adjustment(true))?;
 
         let row = self
@@ -25,7 +25,7 @@ impl DataTable {
     /// Get the values of a row taking into account sorted columns.
     ///
     /// Maps the display row index to the actual row index
-    pub fn get_row_sorted(&self, display_row_index: usize) -> Result<Vec<CellValue>> {
+    pub(crate) fn get_row_sorted(&self, display_row_index: usize) -> Result<Vec<CellValue>> {
         let row_index = display_row_index as i64 - self.y_adjustment(true);
 
         let actual_row_index = self.get_row_index_from_display_index(row_index as u64) as i64;
@@ -34,7 +34,7 @@ impl DataTable {
     }
 
     /// Insert a new row at the given index.
-    pub fn insert_row(&mut self, row_index: usize, values: Option<Vec<CellValue>>) -> Result<()> {
+    pub(crate) fn insert_row(&mut self, row_index: usize, values: Option<Vec<CellValue>>) -> Result<()> {
         let row_index = row_index as i64 - self.y_adjustment(true);
         let array = self.mut_value_as_array()?;
         array.insert_row(usize::try_from(row_index)?, values)?;
@@ -71,7 +71,7 @@ impl DataTable {
     }
 
     /// Remove a row at the given index.
-    pub fn delete_row(
+    pub(crate) fn delete_row(
         &mut self,
         row_index: usize,
     ) -> Result<(Vec<CellValue>, SheetFormatUpdates, BordersUpdates)> {
@@ -98,7 +98,7 @@ impl DataTable {
     /// Remove a row at the given index, for table having sorted columns.
     ///
     /// Removes the row and calls sort_all to update the display buffer.
-    pub fn delete_row_sorted(
+    pub(crate) fn delete_row_sorted(
         &mut self,
         display_row_index: usize,
     ) -> Result<(

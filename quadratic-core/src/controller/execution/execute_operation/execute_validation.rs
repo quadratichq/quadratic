@@ -79,32 +79,54 @@ impl GridController {
             return;
         };
 
+        let validations = sheet
+            .validations
+            .in_rect_unbounded(sheet_rect.as_rect(), &self.a1_context);
+
+        if validations.is_empty() {
+            return;
+        }
+
+        let mut validations_warning_added = vec![];
+        let mut validations_warning_deleted = vec![];
+
         for x in sheet_rect.x_range() {
             for y in sheet_rect.y_range() {
                 let value_pos = Pos::new(x, y);
-                if let Some(validation) =
-                    sheet
-                        .validations
-                        .validate(sheet, value_pos, &self.a1_context)
-                {
-                    transaction.validation_warning_added(
-                        sheet.id,
-                        JsValidationWarning {
-                            pos: value_pos,
-                            validation: Some(validation.id),
-                            style: Some(validation.error.style.clone()),
-                        },
-                    );
-                    sheet
-                        .validations
-                        .set_warning(value_pos.to_sheet_pos(sheet.id), Some(validation.id));
+
+                let validation = validations
+                    .iter()
+                    .find(|validation| validation.validate(sheet, value_pos, &self.a1_context));
+
+                if let Some(&validation) = validation {
+                    validations_warning_added.push((value_pos, validation.to_owned()));
                 } else if sheet.validations.has_warning(value_pos) {
-                    transaction.validation_warning_deleted(sheet.id, value_pos);
-                    sheet
-                        .validations
-                        .set_warning(value_pos.to_sheet_pos(sheet.id), None);
+                    validations_warning_deleted.push(value_pos);
                 }
             }
+        }
+
+        for (value_pos, validation) in validations_warning_added {
+            transaction.validation_warning_added(
+                sheet.id,
+                JsValidationWarning {
+                    pos: value_pos,
+                    validation: Some(validation.id),
+                    style: Some(validation.error.style.clone()),
+                },
+            );
+
+            sheet
+                .validations
+                .set_warning(value_pos.as_sheet_pos(sheet.id), Some(validation.id));
+        }
+
+        for value_pos in validations_warning_deleted {
+            transaction.validation_warning_deleted(sheet.id, value_pos);
+
+            sheet
+                .validations
+                .set_warning(value_pos.as_sheet_pos(sheet.id), None);
         }
     }
 
@@ -124,14 +146,14 @@ impl GridController {
                         transaction
                             .reverse_operations
                             .push(Operation::SetValidationWarning {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 validation_id: Some(validation_id),
                             });
 
                         transaction
                             .forward_operations
                             .push(Operation::SetValidationWarning {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 validation_id: None,
                             });
                     }
@@ -182,7 +204,7 @@ impl GridController {
         };
 
         warnings.iter().for_each(|(pos, validation_id)| {
-            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let sheet_pos = pos.as_sheet_pos(sheet_id);
             let old = sheet
                 .validations
                 .set_warning(sheet_pos, Some(*validation_id));
@@ -213,7 +235,7 @@ impl GridController {
         });
 
         remove_warnings.iter().for_each(|pos| {
-            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let sheet_pos = pos.as_sheet_pos(sheet_id);
             let old = sheet.validations.set_warning(sheet_pos, None);
             transaction.validation_warning_deleted(sheet_id, *pos);
 

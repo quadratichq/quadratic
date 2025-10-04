@@ -31,7 +31,7 @@ impl From<Pos> for JsCoordinate {
 }
 
 impl JsSelection {
-    pub fn get_selection(&self) -> &A1Selection {
+    pub(crate) fn get_selection(&self) -> &A1Selection {
         &self.selection
     }
 }
@@ -72,7 +72,7 @@ impl JsSelection {
         let pos = Pos::new(col as i64, row as i64);
         let table = context
             .get_context()
-            .table_from_pos(pos.to_sheet_pos(sheet_id));
+            .table_from_pos(pos.as_sheet_pos(sheet_id));
         table.map(|t| t.table_name.to_string())
     }
 
@@ -91,7 +91,7 @@ impl JsSelection {
             .first()
             .ok_or("Invalid selection: no ranges")?;
         let rect = range
-            .to_rect(context.get_context())
+            .as_rect(context.get_context())
             .ok_or("Invalid selection: not a rectangle")?;
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())

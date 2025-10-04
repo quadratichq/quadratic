@@ -51,7 +51,7 @@ fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
 }
 
 /// Finds auto complete series.
-pub fn find_auto_complete(options: SeriesOptions) -> Vec<CellValue> {
+pub(crate) fn find_auto_complete(options: SeriesOptions) -> Vec<CellValue> {
     // if cells are missing, just copy series
     if options.series.iter().all(|s| s == &CellValue::Blank) {
         return copy_series(options);

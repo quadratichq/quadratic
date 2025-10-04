@@ -12,7 +12,7 @@ use crate::{
 
 impl GridController {
     /// Adds operations to compute a CellValue::Code at the sheet_pos.
-    pub fn set_code_cell_operations(
+    pub(crate) fn set_code_cell_operations(
         &self,
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
@@ -104,7 +104,7 @@ impl GridController {
     }
 
     /// Reruns a code cell
-    pub fn rerun_code_cell_operations(&self, selection: A1Selection) -> Vec<Operation> {
+    pub(crate) fn rerun_code_cell_operations(&self, selection: A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
 
         let sheet_id = selection.sheet_id;
@@ -116,7 +116,7 @@ impl GridController {
                     .get_code_runs_in_rect(*rect, false)
                     .for_each(|(_, pos, _)| {
                         ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
+                            sheet_pos: pos.as_sheet_pos(sheet_id),
                         });
                     });
             });
@@ -125,16 +125,21 @@ impl GridController {
         ops
     }
 
-    pub fn set_chart_size_operations(&self, sheet_pos: SheetPos, w: u32, h: u32) -> Vec<Operation> {
+    pub(crate) fn set_chart_size_operations(
+        &self,
+        sheet_pos: SheetPos,
+        w: u32,
+        h: u32,
+    ) -> Vec<Operation> {
         vec![Operation::SetChartCellSize { sheet_pos, w, h }]
     }
 
     /// Reruns all code cells in all Sheets.
-    pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
+    pub(crate) fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+                code_cell_positions.push(pos.as_sheet_pos(*sheet_id));
             }
         }
 
@@ -142,13 +147,13 @@ impl GridController {
     }
 
     /// Reruns all code cells in a Sheet.
-    pub fn rerun_sheet_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
+    pub(crate) fn rerun_sheet_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
         for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+            code_cell_positions.push(pos.as_sheet_pos(sheet_id));
         }
 
         self.get_code_run_ops_from_positions(code_cell_positions)
@@ -202,7 +207,7 @@ impl GridController {
         {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
+                    let sheet_pos = pos.as_sheet_pos(sheet_id);
                     if !seen.contains(&sheet_pos) {
                         parent_nodes.push(sheet_pos);
                     }

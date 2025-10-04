@@ -5,7 +5,7 @@ use crate::{CellValue, CopyFormats};
 
 impl DataTable {
     /// Get the values of a column
-    pub fn get_column(&self, column_index: usize) -> Result<Vec<CellValue>> {
+    pub(crate) fn get_column(&self, column_index: usize) -> Result<Vec<CellValue>> {
         let column = self
             .value_ref()?
             .iter()
@@ -18,7 +18,7 @@ impl DataTable {
     }
 
     /// Gets the name of a column from the column_index (not the display index).
-    pub fn column_name(&self, column_index: usize) -> Result<String> {
+    pub(crate) fn column_name(&self, column_index: usize) -> Result<String> {
         if let Some(headers) = &self.column_headers {
             if column_index >= headers.len() {
                 return Err(anyhow::anyhow!(
@@ -37,7 +37,7 @@ impl DataTable {
     ///
     /// Maps the cells values from actual values index to display index, returning
     /// the values in the same sequence as they are displayed.
-    pub fn get_column_sorted(&self, column_index: usize) -> Result<Vec<CellValue>> {
+    pub(crate) fn get_column_sorted(&self, column_index: usize) -> Result<Vec<CellValue>> {
         let mut column = self.get_column(column_index)?;
         if let Some(display_buffer) = &self.display_buffer {
             let mut sorted_column = vec![CellValue::Blank; column.len()];
@@ -91,7 +91,7 @@ impl DataTable {
     /// Insert a new column taking into account sorted columns.
     ///
     /// Maps the cells values to actual values index from display index.
-    pub fn insert_column_sorted(
+    pub(crate) fn insert_column_sorted(
         &mut self,
         column_index: usize,
         column_header: Option<String>,
@@ -147,7 +147,7 @@ impl DataTable {
     }
 
     /// Remove a column at the given index and update the sort.
-    pub fn delete_column_sorted(&mut self, column_index: usize) -> Result<()> {
+    pub(crate) fn delete_column_sorted(&mut self, column_index: usize) -> Result<()> {
         self.delete_column(column_index)?;
 
         if let Some(sort) = &mut self.sort {
@@ -163,7 +163,7 @@ impl DataTable {
     }
 
     /// Returns the display column index from the column index in the values array.
-    pub fn get_display_index_from_column_index(
+    pub(crate) fn get_display_index_from_column_index(
         &self,
         column_index: u32,
         include_self: bool,
@@ -182,7 +182,7 @@ impl DataTable {
     }
 
     /// Returns the column index from the display column index.
-    pub fn get_column_index_from_display_index(
+    pub(crate) fn get_column_index_from_display_index(
         &self,
         display_index: u32,
         include_self: bool,

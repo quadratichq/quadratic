@@ -5,7 +5,7 @@ use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Selects the entire sheet.
-    pub fn select_all(&mut self, append: bool) {
+    pub(crate) fn select_all(&mut self, append: bool) {
         if append {
             if let Some(CellRefRange::Sheet { range: last }) = self.ranges.last_mut() {
                 last.end = RefRangeBounds::ALL.end;
@@ -107,7 +107,7 @@ impl A1Selection {
     }
 
     /// Extends the last column range or creates a new one.
-    pub fn extend_column(&mut self, col: i64, top: i64) {
+    pub(crate) fn extend_column(&mut self, col: i64, top: i64) {
         if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
             if range.is_col_range() {
                 range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
@@ -229,7 +229,7 @@ impl A1Selection {
     }
 
     /// Selects a single column based on keyboard modifiers.
-    pub fn select_column(
+    pub(crate) fn select_column(
         &mut self,
         col: i64,
         ctrl_key: bool,
@@ -264,7 +264,7 @@ impl A1Selection {
     }
 
     /// Extends the last row range or creates a new one.
-    pub fn extend_row(&mut self, row: i64, left: i64) {
+    pub(crate) fn extend_row(&mut self, row: i64, left: i64) {
         if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
             if range.is_row_range() {
                 self.cursor.x = range.start.col();
@@ -283,7 +283,7 @@ impl A1Selection {
     /// Selects a single row. If append is true, then the row is appended
     /// to the ranges (or, if the last selection was a row, then the end of
     /// that row is extended).
-    pub fn select_row(
+    pub(crate) fn select_row(
         &mut self,
         row: i64,
         ctrl_key: bool,
@@ -318,7 +318,7 @@ impl A1Selection {
     /// Selects a rectangular range. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of
     /// that range is extended).
-    pub fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
+    pub(crate) fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
         if !append {
             self.ranges.clear();
         }
@@ -337,7 +337,7 @@ impl A1Selection {
     }
 
     /// Moves the cursor to the given position and clears the selection.
-    pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
+    pub(crate) fn move_to(&mut self, x: i64, y: i64, append: bool) {
         self.cursor.x = x;
         self.cursor.y = y;
         if !append {
@@ -450,7 +450,7 @@ impl A1Selection {
 
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_columns_selected(&mut self, a1_context: &A1Context) {
+    pub(crate) fn set_columns_selected(&mut self, a1_context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
@@ -477,7 +477,7 @@ impl A1Selection {
 
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_rows_selected(&mut self, a1_context: &A1Context) {
+    pub(crate) fn set_rows_selected(&mut self, a1_context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
@@ -504,7 +504,7 @@ impl A1Selection {
 
     /// Appends a selection to an existing selection and returns a new selection.
     #[must_use = "this method returns a new value instead of modifying its input"]
-    pub fn append_selection(&self, other: &Self) -> Self {
+    pub(crate) fn append_selection(&self, other: &Self) -> Self {
         let mut new_selection = self.clone();
         new_selection.ranges.extend(other.ranges.clone());
         new_selection

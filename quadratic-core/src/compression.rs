@@ -33,7 +33,7 @@ pub enum SerializationFormat {
 }
 
 #[function_timer::function_timer(dbgjs)]
-pub fn serialize_and_compress<T>(
+pub(crate) fn serialize_and_compress<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,
     data: T,
@@ -46,7 +46,7 @@ where
 }
 
 #[function_timer::function_timer(dbgjs)]
-pub fn decompress_and_deserialize<T>(
+pub(crate) fn decompress_and_deserialize<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,
     data: &[u8],
@@ -60,7 +60,7 @@ where
 
 // SERIALIZATION
 
-pub fn serialize<T>(serialization_format: &SerializationFormat, data: T) -> Result<Vec<u8>>
+pub(crate) fn serialize<T>(serialization_format: &SerializationFormat, data: T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
@@ -70,7 +70,7 @@ where
     }
 }
 
-pub fn deserialize<T>(serialization_format: &SerializationFormat, data: &[u8]) -> Result<T>
+pub(crate) fn deserialize<T>(serialization_format: &SerializationFormat, data: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
@@ -80,7 +80,7 @@ where
     }
 }
 
-pub fn deserialize_bincode<T>(data: &[u8]) -> Result<T>
+pub(crate) fn deserialize_bincode<T>(data: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
@@ -92,7 +92,7 @@ where
 
 // COMPRESSION
 
-pub fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result<Vec<u8>> {
+pub(crate) fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result<Vec<u8>> {
     match compression_format {
         CompressionFormat::None => Ok(data),
         CompressionFormat::Zlib => compress_zlib(data),
@@ -100,7 +100,7 @@ pub fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result
     }
 }
 
-pub fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
+pub(crate) fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
 
     for chunk in data.chunks(BUFFER_SIZE) {
@@ -110,11 +110,11 @@ pub fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(encoder.finish()?)
 }
 
-pub fn compress_zstd(data: Vec<u8>) -> Result<Vec<u8>> {
+pub(crate) fn compress_zstd(data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(zstd::encode_all(data.as_slice(), ZSTD_COMPRESSION_LEVEL)?)
 }
 
-pub fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result<Vec<u8>> {
     match compression_format {
         CompressionFormat::None => Ok(data.to_vec()),
         CompressionFormat::Zlib => decompress_zlib(data),
@@ -122,7 +122,7 @@ pub fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result
     }
 }
 
-pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
     let writer = Vec::new();
     let mut decoder = ZlibDecoder::new(writer);
 
@@ -133,13 +133,13 @@ pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
     Ok(decoder.finish()?)
 }
 
-pub fn decompress_zstd(data: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn decompress_zstd(data: &[u8]) -> Result<Vec<u8>> {
     Ok(zstd::decode_all(data)?)
 }
 
 // HEADER
 
-pub fn add_header(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
+pub(crate) fn add_header(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
     // add the delimiter to the header
     let mut output = [header, vec![HEADER_DELIMITER]].concat();
 
@@ -149,7 +149,7 @@ pub fn add_header(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(output)
 }
 
-pub fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
+pub(crate) fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
     let index = data
         .iter()
         .position(|&r| r == HEADER_DELIMITER)

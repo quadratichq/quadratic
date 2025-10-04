@@ -2,7 +2,7 @@ use crate::grid::{Sheet, sheet::borders::JsBordersSheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
-    pub fn borders_in_sheet(&self) -> JsBordersSheet {
+    pub(crate) fn borders_in_sheet(&self) -> JsBordersSheet {
         let mut horizontal = vec![];
         let mut vertical = vec![];
 
@@ -41,7 +41,7 @@ impl Sheet {
     }
 
     /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self) {
+    pub(crate) fn send_sheet_borders(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -73,7 +73,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_data_table(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             1,
             1,
             false,
@@ -102,7 +102,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_data_table(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -131,7 +131,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_data_table(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             3,
             3,
             false,
@@ -160,7 +160,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.test_set_data_table(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             3,
             3,
             false,

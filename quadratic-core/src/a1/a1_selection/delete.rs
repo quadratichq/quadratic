@@ -5,7 +5,7 @@ use super::A1Selection;
 impl A1Selection {
     /// Deletes the selection from the current selection. Returns the remaining
     /// selection or None if the selection is completely deleted.
-    pub fn delete_selection(
+    pub(crate) fn delete_selection(
         &self,
         to_delete: &A1Selection,
         a1_context: &A1Context,

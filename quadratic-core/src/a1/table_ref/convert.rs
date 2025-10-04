@@ -6,7 +6,7 @@ impl TableRef {
     /// Converts a table ref to a CellRefRange::RefRangeBounds for use
     /// by the CellsHighlights.ts fn (which draws the dashed rectangles around
     /// cells accessed by code cells)
-    pub fn convert_cells_accessed_to_ref_range_bounds(
+    pub(crate) fn convert_cells_accessed_to_ref_range_bounds(
         &self,
         show_table_headers_for_python: bool,
         a1_context: &A1Context,
@@ -50,7 +50,7 @@ impl TableRef {
     /// its use varies so much
     ///
     /// (ask David F for more details & accuracy checks on this)
-    pub fn convert_to_ref_range_bounds(
+    pub(crate) fn convert_to_ref_range_bounds(
         &self,
         use_unbounded: bool,
         a1_context: &A1Context,

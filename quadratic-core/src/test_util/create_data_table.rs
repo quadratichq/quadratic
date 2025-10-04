@@ -13,7 +13,7 @@ use crate::{
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table(
+pub(crate) fn test_create_data_table(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -33,7 +33,7 @@ pub fn test_create_data_table(
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table_no_ui(
+pub(crate) fn test_create_data_table_no_ui(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -44,7 +44,7 @@ pub fn test_create_data_table_no_ui(
     let v_refs: Vec<&str> = v.iter().map(|s| s.as_str()).collect();
     let dt = test_create_data_table_with_values(gc, sheet_id, pos, width, height, &v_refs);
     gc.data_table_meta(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         None,
         None,
         None,
@@ -64,7 +64,7 @@ pub fn test_create_data_table_no_ui(
 ///
 /// Returns a clone of the created data table.
 #[cfg(test)]
-pub fn test_create_data_table_with_values(
+pub(crate) fn test_create_data_table_with_values(
     gc: &mut GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -82,7 +82,7 @@ pub fn test_create_data_table_with_values(
     }
 
     gc.add_data_table(
-        pos.to_sheet_pos(sheet_id),
+        pos.as_sheet_pos(sheet_id),
         "test_table".to_string(),
         v,
         false,

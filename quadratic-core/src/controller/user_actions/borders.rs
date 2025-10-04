@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn set_borders(
+    pub(crate) fn set_borders(
         &mut self,
         selection: A1Selection,
         border_selection: BorderSelection,

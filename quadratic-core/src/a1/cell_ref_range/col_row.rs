@@ -5,7 +5,7 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted column is the same
     /// as self's column(s). That has to be handled one step above this call.
-    pub fn removed_column(&mut self, column: i64) -> bool {
+    pub(crate) fn removed_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         match self {
@@ -37,7 +37,7 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted row is the same as
     /// self's row(s). That has to be handled one step above this call.
-    pub fn removed_row(&mut self, row: i64) -> bool {
+    pub(crate) fn removed_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         match self {
@@ -64,7 +64,7 @@ impl CellRefRange {
         changed
     }
 
-    pub fn inserted_column(&mut self, column: i64) -> bool {
+    pub(crate) fn inserted_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         match self {
@@ -87,7 +87,7 @@ impl CellRefRange {
         changed
     }
 
-    pub fn inserted_row(&mut self, row: i64) -> bool {
+    pub(crate) fn inserted_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         match self {

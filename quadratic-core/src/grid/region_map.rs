@@ -33,12 +33,12 @@ pub struct RegionMap {
 }
 impl RegionMap {
     /// Constructs a new empty region map.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Associates `pos` with `region`. `Rect` may be unbounded.
-    pub fn insert(&mut self, pos: SheetPos, region: (SheetId, Rect)) {
+    pub(crate) fn insert(&mut self, pos: SheetPos, region: (SheetId, Rect)) {
         let (region_sheet, region_rect) = region;
 
         self.region_to_pos
@@ -56,44 +56,16 @@ impl RegionMap {
 
     /// Removes all associations with `pos` and adds new ones. `Rect`s may be
     /// unbounded.
-    pub fn set_regions_for_pos(&mut self, pos: SheetPos, regions: Vec<(SheetId, Rect)>) {
+    #[cfg(test)]
+    pub(crate) fn set_regions_for_pos(&mut self, pos: SheetPos, regions: Vec<(SheetId, Rect)>) {
         self.remove_pos(pos);
         for region in regions {
             self.insert(pos, region);
         }
     }
 
-    /// Removes a sheet, including all associations it interacts with.
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        // Remove edges that use `sheet_id` in their position.
-        let map = self.pos_to_region.remove(&sheet_id).unwrap_or_default();
-        for (pos, region) in map {
-            for (region_sheet, region_rect) in region {
-                if let Some(rtree) = self.region_to_pos.get_mut(&region_sheet) {
-                    rtree.remove(&GeomWithData::new(region_rect, pos.to_sheet_pos(sheet_id)));
-                }
-            }
-        }
-
-        // Remove edges that use `sheet_id` in their region.
-        let rtree = self.region_to_pos.remove(&sheet_id).unwrap_or_default();
-        let positions: HashSet<SheetPos> = rtree
-            .into_iter()
-            .map(|obj| obj.data)
-            // optimization: ignore references within the sheet we're
-            // removing because they'll get removed anyway.
-            .filter(|pos| pos.sheet_id != sheet_id)
-            .collect();
-        for pos in positions {
-            if let Some(map) = self.pos_to_region.get_mut(&pos.sheet_id)
-                && let Some(regions) = map.get_mut(&pos.into()) {
-                    regions.retain(|&(region_sheet, _region_rect)| region_sheet != sheet_id);
-                }
-        }
-    }
-
     /// Removes all associations with `pos`.
-    pub fn remove_pos(&mut self, pos: SheetPos) {
+    pub(crate) fn remove_pos(&mut self, pos: SheetPos) {
         // IIFE to mimic try_block
         (|| {
             let map = self.pos_to_region.get_mut(&pos.sheet_id)?;
@@ -109,7 +81,7 @@ impl RegionMap {
 
     /// Returns all cell positions associated with anything overlapping
     /// `region`.
-    pub fn get_positions_associated_with_region(
+    pub(crate) fn get_positions_associated_with_region(
         &self,
         region: (SheetId, Rect),
     ) -> HashSet<SheetPos> {
@@ -121,28 +93,6 @@ impl RegionMap {
                 .map(|obj| obj.data)
                 .collect(),
         }
-    }
-
-    #[cfg(test)]
-    fn find_all_mentions_of_sheet(&self, sheet_id: SheetId) -> Vec<(SheetPos, (SheetId, Rect))> {
-        itertools::chain(
-            self.region_to_pos.iter().flat_map(|(region_sheet, rtree)| {
-                rtree
-                    .iter()
-                    .map(|obj| (obj.data, (*region_sheet, *obj.geom())))
-            }),
-            self.pos_to_region.iter().flat_map(|(pos_sheet, map)| {
-                map.iter().flat_map(|(pos, regions)| {
-                    regions
-                        .iter()
-                        .map(|&region| (pos.to_sheet_pos(*pos_sheet), region))
-                })
-            }),
-        )
-        .filter(|(pos, (region_sheet, _region_rect))| {
-            pos.sheet_id == sheet_id || *region_sheet == sheet_id
-        })
-        .collect()
     }
 }
 
@@ -158,7 +108,7 @@ impl Serialize for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect_vec();
@@ -204,7 +154,7 @@ impl PartialEq for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect();
@@ -216,7 +166,7 @@ impl PartialEq for RegionMap {
                 map.iter().flat_map(|(pos, regions)| {
                     regions
                         .iter()
-                        .map(|&region| (pos.to_sheet_pos(*sheet_id), region))
+                        .map(|&region| (pos.as_sheet_pos(*sheet_id), region))
                 })
             })
             .collect();
@@ -286,9 +236,6 @@ mod tests {
                 m.get_positions_associated_with_region((sheet2, rect![D4:F10])),
                 HashSet::from_iter([pos![sheet1!A1], pos![sheet2!C3]]),
             );
-
-            m.remove_sheet(sheet2);
-            assert!(m.find_all_mentions_of_sheet(sheet2).is_empty());
         }
     }
 
@@ -302,10 +249,10 @@ mod tests {
         let all = ref_range_bounds![:];
         let finite = ref_range_bounds![B2:D17];
 
-        map.insert(pos![sheet1!A1], (sheet1, columns.to_rect_unbounded()));
-        map.insert(pos![sheet1!A2], (sheet1, rows.to_rect_unbounded()));
-        map.insert(pos![sheet1!A3], (sheet1, all.to_rect_unbounded()));
-        map.insert(pos![sheet1!A4], (sheet1, finite.to_rect_unbounded()));
+        map.insert(pos![sheet1!A1], (sheet1, columns.as_rect_unbounded()));
+        map.insert(pos![sheet1!A2], (sheet1, rows.as_rect_unbounded()));
+        map.insert(pos![sheet1!A3], (sheet1, all.as_rect_unbounded()));
+        map.insert(pos![sheet1!A4], (sheet1, finite.as_rect_unbounded()));
 
         assert_eq!(
             map.get_positions_associated_with_region((sheet1, rect![D4:F10])),
@@ -320,7 +267,7 @@ mod tests {
         assert_eq!(
             map.get_positions_associated_with_region((
                 sheet1,
-                ref_range_bounds![F:].to_rect_unbounded(),
+                ref_range_bounds![F:].as_rect_unbounded(),
             )),
             HashSet::from_iter([pos![sheet1!A2], pos![sheet1!A3]]),
         );

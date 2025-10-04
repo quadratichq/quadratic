@@ -888,7 +888,7 @@ mod tests {
     fn test_pi() {
         let g = GridController::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "PI".into(),
@@ -906,7 +906,7 @@ mod tests {
     fn test_tau() {
         let g = GridController::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheet_ids()[0]));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.as_sheet_pos(g.sheet_ids()[0]));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "TAU".into(),

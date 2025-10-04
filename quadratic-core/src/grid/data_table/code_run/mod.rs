@@ -41,18 +41,9 @@ pub struct CodeRun {
 }
 
 impl CodeRun {
-    /// Constructs a code cell.
-    pub fn new(language: CodeCellLanguage, code: String) -> Self {
-        Self {
-            language,
-            code,
-            ..Default::default()
-        }
-    }
-
     /// Constructs a new Python code cell.
     #[cfg(test)]
-    pub fn new_python(code: String) -> Self {
+    pub(crate) fn new_python(code: String) -> Self {
         Self {
             language: CodeCellLanguage::Python,
             code,
@@ -60,7 +51,7 @@ impl CodeRun {
         }
     }
 
-    pub fn new_formula(code: String) -> Self {
+    pub(crate) fn new_formula(code: String) -> Self {
         Self {
             language: CodeCellLanguage::Formula,
             code,
@@ -69,7 +60,7 @@ impl CodeRun {
     }
 
     #[cfg(test)]
-    pub fn new_javascript(code: String) -> Self {
+    pub(crate) fn new_javascript(code: String) -> Self {
         Self {
             language: CodeCellLanguage::Javascript,
             code,
@@ -78,7 +69,7 @@ impl CodeRun {
     }
 
     #[cfg(test)]
-    pub fn new_connection(code: String) -> Self {
+    pub(crate) fn new_connection(code: String) -> Self {
         use super::ConnectionKind;
 
         Self {
@@ -89,11 +80,6 @@ impl CodeRun {
             code,
             ..Default::default()
         }
-    }
-
-    /// Returns any error in a code run.
-    pub fn get_error(&self) -> Option<RunError> {
-        self.error.clone()
     }
 }
 
@@ -114,7 +100,7 @@ pub enum CodeCellLanguage {
 }
 
 impl CodeCellLanguage {
-    pub fn as_string(&self) -> String {
+    pub(crate) fn as_string(&self) -> String {
         match self {
             CodeCellLanguage::Python => "Python".to_string(),
             CodeCellLanguage::Formula => "Formula".to_string(),
@@ -126,7 +112,7 @@ impl CodeCellLanguage {
 }
 
 impl CodeCellLanguage {
-    pub fn is_code_language(&self) -> bool {
+    pub(crate) fn is_code_language(&self) -> bool {
         matches!(
             self,
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
@@ -135,11 +121,11 @@ impl CodeCellLanguage {
 
     /// Returns whether this language that uses `q.cells()` syntax (either
     /// Python or Javascript).
-    pub fn has_q_cells(&self) -> bool {
+    pub(crate) fn has_q_cells(&self) -> bool {
         *self == CodeCellLanguage::Python || *self == CodeCellLanguage::Javascript
     }
 
-    pub fn has_handle_bars(&self) -> bool {
+    pub(crate) fn has_handle_bars(&self) -> bool {
         matches!(self, CodeCellLanguage::Connection { .. })
     }
 }

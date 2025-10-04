@@ -26,7 +26,7 @@ impl Instant {
         Self { seconds }
     }
 
-    pub fn now() -> Self {
+    pub(crate) fn now() -> Self {
         Utc::now().naive_utc().into()
     }
 }
@@ -357,28 +357,28 @@ impl Duration {
 
     /// Constructs a duration lasting some number of days, automatically
     /// converting to `f64`.
-    pub fn from_days_bigdec(days: &Decimal) -> Self {
+    pub(crate) fn from_days_bigdec(days: &Decimal) -> Self {
         Self::from_days(days.to_f64().unwrap_or(0.0))
     }
 
     /// Constructs a duration lasting some number of hours, automatically
     /// converting to `f64`.
-    pub fn from_hours_bigdec(hours: &Decimal) -> Self {
+    pub(crate) fn from_hours_bigdec(hours: &Decimal) -> Self {
         Self::from_hours(hours.to_f64().unwrap_or(0.0))
     }
 
     /// Constructs a duration lasting some number of days.
-    pub fn from_days(days: f64) -> Self {
+    pub(crate) fn from_days(days: f64) -> Self {
         Self::from_hours(days * 24.0)
     }
 
     /// Constructs a duration lasting some number of hours.
-    pub fn from_hours(hours: f64) -> Self {
+    pub(crate) fn from_hours(hours: f64) -> Self {
         Self::from_minutes(hours * 60.0)
     }
 
     /// Constructs a duration lasting some number of minutes.
-    pub fn from_minutes(minutes: f64) -> Self {
+    pub(crate) fn from_minutes(minutes: f64) -> Self {
         Self::from_seconds(minutes * 60.0)
     }
 
@@ -391,31 +391,34 @@ impl Duration {
     }
 
     /// Constructs a duration lasting some number of milliseconds.
-    pub fn from_milliseconds(ms: f64) -> Self {
+    pub(crate) fn from_milliseconds(ms: f64) -> Self {
         Self::from_seconds(0.001 * ms)
     }
     /// Constructs a duration lasting some number of microseconds.
-    pub fn from_microseconds(us: f64) -> Self {
+    pub(crate) fn from_microseconds(us: f64) -> Self {
         Self::from_milliseconds(0.001 * us)
     }
     /// Constructs a duration lasting some number of nanoseconds.
-    pub fn from_nanoseconds(ns: f64) -> Self {
+    pub(crate) fn from_nanoseconds(ns: f64) -> Self {
         Self::from_microseconds(0.001 * ns)
     }
     /// Constructs a duration lasting some number of picoseconds.
-    pub fn from_picoseconds(ps: f64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn from_picoseconds(ps: f64) -> Self {
         Self::from_nanoseconds(0.001 * ps)
     }
     /// Constructs a duration lasting some number of picoseconds.
-    pub fn from_femtoseconds(ps: f64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn from_femtoseconds(ps: f64) -> Self {
         Self::from_picoseconds(0.001 * ps)
     }
     /// Constructs a duration lasting some number of attoseconds.
-    pub fn from_attoseconds(a_s: f64) -> Self {
+    #[cfg(test)]
+    pub(crate) fn from_attoseconds(a_s: f64) -> Self {
         Self::from_femtoseconds(0.001 * a_s)
     }
 
-    pub fn abs(self) -> Self {
+    pub(crate) fn abs(self) -> Self {
         match self.months.cmp(&0) {
             std::cmp::Ordering::Less => return -self,
             std::cmp::Ordering::Greater => return self,
@@ -434,36 +437,36 @@ impl Duration {
     }
 
     /// Returns whether the duration represents an integer number of days.
-    pub fn is_integer_days(self) -> bool {
+    pub(crate) fn is_integer_days(self) -> bool {
         (self.seconds / Self::DAY.seconds).fract() == 0.0
     }
 
     /// Returns the number of years, rounded down to an integer.
-    pub fn years(self) -> i32 {
+    pub(crate) fn years(self) -> i32 {
         self.months.div_euclid(12)
     }
     /// Returns the number of months as an integer between `0` and `11`
     /// (inclusive).
-    pub fn subyear_months(self) -> i32 {
+    pub(crate) fn subyear_months(self) -> i32 {
         self.months.rem_euclid(12)
     }
     /// Returns the number of days as an integer.
-    pub fn days(self) -> i64 {
+    pub(crate) fn days(self) -> i64 {
         (self.seconds / 86_400.0).floor() as i64
     }
     /// Returns the number of hours as an integer between `0` and `23`
     /// (inclusive).
-    pub fn subday_hours(self) -> i32 {
+    pub(crate) fn subday_hours(self) -> i32 {
         ((self.seconds / 3_600.0).floor() as i32).rem_euclid(24)
     }
     /// Returns the number of minutes as an integer between `0` and `59`
     /// (inclusive).
-    pub fn subhour_minutes(self) -> i32 {
+    pub(crate) fn subhour_minutes(self) -> i32 {
         ((self.seconds / 60.0).floor() as i32).rem_euclid(60)
     }
     /// Returns the number of seconds as a floating-point number between `0`
     /// (inclusive) and `60.0` (exclusive).
-    pub fn subminute_seconds(self) -> f64 {
+    pub(crate) fn subminute_seconds(self) -> f64 {
         self.seconds.rem_euclid(60.0)
     }
 
@@ -473,7 +476,7 @@ impl Duration {
     /// using `365.24 / 12.0` as the number of days in a month. The number of
     /// days contributed by months/years is always rounded to the nearest
     /// integer.
-    pub fn to_fractional_days(self) -> f64 {
+    pub(crate) fn to_fractional_days(self) -> f64 {
         self.seconds / 86_400.0 + (self.months as f64 * (365.24 / 12.0)).round()
     }
 
@@ -519,7 +522,7 @@ impl From<TimeUnit> for Duration {
     }
 }
 
-pub fn map_local_result<T: chrono::TimeZone + Display>(
+pub(crate) fn map_local_result<T: chrono::TimeZone + Display>(
     value: MappedLocalTime<DateTime<T>>,
 ) -> Result<DateTime<T>> {
     match value {
@@ -592,7 +595,7 @@ impl TimeUnit {
         }
     }
 
-    pub fn short_name(self) -> &'static str {
+    pub(crate) fn short_name(self) -> &'static str {
         match self {
             TimeUnit::Attosecond => "as",
             TimeUnit::Femtosecond => "fs",
@@ -611,16 +614,16 @@ impl TimeUnit {
     }
 }
 
-pub fn add_to_datetime(datetime: NaiveDateTime, duration: Duration) -> NaiveDateTime {
+pub(crate) fn add_to_datetime(datetime: NaiveDateTime, duration: Duration) -> NaiveDateTime {
     add_months(datetime, duration.months) + duration.to_chrono_timedelta()
 }
-pub fn add_to_date(date: NaiveDate, duration: Duration) -> NaiveDate {
+pub(crate) fn add_to_date(date: NaiveDate, duration: Duration) -> NaiveDate {
     add_months(date, duration.months) + duration.to_chrono_timedelta()
 }
-pub fn add_to_time(time: NaiveTime, duration: Duration) -> NaiveTime {
+pub(crate) fn add_to_time(time: NaiveTime, duration: Duration) -> NaiveTime {
     time + duration.to_chrono_timedelta()
 }
-pub fn add_months<T: Add<chrono::Months, Output = T> + Sub<chrono::Months, Output = T>>(
+pub(crate) fn add_months<T: Add<chrono::Months, Output = T> + Sub<chrono::Months, Output = T>>(
     t: T,
     months: i32,
 ) -> T {

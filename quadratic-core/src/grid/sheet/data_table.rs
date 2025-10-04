@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 
 use super::Sheet;
+#[cfg(test)]
+use crate::grid::CodeCellLanguage;
 use crate::{
     CellValue, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeRun, DataTableKind,
+        CodeRun, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
     },
@@ -17,30 +19,30 @@ use indexmap::IndexMap;
 
 impl Sheet {
     /// Returns a DataTable at a Pos
-    pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
+    pub(crate) fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
     }
 
-    pub fn data_table_full_at(&self, pos: &Pos) -> Option<(usize, &DataTable)> {
+    pub(crate) fn data_table_full_at(&self, pos: &Pos) -> Option<(usize, &DataTable)> {
         self.data_tables.get_full_at(pos)
     }
 
-    pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
+    pub(crate) fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
         self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
+    pub(crate) fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
     }
 
     /// Returns the data table pos if the data table intersects a position
-    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+    pub(crate) fn data_table_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
         self.data_tables.get_pos_contains(pos)
     }
 
     /// Returns the data table (import / editable) pos if the data table is an import
-    pub fn data_table_import_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+    pub(crate) fn data_table_import_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
         self.data_tables
             .get_pos_contains(pos)
             .and_then(|data_table_pos| {
@@ -55,7 +57,7 @@ impl Sheet {
     }
 
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
+    pub(crate) fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
@@ -67,7 +69,7 @@ impl Sheet {
     }
 
     /// Returns the data table pos of the data table that contains a position
-    pub fn is_in_non_single_code_cell_code_table(&self, pos: Pos) -> bool {
+    pub(crate) fn is_in_non_single_code_cell_code_table(&self, pos: Pos) -> bool {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             if pos != data_table_pos {
                 true
@@ -86,7 +88,7 @@ impl Sheet {
     }
 
     /// Returns anchor positions of data tables that intersect a rect
-    pub fn data_tables_pos_intersect_rect(
+    pub(crate) fn data_tables_pos_intersect_rect(
         &self,
         rect: Rect,
         ignore_spill_error: bool,
@@ -95,14 +97,17 @@ impl Sheet {
     }
 
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
-    pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+    pub(crate) fn data_tables_pos_intersect_rect_sorted(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = Pos> {
         self.data_tables
             .get_in_rect_sorted(rect, false)
             .map(|(_, pos, _)| pos)
     }
 
     /// Returns data tables that intersect a rect, sorted by index
-    pub fn data_tables_intersect_rect_sorted(
+    pub(crate) fn data_tables_intersect_rect_sorted(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
@@ -110,7 +115,7 @@ impl Sheet {
     }
 
     /// Returns data tables that intersect a rect, sorted by index
-    pub fn data_tables_output_rects_intersect_rect(
+    pub(crate) fn data_tables_output_rects_intersect_rect(
         &self,
         rect: Rect,
         filter: impl Fn(&Pos, &DataTable) -> bool,
@@ -122,13 +127,13 @@ impl Sheet {
     }
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
-    pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
+    pub(crate) fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         self.data_tables_pos_intersect_rect(rect, false)
             .any(|pos| skip != Some(&pos))
     }
 
     /// Returns a DataTable at a Pos as a result
-    pub fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
+    pub(crate) fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
         self.data_table_at(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
     }
@@ -142,7 +147,7 @@ impl Sheet {
     }
 
     /// Returns a mutable DataTable at a Pos
-    pub fn modify_data_table_at(
+    pub(crate) fn modify_data_table_at(
         &mut self,
         pos: &Pos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
@@ -150,7 +155,7 @@ impl Sheet {
         self.data_tables.modify_data_table_at(pos, f)
     }
 
-    pub fn data_table_insert_full(
+    pub(crate) fn data_table_insert_full(
         &mut self,
         pos: Pos,
         mut data_table: DataTable,
@@ -164,7 +169,7 @@ impl Sheet {
         (old_cell_value, index, old_data_table, dirty_rects)
     }
 
-    pub fn data_table_insert_before(
+    pub(crate) fn data_table_insert_before(
         &mut self,
         index: usize,
         pos: Pos,
@@ -180,26 +185,29 @@ impl Sheet {
         (old_cell_value, index, old_data_table, dirty_rects)
     }
 
-    pub fn data_table_shift_remove_full(
+    pub(crate) fn data_table_shift_remove_full(
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
         self.data_tables.shift_remove_full(pos)
     }
 
-    pub fn data_table_shift_remove(
+    pub(crate) fn data_table_shift_remove(
         &mut self,
         pos: Pos,
     ) -> Option<(usize, DataTable, HashSet<Rect>)> {
         self.data_tables.shift_remove(&pos)
     }
 
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(usize, DataTable, HashSet<Rect>)> {
+    pub(crate) fn delete_data_table(
+        &mut self,
+        pos: Pos,
+    ) -> Result<(usize, DataTable, HashSet<Rect>)> {
         self.data_table_shift_remove(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
-    pub fn data_tables_update_spill(&mut self, rect: Rect) -> HashSet<Rect> {
+    pub(crate) fn data_tables_update_spill(&mut self, rect: Rect) -> HashSet<Rect> {
         let mut data_tables_to_modify = Vec::new();
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
@@ -224,7 +232,10 @@ impl Sheet {
     }
 
     /// Returns data tables that intersect a rect
-    pub fn iter_data_tables_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
+    pub(crate) fn iter_data_tables_in_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Rect, &DataTable)> {
         self.data_tables_intersect_rect_sorted(rect)
             .map(|(_, pos, data_table)| {
                 let output_rect = data_table.output_rect(pos, false);
@@ -233,7 +244,7 @@ impl Sheet {
     }
 
     /// Returns data tables that intersect a rect and their intersection with the rect
-    pub fn iter_data_tables_intersects_rect(
+    pub(crate) fn iter_data_tables_intersects_rect(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
@@ -248,7 +259,7 @@ impl Sheet {
 
     /// Checks whether a chart intersects a position. We ignore the chart if it
     /// includes either exclude_x or exclude_y.
-    pub fn chart_intersects(
+    pub(crate) fn chart_intersects(
         &self,
         x: i64,
         y: i64,
@@ -280,7 +291,7 @@ impl Sheet {
 
     /// Returns data tables that intersect the selection and corresponding cells
     /// and values
-    pub fn data_tables_and_cell_values_in_rect(
+    pub(crate) fn data_tables_and_cell_values_in_rect(
         &self,
         bounds: &Rect,
         include_code_table_values: bool,
@@ -360,7 +371,7 @@ impl Sheet {
     }
 
     /// Converts a format update to a SheetFormatUpdates
-    pub fn to_sheet_format_updates(
+    pub(crate) fn to_sheet_format_updates(
         &self,
         sheet_pos: SheetPos,
         data_table_pos: Pos,
@@ -380,7 +391,7 @@ impl Sheet {
 
     /// Returns true if the data table should expand to the right.
     /// Will return false if the rectangle touches the table heading.
-    pub fn should_expand_data_table(data_tables: &[Rect], rect: Rect) -> bool {
+    pub(crate) fn should_expand_data_table(data_tables: &[Rect], rect: Rect) -> bool {
         let rect_moved_left = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
 
         let data_table_immediate_left = data_tables
@@ -396,7 +407,7 @@ impl Sheet {
 
     /// Returns columns and rows to data tables when the cells to add are touching the data table
     #[allow(clippy::type_complexity)]
-    pub fn expand_columns_and_rows(
+    pub(crate) fn expand_columns_and_rows(
         &self,
         data_tables: &[Rect],
         sheet_pos: SheetPos,
@@ -414,7 +425,7 @@ impl Sheet {
     }
 
     /// Returns columns to data tables when the cells to add are touching the data table
-    pub fn expand_columns(
+    pub(crate) fn expand_columns(
         &self,
         data_tables: &[Rect],
         sheet_pos: SheetPos,
@@ -471,7 +482,7 @@ impl Sheet {
     }
 
     /// Returns rows to data tables when the cells to add are touching the data table
-    pub fn expand_rows(
+    pub(crate) fn expand_rows(
         &self,
         data_tables: &[Rect],
         sheet_pos: SheetPos,
@@ -515,24 +526,28 @@ impl Sheet {
     }
 
     /// Returns the code language at a pos
-    pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
+    #[cfg(test)]
+    pub(crate) fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
         self.data_table_at(&pos)
             .map(|data_table| data_table.get_language())
     }
 
     /// Returns true if the cell at pos is a formula cell
-    pub fn is_formula_cell(&self, pos: Pos) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_formula_cell(&self, pos: Pos) -> bool {
         self.code_language_at(pos)
             .is_some_and(|lang| lang == CodeCellLanguage::Formula)
     }
 
     /// Returns true if the cell at pos is a source cell
-    pub fn is_source_cell(&self, pos: Pos) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_source_cell(&self, pos: Pos) -> bool {
         self.data_table_at(&pos).is_some()
     }
 
     /// Returns true if the cell at pos is a data table cell
-    pub fn is_data_table_cell(&self, pos: Pos) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_data_table_cell(&self, pos: Pos) -> bool {
         self.data_table_at(&pos)
             .is_some_and(|dt| matches!(dt.kind, DataTableKind::Import(_)))
     }
@@ -540,7 +555,7 @@ impl Sheet {
     /// You shouldn't be able to create a data table that includes a data table.
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
-    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> Result<bool> {
+    pub(crate) fn enforce_no_data_table_within_rect(&self, rect: Rect) -> Result<bool> {
         let contains_data_table = self.contains_data_table_within_rect(rect, None);
 
         #[cfg(any(target_family = "wasm", test))]
@@ -559,7 +574,11 @@ impl Sheet {
     ///
     /// Returns the old value if it was set.
     #[cfg(test)]
-    pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
+    pub(crate) fn set_data_table(
+        &mut self,
+        pos: Pos,
+        data_table: Option<DataTable>,
+    ) -> Option<DataTable> {
         if let Some(data_table) = data_table {
             self.data_table_insert_full(pos, data_table).2
         } else {
@@ -586,7 +605,7 @@ mod test {
         test_create_js_chart,
     };
 
-    pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
+    pub(crate) fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=1".to_string(),

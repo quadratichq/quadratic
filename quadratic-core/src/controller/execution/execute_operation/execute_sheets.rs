@@ -63,7 +63,7 @@ impl GridController {
                     if let Some(code) = dt.code_run_mut() {
                         code.replace_table_name_in_cell_references(
                             &context,
-                            pos.to_sheet_pos(sheet_id),
+                            pos.as_sheet_pos(sheet_id),
                             &old_name,
                             &unique_name,
                         );

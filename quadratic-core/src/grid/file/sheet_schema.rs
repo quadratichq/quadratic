@@ -27,7 +27,7 @@ pub enum SheetSchema {
 
 impl SheetSchema {
     /// Imports a Sheet from the schema.
-    pub fn into_latest(self) -> Result<Sheet> {
+    pub(crate) fn into_latest(self) -> Result<Sheet> {
         self.upgrade_to_latest()
     }
 
@@ -60,7 +60,7 @@ impl SheetSchema {
 }
 
 /// Exports a Sheet to the latest schema version.
-pub fn export_sheet(sheet: Sheet) -> SheetSchema {
+pub(crate) fn export_sheet(sheet: Sheet) -> SheetSchema {
     let schema = super::serialize::sheets::export_sheet(sheet);
     SheetSchema::V1_12(schema)
 }

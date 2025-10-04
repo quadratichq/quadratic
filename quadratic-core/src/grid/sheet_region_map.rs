@@ -29,19 +29,20 @@ pub struct SheetRegionMap {
 
 impl SheetRegionMap {
     /// Constructs a new empty region map.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Associates `pos` with `region`. `Rect` may be unbounded.
-    pub fn insert(&mut self, pos: Pos, region: Rect) {
+    pub(crate) fn insert(&mut self, pos: Pos, region: Rect) {
         self.region_to_pos.insert(GeomWithData::new(region, pos));
         self.pos_to_region.entry(pos).or_default().push(region);
     }
 
     /// Removes all associations with `pos` and adds new ones. `Rect`s may be
     /// unbounded.
-    pub fn set_regions_for_pos(&mut self, pos: Pos, regions: Vec<Rect>) {
+    #[cfg(test)]
+    pub(crate) fn set_regions_for_pos(&mut self, pos: Pos, regions: Vec<Rect>) {
         self.remove_pos(pos);
         for region in regions {
             self.insert(pos, region);
@@ -49,7 +50,7 @@ impl SheetRegionMap {
     }
 
     /// Removes all associations with `pos`.
-    pub fn remove_pos(&mut self, pos: Pos) {
+    pub(crate) fn remove_pos(&mut self, pos: Pos) {
         // IIFE to mimic try_block
         (|| {
             let regions = self.pos_to_region.remove(&pos)?;
@@ -62,7 +63,7 @@ impl SheetRegionMap {
 
     /// Returns all cell positions associated with anything overlapping
     /// `region`.
-    pub fn get_positions_associated_with_region(&self, region: Rect) -> HashSet<Pos> {
+    pub(crate) fn get_positions_associated_with_region(&self, region: Rect) -> HashSet<Pos> {
         self.region_to_pos
             .locate_in_envelope_intersecting(&region.envelope())
             .map(|obj| obj.data)
@@ -193,10 +194,10 @@ mod tests {
         let all = ref_range_bounds![:];
         let finite = ref_range_bounds![B2:D17];
 
-        map.insert(pos![A1], columns.to_rect_unbounded());
-        map.insert(pos![A2], rows.to_rect_unbounded());
-        map.insert(pos![A3], all.to_rect_unbounded());
-        map.insert(pos![A4], finite.to_rect_unbounded());
+        map.insert(pos![A1], columns.as_rect_unbounded());
+        map.insert(pos![A2], rows.as_rect_unbounded());
+        map.insert(pos![A3], all.as_rect_unbounded());
+        map.insert(pos![A4], finite.as_rect_unbounded());
 
         assert_eq!(
             map.get_positions_associated_with_region(rect![D4:F10]),
@@ -204,7 +205,7 @@ mod tests {
         );
 
         assert_eq!(
-            map.get_positions_associated_with_region(ref_range_bounds![F:].to_rect_unbounded()),
+            map.get_positions_associated_with_region(ref_range_bounds![F:].as_rect_unbounded()),
             HashSet::from_iter([pos![A2], pos![A3]]),
         );
     }

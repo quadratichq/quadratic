@@ -8,7 +8,7 @@ use super::Sheet;
 
 impl Sheet {
     /// Returns true if there is a value within a rect
-    pub fn contains_value_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
+    pub(crate) fn contains_value_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
         if let Some(skip) = skip {
             let skip_rect = Rect::single_pos(*skip);
             self.columns
@@ -24,7 +24,7 @@ impl Sheet {
     /// Replace cell_values with CellValues.
     ///
     /// Returns the old CellValues.
-    pub fn merge_cell_values(&mut self, pos: Pos, cell_values: &CellValues) -> CellValues {
+    pub(crate) fn merge_cell_values(&mut self, pos: Pos, cell_values: &CellValues) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
 
         for x in 0..cell_values.w {
@@ -52,7 +52,7 @@ impl Sheet {
     /// different from calling CellValue.to_display() since it properly formats
     /// numbers. (We no longer format numbers in Rust because the client needs to
     /// be able to change the precision of the number when rendering.)
-    pub fn rendered_value(&self, pos: Pos) -> Option<String> {
+    pub(crate) fn rendered_value(&self, pos: Pos) -> Option<String> {
         let value = self.display_value(pos)?;
         match value {
             CellValue::Number(_) => {
@@ -68,7 +68,7 @@ impl Sheet {
     }
 
     /// Returns the rendered value of the cells in a given rect.
-    pub fn cells_as_string(&self, rect: Rect) -> Vec<Vec<JsCellValueCode>> {
+    pub(crate) fn cells_as_string(&self, rect: Rect) -> Vec<Vec<JsCellValueCode>> {
         let mut values = Vec::new();
         for y in rect.min.y..=rect.max.y {
             let mut row = Vec::new();
@@ -101,7 +101,7 @@ impl Sheet {
     ///
     /// todo: it would be better if this returned ranges (but this is difficult
     /// b/c of tables vs. non-table formatting)
-    pub fn cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
+    pub(crate) fn cell_formats_as_string(&self, rect: Rect) -> Vec<String> {
         let mut formats = Vec::new();
         for x in rect.min.x..=rect.max.x {
             for y in rect.min.y..=rect.max.y {

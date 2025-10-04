@@ -21,7 +21,7 @@ pub use {
 
 #[track_caller]
 #[cfg(test)]
-pub fn str_vec_to_string_vec(values: &Vec<&str>) -> Vec<String> {
+pub(crate) fn str_vec_to_string_vec(values: &Vec<&str>) -> Vec<String> {
     values.iter().map(|s| s.to_string()).collect()
 }
 

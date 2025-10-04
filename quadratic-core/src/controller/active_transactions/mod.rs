@@ -34,7 +34,7 @@ pub struct ActiveTransactions {
 }
 
 impl ActiveTransactions {
-    pub fn new(last_sequence_num: u64) -> Self {
+    pub(crate) fn new(last_sequence_num: u64) -> Self {
         ActiveTransactions {
             last_sequence_num,
             ..Default::default()
@@ -42,7 +42,7 @@ impl ActiveTransactions {
     }
 
     /// Returns a transaction index based on the transaction_id
-    pub fn get_async_transaction_index(&self, transaction_id: Uuid) -> Result<usize> {
+    pub(crate) fn get_async_transaction_index(&self, transaction_id: Uuid) -> Result<usize> {
         self.async_transactions
             .iter()
             .position(|p| p.id == transaction_id && p.has_async > 0)
@@ -54,14 +54,17 @@ impl ActiveTransactions {
     }
 
     /// Returns a transaction based on the transaction_id
-    pub fn get_async_transaction(&self, transaction_id: Uuid) -> Result<PendingTransaction> {
+    pub(crate) fn get_async_transaction(&self, transaction_id: Uuid) -> Result<PendingTransaction> {
         let index = self.get_async_transaction_index(transaction_id)?;
 
         Ok(self.async_transactions[index].to_owned())
     }
 
     /// Removes and returns the mutable awaiting_async transaction based on its transaction_id
-    pub fn remove_awaiting_async(&mut self, transaction_id: Uuid) -> Result<PendingTransaction> {
+    pub(crate) fn remove_awaiting_async(
+        &mut self,
+        transaction_id: Uuid,
+    ) -> Result<PendingTransaction> {
         let index = self.get_async_transaction_index(transaction_id)?;
         let transaction = &mut self.async_transactions[index];
         transaction.has_async -= 1;
@@ -72,7 +75,7 @@ impl ActiveTransactions {
         }
     }
 
-    pub fn add_async_transaction(&mut self, pending: &mut PendingTransaction) {
+    pub(crate) fn add_async_transaction(&mut self, pending: &mut PendingTransaction) {
         // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
         // unsaved operation with the new version.
         self.unsaved_transactions.insert_or_replace(pending, false);
@@ -85,7 +88,7 @@ impl ActiveTransactions {
         }
     }
 
-    pub fn update_async_transaction(&mut self, pending: &PendingTransaction) {
+    pub(crate) fn update_async_transaction(&mut self, pending: &PendingTransaction) {
         // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
         // unsaved operation with the new version.
         self.unsaved_transactions.insert_or_replace(pending, false);
@@ -97,19 +100,20 @@ impl ActiveTransactions {
         }
     }
 
-    pub fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
+    pub(crate) fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
         self.unsaved_transactions
             .mark_transaction_sent(&transaction_id);
     }
 
     /// Returns the async_transactions for testing purposes
-    pub fn async_transactions(&self) -> &[PendingTransaction] {
+    #[cfg(test)]
+    pub(crate) fn async_transactions(&self) -> &[PendingTransaction] {
         &self.async_transactions
     }
 
     /// Returns the async_transactions for testing purposes
     #[cfg(test)]
-    pub fn async_transactions_mut(&mut self) -> &mut Vec<PendingTransaction> {
+    pub(crate) fn async_transactions_mut(&mut self) -> &mut Vec<PendingTransaction> {
         &mut self.async_transactions
     }
 }

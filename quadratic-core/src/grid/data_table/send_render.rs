@@ -26,7 +26,7 @@ impl DataTable {
             return Ok(());
         }
 
-        let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
+        let data_table_sheet_pos = data_table_pos.as_sheet_pos(sheet.id);
         let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
 
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
@@ -279,7 +279,7 @@ impl DataTable {
                                         ) as i64;
 
                                     let mut hash: Pos = (display_col, display_row).into();
-                                    hash.to_quadrant();
+                                    hash.as_quadrant();
                                     dirty_hashes.insert(hash);
                                 }
                             }

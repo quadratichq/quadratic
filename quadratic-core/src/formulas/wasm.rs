@@ -32,7 +32,7 @@ pub fn check_formula(
         x: x as i64,
         y: y as i64,
     }
-    .to_sheet_pos(sheet_id);
+    .as_sheet_pos(sheet_id);
     Ok(parse_and_check_formula(
         formula_string,
         context.get_context(),

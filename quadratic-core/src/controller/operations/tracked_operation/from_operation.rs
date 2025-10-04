@@ -41,7 +41,7 @@ fn get_table_name(data_table: Option<&DataTable>) -> Option<String> {
 }
 
 impl TrackedOperation {
-    pub fn from_operation(operation: &Operation, gc: &GridController) -> Option<Self> {
+    pub(crate) fn from_operation(operation: &Operation, gc: &GridController) -> Option<Self> {
         match operation {
             Operation::SetCellValues { sheet_pos, values } => Some(Self::SetCellValues {
                 selection: sheet_rect_to_selection(

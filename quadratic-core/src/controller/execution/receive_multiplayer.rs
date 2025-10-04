@@ -79,7 +79,7 @@ impl GridController {
 
     /// Server sends us the latest sequence_num to ensure we're in sync. We respond with a request if
     /// we've been missing numbers for too long.
-    pub fn receive_sequence_num(&mut self, sequence_num: u64) {
+    pub(crate) fn receive_sequence_num(&mut self, sequence_num: u64) {
         if sequence_num != self.transactions.last_sequence_num {
             let now = Utc::now();
             if match self.transactions.last_get_transactions_time {
@@ -201,7 +201,7 @@ impl GridController {
     }
 
     /// Received a transaction from the server
-    pub fn received_transaction(
+    pub(crate) fn received_transaction(
         &mut self,
         transaction_id: Uuid,
         sequence_num: u64,
@@ -217,7 +217,7 @@ impl GridController {
     }
 
     /// Received transactions from the server
-    pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
+    pub(crate) fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         self.rollback_unsaved_transactions();
 
         // combine all transaction into one transaction
@@ -238,7 +238,7 @@ impl GridController {
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.
-    pub fn apply_offline_unsaved_transaction(
+    pub(crate) fn apply_offline_unsaved_transaction(
         &mut self,
         transaction_id: Uuid,
         unsaved_transaction: UnsavedTransaction,
@@ -811,7 +811,7 @@ mod tests {
         let mut other = GridController::test();
         other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "From other".to_string(),
             None,
             false,
@@ -821,7 +821,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -879,7 +879,7 @@ mod tests {
     fn create_multiple_calculations_0(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].as_sheet_pos(sheet_id),
             "1".to_string(),
             None,
             false,
@@ -892,7 +892,7 @@ mod tests {
     fn create_multiple_calculations_1(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"A1\") + 1".into(),
             None,
@@ -919,7 +919,7 @@ mod tests {
     fn create_multiple_calculations_2(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].as_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"B1\") + 1".into(),
             None,

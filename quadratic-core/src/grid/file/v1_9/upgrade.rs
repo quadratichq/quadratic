@@ -45,7 +45,7 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v1_10::DataTab
         .collect()
 }
 
-pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
+pub(crate) fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
     v1_10::SheetSchema {
         id: sheet.id,
         name: sheet.name,
@@ -61,7 +61,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_10::SheetSchema {
     }
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_10::GridSchema> {
+pub(crate) fn upgrade(grid: current::GridSchema) -> Result<v1_10::GridSchema> {
     let new_grid = v1_10::GridSchema {
         version: Some("1.10".to_string()),
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),

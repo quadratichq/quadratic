@@ -17,7 +17,7 @@ use super::{
     validations::{export_validations, import_validations},
 };
 
-pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
+pub(crate) fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
     let columns = import_column_builder(sheet.columns);
     let data_tables = import_data_table_builder(sheet.data_tables, &columns)?;
 

@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl Sheet {
-    pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
+    pub(crate) fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
         let dt = self.data_table_at(&pos)?;
         if !dt.is_html() {
             return None;
@@ -31,7 +31,7 @@ impl Sheet {
         })
     }
 
-    pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
+    pub(crate) fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.data_tables
             .expensive_iter()
             .filter_map(|(pos, dt)| {
@@ -115,13 +115,13 @@ impl Sheet {
     }
 
     // Returns a single code cell for rendering.
-    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
+    pub(crate) fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
         let data_table = self.data_table_at(&pos)?;
         self.render_code_cell(pos, data_table)
     }
 
     /// Sends all sheet code cells for rendering to client
-    pub fn send_all_render_code_cells(&self) {
+    pub(crate) fn send_all_render_code_cells(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -143,7 +143,7 @@ impl Sheet {
     /// inside CodeRuns. We may open this up in the future to allow images to be
     /// placed directly on the grid without a CodeRun. In that case, we'll need
     /// to search the columns for images as well.
-    pub fn send_all_images(&self) {
+    pub(crate) fn send_all_images(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -166,7 +166,7 @@ impl Sheet {
     }
 
     /// Sends an image to the client.
-    pub fn send_image(&self, pos: Pos) {
+    pub(crate) fn send_image(&self, pos: Pos) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }

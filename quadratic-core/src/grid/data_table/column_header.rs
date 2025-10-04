@@ -22,7 +22,7 @@ impl From<DataTableColumnHeader> for CellValue {
 }
 
 impl DataTableColumnHeader {
-    pub fn new(name: String, display: bool, value_index: u32) -> Self {
+    pub(crate) fn new(name: String, display: bool, value_index: u32) -> Self {
         DataTableColumnHeader {
             name: CellValue::Text(sanitize_column_name(name)),
             display,
@@ -32,16 +32,8 @@ impl DataTableColumnHeader {
 }
 
 impl DataTable {
-    /// Returns the number of columns in the data table.
-    pub fn column_headers_len(&self) -> u32 {
-        self.column_headers
-            .as_ref()
-            .map(|headers| headers.len() as u32)
-            .unwrap_or(0)
-    }
-
     /// Takes the first row of the array and sets it as the column headings.
-    pub fn apply_first_row_as_header(&mut self) {
+    pub(crate) fn apply_first_row_as_header(&mut self) {
         self.header_is_first_row = true;
 
         let first_row = match &self.value {
@@ -64,7 +56,7 @@ impl DataTable {
     }
 
     /// Toggles whether the first row of the data table is used as the column headings.
-    pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
+    pub(crate) fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
         match first_row_as_header {
             true => self.apply_first_row_as_header(),
             false => self.apply_default_header(),
@@ -73,7 +65,7 @@ impl DataTable {
 
     /// Create default column headings for the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
-    pub fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumnHeader> {
+    pub(crate) fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumnHeader> {
         let func = |i: u32| format!("Column {i}");
 
         self.default_header_with_name(func, width)
@@ -81,7 +73,7 @@ impl DataTable {
 
     /// Create default column headings for the DataTable.
     /// Accept a formatting function
-    pub fn default_header_with_name(
+    pub(crate) fn default_header_with_name(
         &self,
         func: impl Fn(u32) -> String,
         width: Option<u32>,
@@ -101,20 +93,20 @@ impl DataTable {
 
     /// Apply default column headings to the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
-    pub fn apply_default_header(&mut self) {
+    pub(crate) fn apply_default_header(&mut self) {
         self.header_is_first_row = false;
         self.column_headers = Some(self.default_header(None));
     }
 
     /// Get the display of a column header at the given index.
-    pub fn header_display(&self, index: usize) -> bool {
+    pub(crate) fn header_display(&self, index: usize) -> bool {
         self.column_headers
             .as_ref()
             .is_none_or(|headers| headers.get(index).is_none_or(|header| header.display))
     }
 
     /// Adjust the index for the header.
-    pub fn adjust_for_header(&self, index: usize) -> usize {
+    pub(crate) fn adjust_for_header(&self, index: usize) -> usize {
         if self.header_is_first_row {
             index + 1
         } else {
@@ -124,7 +116,7 @@ impl DataTable {
 
     /// Prepares the columns to be sent to the client. If no columns are set, it
     /// will create default columns.
-    pub fn send_columns(&self) -> Vec<JsDataTableColumnHeader> {
+    pub(crate) fn send_columns(&self) -> Vec<JsDataTableColumnHeader> {
         let columns = match self.column_headers.as_ref() {
             Some(columns) => columns,
             None => {
@@ -139,7 +131,7 @@ impl DataTable {
     }
 
     /// Create a unique column header name.
-    pub fn unique_column_header_name(
+    pub(crate) fn unique_column_header_name(
         &self,
         name: Option<&str>,
         index: usize,
@@ -165,7 +157,7 @@ impl DataTable {
     }
 
     /// Set the display of a column header at the given index.
-    pub fn normalize_column_header_names(&mut self) {
+    pub(crate) fn normalize_column_header_names(&mut self) {
         let mut all_names: Vec<String> = vec![];
 
         if let Some(columns) = self.column_headers.as_mut() {
@@ -180,28 +172,29 @@ impl DataTable {
     }
 
     /// Get a column header by index.
-    pub fn get_column_header(&self, index: usize) -> Option<&DataTableColumnHeader> {
+    pub(crate) fn get_column_header(&self, index: usize) -> Option<&DataTableColumnHeader> {
         self.column_headers
             .as_ref()
             .and_then(|columns| columns.get(index))
     }
 
     /// Get a column header by name.
-    pub fn get_header_by_name(&self, name: &str) -> Option<&DataTableColumnHeader> {
+    #[cfg(test)]
+    pub(crate) fn get_header_by_name(&self, name: &str) -> Option<&DataTableColumnHeader> {
         self.column_headers
             .as_ref()
             .and_then(|columns| columns.iter().find(|h| h.name.to_string() == name))
     }
 
     /// Convert column headers to a vector of cell values.
-    pub fn column_headers_to_cell_values(&self) -> Option<Vec<CellValue>> {
+    pub(crate) fn column_headers_to_cell_values(&self) -> Option<Vec<CellValue>> {
         self.column_headers
             .as_ref()
             .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
     }
 
     /// Get the column header at the given display index.
-    pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
+    pub(crate) fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
         let column_index = self.get_column_index_from_display_index(display_x, true);
         self.get_column_header(column_index as usize)
     }

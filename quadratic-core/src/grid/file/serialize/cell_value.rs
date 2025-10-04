@@ -8,7 +8,7 @@ use crate::{
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
-pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCellLanguageSchema {
+pub(crate) fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCellLanguageSchema {
     match language {
         CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
         CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
@@ -31,7 +31,7 @@ pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCel
     }
 }
 
-pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
+pub(crate) fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
     match cell_value {
         CellValue::Blank => current::CellValueSchema::Blank,
         CellValue::Text(text) => current::CellValueSchema::Text(text),
@@ -52,17 +52,17 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
 
 // Change Decimal to a current::CellValue (this will be used to convert BD to
 // various CellValue::Number* types, such as NumberF32, etc.)
-pub fn export_cell_value_number(number: Decimal) -> current::CellValueSchema {
+pub(crate) fn export_cell_value_number(number: Decimal) -> current::CellValueSchema {
     current::CellValueSchema::Number(number.to_string())
 }
 
 // Change Decimal's serialization to a grid::CellValue (this will be used to
 // convert BD to various CellValue::Number* types, such as NumberF32, etc.)
-pub fn import_cell_value_number(number: String) -> CellValue {
+pub(crate) fn import_cell_value_number(number: String) -> CellValue {
     CellValue::Number(decimal_from_str(&number).unwrap_or_default())
 }
 
-pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {
+pub(crate) fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {
     match language {
         current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
         current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
@@ -85,7 +85,7 @@ pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> C
     }
 }
 
-pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
+pub(crate) fn import_cell_value(value: current::CellValueSchema) -> CellValue {
     match value {
         current::CellValueSchema::Blank => CellValue::Blank,
         current::CellValueSchema::Text(text) => CellValue::Text(text),

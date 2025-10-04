@@ -20,7 +20,6 @@ use quadratic_core::{
     a1::A1Selection,
     controller::GridController,
     grid::{Grid, file},
-    util::dbgjs,
 };
 use quadratic_rust_shared::test::benchmark::single_test_or_benchmark;
 
@@ -45,7 +44,7 @@ fn execute(file: &[u8], file_name: &str) {
     )
     .unwrap();
     let file = file::export(gc.into_grid()).unwrap();
-    dbgjs(format!("file size: {}", file.len()));
+    dbg!(format!("file size: {}", file.len()));
 
     let _grid = file::import(file).unwrap();
 }

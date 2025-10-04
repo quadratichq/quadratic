@@ -48,7 +48,7 @@ impl Sheet {
                         transaction
                             .reverse_operations
                             .push(Operation::SetChartCellSize {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 w: width,
                                 h: height,
                             });
@@ -70,7 +70,7 @@ impl Sheet {
                         transaction
                             .reverse_operations
                             .push(Operation::DeleteDataTableColumns {
-                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                sheet_pos: pos.as_sheet_pos(sheet_id),
                                 columns: vec![column_index],
                                 flatten: false,
                                 select_table: false,
@@ -147,8 +147,8 @@ impl Sheet {
                 transaction
                     .reverse_operations
                     .push(Operation::MoveDataTable {
-                        old_sheet_pos: new_pos.to_sheet_pos(self.id),
-                        new_sheet_pos: old_pos.to_sheet_pos(self.id),
+                        old_sheet_pos: new_pos.as_sheet_pos(self.id),
+                        new_sheet_pos: old_pos.as_sheet_pos(self.id),
                     });
             }
         }

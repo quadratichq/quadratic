@@ -5,7 +5,7 @@ impl RefRangeBounds {
     ///
     /// It's impossible to give an exact answer without knowing the bounds of
     /// each column and row.
-    pub fn might_intersect_rect(self, rect: Rect) -> bool {
+    pub(crate) fn might_intersect_rect(self, rect: Rect) -> bool {
         range_might_intersect(rect.x_range(), self.start.col, self.end.col)
             && range_might_intersect(rect.y_range(), self.start.row, self.end.row)
     }
@@ -14,25 +14,12 @@ impl RefRangeBounds {
     ///
     /// It's impossible to give an exact answer without knowing the bounds of
     /// each column and row.
-    pub fn might_contain_pos(self, pos: Pos) -> bool {
+    pub(crate) fn might_contain_pos(self, pos: Pos) -> bool {
         self.might_intersect_rect(Rect::single_pos(pos))
     }
 
-    /// Returns whether `self` might include the columns in the range
-    /// `start..=end`. Infinite ranges are allowed and return true.
-    pub fn might_contain_cols(&self, start: i64, end: i64) -> bool {
-        // If the start is past the end, it can't include any columns
-        self.start.col() <= end && self.end.col() >= start
-    }
-
-    /// Returns whether `self` might include the rows in the range
-    /// `start..=end`. Infinite ranges are allowed and return true.
-    pub fn might_contain_rows(&self, start: i64, end: i64) -> bool {
-        self.start.row() <= end && self.end.row() >= start
-    }
-
     /// Returns whether `self` contains `pos` regardless of data bounds.
-    pub fn contains_pos(self, pos: Pos) -> bool {
+    pub(crate) fn contains_pos(self, pos: Pos) -> bool {
         if pos.x < self.start.col() || pos.x > self.end.col() {
             return false;
         }
@@ -67,24 +54,6 @@ mod tests {
         assert!(!RefRangeBounds::test_a1("A1:D10").contains_pos(Pos::new(11, 1)));
 
         assert!(RefRangeBounds::test_a1("B7:G7").contains_pos(Pos::new(2, 7)));
-    }
-
-    #[test]
-    fn test_might_contain_cols() {
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_cols(1, 2));
-        assert!(!RefRangeBounds::test_a1("A1:B2").might_contain_cols(3, 4));
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_cols(1, 10));
-        assert!(RefRangeBounds::test_a1("*").might_contain_cols(1, 10));
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_cols(1, 1));
-    }
-
-    #[test]
-    fn test_might_contain_rows() {
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_rows(1, 2));
-        assert!(!RefRangeBounds::test_a1("A1:B2").might_contain_rows(3, 4));
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_rows(1, 10));
-        assert!(RefRangeBounds::test_a1("*").might_contain_rows(1, 10));
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_rows(1, 1));
     }
 
     #[test]

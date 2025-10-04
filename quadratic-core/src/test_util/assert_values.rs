@@ -4,7 +4,7 @@ use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::SheetId}
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_value(
+pub(crate) fn assert_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -23,7 +23,7 @@ pub fn assert_cell_value(
 /// Run an assertion that a cell value is equal to the given value using the first sheet of the gc
 #[track_caller]
 #[cfg(test)]
-pub fn assert_display_cell_value_first_sheet(
+pub(crate) fn assert_display_cell_value_first_sheet(
     grid_controller: &GridController,
     x: i64,
     y: i64,
@@ -35,14 +35,14 @@ pub fn assert_display_cell_value_first_sheet(
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_display(gc: &GridController, sheet_pos: SheetPos, value: &str) {
+pub(crate) fn assert_display(gc: &GridController, sheet_pos: SheetPos, value: &str) {
     assert_display_cell_value(gc, sheet_pos.sheet_id, sheet_pos.x, sheet_pos.y, value);
 }
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_display_cell_value(
+pub(crate) fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -70,7 +70,7 @@ pub fn assert_display_cell_value(
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_display_cell_value_pos(
+pub(crate) fn assert_display_cell_value_pos(
     grid_controller: &GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -81,7 +81,7 @@ pub fn assert_display_cell_value_pos(
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
+pub(crate) fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
     let Some(code_run) = gc.sheet(pos.sheet_id).code_run_at(&pos.into()) else {
         panic!("No code cell at {pos}");
     };
@@ -95,7 +95,7 @@ pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
+pub(crate) fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
     let Some(cell_value) = sheet.edit_code_value(Pos { x, y }, gc.a1_context()) else {
         panic!("Expected code cell at {}", Pos { x, y });
@@ -111,7 +111,7 @@ pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y:
 // Run an assertion that cell values in a give column are equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_value_col(
+pub(crate) fn assert_cell_value_col(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -133,7 +133,7 @@ pub fn assert_cell_value_col(
 /// Run an assertion that cell values in a given row are equal to the given value
 #[track_caller]
 #[cfg(test)]
-pub fn assert_cell_value_row(
+pub(crate) fn assert_cell_value_row(
     gc: &GridController,
     sheet_id: SheetId,
     x_start: i64,

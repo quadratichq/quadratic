@@ -42,7 +42,7 @@ impl CellValue {
     ///
     /// `value` is the stringified value
     /// `js_type` is the stringified CelLValue type
-    pub fn from_js(
+    pub(crate) fn from_js(
         cell_value: JsCellValueResult,
         pos: Pos,
         sheet: &mut Sheet,
@@ -66,7 +66,7 @@ impl CellValue {
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: sheet.id,
                         formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_single_cell(pos.to_sheet_pos(sheet.id)),
+                            &A1Selection::from_single_cell(pos.as_sheet_pos(sheet.id)),
                             FormatUpdate {
                                 numeric_format: Some(Some(numeric_format.clone())),
                                 ..Default::default()
@@ -94,7 +94,7 @@ impl CellValue {
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: sheet.id,
                         formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_single_cell(pos.to_sheet_pos(sheet.id)),
+                            &A1Selection::from_single_cell(pos.as_sheet_pos(sheet.id)),
                             FormatUpdate {
                                 numeric_format: Some(Some(numeric_format.clone())),
                                 ..Default::default()

@@ -16,7 +16,7 @@ use crate::{
 /// Creates a checkbox validation for a given selection. show_checkbox = true
 /// and ignore_blank = true. Returns a clone of the validation.
 #[cfg(test)]
-pub fn test_create_checkbox_with_id(gc: &mut GridController, selection: A1Selection) -> Validation {
+pub(crate) fn test_create_checkbox_with_id(gc: &mut GridController, selection: A1Selection) -> Validation {
     let validation = ValidationUpdate {
         id: Some(Uuid::new_v4()),
         selection,
@@ -34,7 +34,7 @@ pub fn test_create_checkbox_with_id(gc: &mut GridController, selection: A1Select
 /// Creates a checkbox validation for a given selection. show_checkbox = true
 /// and ignore_blank = true. Returns a clone of the validation.
 #[cfg(test)]
-pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
+pub(crate) fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
     let validation = ValidationUpdate {
         id: None,
         selection,
@@ -52,7 +52,7 @@ pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> 
 #[track_caller]
 #[cfg(test)]
 /// Asserts that the given sheet position has the expected validation id.
-pub fn assert_validation_id(
+pub(crate) fn assert_validation_id(
     gc: &GridController,
     sheet_pos: SheetPos,
     expected_validation: Option<Uuid>,
@@ -70,7 +70,7 @@ pub fn assert_validation_id(
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_validation_count(gc: &GridController, sheet_id: SheetId, expected_count: usize) {
+pub(crate) fn assert_validation_count(gc: &GridController, sheet_id: SheetId, expected_count: usize) {
     let sheet = gc.sheet(sheet_id);
     assert_eq!(
         expected_count,
@@ -83,7 +83,7 @@ pub fn assert_validation_count(gc: &GridController, sheet_id: SheetId, expected_
 
 #[track_caller]
 #[cfg(test)]
-pub fn assert_validation_warning(
+pub(crate) fn assert_validation_warning(
     gc: &GridController,
     sheet_pos: SheetPos,
     expected_validation: Option<Validation>,

@@ -4,7 +4,7 @@ use super::*;
 
 impl A1Selection {
     /// Selects a table.
-    pub fn select_table(
+    pub(crate) fn select_table(
         &mut self,
         table_name: &str,
         col: Option<String>,

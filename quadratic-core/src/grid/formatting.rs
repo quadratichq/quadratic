@@ -36,7 +36,7 @@ pub enum CellAlign {
 }
 
 impl CellAlign {
-    pub fn as_css_string(&self) -> &'static str {
+    pub(crate) fn as_css_string(&self) -> &'static str {
         match self {
             CellAlign::Center => "text-align: center;",
             CellAlign::Left => "text-align: left;",
@@ -57,7 +57,7 @@ pub enum CellVerticalAlign {
 }
 
 impl CellVerticalAlign {
-    pub fn as_css_string(&self) -> &'static str {
+    pub(crate) fn as_css_string(&self) -> &'static str {
         match self {
             CellVerticalAlign::Top => "vertical-align: top;",
             CellVerticalAlign::Middle => "vertical-align: middle;",
@@ -90,7 +90,7 @@ pub enum CellWrap {
 }
 
 impl CellWrap {
-    pub fn as_css_string(&self) -> &'static str {
+    pub(crate) fn as_css_string(&self) -> &'static str {
         match self {
             CellWrap::Overflow => "overflow: visible; white-space: nowrap;",
             CellWrap::Wrap => "overflow: hidden; white-space: normal; word-wrap: break-word;",
@@ -109,7 +109,8 @@ pub struct NumericFormat {
 
 impl NumericFormat {
     /// Returns a NumericFormat with the kind set to Percentage.
-    pub fn percentage() -> Self {
+    #[cfg(test)]
+    pub(crate) fn percentage() -> Self {
         Self {
             kind: NumericFormatKind::Percentage,
             symbol: None,
@@ -117,7 +118,8 @@ impl NumericFormat {
     }
 
     /// Returns a NumericFormat with the kind set to Number.
-    pub fn number() -> Self {
+    #[cfg(test)]
+    pub(crate) fn number() -> Self {
         Self {
             kind: NumericFormatKind::Number,
             symbol: None,

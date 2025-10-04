@@ -10,7 +10,7 @@ use crate::{
 /// column headers).
 #[track_caller]
 #[cfg(test)]
-pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
+pub(crate) fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
     let cell_value = dt.cell_value_at(col as u32, row as u32 + dt.y_adjustment(true) as u32);
     assert_eq!(
         cell_value,
@@ -26,7 +26,7 @@ pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
 /// Run an assertion that a row of data table is equal to the given values
 #[track_caller]
 #[cfg(test)]
-pub fn assert_data_table_row(dt: &DataTable, row: i64, values: Vec<&str>) {
+pub(crate) fn assert_data_table_row(dt: &DataTable, row: i64, values: Vec<&str>) {
     for (index, value) in values.iter().enumerate() {
         assert_data_table_at(dt, index as i64, row, value);
     }
@@ -35,7 +35,7 @@ pub fn assert_data_table_row(dt: &DataTable, row: i64, values: Vec<&str>) {
 /// Run an assertion that cell values in a given column are equal to the given values. It ignores the table name.
 #[track_caller]
 #[cfg(test)]
-pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) {
+pub(crate) fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) {
     for (index, value) in values.iter().enumerate() {
         assert_data_table_at(dt, column, index as i64, value);
     }
@@ -45,7 +45,7 @@ pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) 
 /// and height.
 #[cfg(test)]
 #[track_caller]
-pub fn assert_chart_size(
+pub(crate) fn assert_chart_size(
     gc: &GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -59,7 +59,7 @@ pub fn assert_chart_size(
 /// Run an assertion that a data table is equal to the given data table.
 #[cfg(test)]
 #[track_caller]
-pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
+pub(crate) fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataTable) {
     let sheet = gc.sheet(sheet_pos.sheet_id);
     let data_table = sheet.data_table_at(&sheet_pos.into()).unwrap();
     assert_eq!(
@@ -72,7 +72,7 @@ pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataT
 /// and height. Also works with charts.
 #[cfg(test)]
 #[track_caller]
-pub fn assert_data_table_size(
+pub(crate) fn assert_data_table_size(
     gc: &GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -121,7 +121,7 @@ pub fn assert_data_table_size(
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_table_count(gc: &GridController, sheet_id: SheetId, count: usize) {
+pub(crate) fn assert_table_count(gc: &GridController, sheet_id: SheetId, count: usize) {
     let sheet = gc.sheet(sheet_id);
     assert_eq!(
         sheet.data_tables.len(),
@@ -134,7 +134,7 @@ pub fn assert_table_count(gc: &GridController, sheet_id: SheetId, count: usize) 
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_data_table_sort_dirty(
+pub(crate) fn assert_data_table_sort_dirty(
     gc: &GridController,
     sheet_id: SheetId,
     pos: Pos,
@@ -152,7 +152,7 @@ pub fn assert_data_table_sort_dirty(
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_import(
+pub(crate) fn assert_import(
     gc: &GridController,
     sheet_pos: SheetPos,
     name: &str,
@@ -192,7 +192,7 @@ pub fn assert_import(
 
 #[cfg(test)]
 #[track_caller]
-pub fn assert_code_language(
+pub(crate) fn assert_code_language(
     gc: &GridController,
     sheet_pos: SheetPos,
     language: CodeCellLanguage,

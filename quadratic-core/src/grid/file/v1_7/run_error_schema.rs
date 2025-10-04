@@ -5,19 +5,19 @@ use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, num::NonZeroU32};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunErrorSchema {
-    pub span: Option<SpanSchema>,
-    pub msg: RunErrorMsgSchema,
+pub(crate) struct RunErrorSchema {
+    pub(crate) span: Option<SpanSchema>,
+    pub(crate) msg: RunErrorMsgSchema,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum AxisSchema {
+pub(crate) enum AxisSchema {
     X = 0,
     Y = 1,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum RunErrorMsgSchema {
+pub(crate) enum RunErrorMsgSchema {
     CodeRunError(Cow<'static, str>),
 
     Spill,

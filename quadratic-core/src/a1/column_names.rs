@@ -2,7 +2,7 @@ use smallvec::SmallVec;
 
 /// Returns a column's name from its number in A1 notation (where A=1, and
 /// negative columns are not allowed).
-pub fn column_name(mut column: i64) -> String {
+pub(crate) fn column_name(mut column: i64) -> String {
     let mut result_bytes_reversed = SmallVec::<[u8; 16]>::new();
     let total_alphabet_chars = (b'Z' - b'A' + 1) as i64;
 
@@ -24,7 +24,7 @@ pub fn column_name(mut column: i64) -> String {
 /// Returns the coordinate of a column from its name, or `None` if no such column exists.
 ///
 /// A=1, B=2, ... Z=26, AA=27, etc.
-pub fn column_from_name(s: &str) -> Option<i64> {
+pub(crate) fn column_from_name(s: &str) -> Option<i64> {
     fn digit(c: char) -> Option<u8> {
         let c = c.to_ascii_uppercase();
         c.is_ascii_uppercase().then(|| c as u8 - b'A')

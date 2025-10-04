@@ -30,14 +30,14 @@ impl From<&Sheet> for SheetContentCache {
 }
 
 impl SheetContentCache {
-    pub fn has_content_at_pos(&self, pos: Pos) -> bool {
+    pub(crate) fn has_content_at_pos(&self, pos: Pos) -> bool {
         // we can use is is_some() since the bool is always true
         self.has_cell_value.get(pos).is_some()
     }
 
     /// Returns the bounds of the column or None if the column is empty of
     /// content.
-    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+    pub(crate) fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
         let min = self.has_cell_value.col_min(column);
         if min == 0 {
             return None;
@@ -50,7 +50,7 @@ impl SheetContentCache {
     }
 
     /// Returns the bounds of the row or None if the row is empty of content.
-    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+    pub(crate) fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         let min = self.has_cell_value.row_min(row);
         if min == 0 {
             return None;

@@ -5,7 +5,7 @@ use itertools::Itertools;
 use sheets::{export_sheet, import_sheet};
 
 use crate::grid::Grid;
-pub use crate::grid::file::current;
+pub(crate) use crate::grid::file::current;
 
 use super::CURRENT_VERSION;
 
@@ -17,10 +17,10 @@ pub(crate) mod data_table;
 pub(crate) mod formats;
 pub(crate) mod row_resizes;
 pub(crate) mod selection;
-pub mod sheets;
+pub(crate) mod sheets;
 pub(crate) mod validations;
 
-pub fn import(file: current::GridSchema) -> Result<Grid> {
+pub(crate) fn import(file: current::GridSchema) -> Result<Grid> {
     let mut grid = Grid {
         sheets: file
             .sheets
@@ -36,7 +36,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(grid)
 }
 
-pub fn export(grid: Grid) -> Result<current::GridSchema> {
+pub(crate) fn export(grid: Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid.sheets.into_values().map(export_sheet).collect(),
