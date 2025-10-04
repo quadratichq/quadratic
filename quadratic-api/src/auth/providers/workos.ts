@@ -271,42 +271,6 @@ export const resetPasswordWorkos = async ({
   setCookiesWorkos({ res, refreshToken });
 };
 
-export const sendMagicAuthCodeWorkos = async ({
-  email,
-  res,
-}: {
-  email: string;
-  res: Response;
-}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
-  return handleEmailVerificationRequiredError(async () => {
-    clearCookiesWorkos({ res });
-
-    await getWorkos().userManagement.createMagicAuth({
-      email,
-    });
-  });
-};
-
-export const authenticateWithMagicCodeWorkos = async ({
-  email,
-  code,
-  res,
-}: {
-  email: string;
-  code: string;
-  res: Response;
-}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
-  return handleEmailVerificationRequiredError(async () => {
-    const { refreshToken } = await getWorkos().userManagement.authenticateWithMagicAuth({
-      clientId: WORKOS_CLIENT_ID,
-      email,
-      code,
-    });
-
-    setCookiesWorkos({ res, refreshToken });
-  });
-};
-
 export const clearCookiesWorkos = ({ res }: { res: Response }) => {
   res.clearCookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, {
     httpOnly: true,

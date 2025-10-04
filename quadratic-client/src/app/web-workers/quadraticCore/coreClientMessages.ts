@@ -418,7 +418,7 @@ export interface ClientCoreImportFile {
   id: number;
   file: ArrayBufferLike;
   fileName: string;
-  fileType: 'csv' | 'parquet' | 'excel';
+  fileType: 'CSV' | 'Parquet' | 'Excel';
   sheetId?: string;
   location?: JsCoordinate;
   cursor?: string;
@@ -434,6 +434,7 @@ export interface CoreClientImportFile {
   contents?: ArrayBufferLike;
   version?: string;
   error?: string;
+  responsePrompt?: string;
 }
 
 export interface ClientCoreDeleteCellValues {

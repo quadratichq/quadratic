@@ -1,9 +1,7 @@
 import express from 'express';
 import authenticateWithCode from '../routes/authenticate-with-code.POST';
-import authenticateWithMagicCode from '../routes/authenticate-with-magic-code.POST';
 import loginWithPassword from '../routes/login-with-password.POST';
 import resetPassword from '../routes/reset-password.POST';
-import sendMagicAuthCode from '../routes/send-magic-auth-code.POST';
 import sendResetPassword from '../routes/send-reset-password.POST';
 import signupWithPassword from '../routes/signup-with-password.POST';
 import authenticate from '../routes/user_management.authenticate.POST';
@@ -20,7 +18,5 @@ authRouter.use('/v0/auth/authenticate-with-code', authenticateWithCode);
 authRouter.use('/v0/auth/verify-email', verifyEmail);
 authRouter.use('/v0/auth/send-reset-password', sendResetPassword);
 authRouter.use('/v0/auth/reset-password', resetPassword);
-authRouter.use('/v0/auth/send-magic-auth-code', sendMagicAuthCode);
-authRouter.use('/v0/auth/authenticate-with-magic-code', authenticateWithMagicCode);
 
 export default authRouter;

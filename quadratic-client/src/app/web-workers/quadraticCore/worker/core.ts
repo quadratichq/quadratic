@@ -51,6 +51,7 @@ import type {
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
+  CoreClientImportFile,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
@@ -422,23 +423,19 @@ class Core {
     hasHeading,
     isOverwrite,
     isAi,
-  }: ClientCoreImportFile): Promise<{
-    contents?: ArrayBufferLike;
-    version?: string;
-    error?: string;
-  }> {
+  }: ClientCoreImportFile): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> {
     if (cursor === undefined) {
       try {
         await initCore();
         let gc: GridController;
         switch (fileType) {
-          case 'excel':
+          case 'Excel':
             gc = GridController.importExcel(new Uint8Array(file), fileName);
             break;
-          case 'csv':
+          case 'CSV':
             gc = GridController.importCsv(new Uint8Array(file), fileName, csvDelimiter, hasHeading);
             break;
-          case 'parquet':
+          case 'Parquet':
             gc = GridController.importParquet(new Uint8Array(file), fileName);
             break;
           default:
@@ -454,23 +451,16 @@ class Core {
     } else {
       try {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
+        let response: JsResponse | string;
         switch (fileType) {
-          case 'excel':
-            const response: JsResponse = this.gridController.importExcelIntoExistingFile(
-              new Uint8Array(file),
-              fileName,
-              cursor,
-              isAi
-            );
-            if (response.error) {
-              return { error: response.error };
-            }
+          case 'Excel':
+            response = this.gridController.importExcelIntoExistingFile(new Uint8Array(file), fileName, cursor, isAi);
             break;
-          case 'csv':
+          case 'CSV':
             if (sheetId === undefined || location === undefined) {
               return { error: 'Expected sheetId and location to be defined' };
             }
-            this.gridController.importCsvIntoExistingFile(
+            response = this.gridController.importCsvIntoExistingFile(
               new Uint8Array(file),
               fileName,
               sheetId,
@@ -481,11 +471,11 @@ class Core {
               isAi
             );
             break;
-          case 'parquet':
+          case 'Parquet':
             if (sheetId === undefined || location === undefined) {
               return { error: 'Expected sheetId and location to be defined' };
             }
-            this.gridController.importParquetIntoExistingFile(
+            response = this.gridController.importParquetIntoExistingFile(
               new Uint8Array(file),
               fileName,
               sheetId,
@@ -497,7 +487,11 @@ class Core {
           default:
             return { error: 'Unsupported file type' };
         }
-        return {};
+        return typeof response === 'string'
+          ? { responsePrompt: response }
+          : response.error
+            ? { error: response.error }
+            : {};
       } catch (error: unknown) {
         this.handleCoreError('importFile.App', error);
         return { error: error as string };

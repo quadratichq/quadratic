@@ -1,6 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
-
+import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
@@ -21,13 +21,14 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
   fast: { label: 'Default', description: 'Good for everyday tasks' },
-  max: { label: 'Max', description: 'Very slow, but most capable' },
+  max: { label: 'Max', description: 'Smartest and most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -106,16 +107,19 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     },
     [modelConfigs, setSelectedModel, thinkingToggle]
   );
-  const selectedModelLabel = useMemo(() => {
-    return (
-      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ||
-      'Default'
-    );
-  }, [selectedModelMode]);
+  const selectedModelLabel = useMemo(
+    () => MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode].label,
+    [selectedModelMode]
+  );
 
-  const { setKnowsAboutModelPicker } = useUserDataKv();
-  // Disabled: AI tooltip after 5 prompts
-  const isOpenDidYouKnowDialog = useMemo(() => false, []);
+  const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
+  const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+  // If they've already seen the popover, don't show it.
+  // Otherwise, only show it to them when they've used the AI a bit.
+  const isOpenDidYouKnowDialog = useMemo(
+    () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
+    [knowsAboutModelPicker, userMessagesCount]
+  );
 
   return (
     <>
@@ -185,7 +189,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           open={!loading && isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
-          description="Default is our fastest model. Max is max intelligence but extremely slow."
+          description="Default is our fastest model. Max is the smartest and most capable."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}
@@ -195,7 +199,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 setKnowsAboutModelPicker(true);
               }}
             >
-              Model: {selectedModelLabel}
+              {selectedModelLabel}
               <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
             </PopoverTrigger>
 
