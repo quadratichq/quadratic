@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import { getExperimentAIMsgCountLimit } from 'quadratic-shared/experiments/getExperimentAIMsgCountLimit';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import {
@@ -7,7 +8,6 @@ import {
   BillingAIUsageMonthlyForUserInTeam,
 } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
-import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
@@ -35,9 +35,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
 
   // If the billing limit is not set, we don't need to check if the user has exceeded it
-  if (!BILLING_AI_USAGE_LIMIT) {
-    return res.status(200).json({ exceededBillingLimit: false });
-  }
+  // if (!BILLING_AI_USAGE_LIMIT) {
+  //   return res.status(200).json({ exceededBillingLimit: false });
+  // }
 
   // Lookup the team
   const team = await dbClient.team.findUnique({
@@ -71,12 +71,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Get usage
   const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-  const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  const exceededBillingLimit = await BillingAIUsageLimitExceeded(usage, team.uuid);
   const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
+  const { value: billingLimit } = await getExperimentAIMsgCountLimit(team.uuid);
 
   const data = {
     exceededBillingLimit,
-    billingLimit: BILLING_AI_USAGE_LIMIT,
+    billingLimit,
     currentPeriodUsage,
   };
   return res.status(200).json(data);

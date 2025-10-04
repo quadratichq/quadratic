@@ -17,6 +17,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
+import { getExperimentAIMsgCountLimit } from 'quadratic-shared/experiments/getExperimentAIMsgCountLimit';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -198,9 +199,11 @@ export const Component = () => {
                     {!isOnPaidPlan ? (
                       <Button
                         disabled={!canManageBilling}
-                        onClick={() => {
+                        onClick={async () => {
+                          const { events } = await getExperimentAIMsgCountLimit(team.uuid);
                           trackEvent('[TeamSettings].upgradeToProClicked', {
                             team_uuid: team.uuid,
+                            ...events,
                           });
                           apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
                             window.location.href = data.url;
@@ -217,6 +220,8 @@ export const Component = () => {
                           variant="outline"
                           className="w-full"
                           onClick={() => {
+                            // Do we track manage billing / cancel too?
+                            // Nothing about this is persisted
                             trackEvent('[TeamSettings].manageBillingClicked', {
                               team_uuid: team.uuid,
                             });

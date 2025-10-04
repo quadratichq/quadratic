@@ -1,5 +1,5 @@
+import { getExperimentAIMsgCountLimit } from 'quadratic-shared/experiments/getExperimentAIMsgCountLimit';
 import dbClient from '../dbClient';
-import { BILLING_AI_USAGE_LIMIT } from '../env-vars';
 
 type AIMessageUsage = {
   month: string;
@@ -61,6 +61,8 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
  * @param monthlyUsage Array of monthly AI message usage, sorted by most recent month first
  * @returns True if the user has exceeded the limit, false otherwise
  */
-export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
-  return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
+export const BillingAIUsageLimitExceeded = async (monthlyUsage: AIMessageUsage[], teamUuid: string) => {
+  const { value } = await getExperimentAIMsgCountLimit(teamUuid);
+  console.log('BILLING_AI_USAGE_LIMIT', value);
+  return BillingAIUsageForCurrentMonth(monthlyUsage) >= (value ?? Infinity);
 };
