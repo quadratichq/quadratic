@@ -4,7 +4,9 @@ use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use rust_decimal::prelude::ToPrimitive;
 
+use crate::SheetRect;
 use crate::Value;
+use crate::a1::A1Selection;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
 use crate::grid::{CodeRun, DataTableKind};
@@ -114,7 +116,7 @@ impl GridController {
         insert_at: Pos,
         delimiter: Option<u8>,
         create_table: Option<bool>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -172,6 +174,7 @@ impl GridController {
         }
 
         let mut ops = vec![];
+        let response_prompt;
 
         let apply_first_row_as_header = match create_table {
             Some(true) => true,
@@ -194,6 +197,13 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
+            let output_rect = data_table.output_rect(sheet_pos.into(), true);
+            let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+            response_prompt = format!(
+                "Imported {} as a data table at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
             ops.push(Operation::SetDataTable {
                 sheet_pos,
                 data_table: Some(data_table),
@@ -202,6 +212,18 @@ impl GridController {
             });
             drop(sheet_format_updates);
         } else {
+            let a1_selection = A1Selection::from_rect(SheetRect::from_numbers(
+                sheet_pos.x,
+                sheet_pos.y,
+                cell_values.w as i64,
+                cell_values.h as i64,
+                sheet_id,
+            ));
+            response_prompt = format!(
+                "Imported {} as a flat data in sheet at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
             ops.push(Operation::SetCellValues {
                 sheet_pos,
                 values: cell_values,
@@ -213,7 +235,7 @@ impl GridController {
             });
         }
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 
     /// Imports an Excel file into the grid.
@@ -221,8 +243,9 @@ impl GridController {
         &mut self,
         file: &[u8],
         file_name: &str,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let mut ops: Vec<Operation> = vec![];
+        let mut response_prompt = format!("Imported {} as sheets - ", file_name);
         let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
         let xlsx_range_to_pos = |(row, col)| Pos {
             x: col as i64 + 1,
@@ -533,6 +556,12 @@ impl GridController {
         }
 
         for (index, sheet) in gc.grid.sheets.into_values().enumerate() {
+            if index == 0 {
+                response_prompt += &sheet.name;
+            } else {
+                response_prompt += &format!(", {}", sheet.name);
+            }
+
             // replace the first sheet if the grid is empty
             if index == 0 && self.grid.is_empty() {
                 ops.push(Operation::ReplaceSheet {
@@ -546,7 +575,7 @@ impl GridController {
             }
         }
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 
     /// Imports a Parquet file into the grid.
@@ -557,12 +586,20 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         updater: Option<impl Fn(&str, u32, u32)>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
+
+        let output_rect = data_table.output_rect(insert_at, true);
+        let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+        let response_prompt = format!(
+            "Imported {} as a data table at {}",
+            file_name,
+            a1_selection.to_string(None, self.a1_context())
+        );
 
         let ops = vec![Operation::SetDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
@@ -571,7 +608,7 @@ impl GridController {
             ignore_old_data_table: true,
         }];
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 }
 
@@ -1363,7 +1400,7 @@ mod test {
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 SIMPLE_CSV.as_bytes(),
@@ -1413,7 +1450,7 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 csv.as_bytes(),

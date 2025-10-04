@@ -13,8 +13,10 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
   isContentImage,
   isContentPdfFile,
+  isContentText,
   isContentTextFile,
   isInternalMessage,
   isToolResultMessage,
@@ -71,11 +73,14 @@ function convertContent(content: Content): Array<ContentBlockParam> {
           title: content.fileName,
         };
         return documentBlockParam;
-      } else {
+      } else if (isContentText(content)) {
         const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
+      } else {
+        return undefined;
       }
-    });
+    })
+    .filter((content) => content !== undefined);
 }
 
 function convertToolResultContent(content: ToolResultContent): Array<TextBlockParam | ImageBlockParam> {
@@ -124,7 +129,7 @@ export function getAnthropicApiArgs(
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const anthropicMessage: MessageParam = {
         role: message.role,
         content: [
@@ -133,7 +138,7 @@ export function getAnthropicApiArgs(
               (content) =>
                 !!content.text.trim() &&
                 (content.type !== 'anthropic_thinking' || !!content.signature) &&
-                (!!thinking || content.type === 'text')
+                (!!thinking || isContentText(content))
             )
             .map((content) => {
               switch (content.type) {
@@ -218,7 +223,7 @@ function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: 
 }
 
 function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
-  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
+  return toolName === undefined ? { type: 'auto', disable_parallel_tool_use: true } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(

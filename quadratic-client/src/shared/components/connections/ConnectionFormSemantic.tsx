@@ -39,7 +39,7 @@ export const ConnectionFormSemantic = ({ form }: ConnectionFormSemanticProps) =>
           onCheckedChange={(checked) => setChecked(!!checked)}
           className=""
         />
-        <Label htmlFor="semantic-description-checkbox">Include a semantic description</Label>
+        <Label htmlFor="semantic-description-checkbox">Semantic layer</Label>
       </div>
       {checked && (
         <FormField

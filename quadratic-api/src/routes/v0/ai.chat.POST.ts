@@ -103,8 +103,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     }
   }
 
+  // Abort the request if the client disconnects or aborts the request
+  const abortController = new AbortController();
+  req.socket.on('close', () => {
+    logger.info('[ai.chat.POST] Client disconnected, aborting AI request');
+    abortController.abort();
+  });
+
   const source = args.source;
-  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit, abortController.signal);
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
     throw new ApiError(400, 'User message not found');
@@ -120,7 +127,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...quadraticContext, ...args.messages];
   }
 
-  const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
+  const parsedResponse = await handleAIRequest({
+    modelKey,
+    args,
+    isOnPaidPlan,
+    exceededBillingLimit,
+    response: res,
+    signal: abortController.signal,
+  });
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);

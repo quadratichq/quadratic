@@ -17,6 +17,7 @@ import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
   isContentImage,
   isContentOpenAIReasoning,
   isContentText,
@@ -89,7 +90,7 @@ export function getOpenAIResponsesApiArgs(
   const messages: Array<ResponseInputItem> = promptMessages.reduce<Array<ResponseInputItem>>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const reasoningItems: ResponseReasoningItem[] = [];
       const openaiMessages: ResponseOutputItem[] = [
         {

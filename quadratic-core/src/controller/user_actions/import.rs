@@ -21,8 +21,8 @@ impl GridController {
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_csv_operations(
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_csv_operations(
             sheet_id,
             file,
             file_name,
@@ -36,7 +36,7 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports an Excel file into the grid.
@@ -49,15 +49,15 @@ impl GridController {
         file_name: &str,
         cursor: Option<String>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_excel_operations(file, file_name)?;
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_excel_operations(file, file_name)?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports a Parquet file into the grid.
@@ -73,15 +73,16 @@ impl GridController {
         cursor: Option<String>,
         updater: Option<impl Fn(&str, u32, u32)>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
+    ) -> Result<String> {
+        let (ops, response_prompt) =
+            self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 }
 
@@ -292,7 +293,7 @@ pub(crate) mod tests {
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
                 csv.as_bytes(),

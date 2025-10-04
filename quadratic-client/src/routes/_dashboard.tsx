@@ -33,6 +33,8 @@ import {
 } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
+const REDIRECTING_FLAG_KEY = 'usedAutoRedirectToTeamFromRoot';
+
 export const DRAWER_WIDTH = 264;
 
 /**
@@ -66,8 +68,11 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   const teamUuid = params.teamUuid ? params.teamUuid : activeTeamUuid;
 
   // If this was a request to the root of the app, re-route to the active team
+  // and set a flag to indicating that we're redirecting, that way we can figure
+  // out if we need to reset the active team in localstorage (see `catch` below)
   const url = new URL(request.url);
   if (url.pathname === '/') {
+    window.localStorage.setItem(REDIRECTING_FLAG_KEY, 'true');
     throw redirect(ROUTES.TEAM(teamUuid) + url.search);
   }
 
@@ -97,14 +102,29 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       });
 
       // We accessed the team successfully, so set it as the active team
+      // and remove the redirecting flag
+      window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
 
       return data;
     })
     .catch((error) => {
-      // If we errored out, remove this one from localstorage because we can't access it
-      // so we don't want to keep trying to load it on the home route `/`
-      setActiveTeam('');
+      // If we errored out coming from the root route `/`, we will reset the
+      // active team in localstorage because we don't have access to it any longer
+      // (and we don't want to continue trying to load it from the root `/`)
+      // When the user is sent back to the root `/` route with no active team,
+      // the app will figure out what their team is from the server (either by
+      // using the team the server returns, or by automatically creating a new one)
+      if (window.localStorage.getItem(REDIRECTING_FLAG_KEY)) {
+        window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
+        setActiveTeam('');
+        throw redirect('/');
+      }
+
+      // Otherwise, the user got to this error by explicitly trying to access a
+      // team they don't have access to (e.g. someone shared a link to a team they
+      // can't see, so we want to make that clear rather than redirect them to
+      // some other team they do have access to and potentially confuse them)
       const { status } = error;
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;
