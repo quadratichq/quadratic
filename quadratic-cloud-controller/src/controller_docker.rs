@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use futures::future::join_all;
-use quadratic_rust_shared::docker::cluster::Cluster;
-use tracing::{error, info};
+use quadratic_rust_shared::docker::container::Container;
+use tokio::sync::Mutex;
+use tracing::{error, info, trace};
 use uuid::Uuid;
 
 use crate::state::State;
@@ -19,12 +20,12 @@ impl Controller {
     }
 
     pub(crate) async fn scan_and_ensure_all_workers(&self) -> Result<()> {
-        info!("[scan_and_ensure_all_workers] Scanning and ensuring all workers exist");
+        trace!("Scanning and ensuring all workers exist");
 
         let file_ids_needing_workers = self.state.get_file_ids_to_process().await?;
 
         info!(
-            "[scan_and_ensure_all_workers] Found {} unique files with pending tasks",
+            "Found {} unique files with pending tasks",
             file_ids_needing_workers.len(),
         );
 
@@ -34,22 +35,16 @@ impl Controller {
     }
 
     async fn ensure_workers_exist(&self, file_ids: HashSet<Uuid>) -> Result<()> {
-        info!(
-            "[ensure_workers_exist] Ensuring workers exist for {} files",
-            file_ids.len()
-        );
+        trace!("Ensuring workers exist for {} files", file_ids.len());
 
         if file_ids.is_empty() {
-            info!("[ensure_workers_exist] No files to ensure workers exist for, skipping");
+            trace!("No files to ensure workers exist for, skipping");
             return Ok(());
         }
 
         let active_worker_file_ids = self.get_all_active_worker_file_ids().await?;
 
-        info!(
-            "[ensure_workers_exist] Found {} active file workers",
-            active_worker_file_ids.len(),
-        );
+        trace!("Found {} active file workers", active_worker_file_ids.len(),);
 
         let missing_workers = file_ids
             .into_iter()
@@ -57,12 +52,12 @@ impl Controller {
             .collect::<Vec<_>>();
 
         if missing_workers.is_empty() {
-            info!("[ensure_workers_exist] No files are missing file workers, skipping");
+            trace!("No files are missing file workers, skipping");
             return Ok(());
         }
 
-        info!(
-            "[ensure_workers_exist] Found {} files that are missing file workers, creating them",
+        trace!(
+            "Found {} files that are missing file workers, creating them",
             missing_workers.len()
         );
 
@@ -74,7 +69,7 @@ impl Controller {
 
         for (file_id, result) in missing_workers.into_iter().zip(results) {
             if let Err(e) = result {
-                error!("[ensure_workers_exist] Failed to create file worker for {file_id}: {e}");
+                error!("Failed to create file worker for {file_id}: {e}");
             }
         }
 
@@ -82,23 +77,40 @@ impl Controller {
     }
 
     async fn get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
-        let active_file_ids = HashSet::new();
+        let active_file_ids = self
+            .state
+            .client
+            .lock()
+            .await
+            .list_ids()
+            .await?
+            .into_iter()
+            .flat_map(|id| Uuid::parse_str(&id))
+            .collect::<HashSet<_>>();
 
         Ok(active_file_ids)
     }
 
     async fn file_has_active_worker(&self, file_id: &Uuid) -> Result<bool> {
-        info!("[file_has_active_worker] Checking if file {file_id} has an active worker");
+        let has_container = self
+            .state
+            .client
+            .lock()
+            .await
+            .has_container(&file_id.to_string())
+            .await?;
 
-        Ok(false)
+        trace!("File {file_id} has an active worker: {has_container}");
+
+        Ok(has_container)
     }
 
     async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
-        info!("[create_worker] Creating worker for file {file_id}");
+        info!("Creating worker for file {file_id}");
 
         // Check if the file has an active worker
         if self.file_has_active_worker(file_id).await? {
-            info!("File worker exists after lock for file {file_id}");
+            trace!("File worker exists after lock for file {file_id}");
             self.state.release_worker_create_lock(file_id).await;
             return Ok(());
         }
@@ -106,20 +118,52 @@ impl Controller {
         // Acquire the worker create lock
         let acquired = self.state.acquire_worker_create_lock(file_id).await;
         if !acquired {
-            info!("Worker creation lock held for file {file_id}");
+            trace!("Worker creation lock held for file {file_id}");
             return Ok(());
         }
+
+        let env_vars = vec![
+            format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
+            format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
+            format!("FILE_ID={}", file_id.to_string()),
+            format!(
+                "WORKER_EPHEMERAL_TOKEN={}",
+                self.state.generate_worker_ephemeral_token(file_id).await,
+            ),
+        ];
+
+        let container = Container::try_new(
+            "quadratic-cloud-worker",
+            self.state.client.lock().await.docker(),
+            Some(env_vars),
+            None,
+        )
+        .await?;
+
+        self.state
+            .client
+            .lock()
+            .await
+            .add_container(Arc::new(Mutex::new(container)), true)
+            .await?;
 
         Ok(())
     }
 
     pub(crate) async fn shutdown_worker(state: &Arc<State>, file_id: &Uuid) -> Result<()> {
-        info!("[shutdown_worker] Shutting down worker for file {file_id}");
+        info!("Shutting down worker for file {file_id}");
+        state
+            .client
+            .lock()
+            .await
+            .remove_container(&file_id.to_string())
+            .await?;
 
         Ok(())
     }
 
     pub(crate) async fn count_active_workers(&self) -> Result<usize> {
-        Ok(0)
+        let active_file_ids = self.get_all_active_worker_file_ids().await?;
+        Ok(active_file_ids.len())
     }
 }

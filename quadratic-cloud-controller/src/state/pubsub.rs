@@ -1,6 +1,4 @@
 use std::collections::HashSet;
-
-use anyhow::Result;
 use quadratic_rust_shared::{
     pubsub::{Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection},
     quadratic_api::Task,
@@ -9,6 +7,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use super::State;
+use crate::error::{ControllerError, Result};
 
 static GROUP_NAME: &str = "quadratic-cloud";
 static ACTIVE_FILE_CHANNEL_SET: &str = "quadratic-cloud-active-file-channel-set";
@@ -30,7 +29,7 @@ impl PubSub {
 
     /// Connect to the PubSub server
     async fn connect(config: &PubSubConfig) -> Result<RedisConnection> {
-        let connection = RedisConnection::new(config.to_owned()).await?;
+        let connection = RedisConnection::new(config.to_owned()).await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
         Ok(connection)
     }
@@ -76,30 +75,24 @@ impl State {
         self.reconnect_pubsub_if_unhealthy().await;
 
         let mut pubsub = self.pubsub.lock().await;
-
         let mut file_ids = HashSet::new();
 
         for task in tasks {
+            let task_bytes = task.as_bytes().map_err(|e| ControllerError::PubSub(e.to_string()))?;
+            
             // publish the task to the file_id channel
-            match pubsub
-                .connection
-                .publish_once_with_dedupe_key(
-                    TASK_DEDUPE_KEY_PREFIX,
-                    &task.file_id.to_string(),
-                    &task.task_id.to_string(),
-                    &task.as_bytes()?,
-                    Some(ACTIVE_FILE_CHANNEL_SET),
-                )
-                .await
-            {
-                Ok(true) => {
-                    file_ids.insert(task.file_id);
-                }
-                Ok(false) => (),
-                Err(e) => {
-                    error!("Error publishing task {task:?} to {ACTIVE_FILE_CHANNEL_SET}: {e}");
-                }
-            }
+            pubsub
+            .connection
+            .publish_once_with_dedupe_key(
+                TASK_DEDUPE_KEY_PREFIX,
+                &task.file_id.to_string(),
+                &task.task_id.to_string(),
+                &task_bytes,
+                Some(ACTIVE_FILE_CHANNEL_SET),
+            )
+            .await.map_err(|e| ControllerError::PubSub(format!("Error publishing task {task:?} to {ACTIVE_FILE_CHANNEL_SET}: {e}")))?;
+            
+            file_ids.insert(task.file_id);
         }
 
         Ok(())
@@ -114,7 +107,7 @@ impl State {
         pubsub
             .connection
             .subscribe(&file_id.to_string(), GROUP_NAME, Some("0"))
-            .await?;
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
         let messages = pubsub
             .connection
@@ -126,15 +119,34 @@ impl State {
                 10,
                 true,
             )
-            .await?;
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
+
+        info!("Got {} tasks for file {file_id}: {:?}", messages.len(), messages);
 
         let tasks = messages
             .into_iter()
-            .flat_map(|(_, task)| match Task::from_bytes(&task) {
-                Ok(task) => Some(task),
-                Err(e) => {
-                    error!("Invalid task for file {file_id:?}, error: {e}");
-                    None
+            .flat_map(|(message_id, task)| {
+                // Add detailed logging for debugging
+                if task.is_empty() {
+                    error!("Empty task data for file {file_id:?}, message_id: {message_id}");
+                    return None;
+                }
+                
+                // Log first few bytes for debugging (but not sensitive data)
+                let preview = if task.len() > 50 {
+                    format!("{}... ({} bytes)", String::from_utf8_lossy(&task[..50]), task.len())
+                } else {
+                    format!("{} ({} bytes)", String::from_utf8_lossy(&task), task.len())
+                };
+                
+                match Task::from_bytes(&task) {
+                    Ok(task) => Some(task),
+                    Err(e) => {
+                        error!(
+                            "Invalid task for file {file_id:?}, message_id: {message_id}, error: {e}, data preview: {preview}"
+                        );
+                        None
+                    }
                 }
             })
             .collect::<Vec<_>>();
@@ -151,7 +163,7 @@ impl State {
         pubsub
             .connection
             .subscribe(&file_id.to_string(), GROUP_NAME, Some("0"))
-            .await?;
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
         // acknowledge the tasks, removing them from the file_id channel and the active channel
         for task_id in task_ids {
@@ -164,10 +176,58 @@ impl State {
                     &task_id.to_string(),
                     Some(ACTIVE_FILE_CHANNEL_SET),
                 )
-                .await?;
+                .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
         }
 
         Ok(())
+    }
+
+    /// Clean up corrupted task data for a file by removing invalid entries
+    pub(crate) async fn cleanup_corrupted_tasks(&self, file_id: Uuid) -> Result<usize> {
+        self.reconnect_pubsub_if_unhealthy().await;
+
+        let mut pubsub = self.pubsub.lock().await;
+
+        pubsub
+            .connection
+            .subscribe(&file_id.to_string(), GROUP_NAME, Some("0"))
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
+
+        let messages = pubsub
+            .connection
+            .messages_with_dedupe_key(
+                &file_id.to_string(),
+                GROUP_NAME,
+                FILE_TASKS_CONSUMER,
+                None,
+                100, // Get more messages for cleanup
+                true,
+            )
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?;
+
+        let mut corrupted_count = 0;
+        let mut corrupted_message_ids = Vec::new();
+
+        for (message_id, task_data) in messages {
+            if task_data.is_empty() || task_data.iter().all(|&b| b.is_ascii_whitespace()) {
+                corrupted_message_ids.push(message_id);
+                corrupted_count += 1;
+            } else if Task::from_bytes(&task_data).is_err() {
+                corrupted_message_ids.push(message_id);
+                corrupted_count += 1;
+            }
+        }
+
+        // Acknowledge corrupted messages to remove them
+        if !corrupted_message_ids.is_empty() {
+            for message_id in corrupted_message_ids {
+                if let Ok(task_id) = Uuid::parse_str(&message_id) {
+                    let _ = self.ack_tasks(file_id, vec![task_id]).await;
+                }
+            }
+        }
+
+        Ok(corrupted_count)
     }
 
     /// Get all file ids from the active channel
@@ -179,7 +239,7 @@ impl State {
         let file_ids = pubsub
             .connection
             .active_channels(ACTIVE_FILE_CHANNEL_SET)
-            .await?
+            .await.map_err(|e| ControllerError::PubSub(e.to_string()))?
             .into_iter()
             .flat_map(|file_id| Uuid::parse_str(&file_id))
             .collect::<HashSet<_>>();

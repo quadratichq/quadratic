@@ -1,8 +1,8 @@
-use anyhow::Result;
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
 use quadratic_rust_shared::environment::Environment;
 
 use crate::config::Config;
+use crate::error::{ControllerError, Result};
 
 pub(crate) struct Settings {
     pub(crate) environment: Environment,
@@ -29,10 +29,10 @@ impl Settings {
     pub(crate) async fn new(config: &Config) -> Result<Self> {
         let jwt_encoding_key =
             EncodingKey::from_rsa_pem(config.jwt_encoding_key.replace(r"\n", "\n").as_bytes())
-                .map_err(|e| anyhow::anyhow!("Failed to create encoding key: {e}"))?;
+                .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         let jwks: JwkSet = serde_json::from_str(&config.jwks)
-            .map_err(|e| anyhow::anyhow!("Failed to parse JWKS JSON: {e}"))?;
+            .map_err(|e| ControllerError::Settings(e.to_string()))?;
 
         let settings = Settings {
             environment: config.environment,

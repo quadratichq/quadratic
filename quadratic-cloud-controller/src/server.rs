@@ -1,4 +1,3 @@
-use anyhow::Result;
 use axum::{
     Extension, Router,
     routing::{get, post},
@@ -14,13 +13,13 @@ use quadratic_rust_shared::{
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing::{error, info};
+use tracing::{error, info, trace};
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     config::Config,
     controller::Controller,
-    error::ControllerError,
+    error::{ControllerError, Result},
     health::{full_healthcheck, healthcheck},
     state::{State, jwt::handle_jwks},
     worker::{
@@ -29,29 +28,33 @@ use crate::{
     },
 };
 
+// const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
+const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
+
 async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
 
-    let controller = match Controller::new(Arc::clone(&state)).await {
-        Ok(controller) => controller,
-        Err(e) => {
-            error!("Error creating controller: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
+    let controller = Controller::new(Arc::clone(&state))
+        .await
+        .map_err(|e| ControllerError::ScheduledTaskWatcher(e.to_string()))?;
 
-    // Wait until the next minute
-    let wait_seconds = 60 - chrono::Utc::now().second() as u64;
-    info!("Waiting until next minute {} seconds", wait_seconds);
+    // Wait until the next interval
+    let current_second = chrono::Utc::now().second() as u64;
+    let wait_seconds = SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS
+        - (current_second % SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS);
+
+    info!("Waiting until next interval {} seconds", wait_seconds);
+
     sleep(Duration::from_secs(wait_seconds)).await;
 
     // Run exactly at 0 seconds of each minute
-    let mut interval = interval(Duration::from_secs(60));
+    let mut interval = interval(Duration::from_secs(SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
     loop {
         interval.tick().await;
 
-        info!("Fetching scheduled tasks from API");
+        trace!("Fetching scheduled tasks from API");
 
         // Fetch scheduled tasks from API
         let scheduled_tasks = match get_scheduled_tasks(
@@ -89,10 +92,10 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     }
 }
 
-pub(crate) fn worker_only_app(state: Arc<State>) -> Result<Router> {
-    info!("Building worker-only app");
+pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
+    trace!("Building worker-only app");
 
-    let app = Router::new()
+    Router::new()
         // Shutdown a worker
         .route(WORKER_SHUTDOWN_ROUTE, get(handle_worker_shutdown))
         //
@@ -123,13 +126,11 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Result<Router> {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        );
-
-    Ok(app)
+        )
 }
 
-pub(crate) fn public_app(state: Arc<State>) -> Result<Router> {
-    info!("Building public app");
+pub(crate) fn public_app(state: Arc<State>) -> Router {
+    trace!("Building public app");
 
     let app = Router::new()
         // JWKS for worker jwt validation
@@ -150,7 +151,7 @@ pub(crate) fn public_app(state: Arc<State>) -> Result<Router> {
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         );
 
-    Ok(app)
+    app
 }
 
 async fn start_server(
@@ -158,52 +159,34 @@ async fn start_server(
     host: String,
     port: String,
     state: Arc<State>,
-    app: fn(Arc<State>) -> Result<Router>,
+    app: fn(Arc<State>) -> Router,
 ) -> Result<()> {
     let environment = state.settings.environment;
 
-    let listener = match tokio::net::TcpListener::bind(format!("{host}:{port}")).await {
-        Ok(listener) => listener,
-        Err(e) => {
-            error!("Error binding to {host}:{port}, error: {e}",);
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
+        .await
+        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-    let local_addr = match listener.local_addr() {
-        Ok(local_addr) => local_addr,
-        Err(e) => {
-            error!("Error getting local address, error: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
+    let local_addr = listener
+        .local_addr()
+        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+    tracing::info!("listening on {local_addr} for {name}, environment={environment}");
 
     // Serve the application with ConnectInfo for IP extraction
-    let app = match app(state) {
-        Ok(app) => app,
-        Err(e) => {
-            error!("Error building {name} app: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
-
-    tracing::info!("listening on {local_addr}, environment={environment}");
-    match axum::serve(listener, app).await {
-        Ok(_) => {
-            info!("{name} stopped");
-        }
-        Err(e) => {
-            error!("Error serving {name} application: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
+    if let Err(e) = axum::serve(listener, app(state)).await {
+        error!("Error serving {name} application: {e}");
+        return Err(ControllerError::StartServer(e.to_string()).into());
     }
+
+    info!("{name} stopped");
 
     Ok(())
 }
 
-async fn start_with_backoff<F, Fut>(name: &str, state: Arc<State>, mut f: F) -> Result<()>
+async fn start_with_backoff<F, Fut>(name: &str, state: Arc<State>, f: F) -> Result<()>
 where
-    F: FnMut(Arc<State>) -> Fut,
+    F: Fn(Arc<State>) -> Fut,
     Fut: std::future::Future<Output = Result<()>>,
 {
     let mut attempt = 0;
@@ -234,21 +217,11 @@ where
 pub(crate) async fn serve() -> Result<()> {
     info!("Starting Worker Controller");
 
-    let config = match Config::new() {
-        Ok(config) => config,
-        Err(e) => {
-            error!("Error creating config: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
-
-    let state = match State::new(&config).await {
-        Ok(state) => Arc::new(state),
-        Err(e) => {
-            error!("Error creating state: {e}");
-            return Err(ControllerError::InternalServer(e.to_string()).into());
-        }
-    };
+    let config = Config::new().map_err(|e| ControllerError::StartServer(e.to_string()))?;
+    let state = State::new(&config)
+        .await
+        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+    let state = Arc::new(state);
 
     let tracing_layer = if state.settings.environment.is_production() {
         tracing_subscriber::fmt::layer().json().boxed()
@@ -269,7 +242,7 @@ pub(crate) async fn serve() -> Result<()> {
         let _ = start_with_backoff(
             "worker-only server",
             worker_only_server_state_clone,
-            |state| {
+            |state| async {
                 start_server(
                     "worker-only",
                     state.settings.worker_only_host.clone(),
@@ -277,6 +250,8 @@ pub(crate) async fn serve() -> Result<()> {
                     state,
                     worker_only_app,
                 )
+                .await
+                .map_err(|e| ControllerError::StartServer(e.to_string()))
             },
         )
         .await;
@@ -288,14 +263,18 @@ pub(crate) async fn serve() -> Result<()> {
         let _ = start_with_backoff(
             "Scheduled task watcher",
             scheduled_task_watcher_state_clone,
-            start_scheduled_task_watcher,
+            |state| async {
+                start_scheduled_task_watcher(state)
+                    .await
+                    .map_err(|e| ControllerError::StartServer(e.to_string()))
+            },
         )
         .await;
     });
 
     // Start public server
     let public_server_state_clone = Arc::clone(&state);
-    start_with_backoff("public server", public_server_state_clone, |state| {
+    start_with_backoff("public server", public_server_state_clone, |state| async {
         start_server(
             "public",
             state.settings.public_host.clone(),
@@ -303,6 +282,8 @@ pub(crate) async fn serve() -> Result<()> {
             state,
             public_app,
         )
+        .await
+        .map_err(|e| ControllerError::StartServer(e.to_string()))
     })
     .await
 }

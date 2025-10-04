@@ -246,7 +246,7 @@ pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetFileInitDataResponse {
     pub team_id: Uuid,
@@ -286,7 +286,51 @@ impl Task {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        serde_json::from_slice(bytes).map_err(|e| SharedError::Serialization(e.to_string()))
+        if bytes.is_empty() {
+            return Err(SharedError::Serialization("Task data is empty".to_string()));
+        }
+
+        // Check if bytes contain only whitespace
+        if bytes.iter().all(|&b| b.is_ascii_whitespace()) {
+            return Err(SharedError::Serialization(
+                "Task data contains only whitespace".to_string(),
+            ));
+        }
+
+        match serde_json::from_slice::<Self>(bytes) {
+            Ok(task) => {
+                // Validate the deserialized task
+                if task.file_id.is_nil() {
+                    return Err(SharedError::Serialization(
+                        "Task has invalid file_id (nil UUID)".to_string(),
+                    ));
+                }
+                if task.task_id.is_nil() {
+                    return Err(SharedError::Serialization(
+                        "Task has invalid task_id (nil UUID)".to_string(),
+                    ));
+                }
+                Ok(task)
+            }
+            Err(e) => {
+                // Provide more context about the JSON error
+                let error_msg = if bytes.len() > 100 {
+                    format!(
+                        "JSON parse error: {} (data length: {} bytes, preview: {}...)",
+                        e,
+                        bytes.len(),
+                        String::from_utf8_lossy(&bytes[..100])
+                    )
+                } else {
+                    format!(
+                        "JSON parse error: {} (data: {})",
+                        e,
+                        String::from_utf8_lossy(bytes)
+                    )
+                };
+                Err(SharedError::Serialization(error_msg))
+            }
+        }
     }
 }
 

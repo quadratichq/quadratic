@@ -7,11 +7,9 @@ pub mod jwt;
 mod pubsub;
 mod settings;
 
-use std::collections::{HashMap, HashSet};
-
-use anyhow::Result;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use std::collections::{HashMap, HashSet};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -23,13 +21,14 @@ use quadratic_rust_shared::docker::cluster::Cluster;
 use self::pubsub::PubSub;
 use self::settings::Settings;
 use crate::config::Config;
+use crate::error::{ControllerError, Result};
 
 pub(crate) struct State {
     pub(crate) settings: Settings,
     pub(crate) pubsub: Mutex<PubSub>,
 
     #[cfg(feature = "docker")]
-    pub(crate) client: quadratic_rust_shared::docker::cluster::Cluster,
+    pub(crate) client: Mutex<quadratic_rust_shared::docker::cluster::Cluster>,
 
     #[cfg(feature = "kubernetes")]
     pub(crate) client: kube::client::Client,
@@ -50,7 +49,7 @@ impl State {
         Ok(State {
             settings: Settings::new(config).await?,
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
-            client: Self::init_client().await?,
+            client: Mutex::new(Self::init_client().await?),
             worker_ephemeral_tokens: Mutex::new(HashMap::new()),
             creating_workers: Mutex::new(HashSet::new()),
         })
@@ -58,17 +57,22 @@ impl State {
 
     #[cfg(feature = "docker")]
     async fn init_client() -> Result<Cluster> {
-        let client = Cluster::try_new().await?;
+        let client = Cluster::try_new()
+            .await
+            .map_err(|e| ControllerError::Client(e.to_string()))?;
 
         Ok(client)
     }
 
     #[cfg(feature = "kubernetes")]
     fn init_client() -> Result<KubeClient> {
-        let mut kube_config = kube::Config::infer().await?;
+        let mut kube_config = kube::Config::infer()
+            .await
+            .map_err(|e| ControllerError::Client(e.to_string()))?;
         kube_config.connect_timeout = Some(std::time::Duration::from_secs(30));
         kube_config.read_timeout = Some(std::time::Duration::from_secs(30));
-        let client = KubeClient::try_from(kube_config)?;
+        let client = KubeClient::try_from(kube_config)
+            .map_err(|e| ControllerError::Client(e.to_string()))?;
 
         Ok(client)
     }
@@ -98,13 +102,16 @@ impl State {
             .await
             .get(&file_id)
             .cloned();
-        if stored_worker_ephemeral_token == Some(worker_ephemeral_token) {
-            Ok(file_id)
-        } else {
-            Err(anyhow::anyhow!(
+
+        let tokens_match = stored_worker_ephemeral_token == Some(worker_ephemeral_token);
+
+        if !tokens_match {
+            return Err(ControllerError::WorkerEphemeralToken(format!(
                 "Invalid worker ephemeral token for file {file_id}"
-            ))
+            )));
         }
+
+        Ok(file_id)
     }
 
     pub(crate) async fn remove_worker_ephemeral_token(&self, file_id: &Uuid) {

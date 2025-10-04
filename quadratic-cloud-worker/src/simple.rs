@@ -11,6 +11,7 @@ use tracing::info;
 const INTERVAL_MS: u64 = 20000; // every 20 seconds
 const API_URL: &str = "http://localhost:8000";
 const M2M_AUTH_TOKEN: &str = "M2M_AUTH_TOKEN";
+const MULTIPLAYER_URL: &str = "ws://localhost:3001/ws";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -42,6 +43,7 @@ async fn main() -> Result<()> {
                                 file_init_data.sequence_number as u64,
                                 &file_init_data.presigned_url,
                                 M2M_AUTH_TOKEN.to_string(),
+                                MULTIPLAYER_URL.to_string(),
                             )
                             .await?;
 

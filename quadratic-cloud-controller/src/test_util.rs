@@ -22,7 +22,7 @@ pub(crate) async fn new_state() -> Arc<State> {
 #[cfg(test)]
 pub(crate) async fn process_route(uri: &str, method: http::Method, body: Body) -> Response<Body> {
     let state = new_state().await;
-    let public_app = public_app(state).unwrap();
+    let public_app = public_app(state);
 
     public_app
         .oneshot(

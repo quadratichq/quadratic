@@ -101,6 +101,7 @@ pub struct Worker {
     pub(crate) file: Arc<Mutex<GridController>>,
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
     pub(crate) m2m_auth_token: String,
+    pub(crate) multiplayer_url: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
     pub(crate) websocket_receiver_handle: Option<JoinHandle<()>>,
@@ -129,6 +130,7 @@ impl Worker {
     /// * `sequence_num` - The sequence number of the file to process.
     /// * `presigned_url` - The presigned URL of the file to process.
     /// * `m2m_auth_token` - The M2M auth token to use for the worker.
+    /// * `multiplayer_url` - The URL of the multiplayer websocket server.
     ///
     /// Returns a new worker.
     pub async fn new(
@@ -136,6 +138,7 @@ impl Worker {
         sequence_num: u64,
         presigned_url: &str,
         m2m_auth_token: String,
+        multiplayer_url: String,
     ) -> Result<Self> {
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
         let mut worker = Worker {
@@ -144,6 +147,7 @@ impl Worker {
             session_id: Uuid::new_v4(),
             file: Arc::new(Mutex::new(file)),
             m2m_auth_token,
+            multiplayer_url,
             transaction_id: Arc::new(Mutex::new(None)),
             websocket_sender: None,
             websocket_receiver: None,
@@ -185,7 +189,8 @@ impl Worker {
     /// sender and receiver.
     async fn connect(&mut self) -> Result<()> {
         if !self.is_connected() {
-            let (websocket, _response) = connect(&self.m2m_auth_token).await?;
+            let (websocket, _response) =
+                connect(&self.multiplayer_url, &self.m2m_auth_token).await?;
             let (sender, receiver) = websocket.split();
 
             self.websocket_sender = Some(Arc::new(Mutex::new(sender)));
@@ -417,6 +422,7 @@ mod tests {
             sequence_num,
             &presigned_url,
             m2m_auth_token.clone(),
+            "ws://localhost:3001/ws".to_string(),
         )
         .await
         .unwrap();
@@ -436,6 +442,7 @@ mod tests {
             sequence_num,
             &presigned_url,
             m2m_auth_token.clone(),
+            "ws://localhost:3001/ws".to_string(),
         )
         .await
         .unwrap();

@@ -33,6 +33,7 @@ impl Worker {
         };
         info!("worker_init_data: {worker_init_data:?}",);
 
+        let multiplayer_url = config.multiplayer_url.to_string();
         let state = match State::new(
             config,
             worker_init_data.worker_access_token.clone(),
@@ -51,6 +52,7 @@ impl Worker {
             &worker_init_data.presigned_url,
             // worker_init_data.worker_access_token,
             "M2M_AUTH_TOKEN".to_string(),
+            multiplayer_url,
         )
         .await
         {

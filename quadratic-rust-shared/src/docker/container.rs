@@ -6,7 +6,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 pub use bollard::Docker;
-use bollard::models::ContainerCreateBody;
+use bollard::models::{ContainerCreateBody, HostConfig};
 use bollard::query_parameters::{
     CreateContainerOptions, LogsOptions, RemoveContainerOptions, StartContainerOptions,
     StopContainerOptions,
@@ -58,10 +58,16 @@ impl Container {
             ..Default::default()
         };
 
+        let host_config = HostConfig {
+            extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
+            ..Default::default()
+        };
+
         let config = ContainerCreateBody {
             image: Some(image.to_string()),
             env: env_vars,
             cmd: cmd,
+            host_config: Some(host_config),
             ..Default::default()
         };
 
@@ -162,8 +168,9 @@ pub mod tests {
 
     pub async fn new_container(docker: Arc<Mutex<Docker>>) -> Arc<Mutex<Container>> {
         let env_vars = vec![
-            format!("CONTROLLER_URL={}", "http://localhost:8080"),
-            format!("FILE_ID={}", "550e8400-e29b-41d4-a716-446655440000"),
+            format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
+            format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
+            format!("FILE_ID={}", "ae08a585-dd3a-4c90-8628-156cdebd21c4"),
             format!(
                 "WORKER_EPHEMERAL_TOKEN={}",
                 "550e8400-e29b-41d4-a716-446655440001"
@@ -193,7 +200,10 @@ pub mod tests {
         let log_container = container.clone();
         tokio::spawn(async move {
             loop {
-                println!("Logs: {}", log_container.lock().await.logs().await.unwrap());
+                if let Ok(logs) = log_container.lock().await.logs().await {
+                    println!("Logs: {}", logs);
+                }
+
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         });

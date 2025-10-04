@@ -83,6 +83,11 @@ impl Cluster {
             .ok_or(Self::error("Container not found"))
     }
 
+    /// Check if a container exists
+    pub async fn has_container(&self, id: &str) -> Result<bool> {
+        Ok(self.containers.contains_key(id))
+    }
+
     /// Add a container
     pub async fn add_container(
         &mut self,
@@ -95,6 +100,17 @@ impl Cluster {
         if start {
             container.lock().await.start().await?;
         }
+
+        let log_container = container.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Ok(logs) = log_container.lock().await.logs().await {
+                    println!("[{}] Logs: {}", log_container.lock().await.id, logs);
+                }
+
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        });
 
         Ok(())
     }
@@ -110,6 +126,10 @@ impl Cluster {
         self.containers.remove(id);
 
         Ok(())
+    }
+
+    pub fn docker(&self) -> Arc<Mutex<Docker>> {
+        Arc::clone(&self.docker)
     }
 
     /// Error helper

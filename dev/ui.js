@@ -45,6 +45,10 @@ export class UI {
         }
     }
     writeWarning(text, highlight) {
+        // Handle undefined, null, or non-string values
+        if (text == null) {
+            return;
+        }
         if (highlight) {
             process.stdout.write(chalk.yellow.bgRed(text));
         }
@@ -54,6 +58,10 @@ export class UI {
         this.trackPromptTextSize(text);
     }
     write(text, color, underline) {
+        // Handle undefined, null, or non-string values
+        if (text == null) {
+            return;
+        }
         if (underline) {
             process.stdout.write(color ? chalk[color].underline(text) : chalk.underline(text));
         }
@@ -63,6 +71,10 @@ export class UI {
         this.trackPromptTextSize(text);
     }
     trackPromptTextSize(text) {
+        // Handle undefined, null, or non-string values
+        if (text == null || typeof text !== "string") {
+            return;
+        }
         const width = process.stdout.getWindowSize()[0];
         // keep track of the cursor and wraps to remove the menu bar when writing logs
         // use an array to turn utf8 characters into 1 character
@@ -160,7 +172,7 @@ export class UI {
         this.statusItem("types");
         this.statusItem("python");
         this.statusItem("shared");
-        this.statusItem("cloudworker");
+        this.statusItem("cloudcontroller");
         if (this.help === "cli") {
             this.write(helpCLI);
         }
