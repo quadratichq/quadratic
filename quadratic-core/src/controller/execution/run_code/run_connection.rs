@@ -88,7 +88,7 @@ impl GridController {
 
         // Add the remaining part of the string
         result.push_str(&code[last_match_end..]);
-        dbgjs!(&result);
+
         Ok(result)
     }
 
