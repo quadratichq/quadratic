@@ -60,7 +60,7 @@ impl GridController {
             // one column or row), which are entered as a comma-delimited list
             // of entries (e.g., "2,3,10,1,...") in the query
 
-            if selection.is_1d_range(context) {
+            if !selection.is_1d_range(context) {
                 return Err(A1Error::WrongCellCount(
                     "Connections only supports one cell or a 1d range of cells".to_string(),
                 ));
@@ -88,7 +88,7 @@ impl GridController {
 
         // Add the remaining part of the string
         result.push_str(&code[last_match_end..]);
-
+        dbgjs!(&result);
         Ok(result)
     }
 
