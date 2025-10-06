@@ -4,6 +4,7 @@ import { logIn } from './helpers/auth.helpers';
 import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
+import { gotoCells } from './helpers/sheet.helper';
 import { createNewTeamByURL } from './helpers/team.helper';
 
 test('Action Visibility', async ({ page: userPage1 }) => {
@@ -1077,7 +1078,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test('User Can See Other Users on File', async ({ page: userPage1 }) => {
+test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User Can See Other Users on File
   //--------------------------------
@@ -1139,11 +1140,6 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage3.waitForLoadState('networkidle');
 
   await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
-
-  // Reload all pages so that user icons will show on each one
-  await userPage1.reload();
-  await userPage2.reload();
-  await userPage3.reload();
 
   //--------------------------------
   // Assert:
@@ -1251,7 +1247,26 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await expect(userPage3_user1_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage3_user2_icon).toBeVisible({ timeout: 60 * 1000 });
 
-  // ensure that multiplayer cursors are visible
+  // ensure that multiplayer cursors are visible on each screen
+  await userPage1.bringToFront();
+  await gotoCells(userPage1, { a1: 'F2:G5' });
+  await userPage2.bringToFront();
+  await gotoCells(userPage2, { a1: 'D2:E5' });
+  await userPage3.bringToFront();
+  await gotoCells(userPage3, { a1: 'B3' });
+
+  await userPage1.bringToFront();
+  await expect(userPage1.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-user-visibility-post-1.png', {
+    maxDiffPixels: 1000,
+  });
+  await userPage2.bringToFront();
+  await expect(userPage2.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-user-visibility-post-2.png', {
+    maxDiffPixels: 1000,
+  });
+  await userPage3.bringToFront();
+  await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-user-visibility-post-3.png', {
+    maxDiffPixels: 1000,
+  });
 
   // Clean up Files
   await userPage1.bringToFront();
