@@ -1000,6 +1000,7 @@ function ListItemPublicLink({
             onValueChange={(value: PublicLinkAccess) => {
               setPublicLinkAccess(value);
             }}
+            data-testid="public-link-access-select"
           >
             <SelectTrigger className={`w-auto`}>
               <SelectValue>{activeOptionLabel}</SelectValue>

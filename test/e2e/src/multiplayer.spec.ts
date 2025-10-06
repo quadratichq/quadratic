@@ -3,7 +3,7 @@ import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
-import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
+import { cleanUpFiles, closeExtraUI, createFile, navigateIntoFile, shareEditableFile } from './helpers/file.helpers';
 import { gotoCells } from './helpers/sheet.helper';
 import { createNewTeamByURL } from './helpers/team.helper';
 
@@ -1078,7 +1078,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await cleanUpFiles(userPage1, { fileName });
 });
 
-test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
+test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User Can See Other Users on File
   //--------------------------------
@@ -1247,12 +1247,53 @@ test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await expect(userPage3_user1_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage3_user2_icon).toBeVisible({ timeout: 60 * 1000 });
 
-  // ensure that multiplayer cursors are visible on each screen
+  // Clean up Files
   await userPage1.bringToFront();
+  await userPage1.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await userPage1.waitForTimeout(2000);
+  await cleanUpFiles(userPage1, { fileName });
+});
+
+test.only('User can see other users multiplayer cursors', async ({ page: userPage1 }) => {
+  // Constants
+  const fileName = 'User_Cursors';
+  await logIn(userPage1, { emailPrefix: 'e2e_user_cursors_1' });
+
+  // First user creates a new team and file
+  await cleanUpFiles(userPage1, { fileName });
+  await createFile(userPage1, { fileName, skipNavigateBack: true });
+
+  // Invite second and third users to the team
+  await shareEditableFile(userPage1);
+  const fileUrl = userPage1.url();
+
+  const user2Browser = await chromium.launch();
+  const userPage2 = await user2Browser.newPage();
+  await logIn(userPage2, { emailPrefix: 'e2e_user_cursors_2' });
+
+  const user3Browser = await chromium.launch();
+  const userPage3 = await user3Browser.newPage();
+  await logIn(userPage3, { emailPrefix: 'e2e_user_cursors_3' });
+
+  // Second user navigates into file
+  await userPage2.goto(fileUrl);
+  await userPage2.waitForTimeout(2000);
+  await userPage2.waitForLoadState('domcontentloaded');
+  await userPage2.waitForLoadState('networkidle');
+  await closeExtraUI(userPage2);
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
+
+  // Third user navigates into file
+  await userPage3.goto(fileUrl);
+  await userPage3.waitForTimeout(2000);
+  await userPage3.waitForLoadState('domcontentloaded');
+  await userPage3.waitForLoadState('networkidle');
+  await closeExtraUI(userPage3);
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 60 * 1000 });
+
+  // ensure that multiplayer cursors are visible on each screen
   await gotoCells(userPage1, { a1: 'F2:G5' });
-  await userPage2.bringToFront();
   await gotoCells(userPage2, { a1: 'D2:E5' });
-  await userPage3.bringToFront();
   await gotoCells(userPage3, { a1: 'B3' });
 
   await userPage1.bringToFront();
@@ -1267,10 +1308,4 @@ test.only('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await expect(userPage3.locator('#QuadraticCanvasID')).toHaveScreenshot('multiplayer-user-visibility-post-3.png', {
     maxDiffPixels: 1000,
   });
-
-  // Clean up Files
-  await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click({ timeout: 60 * 1000 });
-  await userPage1.waitForTimeout(2000);
-  await cleanUpFiles(userPage1, { fileName });
 });
