@@ -1251,6 +1251,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await expect(userPage3_user1_icon).toBeVisible({ timeout: 60 * 1000 });
   await expect(userPage3_user2_icon).toBeVisible({ timeout: 60 * 1000 });
 
+  // ensure that multiplayer cursors are visible
+
   // Clean up Files
   await userPage1.bringToFront();
   await userPage1.locator(`nav a svg`).click({ timeout: 60 * 1000 });
