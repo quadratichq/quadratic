@@ -60,6 +60,6 @@ export function isRestrictedModelCountry(req: Request): boolean {
   if (!restrictedCountriesEnv) {
     return false;
   }
-  const restrictedCountries = restrictedCountriesEnv.split(',').map((c) => c.trim().toUpperCase());
+  const restrictedCountries = JSON.parse(restrictedCountriesEnv).map((c: string) => c.toUpperCase());
   return restrictedCountries.includes(countryCode.toUpperCase());
 }

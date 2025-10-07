@@ -161,7 +161,7 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
-const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others']);
+const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others', 'default']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({

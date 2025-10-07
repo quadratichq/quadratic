@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { useAIModel, type MODEL_TYPE } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
@@ -34,7 +34,7 @@ interface SelectAIModelMenuProps {
   loading: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
-export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
+export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { userMakingRequest } = useFileRouteLoaderData();
   const restrictedModel = userMakingRequest.restrictedModel;
@@ -42,10 +42,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
-  const { modelKey: selectedModel, setModelKey: setSelectedModel, modelConfig: selectedModelConfig } = useAIModel();
-
-  // model shown in the UI (for others, we show the displayName of the model below)
-  const [uiModel, setUiModel] = useState<UIModels>(selectedModelConfig.mode as UIModels);
+  const { modelType, setModelType, selectedModelConfig } = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
@@ -87,9 +84,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             {dropdownModels.map(([key, modelConfig]) => (
               <DropdownMenuCheckboxItem
                 key={key}
-                checked={selectedModel === key}
+                checked={modelType === key}
                 onCheckedChange={() => {
-                  setSelectedModel(key);
+                  setModelType(key as MODEL_TYPE);
                 }}
               >
                 <div className="flex w-full items-center justify-between text-xs">
@@ -106,6 +103,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
       </>
     );
   }
+
+  const isOthers = modelType !== 'default' && modelType !== 'max';
 
   if (restrictedModel) {
     return null;
@@ -128,7 +127,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               e.stopPropagation();
             }}
           >
-            {uiModel === 'others' ? selectedModelConfig.displayName : uiModel === 'default' ? 'Default' : 'Max'}
+            {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Default' : 'Max'}
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
@@ -143,12 +142,12 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
             <form className="flex flex-col gap-1 rounded border border-border text-sm">
               <RadioGroup
-                value={uiModel}
+                value={modelType}
                 className="flex flex-col gap-0"
                 onValueChange={(value) => {
-                  setUiModel(value as UIModels);
                   if (value !== 'others') {
                     setIsPopoverOpen(false);
+                    setModelType(value as MODEL_TYPE);
                   }
                 }}
               >
@@ -179,17 +178,17 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                     <strong className="font-bold">Others</strong>
                     <span className="ml-auto font-normal">Experimental models</span>
                   </Label>
-                  {uiModel === 'others' && (
+                  {isOthers && (
                     <div className="px-4 py-2">
                       <RadioGroup
-                        value={selectedModel}
+                        value={modelType}
                         className="flex flex-col gap-1"
                         onValueChange={(value) => {
                           const modelEntry = othersModels.find(([key]) => key === value);
                           if (modelEntry) {
                             const [modelKey, modelConfig] = modelEntry;
                             trackEvent('[AI].model.change', { model: modelConfig.model });
-                            setSelectedModel(modelKey);
+                            setModelType(modelKey as MODEL_TYPE);
                             setIsPopoverOpen(false);
                           }
                         }}
