@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, FileNewIcon } from '@/shared/components/Icons';
+import { CloseIcon, EditIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -9,6 +9,7 @@ import type {
   NavigateToCreateView,
   NavigateToView,
 } from '@/shared/components/connections/Connections';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -17,7 +18,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -130,7 +131,7 @@ function ListItems({
   items: ConnectionsListConnection[];
 }) {
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-
+  const navigate = useNavigate();
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -143,7 +144,7 @@ function ListItems({
         const isNavigable = !(disabled || isDemo);
         const showSecondaryAction = !isApp && !disabled;
         const showIconHideDemo = !disabled && isDemo;
-        const showIconBrowseSchema = !isApp && !disabled && !isDemo;
+        const showIconEdit = !isApp && !disabled && !isDemo;
         return (
           <div className="group" key={uuid}>
             <div
@@ -156,7 +157,15 @@ function ListItems({
             >
               <button
                 onClick={() => {
-                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                  if (isApp) {
+                    handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                  } else {
+                    // TODO: navigate to a new file with the connection in context
+                    // ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
+                    window.location.href = ROUTES.CREATE_FILE('teamUuid', {
+                      private: true,
+                    });
+                  }
                 }}
                 disabled={!isNavigable}
                 key={uuid}
@@ -198,15 +207,15 @@ function ListItems({
                 </TooltipPopover>
               )}
 
-              {showIconBrowseSchema && (
-                <TooltipPopover label="New file from connection">
+              {showIconEdit && (
+                <TooltipPopover label="Edit connection">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
-                    onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
+                    onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
                   >
-                    <FileNewIcon />
+                    <EditIcon />
                   </Button>
                 </TooltipPopover>
               )}

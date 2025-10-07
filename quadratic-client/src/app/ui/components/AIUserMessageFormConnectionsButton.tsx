@@ -1,4 +1,4 @@
-import { aiAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { DatabaseIcon } from '@/shared/components/Icons';
@@ -18,7 +18,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback } from 'react';
-import { useRecoilCallback, useRecoilState } from 'recoil';
+import { useRecoilCallback, useSetRecoilState } from 'recoil';
 
 interface AIUserMessageFormConnectionsButtonProps {
   disabled: boolean;
@@ -29,7 +29,7 @@ interface AIUserMessageFormConnectionsButtonProps {
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
-    const [aiAnalyst, setAIAnalyst] = useRecoilState(aiAnalystAtom);
+    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickButton = useCallback(() => {
       trackEvent('[AIConnectionsPicker].show');
@@ -60,7 +60,7 @@ export const AIUserMessageFormConnectionsButton = memo(
             ...prev,
             connection: undefined,
           }));
-          setAIAnalyst((prev) => ({ ...prev, contextConnectionUuid: undefined }));
+          setAIAnalystActiveSchemaConnectionUuid(undefined);
         } else {
           trackEvent('[AIConnectionsPicker].selectConnection');
           const connection = connections.find((connection) => connection.uuid === connectionUuid);
@@ -68,15 +68,10 @@ export const AIUserMessageFormConnectionsButton = memo(
             ...prev,
             connection: connection ? { type: connection.type, id: connection.uuid, name: connection.name } : undefined,
           }));
-          setAIAnalyst((prev) => ({ ...prev, contextConnectionUuid: connectionUuid }));
+          setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
         }
       },
-      [connections, context.connection, setContext, setAIAnalyst]
-    );
-
-    console.log(
-      aiAnalyst.contextConnectionUuid,
-      connections.map((connection) => connection.uuid)
+      [connections, context.connection, setContext, setAIAnalystActiveSchemaConnectionUuid]
     );
 
     return (
