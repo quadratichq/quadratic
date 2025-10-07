@@ -7,9 +7,10 @@ use std::fmt::Display;
 pub use bollard::Docker;
 use bollard::models::{ContainerCreateBody, HostConfig};
 use bollard::query_parameters::{
-    CreateContainerOptions, LogsOptions, RemoveContainerOptions, StartContainerOptions,
-    StopContainerOptions,
+    CreateContainerOptions, InspectContainerOptions, LogsOptions, RemoveContainerOptions,
+    StartContainerOptions, StatsOptions, StopContainerOptions,
 };
+use chrono::{DateTime, Utc};
 use futures_util::{Stream, StreamExt};
 use strum_macros::Display;
 use uuid::Uuid;
@@ -32,6 +33,9 @@ pub struct Container {
     pub(crate) image_id: String,
     pub(crate) image: String,
     pub(crate) state: ContainerState,
+    pub start_time: DateTime<Utc>,
+    pub cpu_usage: f64,
+    pub memory_usage: u64,
 }
 
 impl Display for Container {
@@ -71,16 +75,19 @@ impl Container {
             ..Default::default()
         };
 
-        let container = docker
+        let create_container = docker
             .create_container(Some(create_options), config)
             .await
             .map_err(Self::error)?;
 
         Ok(Self {
             id,
-            image_id: container.id,
+            image_id: create_container.id,
             image: image.to_string(),
             state: ContainerState::Stopped,
+            start_time: Utc::now(),
+            cpu_usage: 0.0,
+            memory_usage: 0,
         })
     }
 
@@ -164,6 +171,99 @@ impl Container {
     /// Get the state of the container
     pub fn state(&self) -> ContainerState {
         self.state.clone()
+    }
+
+    /// Get the image ID of the container
+    pub fn image_id(&self) -> &str {
+        &self.image_id
+    }
+
+    /// Get the total runtime of the container in milliseconds
+    pub fn total_runtime(&self) -> u128 {
+        Utc::now()
+            .signed_duration_since(self.start_time)
+            .to_std()
+            .unwrap_or_default()
+            .as_millis()
+    }
+
+    /// Inspect the container to get detailed information including ResourceObject
+    pub async fn inspect(
+        &self,
+        docker: Docker,
+    ) -> Result<bollard::models::ContainerInspectResponse> {
+        docker
+            .inspect_container(&self.image_id, None::<InspectContainerOptions>)
+            .await
+            .map_err(Self::error)
+    }
+
+    /// Get the ResourceObject information from the container (configured limits)
+    pub async fn get_resource_info(
+        &self,
+        docker: Docker,
+    ) -> Result<Option<(Option<i64>, Option<i64>)>> {
+        let inspect_result = self.inspect(docker).await?;
+
+        if let Some(host_config) = inspect_result.host_config {
+            Ok(Some((host_config.nano_cpus, host_config.memory)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Get actual resource usage statistics from the container
+    pub async fn get_resource_usage(&self, docker: Docker) -> Result<Option<(f64, u64)>> {
+        let stats_options = StatsOptions {
+            stream: false,
+            one_shot: true,
+        };
+
+        let mut stats_stream = docker.stats(&self.image_id, Some(stats_options));
+
+        if let Some(stats_result) = stats_stream.next().await {
+            let stats = stats_result.map_err(Self::error)?;
+
+            // Calculate CPU usage percentage
+            let cpu_usage = stats
+                .cpu_stats
+                .as_ref()
+                .zip(stats.precpu_stats.as_ref())
+                .and_then(|(cpu_stats, precpu_stats)| {
+                    let cpu_usage = cpu_stats.cpu_usage.as_ref()?.total_usage?;
+                    let system_usage = cpu_stats.system_cpu_usage?;
+                    let precpu_usage = precpu_stats.cpu_usage.as_ref()?.total_usage?;
+                    let presystem_usage = precpu_stats.system_cpu_usage?;
+
+                    let cpu_delta = cpu_usage.saturating_sub(precpu_usage) as f64;
+                    let system_delta = system_usage.saturating_sub(presystem_usage) as f64;
+                    let online_cpus = cpu_stats.online_cpus.unwrap_or(1) as f64;
+
+                    (system_delta > 0.0).then(|| (cpu_delta / system_delta) * online_cpus * 100.0)
+                })
+                .unwrap_or(0.0);
+
+            // Get memory usage
+            let memory_usage = stats
+                .memory_stats
+                .as_ref()
+                .and_then(|mem| mem.usage)
+                .unwrap_or(0);
+
+            Ok(Some((cpu_usage, memory_usage)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Record the max resource usage in the container.
+    pub async fn record_resource_usage(&mut self, docker: Docker) -> Result<()> {
+        if let Ok(Some(resource_usage)) = self.get_resource_usage(docker).await {
+            self.cpu_usage = self.cpu_usage.max(resource_usage.0);
+            self.memory_usage = self.memory_usage.max(resource_usage.1);
+        }
+
+        Ok(())
     }
 
     /// Error helper

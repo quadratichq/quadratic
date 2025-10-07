@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use anyhow::Result;
+use chrono::Utc;
 use futures::future::join_all;
 use quadratic_rust_shared::docker::container::Container;
 use tokio::sync::Mutex;
@@ -155,8 +156,6 @@ impl Controller {
     }
 
     pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
-        trace!("Shutting down worker for file {file_id}");
-
         let mut client = state.client.lock().await;
         client.remove_container(&file_id).await?;
         state.release_worker_create_lock(&file_id).await;

@@ -146,13 +146,24 @@ impl Cluster {
             .remove(id)
             .ok_or(Self::error("Container not found"))?;
         let mut docker = self.docker.clone();
+        let _ = container.record_resource_usage(docker.clone()).await;
 
         // remove in a separate thread
         tokio::spawn(async move {
             if let Err(e) = container.remove(&mut docker).await {
                 tracing::error!("Error removing container: {:?}", e);
             }
-            tracing::info!("Removed container in thread: {:?}", container);
+
+            tracing::info!(
+                "Removed worker for file {} in thread: Total Runtime: {} ms, Resource Usage - CPU: {:.2}%, Memory: {} bytes ({:.2} MB)",
+                container.id,
+                container.total_runtime(),
+                container.cpu_usage,
+                container.memory_usage,
+                container.memory_usage as f64 / 1024.0 / 1024.0
+            );
+
+            drop(container);
         });
 
         Ok(())

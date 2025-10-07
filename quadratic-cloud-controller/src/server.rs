@@ -3,7 +3,6 @@ use axum::{
     routing::{get, post},
 };
 use chrono::Timelike;
-use futures_util::StreamExt;
 use quadratic_rust_shared::{
     quadratic_api::get_scheduled_tasks,
     quadratic_cloud::{
@@ -31,7 +30,7 @@ use crate::{
 };
 
 // const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
-const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 3;
+const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
 
 async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
@@ -327,7 +326,7 @@ pub(crate) async fn serve() -> Result<()> {
 
 /// In a separate thread, print the logs of all containers every second
 async fn print_container_logs(state: Arc<State>) -> Result<()> {
-    let mut interval = interval(Duration::from_secs(1));
+    let mut interval = interval(Duration::from_millis(100));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     loop {
@@ -340,14 +339,19 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
             .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
         for container_id in containe_ids {
-            let client = state.client.lock().await;
+            let mut client = state.client.lock().await;
+            let docker = client.docker.clone();
             let container = client
-                .get_container(&container_id)
+                .get_container_mut(&container_id)
                 .await
                 .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
+            // record the resource usage
+            let _ = container.record_resource_usage(docker.clone()).await;
+
+            // get the logs
             let logs = container
-                .logs(client.docker.clone())
+                .logs(docker.clone())
                 .await
                 .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
