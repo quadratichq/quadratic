@@ -20,6 +20,7 @@ import type { z } from 'zod';
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
+  contextConnectionUuid: string | undefined;
   showChatHistory: boolean;
   abortController?: AbortController;
   loading: boolean;
@@ -46,6 +47,7 @@ export interface AIAnalystState {
 
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: false,
+  contextConnectionUuid: undefined,
   showChatHistory: false,
   abortController: undefined,
   loading: false,

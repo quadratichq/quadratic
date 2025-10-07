@@ -1,5 +1,5 @@
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getFileTypeFromName } from '@/app/helpers/files';
@@ -17,7 +17,7 @@ import {
 } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface AIContextProps {
   context: Context;
@@ -33,6 +33,7 @@ export const AIContext = memo(
   ({ context, setContext, files, setFiles, importFiles, setImportFiles, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const { connections } = useConnectionsFetcher();
+    const [aiAnalyst, setAIAnalyst] = useRecoilState(aiAnalystAtom);
 
     const handleOnClickConnection = useCallback(() => {
       setContext?.((prev) => ({ ...prev, connection: undefined }));
@@ -68,10 +69,24 @@ export const AIContext = memo(
           .map((connection) => (
             <ContextPill
               key={connection.uuid}
+              isActive={aiAnalyst.contextConnectionUuid === connection.uuid}
               primary={connection.name}
               primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
               secondary={''}
               onClick={handleOnClickConnection}
+              primaryOnClick={() => {
+                setAIAnalyst((prev) => {
+                  console.log(prev.contextConnectionUuid, connection.uuid);
+                  return {
+                    ...prev,
+                    contextConnectionUuid:
+                      prev.contextConnectionUuid && prev.contextConnectionUuid === connection.uuid
+                        ? undefined
+                        : connection.uuid,
+                  };
+                });
+                textareaRef.current?.focus();
+              }}
               noClose={disabled}
             />
           ))}
@@ -111,35 +126,46 @@ export const AIContext = memo(
 );
 
 interface ContextPillProps {
+  isActive?: boolean;
   primary: string;
   primaryIcon?: React.ReactNode;
   secondary: string;
   onClick?: () => void;
   noClose: boolean;
+  primaryOnClick?: () => void;
 }
-const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }: ContextPillProps) => {
-  return (
-    <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
-      <span className="flex items-center gap-1">
-        {primaryIcon}
-        <span className="max-w-48 truncate">{primary}</span>
-      </span>
+const ContextPill = memo(
+  ({ primary, primaryIcon, secondary, onClick, noClose, isActive, primaryOnClick }: ContextPillProps) => {
+    return (
+      <div
+        className={cn(
+          'flex h-5 items-center self-stretch rounded border border-border px-1 text-xs',
+          primaryOnClick && 'cursor-pointer'
+          // isActive && 'border-primary'
+        )}
+        onClick={primaryOnClick}
+      >
+        <span className="flex items-center gap-1">
+          {primaryIcon}
+          <span className="max-w-48 truncate">{primary}</span>
+        </span>
 
-      <span className="ml-0.5 text-muted-foreground">{secondary}</span>
+        <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
-      {!noClose && (
-        <Button
-          size="icon-sm"
-          className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
-          variant="ghost"
-          onClick={onClick}
-        >
-          <CloseIcon className="!h-4 !w-4 !text-xs" />
-        </Button>
-      )}
-    </div>
-  );
-});
+        {!noClose && (
+          <Button
+            size="icon-sm"
+            className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
+            variant="ghost"
+            onClick={onClick}
+          >
+            <CloseIcon className="!h-4 !w-4 !text-xs" />
+          </Button>
+        )}
+      </div>
+    );
+  }
+);
 
 interface FileContextPillProps {
   disabled: boolean;

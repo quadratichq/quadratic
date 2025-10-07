@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
+import { CloseIcon, FileNewIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -199,14 +199,14 @@ function ListItems({
               )}
 
               {showIconBrowseSchema && (
-                <TooltipPopover label="Browse schema">
+                <TooltipPopover label="New file from connection">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
                     onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
                   >
-                    <ExploreSchemaIcon />
+                    <FileNewIcon />
                   </Button>
                 </TooltipPopover>
               )}
