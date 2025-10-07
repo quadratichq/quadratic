@@ -27,6 +27,7 @@ jobs:
           - files
           - connection
           - rust-shared
+          - cloud-controller
         include:
           - package: core
             runner: blacksmith-2vcpu-ubuntu-2404
@@ -41,6 +42,9 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
           - package: rust-shared
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: cloud-controller
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
     steps:

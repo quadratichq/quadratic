@@ -122,6 +122,8 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
             runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-controller
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -501,6 +503,8 @@ jobs:
             url: "https://connection.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
           - name: files
             url: "https://files.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
+          - name: cloud-controller
+            url: "https://cloud-controller.${{ needs.deploy_images.outputs.WEBSITE_URL }}/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_images.outputs.version }}
