@@ -202,7 +202,8 @@ export const createSharedFile = async (page: Page, { fileName, email }: CreateSh
 export const shareEditableFile = async (page: Page) => {
   await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
-  await page.locator(`[data-testid="public-link-access-select"]`).selectOption({ label: 'Can edit' });
+  await page.locator(`[data-testid="public-link-access-select"]`).click();
+  await page.locator(`[role="option"]:has-text("Can edit")`).click();
   await page.keyboard.press('Escape', { delay: 250 });
 };
 
