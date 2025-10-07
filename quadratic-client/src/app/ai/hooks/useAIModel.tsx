@@ -19,6 +19,8 @@ interface UseAIModelReturn {
   modelType: MODEL_TYPE;
   othersModelKey: AIModelKey | undefined;
   setModel: (modelType: MODEL_TYPE, othersModel?: AIModelKey) => void;
+
+  defaultOthersModelKey: AIModelKey;
 }
 
 export const useAIModel = (): UseAIModelReturn => {
@@ -27,6 +29,14 @@ export const useAIModel = (): UseAIModelReturn => {
 
   const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'default');
   const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
+
+  const defaultOthersModelKey = useMemo(() => {
+    const key = Object.keys(MODELS_CONFIGURATION).find(
+      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'others'
+    );
+    if (!key) throw new Error('Others model not found');
+    return key as AIModelKey;
+  }, []);
 
   const modelKey = useMemo(() => {
     if (modelType === 'default') {
@@ -82,5 +92,6 @@ export const useAIModel = (): UseAIModelReturn => {
     othersModelKey,
     selectedModelConfig: MODELS_CONFIGURATION[modelKey],
     setModel,
+    defaultOthersModelKey,
   };
 };

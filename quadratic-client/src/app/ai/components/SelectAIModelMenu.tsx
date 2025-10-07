@@ -42,7 +42,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
-  const { modelType, othersModelKey, setModel, selectedModelConfig } = useAIModel();
+  const { modelType, othersModelKey, setModel, selectedModelConfig, defaultOthersModelKey } = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
@@ -147,8 +147,8 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 onValueChange={(value) => {
                   if (value !== 'others') {
                     setIsPopoverOpen(false);
-                    setModel(value as MODEL_TYPE);
                   }
+                  setModel(value as MODEL_TYPE, defaultOthersModelKey);
                 }}
               >
                 {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
@@ -180,24 +180,21 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                   </Label>
                   {isOthers && (
                     <div className="px-4 py-2">
-                      <RadioGroup
-                        value={modelType}
-                        className="flex flex-col gap-1"
-                        onValueChange={(value) => {
-                          const modelEntry = othersModels.find(([key]) => key === value);
-                          if (modelEntry) {
-                            const [modelKey, modelConfig] = modelEntry;
-                            trackEvent('[AI].model.change', { model: modelConfig.model });
-                            setModel('others', modelKey);
-                            setIsPopoverOpen(false);
-                          }
-                        }}
-                      >
+                      <RadioGroup value={othersModelKey} className="flex flex-col gap-1">
                         {othersModels.map(([modelKey, modelConfig]) => (
                           <Label
                             className="flex cursor-pointer items-center px-2 py-1.5 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
                             key={modelKey}
                             htmlFor={`radio-${modelKey}`}
+                            onClick={() => {
+                              const modelEntry = othersModels.find(([key]) => key === modelKey);
+                              if (modelEntry) {
+                                const [, modelConfig] = modelEntry;
+                                trackEvent('[AI].model.change', { model: modelConfig.model });
+                                setModel('others', modelKey as AIModelKey);
+                                setIsPopoverOpen(false);
+                              }
+                            }}
                           >
                             <RadioGroupItem value={modelKey} className="mr-2" id={`radio-${modelKey}`} />
                             <span>{modelConfig.displayName}</span>
