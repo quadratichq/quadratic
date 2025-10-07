@@ -12,6 +12,7 @@ chrono = { version = "=0.4.39", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"
+futures-util = "0.3.30"
 jsonwebtoken = "9.2.0"
 k8s-openapi = { version = "0.25.0", features = ["v1_31"], optional = true }
 kube = { version = "1.1.0", features = ["client", "derive"], optional = true }

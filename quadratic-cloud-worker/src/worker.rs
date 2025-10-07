@@ -75,12 +75,19 @@ impl Worker {
             )
             .await?;
 
+            info!(
+                "Got {} tasks for file {}",
+                self.state.settings.file_id,
+                tasks.len()
+            );
+
             if tasks.is_empty() {
                 break;
             }
 
-            let mut task_ids = Vec::new();
-            for task in tasks {
+            let mut keys = Vec::new();
+
+            for (key, task) in tasks {
                 match self
                     .core
                     .process_operations(
@@ -92,7 +99,7 @@ impl Worker {
                     )
                     .await
                 {
-                    Ok(_) => task_ids.push(task.task_id),
+                    Ok(_) => keys.push(key),
                     Err(e) => {
                         error!("Error processing tasks, error: {e}");
                     }
@@ -103,7 +110,7 @@ impl Worker {
                 &self.state.settings.controller_url,
                 self.state.settings.file_id,
                 self.state.settings.worker_ephemeral_token,
-                task_ids,
+                keys,
             )
             .await
             {

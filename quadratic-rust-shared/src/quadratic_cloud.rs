@@ -89,7 +89,7 @@ pub async fn get_worker_init_data(
     Ok(worker_init_data)
 }
 
-pub type GetTasksResponse = Vec<Task>;
+pub type GetTasksResponse = Vec<(String, Task)>;
 /// Get the next scheduled tasks for a worker
 pub async fn get_tasks(
     base_url: &str,
@@ -114,24 +114,26 @@ pub async fn get_tasks(
     Ok(scheduled_tasks_response)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AckTasksRequest {
-    pub task_ids: Vec<Uuid>,
+    pub keys: Vec<String>,
 }
+
 #[derive(Serialize, Deserialize)]
 pub struct AckTasksResponse {
     pub success: bool,
 }
+
 /// Ack the tasks
 pub async fn ack_tasks(
     base_url: &str,
     file_id: Uuid,
     worker_ephemeral_token: Uuid,
-    task_ids: Vec<Uuid>,
+    keys: Vec<String>,
 ) -> Result<AckTasksResponse> {
     let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
 
-    let request = AckTasksRequest { task_ids };
+    let request = AckTasksRequest { keys };
 
     let response = reqwest::Client::new()
         .post(url)

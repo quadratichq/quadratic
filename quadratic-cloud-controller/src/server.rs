@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
 };
 use chrono::Timelike;
+use futures_util::StreamExt;
 use quadratic_rust_shared::{
     quadratic_api::get_scheduled_tasks,
     quadratic_cloud::{
@@ -19,6 +20,7 @@ use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use crate::{
     config::Config,
     controller::Controller,
+    controller_docker::IMAGE_NAME,
     error::{ControllerError, Result},
     health::{full_healthcheck, healthcheck},
     state::{State, jwt::handle_jwks},
@@ -29,7 +31,7 @@ use crate::{
 };
 
 // const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
-const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
+const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 3;
 
 async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
@@ -64,7 +66,7 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
         .await
         {
             Ok(scheduled_tasks) => {
-                info!("Got {} scheduled tasks from API", scheduled_tasks.len());
+                trace!("Got {} scheduled tasks from API", scheduled_tasks.len());
                 scheduled_tasks
             }
             Err(e) => {
@@ -73,9 +75,11 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
             }
         };
 
+        let len = scheduled_tasks.len();
+
         match state.add_tasks(scheduled_tasks).await {
             Ok(()) => {
-                info!("Added scheduled tasks to pubsub");
+                trace!("Added {} scheduled tasks to pubsub", len);
             }
             Err(e) => {
                 error!("Error adding scheduled tasks to pubsub: {e}");
@@ -88,7 +92,7 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
 
         let active_count = controller.count_active_workers().await.unwrap_or(0);
 
-        info!("Worker Controller alive - {active_count} active file workers");
+        trace!("Worker Controller alive - {active_count} active file workers");
     }
 }
 
@@ -236,6 +240,31 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_layer)
         .init();
 
+    // Remove any that didn't stop properly
+    let summaries = state
+        .client
+        .lock()
+        .await
+        .list_all()
+        .await
+        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+    for summary in summaries {
+        if summary.image == Some(IMAGE_NAME.to_string()) {
+            if let Some(container_id) = &summary.id {
+                if let Err(e) = state
+                    .client
+                    .lock()
+                    .await
+                    .remove_container_by_docker_id(container_id)
+                    .await
+                {
+                    tracing::error!("Failed to remove container {}: {}", container_id, e);
+                }
+            }
+        }
+    }
+
     // Start worker-only server
     let worker_only_server_state_clone = Arc::clone(&state);
     tokio::spawn(async {
@@ -272,6 +301,14 @@ pub(crate) async fn serve() -> Result<()> {
         .await;
     });
 
+    // In a separate thread, print the logs of all containers every second
+    let container_logs_state_clone = Arc::clone(&state);
+    tokio::spawn(async {
+        if let Err(e) = print_container_logs(container_logs_state_clone).await {
+            error!("Error printing container logs: {e}");
+        }
+    });
+
     // Start public server
     let public_server_state_clone = Arc::clone(&state);
     start_with_backoff("public server", public_server_state_clone, |state| async {
@@ -286,4 +323,58 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| ControllerError::StartServer(e.to_string()))
     })
     .await
+}
+
+/// In a separate thread, print the logs of all containers every second
+async fn print_container_logs(state: Arc<State>) -> Result<()> {
+    let mut interval = interval(Duration::from_secs(1));
+    interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+    loop {
+        let containe_ids = state
+            .client
+            .lock()
+            .await
+            .list_ids()
+            .await
+            .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+        for container_id in containe_ids {
+            let client = state.client.lock().await;
+            let container = client
+                .get_container(&container_id)
+                .await
+                .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+            let logs = container
+                .logs(client.docker.clone())
+                .await
+                .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+            if !logs.is_empty() {
+                tracing::error!("Logs: {}", logs);
+            }
+
+            // let container_guard = container.lock().await;
+            // let logs = container_guard
+            //     .logs_stream()
+            //     .await
+            //     .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+
+            // let mut log_lines = Vec::new();
+            // let mut logs_stream = logs;
+            // while let Some(log_result) = logs_stream.next().await {
+            //     match log_result {
+            //         Ok(log_output) => log_lines.push(log_output.to_string()),
+            //         Err(e) => tracing::warn!("Error reading log: {}", e),
+            //     }
+            // }
+
+            // for log_line in log_lines {
+            //     tracing::error!("Logs: {}", log_line.trim());
+            // }
+        }
+
+        interval.tick().await;
+    }
 }

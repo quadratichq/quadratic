@@ -119,7 +119,7 @@ pub(crate) async fn process_queue_for_room(
     // get all transactions for the room in the queue
     let transactions = pubsub
         .connection
-        .get_messages_from(channel, &(checkpoint_sequence_num + 1).to_string(), false)
+        .get_messages_after(channel, &(checkpoint_sequence_num + 1).to_string(), false)
         .await?
         .into_iter()
         .flat_map(|(_, message)| Transaction::process_incoming(&message))

@@ -52,7 +52,7 @@ export class Input {
                 }
                 this.control.restartShared();
                 break;
-            case "w": // toggle cloudcontroller
+            case "o": // toggle cloudcontroller
                 if (this.control.status.cloudcontroller === "killed") {
                     this.control.status.cloudcontroller = false;
                 }

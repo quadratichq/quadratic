@@ -123,6 +123,8 @@ pub(crate) async fn handle_get_tasks_for_worker(
         .await
         .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
 
+    trace!("Got tasks for worker for file {file_id}: {:?}", tasks);
+
     Ok(Json(tasks))
 }
 
@@ -132,12 +134,19 @@ pub(crate) async fn handle_ack_tasks_for_worker(
     headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
+    if ack_request.keys.is_empty() {
+        return Ok(Json(AckTasksResponse { success: true }));
+    }
+
     let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("Acknowledging tasks for worker for file {file_id}");
+    trace!(
+        "Acknowledging tasks for worker for file {file_id}: {:?}",
+        ack_request
+    );
 
     state
-        .ack_tasks(file_id, ack_request.task_ids)
+        .ack_tasks(file_id, ack_request.keys)
         .await
         .map_err(|e| ControllerError::AckTasks(e.to_string()))?;
 
@@ -151,11 +160,9 @@ pub(crate) async fn handle_worker_shutdown(
 ) -> Result<Json<ShutdownResponse>> {
     let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    info!("Shutting down worker for file {file_id}",);
-
     state.remove_worker_ephemeral_token(&file_id).await;
 
-    Controller::shutdown_worker(&state, &file_id)
+    Controller::shutdown_worker(Arc::clone(&state), &file_id)
         .await
         .map_err(|e| ControllerError::ShutdownWorker(e.to_string()))?;
 

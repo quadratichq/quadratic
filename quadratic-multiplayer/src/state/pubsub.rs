@@ -128,7 +128,7 @@ impl State {
             .lock()
             .await
             .connection
-            .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
+            .get_messages_after(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
             .into_iter()
             .flat_map(|(_, message)| Transaction::process_incoming(&message))

@@ -153,8 +153,17 @@ pub trait PubSub {
         preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
+    /// Get messages from a channel between two specific keys
+    fn get_messages_between(
+        &mut self,
+        channel: &str,
+        start: &str,
+        end: &str,
+        preserve_sequence: bool,
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
+
     /// Get messages from a channel after a specific key
-    fn get_messages_from(
+    fn get_messages_after(
         &mut self,
         channel: &str,
         id: &str,

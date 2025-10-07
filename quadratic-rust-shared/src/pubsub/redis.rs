@@ -184,7 +184,17 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
-    async fn get_messages_from(
+    async fn get_messages_between(
+        &mut self,
+        _channel: &str,
+        _start: &str,
+        _end: &str,
+        _preserve_sequence: bool,
+    ) -> Result<Vec<(String, Vec<u8>)>> {
+        unimplemented!()
+    }
+
+    async fn get_messages_after(
         &mut self,
         _channel: &str,
         _id: &str,

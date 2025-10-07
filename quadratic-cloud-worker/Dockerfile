@@ -48,13 +48,32 @@ RUN cargo build --release
 ###########################################################################################
 FROM ubuntu:24.04 AS runtime
 
-# Install runtime dependencies
+# Install runtime dependencies including Python and pip
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \  
   ca-certificates \
   python3 \
+  python3-pip \
+  python3-venv \
   libpython3.12 \
   && rm -rf /var/lib/apt/lists/*
+
+# Install common Python packages that are frequently used in Quadratic
+RUN pip3 install --break-system-packages \
+  pandas \
+  numpy \
+  matplotlib \
+  seaborn \
+  scipy \
+  requests \
+  openpyxl \
+  xlsxwriter \
+  plotly \
+  scikit-learn \
+  statsmodels \
+  nltk \
+  regex \
+  faker
 
 COPY --from=builder /quadratic/quadratic-cloud-worker/target/release/quadratic-cloud-worker .
 

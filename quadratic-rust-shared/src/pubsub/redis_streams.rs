@@ -472,8 +472,20 @@ impl super::PubSub for RedisConnection {
         Ok(stream_ids_to_messages(messages.ids, preserve_sequence))
     }
 
+    async fn get_messages_between(
+        &mut self,
+        channel: &str,
+        start: &str,
+        end: &str,
+        preserve_sequence: bool,
+    ) -> Result<Vec<Message>> {
+        let messages: StreamRangeReply = self.multiplex.xrange(channel, start, end).await?;
+
+        Ok(stream_ids_to_messages(messages.ids, preserve_sequence))
+    }
+
     /// Get messages from a channel starting from a specific id
-    async fn get_messages_from(
+    async fn get_messages_after(
         &mut self,
         channel: &str,
         id: &str,

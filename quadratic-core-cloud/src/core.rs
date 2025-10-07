@@ -41,6 +41,7 @@ pub async fn process_transaction(
     team_id: String,
     token: String,
 ) -> Result<Uuid> {
+    tracing::info!("Processing transaction: {operations:?}");
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
     let tx_get_cells_request = Arc::new(Mutex::new(tx_get_cells_request));

@@ -276,10 +276,11 @@ pub async fn get_file_init_data(
 #[serde(rename_all = "camelCase")]
 pub struct Task {
     pub file_id: Uuid,
-    pub task_id: Uuid,
+    pub task_id: String,
     pub next_run_time: Option<DateTime<Utc>>,
     pub operations: Vec<u8>,
 }
+
 impl Task {
     pub fn as_bytes(&self) -> Result<Vec<u8>> {
         serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
@@ -297,40 +298,8 @@ impl Task {
             ));
         }
 
-        match serde_json::from_slice::<Self>(bytes) {
-            Ok(task) => {
-                // Validate the deserialized task
-                if task.file_id.is_nil() {
-                    return Err(SharedError::Serialization(
-                        "Task has invalid file_id (nil UUID)".to_string(),
-                    ));
-                }
-                if task.task_id.is_nil() {
-                    return Err(SharedError::Serialization(
-                        "Task has invalid task_id (nil UUID)".to_string(),
-                    ));
-                }
-                Ok(task)
-            }
-            Err(e) => {
-                // Provide more context about the JSON error
-                let error_msg = if bytes.len() > 100 {
-                    format!(
-                        "JSON parse error: {} (data length: {} bytes, preview: {}...)",
-                        e,
-                        bytes.len(),
-                        String::from_utf8_lossy(&bytes[..100])
-                    )
-                } else {
-                    format!(
-                        "JSON parse error: {} (data: {})",
-                        e,
-                        String::from_utf8_lossy(bytes)
-                    )
-                };
-                Err(SharedError::Serialization(error_msg))
-            }
-        }
+        let task = serde_json::from_slice::<Self>(bytes)?;
+        Ok(task)
     }
 }
 

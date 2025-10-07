@@ -10,6 +10,8 @@ use uuid::Uuid;
 
 use crate::state::State;
 
+pub(crate) const IMAGE_NAME: &str = "quadratic-cloud-worker";
+
 pub(crate) struct Controller {
     pub(crate) state: Arc<State>,
 }
@@ -24,7 +26,7 @@ impl Controller {
 
         let file_ids_needing_workers = self.state.get_file_ids_to_process().await?;
 
-        info!(
+        trace!(
             "Found {} unique files with pending tasks",
             file_ids_needing_workers.len(),
         );
@@ -85,7 +87,6 @@ impl Controller {
             .list_ids()
             .await?
             .into_iter()
-            .flat_map(|id| Uuid::parse_str(&id))
             .collect::<HashSet<_>>();
 
         Ok(active_file_ids)
@@ -97,7 +98,7 @@ impl Controller {
             .client
             .lock()
             .await
-            .has_container(&file_id.to_string())
+            .has_container(&file_id)
             .await?;
 
         trace!("File {file_id} has an active worker: {has_container}");
@@ -106,13 +107,13 @@ impl Controller {
     }
 
     async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
-        info!("Creating worker for file {file_id}");
+        trace!("Creating worker for file {file_id}");
 
         // Check if the file has an active worker
         if self.file_has_active_worker(file_id).await? {
             trace!("File worker exists after lock for file {file_id}");
             self.state.release_worker_create_lock(file_id).await;
-            return Ok(());
+            // return Ok(());
         }
 
         // Acquire the worker create lock
@@ -133,8 +134,9 @@ impl Controller {
         ];
 
         let container = Container::try_new(
-            "quadratic-cloud-worker",
-            self.state.client.lock().await.docker(),
+            *file_id,
+            IMAGE_NAME,
+            self.state.client.lock().await.docker.clone(),
             Some(env_vars),
             None,
         )
@@ -144,20 +146,22 @@ impl Controller {
             .client
             .lock()
             .await
-            .add_container(Arc::new(Mutex::new(container)), true)
+            .add_container(container, true)
             .await?;
+
+        info!("Added worker for file {file_id}");
 
         Ok(())
     }
 
-    pub(crate) async fn shutdown_worker(state: &Arc<State>, file_id: &Uuid) -> Result<()> {
-        info!("Shutting down worker for file {file_id}");
-        state
-            .client
-            .lock()
-            .await
-            .remove_container(&file_id.to_string())
-            .await?;
+    pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
+        trace!("Shutting down worker for file {file_id}");
+
+        let mut client = state.client.lock().await;
+        client.remove_container(&file_id).await?;
+        state.release_worker_create_lock(&file_id).await;
+
+        trace!("Shut down worker for file {file_id}");
 
         Ok(())
     }
