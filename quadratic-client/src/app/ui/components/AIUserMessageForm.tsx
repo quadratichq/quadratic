@@ -374,6 +374,8 @@ export const AIUserMessageForm = memo(
             setContext={setContext}
             filesSupportedText={filesSupportedText}
             uiContext={uiContext}
+            messageIndex={messageIndex}
+            showEmptyChatPromptSuggestions={showEmptyChatPromptSuggestions}
           />
         </form>
       </div>
@@ -415,27 +417,36 @@ interface CancelButtonProps {
   show: boolean;
   disabled: boolean;
   abortPrompt: () => void;
+  messageIndex: number;
+  showEmptyChatPromptSuggestions?: boolean;
 }
-const CancelButton = memo(({ show, disabled, abortPrompt }: CancelButtonProps) => {
-  if (!show) {
-    return null;
-  }
+const CancelButton = memo(
+  ({ show, disabled, abortPrompt, messageIndex, showEmptyChatPromptSuggestions = false }: CancelButtonProps) => {
+    if (!show) {
+      return null;
+    }
 
-  return (
-    <Button
-      size="sm"
-      variant="outline"
-      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
-      onClick={(e) => {
-        e.stopPropagation();
-        abortPrompt();
-      }}
-      disabled={disabled}
-    >
-      <BackspaceIcon className="mr-1" /> Cancel generating
-    </Button>
-  );
-});
+    // Check if message counter is showing (same logic as AIMessageCounterBar)
+    const isMessageCounterShowing = !(showEmptyChatPromptSuggestions && messageIndex === 0);
+
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className={`absolute right-1/2 z-10 translate-x-1/2 bg-background ${
+          isMessageCounterShowing ? '-top-16' : '-top-10'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          abortPrompt();
+        }}
+        disabled={disabled}
+      >
+        <BackspaceIcon className="mr-1" /> Cancel generating
+      </Button>
+    );
+  }
+);
 
 interface AIUserMessageFormFooterProps {
   disabled: boolean;
@@ -453,6 +464,8 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   uiContext: AIUserMessageFormProps['uiContext'];
+  messageIndex: number;
+  showEmptyChatPromptSuggestions?: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -471,6 +484,8 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     uiContext,
+    messageIndex,
+    showEmptyChatPromptSuggestions,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -534,7 +549,13 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
+        <CancelButton
+          show={loading}
+          disabled={cancelDisabled}
+          abortPrompt={abortPrompt}
+          messageIndex={messageIndex}
+          showEmptyChatPromptSuggestions={showEmptyChatPromptSuggestions}
+        />
       </>
     );
   }
