@@ -25,6 +25,8 @@ export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:think
 export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-on';
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey =
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on';
+export const DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL: AIModelKey =
+  'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;

@@ -24,7 +24,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
@@ -72,7 +72,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   };
 
   // initialize the core module within client
-  const initializeCore = async () => {
+  const initializeCoreClient = async () => {
     startupTimer.start('file.loader.initCoreClient');
     await initCoreClient();
     startupTimer.end('file.loader.initCoreClient');
@@ -90,7 +90,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     loadFileFromApi(uuid, isVersionHistoryPreview),
     loadPixi(),
     initWorkers(),
-    initializeCore(),
+    initializeCoreClient(),
   ]);
 
   // we were redirected to login, so we don't need to do anything else
@@ -168,7 +168,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   return data;
 };
 
-export const Component = () => {
+export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
@@ -210,7 +210,7 @@ export const Component = () => {
       <QuadraticAppDebugSettings />
     </RecoilRoot>
   );
-};
+});
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
