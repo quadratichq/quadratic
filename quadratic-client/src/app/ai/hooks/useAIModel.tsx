@@ -1,6 +1,6 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
-import useLocalStorage, { type SetValue } from '@/shared/hooks/useLocalStorage';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -17,10 +17,8 @@ interface UseAIModelReturn {
   selectedModelConfig: AIModelConfig;
 
   modelType: MODEL_TYPE;
-  setModelType: SetValue<MODEL_TYPE>;
-
-  SetModelOthers: SetValue<AIModelKey>;
-  othersModel: AIModelKey | undefined;
+  othersModelKey: AIModelKey | undefined;
+  setModel: (modelType: MODEL_TYPE, othersModel?: AIModelKey) => void;
 }
 
 export const useAIModel = (): UseAIModelReturn => {
@@ -28,7 +26,7 @@ export const useAIModel = (): UseAIModelReturn => {
   const { debug } = useDebugFlags();
 
   const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'default');
-  const [othersModel, setOthersModel] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
+  const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
 
   const modelKey = useMemo(() => {
     if (modelType === 'default') {
@@ -46,43 +44,43 @@ export const useAIModel = (): UseAIModelReturn => {
       return max as AIModelKey;
     }
     if (modelType === 'others') {
-      if (!othersModel) throw new Error('Others model not found');
-      return othersModel;
+      if (!othersModelKey) throw new Error('Others model not found');
+      return othersModelKey;
     }
     return modelType;
-  }, [modelType, othersModel]);
+  }, [modelType, othersModelKey]);
 
   useEffect(() => {
     if (debug) return;
 
     // ensure the selected model is still available; otherwise set to default
-    if (modelType !== 'default' && modelType !== 'max') {
-      const modelConfig = MODELS_CONFIGURATION[modelType as AIModelKey];
-      if (modelConfig.mode === 'disabled') {
+    if (modelType === 'others' && othersModelKey) {
+      const modelConfig = MODELS_CONFIGURATION[othersModelKey];
+      if (!modelConfig || modelConfig.mode === 'disabled') {
         setModelType('default');
       }
+    } else if (modelType === 'others') {
+      setModelType('default');
     }
-  }, [debug, modelType, setModelType]);
+  }, [debug, modelType, setModelType, othersModelKey]);
 
   const setModel = useCallback(
     (modelType: MODEL_TYPE, othersKey?: AIModelKey) => {
       if (modelType === 'others') {
         if (!othersKey) throw new Error('Others model not found');
-        setOthersModel(othersKey);
+        setOthersModelKey(othersKey);
       }
       setModelType(modelType);
     },
-    [setModelType, setOthersModel]
+    [setModelType, setOthersModelKey]
   );
 
   return {
     isOnPaidPlan,
     modelKey,
     modelType,
-    setModelType,
+    othersModelKey,
     selectedModelConfig: MODELS_CONFIGURATION[modelKey],
     setModel,
-    othersModel,
-    setOthersModel,
   };
 };

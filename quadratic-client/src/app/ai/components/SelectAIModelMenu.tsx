@@ -42,7 +42,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
-  const { modelType, setModelType, selectedModelConfig } = useAIModel();
+  const { modelType, othersModelKey, setModel, selectedModelConfig } = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
@@ -84,9 +84,9 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
             {dropdownModels.map(([key, modelConfig]) => (
               <DropdownMenuCheckboxItem
                 key={key}
-                checked={modelType === key}
+                checked={othersModelKey === key}
                 onCheckedChange={() => {
-                  setModelType(key as MODEL_TYPE);
+                  setModel('others', key);
                 }}
               >
                 <div className="flex w-full items-center justify-between text-xs">
@@ -147,7 +147,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 onValueChange={(value) => {
                   if (value !== 'others') {
                     setIsPopoverOpen(false);
-                    setModelType(value as MODEL_TYPE);
+                    setModel(value as MODEL_TYPE);
                   }
                 }}
               >
@@ -188,7 +188,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                           if (modelEntry) {
                             const [modelKey, modelConfig] = modelEntry;
                             trackEvent('[AI].model.change', { model: modelConfig.model });
-                            setModelType(modelKey as MODEL_TYPE);
+                            setModel('others', modelKey);
                             setIsPopoverOpen(false);
                           }
                         }}
