@@ -187,6 +187,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                             key={modelKey}
                             htmlFor={`radio-${modelKey}`}
                             onClick={() => {
+                              console.log(modelKey);
                               const modelEntry = othersModels.find(([key]) => key === modelKey);
                               if (modelEntry) {
                                 const [, modelConfig] = modelEntry;

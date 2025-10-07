@@ -28,9 +28,6 @@ export const getModelKey = async (
   signal: AbortSignal
 ): Promise<AIModelKey> => {
   try {
-    // Log the user's country for analytics/debugging
-    logger.info('getModelKey called', { restrictedCountry, source: inputArgs.source });
-
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
       return modelKey;
     }
@@ -47,8 +44,12 @@ export const getModelKey = async (
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
-
       return hasImageFile ? DEFAULT_MODEL_WITH_IMAGE : modelKey;
+    }
+
+    // Restricted country that uses default router model
+    if (restrictedCountry) {
+      return RESTRICTED_MODEL_ROUTER_MODEL;
     }
 
     // if the model is not the model router model, return the model key
@@ -70,11 +71,6 @@ export const getModelKey = async (
 
     if (!userTextPrompt) {
       return DEFAULT_BACKUP_MODEL;
-    }
-
-    // Restricted country that uses default router model
-    if (restrictedCountry) {
-      return RESTRICTED_MODEL_ROUTER_MODEL;
     }
 
     const args: AIRequestHelperArgs = {
