@@ -9,7 +9,6 @@ import type {
   NavigateToCreateView,
   NavigateToView,
 } from '@/shared/components/connections/Connections';
-import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -24,7 +23,6 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
-  handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   handleNavigateToNewView: () => void;
@@ -35,7 +33,6 @@ export const ConnectionsList = ({
   connectionsAreLoading,
   handleNavigateToNewView,
   handleNavigateToCreateView,
-  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
 }: Props) => {
@@ -84,7 +81,6 @@ export const ConnectionsList = ({
           <ListItems
             filterQuery={filterQuery}
             items={connections}
-            handleNavigateToDetailsView={handleNavigateToDetailsView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleShowConnectionDemo={handleShowConnectionDemo}
           />
@@ -119,13 +115,11 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
-  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
   items,
 }: {
   filterQuery: string;
-  handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
@@ -156,15 +150,7 @@ function ListItems({
             >
               <button
                 onClick={() => {
-                  if (isApp) {
-                    handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-                  } else {
-                    // TODO: navigate to a new file with the connection in context
-                    // ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
-                    window.location.href = ROUTES.CREATE_FILE('teamUuid', {
-                      private: true,
-                    });
-                  }
+                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
                 }}
                 disabled={!isNavigable}
                 key={uuid}

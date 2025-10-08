@@ -46,6 +46,10 @@ export const AIAnalystConnectionSchema = memo(() => {
       ? connections.find((connection) => connection.uuid === aiAnalystActiveSchemaConnectionUuid)?.type
       : undefined;
 
+  if (!connectionType) {
+    throw new Error('Expected connectionType to be set in AIAnalystConnectionSchema');
+  }
+
   return (
     <div
       ref={panelRef}
@@ -56,7 +60,7 @@ export const AIAnalystConnectionSchema = memo(() => {
 
       <div className={cn('h-full w-full pt-0.5')}>
         <ConnectionSchemaBrowser
-          TableQueryAction={() => (
+          additionalActions={
             <Button
               onClick={() => setAIAnalystActiveSchemaConnectionUuid(undefined)}
               size="icon-sm"
@@ -65,8 +69,7 @@ export const AIAnalystConnectionSchema = memo(() => {
             >
               <CloseIcon />
             </Button>
-          )}
-          selfContained={false}
+          }
           teamUuid={teamUuid}
           type={connectionType}
           uuid={aiAnalystActiveSchemaConnectionUuid}
