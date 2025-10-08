@@ -18,7 +18,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -131,7 +131,6 @@ function ListItems({
   items: ConnectionsListConnection[];
 }) {
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-  const navigate = useNavigate();
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
