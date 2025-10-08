@@ -147,7 +147,10 @@ const ContextPill = memo(({ disabled, primary, primaryIcon, secondary, onRemove,
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
           variant="ghost"
-          onClick={onRemove}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
         >
           <CloseIcon className="!h-4 !w-4 !text-xs" />
         </Button>
