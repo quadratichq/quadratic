@@ -16,6 +16,7 @@ import {
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback } from 'react';
 import { useRecoilCallback, useSetRecoilState } from 'recoil';
@@ -54,6 +55,7 @@ export const AIUserMessageFormConnectionsButton = memo(
 
     const handleClickConnection = useCallback(
       (connectionUuid: string) => {
+        // If it's the same connection, unselect it
         if (context.connection?.id === connectionUuid) {
           trackEvent('[AIConnectionsPicker].unselectConnection');
           setContext?.((prev) => ({
@@ -61,15 +63,21 @@ export const AIUserMessageFormConnectionsButton = memo(
             connection: undefined,
           }));
           setAIAnalystActiveSchemaConnectionUuid(undefined);
-        } else {
-          trackEvent('[AIConnectionsPicker].selectConnection');
-          const connection = connections.find((connection) => connection.uuid === connectionUuid);
-          setContext?.((prev) => ({
-            ...prev,
-            connection: connection ? { type: connection.type, id: connection.uuid, name: connection.name } : undefined,
-          }));
-          setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+          return;
         }
+
+        // Otherwise set it as the newly selected connection
+        trackEvent('[AIConnectionsPicker].selectConnection');
+        const connection = connections.find((connection) => connection.uuid === connectionUuid);
+        if (connection === undefined) {
+          Sentry.captureException(new Error('A connection that was picked in the UI is not stored in local state.'));
+          return;
+        }
+        setContext?.((prev) => ({
+          ...prev,
+          connection: { type: connection.type, id: connection.uuid, name: connection.name },
+        }));
+        setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
       },
       [connections, context.connection, setContext, setAIAnalystActiveSchemaConnectionUuid]
     );
