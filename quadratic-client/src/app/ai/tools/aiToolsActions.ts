@@ -1275,4 +1275,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing redo tool: ${e}`)];
     }
   },
+  [AITool.OptimizePrompt]: async (args) => {
+    return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
+  },
 } as const;

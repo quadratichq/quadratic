@@ -62,6 +62,7 @@ export enum AITool {
   RemoveValidations = 'remove_validation',
   Undo = 'undo',
   Redo = 'redo',
+  OptimizePrompt = 'optimize_prompt',
 }
 
 export const AIToolSchema = z.enum([
@@ -115,6 +116,7 @@ export const AIToolSchema = z.enum([
   AITool.RemoveValidations,
   AITool.Undo,
   AITool.Redo,
+  AITool.OptimizePrompt,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -528,6 +530,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
+  }),
+  [AITool.OptimizePrompt]: z.object({
+    optimized_prompt: stringSchema,
   }),
 } as const;
 
@@ -2729,5 +2734,39 @@ If the user's redo request is multiple transactions, use the count parameter to 
 This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
 Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
 If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+  },
+  [AITool.OptimizePrompt]: {
+    sources: ['OptimizePrompt'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool optimizes a user's prompt to make it clearer, more specific, and more effective for the AI assistant.\n
+You should improve the prompt by:\n
+- Making it more specific and actionable\n
+- Adding relevant context or details that would help get better results\n
+- Correcting any unclear phrasing\n
+- Maintaining the user's original intent\n
+- Keeping it concise but informative\n
+The optimized prompt should be self-contained and work well for spreadsheet operations.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        optimized_prompt: {
+          type: 'string',
+          description: "The improved version of the user's prompt",
+        },
+      },
+      required: ['optimized_prompt'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
+    prompt: `
+This tool optimizes a user's prompt to make it clearer, more specific, and more effective for the AI assistant.\n
+You should improve the prompt by:\n
+- Making it more specific and actionable\n
+- Adding relevant context or details that would help get better results\n
+- Correcting any unclear phrasing\n
+- Maintaining the user's original intent\n
+- Keeping it concise but informative\n
+The optimized prompt should be self-contained and work well for spreadsheet operations.\n`,
   },
 } as const;

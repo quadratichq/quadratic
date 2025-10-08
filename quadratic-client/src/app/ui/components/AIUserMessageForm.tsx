@@ -8,6 +8,7 @@ import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { AIUserMessageFormOptimizeButton } from '@/app/ui/components/AIUserMessageFormOptimizeButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
@@ -364,6 +365,7 @@ export const AIUserMessageForm = memo(
             waitingOnMessageIndex={waitingOnMessageIndex}
             textareaRef={textareaRef}
             prompt={prompt}
+            setPrompt={setPrompt}
             submitPrompt={handleSubmit}
             abortPrompt={abortPrompt}
             disabled={disabled}
@@ -445,6 +447,7 @@ interface AIUserMessageFormFooterProps {
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
+  setPrompt: (prompt: string) => void;
   submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
@@ -463,6 +466,7 @@ const AIUserMessageFormFooter = memo(
     waitingOnMessageIndex,
     textareaRef,
     prompt,
+    setPrompt,
     submitPrompt,
     abortPrompt,
     handleFiles,
@@ -505,12 +509,20 @@ const AIUserMessageFormFooter = memo(
               filesSupportedText={filesSupportedText}
             />
             {uiContext === 'analyst' && (
-              <AIUserMessageFormConnectionsButton
-                disabled={disabled}
-                context={context}
-                setContext={setContext}
-                textareaRef={textareaRef}
-              />
+              <>
+                <AIUserMessageFormConnectionsButton
+                  disabled={disabled}
+                  context={context}
+                  setContext={setContext}
+                  textareaRef={textareaRef}
+                />
+                <AIUserMessageFormOptimizeButton
+                  disabled={disabled}
+                  prompt={prompt}
+                  setPrompt={setPrompt}
+                  textareaRef={textareaRef}
+                />
+              </>
             )}
           </div>
 
