@@ -1,5 +1,5 @@
 import { useOptimizePrompt } from '@/app/ai/hooks/useOptimizePrompt';
-import { AIIcon } from '@/shared/components/Icons';
+import { AIIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -39,7 +39,7 @@ export const AIUserMessageFormOptimizeButton = memo(
     }, [prompt, optimizePrompt, setPrompt, textareaRef, isOptimizing]);
 
     return (
-      <TooltipPopover label="Restructure prompt with task, data, and location">
+      <TooltipPopover label="Enhance prompt">
         <Button
           size="icon-sm"
           className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
@@ -47,7 +47,7 @@ export const AIUserMessageFormOptimizeButton = memo(
           disabled={disabled || !prompt.trim() || isOptimizing}
           onClick={handleOptimize}
         >
-          <AIIcon className={isOptimizing ? 'animate-pulse' : ''} />
+          {isOptimizing ? <SpinnerIcon /> : <AIIcon />}
         </Button>
       </TooltipPopover>
     );

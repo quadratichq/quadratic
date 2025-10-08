@@ -2739,18 +2739,15 @@ If the user's redo request is multiple transactions, use the count parameter to 
     sources: ['OptimizePrompt'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool restructures a user's prompt into a clear, step-by-step format that follows a specific template.\n
-Transform the user's original prompt to answer these three questions:\n
-1. What do you want performed - describe the analysis, calculation, or task\n
-2. What data do you want to reference - specify the data source, location, or table name\n
-3. Where to place it - specify the preferred location, or default to "an open location right of existing data" if not specified\n
-Maintain the user's original intent while making the prompt more structured and actionable.\n`,
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+The output MUST be a bulleted list with specific sections covering the task, output creation, and any other relevant details.\n
+Use the spreadsheet context to make instructions specific and actionable.\n`,
     parameters: {
       type: 'object',
       properties: {
         optimized_prompt: {
           type: 'string',
-          description: 'The restructured prompt following the three-step template',
+          description: 'The restructured prompt as a bulleted list with clear step-by-step instructions',
         },
       },
       required: ['optimized_prompt'],
@@ -2758,34 +2755,48 @@ Maintain the user's original intent while making the prompt more structured and 
     },
     responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
     prompt: `
-This tool restructures a user's prompt into a clear, step-by-step format that follows a specific template.\n
-You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the restructured prompt more specific.\n
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the instructions specific.\n
 
-Transform the user's original prompt to answer these three questions in order:\n
-1. What do you want performed - describe the analysis, calculation, or task clearly\n
-2. What data do you want to reference - specify the data source using actual table names, sheet names, or cell ranges from the context when the user's intent is clear\n
-3. Where to place it - specify the preferred location for results, or if not mentioned, default to "place it in an open location right of existing data"\n
+REQUIRED OUTPUT FORMAT - a bulleted list with these sections:\n
 
-IMPORTANT: The optimized prompt should be a natural, conversational restructuring that flows well. Don't use numbered lists or bullet points. Instead, weave these three elements together into a clear, coherent prompt that maintains the user's voice.\n
+- Task: [Detailed description of what analysis/calculation to perform, specifying exactly what data to analyze from which table/sheet. Be specific about what aspects of the data to examine.]\n
+- Create: [Specify what output format to generate - code for metrics summaries, charts, tables, etc. If the user doesn't clearly define the output format, make a recommendation like "metrics summaries and relevant charts" based on the task.]\n
+- [Any other relevant details like placement location, specific requirements, or constraints]\n
 
-When restructuring:\n
-- If the user mentions vague data like "my sales" or "the data", check the context for actual table or sheet names and reference them specifically\n
-- If the user's location preference is vague or missing, default to "an open location right of existing data"\n
-- Keep the prompt conversational and natural-sounding\n
+Rules for creating the output:\n
+1. Always start with "- Task:" describing WHAT to analyze and WHERE the data is (use actual table/sheet names from context)\n
+2. Always include "- Create:" describing the output format (metrics, charts, tables, code, etc.)\n
+3. Be specific about the analysis details - don't just say "analyze data", say WHAT aspects to analyze\n
+4. If the user doesn't specify output format, recommend appropriate formats (metrics, charts, summaries)\n
+5. Add any other relevant bullet points for placement, constraints, or special requirements\n
+6. Use actual table names and sheet names from the context when available\n
+7. Default placement to "an open location right of existing data" if not specified\n
+8. IMPORTANT: Use plain text only - NO markdown formatting like **bold**, *italics*, or any other formatting. Just use dashes and plain text.\n
 
 Example transformations:\n
+
 Original: "graph my sales"\n
-Context shows: Sales_Data table exists\n
-Optimized: "Create a graph showing sales trends using the Sales_Data table, and place it in an open location right of existing data."\n
+Context: Sales_Data table exists with columns: date, revenue, region\n
+Optimized:\n
+- Task: Analyze sales trends over time using the Sales_Data table, examining revenue patterns across different dates and regions\n
+- Create: Generate a line chart showing revenue trends, with additional summary metrics for total and average sales\n
+- Place results in an open location right of existing data\n
 
-Original: "calculate totals"\n
-Context shows: Revenue column in Sheet1\n
-Optimized: "Calculate the sum totals for the Revenue column in Sheet1, and place the results in an open location right of existing data."\n
+Original: "analyze customer data"\n
+Context: Customers table with columns: age, purchase_count, total_spent\n
+Optimized:\n
+- Task: Analyze customer demographics and purchase behavior using the Customers table, examining relationships between age, purchase frequency, and spending patterns\n
+- Create: Generate summary metrics (average age, total purchases, spending distribution) and create charts showing customer segmentation and purchase trends\n
+- Place results in an open location right of existing data\n
 
-Original: "analyze customer data and put results in sheet 2"\n
-Context shows: Customers table\n
-Optimized: "Perform an analysis of customer demographics and purchase patterns using the Customers table, and place the results in Sheet 2."\n
+Original: "calculate totals for revenue"\n
+Context: Revenue column in Sheet1\n
+Optimized:\n
+- Task: Calculate sum totals for the Revenue column in Sheet1\n
+- Create: Display the total as a single cell value with a label\n
+- Place the result directly below the Revenue column\n
 
-Maintain the user's original intent while making the prompt more specific and structured using the available context.\n`,
+Be specific, detailed, and actionable in every bullet point.\n`,
   },
 } as const;
