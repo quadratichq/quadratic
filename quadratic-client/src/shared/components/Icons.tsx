@@ -331,10 +331,6 @@ export const FileIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
 
-export const FileNewIcon: IconComponent = (props) => {
-  return <Icon {...props}>note_add</Icon>;
-};
-
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };
