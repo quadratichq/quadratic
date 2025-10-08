@@ -65,7 +65,7 @@ export const ConnectionSchemaBrowser = ({
 
   // Designed to live in a box that takes up the full height of its container
   return (
-    <div className={cn('h-full overflow-auto text-sm')}>
+    <div className="h-full overflow-auto text-sm">
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 truncate">
