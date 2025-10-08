@@ -106,7 +106,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // Abort the request if the client disconnects or aborts the request
   const abortController = new AbortController();
   req.socket.on('close', () => {
-    logger.info('[ai.chat.POST] Client disconnected, aborting AI request');
     abortController.abort();
   });
 
