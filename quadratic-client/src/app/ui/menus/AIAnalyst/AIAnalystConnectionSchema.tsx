@@ -7,7 +7,6 @@ import { ConnectionSchemaBrowser } from '@/shared/components/connections/Connect
 import { CloseIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -58,7 +57,7 @@ export const AIAnalystConnectionSchema = memo(() => {
     >
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
-      <div className={cn('h-full w-full pt-0.5')}>
+      <div className="h-full w-full pt-0.5">
         <ConnectionSchemaBrowser
           additionalActions={
             <Button
