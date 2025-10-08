@@ -47,7 +47,7 @@ export const AIAnalystConnectionSchema = memo(() => {
       : undefined;
 
   if (!connectionType) {
-    throw new Error('Expected connectionType to be set in AIAnalystConnectionSchema');
+    throw new Error('A connection with a known UUID could not find its corresponding type');
   }
 
   return (
