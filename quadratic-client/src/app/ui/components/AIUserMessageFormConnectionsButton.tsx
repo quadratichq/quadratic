@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -88,7 +87,7 @@ export const AIUserMessageFormConnectionsButton = memo(
           <DropdownMenuTrigger asChild>
             <Button
               size="icon-sm"
-              className={cn('h-7 w-7 rounded-full px-0 shadow-none hover:bg-border')}
+              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
               variant="ghost"
               disabled={disabled}
               onClick={handleOnClickButton}
