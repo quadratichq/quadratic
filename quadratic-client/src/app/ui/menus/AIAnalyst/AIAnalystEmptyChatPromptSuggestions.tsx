@@ -34,7 +34,7 @@ interface AIAnalystEmptyChatPromptSuggestionsProps {
   context: Context;
   files: FileContent[];
   importFiles: ImportFile[];
-  showWaypoints?: boolean;
+  showWaypoints: boolean;
 }
 export const AIAnalystEmptyChatPromptSuggestions = memo(
   ({ submit, context, files, importFiles, showWaypoints }: AIAnalystEmptyChatPromptSuggestionsProps) => {
