@@ -72,14 +72,14 @@ export const AIContext = memo(
               primary={connection.name}
               primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
               secondary={''}
-              onClick={handleOnClickConnection}
-              primaryOnClick={() => {
+              onRemove={handleOnClickConnection}
+              onClick={() => {
                 setAIAnalystActiveSchemaConnectionUuid((prevUuid) => {
                   return prevUuid && prevUuid === connection.uuid ? undefined : connection.uuid;
                 });
                 textareaRef.current?.focus();
               }}
-              noClose={disabled}
+              disabled={disabled}
             />
           ))}
 
@@ -88,7 +88,7 @@ export const AIContext = memo(
             key={`${index}-${file.fileName}`}
             disabled={disabled}
             file={file}
-            onClick={() => handleOnClickFileContext(index)}
+            onRemove={() => handleOnClickFileContext(index)}
           />
         ))}
 
@@ -97,8 +97,8 @@ export const AIContext = memo(
             key={`${index}-${file.name}`}
             primary={file.name}
             secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
-            noClose={disabled}
-            onClick={() => handleOnClickImportFileContext(index)}
+            disabled={disabled}
+            onRemove={() => handleOnClickImportFileContext(index)}
           />
         ))}
 
@@ -107,7 +107,7 @@ export const AIContext = memo(
             key={`${index}-${file.name}`}
             primary={file.name}
             secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
-            noClose={disabled}
+            disabled={disabled}
           />
         ))}
 
@@ -121,18 +121,19 @@ interface ContextPillProps {
   primary: string;
   primaryIcon?: React.ReactNode;
   secondary: string;
+  onRemove?: () => void;
+  disabled?: boolean;
   onClick?: () => void;
-  noClose: boolean;
-  primaryOnClick?: () => void;
 }
-const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose, primaryOnClick }: ContextPillProps) => {
+const ContextPill = memo(({ disabled, primary, primaryIcon, secondary, onRemove, onClick }: ContextPillProps) => {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div
+    <Tag
       className={cn(
         'flex h-5 items-center self-stretch rounded border border-border px-1 text-xs',
-        primaryOnClick && 'cursor-pointer'
+        onClick && !disabled && 'cursor-pointer'
       )}
-      onClick={primaryOnClick}
+      {...(onClick && { onClick, disabled })}
     >
       <span className="flex items-center gap-1">
         {primaryIcon}
@@ -141,34 +142,34 @@ const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose, p
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
-      {!noClose && (
+      {!disabled && onRemove && (
         <Button
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
           variant="ghost"
-          onClick={onClick}
+          onClick={onRemove}
         >
           <CloseIcon className="!h-4 !w-4 !text-xs" />
         </Button>
       )}
-    </div>
+    </Tag>
   );
 });
 
 interface FileContextPillProps {
   disabled: boolean;
   file: FileContent;
-  onClick: () => void;
+  onRemove: () => void;
 }
-const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
+const FileContextPill = memo(({ disabled, file, onRemove }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
       <HoverCardTrigger>
         <ContextPill
           primary={file.fileName}
           secondary={getFileTypeLabel(file.mimeType)}
-          noClose={disabled}
-          onClick={onClick}
+          disabled={disabled}
+          onRemove={onRemove}
         />
       </HoverCardTrigger>
       <HoverCardContent className="w-48 overflow-hidden p-0" side="top">
@@ -203,5 +204,5 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return null;
   }
 
-  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" noClose={true} />;
+  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" disabled={true} />;
 });
