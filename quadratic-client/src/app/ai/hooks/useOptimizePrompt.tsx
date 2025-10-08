@@ -20,7 +20,13 @@ export const useOptimizePrompt = () => {
           role: 'user',
           content: [
             createTextContent(
-              `Optimize the following user prompt to make it more effective for a spreadsheet AI assistant. The optimized prompt should be clearer, more specific, and maintain the user's original intent.\n\nOriginal prompt: "${originalPrompt}"\n\nUse the optimize_prompt tool to return the improved version.`
+              `Restructure the following user prompt to follow this template:\n
+1. What do you want performed (the task/analysis)\n
+2. What data do you want to reference (the data source)\n
+3. Where to place it (location preference, or default to "an open location right of existing data")\n
+\nOriginal prompt: "${originalPrompt}"\n
+\nTransform this into a clear, natural-sounding prompt that answers all three questions. If the original prompt doesn't specify where to place results, add "and place it in an open location right of existing data" at the end.\n
+\nUse the optimize_prompt tool to return the restructured version.`
             ),
           ],
           contextType: 'userPrompt',

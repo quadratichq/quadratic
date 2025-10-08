@@ -39,7 +39,7 @@ export const AIUserMessageFormOptimizeButton = memo(
     }, [prompt, optimizePrompt, setPrompt, textareaRef, isOptimizing]);
 
     return (
-      <TooltipPopover label="Optimize prompt">
+      <TooltipPopover label="Restructure prompt with task, data, and location">
         <Button
           size="icon-sm"
           className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"

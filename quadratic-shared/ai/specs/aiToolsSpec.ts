@@ -2739,20 +2739,18 @@ If the user's redo request is multiple transactions, use the count parameter to 
     sources: ['OptimizePrompt'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool optimizes a user's prompt to make it clearer, more specific, and more effective for the AI assistant.\n
-You should improve the prompt by:\n
-- Making it more specific and actionable\n
-- Adding relevant context or details that would help get better results\n
-- Correcting any unclear phrasing\n
-- Maintaining the user's original intent\n
-- Keeping it concise but informative\n
-The optimized prompt should be self-contained and work well for spreadsheet operations.\n`,
+This tool restructures a user's prompt into a clear, step-by-step format that follows a specific template.\n
+Transform the user's original prompt to answer these three questions:\n
+1. What do you want performed - describe the analysis, calculation, or task\n
+2. What data do you want to reference - specify the data source, location, or table name\n
+3. Where to place it - specify the preferred location, or default to "an open location right of existing data" if not specified\n
+Maintain the user's original intent while making the prompt more structured and actionable.\n`,
     parameters: {
       type: 'object',
       properties: {
         optimized_prompt: {
           type: 'string',
-          description: "The improved version of the user's prompt",
+          description: 'The restructured prompt following the three-step template',
         },
       },
       required: ['optimized_prompt'],
@@ -2760,13 +2758,24 @@ The optimized prompt should be self-contained and work well for spreadsheet oper
     },
     responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
     prompt: `
-This tool optimizes a user's prompt to make it clearer, more specific, and more effective for the AI assistant.\n
-You should improve the prompt by:\n
-- Making it more specific and actionable\n
-- Adding relevant context or details that would help get better results\n
-- Correcting any unclear phrasing\n
-- Maintaining the user's original intent\n
-- Keeping it concise but informative\n
-The optimized prompt should be self-contained and work well for spreadsheet operations.\n`,
+This tool restructures a user's prompt into a clear, step-by-step format that follows a specific template.\n
+Transform the user's original prompt to answer these three questions in order:\n
+1. What do you want performed - describe the analysis, calculation, or task clearly\n
+2. What data do you want to reference - specify the data source, location, table name, or cell range\n
+3. Where to place it - specify the preferred location for results, or if not mentioned, default to "Place results in an open location right of existing data"\n
+
+IMPORTANT: The optimized prompt should be a natural, conversational restructuring that flows well. Don't use numbered lists or bullet points. Instead, weave these three elements together into a clear, coherent prompt that maintains the user's voice.\n
+
+Example transformations:\n
+Original: "graph my sales"\n
+Optimized: "Create a graph showing sales trends using the sales data in the table, and place it in an open location right of existing data."\n
+
+Original: "calculate totals"\n
+Optimized: "Calculate the sum totals for the revenue column in the Sales table, and place the results in an open location right of existing data."\n
+
+Original: "analyze customer data and put results in sheet 2"\n
+Optimized: "Perform an analysis of customer demographics and purchase patterns using the customer data table, and place the results in Sheet 2."\n
+
+Maintain the user's original intent while making the prompt more specific and structured.\n`,
   },
 } as const;
