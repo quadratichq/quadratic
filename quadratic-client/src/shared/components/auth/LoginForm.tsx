@@ -108,8 +108,6 @@ export const LoginForm = memo(() => {
       </Form>
 
       <div className="flex flex-row gap-8">
-        <SwitchToMagicAuthCode />
-
         <SwitchToResetPassword />
       </div>
 
@@ -117,29 +115,6 @@ export const LoginForm = memo(() => {
 
       <OAuthButtons />
     </>
-  );
-});
-
-const SwitchToMagicAuthCode = memo(() => {
-  const navigate = useNavigate();
-  const switchToMagicAuthCode = useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const { search } = new URL(window.location.href);
-      navigate(`${ROUTES.SEND_MAGIC_AUTH_CODE}${search}`);
-    },
-    [navigate]
-  );
-
-  return (
-    <button
-      data-testid="send-magic-auth-code"
-      onClick={switchToMagicAuthCode}
-      className="text-sm font-medium text-primary hover:text-primary/80"
-    >
-      {'Magic code'}
-    </button>
   );
 });
 

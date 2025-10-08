@@ -1,10 +1,9 @@
 import { cn } from '@/shared/shadcn/utils';
 import { memo } from 'react';
 
-type AILoadingProps = {
+interface AILoadingProps {
   loading: boolean;
-};
-
+}
 export const AILoading = memo(({ loading }: AILoadingProps) => {
   return (
     <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>

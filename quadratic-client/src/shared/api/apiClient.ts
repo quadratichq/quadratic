@@ -529,20 +529,6 @@ export const apiClient = {
         ApiSchemas['/v0/auth/reset-password.POST.response']
       );
     },
-    sendMagicAuthCode(args: ApiTypes['/v0/auth/send-magic-auth-code.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/send-magic-auth-code`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/send-magic-auth-code.POST.response']
-      );
-    },
-    authenticateWithMagicCode(args: ApiTypes['/v0/auth/authenticate-with-magic-code.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/authenticate-with-magic-code`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/authenticate-with-magic-code.POST.response']
-      );
-    },
   },
 
   // Someday: figure out how to fit in the calls for the AI chat

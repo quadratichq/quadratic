@@ -11,12 +11,12 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { useLoadScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
-export function QuadraticApp() {
+export const QuadraticApp = memo(() => {
   // ensure GridSettings are loaded before app starts
   useSetRecoilState(gridSettingsAtom);
 
@@ -104,4 +104,4 @@ export function QuadraticApp() {
   }
 
   return <QuadraticUIContext />;
-}
+});
