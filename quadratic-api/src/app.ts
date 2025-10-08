@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
@@ -9,8 +8,7 @@ import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
 import winston from 'winston';
-import authRouter from './auth/router/authRouter';
-import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 import logger, { format } from './utils/logger';
@@ -29,17 +27,11 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 
 app.use(helmet());
 
-// cookie parser for auth routes
-app.use(cookieParser());
-
-// workos auth
-app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
-
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
 
 // Request logging middleware for Datadog
-if (LOG_REQUEST_INFO === 'true') {
+if (LOG_REQUEST_INFO) {
   app.use(
     expressWinston.logger({
       transports: [new winston.transports.Console()],
@@ -137,8 +129,8 @@ async function registerRoutes() {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
-      } catch (error) {
-        logger.error(`Failed to register route ${expressRoute}`, error);
+      } catch (err) {
+        logger.error('Failed to register route', { expressRoute, error: err });
       }
     }
   }
