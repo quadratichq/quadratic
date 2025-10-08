@@ -36,7 +36,6 @@ import type {
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import logger from '../../utils/logger';
 import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Part[] {
@@ -175,7 +174,6 @@ function convertSingleType(type: string): Schema {
     case 'null':
       return { type: Type.NULL };
     default:
-      logger.info(`Unknown type: ${type}`);
       throw new Error(`Unknown type: ${type}`);
   }
 }
@@ -221,7 +219,6 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
         description: parameter.description,
       };
     default:
-      logger.info(JSON.stringify(parameter));
       throw new Error(`Unknown parameter type: ${parameter.type}`);
   }
 }
