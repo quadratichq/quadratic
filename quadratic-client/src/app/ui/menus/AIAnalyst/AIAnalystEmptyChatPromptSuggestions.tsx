@@ -107,7 +107,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           </svg>
         </div>
         {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-          <HoverCard>
+          <HoverCard key={`${index}-${label}-card`}>
             <HoverCardTrigger asChild>
               <Button
                 key={`${index}-${label}`}

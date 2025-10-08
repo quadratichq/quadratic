@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
-use crate::controller::operations::clipboard::ClipboardOperation;
+use crate::controller::operations::clipboard::{ClipboardOperation};
 use crate::grid::js_types::JsClipboard;
 use crate::wasm_bindings::capture_core_error;
 use crate::{
