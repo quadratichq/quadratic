@@ -11,10 +11,7 @@ import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testD
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 // Helper function to generate expected serialized Buffer format for HTTP responses
-const expectSerializedBuffer = (data: any) => ({
-  type: 'Buffer',
-  data: Array.from(Buffer.from(JSON.stringify(data))),
-});
+const expectSerializedBuffer = (data: any) => Array.from(Buffer.from(JSON.stringify(data)));
 
 export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 

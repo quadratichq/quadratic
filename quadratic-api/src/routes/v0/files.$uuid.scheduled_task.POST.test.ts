@@ -7,10 +7,7 @@ import { app } from '../../app';
 import { clearDb, createUserTeamAndFile } from '../../tests/testDataGenerator';
 
 // Helper function to generate expected serialized Buffer format for HTTP responses
-const expectSerializedBuffer = (data: any) => ({
-  type: 'Buffer',
-  data: Array.from(Buffer.from(JSON.stringify(data))),
-});
+const expectSerializedBuffer = (data: any) => Array.from(Buffer.from(JSON.stringify(data)));
 
 describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   let uniqueId: string;
@@ -29,11 +26,11 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid UUID parameter format', async () => {
       const response = await request(app)
-        .post('/v0/files/invalid-uuid/scheduled-tasks')
+        .post('/v0/files/invalid-uuid/scheduled_task')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(400);
@@ -44,7 +41,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .post(`/v0/files/${testFile.uuid}/scheduled_task`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(400);
@@ -69,7 +66,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(403);
@@ -82,17 +79,14 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('uuid');
       expect(response.body.cronExpression).toBe('0 0 * * *');
-      expect(response.body.operations).toEqual({
-        type: 'Buffer',
-        data: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
-      });
+      expect(response.body.operations).toEqual(Array.from(Buffer.from(JSON.stringify({ action: 'test' }))));
       expect(response.body.status).toBe('ACTIVE');
     });
   });
@@ -104,7 +98,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *', // Daily at midnight
-          operations: Buffer.from(JSON.stringify({ action: 'backup', type: 'daily' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'backup', type: 'daily' }))),
         });
 
       expect(response.status).toBe(201);
@@ -128,20 +122,21 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '30 14 * * 1-5', // 2:30 PM on weekdays
-          operations: Buffer.from(
-            JSON.stringify({
-              action: 'weekday_report',
-              recipients: ['admin@example.com'],
-              format: 'pdf',
-            })
+          operations: Array.from(
+            Buffer.from(
+              JSON.stringify({
+                action: 'weekday_report',
+                recipients: ['admin@example.com'],
+                format: 'pdf',
+              })
+            )
           ),
         });
 
       expect(response.status).toBe(201);
       expect(response.body.cronExpression).toBe('30 14 * * 1-5');
-      expect(response.body.operations).toEqual({
-        type: 'Buffer',
-        data: Array.from(
+      expect(response.body.operations).toEqual(
+        Array.from(
           Buffer.from(
             JSON.stringify({
               action: 'weekday_report',
@@ -149,8 +144,8 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
               format: 'pdf',
             })
           )
-        ),
-      });
+        )
+      );
     });
 
     it('should handle complex operations object', async () => {
@@ -187,14 +182,11 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 2 * * *', // Daily at 2 AM
-          operations: Buffer.from(JSON.stringify(complexOperations)),
+          operations: Array.from(Buffer.from(JSON.stringify(complexOperations))),
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.operations).toEqual({
-        type: 'Buffer',
-        data: Array.from(Buffer.from(JSON.stringify(complexOperations))),
-      });
+      expect(response.body.operations).toEqual(Array.from(Buffer.from(JSON.stringify(complexOperations))));
     });
   });
 
@@ -205,7 +197,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(404);
@@ -217,7 +209,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: 'invalid cron',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(400);
@@ -228,7 +220,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .post(`/v0/files/${testFile.uuid}/scheduled_task`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(401);
@@ -242,7 +234,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(201);
@@ -263,10 +255,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
       expect(response.body).toHaveProperty('cronExpression');
       expect(response.body.cronExpression).toBe('0 0 * * *');
       expect(response.body).toHaveProperty('operations');
-      expect(response.body.operations).toEqual({
-        type: 'Buffer',
-        data: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
-      });
+      expect(response.body.operations).toEqual(Array.from(Buffer.from(JSON.stringify({ action: 'test' }))));
       expect(response.body).toHaveProperty('createdDate');
       expect(typeof response.body.createdDate).toBe('string');
       expect(response.body).toHaveProperty('updatedDate');
@@ -279,7 +268,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
-          operations: Buffer.from(JSON.stringify({ action: 'test' })),
+          operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
         });
 
       expect(response.status).toBe(201);
@@ -306,7 +295,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
           .send({
             cronExpression: cron,
-            operations: Buffer.from(JSON.stringify({ action: 'test', description })),
+            operations: Array.from(Buffer.from(JSON.stringify({ action: 'test', description }))),
           });
 
         expect(response.status).toBe(201);

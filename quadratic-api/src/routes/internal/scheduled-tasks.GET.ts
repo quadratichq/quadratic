@@ -14,6 +14,7 @@ router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Resp
     return res.status(400).json({ errors: errors.array() });
   }
 
+  // Get all scheduled tasks that are active and have a next run time that is less than or equal to the current time.
   const currentTime = new Date();
   const scheduledTasks = await dbClient.scheduledTask.findMany({
     where: {

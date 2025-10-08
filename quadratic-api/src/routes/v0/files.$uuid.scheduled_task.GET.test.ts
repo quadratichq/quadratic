@@ -9,12 +9,9 @@ import { clearDb, createFile, createUserTeamAndFile, scheduledTask } from '../..
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 // Helper function to generate expected serialized Buffer format for HTTP responses
-const expectSerializedBuffer = (data: any) => ({
-  type: 'Buffer',
-  data: Array.from(Buffer.from(JSON.stringify(data))),
-});
+const expectSerializedBuffer = (data: any) => Array.from(Buffer.from(JSON.stringify(data)));
 
-describe('GET /v0/files/:uuid/scheduled-tasks', () => {
+describe('GET /v0/files/:uuid/scheduled_task', () => {
   let testUser: any;
   let testFile: any;
   let testTeam: any;
@@ -33,7 +30,7 @@ describe('GET /v0/files/:uuid/scheduled-tasks', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .get('/v0/files/invalid-uuid/scheduled-tasks')
+        .get('/v0/files/invalid-uuid/scheduled_task')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);

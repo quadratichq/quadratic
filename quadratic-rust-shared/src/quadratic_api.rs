@@ -281,6 +281,32 @@ pub struct Task {
     pub operations: Vec<u8>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ScheduledTaskLogStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScheduledTaskLogRequest {
+    pub status: ScheduledTaskLogStatus,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScheduledTaskLogResponse {
+    pub id: Uuid,
+    pub scheduled_task_id: Uuid,
+    pub status: ScheduledTaskLogStatus,
+    pub error: Option<String>,
+    pub created_date: DateTime<Utc>,
+}
+
 impl Task {
     pub fn as_bytes(&self) -> Result<Vec<u8>> {
         serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
@@ -299,10 +325,12 @@ impl Task {
         }
 
         let task = serde_json::from_slice::<Self>(bytes)?;
+
         Ok(task)
     }
 }
 
+/// Retrieve all scheduled tasks from the quadratic API server.
 pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>> {
     let url = format!("{base_url}/v0/internal/scheduled-tasks");
     let client = get_client(&url, jwt);
@@ -313,6 +341,31 @@ pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>>
     let tasks = response.json::<Vec<Task>>().await?;
 
     Ok(tasks)
+}
+
+/// Create a scheduled task log for a scheduled task.
+pub async fn create_scheduled_task_log(
+    base_url: &str,
+    jwt: &str,
+    scheduled_task_id: Uuid,
+    status: ScheduledTaskLogStatus,
+    error: Option<String>,
+) -> Result<ScheduledTaskLogResponse> {
+    let url = format!("{base_url}/v0/internal/scheduled-tasks/{scheduled_task_id}/log");
+    let body = ScheduledTaskLogRequest { status, error };
+
+    let response = reqwest::Client::new()
+        .put(url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .json(&body)
+        .send()
+        .await?;
+
+    handle_response(&response)?;
+
+    let scheduled_task_log = response.json::<ScheduledTaskLogResponse>().await?;
+
+    Ok(scheduled_task_log)
 }
 
 #[cfg(test)]

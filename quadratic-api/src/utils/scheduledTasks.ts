@@ -77,6 +77,15 @@ export async function updateScheduledTaskStatus(
   });
 }
 
+// Update the next run time of a scheduled task
+export async function updateScheduledTaskNextRunTime(scheduledTaskId: number, cronExpression: string): Promise<void> {
+  const nextRunTime = getNextRunTime(cronExpression);
+  await dbClient.scheduledTask.update({
+    where: { id: scheduledTaskId },
+    data: { nextRunTime },
+  });
+}
+
 // Get a scheduled task
 export async function getScheduledTask(scheduledTaskUuid: string): Promise<ScheduledTaskResponse> {
   const result = await dbClient.scheduledTask.findFirst({
