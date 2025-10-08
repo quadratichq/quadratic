@@ -22,11 +22,10 @@ const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
     label: 'Search the web',
     prompt: 'Search the web for the top 10 companies in the US by revenue.',
   },
-  // todo: fix the placeholder below
   {
     label: 'Connect an API',
     prompt:
-      'Show me how to do a GET request using Python. Pull data from <PLACEHOLDER> and put it on the sheet. Wrap everything in a single function and have that be the last thing returned to the sheet.',
+      'Show me how to do a GET request using Python. Pull data from jsonplaceholder.typicode.com and put it on the sheet. Wrap everything in a single function and have that be the last thing returned to the sheet.',
   },
 ];
 
