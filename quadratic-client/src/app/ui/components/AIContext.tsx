@@ -36,9 +36,10 @@ export const AIContext = memo(
     const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickConnection = useCallback(() => {
+      setAIAnalystActiveSchemaConnectionUuid(undefined);
       setContext?.((prev) => ({ ...prev, connection: undefined }));
       textareaRef.current?.focus();
-    }, [setContext, textareaRef]);
+    }, [setContext, textareaRef, setAIAnalystActiveSchemaConnectionUuid]);
 
     const handleOnClickFileContext = useCallback(
       (index: number) => {
