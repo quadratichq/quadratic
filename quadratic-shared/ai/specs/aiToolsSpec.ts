@@ -2759,23 +2759,33 @@ Maintain the user's original intent while making the prompt more structured and 
     responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
     prompt: `
 This tool restructures a user's prompt into a clear, step-by-step format that follows a specific template.\n
+You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the restructured prompt more specific.\n
+
 Transform the user's original prompt to answer these three questions in order:\n
 1. What do you want performed - describe the analysis, calculation, or task clearly\n
-2. What data do you want to reference - specify the data source, location, table name, or cell range\n
-3. Where to place it - specify the preferred location for results, or if not mentioned, default to "Place results in an open location right of existing data"\n
+2. What data do you want to reference - specify the data source using actual table names, sheet names, or cell ranges from the context when the user's intent is clear\n
+3. Where to place it - specify the preferred location for results, or if not mentioned, default to "place it in an open location right of existing data"\n
 
 IMPORTANT: The optimized prompt should be a natural, conversational restructuring that flows well. Don't use numbered lists or bullet points. Instead, weave these three elements together into a clear, coherent prompt that maintains the user's voice.\n
 
+When restructuring:\n
+- If the user mentions vague data like "my sales" or "the data", check the context for actual table or sheet names and reference them specifically\n
+- If the user's location preference is vague or missing, default to "an open location right of existing data"\n
+- Keep the prompt conversational and natural-sounding\n
+
 Example transformations:\n
 Original: "graph my sales"\n
-Optimized: "Create a graph showing sales trends using the sales data in the table, and place it in an open location right of existing data."\n
+Context shows: Sales_Data table exists\n
+Optimized: "Create a graph showing sales trends using the Sales_Data table, and place it in an open location right of existing data."\n
 
 Original: "calculate totals"\n
-Optimized: "Calculate the sum totals for the revenue column in the Sales table, and place the results in an open location right of existing data."\n
+Context shows: Revenue column in Sheet1\n
+Optimized: "Calculate the sum totals for the Revenue column in Sheet1, and place the results in an open location right of existing data."\n
 
 Original: "analyze customer data and put results in sheet 2"\n
-Optimized: "Perform an analysis of customer demographics and purchase patterns using the customer data table, and place the results in Sheet 2."\n
+Context shows: Customers table\n
+Optimized: "Perform an analysis of customer demographics and purchase patterns using the Customers table, and place the results in Sheet 2."\n
 
-Maintain the user's original intent while making the prompt more specific and structured.\n`,
+Maintain the user's original intent while making the prompt more specific and structured using the available context.\n`,
   },
 } as const;

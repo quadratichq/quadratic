@@ -22,9 +22,10 @@ export const useOptimizePrompt = () => {
             createTextContent(
               `Restructure the following user prompt to follow this template:\n
 1. What do you want performed (the task/analysis)\n
-2. What data do you want to reference (the data source)\n
+2. What data do you want to reference (use specific table/sheet names from the spreadsheet context when the user's intent is clear)\n
 3. Where to place it (location preference, or default to "an open location right of existing data")\n
 \nOriginal prompt: "${originalPrompt}"\n
+\nYou have access to the full spreadsheet context. Use it to make the prompt more specific by referencing actual table names, sheet names, or data locations when appropriate.\n
 \nTransform this into a clear, natural-sounding prompt that answers all three questions. If the original prompt doesn't specify where to place results, add "and place it in an open location right of existing data" at the end.\n
 \nUse the optimize_prompt tool to return the restructured version.`
             ),
@@ -46,7 +47,7 @@ export const useOptimizePrompt = () => {
           toolName: AITool.OptimizePrompt,
           useToolsPrompt: false,
           language: undefined,
-          useQuadraticContext: false,
+          useQuadraticContext: true,
         });
 
         const optimizePromptToolCall = response.toolCalls.find((toolCall) => toolCall.name === AITool.OptimizePrompt);
