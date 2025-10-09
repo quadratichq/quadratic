@@ -39,17 +39,17 @@ export const getModelKey = async (
 
     const promptMessages = getPromptMessagesForAI(messages);
 
+    // Restricted country that uses restricted model
+    if (restrictedCountry) {
+      return RESTRICTED_MODEL_ROUTER_MODEL;
+    }
+
     // if the model is the default free model, check if the user prompt contains an image file
     if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
       return hasImageFile ? DEFAULT_MODEL_WITH_IMAGE : modelKey;
-    }
-
-    // Restricted country that uses default router model
-    if (restrictedCountry) {
-      return RESTRICTED_MODEL_ROUTER_MODEL;
     }
 
     // if the model is not the model router model, return the model key
@@ -234,7 +234,7 @@ ${userTextPrompt}
     };
 
     const parsedResponse = await handleAIRequest({
-      modelKey: restrictedCountry ? RESTRICTED_MODEL_ROUTER_MODEL : DEFAULT_MODEL_ROUTER_MODEL,
+      modelKey: DEFAULT_MODEL_ROUTER_MODEL,
       args,
       isOnPaidPlan,
       exceededBillingLimit,
