@@ -56,6 +56,14 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
     await handleQuadraticLoading(page);
   }
 
+  // If onboarding video is shown, click "Skip" to proceed
+  const getStartedHeader = page.locator('h1:has-text("Get started")');
+  if (await getStartedHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const skipButton = page.getByRole('button', { name: /Skip/i });
+    if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipButton.click({ timeout: 60 * 1000 });
+    }
+  }
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
 
