@@ -21,7 +21,7 @@ export const ScheduledTaskSchema = z.object({
   fileId: z.number(),
   userId: z.number(),
   nextRunTime: z.string().datetime(),
-  lastRunTime: z.string().datetime().nullable(),
+  lastRunTime: z.union([z.literal(''), z.string().datetime()]).nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
   cronExpression: ScheduledTaskCronExpressionSchema,
   operations: ScheduledTaskOperationsSchema,
