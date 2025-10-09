@@ -234,7 +234,7 @@ ${userTextPrompt}
     };
 
     const parsedResponse = await handleAIRequest({
-      modelKey: DEFAULT_MODEL_ROUTER_MODEL,
+      modelKey: restrictedCountry ? RESTRICTED_MODEL_ROUTER_MODEL : DEFAULT_MODEL_ROUTER_MODEL,
       args,
       isOnPaidPlan,
       exceededBillingLimit,
