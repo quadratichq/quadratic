@@ -12,7 +12,7 @@ use crate::{
 impl GridController {
     /// Returns a string of cells for a connection. For more than one cell, the
     /// cells are comma-delimited.
-    pub fn get_cells_for_connections(sheet: &Sheet, rect: Rect) -> String {
+    pub fn get_cells_comma_delimited_string(sheet: &Sheet, rect: Rect) -> String {
         let mut response = String::new();
         for y in rect.y_range() {
             for x in rect.x_range() {
@@ -77,7 +77,7 @@ impl GridController {
                 ));
             }
             let rect = rects[0];
-            result.push_str(&Self::get_cells_for_connections(sheet, rect));
+            result.push_str(&Self::get_cells_comma_delimited_string(sheet, rect));
 
             transaction
                 .cells_accessed
@@ -314,21 +314,30 @@ mod tests {
         gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
         assert_eq!(
-            GridController::get_cells_for_connections(gc.sheet(sheet_id), Rect::test_a1("A1")),
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1")
+            ),
             "test"
         );
 
         // Test multiple cells in the same row
         gc.set_cell_value(pos![sheet_id!A2], "123".to_string(), None, false);
         assert_eq!(
-            GridController::get_cells_for_connections(gc.sheet(sheet_id), Rect::test_a1("A1:A2")),
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:A2")
+            ),
             "test,123"
         );
 
         // Test multiple cells in the same column
         gc.set_cell_value(pos![sheet_id!B1], "456".to_string(), None, false);
         assert_eq!(
-            GridController::get_cells_for_connections(gc.sheet(sheet_id), Rect::test_a1("A1:B1")),
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:B1")
+            ),
             "test,456"
         );
 
@@ -342,7 +351,10 @@ mod tests {
             false,
         );
         assert_eq!(
-            GridController::get_cells_for_connections(gc.sheet(sheet_id), Rect::test_a1("A1:C1")),
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:C1")
+            ),
             "test,456,246"
         );
     }
