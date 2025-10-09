@@ -126,9 +126,22 @@ impl Controller {
             return Ok(());
         }
 
+        let controller_port = self.state.settings.worker_only_port.to_string();
+        let controller_host = self.state.settings.worker_internal_host.to_string();
+        let multiplayer_port = self.state.settings.multiplayer_port.to_string();
+        let multiplayer_host = self.state.settings.multiplayer_host.to_string();
         let env_vars = vec![
-            format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
-            format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
+            format!("RUST_LOG={}", "warn"), // change this to info for seeing all logs
+            format!(
+                "CONTROLLER_URL={}",
+                format!("http://{controller_host}:{controller_port}")
+            ),
+            format!(
+                "MULTIPLAYER_URL={}",
+                format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
+            ),
+            // format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
+            // format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
             format!("FILE_ID={}", file_id.to_string()),
             format!(
                 "WORKER_EPHEMERAL_TOKEN={}",

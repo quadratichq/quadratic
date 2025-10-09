@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
 };
 use chrono::Timelike;
+use futures::StreamExt;
 use quadratic_rust_shared::quadratic_cloud::{
     WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
     WORKER_GET_WORKER_INIT_DATA_ROUTE, WORKER_SHUTDOWN_ROUTE,
@@ -61,6 +62,10 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
         let scheduled_tasks = log_error_only(scheduled_tasks(&state).await)?;
         let len = scheduled_tasks.len();
         trace!("Got {len} scheduled tasks from API");
+
+        if len == 0 {
+            continue;
+        }
 
         let scheduled_task_ids = scheduled_tasks
             .iter()
@@ -339,33 +344,31 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
             let _ = container.record_resource_usage(docker.clone()).await;
 
             // get the logs
-            let logs = container
-                .logs(docker.clone())
-                .await
-                .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+            // let logs = container
+            //     .logs(docker.clone())
+            //     .await
+            //     .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
             // if !logs.is_empty() {
             //     tracing::error!("Logs: {}", logs);
             // }
 
-            // let container_guard = container.lock().await;
-            // let logs = container_guard
-            //     .logs_stream()
-            //     .await
-            //     .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+            let mut logs = container
+                .logs_stream(docker.clone())
+                .await
+                .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-            // let mut log_lines = Vec::new();
-            // let mut logs_stream = logs;
-            // while let Some(log_result) = logs_stream.next().await {
-            //     match log_result {
-            //         Ok(log_output) => log_lines.push(log_output.to_string()),
-            //         Err(e) => tracing::warn!("Error reading log: {}", e),
-            //     }
-            // }
-
-            // for log_line in log_lines {
-            //     tracing::error!("Logs: {}", log_line.trim());
-            // }
+            while let Some(log_result) = logs.next().await {
+                match log_result {
+                    Ok(log_output) => {
+                        let log_line = log_output.to_string().trim().to_string();
+                        if !log_line.is_empty() {
+                            eprintln!("[CloudWorker] {}", log_line);
+                        }
+                    }
+                    Err(e) => tracing::warn!("Error reading log: {}", e),
+                }
+            }
         }
 
         interval.tick().await;
