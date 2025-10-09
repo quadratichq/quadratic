@@ -115,14 +115,14 @@ export const closeExtraUI = async (page: Page) => {
 
   // Close negative rows and columns warning tooltip
   try {
-    await page.getByLabel(`Close`).click({ timeout: 3000 });
+    await page.getByTestId('close-snackbar-button').click({ timeout: 3000 });
   } catch (error: any) {
     void error;
   }
 
   // Close 'File automatically updated...' alert
   try {
-    await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 3000 });
+    await page.getByTestId('close-snackbar-button').click({ timeout: 3000 });
   } catch (error: any) {
     void error;
   }
