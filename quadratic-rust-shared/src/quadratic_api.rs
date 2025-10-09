@@ -282,7 +282,7 @@ pub struct Task {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum ScheduledTaskLogStatus {
     PENDING,
     RUNNING,
@@ -300,8 +300,8 @@ pub struct ScheduledTaskLogRequest {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScheduledTaskLogResponse {
-    pub id: Uuid,
-    pub scheduled_task_id: Uuid,
+    pub id: u64,
+    pub scheduled_task_id: u64,
     pub status: ScheduledTaskLogStatus,
     pub error: Option<String>,
     pub created_date: DateTime<Utc>,
@@ -352,10 +352,11 @@ pub async fn create_scheduled_task_log(
     error: Option<String>,
 ) -> Result<ScheduledTaskLogResponse> {
     let url = format!("{base_url}/v0/internal/scheduled-tasks/{scheduled_task_id}/log");
+    tracing::info!("Creating scheduled task log {status:?}: {url}");
     let body = ScheduledTaskLogRequest { status, error };
 
     let response = reqwest::Client::new()
-        .put(url)
+        .post(url)
         .header("Authorization", format!("Bearer {jwt}"))
         .json(&body)
         .send()

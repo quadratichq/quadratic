@@ -1,25 +1,24 @@
 use axum::{Extension, http::HeaderMap, response::Json};
-use quadratic_rust_shared::{
-    quadratic_api::get_file_init_data,
-    quadratic_cloud::{
-        AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse,
-        GetWorkerAccessTokenResponse, GetWorkerInitDataResponse, ShutdownResponse,
-        WORKER_EPHEMERAL_TOKEN_HEADER,
-    },
+use quadratic_rust_shared::quadratic_cloud::{
+    AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse,
+    GetWorkerAccessTokenResponse, GetWorkerInitDataResponse, ShutdownResponse,
+    WORKER_EPHEMERAL_TOKEN_HEADER,
 };
 use std::sync::Arc;
-use tracing::{info, trace};
+use tracing::trace;
 use uuid::Uuid;
 
-use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
+use crate::quadratic_api::{insert_completed_logs, insert_failed_logs, insert_running_log};
 use crate::state::State;
+use crate::{controller::Controller, quadratic_api::file_init_data};
 
 /// Extract the UUID from the header
 fn get_uuid_from_header(headers: &HeaderMap, header_name: &str) -> Result<Uuid> {
     let header_value = headers
         .get(header_name)
         .ok_or_else(|| ControllerError::Header(format!("Missing header: {header_name}")))?;
+
     let id = Uuid::parse_str(
         header_value
             .to_str()
@@ -79,13 +78,7 @@ pub(crate) async fn handle_get_file_init_data(
 
     trace!("Getting file init data for file id {file_id}");
 
-    let mut file_init_data = get_file_init_data(
-        &state.settings.quadratic_api_uri,
-        &state.settings.m2m_auth_token,
-        file_id,
-    )
-    .await
-    .map_err(|e| ControllerError::GetFileInitData(e.to_string()))?;
+    let mut file_init_data = file_init_data(&state, file_id).await?;
 
     // TODO(ddimaria): Remove this
     file_init_data.presigned_url = file_init_data
@@ -125,6 +118,13 @@ pub(crate) async fn handle_get_tasks_for_worker(
 
     trace!("Got tasks for worker for file {file_id}: {:?}", tasks);
 
+    // Insert a running log for the file
+    let task_ids = tasks
+        .iter()
+        .map(|(_, task)| task.task_id.to_string())
+        .collect::<Vec<_>>();
+    insert_running_log(&state, task_ids).await?;
+
     Ok(Json(tasks))
 }
 
@@ -134,7 +134,8 @@ pub(crate) async fn handle_ack_tasks_for_worker(
     headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
-    if ack_request.keys.is_empty() {
+    // short circuit if there are no keys to ack
+    if ack_request.successful_tasks.is_empty() && ack_request.failed_tasks.is_empty() {
         return Ok(Json(AckTasksResponse { success: true }));
     }
 
@@ -145,10 +146,26 @@ pub(crate) async fn handle_ack_tasks_for_worker(
         ack_request
     );
 
+    // combine successful and failed keys to ack
+    let keys = ack_request
+        .successful_tasks
+        .iter()
+        .map(|(key, _)| key)
+        // just grab the first element of the tuple for the key
+        .chain(ack_request.failed_tasks.iter().map(|(key, _, _)| key))
+        .cloned()
+        .collect::<Vec<_>>();
+
     state
-        .ack_tasks(file_id, ack_request.keys)
+        .ack_tasks(file_id, keys)
         .await
         .map_err(|e| ControllerError::AckTasks(e.to_string()))?;
+
+    // Insert a completed log for the successful keys
+    insert_completed_logs(&state, ack_request.successful_tasks).await?;
+
+    // Insert a failed log for the failed keys
+    insert_failed_logs(&state, ack_request.failed_tasks).await?;
 
     Ok(Json(AckTasksResponse { success: true }))
 }

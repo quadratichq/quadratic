@@ -3,25 +3,24 @@ use axum::{
     routing::{get, post},
 };
 use chrono::Timelike;
-use quadratic_rust_shared::{
-    quadratic_api::get_scheduled_tasks,
-    quadratic_cloud::{
-        WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
-        WORKER_GET_WORKER_INIT_DATA_ROUTE, WORKER_SHUTDOWN_ROUTE,
-    },
+use quadratic_rust_shared::quadratic_cloud::{
+    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
+    WORKER_GET_WORKER_INIT_DATA_ROUTE, WORKER_SHUTDOWN_ROUTE,
 };
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{error, info, trace};
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::Uuid;
 
 use crate::{
     config::Config,
     controller::Controller,
     controller_docker::IMAGE_NAME,
-    error::{ControllerError, Result},
+    error::{ControllerError, Result, log_error_only},
     health::{full_healthcheck, healthcheck},
+    quadratic_api::{insert_pending_logs, scheduled_tasks},
     state::{State, jwt::handle_jwks},
     worker::{
         handle_ack_tasks_for_worker, handle_get_file_init_data, handle_get_tasks_for_worker,
@@ -31,6 +30,7 @@ use crate::{
 
 // const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
 const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
+const MAX_BACKOFF_SECONDS: u64 = 60;
 
 async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
@@ -58,39 +58,25 @@ async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
         trace!("Fetching scheduled tasks from API");
 
         // Fetch scheduled tasks from API
-        let scheduled_tasks = match get_scheduled_tasks(
-            &state.settings.quadratic_api_uri,
-            &state.settings.m2m_auth_token,
-        )
-        .await
-        {
-            Ok(scheduled_tasks) => {
-                trace!("Got {} scheduled tasks from API", scheduled_tasks.len());
-                scheduled_tasks
-            }
-            Err(e) => {
-                error!("Error fetching scheduled tasks: {e}");
-                continue;
-            }
-        };
-
+        let scheduled_tasks = log_error_only(scheduled_tasks(&state).await)?;
         let len = scheduled_tasks.len();
+        trace!("Got {len} scheduled tasks from API");
 
-        match state.add_tasks(scheduled_tasks).await {
-            Ok(()) => {
-                trace!("Added {} scheduled tasks to pubsub", len);
-            }
-            Err(e) => {
-                error!("Error adding scheduled tasks to pubsub: {e}");
-            }
-        }
+        let scheduled_task_ids = scheduled_tasks
+            .iter()
+            .flat_map(|task| Uuid::parse_str(&task.task_id))
+            .collect::<Vec<_>>();
 
-        if let Err(e) = controller.scan_and_ensure_all_workers().await {
-            error!("Error scanning and ensuring all file workers exist: {e}");
-        }
+        // Add tasks to PubSub
+        log_error_only(state.add_tasks(scheduled_tasks).await)?;
+        trace!("Adding {len} tasks to PubSub");
 
+        // ACK tasks with Quadratic API
+        log_error_only(insert_pending_logs(&state, scheduled_task_ids).await)?;
+
+        // Scan and ensure all workers exist
+        log_error_only(controller.scan_and_ensure_all_workers().await)?;
         let active_count = controller.count_active_workers().await.unwrap_or(0);
-
         trace!("Worker Controller alive - {active_count} active file workers");
     }
 }
@@ -164,8 +150,6 @@ async fn start_server(
     state: Arc<State>,
     app: fn(Arc<State>) -> Router,
 ) -> Result<()> {
-    let environment = state.settings.environment;
-
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
         .await
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
@@ -174,7 +158,10 @@ async fn start_server(
         .local_addr()
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-    tracing::info!("listening on {local_addr} for {name}, environment={environment}");
+    tracing::info!(
+        "listening on {local_addr} for {name}, environment={}",
+        state.settings.environment
+    );
 
     // Serve the application with ConnectInfo for IP extraction
     if let Err(e) = axum::serve(listener, app(state)).await {
@@ -207,7 +194,7 @@ where
         }
 
         let base_delay = 1;
-        let max_delay = 300;
+        let max_delay = MAX_BACKOFF_SECONDS;
         let delay = (base_delay * 2_u64.pow(attempt)).min(max_delay);
 
         info!("Backing off for {delay} seconds (attempt {attempt})");
@@ -239,7 +226,9 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_layer)
         .init();
 
-    // Remove any that didn't stop properly
+    // Remove any docker containersthat didn't stop properly.
+    // This is most relevant in development, but could cleanup errored
+    // containers in production.
     let summaries = state
         .client
         .lock()
@@ -289,7 +278,7 @@ pub(crate) async fn serve() -> Result<()> {
     let scheduled_task_watcher_state_clone = Arc::clone(&state);
     tokio::spawn(async {
         let _ = start_with_backoff(
-            "Scheduled task watcher",
+            "scheduled-task-watcher",
             scheduled_task_watcher_state_clone,
             |state| async {
                 start_scheduled_task_watcher(state)
@@ -310,7 +299,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     // Start public server
     let public_server_state_clone = Arc::clone(&state);
-    start_with_backoff("public server", public_server_state_clone, |state| async {
+    start_with_backoff("public-server", public_server_state_clone, |state| async {
         start_server(
             "public",
             state.settings.public_host.clone(),
@@ -330,7 +319,7 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     loop {
-        let containe_ids = state
+        let container_ids = state
             .client
             .lock()
             .await
@@ -338,7 +327,7 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
             .await
             .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-        for container_id in containe_ids {
+        for container_id in container_ids {
             let mut client = state.client.lock().await;
             let docker = client.docker.clone();
             let container = client

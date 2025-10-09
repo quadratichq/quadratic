@@ -1,15 +1,15 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use anyhow::Result;
-use chrono::Utc;
 use futures::future::join_all;
 use quadratic_rust_shared::docker::container::Container;
-use tokio::sync::Mutex;
 use tracing::{error, info, trace};
 use uuid::Uuid;
 
-use crate::state::State;
+use crate::{
+    error::{ControllerError, Result},
+    state::State,
+};
 
 pub(crate) const IMAGE_NAME: &str = "quadratic-cloud-worker";
 
@@ -86,7 +86,8 @@ impl Controller {
             .lock()
             .await
             .list_ids()
-            .await?
+            .await
+            .map_err(|e| ControllerError::Docker(e.to_string()))?
             .into_iter()
             .collect::<HashSet<_>>();
 
@@ -100,7 +101,8 @@ impl Controller {
             .lock()
             .await
             .has_container(&file_id)
-            .await?;
+            .await
+            .map_err(|e| ControllerError::Docker(e.to_string()))?;
 
         trace!("File {file_id} has an active worker: {has_container}");
 
@@ -141,14 +143,16 @@ impl Controller {
             Some(env_vars),
             None,
         )
-        .await?;
+        .await
+        .map_err(|e| ControllerError::Docker(e.to_string()))?;
 
         self.state
             .client
             .lock()
             .await
             .add_container(container, true)
-            .await?;
+            .await
+            .map_err(|e| ControllerError::Docker(e.to_string()))?;
 
         info!("Added worker for file {file_id}");
 
@@ -157,7 +161,11 @@ impl Controller {
 
     pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
         let mut client = state.client.lock().await;
-        client.remove_container(&file_id).await?;
+        client
+            .remove_container(&file_id)
+            .await
+            .map_err(|e| ControllerError::Docker(e.to_string()))?;
+
         state.release_worker_create_lock(&file_id).await;
 
         trace!("Shut down worker for file {file_id}");

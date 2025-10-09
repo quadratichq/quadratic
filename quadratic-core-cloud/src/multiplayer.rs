@@ -6,7 +6,8 @@ use quadratic_core::controller::{operations::operation::Operation, transaction::
 use quadratic_rust_shared::{
     multiplayer::message::request::MessageRequest,
     net::websocket_client::{
-        WebSocketSender, WebsocketClient, get_enter_room_message, get_leave_room_message,
+        WebSocketSender, WebsocketClient, get_enter_room_message, get_heartbeat_message,
+        get_leave_room_message,
     },
     protobuf::quadratic::transaction::BinaryTransaction as BinaryTransactionProto,
 };
@@ -81,6 +82,16 @@ pub(crate) async fn send_transaction(
     websocket.send_binary(&protobuf_message).await?;
 
     Ok(id)
+}
+
+/// Send heartbeat to the Multiplayer server.
+pub(crate) async fn send_heartbeat(
+    websocket: &mut WebSocketSender,
+    session_id: Uuid,
+    file_id: Uuid,
+) -> Result<()> {
+    let heartbeat_message = get_heartbeat_message(session_id, file_id);
+    send_message(websocket, heartbeat_message).await
 }
 
 /// Leave the room

@@ -85,7 +85,8 @@ impl Worker {
                 break;
             }
 
-            let mut keys = Vec::new();
+            let mut successful_tasks = Vec::new();
+            let mut failed_tasks = Vec::new();
 
             for (key, task) in tasks {
                 match self
@@ -99,9 +100,10 @@ impl Worker {
                     )
                     .await
                 {
-                    Ok(_) => keys.push(key),
+                    Ok(_) => successful_tasks.push((key, task.task_id)),
                     Err(e) => {
                         error!("Error processing tasks, error: {e}");
+                        failed_tasks.push((key, task.task_id, e.to_string()));
                     }
                 };
             }
@@ -110,7 +112,8 @@ impl Worker {
                 &self.state.settings.controller_url,
                 self.state.settings.file_id,
                 self.state.settings.worker_ephemeral_token,
-                keys,
+                successful_tasks,
+                failed_tasks,
             )
             .await
             {

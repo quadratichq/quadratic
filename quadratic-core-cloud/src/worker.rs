@@ -17,11 +17,14 @@ use std::fmt::{self, Debug};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
+use tokio::time::Duration;
 use uuid::Uuid;
 
 use crate::core::process_transaction;
 use crate::error::{CoreCloudError, Result};
-use crate::multiplayer::{connect, enter_room, get_transactions, leave_room, send_transaction};
+use crate::multiplayer::{
+    connect, enter_room, get_transactions, leave_room, send_heartbeat, send_transaction,
+};
 
 fn to_transaction_server(transaction: ReceiveTransaction) -> TransactionServer {
     TransactionServer {
@@ -165,6 +168,24 @@ impl Worker {
         worker
             .get_transactions(file_id, worker.session_id, worker.sequence_num)
             .await?;
+
+        // in a separate thread, send heartbeat messages every 10 seconds
+        if let Some(sender) = &worker.websocket_sender {
+            let sender = Arc::clone(sender);
+            let session_id = worker.session_id;
+            let file_id = worker.file_id;
+
+            tokio::spawn(async move {
+                loop {
+                    if let Err(e) =
+                        send_heartbeat(&mut *sender.lock().await, session_id, file_id).await
+                    {
+                        tracing::error!("Error sending heartbeat: {e}");
+                    }
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                }
+            });
+        }
 
         Ok(worker)
     }

@@ -116,7 +116,10 @@ pub async fn get_tasks(
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AckTasksRequest {
-    pub keys: Vec<String>,
+    // (key, task)
+    pub successful_tasks: Vec<(String, String)>,
+    // (key, task, error)
+    pub failed_tasks: Vec<(String, String, String)>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -129,11 +132,15 @@ pub async fn ack_tasks(
     base_url: &str,
     file_id: Uuid,
     worker_ephemeral_token: Uuid,
-    keys: Vec<String>,
+    successful_tasks: Vec<(String, String)>,
+    failed_tasks: Vec<(String, String, String)>,
 ) -> Result<AckTasksResponse> {
     let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
 
-    let request = AckTasksRequest { keys };
+    let request = AckTasksRequest {
+        successful_tasks,
+        failed_tasks,
+    };
 
     let response = reqwest::Client::new()
         .post(url)

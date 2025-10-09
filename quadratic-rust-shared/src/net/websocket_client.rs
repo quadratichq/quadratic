@@ -227,6 +227,13 @@ pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) ->
     }
 }
 
+pub fn get_heartbeat_message(session_id: Uuid, file_id: Uuid) -> MessageRequest {
+    MessageRequest::Heartbeat {
+        session_id,
+        file_id,
+    }
+}
+
 pub fn get_leave_room_message(session_id: Uuid, file_id: Uuid) -> MessageRequest {
     MessageRequest::LeaveRoom {
         session_id,
