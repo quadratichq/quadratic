@@ -36,11 +36,7 @@ impl Worker {
         info!("worker_init_data: {worker_init_data:?}",);
 
         let multiplayer_url = config.multiplayer_url.to_string();
-        let state = match State::new(
-            config,
-            worker_init_data.worker_access_token.clone(),
-            worker_init_data.team_id,
-        ) {
+        let state = match State::new(config, worker_init_data.worker_access_token.clone()) {
             Ok(state) => state,
             Err(e) => {
                 error!("Error creating state for file: {file_id}, error: {e}");
@@ -135,6 +131,7 @@ impl Worker {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn refresh_worker_access_token(&mut self) -> Result<()> {
         match get_worker_access_token(
             &self.state.settings.controller_url,
@@ -149,9 +146,9 @@ impl Worker {
             }
             Err(e) => {
                 error!("Error getting worker access token, error: {e}");
-                return Err(anyhow::anyhow!(
+                Err(anyhow::anyhow!(
                     "Error getting worker access token, error: {e}"
-                ));
+                ))
             }
         }
     }

@@ -20,6 +20,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Cluster {
     pub(crate) id: Uuid,
+    pub(crate) name: String,
     pub docker: Docker,
     pub(crate) containers: HashMap<Uuid, Container>,
 }
@@ -28,8 +29,9 @@ impl Display for Cluster {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"Cluster(id: {}, containers: {})"#,
+            r#"Cluster(id: {}, name: {}, containers: {})"#,
             self.id,
+            self.name,
             self.containers.len()
         )
     }
@@ -37,11 +39,12 @@ impl Display for Cluster {
 
 impl Cluster {
     /// Create a new cluster
-    pub async fn try_new() -> Result<Self> {
+    pub async fn try_new(name: &str) -> Result<Self> {
         let docker = Self::new_docker()?;
 
         Ok(Self {
             id: Uuid::new_v4(),
+            name: name.to_string(),
             docker,
             containers: HashMap::new(),
         })
@@ -195,7 +198,7 @@ mod tests {
     use crate::docker::container::{ContainerState, tests::new_container};
 
     pub async fn new_cluster() -> Cluster {
-        let mut cluster = Cluster::try_new().await.unwrap();
+        let mut cluster = Cluster::try_new("test").await.unwrap();
 
         let container = new_container(cluster.docker.clone()).await;
         cluster.add_container(container, true).await.unwrap();

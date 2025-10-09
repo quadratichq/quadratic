@@ -19,7 +19,7 @@ pub(crate) struct Settings {
     pub(crate) jwt_expiration_seconds: u64,
     pub(crate) jwks: JwkSet,
     pub(crate) worker_jwt_email: String,
-    pub(crate) namespace: String,
+    pub(crate) _namespace: String,
     pub(crate) version: String,
 }
 
@@ -52,7 +52,7 @@ impl Settings {
             jwt_expiration_seconds: config.jwt_expiration_seconds,
             jwks,
             worker_jwt_email: config.worker_jwt_email.to_owned(),
-            namespace: config.namespace.to_owned(),
+            _namespace: config.namespace.to_owned(),
             version: version(),
         };
 

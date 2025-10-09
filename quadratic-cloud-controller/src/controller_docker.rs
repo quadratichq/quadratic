@@ -100,7 +100,7 @@ impl Controller {
             .client
             .lock()
             .await
-            .has_container(&file_id)
+            .has_container(file_id)
             .await
             .map_err(|e| ControllerError::Docker(e.to_string()))?;
 
@@ -175,11 +175,11 @@ impl Controller {
     pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
         let mut client = state.client.lock().await;
         client
-            .remove_container(&file_id)
+            .remove_container(file_id)
             .await
             .map_err(|e| ControllerError::Docker(e.to_string()))?;
 
-        state.release_worker_create_lock(&file_id).await;
+        state.release_worker_create_lock(file_id).await;
 
         trace!("Shut down worker for file {file_id}");
 

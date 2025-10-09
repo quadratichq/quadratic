@@ -126,7 +126,9 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
 pub(crate) fn public_app(state: Arc<State>) -> Router {
     trace!("Building public app");
 
-    let app = Router::new()
+    
+
+    Router::new()
         // JWKS for worker jwt validation
         .route("/.well-known/jwks.json", get(handle_jwks))
         //
@@ -143,9 +145,7 @@ pub(crate) fn public_app(state: Arc<State>) -> Router {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        );
-
-    app
+        )
 }
 
 async fn start_server(
@@ -171,7 +171,7 @@ async fn start_server(
     // Serve the application with ConnectInfo for IP extraction
     if let Err(e) = axum::serve(listener, app(state)).await {
         error!("Error serving {name} application: {e}");
-        return Err(ControllerError::StartServer(e.to_string()).into());
+        return Err(ControllerError::StartServer(e.to_string()));
     }
 
     info!("{name} stopped");
@@ -243,9 +243,9 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
     for summary in summaries {
-        if summary.image == Some(IMAGE_NAME.to_string()) {
-            if let Some(container_id) = &summary.id {
-                if let Err(e) = state
+        if summary.image == Some(IMAGE_NAME.to_string())
+            && let Some(container_id) = &summary.id
+                && let Err(e) = state
                     .client
                     .lock()
                     .await
@@ -254,8 +254,6 @@ pub(crate) async fn serve() -> Result<()> {
                 {
                     tracing::error!("Failed to remove container {}: {}", container_id, e);
                 }
-            }
-        }
     }
 
     // Start worker-only server

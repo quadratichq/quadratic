@@ -26,9 +26,8 @@ pub(crate) struct State {
 
     #[cfg(feature = "docker")]
     pub(crate) client: Mutex<quadratic_rust_shared::docker::cluster::Cluster>,
-
-    #[cfg(feature = "kubernetes")]
-    pub(crate) client: kube::client::Client,
+    // #[cfg(feature = "kubernetes")]
+    // pub(crate) client: kube::client::Client,
     pub(crate) worker_ephemeral_tokens: Mutex<HashMap<Uuid, Uuid>>,
     pub(crate) creating_workers: Mutex<HashSet<Uuid>>,
 }
@@ -44,7 +43,7 @@ impl State {
         Ok(State {
             settings: Settings::new(config).await?,
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
-            client: Mutex::new(Self::init_client().await?),
+            client: Mutex::new(Self::init_client(&config.namespace).await?),
             worker_ephemeral_tokens: Mutex::new(HashMap::new()),
             creating_workers: Mutex::new(HashSet::new()),
         })
