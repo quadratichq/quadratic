@@ -30,35 +30,47 @@ export const useAIModel = (): UseAIModelReturn => {
   const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'default');
   const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
 
-  const defaultOthersModelKey = useMemo(() => {
+  const othersModelKeys: AIModelKey[] = useMemo(() => {
+    return Object.keys(MODELS_CONFIGURATION).filter((key) => {
+      return MODELS_CONFIGURATION[key as AIModelKey].mode === 'others';
+    }) as AIModelKey[];
+  }, []);
+
+  const defaultOthersModelKey: AIModelKey = useMemo(() => {
+    if (!othersModelKeys.length) throw new Error('Others model not found');
+    return othersModelKeys[0];
+  }, [othersModelKeys]);
+
+  const defaultModelKey: AIModelKey = useMemo(() => {
     const key = Object.keys(MODELS_CONFIGURATION).find(
-      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'others'
+      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'fast'
     );
-    if (!key) throw new Error('Others model not found');
+    if (!key) throw new Error('Default model not found');
+    return key as AIModelKey;
+  }, []);
+
+  const maxModelKey: AIModelKey = useMemo(() => {
+    const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max');
+    if (!key) throw new Error('Default model not found');
     return key as AIModelKey;
   }, []);
 
   const modelKey = useMemo(() => {
+    if (modelType === 'others') {
+      if (othersModelKey) {
+        return othersModelKey;
+      }
+      setModelType('default');
+      return defaultOthersModelKey;
+    }
     if (modelType === 'default') {
-      const fast = Object.keys(MODELS_CONFIGURATION).find(
-        (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'fast'
-      );
-      if (!fast) throw new Error('Fast model not found');
-      return fast as AIModelKey;
+      return defaultModelKey;
     }
     if (modelType === 'max') {
-      const max = Object.keys(MODELS_CONFIGURATION).find(
-        (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max'
-      );
-      if (!max) throw new Error('Max model not found');
-      return max as AIModelKey;
-    }
-    if (modelType === 'others') {
-      if (!othersModelKey) throw new Error('Others model not found');
-      return othersModelKey;
+      return maxModelKey;
     }
     return modelType;
-  }, [modelType, othersModelKey]);
+  }, [defaultModelKey, defaultOthersModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
 
   useEffect(() => {
     if (debug) return;

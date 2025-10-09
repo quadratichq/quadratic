@@ -180,19 +180,27 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                   </Label>
                   {isOthers && (
                     <div className="px-4 py-2">
-                      <RadioGroup value={othersModelKey} className="flex flex-col gap-1">
+                      <RadioGroup
+                        value={othersModelKey}
+                        className="flex flex-col gap-1"
+                        onValueChange={(value) => {
+                          const modelEntry = othersModels.find(([key]) => key === value);
+                          if (modelEntry) {
+                            console.log(modelEntry);
+                            const [, modelConfig] = modelEntry;
+                            trackEvent('[AI].model.change', { model: modelConfig.model });
+                            setModel('others', value as AIModelKey);
+                            setIsPopoverOpen(false);
+                          }
+                        }}
+                      >
                         {othersModels.map(([modelKey, modelConfig]) => (
                           <Label
                             className="flex cursor-pointer items-center px-2 py-1.5 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
                             key={modelKey}
                             htmlFor={`radio-${modelKey}`}
                             onClick={() => {
-                              console.log(modelKey);
-                              const modelEntry = othersModels.find(([key]) => key === modelKey);
-                              if (modelEntry) {
-                                const [, modelConfig] = modelEntry;
-                                trackEvent('[AI].model.change', { model: modelConfig.model });
-                                setModel('others', modelKey as AIModelKey);
+                              if (modelKey === othersModelKey) {
                                 setIsPopoverOpen(false);
                               }
                             }}
