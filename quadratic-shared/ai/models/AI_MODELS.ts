@@ -8,7 +8,7 @@ export const DEFAULT_MODEL_VERSION = 30;
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
 // used when `restrictedCountry` is true, in model router
-export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
@@ -432,6 +432,24 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_input_tokens: 2,
     rate_per_million_output_tokens: 8,
     rate_per_million_cache_read_tokens: 0.5,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-4.1-mini': {
+    model: 'gpt-4.1-mini',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'gpt 4.1 mini',
+    temperature: 0.1,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'azure-openai',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.44,
+    rate_per_million_output_tokens: 1.76,
+    rate_per_million_cache_read_tokens: 0.11,
     rate_per_million_cache_write_tokens: 0,
   },
   'azure-openai:o3': {
