@@ -80,10 +80,11 @@ pub(crate) async fn handle_get_file_init_data(
 
     let mut file_init_data = file_init_data(&state, file_id).await?;
 
-    // TODO(ddimaria): Remove this
+    // TODO(ddimaria): Remove this and use env vars
     file_init_data.presigned_url = file_init_data
         .presigned_url
-        .replace("0.0.0.0", "host.docker.internal");
+        .replace("0.0.0.0", "host.docker.internal")
+        .replace("127.0.0.1", "host.docker.internal");
 
     trace!("[File init data for file {file_id}: {file_init_data:?}");
 
