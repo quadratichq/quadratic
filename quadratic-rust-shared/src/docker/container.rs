@@ -70,7 +70,7 @@ impl Container {
         let config = ContainerCreateBody {
             image: Some(image.to_string()),
             env: env_vars,
-            cmd: cmd,
+            cmd,
             host_config: Some(host_config),
             ..Default::default()
         };
@@ -291,7 +291,7 @@ pub mod tests {
             ),
         ];
 
-        let container = Container::try_new(
+        Container::try_new(
             Uuid::new_v4(),
             "quadratic-cloud-worker",
             docker.clone(),
@@ -299,9 +299,7 @@ pub mod tests {
             None,
         )
         .await
-        .unwrap();
-
-        container
+        .unwrap()
     }
 
     #[tokio::test]
