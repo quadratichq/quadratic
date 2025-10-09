@@ -456,14 +456,13 @@ impl A1Selection {
         }
 
         // checks if the range is a single column or row range
-        if let CellRefRange::Sheet { range: sheet_range } = &range {
-            if (sheet_range.start.col() == sheet_range.end.col()
+        if let CellRefRange::Sheet { range: sheet_range } = &range
+            && ((sheet_range.start.col() == sheet_range.end.col()
                 && sheet_range.start.col() != UNBOUNDED)
                 || (sheet_range.start.row() == sheet_range.end.row()
-                    && sheet_range.start.row() != UNBOUNDED)
-            {
-                return true;
-            }
+                    && sheet_range.start.row() != UNBOUNDED))
+        {
+            return true;
         }
 
         // checks table ranges
