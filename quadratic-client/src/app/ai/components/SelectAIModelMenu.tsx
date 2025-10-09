@@ -186,7 +186,6 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                         onValueChange={(value) => {
                           const modelEntry = othersModels.find(([key]) => key === value);
                           if (modelEntry) {
-                            console.log(modelEntry);
                             const [, modelConfig] = modelEntry;
                             trackEvent('[AI].model.change', { model: modelConfig.model });
                             setModel('others', value as AIModelKey);
