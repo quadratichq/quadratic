@@ -12,6 +12,10 @@ const router = express.Router();
 const requestValidationMiddleware = validateRequestSchema(
   z.object({
     body: z.object({
+      sequenceNumber: z.number(),
+      version: z.string(),
+      s3Key: z.string(),
+      s3Bucket: z.string(),
       status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
       error: z.string().optional(),
     }),
@@ -24,13 +28,13 @@ const requestValidationMiddleware = validateRequestSchema(
 router.post(
   '/scheduled-tasks/:scheduledTaskId/log',
   validateM2MAuth(),
-  // requestValidationMiddleware,
+  requestValidationMiddleware,
   async (req: Request, res: Response) => {
     // Validate request parameters
     const errors = validationResult(req);
-    // if (!errors.isEmpty()) {
-    //   return res.status(400).json({ errors: errors.array() });
-    // }
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
     const scheduledTask = await getScheduledTask(req.params.scheduledTaskId);
     const result = await createScheduledTaskLog({
@@ -44,7 +48,13 @@ router.post(
       await updateScheduledTaskNextRunTime(scheduledTask.id, scheduledTask.cronExpression);
     }
 
-    return res.status(200).json(result);
+    // Ensure error field is included in response even when undefined
+    const response = {
+      ...result,
+      error: result.error || undefined,
+    };
+
+    return res.status(200).json(response);
   }
 );
 

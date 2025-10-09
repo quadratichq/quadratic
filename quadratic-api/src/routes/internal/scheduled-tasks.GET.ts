@@ -24,6 +24,7 @@ router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Resp
       },
     },
     select: {
+      id: true,
       file: {
         select: {
           uuid: true,
@@ -37,10 +38,11 @@ router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Resp
 
   // Transform operations from Buffer to parsed JSON for consistency with other endpoints
   const transformedTasks = scheduledTasks.map((task) => ({
+    id: task.id,
     fileId: task.file.uuid,
     taskId: task.uuid,
     nextRunTime: task.nextRunTime,
-    operations: Array.from(new Uint8Array(task.operations)),
+    operations: JSON.parse(task.operations.toString()),
   }));
 
   return res.status(200).json(transformedTasks);
