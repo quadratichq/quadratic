@@ -344,9 +344,9 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
                 .await
                 .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-            if !logs.is_empty() {
-                tracing::error!("Logs: {}", logs);
-            }
+            // if !logs.is_empty() {
+            //     tracing::error!("Logs: {}", logs);
+            // }
 
             // let container_guard = container.lock().await;
             // let logs = container_guard

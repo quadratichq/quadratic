@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{config::Config, state::State};
 use anyhow::Result;
 use quadratic_core_cloud::worker::Worker as Core;
@@ -93,8 +95,6 @@ impl Worker {
                     .core
                     .process_operations(
                         task.operations,
-                        // self.state.team_id,
-                        // self.state.worker_access_token.clone(),
                         "test_team_id".to_string(),
                         "M2M_AUTH_TOKEN".to_string(),
                     )
@@ -106,6 +106,11 @@ impl Worker {
                         failed_tasks.push((key, task.task_id, e.to_string()));
                     }
                 };
+            }
+
+            // wait for all tasks to be complete
+            while !self.core.status.lock().await.is_complete() {
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
 
             match ack_tasks(
