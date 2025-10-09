@@ -50,11 +50,12 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await handleQuadraticLoading(page);
 
   // go to dashboard if in app
-  const dashboardLink = page.locator('nav a[href="/"]');
-  while (await dashboardLink.isVisible()) {
-    await dashboardLink.click({ timeout: 60 * 1000 });
-    await handleQuadraticLoading(page);
-  }
+  const dashboardLink = page.locator('[data-testid="back-to-dashboard-link"]');
+  await dashboardLink.waitFor({ state: 'visible', timeout: 60 * 1000 });
+  await dashboardLink.click({ timeout: 60 * 1000 });
+  await handleQuadraticLoading(page);
+  // Wait a while to ensure navigation completes
+  await page.waitForTimeout(5 * 1000);
 
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
