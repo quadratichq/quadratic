@@ -146,10 +146,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
 
   // Close Chat
   try {
-    await page
-      .getByRole(`button`, { name: `close` })
-      .first()
-      .click({ timeout: 60 * 1000 });
+    await page.getByTestId('close-ai-analyst').click({ timeout: 60 * 1000 });
   } catch (error: any) {
     void error;
   }
