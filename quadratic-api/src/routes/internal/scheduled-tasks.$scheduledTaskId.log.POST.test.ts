@@ -54,7 +54,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
 
     it('should return 400 when sequenceNumber is not a number', async () => {
@@ -63,7 +64,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
 
     it('should return 400 when version is missing', async () => {
@@ -73,7 +75,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
 
     it('should return 400 when s3Key is missing', async () => {
@@ -83,7 +86,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
 
     it('should return 400 when s3Bucket is missing', async () => {
@@ -93,7 +97,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
 
     it('should return 400 when scheduledTaskId is not a valid UUID', async () => {
@@ -105,7 +110,8 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
         .send(validRequestBody);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
+      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
     });
   });
 
@@ -120,9 +126,10 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
         status: 'PENDING',
-        error: undefined,
         createdDate: expect.any(String),
       });
+      // The working API doesn't include error field when undefined
+      expect(response.body).not.toHaveProperty('error');
     });
 
     it('should create a scheduled task log with RUNNING status', async () => {
@@ -135,9 +142,10 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
         status: 'RUNNING',
-        error: undefined,
         createdDate: expect.any(String),
       });
+      // The working API doesn't include error field when undefined
+      expect(response.body).not.toHaveProperty('error');
     });
 
     it('should create a scheduled task log with PENDING status and update next run time', async () => {
@@ -150,9 +158,10 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
         status: 'PENDING',
-        error: undefined,
         createdDate: expect.any(String),
       });
+      // The working API doesn't include error field when undefined
+      expect(response.body).not.toHaveProperty('error');
     });
 
     it('should create a scheduled task log with FAILED status and error message', async () => {
@@ -184,7 +193,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
         .send(validRequestBody);
 
       expect(response.status).toBe(500);
-      expect(response.body.message).toContain('not found');
+      expect(response.body.error.message).toContain('not found');
     });
   });
 });

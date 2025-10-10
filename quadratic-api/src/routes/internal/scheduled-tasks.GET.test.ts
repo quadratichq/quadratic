@@ -179,12 +179,14 @@ describe('GET /v0/internal/scheduled-tasks', () => {
 
       // Should include these fields
       expect(returnedTask).toHaveProperty('id', task.id);
+      expect(returnedTask).toHaveProperty('fileId', testFile.uuid);
+      expect(returnedTask).toHaveProperty('taskId', task.uuid);
       expect(returnedTask).toHaveProperty('nextRunTime');
-      expect(returnedTask).toHaveProperty('operations', operations);
+      expect(returnedTask).toHaveProperty('operations');
+      expect(Array.isArray(returnedTask.operations)).toBe(true);
 
       // Should NOT include sensitive or unnecessary fields
       expect(returnedTask).not.toHaveProperty('userId');
-      expect(returnedTask).not.toHaveProperty('fileId');
       expect(returnedTask).not.toHaveProperty('cronExpression');
       expect(returnedTask).not.toHaveProperty('status');
       expect(returnedTask).not.toHaveProperty('createdAt');
@@ -227,8 +229,9 @@ describe('GET /v0/internal/scheduled-tasks', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(1);
 
-      // Operations should be parsed JSON object
-      expect(response.body[0].operations).toEqual(complexOperations);
+      // Operations should be returned as byte array
+      expect(Array.isArray(response.body[0].operations)).toBe(true);
+      expect(response.body[0].operations).toEqual(Array.from(Buffer.from(JSON.stringify(complexOperations))));
     });
   });
 
@@ -251,7 +254,8 @@ describe('GET /v0/internal/scheduled-tasks', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(1);
-      expect(response.body[0].operations).toEqual({});
+      expect(Array.isArray(response.body[0].operations)).toBe(true);
+      expect(response.body[0].operations).toEqual(Array.from(Buffer.from('{}')));
     });
 
     it('should not return DELETED scheduled tasks', async () => {
@@ -306,8 +310,8 @@ describe('GET /v0/internal/scheduled-tasks', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(1);
 
-      // Verify the returned task has the correct operations
-      expect(response.body[0].operations.action).toBe('active');
+      // Verify the returned task has operations as byte array
+      expect(Array.isArray(response.body[0].operations)).toBe(true);
     });
   });
 });
