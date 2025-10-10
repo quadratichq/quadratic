@@ -131,6 +131,17 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
 };
 
 const handleOnboarding = async (page: Page) => {
+  // Check for "Get started in"
+  const getStartedHeader = page.locator('h2:has-text("Get started in")');
+  if (await getStartedHeader.isVisible()) {
+    const skipButton = page.locator('[data-testid="skip-get-started"]');
+    if (await skipButton.isVisible()) {
+      await skipButton.click({ timeout: 60 * 1000 });
+      await handleQuadraticLoading(page);
+      return;
+    }
+  }
+
   const onboardingStart = page.locator('h2:has-text("How will you use Quadratic?")');
   if (!(await onboardingStart.isVisible())) {
     await handleQuadraticLoading(page);
