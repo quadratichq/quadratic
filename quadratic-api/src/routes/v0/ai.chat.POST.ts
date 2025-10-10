@@ -192,7 +192,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     });
   } catch (error) {
     logger.error('Error in ai.chat.POST handler', error);
-    return;
+    throw new Error('Error in ai.chat.POST handler');
   }
 
   if (ownerTeam.settingAnalyticsAi) {

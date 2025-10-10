@@ -1,5 +1,6 @@
 import type { Request } from 'express';
 import geoip from 'geoip-lite';
+import { isLocalHostAddress } from 'quadratic-shared/typesAndSchemasConnections';
 import logger from './logger';
 
 /**
@@ -27,7 +28,7 @@ export function getIpFromRequest(req: Request): string {
  */
 export function getCountryFromIp(ip: string): string {
   try {
-    if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
+    if (!ip || isLocalHostAddress(ip)) {
       return 'localdev';
     }
 
