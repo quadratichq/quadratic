@@ -142,6 +142,8 @@ export const workosClient: AuthClient = {
     const client = await getClient();
     await client.signOut({ navigate: false });
     await disposeClient();
+    // Clear the custom workos-has-session cookie
+    document.cookie = 'workos-has-session=; Max-Age=0; Path=/; Secure; SameSite=None';
   },
 
   /**

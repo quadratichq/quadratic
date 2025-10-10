@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import { z } from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
@@ -190,6 +190,7 @@ export const ApiSchemas = {
       fileRole: UserFileRoleSchema.optional(),
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
+      restrictedModel: z.boolean(),
     }),
     license: LicenseSchema,
   }),

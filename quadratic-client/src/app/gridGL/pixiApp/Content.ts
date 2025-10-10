@@ -87,6 +87,7 @@ export class Content extends Container {
 
   destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+    this.multiplayerCursor.destroy();
     super.destroy();
   };
 

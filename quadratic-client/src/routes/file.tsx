@@ -7,11 +7,11 @@ import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
 
-export function Component() {
+export const Component = memo(() => {
   const [overrideNonBlinkMsg, setOverrideNonBlinkMsg] = useLocalStorage('overrideNonBlinkMsg', false);
   const [showNonBlinkMsg, setShowNonBlinkMsg] = useState(
     isDesktop && engineName.toLowerCase() !== 'blink' && !overrideNonBlinkMsg
@@ -87,4 +87,4 @@ export function Component() {
   }
 
   return <Outlet />;
-}
+});

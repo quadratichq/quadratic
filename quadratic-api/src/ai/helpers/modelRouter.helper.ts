@@ -12,6 +12,7 @@ import {
   DEFAULT_MODEL_ROUTER_MODEL,
   DEFAULT_MODEL_WITH_IMAGE,
   MODELS_CONFIGURATION,
+  RESTRICTED_MODEL_ROUTER_MODEL,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
@@ -22,7 +23,9 @@ export const getModelKey = async (
   modelKey: AIModelKey,
   inputArgs: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean
+  exceededBillingLimit: boolean,
+  restrictedCountry: boolean,
+  signal: AbortSignal
 ): Promise<AIModelKey> => {
   try {
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
@@ -36,12 +39,16 @@ export const getModelKey = async (
 
     const promptMessages = getPromptMessagesForAI(messages);
 
+    // Restricted country that uses restricted model
+    if (restrictedCountry) {
+      return RESTRICTED_MODEL_ROUTER_MODEL;
+    }
+
     // if the model is the default free model, check if the user prompt contains an image file
     if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
-
       return hasImageFile ? DEFAULT_MODEL_WITH_IMAGE : modelKey;
     }
 
@@ -226,7 +233,13 @@ ${userTextPrompt}
       useQuadraticContext: false,
     };
 
-    const parsedResponse = await handleAIRequest(DEFAULT_MODEL_ROUTER_MODEL, args, isOnPaidPlan, exceededBillingLimit);
+    const parsedResponse = await handleAIRequest({
+      modelKey: DEFAULT_MODEL_ROUTER_MODEL,
+      args,
+      isOnPaidPlan,
+      exceededBillingLimit,
+      signal,
+    });
 
     const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
       (toolCall) => toolCall.name === AITool.SetAIModel
@@ -237,7 +250,11 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    logger.error('Error in getModelKey', error);
+    if (signal?.aborted) {
+      logger.info('[getModelKey] AI request aborted by client');
+    } else {
+      logger.error('Error in getModelKey', error);
+    }
   }
 
   return DEFAULT_BACKUP_MODEL;

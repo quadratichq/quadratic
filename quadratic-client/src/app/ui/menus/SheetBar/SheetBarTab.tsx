@@ -72,6 +72,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
       data-id={id}
       data-order={order}
       data-test-sheet-name={name}
+      data-test-active={active ? sheet.name : undefined}
       data-actual-order={calculatedOrder}
       onPointerDown={(event) => {
         if (isRenaming) return;

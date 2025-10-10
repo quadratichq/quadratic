@@ -12,6 +12,8 @@ import type { Response } from 'express';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
+  isContentFile,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
@@ -42,15 +44,18 @@ function convertContent(content: Content): Part[] {
     .map((content) => {
       if (isContentText(content)) {
         return { text: content.text.trim() };
-      } else {
+      } else if (isContentFile(content)) {
         return {
           inlineData: {
             data: content.data,
             mimeType: content.mimeType,
           },
         };
+      } else {
+        return undefined;
       }
-    });
+    })
+    .filter((content) => content !== undefined);
 }
 
 function convertToolResultContent(content: ToolResultContent): string {
@@ -84,12 +89,12 @@ export function getGenAIApiArgs(
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const genaiMessage: GenAIContent = {
         role: 'model',
         parts: [
           ...message.content
-            .filter((content) => content.type === 'text' && !!content.text.trim())
+            .filter((content) => isContentText(content) && !!content.text.trim())
             .map((content) => ({
               text: content.text.trim(),
             })),
@@ -135,7 +140,50 @@ export function getGenAIApiArgs(
   return { system, messages, tools, tool_choice };
 }
 
+function handleMultipleTypes(parameter: AIToolArgsPrimitive): Schema {
+  const types = parameter.type as string[];
+
+  // Check if it's a simple nullable type (e.g., ['boolean', 'null'] or ['string', 'null'])
+  if (types.length === 2 && types.includes('null')) {
+    const nonNullType = types.find((t) => t !== 'null');
+    if (nonNullType) {
+      const baseSchema = convertSingleType(nonNullType);
+      return {
+        ...baseSchema,
+        nullable: true,
+        description: parameter.description,
+      };
+    }
+  }
+
+  // For more complex union types, use anyOf
+  return {
+    anyOf: types.map((type) => convertSingleType(type)),
+    description: parameter.description,
+  };
+}
+
+function convertSingleType(type: string): Schema {
+  switch (type) {
+    case 'string':
+      return { type: Type.STRING };
+    case 'number':
+      return { type: Type.NUMBER };
+    case 'boolean':
+      return { type: Type.BOOLEAN };
+    case 'null':
+      return { type: Type.NULL };
+    default:
+      throw new Error(`Unknown type: ${type}`);
+  }
+}
+
 function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolArgsArray | AIToolArgs): Schema {
+  // Handle array of types (union types)
+  if (Array.isArray(parameter.type)) {
+    return handleMultipleTypes(parameter as AIToolArgsPrimitive);
+  }
+
   switch (parameter.type) {
     case 'object':
       return {
@@ -153,17 +201,25 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
     case 'string':
       return {
         type: Type.STRING,
+        description: parameter.description,
       };
     case 'number':
       return {
         type: Type.NUMBER,
+        description: parameter.description,
       };
     case 'boolean':
       return {
         type: Type.BOOLEAN,
+        description: parameter.description,
+      };
+    case 'null':
+      return {
+        type: Type.NULL,
+        description: parameter.description,
       };
     default:
-      throw new Error(`Unknown parameter: ${parameter}`);
+      throw new Error(`Unknown parameter type: ${parameter.type}`);
   }
 }
 

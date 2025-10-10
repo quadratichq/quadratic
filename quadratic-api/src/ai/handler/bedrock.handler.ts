@@ -1,18 +1,22 @@
 import type { BedrockRuntimeClient, ConverseRequest, ConverseStreamRequest } from '@aws-sdk/client-bedrock-runtime';
 import { ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
-import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIRequestHelperArgs, BedrockModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type { BedrockModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
+import type { HandleAIRequestArgs } from './ai.handler';
 
-export const handleBedrockRequest = async (
-  modelKey: BedrockModelKey,
-  args: AIRequestHelperArgs,
-  isOnPaidPlan: boolean,
-  exceededBillingLimit: boolean,
-  bedrock: BedrockRuntimeClient,
-  response?: Response
-): Promise<ParsedAIResponse | undefined> => {
+interface HandleBedrockRequestArgs extends Omit<HandleAIRequestArgs, 'modelKey'> {
+  modelKey: BedrockModelKey;
+  bedrock: BedrockRuntimeClient;
+}
+export const handleBedrockRequest = async ({
+  modelKey,
+  args,
+  isOnPaidPlan,
+  exceededBillingLimit,
+  bedrock,
+  response,
+}: HandleBedrockRequestArgs): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args, options.aiModelMode);

@@ -6,10 +6,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import type { MouseEvent } from 'react';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 
-export default function QuadraticGrid() {
+export const QuadraticGrid = memo(() => {
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
@@ -75,4 +75,4 @@ export default function QuadraticGrid() {
       <ImportProgress />
     </div>
   );
-}
+});

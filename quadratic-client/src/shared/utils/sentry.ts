@@ -31,7 +31,11 @@ export const initSentry = () => {
           extraErrorDataIntegration(),
           httpClientIntegration(),
           zodErrorsIntegration(),
-          replayIntegration({ maskAllText: false, blockAllMedia: false }),
+          replayIntegration({
+            maskAllText: false,
+            blockAllMedia: false,
+            networkDetailDenyUrls: ['/iframe-indexeddb'],
+          }),
           // Canvas is not supported by default, but if we ever need to turn it
           // on, we explored that once here:
           // https://github.com/quadratichq/quadratic/pull/3422/commits/c2f6d31a9bbf9035dfa1f3dd2f0840ca138adf3b

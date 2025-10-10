@@ -556,15 +556,16 @@ class QuadraticCore {
 
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
-  ): Promise<{
-    contents?: ArrayBufferLike;
-    version?: string;
-    error?: string;
-  }> => {
+  ): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> => {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientImportFile) => {
-        resolve(message);
+        resolve({
+          contents: message.contents,
+          version: message.version,
+          error: message.error,
+          responsePrompt: message.responsePrompt,
+        });
       };
       this.send(
         {

@@ -163,7 +163,14 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
           <>
             {customButton}
             {stayOpen && (
-              <Button variant="ghost" size="icon-sm" onClick={handleClose} className="!bg-transparent !text-background">
+              <Button
+                data-testid="close-snackbar-button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Close"
+                onClick={handleClose}
+                className="!bg-transparent !text-background"
+              >
                 <CloseIcon />
               </Button>
             )}

@@ -12,7 +12,9 @@ authenticateRouter.post('/', async (req: Request, res: Response) => {
 
     return res.status(200).json(response);
   } catch (error) {
-    logger.info('/v0/auth/user_management/authenticate.POST.response', error);
+    if (error instanceof Error && !error.message.includes('Invalid refresh token')) {
+      logger.info('/v0/auth/user_management/authenticate.POST.response', error);
+    }
 
     clearCookies({ res });
 

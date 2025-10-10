@@ -14,15 +14,11 @@ import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
 import type * as monaco from 'monaco-editor';
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './CodeEditor.css';
 
-export const dispatchEditorAction = (name: string) => {
-  window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
-};
-
-export const CodeEditor = () => {
+export const CodeEditor = memo(() => {
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const [editorInst, setEditorInst] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
@@ -109,4 +105,4 @@ export const CodeEditor = () => {
       )}
     </>
   );
-};
+});

@@ -284,15 +284,17 @@ export const clearCookiesWorkos = ({ res }: { res: Response }) => {
 };
 
 const setCookiesWorkos = ({ res, refreshToken }: { res: Response; refreshToken: string }) => {
+  const isLocalDev = process.env.NODE_ENV === 'development' && process.env.ENVIRONMENT === 'development';
+
   res.cookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: !isLocalDev, // Only false in local development
+    sameSite: isLocalDev ? 'lax' : 'none',
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
   });
   res.cookie(WORKOS_HAS_SESSION_COOKIE_NAME, 'true', {
-    secure: true,
-    sameSite: 'none',
+    secure: !isLocalDev, // Only false in local development
+    sameSite: isLocalDev ? 'lax' : 'none',
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
   });
 };

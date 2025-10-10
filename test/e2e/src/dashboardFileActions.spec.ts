@@ -664,7 +664,6 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user2Page.waitForTimeout(5 * 1000);
 
   // Remove User Page 3's mouse from the screen
-  await user3Page.getByRole(`heading`, { name: `What can I help with?` }).click({ timeout: 60 * 1000 });
   await user2Page.reload();
   await user2Page.waitForTimeout(5 * 1000);
   await user2Page.waitForLoadState('domcontentloaded');

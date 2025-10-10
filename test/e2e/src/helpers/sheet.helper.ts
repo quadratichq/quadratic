@@ -21,6 +21,14 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
   await assertSelection(page, { a1 });
 };
 
+export const setValueInCell = async (page: Page, a1: string, value: string) => {
+  await gotoCells(page, { a1 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await page.keyboard.type(value, { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await page.waitForTimeout(2 * 1000);
+};
+
 /**
  * Asserts the selection is the expected a1 notation.
  */
@@ -91,6 +99,10 @@ export const changeSheet = async (page: Page, sheetName: string) => {
   await page.waitForTimeout(2 * 1000);
 };
 
+export const assertActiveSheetName = async (page: Page, sheetName: string) => {
+  await expect(page.locator('[data-test-active]')).toContainText(sheetName, { timeout: 10 * 1000 });
+};
+
 const TOP_X = 71;
 const TOP_Y = 106;
 const CELL_WIDTH = 100;
@@ -113,4 +125,22 @@ export const getCellLocation = (
     width: CELL_WIDTH,
     height: CELL_HEIGHT,
   };
+};
+
+export const copyToClipboard = async (page: Page, a1?: string) => {
+  if (a1) {
+    await gotoCells(page, { a1 });
+  }
+  // Copy the text in the cells
+  await page.keyboard.press('Control+C', { delay: 250 });
+  await page.waitForTimeout(5 * 1000);
+};
+
+export const pasteFromClipboard = async (page: Page, a1?: string) => {
+  if (a1) {
+    await gotoCells(page, { a1 });
+  }
+  // Paste the text in the cells
+  await page.keyboard.press('Control+V', { delay: 250 });
+  await page.waitForTimeout(5 * 1000);
 };
