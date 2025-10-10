@@ -102,6 +102,28 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   }
 };
 
+export const closeExtraUI = async (page: Page) => {
+  // Close Chat
+  try {
+    await page.getByTestId('close-ai-analyst').click({ timeout: 60 * 1000 });
+  } catch (error: any) {
+    void error;
+  }
+
+  // Close negative rows and columns warning tooltip
+  try {
+    await page.getByTestId('close-snackbar-button').click({ timeout: 3000 });
+  } catch (error: any) {
+    void error;
+  }
+
+  // Close 'File automatically updated...' alert
+  try {
+    await page.getByTestId('close-snackbar-button').click({ timeout: 3000 });
+  } catch (error: any) {
+    void error;
+  }
+};
 /**
  * Upload File Function. Defaults to .grid
  * Can take spreadsheet naming parameter in options
@@ -144,26 +166,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
     timeout: 60 * 1000,
   });
 
-  // Close Chat
-  try {
-    await page.getByTestId('close-ai-analyst').click({ timeout: 60 * 1000 });
-  } catch (error: any) {
-    void error;
-  }
-
-  // Close negative rows and columns warning tooltip
-  try {
-    await page.getByLabel(`Close`).click({ timeout: 3000 });
-  } catch (error: any) {
-    void error;
-  }
-
-  // Close 'File automatically updated...' alert
-  try {
-    await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 3000 });
-  } catch (error: any) {
-    void error;
-  }
+  closeExtraUI(page);
 };
 
 /**
@@ -188,7 +191,29 @@ export const createSharedFile = async (page: Page, { fileName, email }: CreateSh
 
   await page.locator('[role="menuitem"]:has-text("Share")').click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
-  await page.locator(`input[placeholder="Email"]`).fill(email);
+  await page.locator(`input[placeholder="Email"]`).fill(Array.isArray(email) ? email.join(',') : email);
   await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[role="dialog"] button:nth-of-type(2)`).click({ timeout: 60 * 1000 });
+};
+
+export const shareEditableFile = async (page: Page) => {
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page.locator(`[data-testid="public-link-access-select"]`).click();
+  await page.locator(`[role="option"]:has-text("Can edit")`).click();
+  await page.keyboard.press('Escape', { delay: 250 });
+};
+
+export const inviteUserToFileAsEditors = async (page: Page, email: string | string[]) => {
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+
+  const emails = Array.isArray(email) ? email : [email];
+
+  for (const singleEmail of emails) {
+    await page.locator(`input[placeholder="Email"]`).fill(singleEmail);
+    await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  }
+
   await page.locator(`[role="dialog"] button:nth-of-type(2)`).click({ timeout: 60 * 1000 });
 };
