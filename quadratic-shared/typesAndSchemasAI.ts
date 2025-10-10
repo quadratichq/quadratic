@@ -540,6 +540,7 @@ const AISourceSchema = z.enum([
   'PDFImport',
   'ModelRouter',
   'WebSearch',
+  'OptimizePrompt',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 
