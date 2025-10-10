@@ -523,4 +523,8 @@ export class SheetCursor {
       this.sheets.jsA1Context
     );
   };
+
+  is1dRange = (): boolean => {
+    return this.jsSelection.is1dRange(this.sheets.jsA1Context);
+  };
 }
