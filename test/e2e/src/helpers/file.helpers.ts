@@ -105,10 +105,7 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
 export const closeExtraUI = async (page: Page) => {
   // Close Chat
   try {
-    await page
-      .getByRole(`button`, { name: `close` })
-      .first()
-      .click({ timeout: 60 * 1000 });
+    await page.getByTestId('close-ai-analyst').click({ timeout: 60 * 1000 });
   } catch (error: any) {
     void error;
   }
@@ -169,7 +166,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
     timeout: 60 * 1000,
   });
 
-  closeExtraUI(page);
+  await closeExtraUI(page);
 };
 
 /**
