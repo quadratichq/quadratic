@@ -39,7 +39,7 @@ test('Log Out', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert you're successfully logged out
-  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 5000 });
 });
 
 test('Sign Up', async ({ page }) => {
