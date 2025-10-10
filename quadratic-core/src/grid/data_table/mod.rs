@@ -5,6 +5,7 @@
 //! performed yet).
 use crate::util::is_false;
 
+mod code_run;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
@@ -13,12 +14,10 @@ pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
-
 use std::num::NonZeroU32;
 
 use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
-use crate::grid::CodeRun;
 use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
@@ -32,8 +31,10 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 
+pub use code_run::*;
+
 use super::sheet::borders::Borders;
-use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
+use super::{Grid, SheetFormatting, SheetId};
 
 #[cfg(test)]
 mod test_util;
@@ -72,39 +73,26 @@ impl Grid {
         let unique_name =
             unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
+        for sheet in self.sheets.values_mut() {
+            sheet
+                .data_tables
+                .replace_table_name_in_code_cells(sheet.id, old_name, new_name, a1_context);
+        }
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
         sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
-            dt.update_table_name(&unique_name);
+            dt.name = unique_name.into();
             Ok(())
         })?;
 
         Ok(())
     }
 
-    /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
-        unique_data_table_name("Table", true, None, a1_context)
-    }
-
-    /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_name_in_code_cells(
-        &mut self,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        for sheet in self.sheets.values_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
-        }
-    }
-
-    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_column_name_in_code_cells(
+    /// Updates the column name in all code cells that reference the old name in all sheets in the grid.
+    pub fn update_data_table_column_name(
         &mut self,
         table_name: &str,
         old_name: &str,
@@ -112,10 +100,15 @@ impl Grid {
         a1_context: &A1Context,
     ) {
         for sheet in self.sheets.values_mut() {
-            sheet.replace_table_column_name_in_code_cells(
-                table_name, old_name, new_name, a1_context,
+            sheet.data_tables.replace_table_column_name_in_code_cells(
+                sheet.id, table_name, old_name, new_name, a1_context,
             );
         }
+    }
+
+    /// Returns a unique name for a data table
+    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, a1_context)
     }
 }
 
@@ -475,11 +468,6 @@ impl DataTable {
         }
 
         std::result::Result::Ok(true)
-    }
-
-    /// Updates the table name.
-    pub fn update_table_name(&mut self, name: &str) {
-        self.name = name.into();
     }
 
     /// Returns a reference to the values in the data table.
@@ -869,6 +857,14 @@ impl DataTable {
     /// Returns true if the data table is a formula table
     pub fn is_formula_table(&self) -> bool {
         matches!(self.get_language(), CodeCellLanguage::Formula)
+    }
+
+    /// Converts a DataTable to a string of its kind.
+    pub fn kind_as_string(&self) -> String {
+        match &self.kind {
+            DataTableKind::CodeRun(code_run) => code_run.language.as_string(),
+            DataTableKind::Import(..) => "Data Table".into(),
+        }
     }
 }
 

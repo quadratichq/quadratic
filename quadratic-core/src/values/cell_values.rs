@@ -8,9 +8,9 @@ use std::collections::BTreeMap;
 /// Sparsely-populated rectangle of [`CellValue`]s.
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
-    pub columns: Vec<BTreeMap<u64, CellValue>>,
-    pub w: u32,
-    pub h: u32,
+    pub(crate) columns: Vec<BTreeMap<u64, CellValue>>,
+    pub(crate) w: u32,
+    pub(crate) h: u32,
 }
 
 impl CellValues {
@@ -149,29 +149,6 @@ impl CellValues {
             }
         }
         vec
-    }
-
-    #[cfg(test)]
-    /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
-    pub fn from_cell_value(value: CellValue) -> Self {
-        let mut c = Self::new(1, 1);
-        c.set(0, 0, value);
-        c
-    }
-
-    #[cfg(test)]
-    /// Creates a CellValues from a 2D array of CellValue, including
-    /// CellValue::Blank (which is ignored in into)
-    pub fn from_cell_value_vec(values: Vec<Vec<CellValue>>) -> Self {
-        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
-        let h = values.len() as u32;
-        let mut columns = vec![BTreeMap::new(); w as usize];
-        for (y, col) in values.into_iter().enumerate() {
-            for (x, value) in col.into_iter().enumerate() {
-                columns[x].insert(y as u64, value);
-            }
-        }
-        Self { columns, w, h }
     }
 }
 
@@ -325,16 +302,6 @@ mod test {
     fn size() {
         let cell_values = CellValues::new(2, 3);
         assert_eq!(cell_values.size(), 6);
-    }
-
-    #[test]
-    fn from_cell_value() {
-        let cell_values =
-            CellValues::from(vec![vec![CellValue::from("a")], vec![CellValue::from("b")]]);
-        assert_eq!(cell_values.w, 1);
-        assert_eq!(cell_values.h, 2);
-        assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
-        assert_eq!(cell_values.get(0, 1), Some(&CellValue::from("b")));
     }
 
     #[test]

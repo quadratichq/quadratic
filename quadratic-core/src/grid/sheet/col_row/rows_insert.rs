@@ -13,17 +13,19 @@ impl Sheet {
         &mut self,
         transaction: &mut PendingTransaction,
         row: i64,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
         a1_context: &A1Context,
     ) {
         // mark hashes of old rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        self.check_insert_tables_rows(transaction, row, copy_formats);
-
         self.columns.insert_row(row);
 
-        self.adjust_insert_tables_rows(transaction, row);
+        if !ignore_tables {
+            self.check_insert_tables_rows(transaction, row, copy_formats);
+            self.adjust_insert_tables_rows(transaction, row);
+        }
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
@@ -50,6 +52,7 @@ impl Sheet {
             transaction.reverse_operations.push(Operation::DeleteRow {
                 sheet_id: self.id,
                 row,
+                ignore_tables: true,
                 copy_formats,
             });
         }
@@ -111,6 +114,7 @@ mod test {
         sheet.insert_row(
             &mut transaction,
             1,
+            false,
             CopyFormats::None,
             &A1Context::default(),
         );
@@ -167,6 +171,7 @@ mod test {
         sheet.insert_row(
             &mut transaction,
             2,
+            false,
             CopyFormats::None,
             &A1Context::default(),
         );
@@ -194,7 +199,7 @@ mod test {
         let mut transaction = PendingTransaction::default();
         let context = A1Context::default();
 
-        sheet.insert_row(&mut transaction, 3, CopyFormats::None, &context);
+        sheet.insert_row(&mut transaction, 3, false, CopyFormats::None, &context);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -217,7 +222,7 @@ mod test {
         let mut transaction = PendingTransaction::default();
         let context = A1Context::default();
 
-        sheet.insert_row(&mut transaction, 2, CopyFormats::None, &context);
+        sheet.insert_row(&mut transaction, 2, false, CopyFormats::None, &context);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), 200.0);
         assert_eq!(sheet.offsets.row_height(3), 200.0);

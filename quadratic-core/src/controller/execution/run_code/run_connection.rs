@@ -4,7 +4,7 @@ use crate::{
     RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
+    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
 };
 
 impl GridController {
@@ -105,25 +105,21 @@ impl GridController {
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Connection { kind, id },
-            code,
-        };
-        transaction.waiting_for_async = Some(code_cell);
+        transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
     }
 }
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::{
         Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        grid::{CodeCellLanguage, ConnectionKind, SheetId},
+        grid::{CodeCellLanguage, SheetId},
     };
 
     #[test]
@@ -131,16 +127,11 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, "test".to_string());
+        gc.set_cell_value(pos![sheet_id!A2], "test".to_string(), None, false);
 
         let mut transaction = PendingTransaction::default();
 
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A1];
 
         let code = r#"{{$A$2}}"#;
         let result = gc
@@ -156,8 +147,7 @@ mod tests {
 
         gc.add_sheet(None, None, None, false);
         let sheet_2_id = gc.sheet_ids()[1];
-        let sheet_2 = gc.sheet_mut(sheet_2_id);
-        sheet_2.set_cell_value(Pos { x: 1, y: 2 }, "test2".to_string());
+        gc.set_cell_value(pos![sheet_2_id!A2], "test2".to_string(), None, false);
 
         let code = r#"{{'Sheet2'!$A$2}}"#;
         let result = gc
@@ -177,8 +167,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, "test".to_string());
+        gc.set_cell_value(pos![sheet_id!A2], "test".to_string(), None, false);
 
         let mut transaction = PendingTransaction::default();
 
@@ -220,14 +209,9 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "test".to_string());
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A2];
 
         let mut transaction = PendingTransaction::default();
         let result = gc

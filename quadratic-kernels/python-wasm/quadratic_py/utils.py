@@ -21,12 +21,10 @@ class CellValueType(Enum):
     Duration = 4
     Error = 5
     Html = 6
-    Code = 7
     Image = 8
     Date = 9
     Time = 10
     DateTime = 11
-    Import = 12
 
 JsCellValueResult = Tuple[str, CellValueType]
 

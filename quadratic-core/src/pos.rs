@@ -190,7 +190,7 @@ impl From<&str> for Pos {
 
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
+        write!(f, "{} ({}, {})", self.a1_string(), self.x, self.y)
     }
 }
 

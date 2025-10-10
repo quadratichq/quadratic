@@ -132,7 +132,11 @@ impl GridController {
         new_sheet.id = new_sheet_id;
         new_sheet.name = new_name.clone();
 
-        new_sheet.replace_sheet_name_in_code_cells(&sheet.name, &new_name);
+        new_sheet.data_tables.replace_sheet_name_in_code_cells(
+            new_sheet_id,
+            &sheet.name,
+            &new_name,
+        );
 
         let right_order = self
             .grid

@@ -142,6 +142,7 @@ impl TrackedOperation {
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
                 sheet_name: match schema.as_ref() {
+                    SheetSchema::V1_12(schema) => schema.name.to_string(),
                     SheetSchema::V1_11(schema) => schema.name.to_string(),
                     SheetSchema::V1_10(schema) => schema.name.to_string(),
                     SheetSchema::V1_9(schema) => schema.id.to_string(),
@@ -329,11 +330,23 @@ impl TrackedOperation {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
 
+            Operation::MoveDataTable {
+                old_sheet_pos,
+                new_sheet_pos,
+            } => Some(Self::MoveDataTable {
+                from: sheet_pos_to_selection(*old_sheet_pos, gc),
+                to: sheet_pos_to_selection(*new_sheet_pos, gc),
+            }),
+
+            Operation::SwitchDataTableKind { sheet_pos, kind } => Some(Self::SwitchDataTableKind {
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
+                kind: kind.to_string(),
+            }),
+
             // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }
             | Operation::SetChartCellSize { .. }
             | Operation::SetDataTableAt { .. }
-            | Operation::SwitchDataTableKind { .. }
             | Operation::DataTableMeta { .. }
             | Operation::DataTableOptionMeta { .. }
             | Operation::DataTableFormats { .. }

@@ -713,7 +713,7 @@ mod tests {
 
         // should not trigger auto resize row heights for multiplayer transactions
         let mut other_gc = GridController::test();
-        other_gc.grid_mut().set_first_sheet_id(sheet_id);
+        other_gc.set_first_sheet_id(sheet_id);
         other_gc.received_transaction(transaction_id, 1, ops.0);
         let sheet = other_gc.sheet(sheet_id);
         assert_eq!(

@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -49,14 +49,11 @@ impl GridController {
 
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
-
+            self.thumbnail_dirty_sheet_rect(
+                transaction,
+                SheetRect::single_pos((column, 1).into(), sheet_id),
+            );
             if transaction.is_user_ai_undo_redo() {
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                    x: column,
-                    y: 1,
-                    sheet_id,
-                });
-
                 transaction
                     .forward_operations
                     .push(Operation::ResizeColumn {
@@ -111,14 +108,12 @@ impl GridController {
 
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
+            self.thumbnail_dirty_sheet_rect(
+                transaction,
+                SheetRect::single_pos((1, row).into(), sheet_id),
+            );
 
             if transaction.is_user_ai_undo_redo() {
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                    x: 1,
-                    y: row,
-                    sheet_id,
-                });
-
                 transaction.forward_operations.push(Operation::ResizeRow {
                     sheet_id,
                     row,
@@ -177,17 +172,14 @@ impl GridController {
 
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
+            if let Some(min_row) = row_heights.iter().map(|row_height| row_height.row).min() {
+                self.thumbnail_dirty_sheet_rect(
+                    transaction,
+                    SheetRect::single_pos((1, min_row).into(), sheet_id),
+                );
+            }
 
             if transaction.is_user_ai_undo_redo() {
-                row_heights.iter().any(|JsRowHeight { row, .. }| {
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: 0,
-                        y: *row,
-                        sheet_id,
-                    });
-                    transaction.generate_thumbnail
-                });
-
                 transaction.forward_operations.push(Operation::ResizeRows {
                     sheet_id,
                     row_heights: row_heights.clone(),
@@ -249,17 +241,18 @@ impl GridController {
 
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
+            if let Some(min_column) = column_widths
+                .iter()
+                .map(|column_width| column_width.column)
+                .min()
+            {
+                self.thumbnail_dirty_sheet_rect(
+                    transaction,
+                    SheetRect::single_pos((min_column, 1).into(), sheet_id),
+                );
+            }
 
             if transaction.is_user_ai_undo_redo() {
-                column_widths.iter().any(|JsColumnWidth { column, .. }| {
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: *column,
-                        y: 0,
-                        sheet_id,
-                    });
-                    transaction.generate_thumbnail
-                });
-
                 transaction
                     .forward_operations
                     .push(Operation::ResizeColumns {
@@ -292,17 +285,19 @@ impl GridController {
 
         let old_size = sheet.offsets.set_default_width(size);
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server()
-            && let Some(sheet) = self.try_sheet(sheet_id) {
-                transaction.sheet_info.insert(sheet_id);
-                transaction.add_dirty_hashes_from_selections(
-                    sheet,
-                    &self.a1_context,
-                    vec![A1Selection::all(sheet_id)],
-                );
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
-            }
+        if (cfg!(target_family = "wasm") || cfg!(test))
+            && !transaction.is_server()
+            && let Some(sheet) = self.try_sheet(sheet_id)
+        {
+            transaction.sheet_info.insert(sheet_id);
+            transaction.add_dirty_hashes_from_selections(
+                sheet,
+                &self.a1_context,
+                vec![A1Selection::all(sheet_id)],
+            );
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+        }
 
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
@@ -344,17 +339,19 @@ impl GridController {
 
         let old_size = sheet.offsets.set_default_height(size);
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server()
-            && let Some(sheet) = self.try_sheet(sheet_id) {
-                transaction.sheet_info.insert(sheet_id);
-                transaction.add_dirty_hashes_from_selections(
-                    sheet,
-                    &self.a1_context,
-                    vec![A1Selection::all(sheet_id)],
-                );
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
-            }
+        if (cfg!(target_family = "wasm") || cfg!(test))
+            && !transaction.is_server()
+            && let Some(sheet) = self.try_sheet(sheet_id)
+        {
+            transaction.sheet_info.insert(sheet_id);
+            transaction.add_dirty_hashes_from_selections(
+                sheet,
+                &self.a1_context,
+                vec![A1Selection::all(sheet_id)],
+            );
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+        }
 
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);

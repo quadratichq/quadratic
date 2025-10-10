@@ -679,11 +679,9 @@ mod tests {
         let pos = pos![B2].to_sheet_pos(sheet_id);
         let form = parse_formula("INDIRECT(\"D5\")", ctx, pos).unwrap();
 
-        let sheet = g.sheet_mut(sheet_id);
-        let _ = sheet.set_cell_value(pos![D5], 35);
-        let _ = sheet.set_cell_value(pos![D6], 36);
-        let _ = sheet.set_cell_value(pos![D7], 37);
-        let sheet_id = sheet.id;
+        g.set_cell_value(pos![sheet_id!D5], 35.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!D6], 36.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!D7], 37.to_string(), None, false);
 
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
@@ -1218,10 +1216,9 @@ mod tests {
     fn test_xlookup() {
         let mut g = GridController::from_grid(Grid::new(), 0);
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
         for y in 1..=6 {
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
-            let _ = sheet.set_cell_value(Pos { x: 2, y }, format!("cell #{y}"));
+            g.set_cell_value(pos![sheet_id!1,y], y.to_string(), None, false);
+            g.set_cell_value(pos![sheet_id!2,y], format!("cell #{y}"), None, false);
         }
 
         // Test lookup in sorted array
@@ -1237,7 +1234,6 @@ mod tests {
     fn test_match() {
         let mut g = GridController::from_grid(Grid::test(), 0);
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
 
         // Produce the following grid:
         // 11 21 31 41 51 61
@@ -1248,7 +1244,7 @@ mod tests {
         // 16 26 36 46 56 66
         for x in 1..=6 {
             for y in 1..=6 {
-                let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+                g.set_cell_value(pos![sheet_id!x,y], (x * 10 + y).to_string(), None, false);
             }
         }
 
@@ -1335,13 +1331,12 @@ mod tests {
         assert_eq!("3", eval_to_string(&g, s));
 
         let sheet_id = g.sheet_ids()[0];
-        g.sheet_mut(sheet_id)
-            .set_cell_value(pos![A42], "funny number");
+        g.set_cell_value(pos![sheet_id!A42], "funny number".to_string(), None, false);
         let s = "INDEX(A1:A100, 42)";
         assert_check_syntax_succeeds(&g, s);
         assert_eq!("funny number", eval_to_string(&g, s));
 
-        g.sheet_mut(sheet_id).set_cell_value(pos![L6], "twelfth");
+        g.set_cell_value(pos![sheet_id!L6], "twelfth".to_string(), None, false);
         let s = "INDEX((A6:Q6), 12)"; // parens are ok
         assert_check_syntax_succeeds(&g, s);
         assert_eq!("twelfth", eval_to_string(&g, s));
@@ -1357,36 +1352,36 @@ mod tests {
 
         let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheet_mut(sheet_id).set_cell_value(pos![A5], "aaa");
-        g.sheet_mut(sheet_id).set_cell_value(pos![C5], "ccc");
-        g.sheet_mut(sheet_id).set_cell_value(pos![D5], "ddd");
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 1);
+        g.set_cell_value(pos![sheet_id!A5], "aaa".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!C5], "ccc".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!D5], "ddd".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!C6], 1.to_string(), None, false);
         assert_eq!("aaa", eval_to_string(&g, s));
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 2);
+        g.set_cell_value(pos![sheet_id!C6], 2.to_string(), None, false);
         assert_eq!("ccc", eval_to_string(&g, s));
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 3);
+        g.set_cell_value(pos![sheet_id!C6], 3.to_string(), None, false);
         assert_eq!("ddd", eval_to_string(&g, s));
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], 4);
+        g.set_cell_value(pos![sheet_id!C6], 4.to_string(), None, false);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], -1);
+        g.set_cell_value(pos![sheet_id!C6], "-1".to_string(), None, false);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], i64::MAX);
+        g.set_cell_value(pos![sheet_id!C6], i64::MAX.to_string(), None, false);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], i64::MIN);
+        g.set_cell_value(pos![sheet_id!C6], i64::MIN.to_string(), None, false);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheet_mut(sheet_id).set_cell_value(pos![A2], 12);
-        g.sheet_mut(sheet_id).set_cell_value(pos![L3], "l3");
-        g.sheet_mut(sheet_id).set_cell_value(pos![L4], "l4");
-        g.sheet_mut(sheet_id).set_cell_value(pos![L5], "l5");
-        g.sheet_mut(sheet_id).set_cell_value(pos![L6], "l6");
+        g.set_cell_value(pos![sheet_id!A2], 12.to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!L3], "l3".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!L4], "l4".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!L5], "l5".to_string(), None, false);
+        g.set_cell_value(pos![sheet_id!L6], "l6".to_string(), None, false);
         assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
         assert_check_syntax_succeeds(&g, s);
-        g.sheet_mut(sheet_id).set_cell_value(pos![C6], "2");
+        g.set_cell_value(pos![sheet_id!C6], "2".to_string(), None, false);
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";

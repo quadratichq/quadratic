@@ -92,11 +92,8 @@ pub(crate) mod tests {
 
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, SheetPos, Span,
-        controller::operations::operation::Operation,
-        grid::{CodeCellLanguage, CodeCellValue},
-        number::decimal_from_str,
-        test_util::*,
-        wasm_bindings::js::clear_js_calls,
+        controller::operations::operation::Operation, grid::CodeCellLanguage,
+        number::decimal_from_str, test_util::*, wasm_bindings::js::clear_js_calls,
     };
 
     use chrono::{NaiveDate, NaiveDateTime};
@@ -361,13 +358,13 @@ pub(crate) mod tests {
             sheet.cell_value((7, 2).into()).unwrap(),
             CellValue::Number(decimal_from_str("1").unwrap())
         );
-        assert_eq!(
-            sheet.cell_value((8, 2).into()).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "0/0".to_string()
-            })
+        assert_code_language(
+            &gc,
+            pos![sheet_id!8,2],
+            CodeCellLanguage::Formula,
+            "0/0".to_string(),
         );
+
         assert_eq!(
             sheet.display_value((8, 2).into()).unwrap(),
             CellValue::Error(Box::new(RunError {
@@ -424,13 +421,10 @@ pub(crate) mod tests {
         for y in y_start..=y_end {
             let pos = Pos { x: 1, y };
             // all cells should be formula code cells
-            let code_cell = sheet.cell_value(pos).unwrap();
-            match &code_cell {
-                CellValue::Code(code_cell_value) => {
-                    assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
-                }
-                _ => panic!("expected code cell"),
-            }
+            let code_cell = sheet
+                .code_run_at(&pos)
+                .unwrap_or_else(|| panic!("expected code cell"));
+            assert_eq!(code_cell.language, CodeCellLanguage::Formula);
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet

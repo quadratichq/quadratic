@@ -26,19 +26,19 @@ pub type SheetFormattingType<T> = Contiguous2D<Option<T>>;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct SheetFormatting {
-    pub align: SheetFormattingType<CellAlign>,
-    pub vertical_align: SheetFormattingType<CellVerticalAlign>,
-    pub wrap: SheetFormattingType<CellWrap>,
-    pub numeric_format: SheetFormattingType<NumericFormat>,
-    pub numeric_decimals: SheetFormattingType<i16>,
-    pub numeric_commas: SheetFormattingType<bool>,
-    pub bold: SheetFormattingType<bool>,
-    pub italic: SheetFormattingType<bool>,
-    pub text_color: SheetFormattingType<String>,
-    pub fill_color: SheetFormattingType<String>,
-    pub date_time: SheetFormattingType<String>,
-    pub underline: SheetFormattingType<bool>,
-    pub strike_through: SheetFormattingType<bool>,
+    pub(crate) align: SheetFormattingType<CellAlign>,
+    pub(crate) vertical_align: SheetFormattingType<CellVerticalAlign>,
+    pub(crate) wrap: SheetFormattingType<CellWrap>,
+    pub(crate) numeric_format: SheetFormattingType<NumericFormat>,
+    pub(crate) numeric_decimals: SheetFormattingType<i16>,
+    pub(crate) numeric_commas: SheetFormattingType<bool>,
+    pub(crate) bold: SheetFormattingType<bool>,
+    pub(crate) italic: SheetFormattingType<bool>,
+    pub(crate) text_color: SheetFormattingType<String>,
+    pub(crate) fill_color: SheetFormattingType<String>,
+    pub(crate) date_time: SheetFormattingType<String>,
+    pub(crate) underline: SheetFormattingType<bool>,
+    pub(crate) strike_through: SheetFormattingType<bool>,
 }
 
 impl SheetFormatting {

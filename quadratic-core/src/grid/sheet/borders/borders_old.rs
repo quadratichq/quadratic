@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::Pos;
-use crate::grid::{ColumnData, block::SameValue};
+use crate::grid::block::SameValue;
+use crate::grid::column::ColumnData;
 use crate::{RunLengthEncoding, grid::sheet::borders::BorderStyleTimestamp};
 
 use super::{BorderStyle, BorderStyleCell};
