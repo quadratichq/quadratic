@@ -32,7 +32,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   const handleOnClick = useMemo(
     () =>
       ({ tableQuery, tableName }: { tableQuery: string; tableName: string }) => {
-        trackEvent('[Connections].schemaViewer.insertQuery');
+        trackEvent('[ConnectionSchemaBrowser].insertQuery');
 
         if (editorInst) {
           const model = editorInst.getModel();
