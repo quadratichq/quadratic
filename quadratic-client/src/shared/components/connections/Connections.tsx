@@ -5,6 +5,7 @@ import {
   type ToggleShowConnectionDemoAction,
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
+import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import {
   connectionsByType,
@@ -48,6 +49,7 @@ export type NavigateToCreatePotentialView = (type: PotentialConnectionType) => v
 
 type ConnectionState =
   | { view: 'edit'; uuid: string; type: ConnectionType }
+  | { view: 'details'; uuid: string; type: ConnectionType }
   | { view: 'new' }
   | { view: 'create'; type: ConnectionType }
   | { view: 'create-potential'; type: PotentialConnectionType }
@@ -160,6 +162,9 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ view: 'edit', uuid: connectionUuid, type: connectionType });
   }, []);
+  const handleNavigateToDetailsView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ view: 'details', type: connectionType, uuid: connectionUuid });
+  }, []);
   const handleNavigateToNewView = useCallback(() => {
     setActiveConnectionState({ view: 'new' });
   }, []);
@@ -192,6 +197,24 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               connectionUuid={activeConnectionState.uuid}
               connectionType={activeConnectionState.type}
               handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          </>
+        ) : activeConnectionState.view === 'details' ? (
+          <>
+            <ConnectionBreadcrumbs
+              breadcrumbs={[
+                connectionsBreadcrumb,
+                {
+                  label: 'Browse',
+                  onClick: handleNavigateToListView,
+                },
+              ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
+            />
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionState.type}
               teamUuid={teamUuid}
             />
           </>
@@ -244,6 +267,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             handleNavigateToNewView={handleNavigateToNewView}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
             handleShowConnectionDemo={handleShowConnectionDemo}
           />
         )}

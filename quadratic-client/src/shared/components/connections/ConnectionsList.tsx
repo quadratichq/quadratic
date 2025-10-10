@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon } from '@/shared/components/Icons';
+import { CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -23,6 +23,7 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
+  handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   handleNavigateToNewView: () => void;
@@ -33,6 +34,7 @@ export const ConnectionsList = ({
   connectionsAreLoading,
   handleNavigateToNewView,
   handleNavigateToCreateView,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
 }: Props) => {
@@ -81,6 +83,7 @@ export const ConnectionsList = ({
           <ListItems
             filterQuery={filterQuery}
             items={connections}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleShowConnectionDemo={handleShowConnectionDemo}
           />
@@ -115,16 +118,19 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
+  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
   items,
 }: {
   filterQuery: string;
+  handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
 }) {
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
+
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -137,7 +143,7 @@ function ListItems({
         const isNavigable = !(disabled || isDemo);
         const showSecondaryAction = !isApp && !disabled;
         const showIconHideDemo = !disabled && isDemo;
-
+        const showIconBrowseSchema = !isApp && !disabled && !isDemo;
         return (
           <div className="group" key={uuid}>
             <div
@@ -188,6 +194,19 @@ function ListItems({
                     }}
                   >
                     <CloseIcon />
+                  </Button>
+                </TooltipPopover>
+              )}
+
+              {showIconBrowseSchema && (
+                <TooltipPopover label="Browse schema">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
+                    onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
+                  >
+                    <ExploreSchemaIcon />
                   </Button>
                 </TooltipPopover>
               )}
