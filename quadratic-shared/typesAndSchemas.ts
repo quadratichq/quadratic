@@ -191,6 +191,7 @@ export const ApiSchemas = {
       fileRole: UserFileRoleSchema.optional(),
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
+      restrictedModel: z.boolean(),
     }),
     license: LicenseSchema,
   }),
