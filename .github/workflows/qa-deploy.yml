@@ -141,6 +141,10 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
             runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-controller
+            runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-worker
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -306,6 +310,8 @@ jobs:
             url: "https://connection-pr-qa.quadratic-preview.com/health"
           - name: files
             url: "http://files-pr-qa.quadratic-preview.com/health"
+          - name: cloud-controller
+            url: "https://cloud-controller-pr-qa.quadratic-preview.com/health"
       fail-fast: false
     env:
       EXPECTED_VERSION: ${{ needs.build_client.outputs.version }}

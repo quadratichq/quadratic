@@ -24,6 +24,7 @@ export class Control {
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
   shared?: ChildProcessWithoutNullStreams;
+  cloudcontroller?: ChildProcessWithoutNullStreams;
 
   signals: Record<string, AbortController> = {};
 
@@ -41,6 +42,7 @@ export class Control {
     postgres: false,
     redis: false,
     shared: false,
+    cloudcontroller: false,
   };
 
   constructor(cli: CLI) {
@@ -61,6 +63,7 @@ export class Control {
       this.kill("connection"),
       this.kill("python"),
       this.kill("shared"),
+      this.kill("cloudcontroller"),
     ]);
     process.exit(0);
   }
@@ -177,6 +180,12 @@ export class Control {
             }
             if (this.status.connection !== "killed" && !this.connection) {
               this.runConnection();
+            }
+            if (
+              this.status.cloudcontroller !== "killed" &&
+              !this.cloudcontroller
+            ) {
+              this.runCloudcontroller();
             }
           }
         },
@@ -501,6 +510,51 @@ export class Control {
         this.ui.print("shared", "killed", "red");
       }
       this.status.shared = "killed";
+    }
+  }
+
+  async runCloudcontroller() {
+    if (this.quitting) return;
+    if (this.status.cloudcontroller === "killed") return;
+    this.status.cloudcontroller = false;
+    this.ui.print("cloudcontroller");
+    await this.kill("cloudcontroller");
+
+    this.signals.cloudcontroller = new AbortController();
+    this.cloudcontroller = spawn(
+      "cargo",
+      this.cli.options.cloudcontroller ? ["watch", "-x", "run"] : ["run"],
+      {
+        signal: this.signals.cloudcontroller.signal,
+        cwd: "quadratic-cloud-controller",
+        env: { ...process.env, RUST_LOG: "info" },
+      },
+    );
+    this.ui.printOutput("cloudcontroller", (data) => {
+      this.handleResponse("cloudcontroller", data, {
+        success: ["Finished ", "Running "],
+        error: ["error[", "npm ERR!"],
+        start: "    Compiling",
+      });
+    });
+  }
+
+  async restartCloudcontroller() {
+    this.cli.options.cloudcontroller = !this.cli.options.cloudcontroller;
+    this.runCloudcontroller();
+  }
+
+  async killCloudcontroller() {
+    if (this.status.cloudcontroller === "killed") {
+      this.status.cloudcontroller = false;
+      this.ui.print("cloudcontroller", "restarting...");
+      this.runCloudcontroller();
+    } else {
+      if (this.cloudcontroller) {
+        await this.kill("cloudcontroller");
+        this.ui.print("cloudcontroller", "killed", "red");
+      }
+      this.status.cloudcontroller = "killed";
     }
   }
   async runConnection() {

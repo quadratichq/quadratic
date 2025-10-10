@@ -22,6 +22,7 @@ import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
 import { ConnectionsMenu } from '@/app/ui/menus/ConnectionsMenu/ConnectionsMenu';
 import { FeedbackMenu } from '@/app/ui/menus/FeedbackMenu/FeedbackMenu';
+import { ScheduledTasks } from '@/app/ui/menus/ScheduledTasks/ScheduledTasks';
 import { SheetBar } from '@/app/ui/menus/SheetBar/SheetBar';
 import { Toolbar } from '@/app/ui/menus/Toolbar/Toolbar';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
@@ -131,6 +132,7 @@ export default function QuadraticUI() {
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
+          <ScheduledTasks />
         </div>
 
         {!presentationMode && !isEmbed && <BottomBar />}

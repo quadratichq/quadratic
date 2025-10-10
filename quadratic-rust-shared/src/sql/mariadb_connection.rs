@@ -10,7 +10,6 @@ mod tests {
 
     use chrono::{DateTime, Local, NaiveDateTime, NaiveTime};
     use rust_decimal::Decimal;
-    use serde_json::json;
     use sqlx::Row;
     use std::str::FromStr;
 
@@ -109,7 +108,8 @@ mod tests {
             ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap())
         );
         assert_eq!(to_arrow(28), ArrowType::UInt16(2024));
-        assert_eq!(to_arrow(29), ArrowType::Json(json!({"key": "value"})));
+        // MariaDB returns JSON columns as TEXT type, so we get Utf8 instead of Json
+        assert_eq!(to_arrow(29), ArrowType::Utf8("{\"key\": \"value\"}".into()));
     }
 
     #[tokio::test]
