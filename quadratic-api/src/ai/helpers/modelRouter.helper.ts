@@ -12,6 +12,7 @@ import {
   DEFAULT_MODEL_ROUTER_MODEL,
   DEFAULT_MODEL_WITH_IMAGE,
   MODELS_CONFIGURATION,
+  RESTRICTED_MODEL_ROUTER_MODEL,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
@@ -23,6 +24,7 @@ export const getModelKey = async (
   inputArgs: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
+  restrictedCountry: boolean,
   signal: AbortSignal
 ): Promise<AIModelKey> => {
   try {
@@ -37,12 +39,16 @@ export const getModelKey = async (
 
     const promptMessages = getPromptMessagesForAI(messages);
 
+    // Restricted country that uses restricted model
+    if (restrictedCountry) {
+      return RESTRICTED_MODEL_ROUTER_MODEL;
+    }
+
     // if the model is the default free model, check if the user prompt contains an image file
     if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
-
       return hasImageFile ? DEFAULT_MODEL_WITH_IMAGE : modelKey;
     }
 

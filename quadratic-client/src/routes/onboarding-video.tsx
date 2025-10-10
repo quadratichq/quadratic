@@ -89,6 +89,7 @@ export const Component = () => {
               trackEvent('[OnboardingVideo].skipped');
             }}
             className={btnClassName}
+            data-testid="skip-get-started"
           >
             <Link to="/files/create" reloadDocument>
               Skip

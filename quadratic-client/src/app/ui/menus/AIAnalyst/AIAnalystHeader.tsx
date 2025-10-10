@@ -144,6 +144,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               className="text-muted-foreground hover:text-foreground"
               disabled={loading}
               onClick={() => setShowAIAnalyst(false)}
+              data-testid="close-ai-analyst"
             >
               <CloseIcon />
             </Button>
