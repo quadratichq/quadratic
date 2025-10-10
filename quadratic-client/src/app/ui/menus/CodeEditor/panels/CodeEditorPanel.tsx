@@ -62,6 +62,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
         additionalDropdownItems={[
           { label: 'Insert query in code editor', onClick: handleOnClick, Icon: SaveAndRunIcon },
         ]}
+        eventSource="app-right-side"
       />
     ) : undefined;
 

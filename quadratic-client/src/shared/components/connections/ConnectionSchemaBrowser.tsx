@@ -23,11 +23,13 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
 type ConnectionSchemaBrowserProps = {
+  eventSource: string;
   teamUuid: string;
   type: ConnectionType;
   additionalActions?: React.ReactNode;
@@ -42,6 +44,7 @@ type ConnectionSchemaBrowserProps = {
 export const ConnectionSchemaBrowser = ({
   additionalActions,
   additionalDropdownItems,
+  eventSource,
   teamUuid,
   type,
   uuid,
@@ -60,6 +63,11 @@ export const ConnectionSchemaBrowser = ({
       (table) => table.name.toLowerCase().includes(query) || table.schema.toLowerCase().includes(query)
     );
   }, [data, filterQuery]);
+
+  const handleReload = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].refresh', { eventSource });
+    reloadSchema();
+  }, [eventSource, reloadSchema]);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -83,7 +91,7 @@ export const ConnectionSchemaBrowser = ({
           <div className="flex flex-row-reverse items-center gap-1">
             {additionalActions}
             <TooltipPopover label="Reload schema">
-              <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+              <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
                 <RefreshIcon className={cn(isLoading && 'animate-spin')} />
               </Button>
             </TooltipPopover>
@@ -108,7 +116,6 @@ export const ConnectionSchemaBrowser = ({
               className="absolute right-0 top-0 h-8 w-8 !bg-transparent text-muted-foreground hover:text-foreground"
               onClick={() => {
                 setFilterQuery('');
-
                 inputRef.current?.focus();
               }}
             >
@@ -130,6 +137,7 @@ export const ConnectionSchemaBrowser = ({
             key={index}
             connectionType={type}
             additionalDropdownItems={additionalDropdownItems}
+            eventSource={eventSource}
           />
         ))}
       {data === null && (
@@ -182,14 +190,57 @@ function TableListItem({
   data,
   connectionType,
   additionalDropdownItems,
+  eventSource,
 }: {
   index: number;
   data: Table;
   connectionType: ConnectionType;
   additionalDropdownItems: ConnectionSchemaBrowserProps['additionalDropdownItems'];
+  eventSource: string;
 }) {
   const { name, columns } = data;
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleTableClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      trackEvent('[ConnectionSchemaBrowser].clickTable', { eventSource });
+      setIsExpanded((prev) => !prev);
+    },
+    [eventSource]
+  );
+
+  const handleDropdownClick = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].clickDropdown', { eventSource });
+  }, [eventSource]);
+
+  const handleDropdownMenuItemClick = useCallback(
+    ({
+      label,
+      onClick,
+    }: {
+      label: string;
+      onClick: NonNullable<ConnectionSchemaBrowserProps['additionalDropdownItems']>[number]['onClick'];
+    }) => {
+      trackEvent('[ConnectionSchemaBrowser].clickDropdownItem', { eventSource, label });
+      onClick({
+        tableName: name,
+        tableQuery: getTableQuery({ table: data, connectionType }),
+      });
+    },
+    [eventSource, name, data, connectionType]
+  );
+
+  const handleCopyNameClick = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].clickCopyName', { eventSource });
+    navigator.clipboard.writeText(name);
+  }, [name, eventSource]);
+
+  const handleCopyQueryClick = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].clickCopyQuery', { eventSource });
+    const query = getTableQuery({ table: data, connectionType });
+    navigator.clipboard.writeText(query);
+  }, [eventSource, data, connectionType]);
 
   return (
     <div className="group relative">
@@ -197,10 +248,7 @@ function TableListItem({
         className={
           'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 pr-10 font-normal hover:bg-accent'
         }
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsExpanded((prev) => !prev);
-        }}
+        onClick={handleTableClick}
       >
         <div className="-ml-0.5 flex h-6 w-6 flex-none items-center">
           <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
@@ -211,23 +259,15 @@ function TableListItem({
       <div className="absolute right-2 top-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost" className="text-muted-foreground">
+            <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
               <MoreHorizIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {additionalDropdownItems && (
               <>
-                {additionalDropdownItems.map(({ label, onClick, Icon }, i) => (
-                  <DropdownMenuItem
-                    key={label}
-                    onClick={() =>
-                      onClick({
-                        tableName: name,
-                        tableQuery: getTableQuery({ table: data, connectionType }),
-                      })
-                    }
-                  >
+                {additionalDropdownItems.map(({ label, onClick, Icon }) => (
+                  <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
                     <Icon className="mr-2" /> {label}
                   </DropdownMenuItem>
                 ))}
@@ -235,19 +275,10 @@ function TableListItem({
               </>
             )}
 
-            <DropdownMenuItem
-              onClick={() => {
-                navigator.clipboard.writeText(name);
-              }}
-            >
+            <DropdownMenuItem onClick={handleCopyNameClick}>
               <CopyIcon className="mr-2" /> Copy name
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                const query = getTableQuery({ table: data, connectionType });
-                navigator.clipboard.writeText(query);
-              }}
-            >
+            <DropdownMenuItem onClick={handleCopyQueryClick}>
               <CopyIcon className="mr-2" /> Copy query
             </DropdownMenuItem>
           </DropdownMenuContent>
