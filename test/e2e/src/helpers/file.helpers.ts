@@ -166,7 +166,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
     timeout: 60 * 1000,
   });
 
-  closeExtraUI(page);
+  await closeExtraUI(page);
 };
 
 /**
