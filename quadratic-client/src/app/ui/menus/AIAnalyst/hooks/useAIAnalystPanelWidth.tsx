@@ -14,3 +14,14 @@ export function useAIAnalystPanelWidth() {
   );
   return { panelWidth, setPanelWidth: setWidth };
 }
+
+export function useAIAnalystConnectionSchemaPanelWidth() {
+  const [panelWidth, setPanelWidth] = useLocalStorage<number>('aiAnalystConnectionSchemaPanelWidth', 300);
+  const setWidth = useCallback(
+    (width: number) => {
+      setPanelWidth(Math.min(Math.max(300, width), 450));
+    },
+    [setPanelWidth]
+  );
+  return { panelWidth, setPanelWidth: setWidth };
+}

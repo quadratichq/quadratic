@@ -1,3 +1,4 @@
+import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { DatabaseIcon } from '@/shared/components/Icons';
@@ -14,9 +15,10 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback } from 'react';
-import { useRecoilCallback } from 'recoil';
+import { useRecoilCallback, useSetRecoilState } from 'recoil';
 
 interface AIUserMessageFormConnectionsButtonProps {
   disabled: boolean;
@@ -27,6 +29,7 @@ interface AIUserMessageFormConnectionsButtonProps {
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
+    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickButton = useCallback(() => {
       trackEvent('[AIConnectionsPicker].show');
@@ -51,22 +54,31 @@ export const AIUserMessageFormConnectionsButton = memo(
 
     const handleClickConnection = useCallback(
       (connectionUuid: string) => {
+        // If it's the same connection, unselect it
         if (context.connection?.id === connectionUuid) {
           trackEvent('[AIConnectionsPicker].unselectConnection');
           setContext?.((prev) => ({
             ...prev,
             connection: undefined,
           }));
-        } else {
-          trackEvent('[AIConnectionsPicker].selectConnection');
-          const connection = connections.find((connection) => connection.uuid === connectionUuid);
-          setContext?.((prev) => ({
-            ...prev,
-            connection: connection ? { type: connection.type, id: connection.uuid, name: connection.name } : undefined,
-          }));
+          setAIAnalystActiveSchemaConnectionUuid(undefined);
+          return;
         }
+
+        // Otherwise set it as the newly selected connection
+        trackEvent('[AIConnectionsPicker].selectConnection');
+        const connection = connections.find((connection) => connection.uuid === connectionUuid);
+        if (connection === undefined) {
+          Sentry.captureException(new Error('A connection that was picked in the UI is not stored in local state.'));
+          return;
+        }
+        setContext?.((prev) => ({
+          ...prev,
+          connection: { type: connection.type, id: connection.uuid, name: connection.name },
+        }));
+        setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
       },
-      [connections, context.connection, setContext]
+      [connections, context.connection, setContext, setAIAnalystActiveSchemaConnectionUuid]
     );
 
     return (

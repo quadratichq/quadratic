@@ -13,7 +13,7 @@ import {
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { FileIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
@@ -189,7 +189,7 @@ export function FilesListItemUserFile({
         // it becomes visible.
         className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
       >
-        <DraftIcon />
+        <FileIcon />
         {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
       </div>
       <Link

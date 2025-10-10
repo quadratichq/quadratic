@@ -1,5 +1,6 @@
-import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
+import { FileIcon } from '@/shared/components/Icons';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionDetails = ({
@@ -11,20 +12,31 @@ export const ConnectionDetails = ({
   connectionUuid: string;
   teamUuid: string;
 }) => {
-  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile({
-    connectionType,
-    connectionUuid,
-    isPrivate: true,
-    teamUuid,
-  });
+  const handleClick = ({ tableQuery }: { tableQuery: string; tableName: string }) => {
+    const to = newNewFileFromStateConnection({
+      isPrivate: true,
+      teamUuid,
+      query: tableQuery,
+      connectionType,
+      connectionUuid,
+    });
+    // eslint-disable-next-line react-compiler/react-compiler
+    window.location.href = to;
+  };
 
   return (
     <ConnectionSchemaBrowser
       teamUuid={teamUuid}
-      selfContained={true}
-      TableQueryAction={TableQueryAction}
+      additionalDropdownItems={[
+        {
+          label: 'Create file querying this table',
+          Icon: FileIcon,
+          onClick: handleClick,
+        },
+      ]}
       uuid={connectionUuid}
       type={connectionType}
+      eventSource="dashboard"
     />
   );
 };

@@ -3,7 +3,7 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
+import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -63,7 +63,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           <DropdownMenuContent>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <DraftIcon className="mr-3 text-primary" />
+              <FileIcon className="mr-3 text-primary" />
               <span className="flex flex-col">
                 Local file
                 <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>

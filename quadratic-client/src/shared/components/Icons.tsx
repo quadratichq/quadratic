@@ -283,10 +283,6 @@ export const DownloadExcelIcon: IconComponent = (props) => {
   return <Icon {...props}>file_export</Icon>;
 };
 
-export const DraftIcon: IconComponent = (props) => {
-  return <Icon {...props}>draft</Icon>;
-};
-
 export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
@@ -329,6 +325,10 @@ export const ExternalLinkIcon: IconComponent = (props) => {
 
 export const FastForwardIcon: IconComponent = (props) => {
   return <Icon {...props}>fast_forward</Icon>;
+};
+
+export const FileIcon: IconComponent = (props) => {
+  return <Icon {...props}>draft</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {
