@@ -1262,6 +1262,7 @@ test('User can see other users multiplayer cursors', async ({ page: userPage1 })
   // First user creates a new team and file
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName, skipNavigateBack: true });
+  await gotoCells(userPage1, { a1: 'F2:G5' });
 
   // Invite second and third users to the team
   await shareEditableFile(userPage1);
@@ -1270,6 +1271,7 @@ test('User can see other users multiplayer cursors', async ({ page: userPage1 })
   const user2Browser = await chromium.launch();
   const userPage2 = await user2Browser.newPage();
   await logIn(userPage2, { emailPrefix: 'e2e_user_cursors_2' });
+  await gotoCells(userPage2, { a1: 'D2:E5' });
 
   // Second user navigates into file
   await userPage2.goto(fileUrl);
@@ -1277,26 +1279,20 @@ test('User can see other users multiplayer cursors', async ({ page: userPage1 })
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
   await closeExtraUI(userPage2);
-  await userPage2.locator(`a:has-text("${fileName}")`);
+  userPage2.locator(`a:has-text("${fileName}")`);
 
   const user3Browser = await chromium.launch();
   const userPage3 = await user3Browser.newPage();
   await logIn(userPage3, { emailPrefix: 'e2e_user_cursors_3' });
-
-  // Third user navigates into file
   await userPage3.goto(fileUrl);
+
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
   await closeExtraUI(userPage3);
-  await userPage3.locator(`a:has-text("${fileName}")`);
+  userPage3.locator(`a:has-text("${fileName}")`);
 
   // ensure that multiplayer cursors are visible on each screen
-  await userPage1.bringToFront();
-  await gotoCells(userPage1, { a1: 'F2:G5' });
-  await userPage2.bringToFront();
-  await gotoCells(userPage2, { a1: 'D2:E5' });
-  await userPage3.bringToFront();
   await gotoCells(userPage3, { a1: 'B3' });
 
   await userPage1.bringToFront();
