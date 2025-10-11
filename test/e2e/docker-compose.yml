@@ -8,3 +8,5 @@ services:
     tty: true
     environment:
       - E2E_URL=${E2E_URL}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

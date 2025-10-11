@@ -132,7 +132,8 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
 
 const handleOnboarding = async (page: Page) => {
   // Check for "Get started in"
-  const getStartedHeader = page.locator('h2:has-text("Get started in")');
+  const getStartedHeader = page.locator('h1:has-text("Get started in")');
+  await getStartedHeader.waitFor({ timeout: 10 * 1000 }).catch(() => {});
   if (await getStartedHeader.isVisible()) {
     const skipButton = page.locator('[data-testid="skip-get-started"]');
     if (await skipButton.isVisible()) {
