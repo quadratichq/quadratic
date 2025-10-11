@@ -7,15 +7,12 @@ import {
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
-import {
-  connectionsByType,
-  potentialConnectionsByType,
-  type PotentialConnectionType,
-} from '@/shared/components/connections/connectionsByType';
+import { type PotentialConnectionType } from '@/shared/components/connections/connectionsByType';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
 import { ConnectionsPotential } from '@/shared/components/connections/ConnectionsPotential';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { CloseIcon } from '@/shared/components/Icons';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import {
   Breadcrumb,
@@ -25,6 +22,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/shadcn/ui/breadcrumb';
+import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -178,137 +176,223 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     [handleNavigateToNewView]
   );
 
+  const [data, setData] = useState<any>(generateData());
+
+  const breadcrumbs = useMemo(() => {
+    if (activeConnectionState.view === 'new') {
+      return <ConnectionBreadcrumbs breadcrumbs={[connectionsBreadcrumb, connectionsNewBreadcrumb]} />;
+    }
+    if (activeConnectionState.view === 'create') {
+      return (
+        <ConnectionBreadcrumbs
+          breadcrumbs={[connectionsBreadcrumb, connectionsNewBreadcrumb, { label: activeConnectionState.type }]}
+        />
+      );
+    }
+    if (activeConnectionState.view === 'details') {
+      return (
+        <ConnectionBreadcrumbs
+          breadcrumbs={[
+            connectionsBreadcrumb,
+            {
+              label:
+                connections.find((connection) => connection.uuid === activeConnectionState.uuid)?.name || 'Unknown',
+            },
+          ]}
+        />
+      );
+    }
+    if (activeConnectionState.view === 'edit') {
+      return (
+        <ConnectionBreadcrumbs
+          breadcrumbs={[
+            connectionsBreadcrumb,
+            {
+              label:
+                connections.find((connection) => connection.uuid === activeConnectionState.uuid)?.name || 'Unknown',
+              onClick: () =>
+                handleNavigateToDetailsView({
+                  connectionType: activeConnectionState.type,
+                  connectionUuid: activeConnectionState.uuid,
+                }),
+            },
+            { label: 'Edit' },
+          ]}
+        />
+      );
+    }
+    return <ConnectionBreadcrumbs breadcrumbs={[connectionsBreadcrumb]} />;
+  }, [
+    activeConnectionState,
+    connections,
+    connectionsBreadcrumb,
+    connectionsNewBreadcrumb,
+
+    handleNavigateToDetailsView,
+  ]);
+
   return (
-    <div className={'grid-cols-12 gap-12 md:grid'}>
-      <div className="col-span-8">
-        {activeConnectionState.view === 'edit' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: `Edit`,
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionFormEdit
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
+    <div className="flex flex-col gap-0">
+      <div className="flex h-12 w-full items-center gap-2 border-b border-border px-3">
+        {breadcrumbs}
+        <div className="ml-auto flex flex-row gap-2">
+          {activeConnectionState.view === 'details' && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleNavigateToEditView({
+                    connectionType: activeConnectionState?.type,
+                    connectionUuid: activeConnectionState?.uuid,
+                  });
+                }}
+              >
+                Edit connection
+              </Button>
+              <Button className="">Add data to sheet</Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              console.log('TODO: handle close');
+            }}
+          >
+            <CloseIcon />
+          </Button>
+        </div>
+      </div>
+
+      <div className={'h-full grid-cols-12 overflow-hidden md:grid'}>
+        {activeConnectionState.view === 'create-potential' && (
+          <ConnectionsPotential
+            handleNavigateToNewView={handleNavigateToNewView}
+            connectionType={activeConnectionState.type}
+          />
+        )}
+        {activeConnectionState.view === 'list' && (
+          <div className="col-span-6 overflow-auto px-3 pt-2">
+            <ConnectionsList
               handleNavigateToListView={handleNavigateToListView}
-              teamUuid={teamUuid}
+              activeConnection={'list'}
+              connections={connections}
+              connectionsAreLoading={connectionsAreLoading}
+              handleNavigateToNewView={handleNavigateToNewView}
+              handleNavigateToCreateView={handleNavigateToCreateView}
+              handleNavigateToEditView={handleNavigateToEditView}
+              handleNavigateToDetailsView={handleNavigateToDetailsView}
+              handleShowConnectionDemo={handleShowConnectionDemo}
             />
-          </>
-        ) : activeConnectionState.view === 'details' ? (
+          </div>
+        )}
+
+        {activeConnectionState.view === 'edit' && (
+          <div className="col-span-12 h-full overflow-hidden">
+            <div className="col-span-9 px-3">
+              <ConnectionFormEdit
+                connectionUuid={activeConnectionState.uuid}
+                connectionType={activeConnectionState.type}
+                handleNavigateToListView={handleNavigateToListView}
+                teamUuid={teamUuid}
+              />
+            </div>
+            <div className="col-span-3 pr-3 pt-3">
+              <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+            </div>
+          </div>
+        )}
+
+        {activeConnectionState.view === 'details' && (
           <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                {
-                  label: 'Browse',
-                  onClick: handleNavigateToListView,
-                },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionDetails
-              connectionUuid={activeConnectionState.uuid}
-              connectionType={activeConnectionState.type}
-              teamUuid={teamUuid}
-            />
+            <div className="col-span-3 border-r border-border">
+              <ConnectionDetails
+                connectionUuid={activeConnectionState.uuid}
+                connectionType={activeConnectionState.type}
+                teamUuid={teamUuid}
+                onTableQueryAction={(query) => {
+                  const jsonData = generateData();
+                  setData(jsonData);
+
+                  // connectionClient
+                  //   .query(query, { type: activeConnectionState.type, uuid: activeConnectionState.uuid, teamUuid })
+                  //   .then((json) => {
+                  //     console.log(json);
+                  //   });
+                  // console.log(jsonData);
+                }}
+              />
+            </div>
+            <div className="col-span-9 overflow-auto">
+              <table className="table w-full table-auto text-sm">
+                <thead>
+                  <tr className="sticky top-0 border-b border-border bg-white">
+                    {Object.keys(data[0]).map((key) => (
+                      <th className="sticky top-0 border-b border-border bg-white px-2 text-left">{key}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((row: any) => (
+                    <tr>
+                      {Object.keys(row).map((key) => (
+                        <td className="whitespace-nowrap px-2">{row[key]}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
-        ) : activeConnectionState.view === 'new' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[connectionsBreadcrumb, { label: `New`, onClick: handleNavigateToListView }]}
-            />
+        )}
+
+        {activeConnectionState.view === 'new' ? (
+          <div className="col-span-9 h-full overflow-auto border-r border-border px-3 pt-2">
             <ConnectionsNew
               handleNavigateToCreateView={handleNavigateToCreateView}
               handleNavigateToCreatePotentialView={handleNavigateToCreatePotentialView}
             />
-          </>
-        ) : activeConnectionState.view === 'create' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                connectionsNewBreadcrumb,
-                { label: connectionsByType[activeConnectionState.type].name },
-              ]}
-              Logo={connectionsByType[activeConnectionState.type].Logo}
-            />
+          </div>
+        ) : null}
+
+        {activeConnectionState.view === 'create' && (
+          <div className="col-span-9 px-3 pt-2">
             <ConnectionFormCreate
               teamUuid={teamUuid}
               type={activeConnectionState.type}
               handleNavigateToListView={handleNavigateToListView}
               handleNavigateToNewView={handleNavigateToNewView}
             />
-          </>
-        ) : activeConnectionState.view === 'create-potential' ? (
-          <>
-            <ConnectionBreadcrumbs
-              breadcrumbs={[
-                connectionsBreadcrumb,
-                connectionsNewBreadcrumb,
-                { label: potentialConnectionsByType[activeConnectionState.type].name },
-              ]}
-              Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
-            />
-            <ConnectionsPotential
-              handleNavigateToNewView={handleNavigateToNewView}
-              connectionType={activeConnectionState.type}
-            />
-          </>
-        ) : (
-          <ConnectionsList
-            connections={connections}
-            connectionsAreLoading={connectionsAreLoading}
-            handleNavigateToNewView={handleNavigateToNewView}
-            handleNavigateToCreateView={handleNavigateToCreateView}
-            handleNavigateToEditView={handleNavigateToEditView}
-            handleNavigateToDetailsView={handleNavigateToDetailsView}
-            handleShowConnectionDemo={handleShowConnectionDemo}
-          />
+          </div>
         )}
-      </div>
-      <div className="col-span-4 mt-12 md:mt-0">
-        <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
       </div>
     </div>
   );
 };
 
 const ConnectionBreadcrumbs = memo(
-  ({
-    breadcrumbs,
-    Logo,
-  }: {
-    breadcrumbs: Array<{ label: string; onClick?: () => void }>;
-    Logo?: React.ComponentType;
-  }) => {
+  ({ breadcrumbs }: { breadcrumbs: Array<{ label: string; onClick?: () => void }> }) => {
     return (
-      <div className="flex items-center gap-2 pb-5 pt-0.5">
-        <Breadcrumb>
-          <BreadcrumbList>
-            {breadcrumbs.map(({ label, onClick }, i) =>
-              i === breadcrumbs.length - 1 ? (
-                <BreadcrumbPage key={label + i}>{label}</BreadcrumbPage>
-              ) : (
-                <Fragment key={label + i}>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink onClick={onClick} className="cursor-pointer">
-                      {label}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </Fragment>
-              )
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-        <div className="ml-auto h-8">{Logo && <Logo />}</div>
-      </div>
+      <Breadcrumb>
+        <BreadcrumbList>
+          {breadcrumbs.map(({ label, onClick }, i) =>
+            i === breadcrumbs.length - 1 ? (
+              <BreadcrumbPage className="font-medium" key={label + i}>
+                {label}
+              </BreadcrumbPage>
+            ) : (
+              <Fragment key={label + i}>
+                <BreadcrumbItem>
+                  <BreadcrumbLink onClick={onClick} className="cursor-pointer">
+                    {label}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+              </Fragment>
+            )
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
     );
   }
 );
@@ -334,4 +418,52 @@ function getInitialConnectionState(searchParams: URLSearchParams): ConnectionSta
   }
 
   return { view: 'list' };
+}
+
+const firstNames = ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace'];
+const lastNames = ['Smith', 'Johnson', 'Lee', 'Patel', 'Garcia', 'Müller', 'Brown'];
+const cities = ['New York', 'London', 'Berlin', 'Tokyo', 'Sydney', 'Toronto', 'Paris'];
+const statuses = ['active', 'inactive', 'pending'];
+const countries = ['United States', 'Canada', 'United Kingdom', 'Australia', 'France', 'Germany', 'Italy'];
+
+function randomItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function randomDate(start: Date, end: Date) {
+  const ts = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+  return new Date(ts).toISOString().split('T')[0];
+}
+function shuffle<T>(a: T[]): T[] {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateData(rows = 100) {
+  const baseKeys = ['id', 'name', 'email', 'age', 'city', 'signupDate', 'status', 'address'] as const;
+  const orderedKeys = shuffle([...baseKeys]); // new column order each run
+
+  const data: Record<(typeof baseKeys)[number], unknown>[] = [];
+  for (let i = 0; i < rows; i++) {
+    const first = randomItem(firstNames);
+    const last = randomItem(lastNames);
+    const base = {
+      id: i + 1,
+      name: `${first} ${last}`,
+      email: `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com`,
+      age: Math.floor(Math.random() * 40) + 20,
+      city: randomItem(cities),
+      signupDate: randomDate(new Date(2020, 0, 1), new Date()),
+      status: randomItem(statuses),
+      address: `${randomItem(cities)}, ${randomItem(countries)}`,
+    };
+
+    // Insert properties in the same shuffled order for every row
+    const row: any = {};
+    for (const k of orderedKeys) row[k] = base[k];
+    data.push(row);
+  }
+  return data;
 }
