@@ -10,8 +10,14 @@ import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMes
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import {
+  detectMentionInText,
+  getMentionCursorPosition,
+  MentionsTextarea,
+  useMentionsState,
+} from '@/shared/shadcn/ui/mentions-textarea';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -37,6 +43,7 @@ export interface AIUserMessageFormWrapperProps {
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   initialContext?: Context;
+  initialPrompt?: string;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
@@ -72,6 +79,7 @@ export const AIUserMessageForm = memo(
       autoFocusRef,
       initialContent,
       initialContext,
+      initialPrompt,
       messageIndex,
       onContentChange,
       showEmptyChatPromptSuggestions,
@@ -104,13 +112,15 @@ export const AIUserMessageForm = memo(
       setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
       setImportFiles([]);
       setPrompt(
-        initialContent
-          ?.filter((item) => isContentText(item))
-          .map((item) => item.text)
-          .join('\n') ?? ''
+        initialPrompt
+          ? initialPrompt
+          : (initialContent
+              ?.filter((item) => isContentText(item))
+              .map((item) => item.text)
+              .join('\n') ?? '')
       );
       setContext?.(initialContext ? { ...initialContext } : {});
-    }, [initialContent, initialContext, setContext]);
+    }, [initialContent, initialContext, setContext, setPrompt, initialPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -286,6 +296,66 @@ export const AIUserMessageForm = memo(
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
 
+    // Mentions-related state & functionality
+    const [mentionState, setMentionState] = useMentionsState();
+    const handleClickMention = useCallback(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      // Get current cursor position
+      const cursorPos = textarea.selectionStart || 0;
+      const currentValue = prompt;
+
+      // Insert @ at cursor position
+      const beforeCursor = currentValue.substring(0, cursorPos);
+      const afterCursor = currentValue.substring(cursorPos);
+      const newValue = beforeCursor + '@' + afterCursor;
+
+      setPrompt(newValue);
+
+      // Trigger mention detection using shared utilities
+      setTimeout(() => {
+        const mention = detectMentionInText(newValue, cursorPos + 1);
+
+        if (mention) {
+          const position = getMentionCursorPosition(textarea);
+          setMentionState((prev) => ({
+            ...prev,
+            isOpen: true,
+            query: mention.query,
+            startIndex: mention.startIndex,
+            endIndex: mention.endIndex,
+            position,
+            selectedIndex: 0,
+          }));
+        }
+
+        // Focus and position cursor after @
+        textarea.focus();
+        textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+      }, 0);
+    }, [textareaRef, prompt, setMentionState]);
+
+    const textarea = (
+      <Textarea
+        ref={textareaRef}
+        value={prompt}
+        className={cn(
+          'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
+          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+          (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+        )}
+        onChange={handlePromptChange}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+        placeholder={uiContext === 'analyst' ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        autoHeight={true}
+        maxHeight={maxHeight}
+        disabled={waitingOnMessageIndex !== undefined}
+        onDragEnter={handleDrag}
+      />
+    );
+
     return (
       <div className="relative">
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
@@ -341,23 +411,15 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
           />
 
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-              editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-              (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
-            )}
-            onChange={handlePromptChange}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-            autoHeight={true}
-            maxHeight={maxHeight}
-            disabled={waitingOnMessageIndex !== undefined}
-            onDragEnter={handleDrag}
-          />
+          {/* TODO(ayush): replace textarea with custom editor that supports 
+              highlighting/styling mentions */}
+          {uiContext === 'analyst' ? (
+            <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
+              {textarea}
+            </MentionsTextarea>
+          ) : (
+            textarea
+          )}
 
           <AIUsageExceeded show={showAIUsageExceeded} />
 
@@ -367,12 +429,17 @@ export const AIUserMessageForm = memo(
             waitingOnMessageIndex={waitingOnMessageIndex}
             textareaRef={textareaRef}
             prompt={prompt}
-            submitPrompt={handleSubmit}
+            setPrompt={setPrompt}
+            submitPrompt={() => {
+              handleSubmit(prompt);
+              setPrompt('');
+            }}
             abortPrompt={abortPrompt}
             disabled={disabled}
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
+            handleClickMention={uiContext === 'analyst' ? handleClickMention : undefined}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
@@ -448,10 +515,12 @@ interface AIUserMessageFormFooterProps {
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
+  setPrompt: (prompt: React.SetStateAction<string>) => void;
   submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
+  handleClickMention: (() => void) | undefined;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
@@ -466,10 +535,12 @@ const AIUserMessageFormFooter = memo(
     waitingOnMessageIndex,
     textareaRef,
     prompt,
+    setPrompt,
     submitPrompt,
     abortPrompt,
     handleFiles,
     fileTypes,
+    handleClickMention,
     context,
     setContext,
     filesSupportedText,
@@ -514,6 +585,19 @@ const AIUserMessageFormFooter = memo(
                 setContext={setContext}
                 textareaRef={textareaRef}
               />
+            )}
+            {handleClickMention && (
+              <TooltipPopover label="Reference data">
+                <Button
+                  size="icon-sm"
+                  className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={handleClickMention}
+                >
+                  <MentionIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </div>
 
