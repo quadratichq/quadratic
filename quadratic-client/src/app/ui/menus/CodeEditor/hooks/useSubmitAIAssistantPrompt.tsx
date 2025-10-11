@@ -35,7 +35,7 @@ import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadrat
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
-const MAX_TOOL_CALL_ITERATIONS = 25;
+const MAX_TOOL_CALL_ITERATIONS = 200;
 
 export type SubmitAIAssistantPromptArgs = {
   messageSource: string;
