@@ -1,4 +1,3 @@
-import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
