@@ -124,6 +124,8 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
           - service: cloud-controller
             runner: blacksmith-4vcpu-ubuntu-2404
+          - service: cloud-worker
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
