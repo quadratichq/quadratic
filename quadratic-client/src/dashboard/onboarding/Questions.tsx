@@ -27,7 +27,6 @@ import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 import { z } from 'zod';
 
 const FETCHER_KEY = 'onboarding-form-submission';
-const NUM_FREE_PROMPTS = 20;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -467,16 +466,7 @@ function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
   return (
     <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
       <StarShineIcon className="mr-2" />
-      {isLastQuestion ? (
-        <>
-          You've unlocked <strong className="ml-1 font-semibold">{NUM_FREE_PROMPTS} free prompts</strong>!
-        </>
-      ) : (
-        <>
-          You'll be rewarded <strong className="mx-1 font-semibold">{NUM_FREE_PROMPTS} free prompts</strong> on
-          completion!
-        </>
-      )}
+      {isLastQuestion ? <>You've unlocked free prompts!</> : <>You'll be rewarded free prompts on completion!</>}
     </aside>
   );
 }
