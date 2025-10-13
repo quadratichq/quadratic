@@ -618,6 +618,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id_2);
         let borders = sheet.borders_in_sheet();
+        dbg!(&borders);
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 

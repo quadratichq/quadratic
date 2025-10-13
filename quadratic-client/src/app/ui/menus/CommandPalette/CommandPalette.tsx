@@ -27,10 +27,10 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import fuzzysort from 'fuzzysort';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const CommandPalette = () => {
+export const CommandPalette = memo(() => {
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
@@ -177,4 +177,4 @@ export const CommandPalette = () => {
       </CommandList>
     </CommandDialog>
   );
-};
+});
