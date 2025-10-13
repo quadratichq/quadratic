@@ -21,10 +21,6 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
   });
 
   const validRequestBody = {
-    sequenceNumber: 1,
-    version: '1.0.0',
-    s3Key: 'test-key',
-    s3Bucket: 'test-bucket',
     status: 'PENDING' as const,
   };
 
@@ -47,60 +43,6 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
   });
 
   describe('Request Validation', () => {
-    it('should return 400 when sequenceNumber is missing', async () => {
-      const invalidBody = { ...validRequestBody };
-      delete (invalidBody as any).sequenceNumber;
-
-      const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
-    });
-
-    it('should return 400 when sequenceNumber is not a number', async () => {
-      const invalidBody = { ...validRequestBody, sequenceNumber: 'invalid' };
-
-      const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
-    });
-
-    it('should return 400 when version is missing', async () => {
-      const invalidBody = { ...validRequestBody };
-      delete (invalidBody as any).version;
-
-      const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
-    });
-
-    it('should return 400 when s3Key is missing', async () => {
-      const invalidBody = { ...validRequestBody };
-      delete (invalidBody as any).s3Key;
-
-      const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
-    });
-
-    it('should return 400 when s3Bucket is missing', async () => {
-      const invalidBody = { ...validRequestBody };
-      delete (invalidBody as any).s3Bucket;
-
-      const response = await request(app).post(URL).set('Authorization', `Bearer ${M2M_AUTH_TOKEN}`).send(invalidBody);
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.error.message).toBe('Bad request. Schema validation failed');
-    });
-
     it('should return 400 when scheduledTaskId is not a valid UUID', async () => {
       const invalidURL = '/v0/internal/scheduled-tasks/invalid-uuid/log';
 

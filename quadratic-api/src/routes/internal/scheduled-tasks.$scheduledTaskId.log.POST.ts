@@ -12,10 +12,6 @@ const router = express.Router();
 const requestValidationMiddleware = validateRequestSchema(
   z.object({
     body: z.object({
-      sequenceNumber: z.number(),
-      version: z.string(),
-      s3Key: z.string(),
-      s3Bucket: z.string(),
       status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
       error: z.string().optional(),
     }),
