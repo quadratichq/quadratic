@@ -47,7 +47,7 @@ export const useAIUsage = () => {
 
   const messagesRemaining =
     data?.billingLimit && data?.currentPeriodUsage !== undefined
-      ? Math.max(0, data.billingLimit - data.currentPeriodUsage)
+      ? Math.max(0, data.billingLimit - data.currentPeriodUsage - 1)
       : null;
 
   return {
