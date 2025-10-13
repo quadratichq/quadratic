@@ -15,11 +15,26 @@ pub(crate) const IMAGE_NAME: &str = "quadratic-cloud-worker";
 
 pub(crate) struct Controller {
     pub(crate) state: Arc<State>,
+    image_name: String,
 }
 
 impl Controller {
+    /// Create a new controller
     pub(crate) async fn new(state: Arc<State>) -> Result<Self> {
-        Ok(Self { state })
+        let image_name = Self::discover_image_name(&state).await?;
+
+        Ok(Self { state, image_name })
+    }
+
+    /// Discover the actual image name by querying Docker for images containing IMAGE_NAME_SUBSTRING
+    async fn discover_image_name(state: &Arc<State>) -> Result<String> {
+        state
+            .client
+            .lock()
+            .await
+            .discover_image_name(IMAGE_NAME)
+            .await
+            .map_err(|e| Self::error("discover_image_name", e))
     }
 
     pub(crate) async fn scan_and_ensure_all_workers(&self) -> Result<()> {
@@ -87,7 +102,7 @@ impl Controller {
             .await
             .list_ids()
             .await
-            .map_err(|e| ControllerError::Docker(e.to_string()))?
+            .map_err(|e| Self::error("get_all_active_worker_file_ids", e))?
             .into_iter()
             .collect::<HashSet<_>>();
 
@@ -102,7 +117,7 @@ impl Controller {
             .await
             .has_container(file_id)
             .await
-            .map_err(|e| ControllerError::Docker(e.to_string()))?;
+            .map_err(|e| Self::error("file_has_active_worker", e))?;
 
         trace!("File {file_id} has an active worker: {has_container}");
 
@@ -151,13 +166,13 @@ impl Controller {
 
         let container = Container::try_new(
             *file_id,
-            IMAGE_NAME,
+            &self.image_name,
             self.state.client.lock().await.docker.clone(),
             Some(env_vars),
             None,
         )
         .await
-        .map_err(|e| ControllerError::Docker(e.to_string()))?;
+        .map_err(|e| Self::error("create_worker", e))?;
 
         self.state
             .client
@@ -165,7 +180,7 @@ impl Controller {
             .await
             .add_container(container, true)
             .await
-            .map_err(|e| ControllerError::Docker(e.to_string()))?;
+            .map_err(|e| Self::error("create_worker", e))?;
 
         info!("Added worker for file {file_id}");
 
@@ -177,7 +192,7 @@ impl Controller {
         client
             .remove_container(file_id)
             .await
-            .map_err(|e| ControllerError::Docker(e.to_string()))?;
+            .map_err(|e| Self::error("shutdown_worker", e))?;
 
         state.release_worker_create_lock(file_id).await;
 
@@ -189,5 +204,9 @@ impl Controller {
     pub(crate) async fn count_active_workers(&self) -> Result<usize> {
         let active_file_ids = self.get_all_active_worker_file_ids().await?;
         Ok(active_file_ids.len())
+    }
+
+    fn error(func_name: &str, error: impl ToString) -> ControllerError {
+        ControllerError::Docker(format!("{func_name}: {}", error.to_string()))
     }
 }

@@ -126,8 +126,6 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
 pub(crate) fn public_app(state: Arc<State>) -> Router {
     trace!("Building public app");
 
-    
-
     Router::new()
         // JWKS for worker jwt validation
         .route("/.well-known/jwks.json", get(handle_jwks))
@@ -243,17 +241,19 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
     for summary in summaries {
-        if summary.image == Some(IMAGE_NAME.to_string())
-            && let Some(container_id) = &summary.id
+        if let Some(image) = &summary.image {
+            if image.contains(IMAGE_NAME)
+                && let Some(container_id) = &summary.id
                 && let Err(e) = state
                     .client
                     .lock()
                     .await
                     .remove_container_by_docker_id(container_id)
                     .await
-                {
-                    tracing::error!("Failed to remove container {}: {}", container_id, e);
-                }
+            {
+                tracing::error!("Failed to remove container {}: {}", container_id, e);
+            }
+        }
     }
 
     // Start worker-only server

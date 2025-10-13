@@ -7,7 +7,7 @@ use std::fmt::Display;
 use std::time::Duration;
 
 pub use bollard::Docker;
-use bollard::query_parameters::{ListContainersOptions, RemoveContainerOptions};
+use bollard::query_parameters::{ListContainersOptions, ListImagesOptions, RemoveContainerOptions};
 use bollard::secret::ContainerSummary;
 use uuid::Uuid;
 
@@ -78,6 +78,37 @@ impl Cluster {
             .map_err(Self::error)?;
 
         Ok(containers)
+    }
+
+    /// Discover an image name by searching for a substring in available image tags.
+    ///
+    /// Returns the first image tag that contains the provided substring.
+    /// Falls back to the substring itself if no matching image is found.
+    pub async fn discover_image_name(&self, image_name_substring: &str) -> Result<String> {
+        let options = ListImagesOptions {
+            all: true,
+            ..Default::default()
+        };
+
+        let images = self
+            .docker
+            .list_images(Some(options))
+            .await
+            .map_err(Self::error)?;
+
+        // find the first image that contains the substring in any of its repo tags
+        for image in images {
+            for tag in &image.repo_tags {
+                if tag.contains(image_name_substring) {
+                    return Ok(tag.clone());
+                }
+            }
+        }
+
+        Err(Self::error(format!(
+            "Image not found: {}",
+            image_name_substring
+        )))
     }
 
     /// Get a container
