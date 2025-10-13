@@ -25,7 +25,7 @@ import { useRecoilValue } from 'recoil';
 
 type UIModels = 'default' | 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
-  default: { label: 'Default', description: 'Good for everyday tasks' },
+  default: { label: 'Fast', description: 'Good for everyday tasks' },
   max: { label: 'Max', description: 'Smartest and most capable' },
   others: { label: 'Others', description: 'Experimental models' },
 };
@@ -116,7 +116,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
         open={!loading && isOpenDidYouKnowDialog}
         setOpen={() => setKnowsAboutModelPicker(true)}
         title="AI model choices"
-        description="Default is our fastest model. Max is the smartest and most capable."
+        description="Fast is our fastest model. Max is the smartest and most capable."
       >
         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
           {/* Needs a min-width or it shifts as the popover closes */}
@@ -127,7 +127,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
               e.stopPropagation();
             }}
           >
-            {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Default' : 'Max'}
+            {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
