@@ -320,6 +320,26 @@ export const Component = () => {
             </Type>
 
             <div>
+              {!isOnPaidPlan && (
+                <p className="mb-3 text-sm text-muted-foreground">
+                  <button
+                    onClick={() => {
+                      trackEvent('[TeamSettings].upgradeToProClicked', {
+                        team_uuid: team.uuid,
+                        source: 'privacy_section',
+                      });
+                      apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
+                        window.location.href = data.url;
+                      });
+                    }}
+                    className="font-semibold text-foreground underline hover:text-primary"
+                    disabled={!canManageBilling}
+                  >
+                    Upgrade to Pro
+                  </button>{' '}
+                  to enable AI privacy mode.
+                </p>
+              )}
               <SettingControl
                 label="Improve AI results"
                 description={
@@ -334,7 +354,6 @@ export const Component = () => {
                       Learn more
                     </a>
                     .
-                    {!isOnPaidPlan && <span className="font-semibold"> Upgrade to Pro to enable AI privacy mode.</span>}
                   </>
                 }
                 onCheckedChange={(checked) => {

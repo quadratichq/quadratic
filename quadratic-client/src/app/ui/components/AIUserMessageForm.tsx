@@ -9,6 +9,7 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -425,12 +426,15 @@ interface CancelButtonProps {
 }
 const CancelButton = memo(
   ({ show, disabled, abortPrompt, messageIndex, showEmptyChatPromptSuggestions = false }: CancelButtonProps) => {
+    const { isOnPaidPlan } = useIsOnPaidPlan();
+
     if (!show) {
       return null;
     }
 
     // Check if message counter is showing (same logic as AIMessageCounterBar)
-    const isMessageCounterShowing = !(showEmptyChatPromptSuggestions && messageIndex === 0);
+    // Message counter only shows for free users when not in empty chat state
+    const isMessageCounterShowing = !isOnPaidPlan && !(showEmptyChatPromptSuggestions && messageIndex === 0);
 
     return (
       <Button
