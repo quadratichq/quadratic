@@ -201,40 +201,43 @@ impl Cluster {
 
         for summary in summaries {
             // check both image name and container name to catch all matching containers
-            let should_remove = if let Some(image) = &summary.image {
-                image.contains(image_name_substring)
-            } else if let Some(names) = &summary.names {
-                // container names are in format: "/image-name-{uuid}"
-                names.iter().any(|name| name.contains(image_name_substring))
-            } else {
-                false
-            };
+            let image_matches = summary
+                .image
+                .as_ref()
+                .map(|img| img.contains(image_name_substring))
+                .unwrap_or(false);
 
-            if should_remove {
-                if let Some(container_id) = &summary.id {
-                    let container_name = summary
-                        .names
-                        .as_ref()
-                        .and_then(|n| n.first())
-                        .map(|s| s.as_str())
-                        .unwrap_or("unknown");
+            let name_matches = summary
+                .names
+                .as_ref()
+                .map(|names| names.iter().any(|name| name.contains(image_name_substring)))
+                .unwrap_or(false);
 
-                    tracing::trace!(
-                        "Removing container: {} (ID: {})",
+            let should_remove = image_matches || name_matches;
+
+            if should_remove && let Some(container_id) = &summary.id {
+                let container_name = summary
+                    .names
+                    .as_ref()
+                    .and_then(|n| n.first())
+                    .map(|s| s.as_str())
+                    .unwrap_or("unknown");
+
+                tracing::trace!(
+                    "Removing container: {} (ID: {})",
+                    container_name,
+                    container_id
+                );
+
+                if let Err(e) = self.remove_container_by_docker_id(container_id).await {
+                    tracing::error!(
+                        "Failed to remove container {} ({}): {}",
                         container_name,
-                        container_id
+                        container_id,
+                        e
                     );
-
-                    if let Err(e) = self.remove_container_by_docker_id(container_id).await {
-                        tracing::error!(
-                            "Failed to remove container {} ({}): {}",
-                            container_name,
-                            container_id,
-                            e
-                        );
-                    } else {
-                        removed_count += 1;
-                    }
+                } else {
+                    removed_count += 1;
                 }
             }
         }

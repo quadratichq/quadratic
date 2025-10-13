@@ -45,7 +45,9 @@ FROM ubuntu:24.04 AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \  
   ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  python3 \
+  python3-pip
 
 COPY --from=builder /quadratic/quadratic-cloud-controller/target/release/quadratic-cloud-controller .
 
