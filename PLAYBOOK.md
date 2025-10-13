@@ -4,6 +4,9 @@
 - [Deploying QA](#deploying-qa)
 - [Adding/Modifying Environment Variables](#addingmodifying-environment-variables)
 - [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+- [Troubleshooting Preview Branches](#troubleshooting-preview-branches)
+  - [View Build Logs](#view-build-logs)
+  - [Ensure Images are Pulled](#ensure-images-are-pulled)
 
 
 ## Deploying QA
@@ -38,6 +41,7 @@
    1. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
    1. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
    1. Click on the `Save` button
+   1. For QA, close and reopen the QA PR 
 
 ## SSH into a Preview Branch
 1. Locate the PR number in Github
@@ -56,3 +60,17 @@
    1. View live logs: docker logs -f `CONTAINER ID`
    1. View live tail logs: docker logs -f --tail 100 `CONTAINER ID`
    1. Enter into the container: docker exec -it `CONTAINER ID` bash
+
+## Troubleshooting Preview Branches
+
+### View Build Logs
+1. [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+1. Enter into the command line: `tail -100 /var/log/cloud-init-output.log`
+1. Ensure no errors
+
+### Ensure Images are Pulled
+1. [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+1. Enter into the command line: `docker images`
+1. All services should be listed.  As of this writing, 11 containers should be running.
+
+ 
