@@ -1,12 +1,20 @@
 import { authClient } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { apiClient } from '@/shared/api/apiClient';
 import { LoginForm } from '@/shared/components/auth/LoginForm';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import type { LoaderFunctionArgs } from 'react-router';
 
+const isWorkOs = import.meta.env.VITE_AUTH_TYPE === 'workos';
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const redirectTo = getRedirectTo() || '/';
+
+  if (isWorkOs) {
+    const { callbackUrl } = await apiClient.workos.login();
+    window.location.assign(callbackUrl);
+  }
 
   const isAuthenticated = await authClient.isAuthenticated();
   if (isAuthenticated) {

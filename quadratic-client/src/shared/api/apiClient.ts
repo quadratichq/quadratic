@@ -10,6 +10,11 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
+  workos: {
+    login() {
+      return fetchFromApi(`/v0/workos/login`, { method: 'GET' }, ApiSchemas['/v0/workos/login.GET.response']);
+    },
+  },
   teams: {
     list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
