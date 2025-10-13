@@ -32,7 +32,7 @@ impl Controller {
             .client
             .lock()
             .await
-            .discover_image_name(IMAGE_NAME)
+            .image_tag_from_image_name(IMAGE_NAME)
             .await
             .map_err(|e| {
                 error!("Failed to discover image: {}", e);

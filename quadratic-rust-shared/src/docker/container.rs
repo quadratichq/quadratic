@@ -57,7 +57,7 @@ impl Container {
         env_vars: Option<Vec<String>>,
         cmd: Option<Vec<String>>,
     ) -> Result<Self> {
-        let container_name = Self::sanitize_image_name_for_container(image);
+        let container_name = Self::image_basename(image);
 
         let create_options = CreateContainerOptions {
             name: Some(format!("{}-{}", container_name, id)),
@@ -271,7 +271,7 @@ impl Container {
     /// Sanitize an image name for use as a container name.
     ///
     /// Extracts just the image name (after the last /), removes tags and digests.
-    fn sanitize_image_name_for_container(image: &str) -> String {
+    fn image_basename(image: &str) -> String {
         // remove digest (everything after @)
         let without_digest = image.split('@').next().unwrap_or(image);
 
@@ -326,27 +326,25 @@ pub mod tests {
     fn test_sanitize_image_name_for_container() {
         // Simple image name without tag
         assert_eq!(
-            Container::sanitize_image_name_for_container("quadratic-cloud-worker"),
+            Container::image_basename("quadratic-cloud-worker"),
             "quadratic-cloud-worker"
         );
 
         // Image name with tag
         assert_eq!(
-            Container::sanitize_image_name_for_container("quadratic-cloud-worker:latest"),
+            Container::image_basename("quadratic-cloud-worker:latest"),
             "quadratic-cloud-worker"
         );
 
         // Image name with digest
         assert_eq!(
-            Container::sanitize_image_name_for_container(
-                "quadratic-cloud-worker@sha256:abcdef123456"
-            ),
+            Container::image_basename("quadratic-cloud-worker@sha256:abcdef123456"),
             "quadratic-cloud-worker"
         );
 
         // ECR path without tag - extracts just the image name
         assert_eq!(
-            Container::sanitize_image_name_for_container(
+            Container::image_basename(
                 "058264531788.dkr.ecr.us-west-2.amazonaws.com/quadratic-cloud-worker"
             ),
             "quadratic-cloud-worker"
@@ -354,7 +352,7 @@ pub mod tests {
 
         // ECR path with tag - extracts just the image name without tag
         assert_eq!(
-            Container::sanitize_image_name_for_container(
+            Container::image_basename(
                 "058264531788.dkr.ecr.us-west-2.amazonaws.com/quadratic-cloud-worker:latest"
             ),
             "quadratic-cloud-worker"
@@ -362,24 +360,24 @@ pub mod tests {
 
         // Registry with port and image with tag - extracts just the image name
         assert_eq!(
-            Container::sanitize_image_name_for_container("registry.com:5000/myimage:v1.0"),
+            Container::image_basename("registry.com:5000/myimage:v1.0"),
             "myimage"
         );
 
         // Multi-level path with tag - extracts just the image name
         assert_eq!(
-            Container::sanitize_image_name_for_container("registry.com/path/to/image:tag"),
+            Container::image_basename("registry.com/path/to/image:tag"),
             "image"
         );
 
         // Image with tag and digest
         assert_eq!(
-            Container::sanitize_image_name_for_container("myimage:latest@sha256:abcdef"),
+            Container::image_basename("myimage:latest@sha256:abcdef"),
             "myimage"
         );
 
         assert_eq!(
-            Container::sanitize_image_name_for_container(
+            Container::image_basename(
                 "058264531788.dkr.ecr.us-west-2.amazonaws.com/quadratic-cloud-worker:latest"
             ),
             "quadratic-cloud-worker"

@@ -80,37 +80,6 @@ impl Cluster {
         Ok(containers)
     }
 
-    /// Discover an image name by searching for a substring in available image tags.
-    ///
-    /// Returns the first image tag that contains the provided substring.
-    /// Falls back to the substring itself if no matching image is found.
-    pub async fn discover_image_name(&self, image_name_substring: &str) -> Result<String> {
-        let options = ListImagesOptions {
-            all: true,
-            ..Default::default()
-        };
-
-        let images = self
-            .docker
-            .list_images(Some(options))
-            .await
-            .map_err(Self::error)?;
-
-        // find the first image that contains the substring in any of its repo tags
-        for image in &images {
-            for tag in &image.repo_tags {
-                if tag.contains(image_name_substring) {
-                    return Ok(tag.clone());
-                }
-            }
-        }
-
-        Err(Self::error(format!(
-            "Image not found: {}",
-            image_name_substring
-        )))
-    }
-
     /// Get a container
     pub async fn get_container(&self, id: &Uuid) -> Result<&Container> {
         let container = self
@@ -217,6 +186,101 @@ impl Cluster {
         Ok(())
     }
 
+    /// Remove all containers that match the given image name substring.
+    ///
+    /// This checks both the container's image field and its name to find matches.
+    /// Useful for cleanup on startup or shutdown.
+    ///
+    /// Returns the number of containers removed.
+    pub async fn remove_containers_by_image_name(
+        &mut self,
+        image_name_substring: &str,
+    ) -> Result<usize> {
+        let summaries = self.list_all().await?;
+        let mut removed_count = 0;
+
+        for summary in summaries {
+            // check both image name and container name to catch all matching containers
+            let should_remove = if let Some(image) = &summary.image {
+                image.contains(image_name_substring)
+            } else if let Some(names) = &summary.names {
+                // container names are in format: "/image-name-{uuid}"
+                names.iter().any(|name| name.contains(image_name_substring))
+            } else {
+                false
+            };
+
+            if should_remove {
+                if let Some(container_id) = &summary.id {
+                    let container_name = summary
+                        .names
+                        .as_ref()
+                        .and_then(|n| n.first())
+                        .map(|s| s.as_str())
+                        .unwrap_or("unknown");
+
+                    tracing::trace!(
+                        "Removing container: {} (ID: {})",
+                        container_name,
+                        container_id
+                    );
+
+                    if let Err(e) = self.remove_container_by_docker_id(container_id).await {
+                        tracing::error!(
+                            "Failed to remove container {} ({}): {}",
+                            container_name,
+                            container_id,
+                            e
+                        );
+                    } else {
+                        removed_count += 1;
+                    }
+                }
+            }
+        }
+
+        if removed_count > 0 {
+            tracing::info!(
+                "Removed {} container(s) matching '{}'",
+                removed_count,
+                image_name_substring
+            );
+        }
+
+        Ok(removed_count)
+    }
+
+    /// Discover an image name by searching for a substring in available image tags.
+    ///
+    /// Returns the first image tag that contains the provided substring.
+    /// Falls back to the substring itself if no matching image is found.
+    pub async fn image_tag_from_image_name(&self, image_name_substring: &str) -> Result<String> {
+        let options = ListImagesOptions {
+            all: true,
+            ..Default::default()
+        };
+
+        let images = self
+            .docker
+            .list_images(Some(options))
+            .await
+            .map_err(Self::error)?;
+
+        // find the first image that contains the substring in any of its repo tags
+        for image in &images {
+            for tag in &image.repo_tags {
+                if tag.contains(image_name_substring) {
+                    return Ok(tag.clone());
+                }
+            }
+        }
+
+        Err(Self::error(format!(
+            "Image not found: {}",
+            image_name_substring
+        )))
+    }
+
     /// Error helper
     fn error(error: impl ToString) -> SharedError {
         SharedError::Docker(DockerError::Cluster(error.to_string()))
@@ -283,7 +347,9 @@ mod tests {
             }
         }
 
-        let result = cluster.discover_image_name("quadratic-cloud-worker").await;
+        let result = cluster
+            .image_tag_from_image_name("quadratic-cloud-worker")
+            .await;
 
         match result {
             Ok(image) => {

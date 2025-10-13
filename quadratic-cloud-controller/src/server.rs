@@ -229,31 +229,14 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_layer)
         .init();
 
-    // Remove any docker containersthat didn't stop properly.
-    // This is most relevant in development, but could cleanup errored
-    // containers in production.
-    let summaries = state
+    // Remove any cloud worker containers that didn't stop properly.
+    state
         .client
         .lock()
         .await
-        .list_all()
+        .remove_containers_by_image_name(IMAGE_NAME)
         .await
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
-
-    for summary in summaries {
-        if let Some(image) = &summary.image
-            && image.contains(IMAGE_NAME)
-                && let Some(container_id) = &summary.id
-                && let Err(e) = state
-                    .client
-                    .lock()
-                    .await
-                    .remove_container_by_docker_id(container_id)
-                    .await
-            {
-                tracing::error!("Failed to remove container {}: {}", container_id, e);
-            }
-    }
 
     // Start worker-only server
     let worker_only_server_state_clone = Arc::clone(&state);
