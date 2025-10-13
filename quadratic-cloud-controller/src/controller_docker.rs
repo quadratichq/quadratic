@@ -21,9 +21,7 @@ pub(crate) struct Controller {
 impl Controller {
     /// Create a new controller
     pub(crate) async fn new(state: Arc<State>) -> Result<Self> {
-        info!("Discovering worker image name containing '{}'", IMAGE_NAME);
         let image_name = Self::discover_image_name(&state).await?;
-        info!("Using worker image: {}", image_name);
 
         Ok(Self { state, image_name })
     }

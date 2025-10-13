@@ -377,6 +377,13 @@ pub mod tests {
             Container::sanitize_image_name_for_container("myimage:latest@sha256:abcdef"),
             "myimage"
         );
+
+        assert_eq!(
+            Container::sanitize_image_name_for_container(
+                "058264531788.dkr.ecr.us-west-2.amazonaws.com/quadratic-cloud-worker:latest"
+            ),
+            "quadratic-cloud-worker"
+        );
     }
 
     #[tokio::test]

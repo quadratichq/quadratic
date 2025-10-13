@@ -100,16 +100,7 @@ impl Cluster {
         for image in &images {
             for tag in &image.repo_tags {
                 if tag.contains(image_name_substring) {
-                    let image_without_tag = if let Some(last_slash) = tag.rfind('/') {
-                        // there's a path, remove tag from the image part
-                        let (registry_path, image_part) = tag.split_at(last_slash + 1);
-                        let image_name = image_part.split(':').next().unwrap_or(image_part);
-                        format!("{}{}", registry_path, image_name)
-                    } else {
-                        // no path, just remove tag
-                        tag.split(':').next().unwrap_or(tag).to_string()
-                    };
-                    return Ok(image_without_tag);
+                    return Ok(tag.clone());
                 }
             }
         }
@@ -298,7 +289,7 @@ mod tests {
             Ok(image) => {
                 assert!(image.contains("quadratic-cloud-worker"));
             }
-            Err(e) => {
+            Err(_e) => {
                 for image in images {
                     println!("  Image ID: {}", image.id);
                     for tag in &image.repo_tags {
