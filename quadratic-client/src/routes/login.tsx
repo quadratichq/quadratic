@@ -12,8 +12,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const redirectTo = getRedirectTo() || '/';
 
   if (isWorkOs) {
-    const { callbackUrl } = await apiClient.workos.login();
-    window.location.assign(callbackUrl);
+    const { url } = await apiClient.workos.login(redirectTo);
+    window.location.assign(url);
   }
 
   const isAuthenticated = await authClient.isAuthenticated();

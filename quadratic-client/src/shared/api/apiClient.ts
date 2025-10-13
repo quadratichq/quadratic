@@ -11,8 +11,24 @@ const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
   workos: {
-    login() {
-      return fetchFromApi(`/v0/workos/login`, { method: 'GET' }, ApiSchemas['/v0/workos/login.GET.response']);
+    login(redirectTo: string) {
+      return fetchFromApi(
+        `/v0/workos/login`,
+        { method: 'POST', body: JSON.stringify({ redirectTo }) },
+        ApiSchemas['/v0/workos/login.POST.response']
+      );
+    },
+    logout() {
+      return fetchFromApi(
+        `/v0/workos/logout`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            redirectTo: window.location.origin,
+          }),
+        },
+        ApiSchemas['/v0/workos/logout.POST.response']
+      );
     },
   },
   teams: {

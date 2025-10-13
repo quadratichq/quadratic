@@ -579,6 +579,19 @@ export const ApiSchemas = {
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
   }),
+
+  '/v0/workos/login.POST.request': z.object({
+    redirectTo: z.string(),
+  }),
+  '/v0/workos/login.POST.response': z.object({
+    url: z.string(),
+  }),
+  '/v0/workos/logout.POST.request': z.object({
+    redirectTo: z.string(),
+  }),
+  '/v0/workos/logout.POST.response': z.object({
+    message: z.string(),
+  }),
 };
 
 /**
