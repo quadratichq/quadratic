@@ -13,7 +13,7 @@ const requestValidationMiddleware = validateRequestSchema(
   z.object({
     body: z.object({
       status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
-      error: z.string().optional(),
+      error: z.string().nullable().optional(),
     }),
     params: z.object({
       scheduledTaskId: z.string().uuid(),
