@@ -7,6 +7,9 @@ export const DEFAULT_MODEL_VERSION = 30;
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 
+// used when `restrictedCountry` is true, in model router
+export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
+
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
@@ -86,7 +89,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'max',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -97,12 +100,12 @@ export const MODELS_CONFIGURATION: {
   'vertexai-anthropic:claude-sonnet-4-5@20250929': {
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Claude Sonnet 4.5',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'max',
+    mode: 'others',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -171,6 +174,20 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 24576,
     imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_lite_rate,
+  },
+  'vertexai:gemini-2.5-pro': {
+    model: 'gemini-2.5-pro',
+    displayName: 'Gemini 2.5 Pro',
+    temperature: 0.1,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: false,
+    imageSupport: true,
+    ...AI_RATES.gemini_2_5_pro_rate,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
     model: 'gemini-2.5-flash-lite-preview-06-17',
@@ -346,7 +363,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:o3-2025-04-16': {
     model: 'o3-2025-04-16',
-    displayName: 'o3',
+    displayName: 'OpenAI o3',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 100000,
     canStream: false, // stream is not supported for o1
@@ -365,12 +382,12 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-5-codex': {
     model: 'gpt-5-codex',
     backupModelKey: 'openai:gpt-5-codex',
-    displayName: 'gpt-5 codex',
+    displayName: 'OpenAI GPT-5-Codex',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'others',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -384,12 +401,12 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-5': {
     model: 'gpt-5',
     backupModelKey: 'openai:gpt-5-2025-08-07',
-    displayName: 'gpt-5',
+    displayName: 'OpenAI GPT-5',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'others',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -413,6 +430,42 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     strictParams: true,
     imageSupport: true,
+    rate_per_million_input_tokens: 2,
+    rate_per_million_output_tokens: 8,
+    rate_per_million_cache_read_tokens: 0.5,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-4.1-mini': {
+    model: 'gpt-4.1-mini',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'gpt 4.1 mini',
+    temperature: 0.1,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'azure-openai',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.44,
+    rate_per_million_output_tokens: 1.76,
+    rate_per_million_cache_read_tokens: 0.11,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:o3': {
+    model: 'o3',
+    displayName: 'OpenAI o3',
+    temperature: 1,
+    max_tokens: 32768,
+    canStream: false,
+    canStreamWithToolCalls: false,
+    mode: 'disabled',
+    provider: 'azure-openai',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 2,
     rate_per_million_output_tokens: 8,
     rate_per_million_cache_read_tokens: 0.5,

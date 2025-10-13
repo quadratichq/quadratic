@@ -21,7 +21,7 @@
 
 1. Modify environment variables
 1. Modify the relevant variables in .env.example and .env.test as well
-1. Modify the environment variables in the [self hosting repo](https://github.com/quadratichq/quadratic-selfhost). 
+1. Modify the environment variables in the [self hosting repo](https://github.com/quadratichq/quadratic-selfhost).
    1. Create a PR, modify the environment variables in .env.aws, .env.aws-preview, .env.local
    1. Modify the variables in docker-compose.yml
    1. Merge PR into `main` as preview branches always pull from the main branch
@@ -33,11 +33,11 @@
    1. Create or locate the environment variable (e.g. `/quadratic-development/ANTHROPIC_API_KEY`)
    1. Set the value and save
 1. For `qa` and `prod`:
-   1. Log into Pulumi (likely through the Github SSO)
-   1. Click on the `Environments` link in the left-hand sidebar
-   1. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
-   1. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
-   1. Click on the `Save` button
+   1. Log into Pulumi (likely through the Github SSO) (https://app.pulumi.com/quadratic)
+   3. Click on the `Environments` link in the left-hand sidebar
+   4. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
+   5. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
+   6. Click on the `Save` button
 
 ## SSH into a Preview Branch
 1. Locate the PR number in Github
@@ -45,7 +45,7 @@
 1. Navigate to the `EC2` service
 1. Click on the `Instances` link in the left-hand sidebar or in the middle `Resources` section
 1. Type in the PR number in the search interface
-1. Click on the `Instance ID` link for the matching instance 
+1. Click on the `Instance ID` link for the matching instance
 1. Click on the `Connect` button in the upper right corner
 1. Make sure the `Connect using a Public IP` option is selected and hit the orange `Connect` button
 1. Wait a few momemnts for the SSH UI to load
