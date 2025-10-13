@@ -1,6 +1,6 @@
 {
-  "name": "quadratic-core-cloud",
-  "description": "Quadratic File Service",
+  "name": "quadratic-cloud-controller",
+  "description": "Quadratic Cloud Controller",
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "cargo test",
     "test:watch": "RUST_LOG=info cargo watch -x 'test'",
     "lint": "cargo clippy --all-targets --all-features -- -D warnings",
-    "lint:fix": "cargo clippy --all-targets --all-features --fix -- -D warnings",
+    "lint:fix": "cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings",
     "coverage": "npm run coverage:gen && npm run coverage:html && npm run coverage:view",
     "coverage:gen": "CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",

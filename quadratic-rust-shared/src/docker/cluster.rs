@@ -97,10 +97,19 @@ impl Cluster {
             .map_err(Self::error)?;
 
         // find the first image that contains the substring in any of its repo tags
-        for image in images {
+        for image in &images {
             for tag in &image.repo_tags {
                 if tag.contains(image_name_substring) {
-                    return Ok(tag.clone());
+                    let image_without_tag = if let Some(last_slash) = tag.rfind('/') {
+                        // there's a path, remove tag from the image part
+                        let (registry_path, image_part) = tag.split_at(last_slash + 1);
+                        let image_name = image_part.split(':').next().unwrap_or(image_part);
+                        format!("{}{}", registry_path, image_name)
+                    } else {
+                        // no path, just remove tag
+                        tag.split(':').next().unwrap_or(tag).to_string()
+                    };
+                    return Ok(image_without_tag);
                 }
             }
         }
@@ -260,5 +269,45 @@ mod tests {
         cluster.remove_container(&container_ids[0]).await.unwrap();
 
         assert_eq!(cluster.containers.len(), 1);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_discover_image_name() {
+        let cluster = Cluster::try_new("test-discovery").await.unwrap();
+        let images = cluster
+            .docker
+            .list_images(Some(ListImagesOptions {
+                all: true,
+                ..Default::default()
+            }))
+            .await
+            .unwrap();
+
+        for image in &images {
+            for tag in &image.repo_tags {
+                if tag.contains("quadratic-cloud-worker") {
+                    println!("  Found: {}", tag);
+                }
+            }
+        }
+
+        let result = cluster.discover_image_name("quadratic-cloud-worker").await;
+
+        match result {
+            Ok(image) => {
+                assert!(image.contains("quadratic-cloud-worker"));
+            }
+            Err(e) => {
+                for image in images {
+                    println!("  Image ID: {}", image.id);
+                    for tag in &image.repo_tags {
+                        println!("    - {}", tag);
+                    }
+                }
+
+                panic!("Image discovery failed");
+            }
+        }
     }
 }

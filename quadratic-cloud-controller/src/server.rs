@@ -241,8 +241,8 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
     for summary in summaries {
-        if let Some(image) = &summary.image {
-            if image.contains(IMAGE_NAME)
+        if let Some(image) = &summary.image
+            && image.contains(IMAGE_NAME)
                 && let Some(container_id) = &summary.id
                 && let Err(e) = state
                     .client
@@ -253,7 +253,6 @@ pub(crate) async fn serve() -> Result<()> {
             {
                 tracing::error!("Failed to remove container {}: {}", container_id, e);
             }
-        }
     }
 
     // Start worker-only server

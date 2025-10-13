@@ -21,7 +21,9 @@ pub(crate) struct Controller {
 impl Controller {
     /// Create a new controller
     pub(crate) async fn new(state: Arc<State>) -> Result<Self> {
+        info!("Discovering worker image name containing '{}'", IMAGE_NAME);
         let image_name = Self::discover_image_name(&state).await?;
+        info!("Using worker image: {}", image_name);
 
         Ok(Self { state, image_name })
     }
@@ -34,7 +36,10 @@ impl Controller {
             .await
             .discover_image_name(IMAGE_NAME)
             .await
-            .map_err(|e| Self::error("discover_image_name", e))
+            .map_err(|e| {
+                error!("Failed to discover image: {}", e);
+                Self::error("discover_image_name", e)
+            })
     }
 
     pub(crate) async fn scan_and_ensure_all_workers(&self) -> Result<()> {
