@@ -15,10 +15,6 @@ export const useOptimizePrompt = () => {
 
   const optimizePrompt = useCallback(
     async (originalPrompt: string): Promise<string> => {
-      if (!originalPrompt.trim()) {
-        return '';
-      }
-
       // Get the spreadsheet context with all tables and data
       const [summaryContext, visibleContext] = await Promise.all([getSummaryContext(), getVisibleContext()]);
 

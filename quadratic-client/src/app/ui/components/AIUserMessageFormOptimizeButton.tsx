@@ -18,7 +18,7 @@ export const AIUserMessageFormOptimizeButton = memo(
     const [isOptimizing, setIsOptimizing] = useState(false);
 
     const handleOptimize = useCallback(async () => {
-      if (!prompt.trim() || isOptimizing) return;
+      if (isOptimizing) return;
 
       trackEvent('[AIOptimizePrompt].optimize');
       setIsOptimizing(true);
@@ -44,7 +44,7 @@ export const AIUserMessageFormOptimizeButton = memo(
           size="icon-sm"
           className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
           variant="ghost"
-          disabled={disabled || !prompt.trim() || isOptimizing}
+          disabled={disabled || isOptimizing}
           onClick={handleOptimize}
         >
           {isOptimizing ? <SpinnerIcon /> : <AIIcon />}
