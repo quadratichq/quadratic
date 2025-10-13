@@ -6,7 +6,6 @@ import {
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
@@ -104,11 +103,10 @@ export const AIAnalyst = memo(() => {
                     messageIndex={messagesCount}
                     showEmptyChatPromptSuggestions={true}
                   />
-                  <AIUserMessageFormDisclaimer />
                 </div>
               ) : (
                 // Layout with message counter above chat box for non-empty state
-                <div className={'grid grid-rows-[1fr_auto_auto_auto] px-2 py-0.5'}>
+                <div className={'grid grid-rows-[1fr_auto_auto] px-2 py-0.5'}>
                   <div></div>
                   <AIMessageCounterBar messageIndex={messagesCount} showEmptyChatPromptSuggestions={true} />
                   <AIAnalystUserMessageForm
@@ -118,7 +116,6 @@ export const AIAnalyst = memo(() => {
                     messageIndex={messagesCount}
                     showEmptyChatPromptSuggestions={true}
                   />
-                  <AIUserMessageFormDisclaimer />
                 </div>
               )}
             </>

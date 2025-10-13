@@ -10,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
 import { parseAndValidateClientDataKv } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -31,15 +32,24 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
   const {
     userMakingRequest: { permissions },
-    team: { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId },
+    team,
   } = await getTeam({ uuid, userId });
+  const { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId } = team;
 
-  // Can they make the edits they’re trying to make?
+  // Can they make the edits they're trying to make?
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
   if (settings && !permissions.includes('TEAM_MANAGE')) {
-    throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
+    throw new ApiError(403, 'User does not have permission to edit this team's settings.');
+  }
+
+  // Check if user is trying to disable analytics (enable privacy mode) without a paid plan
+  if (settings?.analyticsAi === false) {
+    const isOnPaidPlan = await getIsOnPaidPlan(team);
+    if (!isOnPaidPlan) {
+      throw new ApiError(403, 'AI privacy mode is only available on the Pro plan. Upgrade to disable analytics.');
+    }
   }
 
   // Validate existing data in the db

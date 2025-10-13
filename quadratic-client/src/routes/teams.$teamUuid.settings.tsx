@@ -334,6 +334,7 @@ export const Component = () => {
                       Learn more
                     </a>
                     .
+                    {!isOnPaidPlan && <span className="font-semibold"> Upgrade to Pro to enable AI privacy mode.</span>}
                   </>
                 }
                 onCheckedChange={(checked) => {
@@ -341,7 +342,7 @@ export const Component = () => {
                 }}
                 checked={optimisticSettings.analyticsAi}
                 className="rounded-lg border border-border p-4 shadow-sm"
-                disabled={!teamPermissions.includes('TEAM_MANAGE')}
+                disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
               />
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">
