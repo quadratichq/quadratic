@@ -11,6 +11,14 @@ jest.mock('./logger', () => ({
   error: jest.fn(),
 }));
 
+// Mock env-vars
+let mockRestrictedCountries = '';
+jest.mock('../env-vars', () => ({
+  get RESTRICTED_MODEL_COUNTRIES() {
+    return mockRestrictedCountries;
+  },
+}));
+
 describe('getIpFromRequest', () => {
   it('should return IP from x-forwarded-for header (string)', () => {
     const req = {
@@ -208,21 +216,14 @@ describe('getCountryFromIp', () => {
 });
 
 describe('isRestrictedModelCountry', () => {
-  const originalEnv = process.env;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset environment before each test
-    process.env = { ...originalEnv };
-  });
-
-  afterAll(() => {
-    // Restore original environment after all tests
-    process.env = originalEnv;
+    // Reset the mock before each test
+    mockRestrictedCountries = '';
   });
 
   it('should return false when RESTRICTED_MODEL_COUNTRIES is not set', () => {
-    delete process.env.RESTRICTED_MODEL_COUNTRIES;
+    mockRestrictedCountries = '';
 
     const req = {
       headers: {
@@ -248,7 +249,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should return true when country is in restricted list', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['CN', 'RU', 'IR']);
+    mockRestrictedCountries = 'CN,RU,IR';
 
     const req = {
       headers: {
@@ -274,7 +275,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should return false when country is not in restricted list', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['CN', 'RU', 'IR']);
+    mockRestrictedCountries = 'CN,RU,IR';
 
     const req = {
       headers: {
@@ -300,7 +301,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should handle case-insensitive country code matching', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['cn', 'ru', 'ir']);
+    mockRestrictedCountries = 'cn,ru,ir';
 
     const req = {
       headers: {
@@ -326,7 +327,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should return false for localdev country', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['CN', 'RU', 'IR']);
+    mockRestrictedCountries = 'CN,RU,IR';
 
     const req = {
       headers: {
@@ -340,7 +341,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should return false for unknown country', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['CN', 'RU', 'IR']);
+    mockRestrictedCountries = 'CN,RU,IR';
 
     const req = {
       headers: {
@@ -356,7 +357,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should extract IP from x-forwarded-for and check restriction', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify(['RU']);
+    mockRestrictedCountries = 'RU';
 
     const req = {
       headers: {
@@ -382,7 +383,7 @@ describe('isRestrictedModelCountry', () => {
   });
 
   it('should handle empty restricted countries list', () => {
-    process.env.RESTRICTED_MODEL_COUNTRIES = JSON.stringify([]);
+    mockRestrictedCountries = '';
 
     const req = {
       headers: {
