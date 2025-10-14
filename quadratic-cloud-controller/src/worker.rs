@@ -5,7 +5,8 @@ use quadratic_rust_shared::quadratic_cloud::{
     WORKER_EPHEMERAL_TOKEN_HEADER,
 };
 use std::sync::Arc;
-use tracing::trace;
+use tracing::{info, trace};
+use url::Url;
 use uuid::Uuid;
 
 use crate::error::{ControllerError, Result};
@@ -79,12 +80,26 @@ pub(crate) async fn handle_get_file_init_data(
     trace!("Getting file init data for file id {file_id}");
 
     let mut file_init_data = file_init_data(&state, file_id).await?;
+    let mut presigned_url = Url::parse(&file_init_data.presigned_url)
+        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
 
-    // TODO(ddimaria): Remove this and use env vars
-    file_init_data.presigned_url = file_init_data
-        .presigned_url
-        .replace("0.0.0.0", "host.docker.internal")
-        .replace("127.0.0.1", "host.docker.internal");
+    // replace the host
+    let files_host = state.settings.files_host.to_string();
+    presigned_url
+        .set_host(Some(&files_host))
+        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
+
+    // replace the port
+    let files_port = state
+        .settings
+        .files_port
+        .parse::<u16>()
+        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
+    presigned_url
+        .set_port(Some(files_port))
+        .map_err(|_e| ControllerError::WorkerInitData("Error setting port".to_string()))?;
+
+    file_init_data.presigned_url = presigned_url.to_string();
 
     trace!("[File init data for file {file_id}: {file_init_data:?}");
 
@@ -110,14 +125,14 @@ pub(crate) async fn handle_get_tasks_for_worker(
 ) -> Result<Json<GetTasksResponse>> {
     let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
-    trace!("Getting tasks for worker for file {file_id}");
+    info!("Getting tasks for worker for file {file_id}");
 
     let tasks = state
         .get_tasks_for_file(file_id)
         .await
         .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
 
-    trace!("Got tasks for worker for file {file_id}: {:?}", tasks);
+    info!("Got tasks for worker for file {file_id}: {:?}", tasks);
 
     // Insert a running log for the file
     let task_ids = tasks

@@ -56,6 +56,9 @@ pub(crate) enum ControllerError {
 
     #[error("Worker ephemeral token error: {0}")]
     WorkerEphemeralToken(String),
+
+    #[error("Worker init data error: {0}")]
+    WorkerInitData(String),
 }
 
 impl From<ControllerError> for String {

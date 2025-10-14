@@ -128,8 +128,10 @@ impl Cluster {
 
             tracing::info!("Stopping container in thread: {:?}", id);
 
-            if let Err(e) = container.lock().await.stop(&mut docker).await {
-                tracing::error!("Error stopping container: {:?}", e);
+            if container.lock().await.should_stop() {
+                if let Err(e) = container.lock().await.stop(&mut docker).await {
+                    tracing::error!("Error stopping container: {:?}", e);
+                }
             }
         });
 

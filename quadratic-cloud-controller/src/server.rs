@@ -328,24 +328,16 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
 
             // Get the logs stream without holding any locks
             // This method handles locking internally and releases before returning
-            let mut logs = {
+            if let Ok(mut logs) = {
                 let client = state.client.lock().await;
-                match client.container_logs_stream(&container_id).await {
-                    Ok(logs) => logs,
-                    Err(_) => continue, // Container was removed or error, skip it
-                }
-            }; // Lock is released here
-
-            // Now we can safely stream logs without holding any locks
-            while let Some(log_result) = logs.next().await {
-                match log_result {
-                    Ok(log_output) => {
-                        let log_line = log_output.to_string().trim().to_string();
-                        if !log_line.is_empty() {
-                            eprintln!("[CloudWorker] {}", log_line);
-                        }
+                client.container_logs_stream(&container_id).await
+            } {
+                // Lock is released here
+                while let Some(Ok(log_result)) = logs.next().await {
+                    let log_line = log_result.to_string().trim().to_string();
+                    if !log_line.is_empty() {
+                        eprintln!("[CloudWorker] {}", log_line);
                     }
-                    Err(e) => tracing::warn!("Error reading log: {}", e),
                 }
             }
         }

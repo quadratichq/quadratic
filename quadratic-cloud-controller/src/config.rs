@@ -15,6 +15,8 @@ pub(crate) struct Config {
     pub(crate) worker_internal_host: String,
     pub(crate) multiplayer_host: String,
     pub(crate) multiplayer_port: String,
+    pub(crate) files_host: String,
+    pub(crate) files_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) jwt_encoding_key: String,
