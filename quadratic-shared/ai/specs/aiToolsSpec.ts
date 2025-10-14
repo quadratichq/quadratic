@@ -62,6 +62,7 @@ export enum AITool {
   RemoveValidations = 'remove_validation',
   Undo = 'undo',
   Redo = 'redo',
+  ContactUs = 'contact_us',
 }
 
 export const AIToolSchema = z.enum([
@@ -115,6 +116,7 @@ export const AIToolSchema = z.enum([
   AITool.RemoveValidations,
   AITool.Undo,
   AITool.Redo,
+  AITool.ContactUs,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -528,6 +530,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
+  }),
+  [AITool.ContactUs]: z.object({
+    message: stringSchema.nullable().optional(),
   }),
 } as const;
 
@@ -1749,7 +1754,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1778,7 +1783,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -2729,5 +2734,29 @@ If the user's redo request is multiple transactions, use the count parameter to 
 This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
 Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
 If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+  },
+  [AITool.ContactUs]: {
+    sources: ['AIAnalyst', 'AIAssistant'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides a way for users to contact the Quadratic team when they are experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+This tool displays a "Contact us" button that allows users to provide feedback directly to the team.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'An optional empathetic message to the user acknowledging their frustration',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ContactUs],
+    prompt: `
+This tool provides a way for users to contact the Quadratic team when they are experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+This should be used to help frustrated users get direct support from the Quadratic team.\n`,
   },
 } as const;

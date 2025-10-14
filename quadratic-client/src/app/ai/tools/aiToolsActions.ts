@@ -1275,4 +1275,13 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing redo tool: ${e}`)];
     }
   },
+  [AITool.ContactUs]: async (args) => {
+    // This tool doesn't perform any action - it just returns content
+    // The actual UI interaction (opening feedback modal) is handled in the tool card component
+    return [
+      createTextContent(
+        args.message || 'I understand your frustration. Please use the button below to contact our team directly.'
+      ),
+    ];
+  },
 } as const;
