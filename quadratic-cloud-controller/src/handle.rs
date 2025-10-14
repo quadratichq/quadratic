@@ -90,12 +90,17 @@ pub(crate) async fn ack_tasks_for_worker(
 ) -> Result<Json<AckTasksResponse>> {
     let file_id = get_uuid_from_header(&headers)?;
 
+    info!(
+        "Acknowledging tasks for worker for file {file_id}: {:?}",
+        ack_request
+    );
+
     // short circuit if there are no keys to ack
     if ack_request.successful_tasks.is_empty() && ack_request.failed_tasks.is_empty() {
         return Ok(Json(AckTasksResponse { success: true }));
     }
 
-    trace!(
+    info!(
         "Acknowledging tasks for worker for file {file_id}: {:?}",
         ack_request
     );

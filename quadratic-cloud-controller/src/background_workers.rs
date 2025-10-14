@@ -14,7 +14,7 @@ use crate::{
 };
 
 // const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
-const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
+const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
 const PUBSUB_WATCHER_INTERVAL_SECONDS: u64 = 10;
 
 pub(crate) fn init_background_workers(state: Arc<State>) -> Result<()> {

@@ -51,7 +51,7 @@ impl Worker {
                 .await
                 .map_err(|e| WorkerError::GetTasks(e.to_string()))?;
 
-            info!("Got {} tasks for file {}", file_id, tasks.len());
+            info!("Got {} tasks for file {}", tasks.len(), file_id);
 
             if tasks.is_empty() {
                 break;
@@ -79,6 +79,7 @@ impl Worker {
             }
 
             // wait for all tasks to be complete
+            info!("Waiting for all tasks to be complete");
             while !self.core.status.lock().await.is_complete() {
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
@@ -92,6 +93,8 @@ impl Worker {
                 Err(e) => error!("Error acknowledging tasks, error: {e}"),
             }
         }
+
+        info!("Exiting run loop");
 
         Ok(())
     }

@@ -198,7 +198,7 @@ impl State {
                 &PubSub::file_id_to_channel(file_id),
                 GROUP,
                 key_refs,
-                None,
+                Some(ACTIVE_CHANNELS),
                 true,
             )
             .await
