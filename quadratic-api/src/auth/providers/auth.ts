@@ -9,8 +9,6 @@ import {
   jwtConfigWorkos,
   loginWithPasswordWorkos,
   logoutSessionWorkos,
-  resetPasswordWorkos,
-  sendResetPasswordWorkos,
   signupWithPasswordWorkos,
   verifyEmailWorkos,
 } from './workos';
@@ -117,23 +115,23 @@ export const logoutSession = async (args: { sessionId: string; res: Response }) 
   }
 };
 
-export const sendResetPassword = async (args: { email: string; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await sendResetPasswordWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in sendResetPassword(): ${AUTH_TYPE}`);
-  }
-};
+// export const sendResetPassword = async (args: { email: string; res: Response }) => {
+//   switch (AUTH_TYPE) {
+//     case 'workos':
+//       return await sendResetPasswordWorkos(args);
+//     default:
+//       throw new Error(`Unsupported auth type in sendResetPassword(): ${AUTH_TYPE}`);
+//   }
+// };
 
-export const resetPassword = async (args: { token: string; password: string; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await resetPasswordWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in resetPassword(): ${AUTH_TYPE}`);
-  }
-};
+// export const resetPassword = async (args: { token: string; password: string; res: Response }) => {
+//   switch (AUTH_TYPE) {
+//     case 'workos':
+//       return await resetPasswordWorkos(args);
+//     default:
+//       throw new Error(`Unsupported auth type in resetPassword(): ${AUTH_TYPE}`);
+//   }
+// };
 
 export const clearCookies = (args: { res: Response }) => {
   switch (AUTH_TYPE) {
