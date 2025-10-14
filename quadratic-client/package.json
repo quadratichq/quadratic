@@ -126,7 +126,7 @@
     "fake-indexeddb": "^6.0.0",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
-    "happy-dom": "^17.4.4",
+    "happy-dom": "^20.0.0",
     "madge": "^8.0.0",
     "msdf-bmfont-xml": "^2.7.0",
     "msw": "^2.4.11",
