@@ -31,7 +31,6 @@ export const Component = () => {
       users,
     },
   } = useDashboardRouteLoaderData();
-
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -198,17 +197,15 @@ export const Component = () => {
                     {!isOnPaidPlan ? (
                       <Button
                         disabled={!canManageBilling}
+                        asChild
                         onClick={() => {
                           trackEvent('[TeamSettings].upgradeToProClicked', {
                             team_uuid: team.uuid,
                           });
-                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                            window.location.href = data.url;
-                          });
                         }}
                         className="mt-4 w-full"
                       >
-                        Upgrade to Pro
+                        <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade to Pro</Link>
                       </Button>
                     ) : (
                       <div className="mt-4 space-y-2">
@@ -321,10 +318,10 @@ export const Component = () => {
 
             <div>
               <SettingControl
-                label="Improve AI results"
+                label="Help improve Quadratic"
                 description={
                   <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    Enable the automated collection and analysis of some usage data.{' '}
                     <a
                       href={DOCUMENTATION_ANALYTICS_AI}
                       target="_blank"
@@ -344,24 +341,20 @@ export const Component = () => {
                 disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
               >
                 {!isOnPaidPlan && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    <button
-                      onClick={() => {
-                        trackEvent('[TeamSettings].upgradeToProClicked', {
-                          team_uuid: team.uuid,
-                          source: 'privacy_section',
-                        });
-                        apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                          window.location.href = data.url;
-                        });
-                      }}
-                      className="font-semibold text-foreground underline hover:text-primary"
-                      disabled={!canManageBilling}
-                    >
-                      Upgrade to Pro
-                    </button>{' '}
-                    to enable AI privacy mode.
-                  </p>
+                  <Button
+                    asChild
+                    onClick={() => {
+                      trackEvent('[TeamSettings].upgradeToProClicked', {
+                        team_uuid: team.uuid,
+                        source: 'privacy_section',
+                      });
+                    }}
+                    size="sm"
+                    className="h-6 px-2"
+                    disabled={!canManageBilling}
+                  >
+                    <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Pro only, upgrade to customize</Link>
+                  </Button>
                 )}
               </SettingControl>
               <div className="mt-4">
