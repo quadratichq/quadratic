@@ -115,7 +115,7 @@ export const logoutSession = async (args: { sessionId: string; res: Response }) 
   }
 };
 
-export const sendResetPassword = async (args: { email: string; res: Response }) => {
+export const sendResetPassword = async (_args: { email: string; res: Response }) => {
   switch (AUTH_TYPE) {
     // case 'workos':
     // return await sendResetPasswordWorkos(args);
@@ -124,7 +124,7 @@ export const sendResetPassword = async (args: { email: string; res: Response }) 
   }
 };
 
-export const resetPassword = async (args: { token: string; password: string; res: Response }) => {
+export const resetPassword = async (_args: { token: string; password: string; res: Response }) => {
   switch (AUTH_TYPE) {
     // case 'workos':
     //   return await resetPasswordWorkos(args);
