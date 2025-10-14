@@ -123,8 +123,11 @@ impl Cluster {
     }
 
     /// Check if a container exists
-    pub async fn has_container(&self, id: &Uuid) -> Result<bool> {
-        Ok(self.containers.contains_key(id))
+    pub async fn has_container(&self, id: &Uuid, require_running: bool) -> Result<bool> {
+        let contains_key = self.containers.contains_key(id);
+        let is_running = self.is_container_running(id).await.unwrap_or(false);
+
+        Ok(contains_key && is_running)
     }
 
     /// Check if a container is running

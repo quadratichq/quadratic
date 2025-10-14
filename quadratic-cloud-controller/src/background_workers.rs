@@ -15,7 +15,7 @@ use crate::{
 
 // const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
 const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
-const PUBSUB_WATCHER_INTERVAL_SECONDS: u64 = 10;
+const PUBSUB_WATCHER_INTERVAL_SECONDS: u64 = 60;
 
 pub(crate) fn init_background_workers(state: Arc<State>) -> Result<()> {
     // listen for scheduled tasks from API
@@ -95,7 +95,10 @@ async fn scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     }
 }
 
-// listen for pubsub messages
+/// Listen for pubsub active channels (file ids).
+///
+/// We don't get scheduled tasks to process here, just file ids in order to
+/// create workers that will poll this service for scheduled tasks.
 async fn pubsub_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting pubsub watcher");
 

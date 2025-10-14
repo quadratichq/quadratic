@@ -85,13 +85,14 @@ impl Controller {
         Ok(active_file_ids)
     }
 
+    /// Check if a file has an active worker
     async fn file_has_active_worker(&self, file_id: &Uuid) -> Result<bool> {
         let has_container = self
             .state
             .client
             .lock()
             .await
-            .has_container(file_id)
+            .has_container(file_id, true)
             .await
             .map_err(|e| Self::error("file_has_active_worker", e))?;
 
@@ -173,11 +174,6 @@ impl Controller {
         tracing::warn!("shutdown_worker 4");
 
         Ok(())
-    }
-
-    pub(crate) async fn count_active_workers(&self) -> Result<usize> {
-        let active_file_ids = self.get_all_active_worker_file_ids().await?;
-        Ok(active_file_ids.len())
     }
 
     fn error(func_name: &str, error: impl ToString) -> ControllerError {
