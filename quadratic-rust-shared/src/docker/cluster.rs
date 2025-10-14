@@ -10,7 +10,8 @@ use std::time::Duration;
 
 pub use bollard::Docker;
 use bollard::query_parameters::{
-    ListContainersOptions, ListImagesOptions, LogsOptions, RemoveContainerOptions,
+    InspectContainerOptions, ListContainersOptions, ListImagesOptions, LogsOptions,
+    RemoveContainerOptions,
 };
 use bollard::secret::ContainerSummary;
 use futures_util::Stream;
@@ -65,16 +66,34 @@ impl Cluster {
     }
 
     /// List all container ids
-    pub async fn list_ids(&self) -> Result<Vec<Uuid>> {
-        let containers = self.containers.keys().cloned().collect::<Vec<Uuid>>();
+    pub async fn list_ids(&self, require_running: bool) -> Result<Vec<Uuid>> {
+        let keys = self.containers.keys();
 
-        Ok(containers)
+        if !require_running {
+            return Ok(keys.cloned().collect());
+        }
+
+        let mut result = Vec::new();
+        for id in keys {
+            if self.is_container_running(id).await.unwrap_or(false) {
+                result.push(*id);
+            }
+        }
+
+        Ok(result)
     }
 
     /// List all containers, including ones not part of this cluster
-    pub async fn list_all(&self) -> Result<Vec<ContainerSummary>> {
+    pub async fn list_all(&self, require_running: bool) -> Result<Vec<ContainerSummary>> {
+        let mut filters = HashMap::new();
+
+        if require_running {
+            filters.insert("desired-state".to_string(), vec!["running".to_string()]);
+        }
+
         let options = ListContainersOptions {
             all: true,
+            filters: Some(filters),
             ..Default::default()
         };
         let containers = self
@@ -106,6 +125,25 @@ impl Cluster {
     /// Check if a container exists
     pub async fn has_container(&self, id: &Uuid) -> Result<bool> {
         Ok(self.containers.contains_key(id))
+    }
+
+    /// Check if a container is running
+    pub async fn is_container_running(&self, id: &Uuid) -> Result<bool> {
+        let container = self
+            .containers
+            .get(id)
+            .ok_or(Self::error("Container not found"))?;
+
+        let image_id = container.lock().await.image_id().to_string();
+
+        let options = InspectContainerOptions { size: false };
+        let inspect = self
+            .docker
+            .inspect_container(&image_id, Some(options))
+            .await
+            .map_err(Self::error)?;
+
+        Ok(inspect.state.and_then(|s| s.running).unwrap_or(false))
     }
 
     /// Add a container
@@ -228,7 +266,7 @@ impl Cluster {
         &mut self,
         image_name_substring: &str,
     ) -> Result<usize> {
-        let summaries = self.list_all().await?;
+        let summaries = self.list_all(false).await?;
         let mut removed_count = 0;
 
         for summary in summaries {
@@ -382,7 +420,7 @@ mod tests {
     #[tokio::test]
     async fn test_cluster() {
         let mut cluster = new_cluster().await;
-        let container_ids = cluster.list_ids().await.unwrap();
+        let container_ids = cluster.list_ids(false).await.unwrap();
 
         assert_eq!(container_ids.len(), 2);
 

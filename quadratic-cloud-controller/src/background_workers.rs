@@ -127,7 +127,7 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
             .client
             .lock()
             .await
-            .list_ids()
+            .list_ids(true)
             .await
             .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 

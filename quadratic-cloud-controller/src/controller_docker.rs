@@ -76,7 +76,7 @@ impl Controller {
             .client
             .lock()
             .await
-            .list_ids()
+            .list_ids(true)
             .await
             .map_err(|e| Self::error("get_all_active_worker_file_ids", e))?
             .into_iter()
