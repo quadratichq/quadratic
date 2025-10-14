@@ -36,22 +36,23 @@ impl Controller {
         }
 
         let existing_workers = self.get_all_active_worker_file_ids().await?;
+        info!("Existing workers: {:?}", existing_workers);
         let workers_needed = file_ids
             .into_iter()
             .filter(|file_id| !existing_workers.contains(file_id))
             .collect::<HashSet<_>>();
-
+        info!("Workers needed: {:?}", workers_needed);
         let workers = workers_needed
             .iter()
             .map(|file_id| self.create_worker(file_id));
         let results = join_all(workers).await;
-
+        info!("Results: {:?}", results);
         for (file_id, result) in workers_needed.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("Failed to create file worker for {file_id}: {e}");
             }
         }
-
+        info!("Finished creating workers");
         Ok(())
     }
 
