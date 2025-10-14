@@ -1052,7 +1052,7 @@ SQL code cell placement instructions:\n
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
+Sets the value of a formula cell (or multiple formula cells in a range) and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
 Provide a name for the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed).\n
@@ -1060,6 +1060,7 @@ Note: we only rename the formula cell if its new. Otherwise we keep the old name
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
 Do not attempt to add formulas to data tables, it will result in an error.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+When using a range, cell references in the formula will automatically adjust relatively for each cell (like copy-paste in spreadsheets). Use $ for absolute references (e.g., $A$1) when you want references to stay fixed.\n
 `,
     parameters: {
       type: 'object',
@@ -1071,11 +1072,12 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
         code_cell_position: {
           type: 'string',
           description:
-            'The position of the formula cell in the current open sheet, in a1 notation. This should be a single cell, not a range.',
+            'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10").',
         },
         formula_string: {
           type: 'string',
-          description: 'The formula which will run in the cell',
+          description:
+            'The formula which will run in the cell(s). If code_cell_position is a range, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
         },
       },
       required: ['sheet_name', 'code_cell_position', 'formula_string'],
@@ -1085,10 +1087,18 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
     prompt: `
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
-set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
+set_formula_cell_value function requires formula_string and the cell position (single cell or range in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
 Don't prefix formulas with \`=\` in formula cells.\n
+
+Multiple formula cells with relative referencing:\n
+- When setting multiple formulas at once, you can use a range for code_cell_position (e.g., "A1:A10").\n
+- Cell references in the formula will automatically adjust relatively for each cell, just like when you copy and paste a formula in a spreadsheet.\n
+- Example: If you apply formula "SUM(A1)" to range B1:B3, it becomes "SUM(A1)" in B1, "SUM(A2)" in B2, and "SUM(A3)" in B3.\n
+- To keep a reference fixed across all cells, use absolute references with $ (e.g., "$A$1" stays as "$A$1" in all cells).\n
+- Mixed references are supported: "$A1" keeps column A fixed but row adjusts, "A$1" keeps row 1 fixed but column adjusts.\n
+- Use ranges when you need to apply a formula pattern to multiple cells, such as calculations down a column or across a row.\n
 
 Formulas placement instructions:\n
 - The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
@@ -1105,6 +1115,7 @@ Examples:
 - Finding the max/min value
 - Basic arithmetic operations
 - Joining strings
+- Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
 `,
   },
   [AITool.MoveCells]: {

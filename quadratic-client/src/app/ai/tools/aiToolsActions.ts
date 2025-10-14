@@ -395,36 +395,113 @@ export const aiToolsActions: AIToolActionsRecord = {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
-      if (!selection.isSingleSelection(sheets.jsA1Context)) {
-        return [createTextContent('Invalid formula cell position, this should be a single cell, not a range')];
-      }
-      const { x, y } = selection.getCursor();
+      const rect = selection.getSingleRectangleOrCursor(sheets.jsA1Context);
 
-      if (formula_string.startsWith('=')) {
-        formula_string = formula_string.slice(1);
+      if (!rect) {
+        return [createTextContent('Invalid formula cell position')];
       }
 
-      const transactionId = await quadraticCore.setCodeCellValue({
-        sheetId,
-        x,
-        y,
-        codeString: formula_string,
-        language: 'Formula',
-        isAi: true,
-      });
+      // Remove leading '=' if present
+      const baseFormula = formula_string.startsWith('=') ? formula_string.slice(1) : formula_string;
 
-      if (transactionId) {
-        await waitForSetCodeCellValue(transactionId);
+      // Calculate number of cells in the range (convert bigint to number)
+      const width = Number(rect.max.x - rect.min.x) + 1;
+      const height = Number(rect.max.y - rect.min.y) + 1;
+      const totalCells = width * height;
+      const startX = Number(rect.min.x);
+      const startY = Number(rect.min.y);
 
-        // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
-        if (tableCodeCell) {
-          const width = tableCodeCell.w;
-          const height = tableCodeCell.h;
-          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+      const transactionIds: string[] = [];
+
+      // Helper function to adjust cell references in formula for relative positioning
+      const adjustFormulaReferences = (formula: string, offsetX: number, offsetY: number): string => {
+        // Match cell references like A1, B2, $A$1, $A1, A$1, etc.
+        // This regex captures: optional sheet prefix, optional $, column letters, optional $, row numbers
+        const cellRefRegex = /(\$?)([A-Z]+)(\$?)(\d+)/gi;
+
+        return formula.replace(cellRefRegex, (match, colAbs, col, rowAbs, row) => {
+          // If reference is absolute (has $), don't adjust it
+          if (colAbs === '$' && rowAbs === '$') {
+            return match; // Fully absolute reference like $A$1
+          }
+
+          // Convert column letters to index
+          let colIndex = 0;
+          for (let i = 0; i < col.length; i++) {
+            colIndex = colIndex * 26 + (col.charCodeAt(i) - 65 + 1);
+          }
+
+          let rowIndex = parseInt(row, 10);
+
+          // Adjust only non-absolute components
+          if (colAbs !== '$') {
+            colIndex += offsetX;
+          }
+          if (rowAbs !== '$') {
+            rowIndex += offsetY;
+          }
+
+          // Convert back to column letters
+          let newCol = '';
+          let tempColIndex = colIndex;
+          while (tempColIndex > 0) {
+            tempColIndex--;
+            newCol = String.fromCharCode(65 + (tempColIndex % 26)) + newCol;
+            tempColIndex = Math.floor(tempColIndex / 26);
+          }
+
+          // Reconstruct the reference with original $ markers
+          return `${colAbs}${newCol}${rowAbs}${rowIndex}`;
+        });
+      };
+
+      // Apply formula to each cell in the range (row-major order) with relative adjustment
+      for (let y = rect.min.y; y <= rect.max.y; y++) {
+        for (let x = rect.min.x; x <= rect.max.x; x++) {
+          const offsetX = Number(x) - startX;
+          const offsetY = Number(y) - startY;
+
+          // Adjust formula references based on offset from starting position
+          const adjustedFormula = adjustFormulaReferences(baseFormula, offsetX, offsetY);
+
+          const transactionId = await quadraticCore.setCodeCellValue({
+            sheetId,
+            x: Number(x),
+            y: Number(y),
+            codeString: adjustedFormula,
+            language: 'Formula',
+            isAi: true,
+          });
+
+          if (transactionId) {
+            transactionIds.push(transactionId);
+          }
+        }
+      }
+
+      if (transactionIds.length > 0) {
+        // Wait for all transactions to complete
+        await Promise.all(transactionIds.map((id) => waitForSetCodeCellValue(id)));
+
+        // Adjust viewport to show the entire range
+        ensureRectVisible(
+          sheetId,
+          { x: Number(rect.min.x), y: Number(rect.min.y) },
+          { x: Number(rect.max.x), y: Number(rect.max.y) }
+        );
+
+        // Return result for the first cell
+        const result = await setCodeCellResult(sheetId, Number(rect.min.x), Number(rect.min.y), messageMetaData);
+
+        if (totalCells > 1) {
+          return [
+            ...result,
+            createTextContent(
+              `\nSuccessfully set ${totalCells} formula cell${totalCells > 1 ? 's' : ''} with relative references in range ${code_cell_position}`
+            ),
+          ];
         }
 
-        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
         return result;
       } else {
         return [createTextContent('Error executing set formula cell value tool')];
