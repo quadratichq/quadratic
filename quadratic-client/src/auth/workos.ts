@@ -154,69 +154,26 @@ export const workosClient: AuthClient = {
     return '';
   },
   async loginWithPassword(args) {
-    //   const { pendingAuthenticationToken } = await apiClient.auth.loginWithPassword(args);
-    //   await handlePendingAuthenticationToken(pendingAuthenticationToken);
-    //   await handleRedirectTo();
+    throw new Error('Not implemented');
   },
   async loginWithOAuth(args) {
-    //   if (await this.isAuthenticated()) {
-    //     window.location.assign(args.redirectTo);
-    //     await waitForAuthClientToRedirect();
-    //   }
-    //   // Handle OAuth in iframe
-    //   else if (window.top && window.self !== window.top) {
-    //     let attempts = 0;
-    //     // Poll for authentication status
-    //     const checkIsAuthenticated = async () => {
-    //       attempts++;
-    //       if (attempts > 40) {
-    //         return;
-    //       }
-    //       const isAuthenticated = await this.isAuthenticated();
-    //       if (isAuthenticated) {
-    //         window.location.assign(args.redirectTo);
-    //         await waitForAuthClientToRedirect();
-    //         return;
-    //       }
-    //       setTimeout(checkIsAuthenticated, 3000);
-    //     };
-    //     checkIsAuthenticated();
-    //     const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider });
-    //     const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
-    //     const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
-    //     window.open(
-    //       oauthUrl,
-    //       '_blank',
-    //       `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top},popup=true`
-    //     );
-    //   }
-    //   // Handle OAuth in main window
-    //   else {
-    //     const oauthUrl = ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo });
-    //     window.location.assign(oauthUrl);
-    //     await waitForAuthClientToRedirect();
-    //   }
     throw new Error('Not implemented');
   },
 
   async signupWithPassword(args): Promise<void> {
-    // const { pendingAuthenticationToken } = await apiClient.auth.signupWithPassword(args);
-    // await handlePendingAuthenticationToken(pendingAuthenticationToken);
-    // await handleRedirectTo();
+    throw new Error('Not implemented');
   },
 
   async verifyEmail(args): Promise<void> {
-    // await apiClient.auth.verifyEmail(args);
-    // await handleRedirectTo();
+    throw new Error('Not implemented');
   },
 
   async sendResetPassword(args): Promise<void> {
-    // await apiClient.auth.sendResetPassword(args);
+    throw new Error('Not implemented');
   },
 
   async resetPassword(args): Promise<void> {
-    // await apiClient.auth.resetPassword(args);
-    // await disposeClient();
+    throw new Error('Not implemented');
   },
 };
 
@@ -224,24 +181,4 @@ const disposeClient = async () => {
   const client = await getClient();
   client.dispose();
   clientPromise = null;
-};
-
-const handlePendingAuthenticationToken = async (pendingAuthenticationToken?: string): Promise<void> => {
-  // if (!pendingAuthenticationToken) {
-  //   return;
-  // }
-  // const url = new URL(window.location.href);
-  // url.pathname = ROUTES.VERIFY_EMAIL;
-  // url.searchParams.set('pendingAuthenticationToken', pendingAuthenticationToken);
-  // window.location.assign(url.toString());
-  // await waitForAuthClientToRedirect();
-};
-
-const handleRedirectTo = async (): Promise<void> => {
-  // await disposeClient();
-  // let redirectTo = getRedirectTo();
-  // if (redirectTo) {
-  //   window.location.assign(redirectTo);
-  //   await waitForAuthClientToRedirect();
-  // }
 };

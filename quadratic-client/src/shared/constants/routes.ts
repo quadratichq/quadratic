@@ -88,15 +88,6 @@ export const ROUTES = {
     },
   },
 
-  // WORKOS_OAUTH: ({ provider, redirectTo }: { provider: OAuthProvider; redirectTo: string }) => {
-  //   const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
-  //   return getWorkosOauthUrl({ provider, state });
-  // },
-  // WORKOS_IFRAME_OAUTH: ({ provider }: { provider: OAuthProvider }) => {
-  //   const state = encodeURIComponent(JSON.stringify({ closeOnComplete: true }));
-  //   return getWorkosOauthUrl({ provider, state });
-  // },
-
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
 } as const;
 
@@ -116,10 +107,3 @@ export const SEARCH_PARAMS = {
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;
-
-// function getWorkosOauthUrl(args: { provider: OAuthProvider; state: string }) {
-//   const { provider, state } = args;
-//   const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
-//   const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
-//   return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-// }
