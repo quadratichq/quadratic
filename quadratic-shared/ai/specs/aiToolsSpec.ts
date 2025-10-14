@@ -531,7 +531,11 @@ export const AIToolsArgsSchema = {
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
   }),
-  [AITool.ContactUs]: z.object({}),
+  [AITool.ContactUs]: z.object({
+    // No parameters needed, but we include a dummy property for schema compatibility.
+    // Should we fix this now? Not sure why param would be required.
+    acknowledged: booleanSchema.nullable().optional(),
+  }),
 } as const;
 
 export type AIToolsArgs = {
@@ -2737,14 +2741,17 @@ If the user's redo request is multiple transactions, use the count parameter to 
     sources: ['AIAnalyst', 'AIAssistant'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool provides a way for users to get help from the Quadratic team.\n
+This tool provides a way for users to get help from the Quadratic team when experiencing frustration or issues.\n
 Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
-This tool displays a "Get help from our team" message with a description "Provide your feedback and we'll get in touch soon."\n
-It includes a recommendation to consider clearing the chat to help AI get a fresh start.\n
-The tool shows both a "Contact us" button and a "New chat" button.\n`,
+The tool displays a contact form with options to reach out to the team or start a new chat.\n`,
     parameters: {
       type: 'object',
-      properties: {},
+      properties: {
+        acknowledged: {
+          type: ['boolean', 'null'],
+          description: 'Optional acknowledgment flag',
+        },
+      },
       required: [],
       additionalProperties: false,
     },
