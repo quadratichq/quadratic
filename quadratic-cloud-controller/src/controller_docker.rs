@@ -149,7 +149,7 @@ impl Controller {
         let multiplayer_port = self.state.settings.multiplayer_port.to_string();
         let multiplayer_host = self.state.settings.multiplayer_host.to_string();
         let env_vars = vec![
-            format!("RUST_LOG={}", "warn"), // change this to info for seeing all logs
+            format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
             format!(
                 "CONTROLLER_URL={}",
                 format!("http://{controller_host}:{controller_port}")
