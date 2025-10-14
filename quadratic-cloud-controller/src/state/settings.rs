@@ -1,5 +1,6 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
 use quadratic_rust_shared::environment::Environment;
+use url::Url;
 
 use crate::config::Config;
 use crate::error::{ControllerError, Result};
@@ -61,6 +62,44 @@ impl Settings {
         };
 
         Ok(settings)
+    }
+
+    // Get the scheme for the files service
+    pub(crate) fn files_scheme(&self) -> String {
+        if self.environment == Environment::Development
+            || self.environment == Environment::Production
+        {
+            "https".into()
+        } else {
+            "http".into()
+        }
+    }
+
+    // Replace the host, port, and scheme for a presigned url
+    pub(crate) fn files_presigned_url(&self, url: &str) -> Result<Url> {
+        let error =
+            |message: &str| ControllerError::WorkerPresignedUrl(format!("{message}: {url:?}"));
+        let mut url = Url::parse(&url).map_err(|e| error(&e.to_string()))?;
+
+        // replace the scheme
+        let scheme = self.files_scheme();
+        url.set_scheme(&scheme)
+            .map_err(|_e| error("Error setting scheme"))?;
+
+        // replace the host
+        let files_host = self.files_host.to_string();
+        url.set_host(Some(&files_host))
+            .map_err(|e| error(&e.to_string()))?;
+
+        // replace the port
+        let files_port = self
+            .files_port
+            .parse::<u16>()
+            .map_err(|e| error(&e.to_string()))?;
+        url.set_port(Some(files_port))
+            .map_err(|_e| error("Error setting port"))?;
+
+        Ok(url)
     }
 }
 

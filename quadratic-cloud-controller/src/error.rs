@@ -53,6 +53,9 @@ pub(crate) enum ControllerError {
 
     #[error("Worker init data error: {0}")]
     WorkerInitData(String),
+
+    #[error("Worker presigned url error: {0}")]
+    WorkerPresignedUrl(String),
 }
 
 impl From<ControllerError> for String {

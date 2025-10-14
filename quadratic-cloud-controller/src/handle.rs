@@ -39,26 +39,11 @@ pub(crate) async fn get_file_init_data(
     trace!("Getting file init data for file id {file_id}");
 
     let mut file_init_data = file_init_data(&state, file_id).await?;
-    let mut presigned_url = Url::parse(&file_init_data.presigned_url)
-        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
 
-    // replace the host
-    let files_host = state.settings.files_host.to_string();
-    presigned_url
-        .set_host(Some(&files_host))
-        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
-
-    // replace the port
-    let files_port = state
+    file_init_data.presigned_url = state
         .settings
-        .files_port
-        .parse::<u16>()
-        .map_err(|e| ControllerError::WorkerInitData(e.to_string()))?;
-    presigned_url
-        .set_port(Some(files_port))
-        .map_err(|_e| ControllerError::WorkerInitData("Error setting port".to_string()))?;
-
-    file_init_data.presigned_url = presigned_url.to_string();
+        .files_presigned_url(&file_init_data.presigned_url)?
+        .to_string();
 
     trace!("[File init data for file {file_id}: {file_init_data:?}");
 

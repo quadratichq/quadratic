@@ -1,5 +1,5 @@
 use chrono::Timelike;
-use futures::{StreamExt, future::join_all};
+use futures::StreamExt;
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
 use tracing::{error, info, trace};
@@ -115,8 +115,6 @@ async fn pubsub_watcher(state: Arc<State>) -> Result<()> {
 
         interval.tick().await;
     }
-
-    Ok(())
 }
 
 /// In a separate thread, print the logs of all containers every second
