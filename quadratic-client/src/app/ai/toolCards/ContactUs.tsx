@@ -1,66 +1,63 @@
+import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowFeedbackMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MailIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
-import type { z } from 'zod';
 import { ToolCard } from './ToolCard';
 
-type ContactUsResponse = z.infer<(typeof aiToolsSpec)[AITool.ContactUs]['responseSchema']>;
+export const ContactUs = memo(({ toolCall: { loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  const setShowFeedbackMenu = useSetRecoilState(editorInteractionStateShowFeedbackMenuAtom);
+  const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
 
-export const ContactUs = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
-    const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ContactUsResponse, ContactUsResponse>>();
-    const setShowFeedbackMenu = useSetRecoilState(editorInteractionStateShowFeedbackMenuAtom);
+  const handleContactClick = useCallback(() => {
+    trackEvent('[AI].ContactUsToolContact');
+    setShowFeedbackMenu(true);
+  }, [setShowFeedbackMenu]);
 
-    useEffect(() => {
-      if (loading) {
-        setToolArgs(undefined);
-        return;
-      }
+  const handleNewChatClick = useCallback(() => {
+    trackEvent('[AI].contactUsToolNewChat');
+    setCurrentChat({
+      id: '',
+      name: '',
+      lastUpdated: Date.now(),
+      messages: [],
+    });
+  }, [setCurrentChat]);
 
-      try {
-        const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.ContactUs].responseSchema.safeParse(json));
-      } catch (error) {
-        setToolArgs(undefined);
-        console.error('[ContactUs] Failed to parse args: ', error);
-      }
-    }, [args, loading]);
+  const icon = <MailIcon />;
+  const label = 'Get help from our team';
 
-    const handleContactClick = useCallback(() => {
-      trackEvent('[AI].contact-us-clicked');
-      setShowFeedbackMenu(true);
-    }, [setShowFeedbackMenu]);
-
-    const icon = <MailIcon />;
-    const label = 'Contact Support';
-
-    if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
-    }
-
-    if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
-    } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
-    }
-
-    return (
-      <ToolCard
-        icon={icon}
-        label={label}
-        description="Get help from the Quadratic team"
-        className={className}
-        actions={
-          <Button size="sm" variant="default" onClick={handleContactClick}>
-            Contact us
-          </Button>
-        }
-      />
-    );
+  if (loading) {
+    return <ToolCard icon={icon} label={label} isLoading className={className} />;
   }
-);
+
+  return (
+    <div
+      className={`flex min-w-0 select-none flex-col gap-2 rounded border border-border bg-background p-3 text-sm shadow-sm ${className}`}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center">{icon}</div>
+        <div className="flex-1">
+          <div className="font-bold">{label}</div>
+        </div>
+      </div>
+
+      <div className="text-xs text-muted-foreground">
+        <div>Provide your feedback and we'll get in touch soon.</div>
+        <div className="mt-1">Contact us or consider starting a new chat to give the AI a fresh start.</div>
+      </div>
+
+      <div className="mt-1 flex gap-2">
+        <Button size="sm" variant="default" onClick={handleContactClick}>
+          Contact us
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleNewChatClick}>
+          New chat
+        </Button>
+      </div>
+    </div>
+  );
+});

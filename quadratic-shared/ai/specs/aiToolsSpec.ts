@@ -531,9 +531,7 @@ export const AIToolsArgsSchema = {
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
   }),
-  [AITool.ContactUs]: z.object({
-    message: stringSchema.nullable().optional(),
-  }),
+  [AITool.ContactUs]: z.object({}),
 } as const;
 
 export type AIToolsArgs = {
@@ -2739,24 +2737,24 @@ If the user's redo request is multiple transactions, use the count parameter to 
     sources: ['AIAnalyst', 'AIAssistant'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-This tool provides a way for users to contact the Quadratic team when they are experiencing frustration or issues.\n
+This tool provides a way for users to get help from the Quadratic team.\n
 Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
-This tool displays a "Contact us" button that allows users to provide feedback directly to the team.\n`,
+This tool displays a "Get help from our team" message with a description "Provide your feedback and we'll get in touch soon."\n
+It includes a recommendation to consider clearing the chat to help AI get a fresh start.\n
+The tool shows both a "Contact us" button and a "New chat" button.\n`,
     parameters: {
       type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'An optional empathetic message to the user acknowledging their frustration',
-        },
-      },
+      properties: {},
       required: [],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.ContactUs],
     prompt: `
-This tool provides a way for users to contact the Quadratic team when they are experiencing frustration or issues.\n
+This tool provides a way for users to get help from the Quadratic team when they are experiencing frustration or issues.\n
 Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
-This should be used to help frustrated users get direct support from the Quadratic team.\n`,
+This should be used to help frustrated users get direct support from the Quadratic team.\n
+The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
+and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
+It provides both a "Contact us" button and a "New chat" button for the user.\n`,
   },
 } as const;
