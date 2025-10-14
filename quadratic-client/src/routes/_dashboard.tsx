@@ -2,6 +2,7 @@ import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
+import { conditionallyNavigateToUpgrade } from '@/routes/upgrade';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
@@ -105,6 +106,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       // and remove the redirecting flag
       window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
+
+      // Should we try to get the person to upgrade?
+      conditionallyNavigateToUpgrade(data, new URL(loaderArgs.request.url).pathname);
 
       return data;
     })
