@@ -12,6 +12,7 @@ use crate::{
 };
 
 pub(crate) const IMAGE_NAME: &str = "quadratic-cloud-worker";
+const DEFAULT_TIMEOUT_SECONDS: i64 = 60;
 
 pub(crate) struct Controller {
     pub(crate) state: Arc<State>,
@@ -173,6 +174,7 @@ impl Controller {
             self.state.client.lock().await.docker.clone(),
             Some(env_vars),
             None,
+            Some(DEFAULT_TIMEOUT_SECONDS),
         )
         .await
         .map_err(|e| Self::error("create_worker", e))?;
@@ -191,15 +193,18 @@ impl Controller {
     }
 
     pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
+        tracing::warn!("shutdown_worker 1");
         let mut client = state.client.lock().await;
+        tracing::warn!("shutdown_worker 2");
         client
             .remove_container(file_id)
             .await
             .map_err(|e| Self::error("shutdown_worker", e))?;
-
+        tracing::warn!("shutdown_worker 3");
         state.release_worker_create_lock(file_id).await;
 
-        trace!("Shut down worker for file {file_id}");
+        info!("Shut down worker for file {file_id}");
+        tracing::warn!("shutdown_worker 4");
 
         Ok(())
     }

@@ -4,11 +4,17 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::pin::Pin;
+use std::sync::Arc;
 use std::time::Duration;
 
 pub use bollard::Docker;
-use bollard::query_parameters::{ListContainersOptions, ListImagesOptions, RemoveContainerOptions};
+use bollard::query_parameters::{
+    ListContainersOptions, ListImagesOptions, LogsOptions, RemoveContainerOptions,
+};
 use bollard::secret::ContainerSummary;
+use futures_util::Stream;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::docker::container::Container;
@@ -22,7 +28,7 @@ pub struct Cluster {
     pub(crate) id: Uuid,
     pub(crate) name: String,
     pub docker: Docker,
-    pub(crate) containers: HashMap<Uuid, Container>,
+    pub(crate) containers: HashMap<Uuid, Arc<Mutex<Container>>>,
 }
 
 impl Display for Cluster {
@@ -81,17 +87,17 @@ impl Cluster {
     }
 
     /// Get a container
-    pub async fn get_container(&self, id: &Uuid) -> Result<&Container> {
+    pub async fn get_container(&self, id: &Uuid) -> Result<Arc<Mutex<Container>>> {
         let container = self
             .containers
             .get(id)
             .ok_or(Self::error("Container not found"))?;
 
-        Ok(container)
+        Ok(Arc::clone(container))
     }
 
     /// Get a mutable reference to a container
-    pub async fn get_container_mut(&mut self, id: &Uuid) -> Result<&mut Container> {
+    pub async fn get_container_mut(&mut self, id: &Uuid) -> Result<&mut Arc<Mutex<Container>>> {
         self.containers
             .get_mut(id)
             .ok_or(Self::error("Container not found"))
@@ -103,14 +109,29 @@ impl Cluster {
     }
 
     /// Add a container
-    pub async fn add_container(&mut self, mut container: Container, start: bool) -> Result<()> {
+    pub async fn add_container(&mut self, container: Container, start: bool) -> Result<()> {
         let id = container.id.to_owned();
+        let timeout_seconds = container.timeout_seconds.to_owned() as u64;
+        let container = Arc::new(Mutex::new(container));
 
         if start {
-            container.start(self.docker.clone()).await?;
+            container.lock().await.start(self.docker.clone()).await?;
         }
 
-        self.containers.insert(id, container);
+        self.containers.insert(id, Arc::clone(&container));
+
+        // in a separate thread,
+        let container = Arc::clone(&container);
+        let mut docker = self.docker.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(timeout_seconds)).await;
+
+            tracing::info!("Stopping container in thread: {:?}", id);
+
+            if let Err(e) = container.lock().await.stop(&mut docker).await {
+                tracing::error!("Error stopping container: {:?}", e);
+            }
+        });
 
         Ok(())
     }
@@ -119,7 +140,7 @@ impl Cluster {
     pub async fn stop_container(&mut self, id: &Uuid) -> Result<()> {
         tracing::trace!("Stopping container {id}");
 
-        let mut container = self
+        let container = self
             .containers
             .remove(id)
             .ok_or(Self::error("Container not found"))?;
@@ -127,7 +148,7 @@ impl Cluster {
 
         // remove in a separate thread
         tokio::spawn(async move {
-            if let Err(e) = container.stop(&mut docker).await {
+            if let Err(e) = container.lock().await.stop(&mut docker).await {
                 tracing::error!("Error stopping container: {:?}", e);
             }
             tracing::info!("Stopped container in thread: {:?}", container);
@@ -142,29 +163,38 @@ impl Cluster {
     ///
     /// First, remove the container from docker daemon, then remove the container from the cluster.
     pub async fn remove_container(&mut self, id: &Uuid) -> Result<()> {
-        tracing::trace!("Removing container {id}");
+        tracing::info!("Removing container {id}");
 
-        let mut container = self
+        let container = self
             .containers
             .remove(id)
             .ok_or(Self::error("Container not found"))?;
         let mut docker = self.docker.clone();
-        let _ = container.record_resource_usage(docker.clone()).await;
+        let total_runtime = container.lock().await.total_runtime();
 
         // remove in a separate thread
+        let id = id.to_owned();
         tokio::spawn(async move {
-            if let Err(e) = container.remove(&mut docker).await {
+            let resource_usage = container
+                .lock()
+                .await
+                .get_resource_usage(docker.clone())
+                .await;
+
+            if let Err(e) = container.lock().await.remove(&mut docker).await {
                 tracing::error!("Error removing container: {:?}", e);
             }
 
-            tracing::info!(
-                "Removed worker for file {} in thread: Total Runtime: {} ms, Resource Usage - CPU: {:.2}%, Memory: {} bytes ({:.2} MB)",
-                container.id,
-                container.total_runtime(),
-                container.cpu_usage,
-                container.memory_usage,
-                container.memory_usage as f64 / 1024.0 / 1024.0
-            );
+            if let Ok(Some((cpu_usage, memory_usage))) = resource_usage {
+                tracing::info!(
+                    "Removed worker for file {} in thread: Total Runtime: {} ms, Resource Usage - CPU: {:.2}%, Memory: {} bytes ({:.2} MB)",
+                    id,
+                    total_runtime,
+                    cpu_usage,
+                    memory_usage,
+                    memory_usage as f64 / 1024.0 / 1024.0
+                );
+            }
 
             drop(container);
         });
@@ -284,6 +314,46 @@ impl Cluster {
         )))
     }
 
+    /// Create a logs stream for a container by its ID.
+    ///
+    /// Returns a stream of log outputs that can be consumed without holding any locks.
+    /// This method extracts the container's image_id and creates a logs stream directly.
+    pub async fn container_logs_stream(
+        &self,
+        id: &Uuid,
+    ) -> Result<
+        Pin<
+            Box<
+                dyn Stream<
+                        Item = std::result::Result<
+                            bollard::container::LogOutput,
+                            bollard::errors::Error,
+                        >,
+                    > + Send,
+            >,
+        >,
+    > {
+        let container = self
+            .containers
+            .get(id)
+            .ok_or(Self::error("Container not found"))?;
+
+        let image_id = {
+            let locked_container = container.lock().await;
+            locked_container.image_id().to_string()
+        };
+
+        let options = LogsOptions {
+            stdout: true,
+            stderr: true,
+            follow: true,
+            tail: "0".to_string(),
+            ..Default::default()
+        };
+
+        Ok(Box::pin(self.docker.logs(&image_id, Some(options))))
+    }
+
     /// Error helper
     fn error(error: impl ToString) -> SharedError {
         SharedError::Docker(DockerError::Cluster(error.to_string()))
@@ -316,13 +386,13 @@ mod tests {
 
         let container = cluster.get_container(&container_ids[0]).await.unwrap();
 
-        assert_eq!(container.id, container_ids[0]);
+        assert_eq!(container.lock().await.id, container_ids[0]);
 
         cluster.stop_container(&container_ids[0]).await.unwrap();
 
         let container = cluster.get_container(&container_ids[0]).await.unwrap();
 
-        assert_eq!(container.state, ContainerState::Stopped);
+        assert_eq!(container.lock().await.state, ContainerState::Stopped);
 
         cluster.remove_container(&container_ids[0]).await.unwrap();
 

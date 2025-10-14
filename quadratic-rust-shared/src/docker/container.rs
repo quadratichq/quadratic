@@ -20,6 +20,8 @@ use crate::{
     error::{Result, SharedError},
 };
 
+const DEFAULT_TIMEOUT_SECONDS: i64 = 60;
+
 #[derive(Debug, Display, Clone, PartialEq)]
 pub enum ContainerState {
     Running,
@@ -33,6 +35,7 @@ pub struct Container {
     pub(crate) image_id: String,
     pub(crate) image: String,
     pub(crate) state: ContainerState,
+    pub(crate) timeout_seconds: i64,
     pub start_time: DateTime<Utc>,
     pub cpu_usage: f64,
     pub memory_usage: u64,
@@ -56,6 +59,7 @@ impl Container {
         docker: Docker,
         env_vars: Option<Vec<String>>,
         cmd: Option<Vec<String>>,
+        timeout_seconds: Option<i64>,
     ) -> Result<Self> {
         let container_name = Self::image_basename(image);
 
@@ -87,6 +91,7 @@ impl Container {
             image_id: create_container.id,
             image: image.to_string(),
             state: ContainerState::Stopped,
+            timeout_seconds: timeout_seconds.unwrap_or(DEFAULT_TIMEOUT_SECONDS),
             start_time: Utc::now(),
             cpu_usage: 0.0,
             memory_usage: 0,
@@ -163,6 +168,8 @@ impl Container {
         let options = LogsOptions {
             stdout: true,
             stderr: true,
+            follow: true,
+            tail: "0".to_string(),
             ..Default::default()
         };
         let logs_stream = docker.logs(&self.image_id, Some(options));
@@ -187,6 +194,11 @@ impl Container {
             .to_std()
             .unwrap_or_default()
             .as_millis()
+    }
+
+    /// Check if the container should be stopped
+    pub fn should_stop(&self) -> bool {
+        self.total_runtime() > self.timeout_seconds as u128 * 1000
     }
 
     /// Inspect the container to get detailed information including ResourceObject
@@ -316,6 +328,7 @@ pub mod tests {
             "quadratic-cloud-worker",
             docker.clone(),
             Some(env_vars),
+            None,
             None,
         )
         .await

@@ -176,13 +176,14 @@ pub(crate) async fn handle_worker_shutdown(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<ShutdownResponse>> {
+    tracing::warn!("handle_worker_shutdown 1");
     let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
-
+    tracing::warn!("handle_worker_shutdown 2");
     state.remove_worker_ephemeral_token(&file_id).await;
-
+    tracing::warn!("handle_worker_shutdown 3");
     Controller::shutdown_worker(Arc::clone(&state), &file_id)
         .await
         .map_err(|e| ControllerError::ShutdownWorker(e.to_string()))?;
-
+    tracing::warn!("handle_worker_shutdown 4");
     Ok(Json(ShutdownResponse { success: true }))
 }
