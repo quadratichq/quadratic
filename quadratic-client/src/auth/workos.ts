@@ -85,9 +85,7 @@ export const workosClient: AuthClient = {
       const { url } = await apiClient.workos.login(callback.toString(), state ? JSON.stringify(state) : undefined);
       if (!url) throw new Error('Expected signInUrl to be defined in login');
       window.location.href = url;
-    } catch (e) {
-      console.log(e);
-    }
+    } catch {}
   },
 
   /**
