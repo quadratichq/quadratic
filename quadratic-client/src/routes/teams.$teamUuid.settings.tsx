@@ -320,26 +320,6 @@ export const Component = () => {
             </Type>
 
             <div>
-              {!isOnPaidPlan && (
-                <p className="mb-3 text-sm text-muted-foreground">
-                  <button
-                    onClick={() => {
-                      trackEvent('[TeamSettings].upgradeToProClicked', {
-                        team_uuid: team.uuid,
-                        source: 'privacy_section',
-                      });
-                      apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                        window.location.href = data.url;
-                      });
-                    }}
-                    className="font-semibold text-foreground underline hover:text-primary"
-                    disabled={!canManageBilling}
-                  >
-                    Upgrade to Pro
-                  </button>{' '}
-                  to enable AI privacy mode.
-                </p>
-              )}
               <SettingControl
                 label="Improve AI results"
                 description={
@@ -362,7 +342,28 @@ export const Component = () => {
                 checked={optimisticSettings.analyticsAi}
                 className="rounded-lg border border-border p-4 shadow-sm"
                 disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
-              />
+              >
+                {!isOnPaidPlan && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    <button
+                      onClick={() => {
+                        trackEvent('[TeamSettings].upgradeToProClicked', {
+                          team_uuid: team.uuid,
+                          source: 'privacy_section',
+                        });
+                        apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
+                          window.location.href = data.url;
+                        });
+                      }}
+                      className="font-semibold text-foreground underline hover:text-primary"
+                      disabled={!canManageBilling}
+                    >
+                      Upgrade to Pro
+                    </button>{' '}
+                    to enable AI privacy mode.
+                  </p>
+                )}
+              </SettingControl>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">
                   When using AI features your data is sent to our AI providers:
