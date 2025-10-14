@@ -11,10 +11,10 @@ const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
   workos: {
-    login(redirectTo: string) {
+    login(redirectTo: string, state?: string) {
       return fetchFromApi(
         `/v0/workos/login`,
-        { method: 'POST', body: JSON.stringify({ redirectTo }) },
+        { method: 'POST', body: JSON.stringify({ redirectTo, state }) },
         ApiSchemas['/v0/workos/login.POST.response']
       );
     },

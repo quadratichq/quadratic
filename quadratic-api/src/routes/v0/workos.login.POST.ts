@@ -16,11 +16,12 @@ async function handler(
 
     // The callback endpoint that WorkOS will redirect to after a user authenticates
     redirectUri: req.body.redirectTo,
+    state: req.body.state,
     clientId: WORKOS_CLIENT_ID,
   });
 
   // Redirect the user to the AuthKit sign-in page
-  res.redirect(authorizationUrl);
+  return res.json({ url: authorizationUrl });
 }
 
 export default [handler];

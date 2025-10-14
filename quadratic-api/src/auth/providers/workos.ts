@@ -169,9 +169,7 @@ export const authenticateWithRefreshTokenWorkos = async ({
   organizationId?: string;
 }) => {
   const refreshToken = req.cookies?.[WORKOS_REFRESH_TOKEN_COOKIE_NAME];
-  if (!refreshToken) {
-    throw new Error('No refresh token found');
-  }
+  if (!refreshToken) return { not_logged_in: true };
 
   const {
     user,

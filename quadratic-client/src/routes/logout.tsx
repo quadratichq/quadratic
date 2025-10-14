@@ -1,5 +1,4 @@
 import { authClient } from '@/auth/auth';
-import { apiClient } from '@/shared/api/apiClient';
 import { resetEventAnalytics } from '@/shared/utils/analyticsEvents';
 import { redirectDocument } from 'react-router';
 
@@ -11,12 +10,8 @@ export const loader = logout;
 export const action = logout;
 
 async function logout() {
-  if (import.meta.env.VITE_AUTH_TYPE === 'workos') {
-    await apiClient.workos.logout();
-  } else {
-    await authClient.logout();
-  }
   localStorage.clear();
   resetEventAnalytics();
+  await authClient.logout();
   return redirectDocument('/');
 }
