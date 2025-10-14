@@ -1,8 +1,7 @@
 use axum::{Extension, http::HeaderMap, response::Json};
 use quadratic_rust_shared::quadratic_cloud::{
-    AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse,
-    GetWorkerAccessTokenResponse, GetWorkerInitDataResponse, ShutdownResponse,
-    WORKER_EPHEMERAL_TOKEN_HEADER,
+    AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, GetTasksResponse, GetWorkerInitDataResponse,
+    ShutdownResponse,
 };
 use std::sync::Arc;
 use tracing::{info, trace};
@@ -15,10 +14,10 @@ use crate::state::State;
 use crate::{controller::Controller, quadratic_api::file_init_data};
 
 /// Extract the UUID from the header
-fn get_uuid_from_header(headers: &HeaderMap, header_name: &str) -> Result<Uuid> {
+fn get_uuid_from_header(headers: &HeaderMap) -> Result<Uuid> {
     let header_value = headers
-        .get(header_name)
-        .ok_or_else(|| ControllerError::Header(format!("Missing header: {header_name}")))?;
+        .get(FILE_ID_HEADER)
+        .ok_or_else(|| ControllerError::Header(format!("Missing header: {FILE_ID_HEADER}")))?;
 
     let id = Uuid::parse_str(
         header_value
@@ -30,52 +29,12 @@ fn get_uuid_from_header(headers: &HeaderMap, header_name: &str) -> Result<Uuid> 
     Ok(id)
 }
 
-/// Extract the file id and worker ephemeral token from the headers and verify the worker ephemeral token
-///
-/// Returns the file id if the worker ephemeral token is valid
-async fn handle_worker_ephemeral_token(state: &State, headers: &HeaderMap) -> Result<Uuid> {
-    let file_id = get_uuid_from_header(headers, FILE_ID_HEADER)?;
-
-    let worker_ephemeral_token = match get_uuid_from_header(headers, WORKER_EPHEMERAL_TOKEN_HEADER)
-    {
-        Ok(worker_ephemeral_token) => worker_ephemeral_token,
-        Err(e) => {
-            state.remove_worker_ephemeral_token(&file_id).await;
-            return Err(ControllerError::WorkerEphemeralToken(e.to_string()));
-        }
-    };
-
-    state
-        .verify_worker_ephemeral_token(file_id, worker_ephemeral_token)
-        .await
-        .map_err(|e| ControllerError::WorkerEphemeralToken(e.to_string()))?;
-
-    Ok(file_id)
-}
-
-/// Get a worker access token
-pub(crate) async fn handle_get_worker_access_token(
-    Extension(state): Extension<Arc<State>>,
-    headers: HeaderMap,
-) -> Result<Json<GetWorkerAccessTokenResponse>> {
-    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
-
-    trace!("Getting worker access token for file {file_id}");
-
-    let token = state
-        .generate_worker_access_token(file_id)
-        .await
-        .map_err(|e| ControllerError::WorkerAccessToken(e.to_string()))?;
-
-    Ok(Json(GetWorkerAccessTokenResponse { jwt: token }))
-}
-
 /// Get a file init data
-pub(crate) async fn handle_get_file_init_data(
+pub(crate) async fn get_file_init_data(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetWorkerInitDataResponse>> {
-    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
+    let file_id = get_uuid_from_header(&headers)?;
 
     trace!("Getting file init data for file id {file_id}");
 
@@ -103,27 +62,21 @@ pub(crate) async fn handle_get_file_init_data(
 
     trace!("[File init data for file {file_id}: {file_init_data:?}");
 
-    let worker_access_token = state
-        .generate_worker_access_token(file_id)
-        .await
-        .map_err(|e| ControllerError::WorkerAccessToken(e.to_string()))?;
-
     let worker_init_data = GetWorkerInitDataResponse {
         team_id: file_init_data.team_id,
         sequence_number: file_init_data.sequence_number,
         presigned_url: file_init_data.presigned_url,
-        worker_access_token,
     };
 
     Ok(Json(worker_init_data))
 }
 
 /// Get the next tasks for this worker
-pub(crate) async fn handle_get_tasks_for_worker(
+pub(crate) async fn get_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<GetTasksResponse>> {
-    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
+    let file_id = get_uuid_from_header(&headers)?;
 
     info!("Getting tasks for worker for file {file_id}");
 
@@ -145,17 +98,17 @@ pub(crate) async fn handle_get_tasks_for_worker(
 }
 
 /// Acknowledge tasks completion
-pub(crate) async fn handle_ack_tasks_for_worker(
+pub(crate) async fn ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
+    let file_id = get_uuid_from_header(&headers)?;
+
     // short circuit if there are no keys to ack
     if ack_request.successful_tasks.is_empty() && ack_request.failed_tasks.is_empty() {
         return Ok(Json(AckTasksResponse { success: true }));
     }
-
-    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
 
     trace!(
         "Acknowledging tasks for worker for file {file_id}: {:?}",
@@ -187,18 +140,16 @@ pub(crate) async fn handle_ack_tasks_for_worker(
 }
 
 /// Shutdown the worker
-pub(crate) async fn handle_worker_shutdown(
+pub(crate) async fn shutdown_worker(
     Extension(state): Extension<Arc<State>>,
     headers: HeaderMap,
 ) -> Result<Json<ShutdownResponse>> {
     tracing::warn!("handle_worker_shutdown 1");
-    let file_id = handle_worker_ephemeral_token(&state, &headers).await?;
+    let file_id = get_uuid_from_header(&headers)?;
     tracing::warn!("handle_worker_shutdown 2");
-    state.remove_worker_ephemeral_token(&file_id).await;
-    tracing::warn!("handle_worker_shutdown 3");
     Controller::shutdown_worker(Arc::clone(&state), &file_id)
         .await
         .map_err(|e| ControllerError::ShutdownWorker(e.to_string()))?;
-    tracing::warn!("handle_worker_shutdown 4");
+    tracing::warn!("handle_worker_shutdown 2");
     Ok(Json(ShutdownResponse { success: true }))
 }

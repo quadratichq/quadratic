@@ -33,7 +33,6 @@ impl Worker {
             file_id,
             worker_init_data.sequence_number as u64,
             &worker_init_data.presigned_url,
-            // worker_init_data.worker_access_token,
             "M2M_AUTH_TOKEN".to_string(),
             multiplayer_url,
         )

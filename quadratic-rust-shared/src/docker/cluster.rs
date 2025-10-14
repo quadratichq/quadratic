@@ -275,7 +275,7 @@ impl Cluster {
         }
 
         if removed_count > 0 {
-            tracing::info!(
+            tracing::trace!(
                 "Removed {} container(s) matching '{}'",
                 removed_count,
                 image_name_substring

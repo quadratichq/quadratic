@@ -27,6 +27,34 @@ impl Controller {
         Ok(Self { state, image_name })
     }
 
+    pub(crate) async fn create_workers(&self, file_ids: HashSet<Uuid>) -> Result<()> {
+        trace!("Creating workers for {} files", file_ids.len());
+
+        if file_ids.is_empty() {
+            trace!("No files to create workers for, skipping");
+            return Ok(());
+        }
+
+        let existing_workers = self.get_all_active_worker_file_ids().await?;
+        let workers_needed = file_ids
+            .into_iter()
+            .filter(|file_id| !existing_workers.contains(file_id))
+            .collect::<HashSet<_>>();
+
+        let workers = workers_needed
+            .iter()
+            .map(|file_id| self.create_worker(file_id));
+        let results = join_all(workers).await;
+
+        for (file_id, result) in workers_needed.into_iter().zip(results) {
+            if let Err(e) = result {
+                error!("Failed to create file worker for {file_id}: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
     /// Discover the actual image name by querying Docker for images containing IMAGE_NAME_SUBSTRING
     async fn discover_image_name(state: &Arc<State>) -> Result<String> {
         state
@@ -39,63 +67,6 @@ impl Controller {
                 error!("Failed to discover image: {}", e);
                 Self::error("discover_image_name", e)
             })
-    }
-
-    pub(crate) async fn scan_and_ensure_all_workers(&self) -> Result<()> {
-        trace!("Scanning and ensuring all workers exist");
-
-        let file_ids_needing_workers = self.state.get_file_ids_to_process().await?;
-
-        trace!(
-            "Found {} unique files with pending tasks",
-            file_ids_needing_workers.len(),
-        );
-
-        self.ensure_workers_exist(file_ids_needing_workers).await?;
-
-        Ok(())
-    }
-
-    async fn ensure_workers_exist(&self, file_ids: HashSet<Uuid>) -> Result<()> {
-        trace!("Ensuring workers exist for {} files", file_ids.len());
-
-        if file_ids.is_empty() {
-            trace!("No files to ensure workers exist for, skipping");
-            return Ok(());
-        }
-
-        let active_worker_file_ids = self.get_all_active_worker_file_ids().await?;
-
-        trace!("Found {} active file workers", active_worker_file_ids.len(),);
-
-        let missing_workers = file_ids
-            .into_iter()
-            .filter(|file_id| !active_worker_file_ids.contains(file_id))
-            .collect::<Vec<_>>();
-
-        if missing_workers.is_empty() {
-            trace!("No files are missing file workers, skipping");
-            return Ok(());
-        }
-
-        trace!(
-            "Found {} files that are missing file workers, creating them",
-            missing_workers.len()
-        );
-
-        let futures = missing_workers
-            .iter()
-            .map(|file_id| self.create_worker(file_id));
-
-        let results = join_all(futures).await;
-
-        for (file_id, result) in missing_workers.into_iter().zip(results) {
-            if let Err(e) = result {
-                error!("Failed to create file worker for {file_id}: {e}");
-            }
-        }
-
-        Ok(())
     }
 
     async fn get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
@@ -128,7 +99,7 @@ impl Controller {
         Ok(has_container)
     }
 
-    async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
+    pub(crate) async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
         trace!("Creating worker for file {file_id}");
 
         // Check if the file has an active worker
@@ -159,13 +130,7 @@ impl Controller {
                 "MULTIPLAYER_URL={}",
                 format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
             ),
-            // format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
-            // format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
             format!("FILE_ID={}", file_id.to_string()),
-            format!(
-                "WORKER_EPHEMERAL_TOKEN={}",
-                self.state.generate_worker_ephemeral_token(file_id).await,
-            ),
         ];
 
         let container = Container::try_new(

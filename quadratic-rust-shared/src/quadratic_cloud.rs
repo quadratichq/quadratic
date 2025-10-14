@@ -6,7 +6,6 @@ use crate::SharedError;
 use crate::error::Result;
 use crate::quadratic_api::Task;
 
-pub const WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE: &str = "/worker/get-worker-access-token";
 pub const WORKER_GET_WORKER_INIT_DATA_ROUTE: &str = "/worker/get-worker-init-data";
 pub const WORKER_GET_TASKS_ROUTE: &str = "/worker/get-tasks";
 pub const WORKER_ACK_TASKS_ROUTE: &str = "/worker/ack-tasks";
@@ -26,35 +25,6 @@ fn handle_response(response: &Response) -> Result<()> {
             "Unexpected response: {response:?}"
         ))),
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct GetWorkerAccessTokenResponse {
-    pub jwt: String,
-}
-/// Get a worker access token
-pub async fn get_worker_access_token(
-    base_url: &str,
-    file_id: Uuid,
-    worker_ephemeral_token: Uuid,
-) -> Result<GetWorkerAccessTokenResponse> {
-    let url = format!("{base_url}{WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE}");
-
-    let response = reqwest::Client::new()
-        .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
-        .header(
-            WORKER_EPHEMERAL_TOKEN_HEADER,
-            worker_ephemeral_token.to_string(),
-        )
-        .send()
-        .await?;
-
-    handle_response(&response)?;
-
-    let worker_access_token = response.json::<GetWorkerAccessTokenResponse>().await?;
-
-    Ok(worker_access_token)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

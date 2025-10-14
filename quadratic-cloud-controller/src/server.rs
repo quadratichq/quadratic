@@ -2,114 +2,43 @@ use axum::{
     Extension, Router,
     routing::{get, post},
 };
-use chrono::Timelike;
-use futures::StreamExt;
 use quadratic_rust_shared::quadratic_cloud::{
-    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
-    WORKER_GET_WORKER_INIT_DATA_ROUTE, WORKER_SHUTDOWN_ROUTE,
+    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_INIT_DATA_ROUTE,
+    WORKER_SHUTDOWN_ROUTE,
 };
 use std::{sync::Arc, time::Duration};
-use tokio::time::{MissedTickBehavior, interval, sleep};
+use tokio::time::sleep;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{error, info, trace};
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 use crate::{
+    background_workers::init_background_workers,
     config::Config,
-    controller::Controller,
     controller_docker::IMAGE_NAME,
-    error::{ControllerError, Result, log_error_only},
+    error::{ControllerError, Result},
+    handle::{ack_tasks_for_worker, get_file_init_data, get_tasks_for_worker, shutdown_worker},
     health::{full_healthcheck, healthcheck},
-    quadratic_api::{insert_pending_logs, scheduled_tasks},
     state::{State, jwt::handle_jwks},
-    worker::{
-        handle_ack_tasks_for_worker, handle_get_file_init_data, handle_get_tasks_for_worker,
-        handle_get_worker_access_token, handle_worker_shutdown,
-    },
 };
 
-// const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 60;
-const SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS: u64 = 10;
 const MAX_BACKOFF_SECONDS: u64 = 60;
-
-async fn start_scheduled_task_watcher(state: Arc<State>) -> Result<()> {
-    info!("Starting scheduled task watcher");
-
-    let controller = Controller::new(Arc::clone(&state))
-        .await
-        .map_err(|e| ControllerError::ScheduledTaskWatcher(e.to_string()))?;
-
-    // Wait until the next interval
-    let current_second = chrono::Utc::now().second() as u64;
-    // TODO(ddimari): Change this back to the original logic
-    // let wait_seconds = SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS
-    //     - (current_second % SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS);
-    let wait_seconds = 0;
-
-    info!("Waiting until next interval {} seconds", wait_seconds);
-
-    sleep(Duration::from_secs(wait_seconds)).await;
-
-    // Run exactly at 0 seconds of each minute
-    let mut interval = interval(Duration::from_secs(SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS));
-    interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
-
-    loop {
-        info!("Fetching scheduled tasks from API");
-
-        // Fetch scheduled tasks from API
-        let scheduled_tasks = log_error_only(scheduled_tasks(&state).await)?;
-        let len = scheduled_tasks.len();
-        info!("Got {len} scheduled tasks from API");
-
-        if len > 0 {
-            let scheduled_task_ids = scheduled_tasks
-                .iter()
-                .flat_map(|task| Uuid::parse_str(&task.task_id))
-                .collect::<Vec<_>>();
-
-            // Add tasks to PubSub
-            log_error_only(state.add_tasks(scheduled_tasks).await)?;
-            trace!("Adding {len} tasks to PubSub");
-
-            // ACK tasks with Quadratic API
-            log_error_only(insert_pending_logs(&state, scheduled_task_ids).await)?;
-
-            // Scan and ensure all workers exist
-            log_error_only(controller.scan_and_ensure_all_workers().await)?;
-            let active_count = controller.count_active_workers().await.unwrap_or(0);
-            trace!("Worker Controller alive - {active_count} active file workers");
-        }
-
-        interval.tick().await;
-    }
-}
 
 pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
     trace!("Building worker-only app");
 
     Router::new()
         // Shutdown a worker
-        .route(WORKER_SHUTDOWN_ROUTE, get(handle_worker_shutdown))
+        .route(WORKER_SHUTDOWN_ROUTE, get(shutdown_worker))
         //
         // Acknowledge tasks after they have been processed by the worker
-        .route(WORKER_ACK_TASKS_ROUTE, post(handle_ack_tasks_for_worker))
+        .route(WORKER_ACK_TASKS_ROUTE, post(ack_tasks_for_worker))
         //
         // Get tasks for a file by worker
-        .route(WORKER_GET_TASKS_ROUTE, get(handle_get_tasks_for_worker))
+        .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
         //
         // Get a last checkpoint data URL for a file
-        .route(
-            WORKER_GET_WORKER_INIT_DATA_ROUTE,
-            get(handle_get_file_init_data),
-        )
-        //
-        // Get a worker access token
-        .route(
-            WORKER_GET_WORKER_ACCESS_TOKEN_ROUTE,
-            get(handle_get_worker_access_token),
-        )
+        .route(WORKER_GET_WORKER_INIT_DATA_ROUTE, get(get_file_init_data))
         //
         // Worker API routes
         //
@@ -177,7 +106,7 @@ async fn start_server(
     Ok(())
 }
 
-async fn start_with_backoff<F, Fut>(name: &str, state: Arc<State>, f: F) -> Result<()>
+pub(crate) async fn start_with_backoff<F, Fut>(name: &str, state: Arc<State>, f: F) -> Result<()>
 where
     F: Fn(Arc<State>) -> Fut,
     Fut: std::future::Future<Output = Result<()>>,
@@ -230,15 +159,14 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     // Remove any cloud worker containers that didn't stop properly.
-    state
-        .client
-        .lock()
-        .await
-        .remove_containers_by_image_name(IMAGE_NAME)
-        .await
-        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
+    if let Err(e) = remove_containers_by_image_name(Arc::clone(&state)).await {
+        error!("Error removing containers by image name: {e}");
+    }
 
-    // Start worker-only server
+    // init background workers
+    init_background_workers(Arc::clone(&state))?;
+
+    // start worker-only server in a separate thread
     let worker_only_server_state_clone = Arc::clone(&state);
     tokio::spawn(async {
         let _ = start_with_backoff(
@@ -259,29 +187,6 @@ pub(crate) async fn serve() -> Result<()> {
         .await;
     });
 
-    // Start scheduled task watcher
-    let scheduled_task_watcher_state_clone = Arc::clone(&state);
-    tokio::spawn(async {
-        let _ = start_with_backoff(
-            "scheduled-task-watcher",
-            scheduled_task_watcher_state_clone,
-            |state| async {
-                start_scheduled_task_watcher(state)
-                    .await
-                    .map_err(|e| ControllerError::StartServer(e.to_string()))
-            },
-        )
-        .await;
-    });
-
-    // In a separate thread, print the logs of all containers every second
-    let container_logs_state_clone = Arc::clone(&state);
-    tokio::spawn(async {
-        if let Err(e) = print_container_logs(container_logs_state_clone).await {
-            error!("Error printing container logs: {e}");
-        }
-    });
-
     // Start public server
     let public_server_state_clone = Arc::clone(&state);
     start_with_backoff("public-server", public_server_state_clone, |state| async {
@@ -298,50 +203,22 @@ pub(crate) async fn serve() -> Result<()> {
     .await
 }
 
-/// In a separate thread, print the logs of all containers every second
-async fn print_container_logs(state: Arc<State>) -> Result<()> {
-    let mut interval = interval(Duration::from_millis(100));
-    interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+// Remove any cloud worker containers that didn't stop properly.
+async fn remove_containers_by_image_name(state: Arc<State>) -> Result<()> {
+    let number_removed = state
+        .client
+        .lock()
+        .await
+        .remove_containers_by_image_name(IMAGE_NAME)
+        .await
+        .map_err(|e| ControllerError::StartServer(e.to_string()))?;
 
-    loop {
-        let container_ids = state
-            .client
-            .lock()
-            .await
-            .list_ids()
-            .await
-            .map_err(|e| ControllerError::StartServer(e.to_string()))?;
-
-        for container_id in container_ids {
-            // Record resource usage while holding the lock briefly
-            {
-                let mut client = state.client.lock().await;
-                let docker = client.docker.clone();
-                if let Ok(container) = client.get_container_mut(&container_id).await {
-                    let _ = container
-                        .lock()
-                        .await
-                        .record_resource_usage(docker.clone())
-                        .await;
-                }
-            } // Lock is released here
-
-            // Get the logs stream without holding any locks
-            // This method handles locking internally and releases before returning
-            if let Ok(mut logs) = {
-                let client = state.client.lock().await;
-                client.container_logs_stream(&container_id).await
-            } {
-                // Lock is released here
-                while let Some(Ok(log_result)) = logs.next().await {
-                    let log_line = log_result.to_string().trim().to_string();
-                    if !log_line.is_empty() {
-                        eprintln!("[CloudWorker] {}", log_line);
-                    }
-                }
-            }
-        }
-
-        interval.tick().await;
+    if number_removed > 0 {
+        info!(
+            "Removed {} containers by image name {}",
+            number_removed, IMAGE_NAME
+        );
     }
+
+    Ok(())
 }

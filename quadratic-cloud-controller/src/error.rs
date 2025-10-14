@@ -51,12 +51,6 @@ pub(crate) enum ControllerError {
     #[error("Error with Uuid: {0}")]
     Uuid(String),
 
-    #[error("Worker access token error: {0}")]
-    WorkerAccessToken(String),
-
-    #[error("Worker ephemeral token error: {0}")]
-    WorkerEphemeralToken(String),
-
     #[error("Worker init data error: {0}")]
     WorkerInitData(String),
 }
@@ -70,9 +64,6 @@ impl From<ControllerError> for String {
 impl IntoResponse for ControllerError {
     fn into_response(self) -> Response {
         let (status, error) = match &self {
-            ControllerError::WorkerEphemeralToken(error) => {
-                (StatusCode::UNAUTHORIZED, clean_errors(error))
-            }
             ControllerError::GetTasksForWorker(error) => {
                 (StatusCode::BAD_REQUEST, clean_errors(error))
             }
