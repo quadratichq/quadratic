@@ -120,20 +120,20 @@ impl Cluster {
 
         self.containers.insert(id, Arc::clone(&container));
 
-        // in a separate thread,
-        let container = Arc::clone(&container);
-        let mut docker = self.docker.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(timeout_seconds)).await;
+        // // in a separate thread,
+        // let container = Arc::clone(&container);
+        // let mut docker = self.docker.clone();
+        // tokio::spawn(async move {
+        //     tokio::time::sleep(Duration::from_secs(timeout_seconds)).await;
 
-            tracing::info!("Stopping container in thread: {:?}", id);
+        //     tracing::info!("Stopping container in thread: {:?}", id);
 
-            if container.lock().await.should_stop() {
-                if let Err(e) = container.lock().await.stop(&mut docker).await {
-                    tracing::error!("Error stopping container: {:?}", e);
-                }
-            }
-        });
+        //     if container.lock().await.should_stop() {
+        //         if let Err(e) = container.lock().await.stop(&mut docker).await {
+        //             tracing::error!("Error stopping container: {:?}", e);
+        //         }
+        //     }
+        // });
 
         Ok(())
     }

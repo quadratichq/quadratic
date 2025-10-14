@@ -1,10 +1,27 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, WorkerError>;
+
 #[derive(Error, Debug)]
 pub(crate) enum WorkerError {
+    #[error("Ack tasks error: {0}")]
+    AckTasks(String),
+
     #[error("Config error: {0}")]
     Config(String),
 
-    #[error("State error: {0}")]
-    State(String),
+    #[error("Create worker error: {0}")]
+    CreateWorker(String),
+
+    #[error("Get tasks error: {0}")]
+    GetTasks(String),
+
+    #[error("Worker init data error: {0}")]
+    InitData(String),
+
+    #[error("Leave room error: {0}")]
+    LeaveRoom(String),
+
+    #[error("Shutdown error: {0}")]
+    Shutdown(String),
 }

@@ -62,23 +62,17 @@ pub struct GetWorkerInitDataResponse {
     pub team_id: Uuid,
     pub sequence_number: u32,
     pub presigned_url: String,
-    pub worker_access_token: String,
 }
 /// Get a worker init data
 pub async fn get_worker_init_data(
     base_url: &str,
     file_id: Uuid,
-    worker_ephemeral_token: Uuid,
 ) -> Result<GetWorkerInitDataResponse> {
     let url = format!("{base_url}{WORKER_GET_WORKER_INIT_DATA_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(
-            WORKER_EPHEMERAL_TOKEN_HEADER,
-            worker_ephemeral_token.to_string(),
-        )
         .send()
         .await?;
 
@@ -91,20 +85,12 @@ pub async fn get_worker_init_data(
 
 pub type GetTasksResponse = Vec<(String, Task)>;
 /// Get the next scheduled tasks for a worker
-pub async fn get_tasks(
-    base_url: &str,
-    file_id: Uuid,
-    worker_ephemeral_token: Uuid,
-) -> Result<GetTasksResponse> {
+pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse> {
     let url = format!("{base_url}{WORKER_GET_TASKS_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(
-            WORKER_EPHEMERAL_TOKEN_HEADER,
-            worker_ephemeral_token.to_string(),
-        )
         .send()
         .await?;
 
@@ -131,7 +117,6 @@ pub struct AckTasksResponse {
 pub async fn ack_tasks(
     base_url: &str,
     file_id: Uuid,
-    worker_ephemeral_token: Uuid,
     successful_tasks: Vec<(String, String)>,
     failed_tasks: Vec<(String, String, String)>,
 ) -> Result<AckTasksResponse> {
@@ -145,10 +130,6 @@ pub async fn ack_tasks(
     let response = reqwest::Client::new()
         .post(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(
-            WORKER_EPHEMERAL_TOKEN_HEADER,
-            worker_ephemeral_token.to_string(),
-        )
         .json(&request)
         .send()
         .await?;
@@ -164,20 +145,12 @@ pub struct ShutdownResponse {
     pub success: bool,
 }
 /// Shutdown the worker
-pub async fn worker_shutdown(
-    base_url: &str,
-    file_id: Uuid,
-    worker_ephemeral_token: Uuid,
-) -> Result<ShutdownResponse> {
+pub async fn worker_shutdown(base_url: &str, file_id: Uuid) -> Result<ShutdownResponse> {
     let url = format!("{base_url}{WORKER_SHUTDOWN_ROUTE}");
 
     let response = reqwest::Client::new()
         .get(url)
         .header(FILE_ID_HEADER, file_id.to_string())
-        .header(
-            WORKER_EPHEMERAL_TOKEN_HEADER,
-            worker_ephemeral_token.to_string(),
-        )
         .send()
         .await?;
 

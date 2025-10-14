@@ -1,15 +1,13 @@
-use anyhow::Result;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::error::WorkerError;
+use crate::error::{Result, WorkerError};
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Config {
     pub(crate) controller_url: String,
     pub(crate) multiplayer_url: String,
     pub(crate) file_id: Uuid,
-    pub(crate) worker_ephemeral_token: Uuid,
 }
 
 impl Config {
@@ -21,7 +19,6 @@ impl Config {
             std::env::remove_var("CONTROLLER_URL");
             std::env::remove_var("MULTIPLAYER_URL");
             std::env::remove_var("FILE_ID");
-            std::env::remove_var("WORKER_EPHEMERAL_TOKEN");
         }
 
         Ok(config)
