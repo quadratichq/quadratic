@@ -3,7 +3,7 @@ import { GenericServerException, WorkOS, type UserResponse } from '@workos-inc/n
 import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
-import { JWKS_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD } from '../../env-vars';
+import { JWKS_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID } from '../../env-vars';
 import logger from '../../utils/logger';
 import type { User, UsersRequest } from './auth';
 
@@ -86,17 +86,13 @@ export const loginWithPasswordWorkos = async ({
   res: Response;
 }): Promise<{ pendingAuthenticationToken: string | undefined }> => {
   return handleEmailVerificationRequiredError(async () => {
-    const { user, sealedSession } = await getWorkos().userManagement.authenticateWithPassword({
+    const { user, refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
       clientId: WORKOS_CLIENT_ID,
       email,
       password,
-      session: {
-        sealSession: true,
-        cookiePassword: WORKOS_COOKIE_PASSWORD,
-      },
     });
 
-    setCookiesWorkos({ res, sealedSession });
+    setCookiesWorkos({ res, refreshToken });
 
     if (!user.emailVerified) {
       await getWorkos().userManagement.updateUser({
@@ -129,17 +125,13 @@ export const signupWithPasswordWorkos = async ({
       emailVerified: true,
     });
 
-    const { sealedSession } = await getWorkos().userManagement.authenticateWithPassword({
+    const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
       clientId: WORKOS_CLIENT_ID,
       email,
       password,
-      session: {
-        sealSession: true,
-        cookiePassword: WORKOS_COOKIE_PASSWORD,
-      },
     });
 
-    setCookiesWorkos({ res, sealedSession });
+    setCookiesWorkos({ res, refreshToken });
   });
 };
 
@@ -151,16 +143,12 @@ export const authenticateWithCodeWorkos = async ({
   res: Response;
 }): Promise<{ pendingAuthenticationToken: string | undefined }> => {
   return handleEmailVerificationRequiredError(async () => {
-    const { sealedSession, user } = await getWorkos().userManagement.authenticateWithCode({
+    const { refreshToken, user } = await getWorkos().userManagement.authenticateWithCode({
       clientId: WORKOS_CLIENT_ID,
       code,
-      session: {
-        sealSession: true,
-        cookiePassword: WORKOS_COOKIE_PASSWORD,
-      },
     });
 
-    setCookiesWorkos({ res, sealedSession });
+    setCookiesWorkos({ res, refreshToken });
 
     if (!user.emailVerified) {
       await getWorkos().userManagement.updateUser({
@@ -183,17 +171,17 @@ export const authenticateWithRefreshTokenWorkos = async ({
   const refreshToken = req.cookies?.[WORKOS_REFRESH_TOKEN_COOKIE_NAME];
   if (!refreshToken) return { not_logged_in: true };
 
-  const { user, accessToken, sealedSession } = await getWorkos().userManagement.authenticateWithRefreshToken({
+  const {
+    user,
+    accessToken,
+    refreshToken: newRefreshToken,
+  } = await getWorkos().userManagement.authenticateWithRefreshToken({
     clientId: WORKOS_CLIENT_ID,
     refreshToken: refreshToken,
     organizationId: organizationId,
-    session: {
-      sealSession: true,
-      cookiePassword: WORKOS_COOKIE_PASSWORD,
-    },
   });
 
-  setCookiesWorkos({ res, sealedSession });
+  setCookiesWorkos({ res, refreshToken: newRefreshToken });
 
   const userResponse: UserResponse = {
     object: user.object,
@@ -226,17 +214,13 @@ export const verifyEmailWorkos = async ({
   code: string;
   res: Response;
 }) => {
-  const { sealedSession } = await getWorkos().userManagement.authenticateWithEmailVerification({
+  const { refreshToken } = await getWorkos().userManagement.authenticateWithEmailVerification({
     clientId: WORKOS_CLIENT_ID,
     pendingAuthenticationToken,
     code,
-    session: {
-      sealSession: true,
-      cookiePassword: WORKOS_COOKIE_PASSWORD,
-    },
   });
 
-  setCookiesWorkos({ res, sealedSession });
+  setCookiesWorkos({ res, refreshToken });
 };
 
 export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
@@ -276,17 +260,13 @@ export const resetPasswordWorkos = async ({
     });
   }
 
-  const { sealedSession } = await getWorkos().userManagement.authenticateWithPassword({
+  const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
     clientId: WORKOS_CLIENT_ID,
     email: user.email,
     password,
-    session: {
-      sealSession: true,
-      cookiePassword: WORKOS_COOKIE_PASSWORD,
-    },
   });
 
-  setCookiesWorkos({ res, sealedSession });
+  setCookiesWorkos({ res, refreshToken });
 };
 
 export const clearCookiesWorkos = ({ res }: { res: Response }) => {
@@ -301,16 +281,16 @@ export const clearCookiesWorkos = ({ res }: { res: Response }) => {
   });
 };
 
-const setCookiesWorkos = ({ res, sealedSession }: { res: Response; sealedSession: string | undefined }) => {
+const setCookiesWorkos = ({ res, refreshToken }: { res: Response; refreshToken: string | undefined }) => {
   const isLocalDev = process.env.NODE_ENV === 'development' && process.env.ENVIRONMENT === 'development';
 
-  res.cookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, sealedSession, {
+  res.cookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
     httpOnly: true,
     secure: !isLocalDev, // Only false in local development
     sameSite: isLocalDev ? 'lax' : 'none',
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
   });
-  res.cookie(WORKOS_HAS_SESSION_COOKIE_NAME, sealedSession, {
+  res.cookie(WORKOS_HAS_SESSION_COOKIE_NAME, 'true', {
     secure: !isLocalDev, // Only false in local development
     sameSite: isLocalDev ? 'lax' : 'none',
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
