@@ -129,7 +129,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on': {
     model: 'claude-haiku-4-5@20251001',
-    backupModelKey: 'bedrock-anthropic:anthropic.claude-haiku-4-5-20251001-v1:0:thinking-toggle-on',
+    backupModelKey: 'anthropic:claude-haiku-4.5:thinking-toggle-on',
     displayName: 'claude haiku 4.5',
     temperature: 1,
     max_tokens: 64000,
@@ -145,7 +145,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-haiku-4-5@20251001': {
     model: 'claude-haiku-4-5@20251001',
-    backupModelKey: 'bedrock-anthropic:anthropic.claude-haiku-4-5-20251001-v1:0:thinking-toggle-on',
+    backupModelKey: 'anthropic:claude-haiku-4.5:thinking-toggle-on',
     displayName: 'Claude Haiku 4.5',
     temperature: 1,
     max_tokens: 64000,
