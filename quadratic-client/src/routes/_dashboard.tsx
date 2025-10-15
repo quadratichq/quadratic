@@ -1,4 +1,5 @@
 import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
+import { useWorkOs } from '@/auth/useWorkOs';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
@@ -147,6 +148,8 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
+  useWorkOs();
+
   const loaderData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData | null;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();

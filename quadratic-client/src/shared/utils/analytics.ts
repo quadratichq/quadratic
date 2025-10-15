@@ -14,7 +14,8 @@ export function googleAnalyticsAvailable(): boolean {
 }
 
 // This runs in the root loader, so analytics calls can run inside loaders.
-export function initializeAnalytics(user: User) {
+export function initializeAnalytics(user: User | null) {
+  if (!user) return;
   loadGoogleAnalytics(user);
   initAmplitudeAnalytics(user);
   if (user) identifyEventAnalyticsUser(user);
