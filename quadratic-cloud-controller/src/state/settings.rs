@@ -79,7 +79,7 @@ impl Settings {
     pub(crate) fn files_presigned_url(&self, url: &str) -> Result<Url> {
         let error =
             |message: &str| ControllerError::WorkerPresignedUrl(format!("{message}: {url:?}"));
-        let mut url = Url::parse(&url).map_err(|e| error(&e.to_string()))?;
+        let mut url = Url::parse(url).map_err(|e| error(&e.to_string()))?;
 
         // replace the scheme
         let scheme = self.files_scheme();

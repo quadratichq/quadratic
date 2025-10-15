@@ -87,8 +87,6 @@ impl Container {
             .await
             .map_err(Self::error)?;
 
-        tracing::info!("Created container: {:?}", create_container);
-
         Ok(Self {
             id,
             image_id: create_container.id,
@@ -103,24 +101,12 @@ impl Container {
 
     /// Start the container
     pub async fn start(&mut self, docker: Docker) -> Result<()> {
-        tracing::info!(
-            "Container::start called for image_id: {}, current state: {:?}",
-            self.image_id,
-            self.state
-        );
-
         let start_options = StartContainerOptions { detach_keys: None };
 
-        tracing::info!(
-            "Calling docker.start_container for image_id: {}",
-            self.image_id
-        );
         docker
             .start_container(&self.image_id, Some(start_options))
             .await
             .map_err(Self::error)?;
-
-        tracing::info!("Docker container {} started successfully", self.image_id);
 
         self.state = ContainerState::Running;
 

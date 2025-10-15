@@ -160,25 +160,11 @@ impl Cluster {
         let _timeout_seconds = container.timeout_seconds.to_owned() as u64;
         let container = Arc::new(Mutex::new(container));
 
-        tracing::info!(
-            "add_container called with start={} for container {}",
-            start,
-            id
-        );
-
         if start {
-            tracing::info!("Starting container {}", id);
             container.lock().await.start(self.docker.clone()).await?;
-            tracing::info!("Container {} started successfully", id);
         }
 
         self.containers.insert(id, Arc::clone(&container));
-
-        tracing::info!(
-            "Added container {}: total containers = {}",
-            id,
-            self.containers.len()
-        );
 
         // // in a separate thread,
         // let container = Arc::clone(&container);

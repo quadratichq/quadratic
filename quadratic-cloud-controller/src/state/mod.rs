@@ -11,7 +11,6 @@ mod settings;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::Result;

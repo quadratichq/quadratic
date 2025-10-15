@@ -300,10 +300,10 @@ pub async fn get_file_init_data(
 #[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
-    #[cfg_attr(feature = "quadratic-cloud", bincode(with_serde))]
+    #[bincode(with_serde)]
     pub file_id: Uuid,
     pub task_id: String,
-    #[cfg_attr(feature = "quadratic-cloud", bincode(with_serde))]
+    #[bincode(with_serde)]
     pub next_run_time: Option<DateTime<Utc>>,
     pub operations: Vec<u8>,
 }
