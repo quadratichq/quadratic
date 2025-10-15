@@ -2,7 +2,7 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 31;
+export const DEFAULT_MODEL_VERSION = 32;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
@@ -11,7 +11,7 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'baseten:moonshotai/Kimi-K2-Instruct-0905';
+export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
@@ -119,7 +119,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: false,
@@ -135,7 +135,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'fast',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -604,7 +604,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,
