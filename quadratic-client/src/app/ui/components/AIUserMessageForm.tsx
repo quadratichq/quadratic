@@ -9,7 +9,6 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -378,8 +377,6 @@ export const AIUserMessageForm = memo(
             setContext={setContext}
             filesSupportedText={filesSupportedText}
             uiContext={uiContext}
-            messageIndex={messageIndex}
-            showEmptyChatPromptSuggestions={showEmptyChatPromptSuggestions}
           />
         </form>
       </div>
@@ -421,39 +418,27 @@ interface CancelButtonProps {
   show: boolean;
   disabled: boolean;
   abortPrompt: () => void;
-  messageIndex: number;
-  showEmptyChatPromptSuggestions?: boolean;
 }
-const CancelButton = memo(
-  ({ show, disabled, abortPrompt, messageIndex, showEmptyChatPromptSuggestions = false }: CancelButtonProps) => {
-    const { isOnPaidPlan } = useIsOnPaidPlan();
-
-    if (!show) {
-      return null;
-    }
-
-    // Check if message counter is showing (same logic as AIMessageCounterBar)
-    // Message counter only shows for free users when not in empty chat state
-    const isMessageCounterShowing = !isOnPaidPlan && !(showEmptyChatPromptSuggestions && messageIndex === 0);
-
-    return (
-      <Button
-        size="sm"
-        variant="outline"
-        className={`absolute right-1/2 z-10 translate-x-1/2 bg-background ${
-          isMessageCounterShowing ? '-top-16' : '-top-10'
-        }`}
-        onClick={(e) => {
-          e.stopPropagation();
-          abortPrompt();
-        }}
-        disabled={disabled}
-      >
-        <BackspaceIcon className="mr-1" /> Cancel generating
-      </Button>
-    );
+const CancelButton = memo(({ show, disabled, abortPrompt }: CancelButtonProps) => {
+  if (!show) {
+    return null;
   }
-);
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
+      onClick={(e) => {
+        e.stopPropagation();
+        abortPrompt();
+      }}
+      disabled={disabled}
+    >
+      <BackspaceIcon className="mr-1" /> Cancel generating
+    </Button>
+  );
+});
 
 interface AIUserMessageFormFooterProps {
   disabled: boolean;
@@ -471,8 +456,6 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   uiContext: AIUserMessageFormProps['uiContext'];
-  messageIndex: number;
-  showEmptyChatPromptSuggestions?: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -491,8 +474,6 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     uiContext,
-    messageIndex,
-    showEmptyChatPromptSuggestions,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -563,13 +544,7 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton
-          show={loading}
-          disabled={cancelDisabled}
-          abortPrompt={abortPrompt}
-          messageIndex={messageIndex}
-          showEmptyChatPromptSuggestions={showEmptyChatPromptSuggestions}
-        />
+        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
       </>
     );
   }

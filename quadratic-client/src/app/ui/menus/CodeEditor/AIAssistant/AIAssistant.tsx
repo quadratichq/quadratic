@@ -14,14 +14,14 @@ export const AIAssistant = memo(() => {
     <div className="grid h-full grid-rows-[1fr_auto]">
       <AIAssistantMessages textareaRef={textareaRef} />
 
-      <div className="flex h-full flex-col justify-end px-2 py-0.5">
-        <AIMessageCounterBar messageIndex={messagesCount} showEmptyChatPromptSuggestions={false} />
+      <div className="flex h-full flex-col justify-end px-2 pb-1.5 pt-0.5">
         <AIAssistantUserMessageForm
           ref={textareaRef}
           autoFocusRef={autoFocusRef}
           textareaRef={textareaRef}
           messageIndex={messagesCount}
         />
+        <AIMessageCounterBar />
       </div>
     </div>
   );

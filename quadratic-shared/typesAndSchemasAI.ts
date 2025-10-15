@@ -169,6 +169,7 @@ export const AIModelConfigSchema = z
     model: AIModelSchema,
     backupModelKey: AIModelKeySchema.optional(),
     displayName: z.string(),
+    displayProvider: z.string(),
     temperature: z.number(),
     max_tokens: z.number(),
     canStream: z.boolean(),

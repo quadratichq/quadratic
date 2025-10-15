@@ -36,6 +36,7 @@ export const MODELS_CONFIGURATION: {
   'quadratic:quadratic-auto:thinking-toggle-off': {
     model: 'quadratic-auto',
     displayName: 'auto',
+    displayProvider: 'Quadratic',
     temperature: 0.1,
     max_tokens: 8192,
     canStream: true,
@@ -51,7 +52,8 @@ export const MODELS_CONFIGURATION: {
   'quadratic:quadratic-auto:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -67,7 +69,8 @@ export const MODELS_CONFIGURATION: {
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off': {
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-off',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
@@ -83,7 +86,8 @@ export const MODELS_CONFIGURATION: {
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on': {
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -99,7 +103,8 @@ export const MODELS_CONFIGURATION: {
   'vertexai-anthropic:claude-sonnet-4-5@20250929': {
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'Claude Sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -113,7 +118,8 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-off': {
     model: 'gemini-2.5-flash',
-    displayName: 'gemini 2.5 flash',
+    displayName: '2.5 flash',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -129,7 +135,8 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-on': {
     model: 'gemini-2.5-flash',
-    displayName: 'gemini 2.5 flash',
+    displayName: '2.5 flash',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -145,7 +152,8 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off': {
     model: 'gemini-2.5-flash-lite',
-    displayName: 'gemini 2.5 flash lite',
+    displayName: '2.5 flash lite',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -160,7 +168,8 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on': {
     model: 'gemini-2.5-flash-lite',
-    displayName: 'gemini 2.5 flash lite',
+    displayName: '2.5 Flash-Lite',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -176,7 +185,8 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-2.5-pro': {
     model: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro',
+    displayName: '2.5 Pro',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -190,7 +200,8 @@ export const MODELS_CONFIGURATION: {
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
     model: 'gemini-2.5-flash-lite-preview-06-17',
-    displayName: 'gemini 2.5 flash lite',
+    displayName: '2.5 Flash-Lite',
+    displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
@@ -206,7 +217,8 @@ export const MODELS_CONFIGURATION: {
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'azure-openai:gpt-5-codex',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
@@ -222,7 +234,8 @@ export const MODELS_CONFIGURATION: {
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'azure-openai:gpt-5-codex',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -237,7 +250,8 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
-    displayName: 'deepseek r1',
+    displayName: 'R1',
+    displayProvider: 'DeepSeek',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -255,7 +269,8 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
@@ -271,7 +286,8 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
-    displayName: 'claude sonnet 4.5',
+    displayName: 'Sonnet 4.5',
+    displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
     canStream: true,
@@ -287,7 +303,8 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-5-codex': {
     model: 'gpt-5-codex',
     backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'gpt-5 codex',
+    displayName: 'GPT-5-Codex',
+    displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
@@ -307,7 +324,8 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
     backupModelKey: 'baseten:moonshotai/Kimi-K2-Instruct-0905',
-    displayName: 'gpt-5',
+    displayName: 'GPT-5',
+    displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
@@ -327,7 +345,8 @@ export const MODELS_CONFIGURATION: {
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+    displayName: 'GPT-4.1',
+    displayProvider: 'OpenAI',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -344,7 +363,8 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:o4-mini-2025-04-16': {
     model: 'o4-mini-2025-04-16',
-    displayName: 'o4 mini',
+    displayName: 'o4 Mini',
+    displayProvider: 'OpenAI',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 100000,
     canStream: true,
@@ -362,7 +382,8 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:o3-2025-04-16': {
     model: 'o3-2025-04-16',
-    displayName: 'OpenAI o3',
+    displayName: 'o3',
+    displayProvider: 'OpenAI',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 100000,
     canStream: false, // stream is not supported for o1
@@ -381,7 +402,8 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-5-codex': {
     model: 'gpt-5-codex',
     backupModelKey: 'openai:gpt-5-codex',
-    displayName: 'OpenAI GPT-5-Codex',
+    displayName: 'GPT-5-Codex',
+    displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
@@ -400,7 +422,8 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-5': {
     model: 'gpt-5',
     backupModelKey: 'openai:gpt-5-2025-08-07',
-    displayName: 'OpenAI GPT-5',
+    displayName: 'GPT-5',
+    displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
@@ -419,7 +442,8 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-4.1': {
     model: 'gpt-4.1',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
-    displayName: 'gpt 4.1',
+    displayName: 'GPT-4.1',
+    displayProvider: 'OpenAI',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -437,7 +461,8 @@ export const MODELS_CONFIGURATION: {
   'azure-openai:gpt-4.1-mini': {
     model: 'gpt-4.1-mini',
     backupModelKey: 'azure-openai:gpt-4.1',
-    displayName: 'gpt 4.1 mini',
+    displayName: 'GPT-4.1 mini',
+    displayProvider: 'OpenAI',
     temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
@@ -454,7 +479,8 @@ export const MODELS_CONFIGURATION: {
   },
   'azure-openai:o3': {
     model: 'o3',
-    displayName: 'OpenAI o3',
+    displayName: 'o3',
+    displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 32768,
     canStream: false,
@@ -472,7 +498,8 @@ export const MODELS_CONFIGURATION: {
   },
   'xai:grok-4-0709': {
     model: 'grok-4-0709',
-    displayName: 'grok 4',
+    displayName: 'Grok 4',
+    displayProvider: 'xAI',
     temperature: 0.1,
     max_tokens: 256000,
     canStream: true,
@@ -491,6 +518,7 @@ export const MODELS_CONFIGURATION: {
     model: 'moonshotai/Kimi-K2-Instruct-0905',
     backupModelKey: 'baseten:deepseek-ai/DeepSeek-V3.1',
     displayName: 'Kimi K2 Instruct 0905',
+    displayProvider: 'Moonshot AI',
     temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,
@@ -513,7 +541,8 @@ export const MODELS_CONFIGURATION: {
   'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct': {
     model: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
-    displayName: 'Qwen3 Coder 480B',
+    displayName: 'Qwen3-Coder-480B',
+    displayProvider: 'Qwen',
     temperature: 0.7,
     max_tokens: 0, // use api default
     canStream: true,
@@ -536,7 +565,8 @@ export const MODELS_CONFIGURATION: {
   'baseten:deepseek-ai/DeepSeek-V3.1': {
     model: 'deepseek-ai/DeepSeek-V3.1',
     backupModelKey: 'azure-openai:gpt-4.1',
-    displayName: 'DeepSeek V3.1',
+    displayName: 'V3.1',
+    displayProvider: 'DeepSeek',
     temperature: 0.6,
     max_tokens: 0, // use api default
     canStream: true,
@@ -559,7 +589,8 @@ export const MODELS_CONFIGURATION: {
   'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
     model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
-    displayName: 'Qwen3 Coder 480B',
+    displayName: 'Qwen3-Coder-480B',
+    displayProvider: 'Qwen',
     temperature: 0.7,
     max_tokens: 0, // use api default
     canStream: true,
@@ -582,7 +613,8 @@ export const MODELS_CONFIGURATION: {
   'fireworks:accounts/fireworks/models/deepseek-v3p1': {
     model: 'accounts/fireworks/models/deepseek-v3p1',
     backupModelKey: 'azure-openai:gpt-4.1',
-    displayName: 'DeepSeek V3.1',
+    displayName: 'V3.1',
+    displayProvider: 'DeepSeek',
     temperature: 0.2,
     max_tokens: 0, // use api default
     canStream: true,
@@ -604,7 +636,8 @@ export const MODELS_CONFIGURATION: {
   },
   'open-router:deepseek/deepseek-r1-0528': {
     model: 'deepseek/deepseek-r1-0528',
-    displayName: 'deepseek r1 0528',
+    displayName: 'R1-0528',
+    displayProvider: 'DeepSeek',
     temperature: 0.1,
     max_tokens: 0, // use api default
     canStream: true,

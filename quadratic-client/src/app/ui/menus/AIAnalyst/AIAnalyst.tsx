@@ -93,31 +93,21 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              {messagesCount === 0 ? (
-                // Original layout for empty state - completely unaltered
-                <div className={'grid grid-rows-[1fr_auto] px-2 py-0.5'}>
-                  <AIAnalystUserMessageForm
-                    ref={textareaRef}
-                    autoFocusRef={autoFocusRef}
-                    textareaRef={textareaRef}
-                    messageIndex={messagesCount}
-                    showEmptyChatPromptSuggestions={true}
-                  />
-                </div>
-              ) : (
-                // Layout with message counter above chat box for non-empty state
-                <div className={'grid grid-rows-[1fr_auto_auto] px-2 py-0.5'}>
-                  <div></div>
-                  <AIMessageCounterBar messageIndex={messagesCount} showEmptyChatPromptSuggestions={true} />
-                  <AIAnalystUserMessageForm
-                    ref={textareaRef}
-                    autoFocusRef={autoFocusRef}
-                    textareaRef={textareaRef}
-                    messageIndex={messagesCount}
-                    showEmptyChatPromptSuggestions={true}
-                  />
-                </div>
-              )}
+              <div
+                className={cn(
+                  'px-2 pb-2 pt-0.5',
+                  messagesCount === 0 ? 'grid grid-rows-[1fr_auto]' : 'grid grid-rows-[1fr_auto_auto]'
+                )}
+              >
+                <AIAnalystUserMessageForm
+                  ref={textareaRef}
+                  autoFocusRef={autoFocusRef}
+                  textareaRef={textareaRef}
+                  messageIndex={messagesCount}
+                  showEmptyChatPromptSuggestions={true}
+                />
+                {messagesCount !== 0 && <AIMessageCounterBar />}
+              </div>
             </>
           )}
         </div>

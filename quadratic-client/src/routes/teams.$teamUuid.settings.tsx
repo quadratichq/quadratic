@@ -341,20 +341,24 @@ export const Component = () => {
                 disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
               >
                 {!isOnPaidPlan && (
-                  <Button
-                    asChild
-                    onClick={() => {
-                      trackEvent('[TeamSettings].upgradeToProClicked', {
-                        team_uuid: team.uuid,
-                        source: 'privacy_section',
-                      });
-                    }}
-                    size="sm"
-                    className="h-6 px-2"
-                    disabled={!canManageBilling}
-                  >
-                    <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Pro only, upgrade to customize</Link>
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Button
+                      asChild
+                      variant="link"
+                      onClick={() => {
+                        trackEvent('[TeamSettings].upgradeToProClicked', {
+                          team_uuid: team.uuid,
+                          source: 'privacy_section',
+                        });
+                      }}
+                      size="sm"
+                      className="h-6"
+                      disabled={!canManageBilling}
+                    >
+                      <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade now</Link>
+                    </Button>
+                  </div>
                 )}
               </SettingControl>
               <div className="mt-4">
