@@ -1,13 +1,51 @@
-use serde::Deserialize;
+use quadratic_rust_shared::quadratic_api::Task;
+use quadratic_rust_shared::quadratic_cloud::{
+    GetWorkerInitDataResponse, decompress_and_decode_tasks,
+};
+use serde::{Deserialize, Deserializer};
 use uuid::Uuid;
 
 use crate::error::{Result, WorkerError};
 
-#[derive(Deserialize, Debug, Clone)]
+// Remove surrounding quotes if present (from {:?} debug format)
+fn remove_surrounding_quotes<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+
+    Ok(s.trim_matches('"').into())
+}
+
+fn deserialize_tasks<'de, D>(deserializer: D) -> std::result::Result<Vec<(String, Task)>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let deserialized = remove_surrounding_quotes(deserializer)?;
+    decompress_and_decode_tasks(deserialized).map_err(serde::de::Error::custom)
+}
+
+fn deserialize_worker_init_data<'de, D>(
+    deserializer: D,
+) -> std::result::Result<GetWorkerInitDataResponse, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let deserialized = remove_surrounding_quotes(deserializer)?;
+    serde_json::from_str(&deserialized).map_err(serde::de::Error::custom)
+}
+
+#[derive(Deserialize, Debug)]
 pub(crate) struct Config {
     pub(crate) controller_url: String,
     pub(crate) multiplayer_url: String,
     pub(crate) file_id: Uuid,
+    pub(crate) m2m_auth_token: String,
+
+    #[serde(deserialize_with = "deserialize_tasks")]
+    pub(crate) tasks: Vec<(String, Task)>,
+    #[serde(deserialize_with = "deserialize_worker_init_data")]
+    pub(crate) worker_init_data: GetWorkerInitDataResponse,
 }
 
 impl Config {
@@ -19,6 +57,9 @@ impl Config {
             std::env::remove_var("CONTROLLER_URL");
             std::env::remove_var("MULTIPLAYER_URL");
             std::env::remove_var("FILE_ID");
+            std::env::remove_var("M2M_AUTH_TOKEN");
+            std::env::remove_var("TASKS");
+            std::env::remove_var("WORKER_INIT_DATA");
         }
 
         Ok(config)

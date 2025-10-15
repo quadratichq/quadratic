@@ -255,6 +255,12 @@ impl Worker {
                                     }
                                     // TODO(ddimaria): keep a count of users in the room
                                     MessageResponse::UsersInRoom { .. } => {}
+                                    // Handle error responses - if we get an error about missing transactions,
+                                    // it likely means we're already at the latest sequence and there are no
+                                    // catchup transactions to receive
+                                    MessageResponse::Error { .. } => {
+                                        status.lock().await.received_catchup_transactions = true;
+                                    }
                                     // we don't care about other messages
                                     _ => {}
                                 },

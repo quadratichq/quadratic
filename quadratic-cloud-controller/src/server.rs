@@ -2,10 +2,7 @@ use axum::{
     Extension, Router,
     routing::{get, post},
 };
-use quadratic_rust_shared::quadratic_cloud::{
-    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_GET_WORKER_INIT_DATA_ROUTE,
-    WORKER_SHUTDOWN_ROUTE,
-};
+use quadratic_rust_shared::quadratic_cloud::{WORKER_ACK_TASKS_ROUTE, WORKER_SHUTDOWN_ROUTE};
 use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
@@ -17,7 +14,7 @@ use crate::{
     config::Config,
     controller_docker::IMAGE_NAME,
     error::{ControllerError, Result},
-    handle::{ack_tasks_for_worker, get_file_init_data, get_tasks_for_worker, shutdown_worker},
+    handle::{ack_tasks_for_worker, shutdown_worker},
     health::{full_healthcheck, healthcheck},
     state::{State, jwt::handle_jwks},
 };
@@ -28,19 +25,14 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
     trace!("Building worker-only app");
 
     Router::new()
+        //
+        // Worker API routes
+        //
         // Shutdown a worker
         .route(WORKER_SHUTDOWN_ROUTE, get(shutdown_worker))
         //
         // Acknowledge tasks after they have been processed by the worker
         .route(WORKER_ACK_TASKS_ROUTE, post(ack_tasks_for_worker))
-        //
-        // Get tasks for a file by worker
-        .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
-        //
-        // Get a last checkpoint data URL for a file
-        .route(WORKER_GET_WORKER_INIT_DATA_ROUTE, get(get_file_init_data))
-        //
-        // Worker API routes
         //
         // state
         .layer(Extension(state))

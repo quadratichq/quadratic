@@ -7,11 +7,9 @@ mod client;
 pub mod jwt;
 mod pubsub;
 mod settings;
-mod worker;
 
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
-use std::collections::{HashMap, HashSet};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -28,8 +26,6 @@ pub(crate) struct State {
     pub(crate) client: Mutex<quadratic_rust_shared::docker::cluster::Cluster>,
     // #[cfg(feature = "kubernetes")]
     // pub(crate) client: kube::client::Client,
-    pub(crate) worker_ephemeral_tokens: Mutex<HashMap<Uuid, Uuid>>,
-    pub(crate) creating_workers: Mutex<HashSet<Uuid>>,
 }
 
 impl State {
@@ -43,9 +39,8 @@ impl State {
         Ok(State {
             settings: Settings::new(config).await?,
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
+            #[cfg(feature = "docker")]
             client: Mutex::new(Self::init_client(&config.namespace).await?),
-            worker_ephemeral_tokens: Mutex::new(HashMap::new()),
-            creating_workers: Mutex::new(HashSet::new()),
         })
     }
 }

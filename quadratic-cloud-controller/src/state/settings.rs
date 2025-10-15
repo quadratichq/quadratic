@@ -101,6 +101,20 @@ impl Settings {
 
         Ok(url)
     }
+
+    pub(crate) fn controller_url(&self) -> String {
+        let controller_port = self.worker_only_port.to_string();
+        let controller_host = self.worker_internal_host.to_string();
+
+        format!("http://{controller_host}:{controller_port}")
+    }
+
+    pub(crate) fn multiplayer_url(&self) -> String {
+        let multiplayer_port = self.multiplayer_port.to_string();
+        let multiplayer_host = self.multiplayer_host.to_string();
+
+        format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
+    }
 }
 
 #[cfg(test)]

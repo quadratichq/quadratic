@@ -125,6 +125,11 @@ impl Cluster {
     /// Check if a container exists
     pub async fn has_container(&self, id: &Uuid, require_running: bool) -> Result<bool> {
         let contains_key = self.containers.contains_key(id);
+
+        if !require_running {
+            return Ok(contains_key);
+        }
+
         let is_running = self.is_container_running(id).await.unwrap_or(false);
 
         Ok(contains_key && is_running)
@@ -152,14 +157,28 @@ impl Cluster {
     /// Add a container
     pub async fn add_container(&mut self, container: Container, start: bool) -> Result<()> {
         let id = container.id.to_owned();
-        let timeout_seconds = container.timeout_seconds.to_owned() as u64;
+        let _timeout_seconds = container.timeout_seconds.to_owned() as u64;
         let container = Arc::new(Mutex::new(container));
 
+        tracing::info!(
+            "add_container called with start={} for container {}",
+            start,
+            id
+        );
+
         if start {
+            tracing::info!("Starting container {}", id);
             container.lock().await.start(self.docker.clone()).await?;
+            tracing::info!("Container {} started successfully", id);
         }
 
         self.containers.insert(id, Arc::clone(&container));
+
+        tracing::info!(
+            "Added container {}: total containers = {}",
+            id,
+            self.containers.len()
+        );
 
         // // in a separate thread,
         // let container = Arc::clone(&container);

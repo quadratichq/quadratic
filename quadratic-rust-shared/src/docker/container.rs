@@ -57,14 +57,15 @@ impl Container {
         id: Uuid,
         image: &str,
         docker: Docker,
+        container_name: Option<String>,
         env_vars: Option<Vec<String>>,
         cmd: Option<Vec<String>>,
         timeout_seconds: Option<i64>,
     ) -> Result<Self> {
-        let container_name = Self::image_basename(image);
+        let container_name = container_name.unwrap_or(Self::image_basename(image));
 
         let create_options = CreateContainerOptions {
-            name: Some(format!("{}-{}", container_name, id)),
+            name: Some(container_name),
             ..Default::default()
         };
 
@@ -86,6 +87,8 @@ impl Container {
             .await
             .map_err(Self::error)?;
 
+        tracing::info!("Created container: {:?}", create_container);
+
         Ok(Self {
             id,
             image_id: create_container.id,
@@ -100,11 +103,24 @@ impl Container {
 
     /// Start the container
     pub async fn start(&mut self, docker: Docker) -> Result<()> {
+        tracing::info!(
+            "Container::start called for image_id: {}, current state: {:?}",
+            self.image_id,
+            self.state
+        );
+
         let start_options = StartContainerOptions { detach_keys: None };
+
+        tracing::info!(
+            "Calling docker.start_container for image_id: {}",
+            self.image_id
+        );
         docker
             .start_container(&self.image_id, Some(start_options))
             .await
             .map_err(Self::error)?;
+
+        tracing::info!("Docker container {} started successfully", self.image_id);
 
         self.state = ContainerState::Running;
 
@@ -327,6 +343,7 @@ pub mod tests {
             Uuid::new_v4(),
             "quadratic-cloud-worker",
             docker.clone(),
+            None,
             Some(env_vars),
             None,
             None,

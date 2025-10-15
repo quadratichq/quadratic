@@ -1,6 +1,5 @@
 mod config;
 mod error;
-mod state;
 mod worker;
 
 use tracing::info;

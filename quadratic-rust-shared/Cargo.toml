@@ -24,6 +24,7 @@ axum-extra = { version = "0.10.0", features = [
 ], optional = true }
 axum-macros = { version = "0.5.0", optional = true }
 base64 = { version = "0.22.1", optional = true }
+bincode = { version = "2.0.1", optional = true, features = ["serde"] }
 bigdecimal = "0.4.5" # need this fixed to the sqlx dependency
 bollard = { version = "0.19.3", optional = true }
 bytes = "1.6.0"
@@ -125,7 +126,8 @@ net = [
 ]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
-quadratic-api = ["reqwest", "urlencoding"]
+quadratic-api = ["bincode", "reqwest", "urlencoding"]
+quadratic-cloud = ["base64", "bincode", "quadratic-api"]
 record-request-mock = []
 sql = [
   "arrow",
@@ -145,7 +147,6 @@ sql = [
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]
 test = ["httpmock", "criterion", "tabled"]
-quadratic-cloud = ["quadratic-api"]
 
 [dev-dependencies]
 arrow = { version = "=54.2.1", features = ["prettyprint"] }

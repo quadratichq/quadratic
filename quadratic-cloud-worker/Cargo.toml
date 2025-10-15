@@ -13,6 +13,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "quadratic-cloud",
 ] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.108"
 thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
 tracing = "0.1.40"

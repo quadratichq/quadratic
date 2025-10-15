@@ -15,6 +15,9 @@ pub(crate) enum ControllerError {
     #[error("Client error: {0}")]
     Client(String),
 
+    #[error("Error compressing tasks: {0}")]
+    CompressTasks(String),
+
     #[error("Config error: {0}")]
     Config(String),
 
@@ -50,9 +53,6 @@ pub(crate) enum ControllerError {
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
-
-    #[error("Worker init data error: {0}")]
-    WorkerInitData(String),
 
     #[error("Worker presigned url error: {0}")]
     WorkerPresignedUrl(String),

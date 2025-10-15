@@ -188,7 +188,7 @@ impl State {
         self.subscribe_pubsub(file_id).await?;
 
         let mut pubsub = self.pubsub.lock().await;
-        let key_refs = keys.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        let keys_refs = keys.iter().map(|s| s.as_str()).collect::<Vec<_>>();
 
         trace!("Acknowledging tasks for file {file_id}: {keys:?}");
 
@@ -197,7 +197,7 @@ impl State {
             .ack(
                 &PubSub::file_id_to_channel(file_id),
                 GROUP,
-                key_refs,
+                keys_refs,
                 Some(ACTIVE_CHANNELS),
                 true,
             )

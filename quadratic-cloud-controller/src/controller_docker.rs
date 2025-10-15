@@ -2,12 +2,16 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use futures::future::join_all;
-use quadratic_rust_shared::docker::container::Container;
+use quadratic_rust_shared::{
+    docker::container::Container,
+    quadratic_cloud::{GetWorkerInitDataResponse, compress_tasks, encode_tasks},
+};
 use tracing::{error, info, trace};
 use uuid::Uuid;
 
 use crate::{
     error::{ControllerError, Result},
+    quadratic_api::{file_init_data, insert_running_log},
     state::State,
 };
 
@@ -35,24 +39,19 @@ impl Controller {
             return Ok(());
         }
 
-        let existing_workers = self.get_all_active_worker_file_ids().await?;
-        info!("Existing workers: {:?}", existing_workers);
-        let workers_needed = file_ids
-            .into_iter()
-            .filter(|file_id| !existing_workers.contains(file_id))
-            .collect::<HashSet<_>>();
-        info!("Workers needed: {:?}", workers_needed);
-        let workers = workers_needed
-            .iter()
-            .map(|file_id| self.create_worker(file_id));
+        let workers = file_ids.iter().map(|file_id| self.create_worker(file_id));
         let results = join_all(workers).await;
+
         info!("Results: {:?}", results);
-        for (file_id, result) in workers_needed.into_iter().zip(results) {
+
+        for (file_id, result) in file_ids.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("Failed to create file worker for {file_id}: {e}");
             }
         }
+
         info!("Finished creating workers");
+
         Ok(())
     }
 
@@ -85,66 +84,112 @@ impl Controller {
         Ok(active_file_ids)
     }
 
-    /// Check if a file has an active worker
-    async fn file_has_active_worker(&self, file_id: &Uuid) -> Result<bool> {
-        let has_container = self
+    // /// Check if a file has an active worker
+    // async fn file_has_active_worker(&self, file_id: &Uuid) -> Result<bool> {
+    //     let has_container = self
+    //         .state
+    //         .client
+    //         .lock()
+    //         .await
+    //         .has_container(file_id, true)
+    //         .await
+    //         .map_err(|e| Self::error("file_has_active_worker", e))?;
+
+    //     trace!("File {file_id} has an active worker: {has_container}");
+
+    //     Ok(has_container)
+    // }
+
+    pub(crate) async fn get_worker_init_data(
+        &self,
+        file_id: &Uuid,
+    ) -> Result<GetWorkerInitDataResponse> {
+        let mut file_init_data = file_init_data(&self.state, *file_id).await?;
+
+        file_init_data.presigned_url = self
             .state
-            .client
-            .lock()
-            .await
-            .has_container(file_id, true)
-            .await
-            .map_err(|e| Self::error("file_has_active_worker", e))?;
+            .settings
+            .files_presigned_url(&file_init_data.presigned_url)?
+            .to_string();
 
-        trace!("File {file_id} has an active worker: {has_container}");
+        trace!("[File init data for file {file_id}: {file_init_data:?}");
 
-        Ok(has_container)
+        let worker_init_data = GetWorkerInitDataResponse {
+            team_id: file_init_data.team_id,
+            sequence_number: file_init_data.sequence_number,
+            presigned_url: file_init_data.presigned_url,
+        };
+
+        Ok(worker_init_data)
+    }
+
+    pub(crate) async fn binary_tasks_for_file(
+        &self,
+        file_id: &Uuid,
+    ) -> Result<(Vec<u8>, Vec<String>)> {
+        let tasks = self
+            .state
+            .get_tasks_for_file(*file_id)
+            .await
+            .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
+
+        info!(
+            "Got tasks for worker for file {file_id} for binary tasks: {:?}",
+            tasks
+        );
+
+        let task_ids = tasks
+            .iter()
+            .map(|(_, task)| task.task_id.to_string())
+            .collect::<Vec<_>>();
+
+        let binary_tasks =
+            compress_tasks(tasks).map_err(|e| ControllerError::CompressTasks(e.to_string()))?;
+
+        Ok((binary_tasks, task_ids))
     }
 
     pub(crate) async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
         trace!("Creating worker for file {file_id}");
 
-        // Check if the file has an active worker
-        if self.file_has_active_worker(file_id).await? {
-            trace!("File worker exists after lock for file {file_id}");
-            self.state.release_worker_create_lock(file_id).await;
-            // return Ok(());
-        }
+        let container_name = format!("quadratic-cron-{file_id}-{}", Uuid::new_v4());
+        let controller_url = self.state.settings.controller_url();
+        let multiplayer_url = self.state.settings.multiplayer_url();
+        let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
+        let worker_init_data = self.get_worker_init_data(file_id).await?;
+        let (tasks, task_ids) = self.binary_tasks_for_file(file_id).await?;
 
-        // Acquire the worker create lock
-        let acquired = self.state.acquire_worker_create_lock(file_id).await;
-        if !acquired {
-            trace!("Worker creation lock held for file {file_id}");
+        if task_ids.is_empty() {
+            info!("No tasks to create worker for file {file_id}");
             return Ok(());
         }
 
-        let controller_port = self.state.settings.worker_only_port.to_string();
-        let controller_host = self.state.settings.worker_internal_host.to_string();
-        let multiplayer_port = self.state.settings.multiplayer_port.to_string();
-        let multiplayer_host = self.state.settings.multiplayer_host.to_string();
+        let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
+        let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
+
         let env_vars = vec![
             format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
-            format!(
-                "CONTROLLER_URL={}",
-                format!("http://{controller_host}:{controller_port}")
-            ),
-            format!(
-                "MULTIPLAYER_URL={}",
-                format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
-            ),
-            format!("FILE_ID={}", file_id.to_string()),
+            format!("CONTROLLER_URL={controller_url}"),
+            format!("MULTIPLAYER_URL={multiplayer_url}"),
+            format!("FILE_ID={file_id}"),
+            format!("M2M_AUTH_TOKEN={m2m_auth_token}"),
+            format!("TASKS={}", encoded_tasks),
+            format!("WORKER_INIT_DATA={}", worker_init_data_json),
         ];
 
         let container = Container::try_new(
             *file_id,
             &self.image_name,
             self.state.client.lock().await.docker.clone(),
+            Some(container_name),
             Some(env_vars),
             None,
             Some(DEFAULT_TIMEOUT_SECONDS),
         )
         .await
         .map_err(|e| Self::error("create_worker", e))?;
+
+        info!("About to add and start container for file {file_id}");
 
         self.state
             .client
@@ -154,7 +199,9 @@ impl Controller {
             .await
             .map_err(|e| Self::error("create_worker", e))?;
 
-        info!("Added worker for file {file_id}");
+        info!("Successfully added and started worker for file {file_id}");
+
+        insert_running_log(&self.state, task_ids).await?;
 
         Ok(())
     }
@@ -168,10 +215,8 @@ impl Controller {
             .await
             .map_err(|e| Self::error("shutdown_worker", e))?;
         tracing::warn!("shutdown_worker 3");
-        state.release_worker_create_lock(file_id).await;
 
         info!("Shut down worker for file {file_id}");
-        tracing::warn!("shutdown_worker 4");
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -12,6 +13,14 @@ pub const WORKER_ACK_TASKS_ROUTE: &str = "/worker/ack-tasks";
 pub const WORKER_SHUTDOWN_ROUTE: &str = "/worker/shutdown";
 pub const FILE_ID_HEADER: &str = "file-id";
 pub const WORKER_EPHEMERAL_TOKEN_HEADER: &str = "worker-ephemeral-token";
+const MAX_FILE_SIZE: usize = 104857600; // 100 MB
+const BINCODE_CONFIG: bincode::config::Configuration<
+    bincode::config::LittleEndian,
+    bincode::config::Fixint,
+    bincode::config::Limit<MAX_FILE_SIZE>, // 100 MB
+> = bincode::config::standard()
+    .with_fixed_int_encoding()
+    .with_limit::<MAX_FILE_SIZE>();
 
 fn handle_response(response: &Response) -> Result<()> {
     match response.status() {
@@ -67,14 +76,15 @@ pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse
     handle_response(&response)?;
 
     let scheduled_tasks_response = response.json::<GetTasksResponse>().await?;
+
     Ok(scheduled_tasks_response)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AckTasksRequest {
-    // (key, task)
+    // (key, task_id)
     pub successful_tasks: Vec<(String, String)>,
-    // (key, task, error)
+    // (key,task_id, error)
     pub failed_tasks: Vec<(String, String, String)>,
 }
 
@@ -87,7 +97,9 @@ pub struct AckTasksResponse {
 pub async fn ack_tasks(
     base_url: &str,
     file_id: Uuid,
+    // (key, task_id)
     successful_tasks: Vec<(String, String)>,
+    // (task_id, error)
     failed_tasks: Vec<(String, String, String)>,
 ) -> Result<AckTasksResponse> {
     let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
@@ -128,4 +140,56 @@ pub async fn worker_shutdown(base_url: &str, file_id: Uuid) -> Result<ShutdownRe
 
     let shutdown_response = response.json::<ShutdownResponse>().await?;
     Ok(shutdown_response)
+}
+
+pub fn compress_and_encode_tasks(tasks: Vec<(String, Task)>) -> Result<String> {
+    let binary_tasks = compress_tasks(tasks)?;
+    let encoded_tasks = encode_tasks(binary_tasks)?;
+    Ok(encoded_tasks)
+}
+
+pub fn decompress_and_decode_tasks(encoded_tasks: String) -> Result<Vec<(String, Task)>> {
+    let binary_tasks = decode_tasks(encoded_tasks)?;
+    let tasks = decompress_tasks(binary_tasks)?;
+    Ok(tasks)
+}
+
+pub fn compress_tasks(tasks: Vec<(String, Task)>) -> Result<Vec<u8>> {
+    let binary_tasks = bincode::encode_to_vec(&tasks, bincode::config::standard())
+        .map_err(|e| SharedError::Serialization(format!("Failed to serialize tasks: {}", e)))?;
+
+    Ok(binary_tasks)
+}
+
+pub fn decompress_tasks(binary_tasks: Vec<u8>) -> Result<Vec<(String, Task)>> {
+    let (tasks, _) = bincode::decode_from_slice(&binary_tasks, bincode::config::standard())
+        .map_err(|e| SharedError::Serialization(format!("Failed to deserialize tasks: {}", e)))?;
+
+    Ok(tasks)
+}
+
+pub fn encode_tasks(binary_tasks: Vec<u8>) -> Result<String> {
+    let encoded_tasks = BASE64.encode(binary_tasks);
+    Ok(encoded_tasks)
+}
+
+pub fn decode_tasks(encoded_tasks: String) -> Result<Vec<u8>> {
+    let binary_tasks = BASE64
+        .decode(encoded_tasks)
+        .map_err(|e| SharedError::Serialization(format!("Failed to decode tasks: {}", e)))?;
+    Ok(binary_tasks)
+}
+
+pub fn serialize_tasks(tasks: Vec<Task>) -> Result<Vec<u8>> {
+    let binary_tasks = bincode::encode_to_vec(&tasks, BINCODE_CONFIG)
+        .map_err(|e| SharedError::Serialization(format!("Failed to serialize tasks: {}", e)))?;
+
+    Ok(binary_tasks)
+}
+
+pub fn deserialize_tasks(binary_tasks: Vec<u8>) -> Result<Vec<Task>> {
+    let (tasks, _) = bincode::decode_from_slice(&binary_tasks, BINCODE_CONFIG)
+        .map_err(|e| SharedError::Serialization(format!("Failed to deserialize tasks: {}", e)))?;
+
+    Ok(tasks)
 }
