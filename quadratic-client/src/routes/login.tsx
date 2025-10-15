@@ -4,9 +4,8 @@ import { isWorkOs, useWorkOs } from '@/auth/useWorkOs';
 import { LoginForm } from '@/shared/components/auth/LoginForm';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
+import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-
-// note: this is not used by WorkOS since it uses the WorkOS login flow
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const redirectTo = getRedirectTo() || '/';
@@ -30,7 +29,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const Component = () => {
   const { signIn } = useWorkOs();
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (signIn) {
+      signIn();
+    }
+  }, [signIn]);
+
+  if (signIn) {
+    return null;
+  }
 
   return <LoginForm />;
 };

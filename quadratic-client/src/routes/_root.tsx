@@ -24,7 +24,9 @@ export const Component = () => {
     return (
       <AuthKitProvider
         clientId={import.meta.env.VITE_WORKOS_CLIENT_ID}
-        apiHostname={import.meta.env.VITE_QUADRATIC_API_URL}
+        apiHostname={import.meta.env.VITE_WORKOS_API}
+        https={import.meta.env.VITE_WORKOS_SECURE === 'true'}
+        devMode={import.meta.env.VITE_DEBUG === '1'}
       >
         <InitializeAuthKit />
         <MuiTheme>

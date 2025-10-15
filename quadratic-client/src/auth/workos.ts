@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
 import { workOs } from '@/auth/useWorkOs';
+import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { captureEvent } from '@sentry/react';
 
-const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
-
 // verify all Workos env variables are set
-if (!WORKOS_CLIENT_ID) {
+if (!VITE_WORKOS_CLIENT_ID) {
   const message = 'Workos variables are not configured correctly.';
   captureEvent({
     message,

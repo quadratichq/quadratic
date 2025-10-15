@@ -301,7 +301,7 @@ export const clearCookiesWorkos = ({ res }: { res: Response }) => {
   });
 };
 
-const setCookiesWorkos = ({ res, sealedSession }: { res: Response; sealedSession: string | undefined }) => {
+export const setCookiesWorkos = ({ res, sealedSession }: { res: Response; sealedSession: string | undefined }) => {
   const isLocalDev = process.env.NODE_ENV === 'development' && process.env.ENVIRONMENT === 'development';
 
   res.cookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, sealedSession, {
