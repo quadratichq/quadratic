@@ -10,27 +10,27 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
-  workos: {
-    login(redirectTo: string, state?: string) {
-      return fetchFromApi(
-        `/v0/workos/login`,
-        { method: 'POST', body: JSON.stringify({ redirectTo, state }) },
-        ApiSchemas['/v0/workos/login.POST.response']
-      );
-    },
-    logout() {
-      return fetchFromApi(
-        `/v0/workos/logout`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            redirectTo: window.location.origin,
-          }),
-        },
-        ApiSchemas['/v0/workos/logout.POST.response']
-      );
-    },
-  },
+  // workos: {
+  //   login(redirectTo: string, state?: string) {
+  //     return fetchFromApi(
+  //       `/v0/workos/login`,
+  //       { method: 'POST', body: JSON.stringify({ redirectTo, state }) },
+  //       ApiSchemas['/v0/workos/login.POST.response']
+  //     );
+  //   },
+  //   logout() {
+  //     return fetchFromApi(
+  //       `/v0/workos/logout`,
+  //       {
+  //         method: 'POST',
+  //         body: JSON.stringify({
+  //           redirectTo: window.location.origin,
+  //         }),
+  //       },
+  //       ApiSchemas['/v0/workos/logout.POST.response']
+  //     );
+  //   },
+  // },
   teams: {
     list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);

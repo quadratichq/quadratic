@@ -11,6 +11,12 @@
     "outDir": "dist",
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "scripts/**/*.ts",
+    "src/routes/v0/workos.logout.POST.ts.deprecated",
+    "src/routes/v0/workos.login.POST.ts.deprecated"
+  ],
   "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]
 }

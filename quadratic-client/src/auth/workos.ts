@@ -47,7 +47,7 @@ export const workosClient: AuthClient = {
    * Get the current authenticated user from Workos.
    */
   async user(): Promise<User | undefined> {
-    // document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
+    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     await disposeClient();
     const client = await getClient();
     await client.initialize();
@@ -76,11 +76,12 @@ export const workosClient: AuthClient = {
         redirectTo: args.redirectTo,
       };
     }
-    const callback = new URL(window.location.origin + ROUTES.LOGIN_RESULT);
+    // const callback = new URL(window.location.origin + ROUTES.LOGIN_RESULT);
     try {
-      const { url } = await apiClient.workos.login(callback.toString(), state ? JSON.stringify(state) : undefined);
-      if (!url) throw new Error('Expected signInUrl to be defined in login');
-      window.location.href = url;
+      debugger;
+      // const { url } = await apiClient.workos.login(callback.toString(), state ? JSON.stringify(state) : undefined);
+      // if (!url) throw new Error('Expected signInUrl to be defined in login');
+      // window.location.href = url;
     } catch {}
   },
 
