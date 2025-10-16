@@ -111,6 +111,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       // Create a log entry
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-1',
         status: 'COMPLETED',
       });
 
@@ -132,6 +133,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       // Create multiple log entries with slight delays to ensure different timestamps
       const log1 = await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-1',
         status: 'PENDING',
       });
 
@@ -139,6 +141,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       const log2 = await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-2',
         status: 'RUNNING',
       });
 
@@ -146,6 +149,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       const log3 = await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-3',
         status: 'COMPLETED',
       });
 
@@ -169,6 +173,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-error',
         status: 'FAILED',
         error: errorMessage,
       });
@@ -191,6 +196,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       for (const status of statuses) {
         await createScheduledTaskLog({
           scheduledTaskId: testScheduledTask.id,
+          runId: `test-run-id-${status}`,
           status,
           error: status === 'FAILED' ? 'Test error' : undefined,
         });
@@ -215,6 +221,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-long-error',
         status: 'FAILED',
         error: longErrorMessage,
       });
@@ -235,11 +242,13 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       // Create logs for both tasks
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-task1',
         status: 'COMPLETED',
       });
 
       await createScheduledTaskLog({
         scheduledTaskId: anotherTask.id,
+        runId: 'test-run-id-task2',
         status: 'FAILED',
         error: 'Different task error',
       });
@@ -259,6 +268,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
     it('should return correctly formatted response with all required fields', async () => {
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-format',
         status: 'COMPLETED',
       });
 
@@ -294,6 +304,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
     it('should return valid date strings for date fields', async () => {
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-date',
         status: 'COMPLETED',
       });
 
@@ -318,6 +329,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-with-error',
         status: 'FAILED',
         error: errorMessage,
       });
@@ -354,6 +366,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
         logPromises.push(
           createScheduledTaskLog({
             scheduledTaskId: testScheduledTask.id,
+            runId: `test-run-id-${i}`,
             status: (i % 2 === 0 ? 'COMPLETED' : 'FAILED') as 'COMPLETED' | 'FAILED',
             error: i % 2 === 1 ? `Error ${i}` : undefined,
           })
@@ -385,6 +398,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
 
       await createScheduledTaskLog({
         scheduledTaskId: testScheduledTask.id,
+        runId: 'test-run-id-special-chars',
         status: 'FAILED',
         error: specialErrorMessage,
       });

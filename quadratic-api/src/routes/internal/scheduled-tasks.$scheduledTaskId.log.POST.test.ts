@@ -21,6 +21,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
   });
 
   const validRequestBody = {
+    runId: '550e8400-e29b-41d4-a716-446655440001',
     status: 'PENDING' as const,
   };
 
@@ -67,6 +68,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       expect(response.body).toMatchObject({
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
+        runId: expect.any(String),
         status: 'PENDING',
         createdDate: expect.any(String),
       });
@@ -83,6 +85,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       expect(response.body).toMatchObject({
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
+        runId: expect.any(String),
         status: 'RUNNING',
         createdDate: expect.any(String),
       });
@@ -99,6 +102,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       expect(response.body).toMatchObject({
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
+        runId: expect.any(String),
         status: 'PENDING',
         createdDate: expect.any(String),
       });
@@ -119,6 +123,7 @@ describe('POST /v0/internal/scheduled-tasks/:scheduledTaskId/log', () => {
       expect(response.body).toMatchObject({
         id: expect.any(Number),
         scheduledTaskId: expect.any(Number),
+        runId: expect.any(String),
         status: 'FAILED',
         error: 'Test error message',
         createdDate: expect.any(String),

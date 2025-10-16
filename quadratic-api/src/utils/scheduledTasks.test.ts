@@ -520,6 +520,7 @@ describe('scheduledTasks utilities', () => {
         const dbLog = await dbClient.scheduledTaskLog.create({
           data: {
             scheduledTaskId: existingTask.id,
+            runId: 'test-run-id',
             status: 'COMPLETED',
             error: null,
           },
@@ -543,6 +544,7 @@ describe('scheduledTasks utilities', () => {
         const dbLog = await dbClient.scheduledTaskLog.create({
           data: {
             scheduledTaskId: existingTask.id,
+            runId: 'test-run-id',
             status: 'FAILED',
             error: errorMessage,
           },
@@ -557,6 +559,7 @@ describe('scheduledTasks utilities', () => {
       it('should create log with PENDING status', async () => {
         const result = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id',
           status: 'PENDING',
         });
 
@@ -574,6 +577,7 @@ describe('scheduledTasks utilities', () => {
         const errorMessage = 'Database connection failed';
         const result = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id',
           status: 'FAILED',
           error: errorMessage,
         });
@@ -593,6 +597,7 @@ describe('scheduledTasks utilities', () => {
         for (const status of statuses) {
           const result = await createScheduledTaskLog({
             scheduledTaskId: existingTask.id,
+            runId: `test-run-id-${status}`,
             status,
           });
 
@@ -610,6 +615,7 @@ describe('scheduledTasks utilities', () => {
       it('should return single log when one exists', async () => {
         const log = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id',
           status: 'COMPLETED',
         });
 
@@ -621,6 +627,7 @@ describe('scheduledTasks utilities', () => {
       it('should return multiple logs in order', async () => {
         const log1 = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id-1',
           status: 'PENDING',
         });
 
@@ -629,6 +636,7 @@ describe('scheduledTasks utilities', () => {
 
         const log2 = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id-2',
           status: 'RUNNING',
         });
 
@@ -636,6 +644,7 @@ describe('scheduledTasks utilities', () => {
 
         const log3 = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id-3',
           status: 'COMPLETED',
         });
 
@@ -660,11 +669,13 @@ describe('scheduledTasks utilities', () => {
         // Create logs for both tasks
         const log1 = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id-1',
           status: 'COMPLETED',
         });
 
         const log2 = await createScheduledTaskLog({
           scheduledTaskId: otherTask.id,
+          runId: 'test-run-id-2',
           status: 'FAILED',
         });
 
@@ -684,6 +695,7 @@ describe('scheduledTasks utilities', () => {
       it('should retrieve existing log', async () => {
         const log = await createScheduledTaskLog({
           scheduledTaskId: existingTask.id,
+          runId: 'test-run-id',
           status: 'COMPLETED',
         });
 
@@ -714,16 +726,19 @@ describe('scheduledTasks utilities', () => {
       // Create some logs for the task
       await createScheduledTaskLog({
         scheduledTaskId: task.id,
+        runId: 'test-run-id-1',
         status: 'PENDING',
       });
 
       await createScheduledTaskLog({
         scheduledTaskId: task.id,
+        runId: 'test-run-id-2',
         status: 'RUNNING',
       });
 
       await createScheduledTaskLog({
         scheduledTaskId: task.id,
+        runId: 'test-run-id-3',
         status: 'COMPLETED',
       });
 
@@ -791,6 +806,7 @@ describe('scheduledTasks utilities', () => {
         }),
         createScheduledTaskLog({
           scheduledTaskId: tasks[1].id,
+          runId: 'test-run-id',
           status: 'RUNNING',
         }),
         updateScheduledTaskStatus(tasks[2].id, 'INACTIVE'),
