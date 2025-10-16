@@ -579,31 +579,6 @@ export const ApiSchemas = {
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
   }),
-
-  '/v0/workos/login.POST.request': z.object({
-    redirectTo: z.string(),
-    state: z.string().optional(),
-  }),
-  '/v0/workos/login.POST.response': z.object({
-    url: z.string().optional(),
-  }),
-  '/v0/workos/logout.POST.request': z.object({
-    redirectTo: z.string(),
-  }),
-  '/v0/workos/logout.POST.response': z.object({
-    message: z.string(),
-  }),
-
-  '/v0/auth/user_management/authenticate.POST.request': z.object({
-    refreshToken: z.string(),
-    organizationId: z.string(),
-  }),
-  '/v0/auth/user_management/authenticate.POST.response': z.object({
-    not_logged_in: z.boolean().optional(),
-    user: z.any().optional(),
-    access_token: z.string().optional(),
-    refresh_token: z.string().optional(),
-  }),
 };
 
 /**
