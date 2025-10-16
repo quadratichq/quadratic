@@ -54,9 +54,8 @@ export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 // WorkOS
 export const WORKOS_CLIENT_ID = process.env.WORKOS_CLIENT_ID as string;
 export const WORKOS_API_KEY = process.env.WORKOS_API_KEY as string;
-export const WORKOS_COOKIE_PASSWORD = process.env.WORKOS_COOKIE_PASSWORD as string;
 if (process.env.AUTH_TYPE === 'workos') {
-  ['WORKOS_CLIENT_ID', 'WORKOS_API_KEY', 'WORKOS_COOKIE_PASSWORD'].forEach(ensureEnvVarExists);
+  ['WORKOS_CLIENT_ID', 'WORKOS_API_KEY'].forEach(ensureEnvVarExists);
 }
 
 // Required in prod, optional locally
