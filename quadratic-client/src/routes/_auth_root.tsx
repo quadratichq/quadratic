@@ -1,4 +1,5 @@
 import { authClient } from '@/auth/auth';
+import { VITE_AUTH_TYPE } from '@/env-vars';
 import { AuthFormWrapper } from '@/shared/components/auth/AuthFormWrapper';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useLoggedInUserChange } from '@/shared/hooks/useLoggedInUserChange';
@@ -27,6 +28,10 @@ export const Component = () => {
   );
 
   useRemoveInitialLoadingUI();
+
+  if (VITE_AUTH_TYPE === 'workos') {
+    return <Outlet />;
+  }
 
   return (
     <AuthFormWrapper className={`${isLoading ? 'pointer-events-none overflow-hidden opacity-75' : 'overflow-auto'}`}>

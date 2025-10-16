@@ -17,12 +17,16 @@ if (!WORKOS_CLIENT_ID) {
 
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
-let clientPromise: ReturnType<typeof createClient> | null = null;
-function getClient(): ReturnType<typeof createClient> {
+let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = null;
+async function getClient() {
   if (!clientPromise) {
-    clientPromise = createClient(WORKOS_CLIENT_ID, {
-      redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-    });
+    clientPromise = (async () => {
+      const client = await createClient(WORKOS_CLIENT_ID, {
+        redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
+      });
+      await client.initialize();
+      return client;
+    })();
   }
   return clientPromise;
 }
@@ -32,8 +36,8 @@ export const workosClient: AuthClient = {
    * Return whether the user is authenticated and the session is valid.
    */
   async isAuthenticated(): Promise<boolean> {
-    await this.getTokenOrRedirect(true);
-    const user = await this.user();
+    const client = await getClient();
+    const user = client.getUser();
     return !!user;
   },
 
@@ -41,9 +45,7 @@ export const workosClient: AuthClient = {
    * Get the current authenticated user from WorkOS AuthKit.
    */
   async user(): Promise<User | undefined> {
-    await disposeClient();
     const client = await getClient();
-    await client.initialize();
     const workosUser = client.getUser();
     if (!workosUser) {
       return undefined;
@@ -64,16 +66,12 @@ export const workosClient: AuthClient = {
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void> {
     const client = await getClient();
-    if (client.getUser()) {
-      return;
-    }
     let state = undefined;
     if (args.redirectTo && args.redirectTo !== '/') {
       state = {
         redirectTo: args.redirectTo,
       };
     }
-    // const callback = new URL(window.location.origin + ROUTES.LOGIN_RESULT);
     await client.signIn({
       state: state ? JSON.stringify(state) : undefined,
     });
@@ -81,16 +79,16 @@ export const workosClient: AuthClient = {
 
   /**
    * Handle the redirect from Workos after the user has logged in.
-   * AuthKit SDK automatically handles the code exchange, so we just need
-   * to redirect the user to the appropriate destination based on state.
+   * AuthKit SDK automatically handles the code exchange during initialization.
    */
   async handleSigninRedirect(href: string): Promise<void> {
     try {
+      // Client initialization happens in getClient() and processes the callback
+      await getClient();
+
       const url = new URL(href);
       const state = url.searchParams.get('state');
 
-      // AuthKit SDK handles code exchange automatically
-      // Just redirect based on state
       let redirectTo = window.location.origin;
 
       if (state) {
@@ -119,8 +117,8 @@ export const workosClient: AuthClient = {
    */
   async logout(): Promise<void> {
     const client = await getClient();
-    client.signOut({ returnTo: window.location.origin, navigate: true });
-    debugger;
+    client.signOut({ returnTo: window.location.origin });
+    disposeClient();
   },
 
   /**
@@ -133,7 +131,6 @@ export const workosClient: AuthClient = {
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
-      await disposeClient();
       if (!skipRedirect) {
         const url = new URL(window.location.href);
         await this.login({ redirectTo: url.toString(), href: window.location.href });
@@ -163,8 +160,6 @@ export const workosClient: AuthClient = {
   },
 };
 
-const disposeClient = async () => {
-  const client = await getClient();
-  client.dispose();
+const disposeClient = () => {
   clientPromise = null;
 };
