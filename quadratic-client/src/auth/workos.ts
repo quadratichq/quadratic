@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
+import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { ROUTES } from '@/shared/constants/routes';
 import { captureEvent } from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
 
-const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
-
 // verify all Workos env variables are set
-if (!WORKOS_CLIENT_ID) {
+if (!VITE_WORKOS_CLIENT_ID) {
   const message = 'Workos variables are not configured correctly.';
   captureEvent({
     message,
@@ -21,7 +20,7 @@ let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = nu
 async function getClient() {
   if (!clientPromise) {
     clientPromise = (async () => {
-      const client = await createClient(WORKOS_CLIENT_ID, {
+      const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
       });
       await client.initialize();
