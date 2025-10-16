@@ -4,8 +4,9 @@ import {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
-import { SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -24,7 +25,7 @@ const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
     label: 'Connect an API',
     prompt:
-      'Show me how to do a GET request using Python. Pull data from https://jsonplaceholder.typicode.com and put it on the sheet. Wrap everything in a single function and have that be the last thing returned to the sheet.',
+      'Show me how to do a GET request using Python. Pull data from jsonplaceholder.typicode.com and put it on the sheet. Wrap everything in a single function and have that be the last thing returned to the sheet.',
   },
 ];
 
@@ -87,7 +88,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute bottom-full left-0 mb-1 flex w-full flex-row flex-wrap gap-1">
+      <div className="absolute bottom-full left-0 mb-2 flex w-full flex-row flex-wrap gap-2">
         <div className="absolute bottom-full left-6 mb-2 flex flex-col text-muted-foreground">
           <h3 className="text-sm">Try a suggestion</h3>
           <p className="hidden text-xs">See what’s possible based on your sheet.</p>
@@ -106,25 +107,28 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
           </svg>
         </div>
         {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-          <Button
-            key={`${index}-${label}`}
-            disabled={loading}
-            variant="secondary"
-            size="sm"
-            className={cn('relative flex h-6 items-center px-2 text-sm font-normal')}
-            onClick={() => {
-              trackEvent('[AIAnalyst].submitExamplePrompt');
-              submit(prompt);
-            }}
-          >
-            {label}
-          </Button>
+          <HoverCard key={`${index}-${label}-card`}>
+            <HoverCardTrigger asChild>
+              <Button
+                key={`${index}-${label}`}
+                disabled={loading}
+                variant="secondary"
+                size="sm"
+                className="relative flex h-6 items-center px-2 text-sm font-normal hover:underline"
+                onClick={() => {
+                  trackEvent('[AIAnalyst].submitExamplePrompt');
+                  submit(prompt);
+                }}
+              >
+                {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
+                <span className={cn(loading && 'opacity-0')}>{label}</span>
+              </Button>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <p className="text-sm">{prompt}</p>
+            </HoverCardContent>
+          </HoverCard>
         ))}
-        {loading && (
-          <span className="absolute bottom-0 right-0 z-10 flex h-6 items-center bg-background px-1">
-            <SpinnerIcon className="text-primary" />
-          </span>
-        )}
       </div>
     );
   }

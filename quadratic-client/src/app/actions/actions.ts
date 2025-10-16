@@ -32,6 +32,7 @@ export enum Action {
   HelpCommunity = 'help_community',
   HelpChangelog = 'help_changelog',
   HelpFeedback = 'help_feedback',
+  HelpYouTube = 'help_youtube',
   FormatAlignHorizontalCenter = 'format_align_horizontal_center',
   FormatAlignHorizontalLeft = 'format_align_horizontal_left',
   FormatAlignHorizontalRight = 'format_align_horizontal_right',

@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.20.2",
+  "version": "0.20.3",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -72,6 +72,7 @@
     "eventemitter3": "^5.0.1",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^3.1.0",
+    "hls.js": "^1.6.12",
     "localforage": "^1.10.0",
     "mixpanel-browser": "2.67.0",
     "monaco-editor": "^0.52.2",
@@ -125,7 +126,7 @@
     "fake-indexeddb": "^6.0.0",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
-    "happy-dom": "^17.4.4",
+    "happy-dom": "^20.0.0",
     "madge": "^8.0.0",
     "msdf-bmfont-xml": "^2.7.0",
     "msw": "^2.4.11",

@@ -15,6 +15,13 @@ export const getConnectionTableInfo = async (
   connection: ConnectionList[number],
   teamUuid: string
 ): Promise<ConnectionInfo> => {
+  const connectionDetailsShared = {
+    connectionId: connection.uuid,
+    connectionName: connection.name,
+    connectionType: connection.type,
+    semanticDescription: connection.semanticDescription,
+  };
+
   try {
     const schema = await connectionClient.schemas.get(
       connection.type,
@@ -26,30 +33,21 @@ export const getConnectionTableInfo = async (
 
     if (!schema) {
       return {
-        connectionId: connection.uuid,
-        connectionName: connection.name,
-        connectionType: connection.type,
-        semanticDescription: connection.semanticDescription,
+        ...connectionDetailsShared,
         schema: null,
         error: 'No schema data returned from connection service',
       };
     }
 
     return {
-      connectionId: connection.uuid,
-      connectionName: connection.name,
-      connectionType: connection.type,
-      semanticDescription: connection.semanticDescription,
+      ...connectionDetailsShared,
       schema,
       error: undefined,
     };
   } catch (error) {
     console.warn(`[getConnectionTableInfo] Failed to get schema for connection ${connection.uuid}:`, error);
     return {
-      connectionId: connection.uuid,
-      connectionName: connection.name,
-      connectionType: connection.type,
-      semanticDescription: connection.semanticDescription,
+      ...connectionDetailsShared,
       schema: null,
       error: `Failed to retrieve schema: ${error instanceof Error ? error.message : String(error)}`,
     };
