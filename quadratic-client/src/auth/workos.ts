@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
-import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { captureEvent } from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
@@ -22,12 +20,8 @@ if (!WORKOS_CLIENT_ID) {
 let clientPromise: ReturnType<typeof createClient> | null = null;
 function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
-    const apiHostname = apiClient.auth.getApiHostname();
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-      apiHostname,
-      https: !apiHostname.includes('localhost'),
-      devMode: false,
     });
   }
   return clientPromise;
@@ -44,10 +38,9 @@ export const workosClient: AuthClient = {
   },
 
   /**
-   * Get the current authenticated user from Workos.
+   * Get the current authenticated user from WorkOS AuthKit.
    */
   async user(): Promise<User | undefined> {
-    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     await disposeClient();
     const client = await getClient();
     await client.initialize();
@@ -70,6 +63,10 @@ export const workosClient: AuthClient = {
    * Login the user in Workos and create a new session.
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void> {
+    const client = await getClient();
+    if (client.getUser()) {
+      return;
+    }
     let state = undefined;
     if (args.redirectTo && args.redirectTo !== '/') {
       state = {
@@ -77,64 +74,53 @@ export const workosClient: AuthClient = {
       };
     }
     // const callback = new URL(window.location.origin + ROUTES.LOGIN_RESULT);
-    try {
-      const client = await getClient();
-      const url = await client.getSignInUrl({
-        state: state ? JSON.stringify(state) : undefined,
-      });
-      console.log(url);
-      window.location.href = url;
-      // const { url } = await apiClient.workos.login(callback.toString(), state ? JSON.stringify(state) : undefined);
-      // if (!url) throw new Error('Expected signInUrl to be defined in login');
-      // window.location.href = url;
-    } catch {}
+    await client.signIn({
+      state: state ? JSON.stringify(state) : undefined,
+    });
   },
 
   /**
-   * Handle the redirect from Workos after the user has logged in if
-   * code and state are present in the query params.
+   * Handle the redirect from Workos after the user has logged in.
+   * AuthKit SDK automatically handles the code exchange, so we just need
+   * to redirect the user to the appropriate destination based on state.
    */
   async handleSigninRedirect(href: string): Promise<void> {
     try {
       const url = new URL(href);
-      const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
-      if (!code || !state) {
-        return;
-      }
-      url.searchParams.delete('code');
-      const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithCode({ code });
-      if (pendingAuthenticationToken) {
-        url.pathname = ROUTES.VERIFY_EMAIL;
-        url.searchParams.set('pendingAuthenticationToken', pendingAuthenticationToken);
-        window.location.assign(url.toString());
-        await waitForAuthClientToRedirect();
-      } else {
-        let redirectTo = window.location.origin;
-        const stateObj = JSON.parse(decodeURIComponent(state));
-        if (!!stateObj && typeof stateObj === 'object') {
-          if ('closeOnComplete' in stateObj && stateObj.closeOnComplete) {
-            document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
-            window.close();
-            return;
+
+      // AuthKit SDK handles code exchange automatically
+      // Just redirect based on state
+      let redirectTo = window.location.origin;
+
+      if (state) {
+        try {
+          const stateObj = JSON.parse(decodeURIComponent(state));
+          if (!!stateObj && typeof stateObj === 'object') {
+            if ('closeOnComplete' in stateObj && stateObj.closeOnComplete) {
+              window.close();
+              return;
+            }
+            if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
+              redirectTo = stateObj.redirectTo;
+            }
           }
-          if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
-            redirectTo = stateObj.redirectTo;
-          }
+        } catch {
+          // Invalid state, just use default redirectTo
         }
-        window.location.assign(redirectTo);
-        await waitForAuthClientToRedirect();
       }
+
+      window.location.assign(redirectTo);
     } catch {}
   },
 
   /**
-   * Logout the user in Workos and terminate the singleton session.
-   * Take the user back to the login page (as defined in the Workos).
+   * Logout the user via AuthKit and navigate to the login page.
    */
   async logout(): Promise<void> {
     const client = await getClient();
     client.signOut({ returnTo: window.location.origin, navigate: true });
+    debugger;
   },
 
   /**
@@ -155,27 +141,25 @@ export const workosClient: AuthClient = {
     }
     return '';
   },
-  async loginWithPassword(args) {
-    throw new Error('Not implemented');
-  },
-  async loginWithOAuth(args) {
-    throw new Error('Not implemented');
-  },
 
-  async signupWithPassword(args): Promise<void> {
-    throw new Error('Not implemented');
+  // AuthKit uses hosted UI for all these flows
+  async loginWithPassword(_args): Promise<void> {
+    throw new Error('AuthKit uses hosted UI for password login');
   },
-
-  async verifyEmail(args): Promise<void> {
-    throw new Error('Not implemented');
+  async loginWithOAuth(_args): Promise<void> {
+    throw new Error('AuthKit uses hosted UI for OAuth');
   },
-
-  async sendResetPassword(args): Promise<void> {
-    throw new Error('Not implemented');
+  async signupWithPassword(_args): Promise<void> {
+    throw new Error('AuthKit uses hosted UI for signup');
   },
-
-  async resetPassword(args): Promise<void> {
-    throw new Error('Not implemented');
+  async verifyEmail(_args): Promise<void> {
+    throw new Error('AuthKit handles email verification');
+  },
+  async sendResetPassword(_args): Promise<void> {
+    throw new Error('AuthKit uses hosted UI for password reset');
+  },
+  async resetPassword(_args): Promise<void> {
+    throw new Error('AuthKit uses hosted UI for password reset');
   },
 };
 
