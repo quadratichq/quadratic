@@ -16,7 +16,7 @@
     "src/**/*.d.ts",
     "scripts/**/*.ts",
     "src/routes/v0/workos.logout.POST.ts.deprecated",
-    "src/routes/v0/workos.login.POST.ts.deprecated"
+    "src/routes/v0/workos.login.POST.ts"
   ],
   "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]
 }
