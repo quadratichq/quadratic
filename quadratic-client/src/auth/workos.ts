@@ -114,7 +114,7 @@ export const workosClient: AuthClient = {
   /**
    * Logout the user via AuthKit and navigate to the login page.
    */
-  async logout(): Promise<void> {
+  async logout() {
     const client = await getClient();
     client.signOut({ returnTo: window.location.origin });
     disposeClient();
