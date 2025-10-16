@@ -33,8 +33,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const {
     userMakingRequest: { permissions },
     team,
+    team: { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId },
   } = await getTeam({ uuid, userId });
-  const { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId } = team;
 
   // Can they make the edits they're trying to make?
   if (!permissions.includes('TEAM_EDIT')) {
@@ -44,11 +44,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'User does not have permission to edit this team settings.');
   }
 
-  // Check if user is trying to disable analytics (enable privacy mode) without a paid plan
-  if (settings?.analyticsAi === false) {
+  // You can't change privacy settings without a paid plan
+  if (settings && 'analyticsAi' in settings) {
     const isOnPaidPlan = await getIsOnPaidPlan(team);
     if (!isOnPaidPlan) {
-      throw new ApiError(403, 'AI privacy mode is only available on the Pro plan. Upgrade to disable analytics.');
+      throw new ApiError(403, 'Upgrade to plan to disable analytics.');
     }
   }
 
