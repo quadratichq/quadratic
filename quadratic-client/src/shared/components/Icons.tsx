@@ -311,6 +311,10 @@ export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
 };
 
+export const EnhancePromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>wand_stars</Icon>;
+};
+
 export const ErrorIcon: IconComponent = (props) => {
   return <Icon {...props}>error</Icon>;
 };

@@ -1,5 +1,5 @@
 import { useOptimizePrompt } from '@/app/ai/hooks/useOptimizePrompt';
-import { AIIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { EnhancePromptIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -47,7 +47,7 @@ export const AIUserMessageFormOptimizeButton = memo(
           disabled={disabled || isOptimizing}
           onClick={handleOptimize}
         >
-          {isOptimizing ? <SpinnerIcon /> : <AIIcon />}
+          {isOptimizing ? <SpinnerIcon /> : <EnhancePromptIcon />}
         </Button>
       </TooltipPopover>
     );
