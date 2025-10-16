@@ -38,8 +38,12 @@ export const useAIMessagesLeft = () => {
       apiClient.teams.billing
         .aiUsage(teamUuid)
         .then((data) => {
-          setMessagesLeft(data.billingLimit - data.currentPeriodUsage);
-          setLoadState('loaded');
+          if (data.billingLimit && data.currentPeriodUsage) {
+            setMessagesLeft(data.billingLimit - data.currentPeriodUsage);
+            setLoadState('loaded');
+          } else {
+            throw new Error('Unexpected data from the API.');
+          }
         })
         .catch((err) => {
           console.error('Failed to fetch AI usage:', err);
@@ -53,8 +57,6 @@ export const useAIMessagesLeft = () => {
   useEffect(() => {
     if (messagesLeft !== null && prevAiAnalyastLoading.current === false && aiAnalyastLoading === true) {
       setMessagesLeft(messagesLeft - 1);
-      // TODO: remove
-      setTimeout(() => apiClient.teams.billing.aiUsage(teamUuid), 2000);
     }
     prevAiAnalyastLoading.current = aiAnalyastLoading;
   }, [aiAnalyastLoading, messagesLeft, setMessagesLeft]);
