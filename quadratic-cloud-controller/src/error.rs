@@ -27,9 +27,6 @@ pub(crate) enum ControllerError {
     #[error("Error getting tasks for worker: {0}")]
     GetTasksForWorker(String),
 
-    #[error("Header error: {0}")]
-    Header(String),
-
     #[error("PubSub error: {0}")]
     PubSub(String),
 
@@ -70,7 +67,6 @@ impl IntoResponse for ControllerError {
             ControllerError::GetTasksForWorker(error) => {
                 (StatusCode::BAD_REQUEST, clean_errors(error))
             }
-            ControllerError::Header(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 

@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::SharedError;
 use crate::error::Result;
-use crate::quadratic_api::Task;
+use crate::quadratic_api::{Task, TaskRun};
 
 pub const WORKER_GET_WORKER_INIT_DATA_ROUTE: &str = "/worker/get-worker-init-data";
 pub const WORKER_GET_TASKS_ROUTE: &str = "/worker/get-tasks";
@@ -82,10 +82,12 @@ pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AckTasksRequest {
-    // (key, task_id)
-    pub successful_tasks: Vec<(String, String)>,
-    // (key,task_id, error)
-    pub failed_tasks: Vec<(String, String, String)>,
+    pub container_id: Uuid,
+    pub file_id: Uuid,
+    // (key, run_id, task_id)
+    pub successful_tasks: Vec<(String, Uuid, Uuid)>,
+    // (key, run_id, task_id, error)
+    pub failed_tasks: Vec<(String, Uuid, Uuid, String)>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -96,22 +98,24 @@ pub struct AckTasksResponse {
 /// Ack the tasks
 pub async fn ack_tasks(
     base_url: &str,
+    container_id: Uuid,
     file_id: Uuid,
-    // (key, task_id)
-    successful_tasks: Vec<(String, String)>,
-    // (task_id, error)
-    failed_tasks: Vec<(String, String, String)>,
+    // (key, run_id, task_id)
+    successful_tasks: Vec<(String, Uuid, Uuid)>,
+    // (key, run_id, task_id, error)
+    failed_tasks: Vec<(String, Uuid, Uuid, String)>,
 ) -> Result<AckTasksResponse> {
     let url = format!("{base_url}{WORKER_ACK_TASKS_ROUTE}");
 
     let request = AckTasksRequest {
+        container_id,
+        file_id,
         successful_tasks,
         failed_tasks,
     };
 
     let response = reqwest::Client::new()
         .post(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
         .json(&request)
         .send()
         .await?;
@@ -123,16 +127,31 @@ pub async fn ack_tasks(
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct ShutdownRequest {
+    pub container_id: Uuid,
+    pub file_id: Uuid,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct ShutdownResponse {
     pub success: bool,
 }
 /// Shutdown the worker
-pub async fn worker_shutdown(base_url: &str, file_id: Uuid) -> Result<ShutdownResponse> {
+pub async fn worker_shutdown(
+    base_url: &str,
+    container_id: Uuid,
+    file_id: Uuid,
+) -> Result<ShutdownResponse> {
     let url = format!("{base_url}{WORKER_SHUTDOWN_ROUTE}");
 
+    let request = ShutdownRequest {
+        container_id,
+        file_id,
+    };
+
     let response = reqwest::Client::new()
-        .get(url)
-        .header(FILE_ID_HEADER, file_id.to_string())
+        .post(url)
+        .json(&request)
         .send()
         .await?;
 
@@ -142,26 +161,26 @@ pub async fn worker_shutdown(base_url: &str, file_id: Uuid) -> Result<ShutdownRe
     Ok(shutdown_response)
 }
 
-pub fn compress_and_encode_tasks(tasks: Vec<(String, Task)>) -> Result<String> {
+pub fn compress_and_encode_tasks(tasks: Vec<(String, TaskRun)>) -> Result<String> {
     let binary_tasks = compress_tasks(tasks)?;
     let encoded_tasks = encode_tasks(binary_tasks)?;
     Ok(encoded_tasks)
 }
 
-pub fn decompress_and_decode_tasks(encoded_tasks: String) -> Result<Vec<(String, Task)>> {
+pub fn decompress_and_decode_tasks(encoded_tasks: String) -> Result<Vec<(String, TaskRun)>> {
     let binary_tasks = decode_tasks(encoded_tasks)?;
     let tasks = decompress_tasks(binary_tasks)?;
     Ok(tasks)
 }
 
-pub fn compress_tasks(tasks: Vec<(String, Task)>) -> Result<Vec<u8>> {
+pub fn compress_tasks(tasks: Vec<(String, TaskRun)>) -> Result<Vec<u8>> {
     let binary_tasks = bincode::encode_to_vec(&tasks, bincode::config::standard())
         .map_err(|e| SharedError::Serialization(format!("Failed to serialize tasks: {}", e)))?;
 
     Ok(binary_tasks)
 }
 
-pub fn decompress_tasks(binary_tasks: Vec<u8>) -> Result<Vec<(String, Task)>> {
+pub fn decompress_tasks(binary_tasks: Vec<u8>) -> Result<Vec<(String, TaskRun)>> {
     let (tasks, _) = bincode::decode_from_slice(&binary_tasks, bincode::config::standard())
         .map_err(|e| SharedError::Serialization(format!("Failed to deserialize tasks: {}", e)))?;
 

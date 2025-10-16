@@ -34,6 +34,7 @@ export type ScheduledTask = z.infer<typeof ScheduledTaskSchema>;
 export const ScheduledTaskLogSchema = z.object({
   id: z.number(),
   scheduledTaskId: z.number(),
+  runId: z.string().uuid(),
   status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
   error: z.string().optional(),
   createdDate: z.string().datetime(),

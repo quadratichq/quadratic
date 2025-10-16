@@ -57,6 +57,9 @@ impl Cluster {
         })
     }
 
+    /// Create a new Docker client.
+    ///
+    /// Docker clones are cheap as it's members are either copy or behind an Arc.
     pub fn new_docker() -> Result<Docker> {
         let mut docker = Docker::connect_with_socket_defaults()
             .map_err(|e| SharedError::Docker(DockerError::Connection(e.to_string())))?;

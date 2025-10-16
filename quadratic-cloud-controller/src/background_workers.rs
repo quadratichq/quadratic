@@ -54,7 +54,7 @@ async fn scheduled_task_watcher(state: Arc<State>) -> Result<()> {
     info!("Starting scheduled task watcher");
 
     // Wait until the next interval
-    let current_second = chrono::Utc::now().second() as u64;
+    let _current_second = chrono::Utc::now().second() as u64;
     // TODO(ddimari): Change this back to the original logic
     // let wait_seconds = SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS
     //     - (current_second % SCHEDULED_TASK_WATCHER_INTERVAL_SECONDS);
@@ -77,17 +77,17 @@ async fn scheduled_task_watcher(state: Arc<State>) -> Result<()> {
         info!("Got {len} scheduled tasks from API");
 
         if len > 0 {
-            let scheduled_task_ids = scheduled_tasks
+            let ids = scheduled_tasks
                 .iter()
-                .flat_map(|task| Uuid::parse_str(&task.task_id))
-                .collect::<Vec<_>>();
+                .map(|task| (task.run_id, task.task_id))
+                .collect::<Vec<(Uuid, Uuid)>>();
 
             // Add tasks to PubSub
             log_error_only(state.add_tasks(scheduled_tasks).await)?;
             trace!("Adding {len} tasks to PubSub");
 
             // ACK tasks with Quadratic API
-            log_error_only(insert_pending_logs(&state, scheduled_task_ids).await)?;
+            log_error_only(insert_pending_logs(&state, ids).await)?;
         }
 
         interval.tick().await;

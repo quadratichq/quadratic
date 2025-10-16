@@ -1,5 +1,5 @@
 use quadratic_rust_shared::quadratic_api::{
-    GetFileInitDataResponse, ScheduledTaskLogResponse, ScheduledTaskLogStatus, Task,
+    GetFileInitDataResponse, ScheduledTaskLogResponse, ScheduledTaskLogStatus, TaskRun,
     create_scheduled_task_log, get_file_init_data, get_scheduled_tasks,
 };
 use tracing::trace;
@@ -33,18 +33,20 @@ pub(crate) async fn file_init_data(
 /// Get the scheduled tasks to run.
 ///
 /// Scheduled tasks include the file id, task id, next run time, and operations.
-pub(crate) async fn scheduled_tasks(state: &State) -> Result<Vec<Task>> {
+pub(crate) async fn scheduled_tasks(state: &State) -> Result<Vec<TaskRun>> {
     get_scheduled_tasks(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
     )
     .await
     .map_err(|e| api_error(e, "Get scheduled tasks"))
+    .map(|tasks| tasks.into_iter().map(|task| task.into()).collect())
 }
 
 /// Insert a scheduled task log for a scheduled task.
 pub(crate) async fn insert_scheduled_task_log(
     state: &State,
+    run_id: Uuid,
     scheduled_task_id: Uuid,
     status: ScheduledTaskLogStatus,
     error: Option<String>,
@@ -52,6 +54,7 @@ pub(crate) async fn insert_scheduled_task_log(
     create_scheduled_task_log(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
+        run_id,
         scheduled_task_id,
         status,
         error,
@@ -61,31 +64,30 @@ pub(crate) async fn insert_scheduled_task_log(
 }
 
 /// Insert pending logs for a scheduled task.
-pub(crate) async fn insert_pending_logs(
-    state: &State,
-    scheduled_task_ids: Vec<Uuid>,
-) -> Result<()> {
-    for scheduled_task_id in scheduled_task_ids {
+pub(crate) async fn insert_pending_logs(state: &State, ids: Vec<(Uuid, Uuid)>) -> Result<()> {
+    for (run_id, task_id) in ids {
         insert_scheduled_task_log(
             state,
-            scheduled_task_id,
+            run_id,
+            task_id,
             ScheduledTaskLogStatus::PENDING,
             None,
         )
         .await?;
 
-        trace!("Inserted pending log for {scheduled_task_id} with Quadratic API");
+        trace!("Inserted pending log for {task_id} with Quadratic API");
     }
 
     Ok(())
 }
 
 /// Insert a running log for a scheduled task.
-pub(crate) async fn insert_running_log(state: &State, tasks: Vec<String>) -> Result<()> {
-    for task_id in tasks {
+pub(crate) async fn insert_running_log(state: &State, tasks: Vec<(Uuid, Uuid)>) -> Result<()> {
+    for (run_id, task_id) in tasks {
         insert_scheduled_task_log(
             state,
-            Uuid::parse_str(&task_id)?,
+            run_id,
+            task_id,
             ScheduledTaskLogStatus::RUNNING,
             None,
         )
@@ -99,12 +101,13 @@ pub(crate) async fn insert_running_log(state: &State, tasks: Vec<String>) -> Res
 /// Insert a completed log for a scheduled task.
 pub(crate) async fn insert_completed_logs(
     state: &State,
-    tasks: Vec<(String, String)>,
+    tasks: Vec<(String, Uuid, Uuid)>,
 ) -> Result<()> {
-    for (_, task_id) in tasks {
+    for (_, run_id, task_id) in tasks {
         insert_scheduled_task_log(
             state,
-            Uuid::parse_str(&task_id)?,
+            run_id,
+            task_id,
             ScheduledTaskLogStatus::COMPLETED,
             None,
         )
@@ -118,12 +121,13 @@ pub(crate) async fn insert_completed_logs(
 /// Insert a failed log for a scheduled task.
 pub(crate) async fn insert_failed_logs(
     state: &State,
-    tasks: Vec<(String, String, String)>,
+    tasks: Vec<(String, Uuid, Uuid, String)>,
 ) -> Result<()> {
-    for (_, task_id, error) in tasks {
+    for (_, run_id, task_id, error) in tasks {
         insert_scheduled_task_log(
             state,
-            Uuid::parse_str(&task_id)?,
+            run_id,
+            task_id,
             ScheduledTaskLogStatus::FAILED,
             Some(error),
         )

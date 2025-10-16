@@ -1,6 +1,6 @@
 use quadratic_rust_shared::{
     pubsub::{Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection},
-    quadratic_api::Task,
+    quadratic_api::TaskRun,
 };
 use std::collections::HashSet;
 use tracing::{error, info, trace};
@@ -61,11 +61,11 @@ impl PubSub {
     }
 
     /// Convert messages to tasks
-    fn messages_to_tasks(messages: Vec<(String, Vec<u8>)>) -> Vec<(String, Task)> {
+    fn messages_to_tasks(messages: Vec<(String, Vec<u8>)>) -> Vec<(String, TaskRun)> {
         messages
             .into_iter()
-            .filter_map(|(key, message)| Task::from_bytes(&message).ok().map(|task| (key, task)))
-            .collect::<Vec<(String, Task)>>()
+            .filter_map(|(key, message)| TaskRun::from_bytes(&message).ok().map(|task| (key, task)))
+            .collect::<Vec<(String, TaskRun)>>()
     }
 
     /// Convert a file id to a channel
@@ -109,7 +109,7 @@ impl State {
     }
 
     /// Add tasks to the PubSub channel for a file
-    pub(crate) async fn add_tasks(&self, tasks: Vec<Task>) -> Result<()> {
+    pub(crate) async fn add_tasks(&self, tasks: Vec<TaskRun>) -> Result<()> {
         self.reconnect_pubsub_if_unhealthy().await;
 
         let mut pubsub = self.pubsub.lock().await;
@@ -164,22 +164,25 @@ impl State {
     }
 
     /// Get tasks for a file
-    pub(crate) async fn get_tasks_for_file(&self, file_id: Uuid) -> Result<Vec<(String, Task)>> {
+    pub(crate) async fn get_tasks_for_file(&self, file_id: Uuid) -> Result<Vec<(String, TaskRun)>> {
         self.reconnect_pubsub_if_unhealthy().await;
         self.subscribe_pubsub(file_id).await?;
 
         let channel = PubSub::file_id_to_channel(file_id);
         let mut pubsub = self.pubsub.lock().await;
 
-        let tasks = pubsub
+        let task_runs = pubsub
             .connection
             .messages(&channel, GROUP, CONSUMER, None, 100, true)
             .await
             .map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
-        trace!("Got {} tasks for file {file_id} in pubsub", tasks.len());
+        trace!(
+            "Got {} task runs for file {file_id} in pubsub",
+            task_runs.len()
+        );
 
-        Ok(PubSub::messages_to_tasks(tasks))
+        Ok(PubSub::messages_to_tasks(task_runs))
     }
 
     /// Acknowledge a task after it has been processed by the worker

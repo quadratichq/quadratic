@@ -32,6 +32,8 @@ pub enum ContainerState {
 #[derive(Debug)]
 pub struct Container {
     pub(crate) id: Uuid,
+    pub(crate) file_id: Uuid,
+    pub(crate) ids: Vec<(Uuid, Uuid)>,
     pub(crate) image_id: String,
     pub(crate) image: String,
     pub(crate) state: ContainerState,
@@ -55,6 +57,8 @@ impl Container {
     /// Create a new container
     pub async fn try_new(
         id: Uuid,
+        file_id: Uuid,
+        ids: Vec<(Uuid, Uuid)>,
         image: &str,
         docker: Docker,
         container_name: Option<String>,
@@ -89,6 +93,8 @@ impl Container {
 
         Ok(Self {
             id,
+            file_id,
+            ids,
             image_id: create_container.id,
             image: image.to_string(),
             state: ContainerState::Stopped,
@@ -327,6 +333,8 @@ pub mod tests {
 
         Container::try_new(
             Uuid::new_v4(),
+            Uuid::new_v4(),
+            vec![(Uuid::new_v4(), Uuid::new_v4())],
             "quadratic-cloud-worker",
             docker.clone(),
             None,

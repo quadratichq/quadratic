@@ -1,39 +1,21 @@
-use axum::{Extension, http::HeaderMap, response::Json};
+use axum::{Extension, response::Json};
 use quadratic_rust_shared::quadratic_cloud::{
-    AckTasksRequest, AckTasksResponse, FILE_ID_HEADER, ShutdownResponse,
+    AckTasksRequest, AckTasksResponse, ShutdownRequest, ShutdownResponse,
 };
 use std::sync::Arc;
 use tracing::info;
-use uuid::Uuid;
 
 use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
 use crate::quadratic_api::{insert_completed_logs, insert_failed_logs};
 use crate::state::State;
 
-/// Extract the UUID from the header
-fn get_uuid_from_header(headers: &HeaderMap) -> Result<Uuid> {
-    let header_value = headers
-        .get(FILE_ID_HEADER)
-        .ok_or_else(|| ControllerError::Header(format!("Missing header: {FILE_ID_HEADER}")))?;
-
-    let id = Uuid::parse_str(
-        header_value
-            .to_str()
-            .map_err(|e| ControllerError::Header(e.to_string()))?,
-    )
-    .map_err(|e| ControllerError::Header(e.to_string()))?;
-
-    Ok(id)
-}
-
 /// Acknowledge tasks completion
 pub(crate) async fn ack_tasks_for_worker(
     Extension(state): Extension<Arc<State>>,
-    headers: HeaderMap,
     Json(ack_request): Json<AckTasksRequest>,
 ) -> Result<Json<AckTasksResponse>> {
-    let file_id = get_uuid_from_header(&headers)?;
+    let file_id = ack_request.file_id;
 
     info!(
         "Acknowledging tasks for worker for file {file_id}: {:?}",
@@ -54,8 +36,8 @@ pub(crate) async fn ack_tasks_for_worker(
     let keys = ack_request
         .successful_tasks
         .iter()
-        .map(|(key, _)| key)
-        .chain(ack_request.failed_tasks.iter().map(|(key, _, _)| key))
+        .map(|(key, _, _)| key)
+        .chain(ack_request.failed_tasks.iter().map(|(key, _, _, _)| key))
         .cloned()
         .collect::<Vec<_>>();
 
@@ -76,14 +58,14 @@ pub(crate) async fn ack_tasks_for_worker(
 /// Shutdown the worker
 pub(crate) async fn shutdown_worker(
     Extension(state): Extension<Arc<State>>,
-    headers: HeaderMap,
+    Json(shutdown_request): Json<ShutdownRequest>,
 ) -> Result<Json<ShutdownResponse>> {
-    tracing::warn!("handle_worker_shutdown 1");
-    let file_id = get_uuid_from_header(&headers)?;
-    tracing::warn!("handle_worker_shutdown 2");
-    Controller::shutdown_worker(Arc::clone(&state), &file_id)
+    let container_id = shutdown_request.container_id;
+    let file_id = shutdown_request.file_id;
+
+    Controller::shutdown_worker(Arc::clone(&state), &container_id, &file_id)
         .await
         .map_err(|e| ControllerError::ShutdownWorker(e.to_string()))?;
-    tracing::warn!("handle_worker_shutdown 2");
+
     Ok(Json(ShutdownResponse { success: true }))
 }

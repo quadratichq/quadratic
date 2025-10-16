@@ -39,7 +39,7 @@ impl Controller {
             return Ok(());
         }
 
-        let workers = file_ids.iter().map(|file_id| self.create_worker(file_id));
+        let workers = file_ids.iter().map(|file_id| self.create_worker(*file_id));
         let results = join_all(workers).await;
 
         info!("Results: {:?}", results);
@@ -69,7 +69,7 @@ impl Controller {
             })
     }
 
-    async fn get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
+    async fn _get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
         let active_file_ids = self
             .state
             .client
@@ -123,10 +123,13 @@ impl Controller {
         Ok(worker_init_data)
     }
 
+    /// Get the binary tasks for a file and return a tuple of the binary tasks
+    /// and a vector of (run_id, task_id) pairs. The run_id is a new UUID for
+    /// each task.
     pub(crate) async fn binary_tasks_for_file(
         &self,
         file_id: &Uuid,
-    ) -> Result<(Vec<u8>, Vec<String>)> {
+    ) -> Result<(Vec<u8>, Vec<(Uuid, Uuid)>)> {
         let tasks = self
             .state
             .get_tasks_for_file(*file_id)
@@ -138,37 +141,40 @@ impl Controller {
             tasks
         );
 
-        let task_ids = tasks
+        let ids = tasks
             .iter()
-            .map(|(_, task)| task.task_id.to_string())
+            .map(|(_, task)| (task.run_id, task.task_id))
             .collect::<Vec<_>>();
 
         let binary_tasks =
             compress_tasks(tasks).map_err(|e| ControllerError::CompressTasks(e.to_string()))?;
 
-        Ok((binary_tasks, task_ids))
+        Ok((binary_tasks, ids))
     }
 
-    pub(crate) async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
+    pub(crate) async fn create_worker(&self, file_id: Uuid) -> Result<()> {
         trace!("Creating worker for file {file_id}");
 
-        let container_name = format!("quadratic-cron-{file_id}-{}", Uuid::new_v4());
-        let controller_url = self.state.settings.controller_url();
-        let multiplayer_url = self.state.settings.multiplayer_url();
-        let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
-        let worker_init_data = self.get_worker_init_data(file_id).await?;
-        let (tasks, task_ids) = self.binary_tasks_for_file(file_id).await?;
+        let (tasks, ids) = self.binary_tasks_for_file(&file_id).await?;
 
-        if task_ids.is_empty() {
+        if ids.is_empty() {
             info!("No tasks to create worker for file {file_id}");
             return Ok(());
         }
 
-        let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
+        let container_id = Uuid::new_v4();
+        let container_name = format!("quadratic-cron-{file_id}-{container_id}");
+        let controller_url = self.state.settings.controller_url();
+        let multiplayer_url = self.state.settings.multiplayer_url();
+        let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
+        let worker_init_data = self.get_worker_init_data(&file_id).await?;
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
+
+        let encoded_tasks = encode_tasks(tasks).map_err(|e| Self::error("create_worker", e))?;
 
         let env_vars = vec![
             format!("RUST_LOG={}", "info"), // change this to info for seeing all logs
+            format!("CONTAINER_ID={container_id}"),
             format!("CONTROLLER_URL={controller_url}"),
             format!("MULTIPLAYER_URL={multiplayer_url}"),
             format!("FILE_ID={file_id}"),
@@ -178,7 +184,9 @@ impl Controller {
         ];
 
         let container = Container::try_new(
-            *file_id,
+            container_id,
+            file_id,
+            ids.clone(),
             &self.image_name,
             self.state.client.lock().await.docker.clone(),
             Some(container_name),
@@ -201,20 +209,22 @@ impl Controller {
 
         info!("Successfully added and started worker for file {file_id}");
 
-        insert_running_log(&self.state, task_ids).await?;
+        insert_running_log(&self.state, ids).await?;
 
         Ok(())
     }
 
-    pub(crate) async fn shutdown_worker(state: Arc<State>, file_id: &Uuid) -> Result<()> {
-        tracing::warn!("shutdown_worker 1");
+    pub(crate) async fn shutdown_worker(
+        state: Arc<State>,
+        container_id: &Uuid,
+        file_id: &Uuid,
+    ) -> Result<()> {
+        tracing::trace!("Shutting down worker");
         let mut client = state.client.lock().await;
-        tracing::warn!("shutdown_worker 2");
         client
-            .remove_container(file_id)
+            .remove_container(container_id)
             .await
             .map_err(|e| Self::error("shutdown_worker", e))?;
-        tracing::warn!("shutdown_worker 3");
 
         info!("Shut down worker for file {file_id}");
 

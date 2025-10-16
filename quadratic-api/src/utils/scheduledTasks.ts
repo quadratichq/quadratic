@@ -127,15 +127,19 @@ type ScheduledTaskLogResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:schedu
 
 export function resultToScheduledTaskLogResponse(result: ScheduledTaskLog): ScheduledTaskLogResponse {
   return {
-    ...result,
-    createdDate: result.createdDate.toISOString(),
+    id: result.id,
+    scheduledTaskId: result.scheduledTaskId,
+    runId: result.runId,
+    status: result.status,
     error: result.error || undefined,
+    createdDate: result.createdDate.toISOString(),
   };
 }
 
 // Create a scheduled task log
 export async function createScheduledTaskLog(data: {
   scheduledTaskId: number;
+  runId: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   error?: string;
 }): Promise<ScheduledTaskLogResponse> {

@@ -29,7 +29,7 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
         // Worker API routes
         //
         // Shutdown a worker
-        .route(WORKER_SHUTDOWN_ROUTE, get(shutdown_worker))
+        .route(WORKER_SHUTDOWN_ROUTE, post(shutdown_worker))
         //
         // Acknowledge tasks after they have been processed by the worker
         .route(WORKER_ACK_TASKS_ROUTE, post(ack_tasks_for_worker))

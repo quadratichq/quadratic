@@ -1,5 +1,5 @@
 use quadratic_core_cloud::worker::Worker as Core;
-use quadratic_rust_shared::quadratic_api::Task;
+use quadratic_rust_shared::quadratic_api::TaskRun;
 use quadratic_rust_shared::quadratic_cloud::{
     GetWorkerInitDataResponse, ack_tasks, worker_shutdown,
 };
@@ -12,16 +12,18 @@ use crate::error::{Result, WorkerError};
 
 pub(crate) struct Worker {
     core: Core,
+    container_id: Uuid,
     file_id: Uuid,
     worker_init_data: GetWorkerInitDataResponse,
     m2m_auth_token: String,
     controller_url: String,
-    tasks: Vec<(String, Task)>,
+    tasks: Vec<(String, TaskRun)>,
 }
 
 impl Worker {
     pub(crate) async fn new(config: Config) -> Result<Self> {
         let file_id = config.file_id.to_owned();
+        let container_id = config.container_id.to_owned();
         let worker_init_data = config.worker_init_data;
         let m2m_auth_token = config.m2m_auth_token.to_owned();
         let controller_url = config.controller_url.to_owned();
@@ -41,6 +43,7 @@ impl Worker {
 
         Ok(Self {
             core,
+            container_id,
             file_id,
             worker_init_data,
             m2m_auth_token,
@@ -50,9 +53,11 @@ impl Worker {
     }
 
     pub(crate) async fn run(&mut self) -> Result<()> {
-        let controller_url = self.controller_url.to_owned();
+        let container_id = self.container_id;
         let file_id = self.file_id;
         let team_id = self.worker_init_data.team_id.to_string();
+        let controller_url = self.controller_url.to_owned();
+
         // swap the tasks in memory and replace with an empty vec
         let tasks = std::mem::take(&mut self.tasks);
 
@@ -69,10 +74,10 @@ impl Worker {
                 )
                 .await
             {
-                Ok(_) => successful_tasks.push((key, task.task_id)),
+                Ok(_) => successful_tasks.push((key, task.run_id, task.task_id)),
                 Err(e) => {
                     error!("Error processing tasks, error: {e}");
-                    failed_tasks.push((key, task.task_id, e.to_string()));
+                    failed_tasks.push((key, task.run_id, task.task_id, e.to_string()));
                 }
             };
         }
@@ -83,62 +88,20 @@ impl Worker {
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
 
-        let acked_tasks = ack_tasks(&controller_url, file_id, successful_tasks, failed_tasks)
-            .await
-            .map_err(|e| WorkerError::AckTasks(e.to_string()));
+        let acked_tasks = ack_tasks(
+            &controller_url,
+            container_id,
+            file_id,
+            successful_tasks,
+            failed_tasks,
+        )
+        .await
+        .map_err(|e| WorkerError::AckTasks(e.to_string()));
 
         match acked_tasks {
             Ok(_) => info!("Tasks acknowledged successfully"),
             Err(e) => error!("Error acknowledging tasks, error: {e}"),
         }
-
-        // loop {
-        //     let tasks = get_tasks(&controller_url, file_id)
-        //         .await
-        //         .map_err(|e| WorkerError::GetTasks(e.to_string()))?;
-
-        //     info!("Got {} tasks for file {}", tasks.len(), file_id);
-
-        //     if tasks.is_empty() {
-        //         break;
-        //     }
-
-        //     let mut successful_tasks = Vec::new();
-        //     let mut failed_tasks = Vec::new();
-
-        //     for (key, task) in tasks {
-        //         match self
-        //             .core
-        //             .process_operations(
-        //                 task.operations,
-        //                 "test_team_id".to_string(),
-        //                 "M2M_AUTH_TOKEN".to_string(),
-        //             )
-        //             .await
-        //         {
-        //             Ok(_) => successful_tasks.push((key, task.task_id)),
-        //             Err(e) => {
-        //                 error!("Error processing tasks, error: {e}");
-        //                 failed_tasks.push((key, task.task_id, e.to_string()));
-        //             }
-        //         };
-        //     }
-
-        //     // wait for all tasks to be complete
-        //     info!("Waiting for all tasks to be complete");
-        //     while !self.core.status.lock().await.is_complete() {
-        //         tokio::time::sleep(Duration::from_secs(1)).await;
-        //     }
-
-        //     let acked_tasks = ack_tasks(&controller_url, file_id, successful_tasks, failed_tasks)
-        //         .await
-        //         .map_err(|e| WorkerError::AckTasks(e.to_string()));
-
-        //     match acked_tasks {
-        //         Ok(_) => info!("Tasks acknowledged successfully"),
-        //         Err(e) => error!("Error acknowledging tasks, error: {e}"),
-        //     }
-        // }
 
         info!("Exiting run loop");
 
@@ -155,7 +118,7 @@ impl Worker {
             .map_err(|e| WorkerError::LeaveRoom(e.to_string()))?;
 
         // send worker shutdown request to the controller
-        worker_shutdown(&self.controller_url, self.file_id)
+        worker_shutdown(&self.controller_url, self.container_id, self.file_id)
             .await
             .map_err(|e| WorkerError::Shutdown(e.to_string()))?;
 

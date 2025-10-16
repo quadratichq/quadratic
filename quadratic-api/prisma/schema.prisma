@@ -366,6 +366,7 @@ model ScheduledTaskLog {
     id              Int                    @id @default(autoincrement())
     scheduledTaskId Int                    @map("scheduled_task_id")
     scheduledTask   ScheduledTask          @relation(fields: [scheduledTaskId], references: [id])
+    runId           String                 @map("run_id")
     status          ScheduledTaskLogStatus @default(PENDING) @map("status")
     error           String?                @map("error")
     createdDate     DateTime               @default(now()) @map("created_date")

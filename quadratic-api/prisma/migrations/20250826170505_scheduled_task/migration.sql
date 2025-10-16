@@ -25,6 +25,7 @@ CREATE TABLE "ScheduledTask" (
 CREATE TABLE "ScheduledTaskLog" (
     "id" SERIAL NOT NULL,
     "scheduled_task_id" INTEGER NOT NULL,
+    "run_id" TEXT NOT NULL,
     "status" "ScheduledTaskLogStatus" NOT NULL DEFAULT 'PENDING',
     "error" TEXT,
     "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -302,10 +302,34 @@ pub async fn get_file_init_data(
 pub struct Task {
     #[bincode(with_serde)]
     pub file_id: Uuid,
-    pub task_id: String,
+    #[bincode(with_serde)]
+    pub task_id: Uuid,
     #[bincode(with_serde)]
     pub next_run_time: Option<DateTime<Utc>>,
     pub operations: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskRun {
+    #[bincode(with_serde)]
+    pub file_id: Uuid,
+    #[bincode(with_serde)]
+    pub task_id: Uuid,
+    #[bincode(with_serde)]
+    pub run_id: Uuid,
+    pub operations: Vec<u8>,
+}
+
+impl From<Task> for TaskRun {
+    fn from(task: Task) -> Self {
+        TaskRun {
+            file_id: task.file_id,
+            task_id: task.task_id,
+            run_id: Uuid::new_v4(),
+            operations: task.operations,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -320,6 +344,7 @@ pub enum ScheduledTaskLogStatus {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScheduledTaskLogRequest {
+    pub run_id: Uuid,
     pub status: ScheduledTaskLogStatus,
     pub error: Option<String>,
 }
@@ -329,12 +354,13 @@ pub struct ScheduledTaskLogRequest {
 pub struct ScheduledTaskLogResponse {
     pub id: u64,
     pub scheduled_task_id: u64,
+    pub run_id: Uuid,
     pub status: ScheduledTaskLogStatus,
     pub error: Option<String>,
     pub created_date: DateTime<Utc>,
 }
 
-impl Task {
+impl TaskRun {
     pub fn as_bytes(&self) -> Result<Vec<u8>> {
         serde_json::to_vec(self).map_err(|e| SharedError::Serialization(e.to_string()))
     }
@@ -347,13 +373,13 @@ impl Task {
         // Check if bytes contain only whitespace
         if bytes.iter().all(|&b| b.is_ascii_whitespace()) {
             return Err(SharedError::Serialization(
-                "Task data contains only whitespace".to_string(),
+                "TaskRun data contains only whitespace".to_string(),
             ));
         }
 
-        let task = serde_json::from_slice::<Self>(bytes)?;
+        let task_run = serde_json::from_slice::<Self>(bytes)?;
 
-        Ok(task)
+        Ok(task_run)
     }
 }
 
@@ -374,13 +400,21 @@ pub async fn get_scheduled_tasks(base_url: &str, jwt: &str) -> Result<Vec<Task>>
 pub async fn create_scheduled_task_log(
     base_url: &str,
     jwt: &str,
+    run_id: Uuid,
     scheduled_task_id: Uuid,
     status: ScheduledTaskLogStatus,
     error: Option<String>,
 ) -> Result<ScheduledTaskLogResponse> {
+    tracing::info!(
+        "Creating scheduled task log, run_id: {run_id}, scheduled_task_id: {scheduled_task_id}, status: {status:?}"
+    );
+
     let url = format!("{base_url}/v0/internal/scheduled-tasks/{scheduled_task_id}/log");
-    tracing::info!("Creating scheduled task log {status:?}: {url}");
-    let body = ScheduledTaskLogRequest { status, error };
+    let body = ScheduledTaskLogRequest {
+        run_id,
+        status,
+        error,
+    };
 
     let response = reqwest::Client::new()
         .post(url)

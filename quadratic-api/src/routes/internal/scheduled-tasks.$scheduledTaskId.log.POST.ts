@@ -12,6 +12,7 @@ const router = express.Router();
 const requestValidationMiddleware = validateRequestSchema(
   z.object({
     body: z.object({
+      runId: z.string().uuid(),
       status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
       error: z.string().nullable().optional(),
     }),
@@ -35,6 +36,7 @@ router.post(
     const scheduledTask = await getScheduledTask(req.params.scheduledTaskId);
     const result = await createScheduledTaskLog({
       scheduledTaskId: scheduledTask.id,
+      runId: req.body.runId,
       status: req.body.status,
       error: req.body.error,
     });

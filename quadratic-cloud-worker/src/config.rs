@@ -1,6 +1,6 @@
-use quadratic_rust_shared::quadratic_api::Task;
-use quadratic_rust_shared::quadratic_cloud::{
-    GetWorkerInitDataResponse, decompress_and_decode_tasks,
+use quadratic_rust_shared::{
+    quadratic_api::TaskRun,
+    quadratic_cloud::{GetWorkerInitDataResponse, decompress_and_decode_tasks},
 };
 use serde::{Deserialize, Deserializer};
 use uuid::Uuid;
@@ -17,7 +17,9 @@ where
     Ok(s.trim_matches('"').into())
 }
 
-fn deserialize_tasks<'de, D>(deserializer: D) -> std::result::Result<Vec<(String, Task)>, D::Error>
+fn deserialize_tasks<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<(String, TaskRun)>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -37,13 +39,14 @@ where
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
+    pub(crate) container_id: Uuid,
     pub(crate) controller_url: String,
     pub(crate) multiplayer_url: String,
     pub(crate) file_id: Uuid,
     pub(crate) m2m_auth_token: String,
 
     #[serde(deserialize_with = "deserialize_tasks")]
-    pub(crate) tasks: Vec<(String, Task)>,
+    pub(crate) tasks: Vec<(String, TaskRun)>,
     #[serde(deserialize_with = "deserialize_worker_init_data")]
     pub(crate) worker_init_data: GetWorkerInitDataResponse,
 }
@@ -54,6 +57,7 @@ impl Config {
 
         // Delete environment variables immediately after reading
         unsafe {
+            std::env::remove_var("CONTAINER_ID");
             std::env::remove_var("CONTROLLER_URL");
             std::env::remove_var("MULTIPLAYER_URL");
             std::env::remove_var("FILE_ID");
