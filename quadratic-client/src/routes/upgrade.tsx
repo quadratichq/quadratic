@@ -1,3 +1,4 @@
+import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { SpinnerIcon } from '@/shared/components/Icons';
@@ -59,9 +60,10 @@ export const Component = () => {
       Icon={RocketIcon}
       title="Reminder: upgrade to Pro"
       description="A friendly, periodic reminder to upgrade your experience."
+      className="w-full max-w-xl"
       actions={
-        <div className="relative flex flex-col gap-2">
-          <div className="mb-6 flex h-28 items-center justify-center rounded-lg bg-border">Free vs. pro here</div>
+        <div className="relative flex flex-col gap-8">
+          <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid={teamUuid} />
           <div className="flex items-center justify-center gap-2">
             <Button variant="outline" className="w-36" onClick={handleNoThanks} disabled={isLoading}>
               No, thanks
