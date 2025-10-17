@@ -151,53 +151,36 @@ export async function createScheduledTaskLog(data: {
 // Get scheduled task logs
 // Returns the most recent log entry for each distinct run_id, with pagination support
 export async function getScheduledTaskLogs(
-  scheduledTaskId: number,
+  scheduledTaskUuid: string,
   limit: number = 10,
   page: number = 1
 ): Promise<ScheduledTaskLogResponse[]> {
   const offset = (page - 1) * limit;
 
-  const result = await dbClient.$queryRaw<
-    Array<{
-      id: number;
-      scheduled_task_id: number;
-      run_id: string;
-      status: string;
-      error: string | null;
-      created_date: Date;
-    }>
-  >`
+  const result = await dbClient.$queryRaw<Array<ScheduledTaskLog>>`
     SELECT * FROM (
-      SELECT DISTINCT ON (run_id)
-        id,
-        scheduled_task_id,
-        run_id,
-        status,
-        error,
-        created_date
+      SELECT DISTINCT ON (stl.run_id)
+        stl.id,
+        stl.scheduled_task_id as "scheduledTaskId",
+        stl.run_id as "runId",
+        stl.status,
+        stl.error,
+        stl.created_date as "createdDate"
       FROM 
-        "ScheduledTaskLog"
+        "ScheduledTaskLog" stl
+      INNER JOIN "ScheduledTask" st ON stl.scheduled_task_id = st.id
       WHERE
-        scheduled_task_id = ${scheduledTaskId}
+        st.uuid = ${scheduledTaskUuid}
+        AND st.status != 'DELETED'
       ORDER BY 
-        run_id, created_date DESC
+        stl.run_id, stl.created_date DESC
     ) subquery
-    ORDER BY created_date DESC
+    ORDER BY "createdDate" DESC
     LIMIT ${limit}
     OFFSET ${offset}
   `;
 
-  // Map snake_case columns from raw query to camelCase for the response function
-  return result.map((row) =>
-    resultToScheduledTaskLogResponse({
-      id: row.id,
-      scheduledTaskId: row.scheduled_task_id,
-      runId: row.run_id,
-      status: row.status,
-      error: row.error,
-      createdDate: row.created_date,
-    } as ScheduledTaskLog)
-  );
+  return result.map((row) => resultToScheduledTaskLogResponse(row));
 }
 
 // Get a scheduled task log

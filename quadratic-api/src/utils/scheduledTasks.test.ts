@@ -608,7 +608,7 @@ describe('scheduledTasks utilities', () => {
 
     describe('getScheduledTaskLogs', () => {
       it('should return empty array when no logs exist', async () => {
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toEqual([]);
       });
 
@@ -619,7 +619,7 @@ describe('scheduledTasks utilities', () => {
           status: 'COMPLETED',
         });
 
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe(log.id);
       });
@@ -648,7 +648,7 @@ describe('scheduledTasks utilities', () => {
           status: 'COMPLETED',
         });
 
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toHaveLength(3);
 
         const logIds = result.map((log) => log.id);
@@ -680,12 +680,12 @@ describe('scheduledTasks utilities', () => {
         });
 
         // Get logs for first task
-        const result1 = await getScheduledTaskLogs(existingTask.id);
+        const result1 = await getScheduledTaskLogs(existingTask.uuid);
         expect(result1).toHaveLength(1);
         expect(result1[0].id).toBe(log1.id);
 
         // Get logs for second task
-        const result2 = await getScheduledTaskLogs(otherTask.id);
+        const result2 = await getScheduledTaskLogs(otherTask.uuid);
         expect(result2).toHaveLength(1);
         expect(result2[0].id).toBe(log2.id);
       });
@@ -701,7 +701,7 @@ describe('scheduledTasks utilities', () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
 
-        const result = await getScheduledTaskLogs(existingTask.id, 5);
+        const result = await getScheduledTaskLogs(existingTask.uuid, 5);
         expect(result).toHaveLength(5);
       });
 
@@ -716,7 +716,7 @@ describe('scheduledTasks utilities', () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
 
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toHaveLength(10);
       });
 
@@ -732,15 +732,15 @@ describe('scheduledTasks utilities', () => {
         }
 
         // Get page 1
-        const page1 = await getScheduledTaskLogs(existingTask.id, 10, 1);
+        const page1 = await getScheduledTaskLogs(existingTask.uuid, 10, 1);
         expect(page1).toHaveLength(10);
 
         // Get page 2
-        const page2 = await getScheduledTaskLogs(existingTask.id, 10, 2);
+        const page2 = await getScheduledTaskLogs(existingTask.uuid, 10, 2);
         expect(page2).toHaveLength(10);
 
         // Get page 3
-        const page3 = await getScheduledTaskLogs(existingTask.id, 10, 3);
+        const page3 = await getScheduledTaskLogs(existingTask.uuid, 10, 3);
         expect(page3).toHaveLength(5);
 
         // Verify no overlap
@@ -779,7 +779,7 @@ describe('scheduledTasks utilities', () => {
           status: 'COMPLETED',
         });
 
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe(latestLog.id);
         expect(result[0].status).toBe('COMPLETED');
@@ -820,7 +820,7 @@ describe('scheduledTasks utilities', () => {
           error: 'Test error',
         });
 
-        const result = await getScheduledTaskLogs(existingTask.id);
+        const result = await getScheduledTaskLogs(existingTask.uuid);
         expect(result).toHaveLength(2);
 
         const returnedIds = result.map((log) => log.id);
@@ -896,7 +896,7 @@ describe('scheduledTasks utilities', () => {
       expect(updatedTask.operations).toEqual(Array.from(toUint8Array({ action: 'updated_lifecycle_test' })));
 
       // Verify logs still exist
-      const logs = await getScheduledTaskLogs(task.id);
+      const logs = await getScheduledTaskLogs(task.uuid);
       expect(logs).toHaveLength(3);
 
       // Set task inactive
@@ -913,7 +913,7 @@ describe('scheduledTasks utilities', () => {
       await expect(getScheduledTask(task.uuid)).rejects.toThrow();
 
       // Verify logs still exist (logs are not deleted when task is deleted)
-      const logsAfterDeletion = await getScheduledTaskLogs(task.id);
+      const logsAfterDeletion = await getScheduledTaskLogs(task.uuid);
       expect(logsAfterDeletion).toHaveLength(3);
     });
 
@@ -954,7 +954,7 @@ describe('scheduledTasks utilities', () => {
         updateScheduledTaskStatus(tasks[2].id, 'INACTIVE'),
       ]);
 
-      const task2Logs = await getScheduledTaskLogs(tasks[1].id);
+      const task2Logs = await getScheduledTaskLogs(tasks[1].uuid);
       expect(task2Logs).toHaveLength(1);
       expect(task2Logs[0].status).toBe('RUNNING');
 
