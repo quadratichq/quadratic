@@ -87,6 +87,27 @@ impl GridController {
         None
     }
 
+    #[wasm_bindgen(js_name = "setFormula")]
+    pub fn js_set_formula(
+        &mut self,
+        sheet_id: String,
+        selection: String,
+        code_string: String,
+        code_cell_name: Option<String>,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Invalid selection: {e}"))?;
+            let transaction_id = self.set_formula(sheet_id, selection, code_string, code_cell_name);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
+    }
+
     /// Reruns all code cells in grid.
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
     pub fn js_rerun_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> JsValue {

@@ -20,6 +20,18 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, is_ai)
     }
 
+    /// Starts a transaction to set a formula in a range of cells (this is always triggered by the AI)
+    pub fn set_formula(
+        &mut self,
+        selection: A1Selection,
+        code_string: String,
+        code_cell_name: Option<String>,
+        cursor: Option<String>,
+    ) -> String {
+        let ops = self.set_formula_operations(selection, code_string, code_cell_name);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCode, true)
+    }
+
     /// Reruns code cells in grid.
     pub fn rerun_all_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> String {
         let ops = self.rerun_all_code_cells_operations();

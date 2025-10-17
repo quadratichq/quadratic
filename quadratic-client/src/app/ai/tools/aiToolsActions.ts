@@ -394,6 +394,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       const rect = selection.getSingleRectangleOrCursor(sheets.jsA1Context);
 

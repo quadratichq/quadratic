@@ -35,18 +35,62 @@ impl GridController {
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableOptionMeta {
-                    sheet_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
-                    show_name: None,
-                    show_columns: None,
-                });
-            }
+            && self.data_table_at(sheet_pos).is_none()
+        {
+            ops.push(Operation::DataTableOptionMeta {
+                sheet_pos,
+                name: Some(code_cell_name),
+                alternating_colors: None,
+                columns: None,
+                show_name: None,
+                show_columns: None,
+            });
+        }
 
         ops
+    }
+
+    pub fn set_formula_operations(
+        &self,
+        selection: A1Selection,
+        code_string: String,
+        code_cell_name: Option<String>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        let rects = selection.rects(&self.a1_context);
+        if rects.is_empty() {
+            return ops;
+        }
+        let first_pos = rects[0].min.to_sheet_pos(selection.sheet_id);
+        rects.iter().for_each(|rect| {
+            let mut values = CellValues::new_blank(rect.width(), rect.height());
+            for x in rect.min.x..=rect.max.x {
+                for y in rect.min.y..=rect.max.y {
+                    let sheet_pos = SheetPos {
+                        x,
+                        y,
+                        sheet_id: selection.sheet_id,
+                    };
+                    if first_pos != sheet_pos {
+                        if sheet_pos
+                    }
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: CellValues::from(CellValue::Code(CodeCellValue {
+                            language: CodeCellLanguage::Formula,
+                            code: code_string,
+                        })),
+                    });
+                }
+            }
+        });
+        vec![Operation::SetCellValues {
+            sheet_pos: selection.to_sheet_pos(selection.sheet_id),
+            values: CellValues::from(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: code_string,
+            })),
+        }]
     }
 
     /// Reruns a code cell

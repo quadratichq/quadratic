@@ -1450,6 +1450,20 @@ class Core {
       this.handleCoreError('getAITransactions', e);
     }
   }
+
+  setFormula(
+    sheetId: string,
+    selection: string,
+    codeString: string,
+    codeCellName: string | undefined
+  ): string | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName);
+    } catch (e) {
+      this.handleCoreError('setFormula', e);
+    }
+  }
 }
 
 export const core = new Core();
