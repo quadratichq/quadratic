@@ -358,6 +358,209 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
     });
   });
 
+  describe('Pagination', () => {
+    it('should respect limit parameter', async () => {
+      // Create 15 log entries with different run IDs
+      for (let i = 0; i < 15; i++) {
+        await createScheduledTaskLog({
+          scheduledTaskId: testScheduledTask.id,
+          runId: `test-run-id-${i}`,
+          status: 'COMPLETED',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=5`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(5);
+    });
+
+    it('should use default limit of 10 when not specified', async () => {
+      // Create 15 log entries with different run IDs
+      for (let i = 0; i < 15; i++) {
+        await createScheduledTaskLog({
+          scheduledTaskId: testScheduledTask.id,
+          runId: `test-run-id-${i}`,
+          status: 'COMPLETED',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(10);
+    });
+
+    it('should handle page parameter correctly', async () => {
+      // Create 25 log entries with different run IDs
+      for (let i = 0; i < 25; i++) {
+        await createScheduledTaskLog({
+          scheduledTaskId: testScheduledTask.id,
+          runId: `test-run-id-${i}`,
+          status: 'COMPLETED',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+
+      // Get page 1 (first 10)
+      const page1Response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=10&page=1`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(page1Response.status).toBe(200);
+      expect(page1Response.body).toHaveLength(10);
+
+      // Get page 2 (next 10)
+      const page2Response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=10&page=2`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(page2Response.status).toBe(200);
+      expect(page2Response.body).toHaveLength(10);
+
+      // Get page 3 (last 5)
+      const page3Response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=10&page=3`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(page3Response.status).toBe(200);
+      expect(page3Response.body).toHaveLength(5);
+
+      // Verify pages don't overlap
+      const page1Ids = page1Response.body.map((log: any) => log.id);
+      const page2Ids = page2Response.body.map((log: any) => log.id);
+      const page3Ids = page3Response.body.map((log: any) => log.id);
+
+      const allIds = [...page1Ids, ...page2Ids, ...page3Ids];
+      const uniqueIds = new Set(allIds);
+      expect(uniqueIds.size).toBe(allIds.length);
+    });
+
+    it('should return empty array for page beyond available data', async () => {
+      // Create 5 log entries
+      for (let i = 0; i < 5; i++) {
+        await createScheduledTaskLog({
+          scheduledTaskId: testScheduledTask.id,
+          runId: `test-run-id-${i}`,
+          status: 'COMPLETED',
+        });
+      }
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=10&page=2`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(0);
+    });
+  });
+
+  describe('Distinct Run ID Behavior', () => {
+    it('should return only the most recent log entry for each run_id', async () => {
+      const runId = 'test-run-id-same';
+
+      // Create multiple logs with the same run_id
+      await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId,
+        status: 'PENDING',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId,
+        status: 'RUNNING',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const latestLog = await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId,
+        status: 'COMPLETED',
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0].id).toBe(latestLog.id);
+      expect(response.body[0].status).toBe('COMPLETED');
+    });
+
+    it('should return one log per distinct run_id with multiple runs', async () => {
+      // Create run 1 with 3 status updates
+      await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-1',
+        status: 'PENDING',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-1',
+        status: 'RUNNING',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const run1Latest = await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-1',
+        status: 'COMPLETED',
+      });
+
+      // Create run 2 with 2 status updates
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-2',
+        status: 'PENDING',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const run2Latest = await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-2',
+        status: 'FAILED',
+        error: 'Test error',
+      });
+
+      // Create run 3 with 1 status update
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const run3Latest = await createScheduledTaskLog({
+        scheduledTaskId: testScheduledTask.id,
+        runId: 'run-3',
+        status: 'RUNNING',
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(3);
+
+      const returnedIds = response.body.map((log: any) => log.id);
+      expect(returnedIds).toContain(run1Latest.id);
+      expect(returnedIds).toContain(run2Latest.id);
+      expect(returnedIds).toContain(run3Latest.id);
+
+      // Verify the logs are ordered by created_date DESC (most recent first)
+      const dates = response.body.map((log: any) => new Date(log.createdDate).getTime());
+      for (let i = 1; i < dates.length; i++) {
+        expect(dates[i - 1]).toBeGreaterThanOrEqual(dates[i]);
+      }
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle requests for tasks with very large number of logs', async () => {
       // Create many log entries
@@ -376,7 +579,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       await Promise.all(logPromises);
 
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log?limit=100`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);

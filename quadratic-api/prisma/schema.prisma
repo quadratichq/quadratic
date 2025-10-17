@@ -373,4 +373,6 @@ model ScheduledTaskLog {
 
     @@index([scheduledTaskId])
     @@index([status])
+    @@index([runId, createdDate(sort: Desc)])
+    @@index([createdDate(sort: Desc)])
 }

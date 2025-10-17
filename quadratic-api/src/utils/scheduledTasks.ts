@@ -149,9 +149,55 @@ export async function createScheduledTaskLog(data: {
 }
 
 // Get scheduled task logs
-export async function getScheduledTaskLogs(scheduledTaskId: number): Promise<ScheduledTaskLogResponse[]> {
-  const result = await dbClient.scheduledTaskLog.findMany({ where: { scheduledTaskId } });
-  return result.map(resultToScheduledTaskLogResponse);
+// Returns the most recent log entry for each distinct run_id, with pagination support
+export async function getScheduledTaskLogs(
+  scheduledTaskId: number,
+  limit: number = 10,
+  page: number = 1
+): Promise<ScheduledTaskLogResponse[]> {
+  const offset = (page - 1) * limit;
+
+  const result = await dbClient.$queryRaw<
+    Array<{
+      id: number;
+      scheduled_task_id: number;
+      run_id: string;
+      status: string;
+      error: string | null;
+      created_date: Date;
+    }>
+  >`
+    SELECT * FROM (
+      SELECT DISTINCT ON (run_id)
+        id,
+        scheduled_task_id,
+        run_id,
+        status,
+        error,
+        created_date
+      FROM 
+        "ScheduledTaskLog"
+      WHERE
+        scheduled_task_id = ${scheduledTaskId}
+      ORDER BY 
+        run_id, created_date DESC
+    ) subquery
+    ORDER BY created_date DESC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+
+  // Map snake_case columns from raw query to camelCase for the response function
+  return result.map((row) =>
+    resultToScheduledTaskLogResponse({
+      id: row.id,
+      scheduledTaskId: row.scheduled_task_id,
+      runId: row.run_id,
+      status: row.status,
+      error: row.error,
+      createdDate: row.created_date,
+    } as ScheduledTaskLog)
+  );
 }
 
 // Get a scheduled task log

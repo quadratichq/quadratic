@@ -51,6 +51,12 @@ CREATE INDEX "ScheduledTaskLog_scheduled_task_id_idx" ON "ScheduledTaskLog"("sch
 -- CreateIndex
 CREATE INDEX "ScheduledTaskLog_status_idx" ON "ScheduledTaskLog"("status");
 
+-- CreateIndex
+CREATE INDEX "ScheduledTaskLog_run_id_created_date_desc_idx" ON "ScheduledTaskLog"("run_id", "created_date" DESC);
+
+-- CreateIndex
+CREATE INDEX "ScheduledTaskLog_created_date_desc_idx" ON "ScheduledTaskLog"("created_date" DESC)
+
 -- AddForeignKey
 ALTER TABLE "ScheduledTask" ADD CONSTRAINT "ScheduledTask_file_id_fkey" FOREIGN KEY ("file_id") REFERENCES "File"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

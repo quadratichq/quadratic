@@ -14,6 +14,10 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
+  query: z.object({
+    page: z.coerce.number().optional(),
+    limit: z.coerce.number().optional(),
+  }),
   params: z.object({
     uuid: z.string().uuid(),
     scheduledTaskUuid: z.string().uuid(),
@@ -26,6 +30,7 @@ async function handler(
 ) {
   const {
     params: { uuid, scheduledTaskUuid },
+    query: { limit, page },
   } = parseRequest(req, schema);
 
   const {
@@ -41,7 +46,7 @@ async function handler(
   }
 
   const task = await getScheduledTask(scheduledTaskUuid);
-  const result = await getScheduledTaskLogs(task.id);
+  const result = await getScheduledTaskLogs(task.id, limit, page);
 
   return res.status(200).json(result);
 }

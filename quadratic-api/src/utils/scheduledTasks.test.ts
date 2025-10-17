@@ -689,6 +689,148 @@ describe('scheduledTasks utilities', () => {
         expect(result2).toHaveLength(1);
         expect(result2[0].id).toBe(log2.id);
       });
+
+      it('should respect limit parameter', async () => {
+        // Create 15 logs with different run IDs
+        for (let i = 0; i < 15; i++) {
+          await createScheduledTaskLog({
+            scheduledTaskId: existingTask.id,
+            runId: `test-run-id-${i}`,
+            status: 'COMPLETED',
+          });
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+
+        const result = await getScheduledTaskLogs(existingTask.id, 5);
+        expect(result).toHaveLength(5);
+      });
+
+      it('should use default limit of 10', async () => {
+        // Create 15 logs with different run IDs
+        for (let i = 0; i < 15; i++) {
+          await createScheduledTaskLog({
+            scheduledTaskId: existingTask.id,
+            runId: `test-run-id-${i}`,
+            status: 'COMPLETED',
+          });
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+
+        const result = await getScheduledTaskLogs(existingTask.id);
+        expect(result).toHaveLength(10);
+      });
+
+      it('should handle pagination correctly', async () => {
+        // Create 25 logs with different run IDs
+        for (let i = 0; i < 25; i++) {
+          await createScheduledTaskLog({
+            scheduledTaskId: existingTask.id,
+            runId: `test-run-id-${i}`,
+            status: 'COMPLETED',
+          });
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+
+        // Get page 1
+        const page1 = await getScheduledTaskLogs(existingTask.id, 10, 1);
+        expect(page1).toHaveLength(10);
+
+        // Get page 2
+        const page2 = await getScheduledTaskLogs(existingTask.id, 10, 2);
+        expect(page2).toHaveLength(10);
+
+        // Get page 3
+        const page3 = await getScheduledTaskLogs(existingTask.id, 10, 3);
+        expect(page3).toHaveLength(5);
+
+        // Verify no overlap
+        const page1Ids = page1.map((log) => log.id);
+        const page2Ids = page2.map((log) => log.id);
+        const page3Ids = page3.map((log) => log.id);
+
+        const allIds = [...page1Ids, ...page2Ids, ...page3Ids];
+        const uniqueIds = new Set(allIds);
+        expect(uniqueIds.size).toBe(allIds.length);
+      });
+
+      it('should return only the most recent log per run_id', async () => {
+        const runId = 'test-run-id-same';
+
+        // Create multiple logs with the same run_id
+        await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId,
+          status: 'PENDING',
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId,
+          status: 'RUNNING',
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        const latestLog = await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId,
+          status: 'COMPLETED',
+        });
+
+        const result = await getScheduledTaskLogs(existingTask.id);
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe(latestLog.id);
+        expect(result[0].status).toBe('COMPLETED');
+      });
+
+      it('should return one log per distinct run_id', async () => {
+        // Create run 1 with 3 status updates
+        await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId: 'run-1',
+          status: 'PENDING',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId: 'run-1',
+          status: 'RUNNING',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        const run1Latest = await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId: 'run-1',
+          status: 'COMPLETED',
+        });
+
+        // Create run 2 with 2 status updates
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId: 'run-2',
+          status: 'PENDING',
+        });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        const run2Latest = await createScheduledTaskLog({
+          scheduledTaskId: existingTask.id,
+          runId: 'run-2',
+          status: 'FAILED',
+          error: 'Test error',
+        });
+
+        const result = await getScheduledTaskLogs(existingTask.id);
+        expect(result).toHaveLength(2);
+
+        const returnedIds = result.map((log) => log.id);
+        expect(returnedIds).toContain(run1Latest.id);
+        expect(returnedIds).toContain(run2Latest.id);
+
+        // Verify order is by created_date DESC
+        expect(result[0].id).toBe(run2Latest.id);
+        expect(result[1].id).toBe(run1Latest.id);
+      });
     });
 
     describe('getScheduledTaskLog', () => {
