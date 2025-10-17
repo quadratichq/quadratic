@@ -464,7 +464,7 @@ pub mod tests {
 
     #[tokio::test]
     // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
-    // #[ignore]
+    #[ignore]
     async fn test_snowflake_query() {
         let (rows, over_the_limit, num_records) = test_query(None).await;
 
