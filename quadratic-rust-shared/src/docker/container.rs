@@ -64,6 +64,7 @@ impl Display for Container {
 
 impl Container {
     /// Create a new container
+    #[allow(clippy::too_many_arguments)]
     pub async fn try_new(
         id: Uuid,
         file_id: Uuid,
@@ -370,7 +371,7 @@ pub mod tests {
 
     use super::*;
 
-    pub async fn new_container(docker: Docker) -> Container {
+    pub async fn new_container(docker: Docker) -> Result<Container> {
         let env_vars = vec![
             format!("CONTROLLER_URL={}", "http://host.docker.internal:3005"),
             format!("MULTIPLAYER_URL={}", "ws://host.docker.internal:3001/ws"),
@@ -383,19 +384,21 @@ pub mod tests {
 
         // Use alpine with a sleep command for testing container lifecycle
         // This is a small, publicly available image from Docker Hub
+        // Generate a unique container name to avoid conflicts
+        let container_name = format!("alpine-test-{}", Uuid::new_v4());
+
         Container::try_new(
             Uuid::new_v4(),
             Uuid::new_v4(),
             vec![(Uuid::new_v4(), Uuid::new_v4())],
             "alpine:latest",
             docker.clone(),
-            None,
+            Some(container_name),
             Some(env_vars),
             Some(vec!["sleep".to_string(), "30".to_string()]),
             None,
         )
         .await
-        .unwrap()
     }
 
     #[test]
@@ -461,9 +464,10 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn test_container() {
-        let mut docker = Docker::connect_with_socket_defaults().unwrap();
-        let container = Arc::new(Mutex::new(new_container(docker.clone()).await));
+    async fn test_container() -> Result<()> {
+        let mut docker = Docker::connect_with_socket_defaults()
+            .map_err(|e| SharedError::Docker(DockerError::Container(e.to_string())))?;
+        let container = Arc::new(Mutex::new(new_container(docker.clone()).await?));
 
         // in a separate thread, print the logs every second
         let log_container = Arc::clone(&container);
@@ -482,20 +486,22 @@ pub mod tests {
 
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        container.lock().await.start(docker.clone()).await.unwrap();
+        container.lock().await.start(docker.clone()).await?;
 
         println!("Started worker: {}", container.lock().await);
 
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        container.lock().await.stop(&mut docker).await.unwrap();
+        container.lock().await.stop(&mut docker).await?;
 
         println!("Stopped worker: {}", container.lock().await);
 
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        container.lock().await.remove(&mut docker).await.unwrap();
+        container.lock().await.remove(&mut docker).await?;
 
         println!("Removed worker: {}", container.lock().await);
+
+        Ok(())
     }
 }

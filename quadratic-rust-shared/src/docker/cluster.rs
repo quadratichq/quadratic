@@ -414,40 +414,44 @@ impl Cluster {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::docker::container::{ContainerState, tests::new_container};
+    use crate::docker::container::tests::new_container;
 
-    pub async fn new_cluster() -> Cluster {
-        let mut cluster = Cluster::try_new("test").await.unwrap();
+    pub async fn new_cluster() -> Result<Cluster> {
+        let mut cluster = Cluster::try_new("test").await?;
 
-        let container = new_container(cluster.docker.clone()).await;
-        cluster.add_container(container, true).await.unwrap();
+        let container = new_container(cluster.docker.clone()).await?;
+        cluster.add_container(container, true).await?;
 
-        let container = new_container(cluster.docker.clone()).await;
-        cluster.add_container(container, true).await.unwrap();
+        let container = new_container(cluster.docker.clone()).await?;
+        cluster.add_container(container, true).await?;
 
-        cluster
+        Ok(cluster)
     }
 
     #[tokio::test]
-    async fn test_cluster() {
-        let mut cluster = new_cluster().await;
-        let container_ids = cluster.list_ids(false).await.unwrap();
+    async fn test_cluster() -> Result<()> {
+        let mut cluster = new_cluster().await?;
+        let container_ids = cluster.list_ids(false).await?;
 
         assert_eq!(container_ids.len(), 2);
 
-        let container = cluster.get_container(&container_ids[0]).await.unwrap();
+        let container = cluster.get_container(&container_ids[0]).await?;
 
         assert_eq!(container.lock().await.id, container_ids[0]);
 
-        cluster.stop_container(&container_ids[0]).await.unwrap();
+        // stop_container removes the container from the cluster
+        cluster.stop_container(&container_ids[0]).await?;
 
-        let container = cluster.get_container(&container_ids[0]).await.unwrap();
-
-        assert_eq!(container.lock().await.state, ContainerState::Stopped);
-
-        cluster.remove_container(&container_ids[0]).await.unwrap();
-
+        // After stopping, the container should be removed from the cluster
         assert_eq!(cluster.containers.len(), 1);
+
+        // Remove the second container
+        cluster.remove_container(&container_ids[1]).await?;
+
+        // All containers should be removed now
+        assert_eq!(cluster.containers.len(), 0);
+
+        Ok(())
     }
 
     #[tokio::test]
