@@ -135,6 +135,7 @@ export const workosClient: AuthClient = {
       return token;
     } catch (e) {
       if (!skipRedirect) {
+        debugger;
         const url = new URL(window.location.href);
         await this.login({ redirectTo: url.toString(), href: window.location.href });
       }
