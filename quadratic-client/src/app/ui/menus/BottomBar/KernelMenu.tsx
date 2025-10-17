@@ -105,6 +105,8 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
       </SidebarTooltip>
       <DropdownMenuContent
         side="right"
+        align="start"
+        alignOffset={-16}
         onCloseAutoFocus={(e) => {
           e.preventDefault();
           focusGrid();
