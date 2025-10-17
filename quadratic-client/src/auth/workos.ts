@@ -83,7 +83,11 @@ export const workosClient: AuthClient = {
   async handleSigninRedirect(href: string): Promise<void> {
     try {
       // Client initialization happens in getClient() and processes the callback
-      await getClient();
+      const client = await getClient();
+      if (!client.getUser()) {
+        console.log('no user found after signin redirect');
+        throw new Error('No user found after signin redirect');
+      }
 
       const url = new URL(href);
       const state = url.searchParams.get('state');

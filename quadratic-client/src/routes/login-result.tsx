@@ -63,8 +63,8 @@ export const loader = async ({ request }: { request: Request }) => {
       }
       return redirect(redirectTo);
     }
+    return redirect('/');
   } catch (e) {
     console.error(e);
   }
-  return redirect('/');
 };
