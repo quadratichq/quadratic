@@ -84,7 +84,6 @@ export const workosClient: AuthClient = {
     try {
       // Client initialization happens in getClient() and processes the callback
       const client = await getClient();
-      await client.initialize();
       if (!client.getUser()) {
         throw new Error('No user found after signin redirect');
       }
@@ -112,7 +111,10 @@ export const workosClient: AuthClient = {
       }
 
       window.location.assign(redirectTo);
-    } catch {}
+    } catch (error) {
+      console.error('WorkOS signin redirect failed:', error);
+      throw error; // Let the loader's catch block handle it
+    }
   },
 
   /**
@@ -135,7 +137,6 @@ export const workosClient: AuthClient = {
       return token;
     } catch (e) {
       if (!skipRedirect) {
-        debugger;
         const url = new URL(window.location.href);
         await this.login({ redirectTo: url.toString(), href: window.location.href });
       }
