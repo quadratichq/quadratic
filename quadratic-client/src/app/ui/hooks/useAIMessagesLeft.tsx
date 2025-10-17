@@ -6,14 +6,18 @@ import { useEffect, useRef, useState } from 'react';
 import { atom, useRecoilState, useRecoilValue } from 'recoil';
 
 /**
- * A few notes, because this is a bit hacky.
+ * This is a bit hacky, but it's the best way to track no. of messages left.
  *
- * At the highest level, the way this works is we fetch the usage data once and
- * store it in recoil then we manually  decrement it whenever the user submits
- * a message.
+ * At the highest level, this works by fetching the usage data once and then
+ * storing it in recoil. Then we manually decrement it whenever the user submits
+ * a message in the analyst or the assistant. (So we track it on the client.)
  *
- * ...TODO: finish this
+ * Using the current usage endpoint doesn't work because it's not real-time.
+ * When the user submits a message and we call the usage endpoint, it won't say
+ * their count has gone down by one because the AI prompt is still running.
  *
+ * Long-term probably the best way to handle this is have the prompt endpoint
+ * stream the result as well as the usage data.
  */
 
 const messagesLeftAtom = atom<number | null>({
