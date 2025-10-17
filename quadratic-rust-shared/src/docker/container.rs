@@ -7,8 +7,8 @@ use std::fmt::Display;
 pub use bollard::Docker;
 use bollard::models::{ContainerCreateBody, HostConfig};
 use bollard::query_parameters::{
-    CreateContainerOptions, InspectContainerOptions, LogsOptions, RemoveContainerOptions,
-    StartContainerOptions, StatsOptions, StopContainerOptions,
+    CreateContainerOptions, CreateImageOptions, InspectContainerOptions, ListImagesOptions,
+    LogsOptions, RemoveContainerOptions, StartContainerOptions, StatsOptions, StopContainerOptions,
 };
 use chrono::{DateTime, Utc};
 use futures_util::{Stream, StreamExt};
@@ -47,8 +47,17 @@ impl Display for Container {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"Container(image: {}, id: {}, state: {})"#,
-            self.image, self.id, self.state
+            r#"Container(image: {}, id: {}, file_id: {}, ids: {:?}, image_id: {}, state: {}, timeout_seconds: {}, start_time: {}, cpu_usage: {}, memory_usage: {})"#,
+            self.image,
+            self.id,
+            self.file_id,
+            self.ids,
+            self.image_id,
+            self.state,
+            self.timeout_seconds,
+            self.start_time,
+            self.cpu_usage,
+            self.memory_usage,
         )
     }
 }
@@ -66,6 +75,9 @@ impl Container {
         cmd: Option<Vec<String>>,
         timeout_seconds: Option<i64>,
     ) -> Result<Self> {
+        // Pull the image if it doesn't exist locally
+        Self::pull_image_if_needed(&docker, image).await?;
+
         let container_name = container_name.unwrap_or(Self::image_basename(image));
 
         let create_options = CreateContainerOptions {
@@ -288,6 +300,44 @@ impl Container {
         Ok(())
     }
 
+    /// Pull a Docker image if it doesn't exist locally
+    async fn pull_image_if_needed(docker: &Docker, image: &str) -> Result<()> {
+        // Check if image exists locally
+        let images = docker
+            .list_images(Some(ListImagesOptions {
+                all: true,
+                ..Default::default()
+            }))
+            .await
+            .map_err(Self::error)?;
+
+        let image_exists = images.iter().any(|img| {
+            img.repo_tags
+                .iter()
+                .any(|tag| tag == image || tag.starts_with(&format!("{}:", image)))
+        });
+
+        if !image_exists {
+            tracing::info!("Pulling Docker image: {}", image);
+
+            let options = CreateImageOptions {
+                from_image: Some(image.to_string()),
+                ..Default::default()
+            };
+
+            let mut stream = docker.create_image(Some(options), None, None);
+
+            // Consume the stream to ensure the pull completes
+            while let Some(result) = stream.next().await {
+                result.map_err(Self::error)?;
+            }
+
+            tracing::info!("Successfully pulled Docker image: {}", image);
+        }
+
+        Ok(())
+    }
+
     /// Sanitize an image name for use as a container name.
     ///
     /// Extracts just the image name (after the last /), removes tags and digests.
@@ -331,15 +381,17 @@ pub mod tests {
             ),
         ];
 
+        // Use alpine with a sleep command for testing container lifecycle
+        // This is a small, publicly available image from Docker Hub
         Container::try_new(
             Uuid::new_v4(),
             Uuid::new_v4(),
             vec![(Uuid::new_v4(), Uuid::new_v4())],
-            "quadratic-cloud-worker",
+            "alpine:latest",
             docker.clone(),
             None,
             Some(env_vars),
-            None,
+            Some(vec!["sleep".to_string(), "30".to_string()]),
             None,
         )
         .await

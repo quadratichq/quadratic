@@ -282,24 +282,20 @@ mod tests {
             while let Some(Ok(msg)) = socket.recv().await {
                 if let axum::extract::ws::Message::Text(text) = msg {
                     // Parse the incoming message
-                    if let Ok(request) = serde_json::from_str::<MessageRequest>(&text) {
-                        match request {
-                            MessageRequest::Ping { message } => {
-                                // Respond with pong
-                                let response = MessageResponse::Pong { message };
-                                let response_text = serde_json::to_string(&response)
-                                    .expect("Failed to serialize response");
-                                if socket
-                                    .send(axum::extract::ws::Message::Text(response_text.into()))
-                                    .await
-                                    .is_err()
-                                {
-                                    break;
-                                }
+                    if let Ok(request) = serde_json::from_str::<MessageRequest>(&text)
+                        && let MessageRequest::Ping { message } = request {
+                            // Respond with pong
+                            let response = MessageResponse::Pong { message };
+                            let response_text = serde_json::to_string(&response)
+                                .expect("Failed to serialize response");
+                            if socket
+                                .send(axum::extract::ws::Message::Text(response_text.into()))
+                                .await
+                                .is_err()
+                            {
+                                break;
                             }
-                            _ => {}
                         }
-                    }
                 }
             }
         }
