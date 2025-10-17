@@ -84,8 +84,8 @@ export const workosClient: AuthClient = {
     try {
       // Client initialization happens in getClient() and processes the callback
       const client = await getClient();
+      client.initialize();
       if (!client.getUser()) {
-        console.log('no user found after signin redirect');
         throw new Error('No user found after signin redirect');
       }
 
