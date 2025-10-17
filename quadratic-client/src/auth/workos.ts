@@ -137,26 +137,6 @@ export const workosClient: AuthClient = {
     }
     return '';
   },
-
-  // AuthKit uses hosted UI for all these flows
-  async loginWithPassword(_args): Promise<void> {
-    throw new Error('AuthKit uses hosted UI for password login');
-  },
-  async loginWithOAuth(_args): Promise<void> {
-    throw new Error('AuthKit uses hosted UI for OAuth');
-  },
-  async signupWithPassword(_args): Promise<void> {
-    throw new Error('AuthKit uses hosted UI for signup');
-  },
-  async verifyEmail(_args): Promise<void> {
-    throw new Error('AuthKit handles email verification');
-  },
-  async sendResetPassword(_args): Promise<void> {
-    throw new Error('AuthKit uses hosted UI for password reset');
-  },
-  async resetPassword(_args): Promise<void> {
-    throw new Error('AuthKit uses hosted UI for password reset');
-  },
 };
 
 const disposeClient = () => {
