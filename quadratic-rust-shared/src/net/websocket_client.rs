@@ -255,41 +255,79 @@ pub fn get_transactions_message(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use axum::{
+        Router,
+        extract::ws::{WebSocket, WebSocketUpgrade},
+        response::IntoResponse,
+        routing::get,
+    };
     use http::StatusCode;
+    use std::net::{Ipv4Addr, SocketAddr};
+    use tokio::net::TcpListener;
 
     use crate::multiplayer::message::response::MessageResponse;
 
-    use super::*;
+    // Helper functions for testing websocket client functionality.
+    // Similar to net::websocket_server::test_util::integration_test_setup, but returns
+    // a URL so we can test the WebsocketClient connection logic.
 
-    #[tokio::test]
-    async fn test_websocket_send_and_receive() {
-        let url = "ws://127.0.0.1:3001/ws";
-        let headers = vec![("Authorization".to_string(), get_authorization_header())];
-        let (mut websocket, response) = WebsocketClient::connect_with_headers(url, headers)
-            .await
-            .unwrap();
-        assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
+    /// Creates a simple ping/pong router for testing
+    fn create_ping_pong_router() -> Router {
+        async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+            ws.on_upgrade(handle_socket)
+        }
 
-        let message = MessageRequest::Ping {
-            message: "test".to_string(),
-        };
-        let serialized_message = serde_json::to_string(&message).unwrap();
-
-        let response = MessageResponse::Pong {
-            message: "test".to_string(),
-        };
-        let serialized_response = serde_json::to_string(&response).unwrap();
-        websocket
-            .send_text(&serialized_message)
-            .await
-            .expect("Failed to send message");
-
-        if let Ok(Some(received)) = websocket.receive().await {
-            match received {
-                Message::Text(text) => assert_eq!(text, serialized_response),
-                _ => panic!("Received message should be text"),
+        async fn handle_socket(mut socket: WebSocket) {
+            while let Some(Ok(msg)) = socket.recv().await {
+                if let axum::extract::ws::Message::Text(text) = msg {
+                    // Parse the incoming message
+                    if let Ok(request) = serde_json::from_str::<MessageRequest>(&text) {
+                        match request {
+                            MessageRequest::Ping { message } => {
+                                // Respond with pong
+                                let response = MessageResponse::Pong { message };
+                                let response_text = serde_json::to_string(&response)
+                                    .expect("Failed to serialize response");
+                                if socket
+                                    .send(axum::extract::ws::Message::Text(response_text.into()))
+                                    .await
+                                    .is_err()
+                                {
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
         }
+
+        Router::new().route("/ws", get(ws_handler))
+    }
+
+    /// Creates a test websocket server on a random localhost port.
+    /// Returns the WebSocket URL to connect to and a handle to the server task.
+    /// The server automatically handles ping/pong messages for testing.
+    async fn create_test_server() -> (String, tokio::task::JoinHandle<()>) {
+        let app = create_ping_pong_router();
+
+        let listener = TcpListener::bind(SocketAddr::from((Ipv4Addr::LOCALHOST, 0)))
+            .await
+            .expect("Failed to bind test server");
+        let addr = listener.local_addr().expect("Failed to get local address");
+
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, app.into_make_service())
+                .await
+                .expect("Failed to start test server");
+        });
+
+        // Give the server a moment to start
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+
+        (format!("ws://{}:{}/ws", addr.ip(), addr.port()), handle)
     }
 
     #[tokio::test]
@@ -300,18 +338,118 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_websocket_url() {
+        // Test that we can create a connection error without panicking
+        let invalid_url = "ws://localhost:99999/ws";
+        match WebsocketClient::connect(invalid_url).await {
+            Ok(_) => panic!("Should not connect to invalid URL"),
+            Err(e) => {
+                // Verify error is properly wrapped
+                assert!(matches!(e, SharedError::Net(Net::WebsocketClient(_))));
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_websocket_error_helper() {
+        let error = WebsocketClient::error("test error");
+        match error {
+            SharedError::Net(Net::WebsocketClient(msg)) => {
+                assert_eq!(msg, "test error");
+            }
+            _ => panic!("Wrong error type"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_websocket_send_and_receive() {
+        let (url, _handle) = create_test_server().await;
+
+        let (mut websocket, response) = WebsocketClient::connect(&url)
+            .await
+            .expect("Failed to connect to test server");
+
+        assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
+
+        let message = MessageRequest::Ping {
+            message: "test".to_string(),
+        };
+        let serialized_message =
+            serde_json::to_string(&message).expect("Failed to serialize message");
+
+        let expected_response = MessageResponse::Pong {
+            message: "test".to_string(),
+        };
+        let serialized_response =
+            serde_json::to_string(&expected_response).expect("Failed to serialize response");
+
+        websocket
+            .send_text(&serialized_message)
+            .await
+            .expect("Failed to send message");
+
+        match websocket.receive().await {
+            Ok(Some(Message::Text(text))) => {
+                assert_eq!(text, serialized_response);
+            }
+            Ok(Some(other)) => panic!("Expected text message, got {:?}", other),
+            Ok(None) => panic!("Expected message, got None"),
+            Err(e) => panic!("Failed to receive message: {:?}", e),
+        }
+    }
+
+    #[tokio::test]
     async fn test_websocket_connect_with_headers() {
-        let url = "ws://127.0.0.1:3001/ws";
+        let (url, _handle) = create_test_server().await;
+
         let headers = vec![
             ("Authorization".to_string(), "Bearer test-token".to_string()),
             ("X-Custom-Header".to_string(), "test-value".to_string()),
         ];
 
-        let (result, response) = WebsocketClient::connect_with_headers(url, headers)
+        let (result, response) = WebsocketClient::connect_with_headers(&url, headers)
             .await
-            .unwrap();
+            .expect("Failed to connect to test server");
 
         assert_eq!(result.url(), url);
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
+    }
+
+    #[tokio::test]
+    async fn test_websocket_split() {
+        let (url, _handle) = create_test_server().await;
+
+        let (websocket, _) = WebsocketClient::connect(&url)
+            .await
+            .expect("Failed to connect to test server");
+
+        let (mut sender, mut receiver) = websocket.split();
+
+        // Send a ping message
+        let message = MessageRequest::Ping {
+            message: "split test".to_string(),
+        };
+        let serialized = serde_json::to_string(&message).expect("Failed to serialize message");
+
+        sender
+            .send_text(&serialized)
+            .await
+            .expect("Failed to send message");
+
+        // Receive the pong response
+        match receiver.receive_text().await {
+            Ok(Some(text)) => {
+                let response: MessageResponse =
+                    serde_json::from_str(&text).expect("Failed to parse response");
+                match response {
+                    MessageResponse::Pong { message } => {
+                        assert_eq!(message, "split test");
+                    }
+                    _ => panic!("Expected Pong response"),
+                }
+            }
+            Ok(None) => panic!("Expected message, got None"),
+            Err(e) => panic!("Failed to receive message: {:?}", e),
+        }
     }
 }
