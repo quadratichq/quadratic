@@ -154,19 +154,23 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   // Act:
   //--------------------------------
   // Click the 'Sign up' button
-  await page.locator(`:text("Sign up")`).click({ timeout: 60 * 1000 });
+  const loginPage = page.locator(`[name="email"]`);
+  await loginPage.waitFor({ timeout: 2 * 60 * 1000 });
+  await page.locator('a:has-text("Sign up")').click({ timeout: 60 * 1000 });
 
-  const signupPage = page.locator(`h1:has-text("Sign up for Quadratic")`);
-  await signupPage.waitFor({ timeout: 2 * 60 * 1000 });
+  const signupTitle = page.getByText('First name');
+  await signupTitle.waitFor({ timeout: 2 * 60 * 1000 });
 
   // Fill in signup page and submit
-  await page.locator(`[data-testid="signup-email"]`).fill(email, { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="signup-password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="signup-first-name"]`).fill('E2E', { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="signup-last-name"]`).fill('Test', { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="signup-submit"]`).click({ timeout: 60 * 1000 });
-  await signupPage.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.locator('[name="first_name"]').fill('E2E', { timeout: 60 * 1000 });
+  await page.locator('[name="last_name"]').fill('Test', { timeout: 60 * 1000 });
+  await page.locator('[name="email"]').fill(email, { timeout: 60 * 1000 });
+  await page.locator('[value="sign-up"]').click({ timeout: 60 * 1000 });
 
+  await page.locator('[name="password"]').fill(USER_PASSWORD, { timeout: 60 * 1000 });
+  await page.locator('[value="sign-up"]').click({ timeout: 60 * 1000 });
+
+  await handleHumanCheck(page);
   await handleOnboarding(page);
 
   await handleQuadraticLoading(page);
