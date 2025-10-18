@@ -4,6 +4,9 @@ export const ensureEnvVarExists = (key: string) => {
   }
 };
 
+// IMPORTANT: any changes to env vars should also be included in vite.config.js
+// so it properly fails during build time
+
 export const VITE_DEBUG = import.meta.env.VITE_DEBUG;
 
 export const VITE_AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
