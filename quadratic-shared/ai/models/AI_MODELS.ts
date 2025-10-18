@@ -34,6 +34,7 @@ export const MODELS_CONFIGURATION: {
   // uses 'DEFAULT_MODEL_ROUTER_MODEL' to find the best model for this prompt,
   // settings and price correspond to the current 'DEFAULT_MODEL_ROUTER_MODEL'
   'quadratic:quadratic-auto:thinking-toggle-off': {
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
     model: 'quadratic-auto',
     displayName: 'auto',
     displayProvider: 'Quadratic',
@@ -47,9 +48,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
     displayName: 'Sonnet 4.5',
@@ -64,9 +65,9 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-off',
     displayName: 'Sonnet 4.5',
@@ -81,9 +82,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
     displayName: 'Sonnet 4.5',
@@ -98,9 +99,9 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'vertexai-anthropic:claude-sonnet-4-5@20250929': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5@20250929',
     backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
     displayName: 'Sonnet 4.5',
@@ -114,9 +115,9 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-off': {
+    ...AI_RATES.gemini_2_5_flash_rate,
     model: 'gemini-2.5-flash',
     displayName: '2.5 flash',
     displayProvider: 'Gemini',
@@ -131,9 +132,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     thinkingBudget: 0,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-on': {
+    ...AI_RATES.gemini_2_5_flash_rate,
     model: 'gemini-2.5-flash',
     displayName: '2.5 flash',
     displayProvider: 'Gemini',
@@ -148,9 +149,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     thinkingBudget: 24576,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off': {
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
     model: 'gemini-2.5-flash-lite',
     displayName: '2.5 flash lite',
     displayProvider: 'Gemini',
@@ -164,9 +165,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingBudget: 512,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on': {
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
     model: 'gemini-2.5-flash-lite',
     displayName: '2.5 Flash-Lite',
     displayProvider: 'Gemini',
@@ -181,9 +182,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     thinkingBudget: 24576,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'vertexai:gemini-2.5-pro': {
+    ...AI_RATES.gemini_2_5_pro_rate,
     model: 'gemini-2.5-pro',
     displayName: '2.5 Pro',
     displayProvider: 'Gemini',
@@ -196,9 +197,9 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_pro_rate,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
     model: 'gemini-2.5-flash-lite-preview-06-17',
     displayName: '2.5 Flash-Lite',
     displayProvider: 'Gemini',
@@ -212,9 +213,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingBudget: 0,
     imageSupport: true,
-    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'azure-openai:gpt-5-codex',
     displayName: 'Sonnet 4.5',
@@ -229,9 +230,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     backupModelKey: 'azure-openai:gpt-5-codex',
     displayName: 'Sonnet 4.5',
@@ -246,7 +247,6 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
@@ -267,6 +267,7 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_write_tokens: 0,
   },
   'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
     displayName: 'Sonnet 4.5',
@@ -281,9 +282,9 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'claude-sonnet-4-5-20250929',
     backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
     displayName: 'Sonnet 4.5',
@@ -298,7 +299,6 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
   },
   'openai:gpt-5-codex': {
     model: 'gpt-5-codex',
