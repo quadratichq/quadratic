@@ -136,7 +136,10 @@ export const workosClient: AuthClient = {
    */
   async logout() {
     const client = await getClient();
-    client.signOut({ returnTo: window.location.origin });
+    // Must use navigate: false to get Promise<void> instead of void
+    // This waits for server logout to complete before redirecting
+    await client.signOut({ returnTo: window.location.origin, navigate: false });
+    window.location.href = window.location.origin;
   },
 
   /**
