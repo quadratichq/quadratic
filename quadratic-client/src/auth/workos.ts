@@ -34,8 +34,8 @@ async function getClient() {
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-        apiHostname: isLocalhost ? '' : `authenticate.${getBaseDomain(hostname)}`,
-        https: !isLocalhost,
+        apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
+        https: isLocalhost ? undefined : true,
       });
       await client.initialize();
       return client;
@@ -136,8 +136,10 @@ export const workosClient: AuthClient = {
    */
   async logout() {
     const client = await getClient();
-    client.signOut({ returnTo: window.location.origin });
-    disposeClient();
+    // Must use navigate: false to get Promise<void> instead of void
+    // This waits for server logout to complete before redirecting
+    await client.signOut({ returnTo: window.location.origin, navigate: false });
+    window.location.href = window.location.origin;
   },
 
   /**
@@ -157,8 +159,4 @@ export const workosClient: AuthClient = {
     }
     return '';
   },
-};
-
-const disposeClient = () => {
-  clientPromise = null;
 };
