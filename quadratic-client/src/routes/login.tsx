@@ -1,6 +1,5 @@
 import { authClient } from '@/auth/auth';
 import { VITE_AUTH_TYPE } from '@/env-vars';
-import { LoginForm } from '@/shared/components/auth/LoginForm';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import type { LoaderFunctionArgs } from 'react-router';
@@ -25,11 +24,4 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       await authClient.login({ redirectTo, isSignupFlow: true, href: request.url });
     }
   }
-};
-
-export const Component = () => {
-  if (VITE_AUTH_TYPE === 'workos') {
-    return null;
-  }
-  return <LoginForm />;
 };

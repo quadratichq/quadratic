@@ -17,6 +17,11 @@ if (VITE_AUTH_TYPE === 'workos') {
   ensureEnvVarExists('VITE_WORKOS_CLIENT_ID');
 }
 
+export const VITE_ORY_HOST = import.meta.env.VITE_ORY_HOST;
+if (VITE_AUTH_TYPE === 'ory') {
+  ensureEnvVarExists('VITE_ORY_HOST');
+}
+
 export const VITE_QUADRATIC_API_URL = import.meta.env.VITE_QUADRATIC_API_URL;
 export const VITE_QUADRATIC_MULTIPLAYER_URL = import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL;
 export const VITE_QUADRATIC_CONNECTION_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
