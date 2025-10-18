@@ -18,7 +18,7 @@ test('Log In', async ({ page }) => {
   await expect(page).toHaveURL(/teams/);
 });
 
-test.only('Log Out', async ({ page }) => {
+test('Log Out', async ({ page }) => {
   //--------------------------------
   // Log Out
   //--------------------------------
