@@ -34,8 +34,8 @@ async function getClient() {
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-        apiHostname: isLocalhost ? '' : `authenticate.${getBaseDomain(hostname)}`,
-        https: !isLocalhost,
+        apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
+        https: isLocalhost ? undefined : true,
       });
       await client.initialize();
       return client;
@@ -137,7 +137,6 @@ export const workosClient: AuthClient = {
   async logout() {
     const client = await getClient();
     client.signOut({ returnTo: window.location.origin });
-    disposeClient();
   },
 
   /**
@@ -177,8 +176,4 @@ export const workosClient: AuthClient = {
   async resetPassword(_args): Promise<void> {
     throw new Error('AuthKit uses hosted UI for password reset');
   },
-};
-
-const disposeClient = () => {
-  clientPromise = null;
 };
