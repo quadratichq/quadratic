@@ -22,6 +22,8 @@ async function getClient() {
     clientPromise = (async () => {
       const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
+        apiHostname: 'https://auth.quadratic-preview.com',
+        https: true,
       });
       await client.initialize();
       return client;
