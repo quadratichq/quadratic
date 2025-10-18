@@ -20,10 +20,12 @@ let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = nu
 async function getClient() {
   if (!clientPromise) {
     clientPromise = (async () => {
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-        apiHostname: 'auth.quadratic-preview.com',
-        https: true,
+        apiHostname: isLocalhost ? '' : `authenticate.${hostname}`,
+        https: !isLocalhost,
       });
       await client.initialize();
       return client;
