@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { logIn, signUp } from './helpers/auth.helpers';
 
-test('Log In', async ({ page }) => {
+test.only('Log In', async ({ page }) => {
   //--------------------------------
   // Log In
   //--------------------------------

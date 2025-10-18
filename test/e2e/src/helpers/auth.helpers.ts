@@ -9,6 +9,56 @@ type LogInOptions = {
   route?: string;
   createAccount?: boolean;
 };
+
+const handleHumanCheck = async (page: Page) => {
+  const humanCheckHeader = page.locator('text=Before continuing, we need to be sure');
+  if (await humanCheckHeader.isVisible({ timeout: 1500 }).catch(() => false)) {
+    console.log('⚠️  Bot protection detected. Please whitelist E2E test users in WorkOS Radar.');
+    console.log('   Emails to whitelist: *e2e_*@quadratichq.com');
+    console.log('   WorkOS Dashboard: https://dashboard.workos.com/');
+
+    // Attempt multiple strategies to handle Cloudflare Turnstile
+
+    // Strategy 1: Try to find and click the Turnstile checkbox in iframe
+    try {
+      const turnstileFrame = page.frameLocator('iframe[title*="Widget"][src*="turnstile"]').first();
+      const checkbox = turnstileFrame.locator('input[type="checkbox"]').first();
+      if (await checkbox.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await checkbox.click({ timeout: 5000 });
+        await page.waitForTimeout(2000);
+        return;
+      }
+    } catch {
+      // Continue to next strategy
+    }
+
+    // Strategy 2: Look for Cloudflare challenges iframe
+    try {
+      const cfFrame = page.frameLocator('iframe[src*="challenges.cloudflare.com"]').first();
+      const cfCheckbox = cfFrame.locator('input[type="checkbox"], .cb-i').first();
+      if (await cfCheckbox.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await cfCheckbox.click({ timeout: 5000 });
+        await page.waitForTimeout(2000);
+        return;
+      }
+    } catch {
+      // Continue to next strategy
+    }
+
+    // Strategy 3: Check for direct checkbox (legacy/fallback)
+    const verifyCheckbox = page.getByRole('checkbox', { name: /verify you are human/i });
+    if (await verifyCheckbox.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await verifyCheckbox.check({ timeout: 5000 });
+      await page.waitForTimeout(750);
+      return;
+    }
+
+    // If we get here, captcha couldn't be bypassed automatically
+    console.error('❌ Unable to bypass bot protection automatically.');
+    console.error('   Action required: Configure WorkOS Radar to whitelist test users.');
+  }
+};
+
 export const logIn = async (page: Page, options: LogInOptions): Promise<string> => {
   // grant clipboard permissions
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -19,7 +69,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // extract email and password if available otherwise use env vars
   const email = `${options.emailPrefix}_${browserName}@quadratichq.com`;
 
-  const loginPage = page.locator(`h1:has-text("Log in to Quadratic")`);
+  const loginPage = page.locator(`[name="email"]`);
 
   // to create a new account, only needed when adding a dedicated account for new test
   if (options.createAccount) {
@@ -40,13 +90,19 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await loginPage.waitFor({ timeout: 2 * 60 * 1000 });
 
   // fill out log in page and log in
-  await page.locator(`[data-testid="login-email"]`).fill(email, { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="login-password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
-  await page.locator(`[data-testid="login-submit"]`).click({ timeout: 60 * 1000 });
-  await loginPage.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.locator(`[name="email"]`).fill(email, { timeout: 60 * 1000 });
+  page.locator('button:has-text("Continue")').click({ timeout: 60 * 1000 });
+
+  // Handle optional captcha/anti-bot step if present
+  await handleHumanCheck(page);
+
+  await page.waitForURL((url) => !url.pathname.startsWith('/password'), { timeout: 2 * 60 * 1000 });
+  await page.locator(`[name="password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
+  await page.locator('button[value="password"]').click({ timeout: 60 * 1000 });
+
+  await handleHumanCheck(page);
 
   await handleOnboarding(page);
-
   await handleQuadraticLoading(page);
 
   // go to dashboard if in app
