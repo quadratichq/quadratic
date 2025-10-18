@@ -14,6 +14,16 @@ if (!VITE_WORKOS_CLIENT_ID) {
   });
 }
 
+// Helper function to extract the last two parts of a hostname
+// e.g., "workos-attempt-3.quadratic-preview.com" -> "quadratic-preview.com"
+function getBaseDomain(hostname: string): string {
+  const parts = hostname.split('.');
+  if (parts.length <= 2) {
+    return hostname;
+  }
+  return parts.slice(-2).join('.');
+}
+
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
 let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = null;
@@ -24,7 +34,7 @@ async function getClient() {
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       const client = await createClient(VITE_WORKOS_CLIENT_ID, {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-        apiHostname: isLocalhost ? '' : `authenticate.${hostname}`,
+        apiHostname: isLocalhost ? '' : `authenticate.${getBaseDomain(hostname)}`,
         https: !isLocalhost,
       });
       await client.initialize();
