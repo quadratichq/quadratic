@@ -11,6 +11,7 @@ export const HelpMenubarMenu = () => {
         <MenubarItemAction action={Action.HelpQuadratic101} actionArgs={undefined} />
         <MenubarItemAction action={Action.HelpCommunity} actionArgs={undefined} />
         <MenubarItemAction action={Action.HelpChangelog} actionArgs={undefined} />
+        <MenubarItemAction action={Action.HelpYouTube} actionArgs={undefined} />
         <MenubarSeparator />
         <MenubarItemAction action={Action.HelpContactUs} actionArgs={undefined} />
       </MenubarContent>

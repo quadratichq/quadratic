@@ -323,7 +323,7 @@ Note: you may need to restart node dev occasionally if it doesn't pick up your c
 
 1. All machines types to locally run E2E tests from /quadratic/test/e2e/:
    * `npm run test` to run all tests
-   * `npm run teste:ui` to open UI that runs tests
+   * `npm run test:ui` to open UI that runs tests
    * (Only Linux): `npm run test:update` will update images--normally, you will use test.only(...) in front of the desired test so you only update that test
 2. To generate images on Mac or Windows, run e2e /quadratic:
    * `npm run test` will run all tests in docker

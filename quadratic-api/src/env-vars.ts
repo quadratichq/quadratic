@@ -66,6 +66,7 @@ export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
 export const FINE_TUNE = process.env.FINE_TUNE || 'false';
+export const RESTRICTED_MODEL_COUNTRIES = process.env.RESTRICTED_MODEL_COUNTRIES || '';
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
