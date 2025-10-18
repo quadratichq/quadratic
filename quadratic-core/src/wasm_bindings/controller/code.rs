@@ -39,8 +39,7 @@ impl GridController {
         }
     }
 
-    /// Returns the code cell (which is a combination of CellValue::Code and CodeRun).
-    /// If the cell is part of a code run, it returns the code run that caused the output.
+    /// Returns the code cell if the pos is part of a code run.
     ///
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
