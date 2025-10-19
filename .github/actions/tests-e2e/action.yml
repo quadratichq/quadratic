@@ -29,36 +29,16 @@ runs:
       with:
         node-version: 24
 
-    - name: Install AWS CLI
-      run: |
-        apt-get update
-        apt-get install -y awscli
-      shell: bash
-
     - name: Install Dependencies
       run: cd test/e2e && npm install
       shell: bash
 
-    - name: Get WorkOS credentials from SSM
-      id: get-workos-creds
-      run: |
-        WORKOS_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
-        WORKOS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
-        echo "::add-mask::$WORKOS_CLIENT_ID"
-        echo "::add-mask::$WORKOS_API_KEY"
-        echo "workos_client_id=$WORKOS_CLIENT_ID" >> $GITHUB_OUTPUT
-        echo "workos_api_key=$WORKOS_API_KEY" >> $GITHUB_OUTPUT
-      shell: bash
-
     - name: Run Playwright tests
-      run: cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
+      run: export E2E_URL=${{ inputs.e2e_url }} && cd test/e2e && npm run test -- --shard ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       shell: bash
       env:
         CI: true
         GITHUB_ACTIONS: false
-        E2E_URL: ${{ inputs.e2e_url }}
-        WORKOS_CLIENT_ID: ${{ steps.get-workos-creds.outputs.workos_client_id }}
-        WORKOS_API_KEY: ${{ steps.get-workos-creds.outputs.workos_api_key }}
 
     - name: Upload blob report to GitHub Actions Artifacts
       uses: actions/upload-artifact@v4
