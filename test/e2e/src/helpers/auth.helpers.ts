@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { USER_PASSWORD } from '../constants/auth';
 import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
+import { ensureUserExists } from './workos.helper';
 
 type LogInOptions = {
   emailPrefix: string;
@@ -68,6 +69,14 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // extract email and password if available otherwise use env vars
   const email = `${options.emailPrefix}_${browserName}@quadratichq.com`;
+
+  await ensureUserExists({
+    email,
+    firstName: 'E2E',
+    lastName: 'Test',
+    password: USER_PASSWORD,
+    ensureEmailVerified: true,
+  });
 
   const loginPage = page.locator(`[name="email"]`);
 

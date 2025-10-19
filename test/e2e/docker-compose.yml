@@ -8,3 +8,5 @@ services:
     tty: true
     environment:
       - E2E_URL=${E2E_URL}
+      - WORKOS_CLIENT_ID=${WORKOS_CLIENT_ID}
+      - WORKOS_API_KEY=${WORKOS_API_KEY}
