@@ -342,12 +342,11 @@ mod tests {
     fn validation_list_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
-        sheet.set_cell_value(pos![A1], "First");
-        sheet.set_cell_value(pos![A2], "Second");
-        sheet.set_cell_value(pos![A3], "false");
-        sheet.set_cell_value(pos![A4], "123");
+        gc.set_cell_value(pos![sheet_id!A1], "First".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "Second".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A3], "false".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A4], "123".into(), None, false);
 
         let list = ValidationList {
             source: ValidationListSource::Selection(A1Selection::test_a1_sheet_id(
@@ -363,7 +362,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        sheet.validations.set(validation.clone());
+        gc.sheet_mut(sheet_id).validations.set(validation.clone());
 
         assert_eq!(
             gc.validation_list(sheet_id, 2, 1),

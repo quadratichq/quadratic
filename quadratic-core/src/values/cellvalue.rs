@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use super::number::decimal_from_str;
 use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
-use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
@@ -76,13 +75,10 @@ pub enum CellValue {
     /// Error value.
     #[cfg_attr(test, proptest(skip))]
     Error(Box<RunError>),
+    #[cfg_attr(test, proptest(skip))]
     Html(String),
     #[cfg_attr(test, proptest(skip))]
-    Code(CodeCellValue),
-    #[cfg_attr(test, proptest(skip))]
     Image(String),
-    #[cfg_attr(test, proptest(skip))]
-    Import(Import),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -99,9 +95,7 @@ impl fmt::Display for CellValue {
             CellValue::DateTime(dt) => write!(f, "{dt}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{s}"),
-            CellValue::Code(code) => write!(f, "{code:?}"),
             CellValue::Image(s) => write!(f, "{s}"),
-            CellValue::Import(import) => write!(f, "{import:?}"),
         }
     }
 }
@@ -125,12 +119,10 @@ impl CellValue {
             CellValue::Duration(_) => "duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
-            CellValue::Code(_) => "code",
             CellValue::Image(_) => "image",
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
-            CellValue::Import(_) => "import",
         }
     }
 
@@ -144,12 +136,10 @@ impl CellValue {
             CellValue::Duration(_) => 4,
             CellValue::Error(_) => 5,
             CellValue::Html(_) => 6,
-            CellValue::Code(_) => 7,
             CellValue::Image(_) => 8,
             CellValue::Date(_) => 9,
             CellValue::Time(_) => 10,
             CellValue::Instant(_) | CellValue::DateTime(_) => 11,
-            CellValue::Import(_) => 12,
         }
     }
 
@@ -165,12 +155,10 @@ impl CellValue {
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Code(_) => "[code cell]".to_string(),
             CellValue::Image(_) => "[image]".to_string(),
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),
-            CellValue::Import(import) => import.to_string(),
         }
     }
 
@@ -214,10 +202,8 @@ impl CellValue {
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
             CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
-            CellValue::Import(import) => import.to_string(),
 
             // these should not render
-            CellValue::Code(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
     }
@@ -319,10 +305,8 @@ impl CellValue {
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
-            CellValue::Import(import) => import.to_string(),
 
             // this should not be editable
-            CellValue::Code(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
     }
@@ -344,8 +328,6 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
 
             // these should not return a value
-            CellValue::Code(_) => String::new(),
-            CellValue::Import(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
     }
@@ -518,9 +500,7 @@ impl CellValue {
             CellValue::Duration(_) => 7,
             CellValue::Blank => 8,
             CellValue::Html(_) => 9,
-            CellValue::Code(_) => 10,
             CellValue::Image(_) => 11,
-            CellValue::Import(_) => 12,
         }
     }
 
@@ -645,7 +625,6 @@ impl CellValue {
     /// Convert string to a cell_value and generate necessary operations
     pub fn string_to_cell_value(
         value: &str,
-        allow_code: bool,
         user_entered_percent: bool,
     ) -> (CellValue, FormatUpdate) {
         let mut format_update = FormatUpdate::default();
@@ -707,15 +686,6 @@ impl CellValue {
             date_time
         } else if let Some(duration) = CellValue::unpack_duration(value) {
             duration
-        } else if let Some(code) = value.strip_prefix("=") {
-            if allow_code {
-                CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: code.to_string(),
-                })
-            } else {
-                CellValue::Text(code.to_string())
-            }
         } else {
             CellValue::Text(value.into())
         };
@@ -729,14 +699,6 @@ impl CellValue {
 
     pub fn is_image(&self) -> bool {
         matches!(self, CellValue::Image(_))
-    }
-
-    pub fn is_code(&self) -> bool {
-        matches!(self, CellValue::Code(_))
-    }
-
-    pub fn is_import(&self) -> bool {
-        matches!(self, CellValue::Import(_))
     }
 
     /// Returns the contained error, or panics the value is not an error.
@@ -1074,21 +1036,6 @@ impl CellValue {
         }
         crate::formulas::util::checked_div(span, sum, count as f64)
     }
-
-    pub fn code_cell_value(&self) -> Option<CodeCellValue> {
-        match self {
-            CellValue::Code(code) => Some(code.to_owned()),
-            CellValue::Import(_) => Some(CodeCellValue::new(CodeCellLanguage::Import, "".into())),
-            _ => None,
-        }
-    }
-
-    pub fn code_cell_value_mut(&mut self) -> Option<&mut CodeCellValue> {
-        match self {
-            CellValue::Code(code) => Some(code),
-            _ => None,
-        }
-    }
 }
 
 /// Unique hash of [`CellValue`], for performance optimization. This is
@@ -1351,8 +1298,6 @@ mod test {
         let value = CellValue::Html("test".to_string());
         assert!(value.is_html());
         assert!(!value.is_image());
-        assert!(!value.is_code());
-        assert!(!value.is_import());
 
         let value = CellValue::Text("test".into());
         assert!(!value.is_html());
@@ -1363,38 +1308,9 @@ mod test {
         let value = CellValue::Image("test".to_string());
         assert!(!value.is_html());
         assert!(value.is_image());
-        assert!(!value.is_code());
-        assert!(!value.is_import());
 
         let value = CellValue::Text("test".into());
         assert!(!value.is_image());
-    }
-
-    #[test]
-    fn test_is_code() {
-        let value = CellValue::Code(CodeCellValue::new(
-            CodeCellLanguage::Python,
-            "test".to_string(),
-        ));
-        assert!(!value.is_html());
-        assert!(!value.is_image());
-        assert!(value.is_code());
-        assert!(!value.is_import());
-
-        let value = CellValue::Text("test".into());
-        assert!(!value.is_code());
-    }
-
-    #[test]
-    fn test_is_import() {
-        let value = CellValue::Import(Import::new("test".to_string()));
-        assert!(!value.is_html());
-        assert!(!value.is_image());
-        assert!(!value.is_code());
-        assert!(value.is_import());
-
-        let value = CellValue::Text("test".into());
-        assert!(!value.is_import());
     }
 
     #[test]
@@ -1464,7 +1380,7 @@ mod test {
 
     #[test]
     fn test_percentage_14() {
-        let (value, format) = CellValue::string_to_cell_value("14%", false, true);
+        let (value, format) = CellValue::string_to_cell_value("14%", false);
         assert_eq!(value, CellValue::Number(decimal_from_str("0.14").unwrap()));
         assert_eq!(
             format,
@@ -1477,5 +1393,211 @@ mod test {
             }
         );
         assert_eq!(value.to_edit(), "0.14");
+    }
+
+    #[test]
+    fn boolean_to_cell_value() {
+        let (value, format_update) = CellValue::string_to_cell_value("true", true);
+        assert_eq!(value, CellValue::Logical(true));
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("false", true);
+        assert_eq!(value, CellValue::Logical(false));
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("TRUE", true);
+        assert_eq!(value, CellValue::Logical(true));
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("FALSE", true);
+        assert_eq!(value, CellValue::Logical(false));
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("tRue", true);
+        assert_eq!(value, CellValue::Logical(true));
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("FaLse", true);
+        assert_eq!(value, CellValue::Logical(false));
+        assert!(format_update.is_default());
+    }
+
+    #[test]
+    fn number_to_cell_value() {
+        let (value, format_update) = CellValue::string_to_cell_value("123", false);
+        assert_eq!(value, 123.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("123.45", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123.45").unwrap())
+        );
+        assert!(format_update.is_default());
+
+        let (value, format_update) = CellValue::string_to_cell_value("123,456.78", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456.78").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        let (value, format_update) = CellValue::string_to_cell_value("123,456,789.01", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456789.01").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // currency with comma
+        let (value, format_update) = CellValue::string_to_cell_value("$123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with comma
+        let (value, format_update) = CellValue::string_to_cell_value("(123,456)", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
+
+        // parentheses with -ve
+        let (value, format_update) = CellValue::string_to_cell_value("(-123,456)", false);
+        assert_eq!(value, CellValue::Text("(-123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // currency with a space
+        let (value, format_update) = CellValue::string_to_cell_value("$ 123,456", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve outside
+        let (value, format_update) = CellValue::string_to_cell_value("- $ 123,456", true);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with a space and -ve inside
+        let (value, format_update) = CellValue::string_to_cell_value("$ -123,456", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses outside
+        let (value, format_update) = CellValue::string_to_cell_value("($ 123,456)", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses inside
+        let (value, format_update) = CellValue::string_to_cell_value("$(123,456)", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // currency with parentheses and space
+        let (value, format_update) = CellValue::string_to_cell_value("$ ( 123,456)", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("-123456").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }))
+        );
+
+        // parentheses with -ve
+        let (value, format_update) = CellValue::string_to_cell_value("(-$123,456)", false);
+        assert_eq!(value, CellValue::Text("(-$123,456)".to_string()));
+        assert!(format_update.is_default());
+
+        // percent with a space
+        let (value, format_update) = CellValue::string_to_cell_value("123456 %", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+
+        // percent with a comma
+        let (value, format_update) = CellValue::string_to_cell_value("123,456%", false);
+        assert_eq!(
+            value,
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
+        );
+        assert_eq!(
+            format_update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn test_problematic_number() {
+        let value = "980E92207901934";
+        let (cell_value, _) = CellValue::string_to_cell_value(value, false);
+        assert_eq!(cell_value.to_string(), value.to_string());
     }
 }
