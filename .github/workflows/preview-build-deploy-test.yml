@@ -432,7 +432,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
+            ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}){:target="_blank"}
             ⏳ Tests-E2E
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -604,6 +604,13 @@ jobs:
           submodules: false
           lfs: false
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Run tests e2e
         uses: ./.github/actions/tests-e2e
         id: run-tests-e2e
@@ -721,7 +728,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }}){:target="_blank"}
           edit-mode: replace
 
       - name: Update comment on E2E tests end
