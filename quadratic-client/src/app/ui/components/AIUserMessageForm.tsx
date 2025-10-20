@@ -321,26 +321,23 @@ export const AIUserMessageForm = memo(
       setPrompt(newValue);
 
       // Trigger mention detection using shared utilities
-      setTimeout(() => {
-        const mention = detectMentionInText(newValue, cursorPos + 1);
+      const mention = detectMentionInText(newValue, cursorPos + 1);
+      if (mention) {
+        const position = getMentionCursorPosition(textarea);
+        setMentionState((prev) => ({
+          ...prev,
+          isOpen: true,
+          query: mention.query,
+          startIndex: mention.startIndex,
+          endIndex: mention.endIndex,
+          position,
+          selectedIndex: 0,
+        }));
+      }
 
-        if (mention) {
-          const position = getMentionCursorPosition(textarea);
-          setMentionState((prev) => ({
-            ...prev,
-            isOpen: true,
-            query: mention.query,
-            startIndex: mention.startIndex,
-            endIndex: mention.endIndex,
-            position,
-            selectedIndex: 0,
-          }));
-        }
-
-        // Focus and position cursor after @
-        textarea.focus();
-        textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
-      }, 0);
+      // Focus and position cursor after @
+      textarea.focus();
+      textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
     }, [textareaRef, prompt, setMentionState]);
 
     // Listen for when the user uses the "Reference in chat" action via the grid
