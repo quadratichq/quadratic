@@ -16,6 +16,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
+import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
@@ -126,6 +127,7 @@ export default function QuadraticUI() {
           }}
         >
           {canEditFile && isAuthenticated && <AIAnalyst />}
+          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
