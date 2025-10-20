@@ -1,11 +1,9 @@
-import { tableInfoAtom } from '@/app/atoms/tableInfoAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { useGetGridItems } from '@/app/ui/hooks/useGetGridItems';
+import { tableNameToRange } from '@/app/ui/menus/GoTo/GoTo';
 import { SheetIcon, TableIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import type { MentionItem } from '@/shared/shadcn/ui/mentions-textarea';
-import { useMemo } from 'react';
-import { useRecoilValue } from 'recoil';
 
 export interface MentionGroup {
   heading: string;
@@ -13,42 +11,7 @@ export interface MentionGroup {
 }
 
 export const useGetMentions = (value: string): MentionGroup[] => {
-  const tableInfo = useRecoilValue(tableInfoAtom);
-
-  const tablesFiltered = useMemo(
-    () =>
-      tableInfo
-        ? tableInfo.filter(({ name, language }) => {
-            if (language !== 'Import') {
-              return false;
-            }
-
-            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-          })
-        : [],
-    [tableInfo, value]
-  );
-
-  const codeTablesFiltered = useMemo(
-    () =>
-      tableInfo
-        ? tableInfo.filter(({ name, language }) => {
-            if (language === 'Formula' || language === 'Import') {
-              return false;
-            }
-            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-          })
-        : [],
-    [tableInfo, value]
-  );
-
-  const sheetsFiltered = useMemo(
-    () =>
-      sheets
-        .map((sheet) => sheet)
-        .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
-    [value]
-  );
+  const { tablesFiltered, codeTablesFiltered, sheetsFiltered } = useGetGridItems(value);
 
   const groups: MentionGroup[] = [];
 
@@ -92,13 +55,3 @@ export const useGetMentions = (value: string): MentionGroup[] => {
 
   return groups;
 };
-
-function tableNameToRange(tableName: string) {
-  let range = '';
-  try {
-    range = sheets.convertTableToRange(tableName, sheets.current);
-  } catch (e) {
-    console.error('Error getting table name range in useGetMentions.tsx', e);
-  }
-  return range;
-}
