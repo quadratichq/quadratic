@@ -7,7 +7,7 @@ import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { gotoCells } from './helpers/sheet.helper';
 
-test.only('Appearance Customization', async ({ page }) => {
+test('Appearance Customization', async ({ page }) => {
   //--------------------------------
   // Dark Customization
   //--------------------------------
