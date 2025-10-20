@@ -366,9 +366,9 @@ export function getMentionCursorPosition(textarea: HTMLTextAreaElement) {
   const textHeight = div.offsetHeight;
   document.body.removeChild(div);
 
-  // Calculate position
+  // Calculate position accounting for scroll offset
   const lines = Math.floor(textHeight / lineHeight);
-  const top = rect.top + paddingTop + lines * lineHeight;
+  const top = rect.top + paddingTop + lines * lineHeight - textarea.scrollTop;
   const left = rect.left + paddingLeft;
 
   return { top, left };
