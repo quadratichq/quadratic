@@ -8,7 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getScheduledTaskLogs } from '../../utils/scheduledTasks';
+import { getScheduledTask, getScheduledTaskLogs } from '../../utils/scheduledTasks';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -44,6 +44,9 @@ async function handler(
   if (!filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, "You don't have access to this file");
   }
+
+  // Verify the scheduled task exists (this will throw 500 if not found)
+  await getScheduledTask(scheduledTaskUuid);
 
   const result = await getScheduledTaskLogs(scheduledTaskUuid, limit, page);
 

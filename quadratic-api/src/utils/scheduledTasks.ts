@@ -171,7 +171,6 @@ export async function getScheduledTaskLogs(
       INNER JOIN "ScheduledTask" st ON stl.scheduled_task_id = st.id
       WHERE
         st.uuid = ${scheduledTaskUuid}
-        AND st.status != 'DELETED'
       ORDER BY 
         stl.run_id, stl.created_date DESC
     ) subquery
