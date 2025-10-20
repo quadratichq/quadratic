@@ -433,8 +433,7 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
           />
 
-          {/* TODO(ayush): replace textarea with custom editor that supports 
-              highlighting/styling mentions */}
+          {/* Don't use @-mentions if we're not in the analyst */}
           {uiContext.startsWith('analyst') ? (
             <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
