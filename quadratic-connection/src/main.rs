@@ -14,7 +14,6 @@ mod server;
 mod sql;
 mod ssh;
 mod state;
-mod synced_connection;
 
 #[cfg(test)]
 mod test_util;

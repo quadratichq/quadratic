@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub mod annotations;
 pub mod client;
 pub mod cohorts;
@@ -5,6 +7,12 @@ pub mod engage;
 pub mod events;
 pub mod funnel;
 pub mod revenue;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MixpanelConnection {
+    pub api_secret: String,
+    pub project_id: String,
+}
 
 #[derive(Debug, Clone)]
 pub enum MixpanelServer {

@@ -26,6 +26,9 @@ pub enum ConnectionError {
     #[error("Connection error: {0}")]
     Connection(String),
 
+    #[error("Error creating object store: {0}")]
+    CreateObjectStore(String),
+
     #[error("Header error: {0}")]
     Header(String),
 

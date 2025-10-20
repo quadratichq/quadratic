@@ -13,29 +13,20 @@ use quadratic_rust_shared::{
     quadratic_api::get_connections_by_type,
     synced::{
         get_last_date_processed,
-        mixpanel::{client::MixpanelClient, events::ExportParams},
+        mixpanel::{MixpanelConnection, client::MixpanelClient, events::ExportParams},
         upload,
     },
 };
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    error::{ConnectionError, Result},
-    state::{
-        State,
-        synced_connection_cache::{SyncedConnectionKind, SyncedConnectionStatus},
-    },
+    error::{FilesError, Result},
+    state::State,
+    synced_connection::{SyncedConnectionKind, SyncedConnectionStatus},
 };
 
 const MAX_DAYS_TO_EXPORT: i64 = 90;
 const CHUNK_SIZE: u32 = 7; // 7 days
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MixpanelConnection {
-    pub api_secret: String,
-    pub project_id: String,
-}
 
 /// Process all Mixpanel connections.
 pub(crate) async fn process_mixpanel_connections(state: Arc<State>) -> Result<()> {
@@ -127,7 +118,7 @@ pub(crate) async fn process_mixpanel_connection(
 
         let params = ExportParams::new(chunk_start, chunk_end);
         let parquet_data = client.export_events_streaming(params).await.map_err(|e| {
-            ConnectionError::Synced(format!(
+            FilesError::SyncedConnection(format!(
                 "Failed to export events for chunk {}: {}",
                 chunk_index + 1,
                 e
@@ -145,7 +136,7 @@ pub(crate) async fn process_mixpanel_connection(
         let num_files = upload(&object_store, &prefix, parquet_data)
             .await
             .map_err(|e| {
-                ConnectionError::Synced(format!(
+                FilesError::SyncedConnection(format!(
                     "Failed to upload events for chunk {}: {}",
                     chunk_index + 1,
                     e
@@ -257,7 +248,7 @@ async fn complete_connection_status(state: Arc<State>, connection_id: Uuid) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::synced_connection_cache::{SyncedConnectionKind, SyncedConnectionStatus};
+    use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
     use crate::test_util::new_arc_state;
     use uuid::Uuid;
 

@@ -57,7 +57,7 @@ pub(crate) fn str_vec(value: &str) -> Vec<u8> {
 
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config, None).unwrap()
+    State::new(&config, None).await.unwrap()
 }
 
 pub(crate) async fn new_arc_state() -> Arc<State> {

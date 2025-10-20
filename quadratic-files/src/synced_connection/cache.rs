@@ -7,17 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum SyncedConnectionKind {
-    Mixpanel,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum SyncedConnectionStatus {
-    Setup,
-    ApiRequest,
-    Upload,
-}
+use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SyncedConnectionCache {

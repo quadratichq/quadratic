@@ -49,27 +49,6 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
   return { ok: true, connection };
 }
 
-async function syncConnection(teamUuid: string, connectionUuid: string, type: ConnectionType) {
-  const syncTypes = ['mixpanel'] as const;
-  const syncType = syncTypes.find((syncType) => syncType === type.toLowerCase());
-
-  try {
-    if (syncType) {
-      try {
-        await connectionClient.sync.get(syncType, connectionUuid, teamUuid);
-        console.log(`Successfully synced ${syncType} connection`);
-      } catch (syncError) {
-        console.error(`Failed to sync ${syncType} connection:`, syncError);
-      }
-    }
-
-    return { ok: true };
-  } catch (e) {
-    console.error(e);
-    return { ok: false };
-  }
-}
-
 /**
  *
  * Action
@@ -86,8 +65,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     try {
       const result = await apiClient.connections.create({ teamUuid, body });
 
-      await syncConnection(teamUuid, result.uuid, body.type);
-
       return { ok: true, connectionUuid: result.uuid };
     } catch (e) {
       console.error(e);
@@ -100,8 +77,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       const { connectionUuid, teamUuid, body } = data as UpdateConnectionAction;
 
       await apiClient.connections.update({ teamUuid, connectionUuid, body });
-
-      await syncConnection(teamUuid, connectionUuid, body.type);
 
       return { ok: true };
     } catch (e) {

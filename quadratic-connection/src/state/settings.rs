@@ -1,10 +1,13 @@
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::SharedError;
 use quadratic_rust_shared::arrow::object_store::{
     ObjectStore, ObjectStoreKind, new_filesystem_object_store, new_s3_object_store,
     object_store_url,
 };
 use quadratic_rust_shared::sql::datafusion_connection::DatafusionConnection;
-use quadratic_rust_shared::storage::StorageType;
+use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
+use quadratic_rust_shared::storage::s3::{S3, S3Config};
+use quadratic_rust_shared::storage::{StorageConfig, StorageContainer, StorageType};
 use reqwest::Url;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -19,13 +22,43 @@ pub(crate) struct Settings {
     pub(crate) jwks: Option<JwkSet>,
     pub(crate) max_response_bytes: u64,
     pub(crate) datafusion_connection: DatafusionConnection,
-    pub(crate) object_store: Arc<dyn ObjectStore>,
 }
 
 impl Settings {
-    pub(crate) fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
-        let object_store = object_store(config)?;
-        let datafusion_connection = new_datafusion_connection(config, object_store.clone())?;
+    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
+        let expected = |val: &Option<String>, var: &str| {
+            val.to_owned()
+                .unwrap_or_else(|| panic!("Expected {var} to have a value"))
+        };
+        let is_local = config.environment.is_local_or_docker();
+        let storage = match config.storage_type {
+            StorageType::S3 => StorageContainer::S3(S3::new(
+                S3Config::new(
+                    expected(&config.aws_s3_bucket_name, "AWS_S3_BUCKET_NAME"),
+                    expected(&config.aws_s3_region, "AWS_S3_REGION"),
+                    expected(&config.aws_s3_access_key_id, "AWS_S3_ACCESS_KEY_ID"),
+                    expected(&config.aws_s3_secret_access_key, "AWS_S3_SECRET_ACCESS_KEY"),
+                    "Quadratic File Service",
+                    is_local,
+                )
+                .await,
+            )),
+            StorageType::FileSystem => {
+                StorageContainer::FileSystem(FileSystem::new(FileSystemConfig {
+                    path: expected(&config.storage_dir, "STORAGE_DIR"),
+                    encryption_keys: config
+                        .storage_encryption_keys
+                        .to_owned()
+                        .expect("Expected STORAGE_ENCRYPTION_KEYS to have a value"),
+                }))
+            }
+        };
+
+        let object_store = StorageConfig::from(&storage)
+            .try_into()
+            .map_err(|e: SharedError| ConnectionError::CreateObjectStore(e.to_string()))?;
+
+        let datafusion_connection = new_datafusion_connection(config, object_store)?;
 
         Ok(Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
@@ -33,7 +66,6 @@ impl Settings {
             jwks,
             max_response_bytes: config.max_response_bytes,
             datafusion_connection,
-            object_store,
         })
     }
 }
@@ -41,8 +73,12 @@ impl Settings {
 /// Get a required value from the config.
 fn required<'a>(config: &'a Config, value: Option<&'a String>) -> &'a String {
     let storage_type = config.storage_type.to_string();
-    value.unwrap_or_else(|| panic!("Missing required environment variables for {} storage",
-        storage_type))
+    value.unwrap_or_else(|| {
+        panic!(
+            "Missing required environment variables for {} storage",
+            storage_type
+        )
+    })
 }
 
 /// Create a new datafusion connection.

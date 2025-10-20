@@ -96,43 +96,6 @@ export const connectionClient = {
       return SqlSchema.parse(data);
     },
   },
-  sync: {
-    get: async (
-      connectionType: 'mixpanel' | 'MIXPANEL',
-      connectionId: string,
-      teamUuid: string,
-      timeout: number = 10 * 60 * 1000 // 10 minutes
-    ) => {
-      try {
-        await requireLogin();
-
-        const typeLower = connectionType.toLowerCase();
-        const headers = new Headers(await jwtHeader());
-        headers.set('X-Team-Id', teamUuid);
-
-        const res = await fetch(`${API_URL}/${typeLower}/sync/${connectionId}`, {
-          method: 'GET',
-          headers,
-          signal: AbortSignal.timeout(timeout),
-        });
-
-        if (res.status !== 200) {
-          throw new Error('Failed to sync the connection');
-        }
-
-        return {
-          synced: true,
-          message: 'Connection synced successfully',
-        };
-      } catch (err) {
-        console.error('Failed to sync the connection', err);
-        return {
-          synced: false,
-          message: 'Failed to sync the connection',
-        };
-      }
-    },
-  },
   test: {
     run: async ({
       type,

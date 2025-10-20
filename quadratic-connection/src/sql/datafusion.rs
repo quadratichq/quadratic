@@ -11,19 +11,17 @@ use quadratic_rust_shared::{
     sql::datafusion_connection::{
         DatafusionConnection, tests::new_datafusion_connection as new_datafusion_test_connection,
     },
-    synced::mixpanel::client::MixpanelClient,
+    synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
 };
 
 use uuid::Uuid;
 
 use crate::{
     auth::Claims,
-    connection::get_api_connection,
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
     state::State,
-    synced_connection::{MixpanelConnection, process_mixpanel_connection},
 };
 
 use super::{Schema, SchemaQuery, query_generic, schema_generic};
@@ -87,30 +85,6 @@ pub(crate) async fn schema(
     let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     schema_generic(api_connection, state, params).await
-}
-
-pub(crate) async fn sync_mixpanel(
-    Path(id): Path<Uuid>,
-    headers: HeaderMap,
-    state: Extension<Arc<State>>,
-    claims: Claims,
-) -> Result<impl IntoResponse> {
-    let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_api_connection::<MixpanelConnection>(
-        &state,
-        "",
-        &claims.email,
-        &id,
-        &team_id,
-        &headers,
-    )
-    .await?;
-    let mixpanel_connection = MixpanelConnection {
-        api_secret: api_connection.type_details.api_secret,
-        project_id: api_connection.type_details.project_id,
-    };
-
-    process_mixpanel_connection((*state).clone(), mixpanel_connection, id).await
 }
 
 #[cfg(test)]

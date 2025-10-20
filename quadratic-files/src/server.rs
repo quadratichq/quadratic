@@ -21,6 +21,7 @@ use crate::file::get_files_to_process;
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
+use crate::synced_connection::mixpanel::process_mixpanel_connections;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
     auth::get_middleware,
@@ -32,6 +33,7 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 30;
+const SYNC_INTERVAL_M: u64 = 60;
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -199,6 +201,21 @@ pub(crate) async fn serve() -> Result<()> {
                         stats.files_to_process_in_pubsub,
                         stats.last_processed_file_time.unwrap_or_default(),
                     );
+                }
+            }
+        }
+    });
+
+    // Sync connections in a separate thread
+    tokio::spawn({
+        async move {
+            let mut interval = time::interval(Duration::from_secs(SYNC_INTERVAL_M * 60));
+
+            loop {
+                interval.tick().await;
+
+                if let Err(e) = process_mixpanel_connections(state.clone()).await {
+                    tracing::error!("Error syncing Mixpanel connections: {e}");
                 }
             }
         }
