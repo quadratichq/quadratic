@@ -43,7 +43,7 @@ export function GridContextMenuCell() {
   return (
     <ContextMenuBase>
       {canRunSelection && <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />}
-      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorStringWithSheetName} />
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={cursorStringWithSheetName} />
 
       <DropdownMenuSeparator />
 

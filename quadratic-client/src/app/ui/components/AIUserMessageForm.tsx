@@ -44,10 +44,10 @@ export interface AIUserMessageFormWrapperProps {
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   initialContext?: Context;
-  initialPrompt?: string;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
+  uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
 }
 
 export interface SubmitPromptArgs {
@@ -61,7 +61,6 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
   cancelDisabled: boolean;
-  uiContext: 'analyst' | 'assistant';
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
@@ -80,7 +79,6 @@ export const AIUserMessageForm = memo(
       autoFocusRef,
       initialContent,
       initialContext,
-      initialPrompt,
       messageIndex,
       onContentChange,
       showEmptyChatPromptSuggestions,
@@ -110,18 +108,21 @@ export const AIUserMessageForm = memo(
     const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
     useEffect(() => {
-      setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
-      setImportFiles([]);
-      setPrompt(
-        initialPrompt
-          ? initialPrompt
-          : (initialContent
-              ?.filter((item) => isContentText(item))
-              .map((item) => item.text)
-              .join('\n') ?? '')
-      );
+      if (initialContent) {
+        setFiles(initialContent.filter((item) => isContentFile(item)) ?? []);
+        setImportFiles([]);
+
+        console.log('fire intialContent', initialContent);
+        setPrompt(
+          initialContent
+            .filter((item) => isContentText(item))
+            .map((item) => item.text)
+            .join('\n')
+        );
+      }
+
       setContext?.(initialContext ? { ...initialContext } : {});
-    }, [initialContent, initialContext, setContext, setPrompt, initialPrompt]);
+    }, [initialContent, initialContext, setContext, setPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -344,6 +345,22 @@ export const AIUserMessageForm = memo(
       }, 0);
     }, [textareaRef, prompt, setMentionState]);
 
+    // Listen for when the user uses the "Reference in chat" action via the grid
+    // Apply _only_ for new
+    useEffect(() => {
+      const handleAddReference = (reference: string) => {
+        console.log('fire handleAddReference', reference);
+        setPrompt((prev) => `${prev}${prev.length > 0 && !prev.endsWith(' ') ? ' ' : ''}@${reference} `);
+        textareaRef.current?.focus();
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystAddReference', handleAddReference);
+      }
+      return () => {
+        events.off('aiAnalystAddReference', handleAddReference);
+      };
+    }, [uiContext]);
+
     const textarea = (
       <Textarea
         ref={textareaRef}
@@ -356,7 +373,7 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={uiContext === 'analyst' ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        placeholder={uiContext.startsWith('analyst') ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
@@ -423,7 +440,7 @@ export const AIUserMessageForm = memo(
 
           {/* TODO(ayush): replace textarea with custom editor that supports 
               highlighting/styling mentions */}
-          {uiContext === 'analyst' ? (
+          {uiContext.startsWith('analyst') ? (
             <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
             </MentionsTextarea>
@@ -449,7 +466,7 @@ export const AIUserMessageForm = memo(
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            handleClickMention={uiContext === 'analyst' ? handleClickMention : undefined}
+            handleClickMention={uiContext.startsWith('analyst') ? handleClickMention : undefined}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
@@ -588,7 +605,7 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {uiContext === 'analyst' && (
+            {uiContext.startsWith('analyst') && (
               <AIUserMessageFormConnectionsButton
                 disabled={disabled}
                 context={context}

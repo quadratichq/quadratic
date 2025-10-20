@@ -14,7 +14,7 @@ export function GridContextMenuDataTableCell() {
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorStringWithSheetName} />
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={cursorStringWithSheetName} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />

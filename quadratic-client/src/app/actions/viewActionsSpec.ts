@@ -1,13 +1,14 @@
 import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { AIIcon, CodeIcon, GoToIcon } from '@/shared/components/Icons';
+import { CodeIcon, GoToIcon, MentionIcon } from '@/shared/components/Icons';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -31,11 +32,11 @@ type ViewActionSpec = Pick<
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
   | Action.ToggleAIAnalyst
-  | Action.StartChatInAIAnalyst
+  | Action.AddReferenceToAIAnalyst
 >;
 
 export type ViewActionArgs = {
-  [Action.StartChatInAIAnalyst]: string | undefined;
+  [Action.AddReferenceToAIAnalyst]: string;
 };
 
 export const viewActionsSpec: ViewActionSpec = {
@@ -188,27 +189,27 @@ export const viewActionsSpec: ViewActionSpec = {
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
     },
   },
-  [Action.StartChatInAIAnalyst]: {
+  [Action.AddReferenceToAIAnalyst]: {
     label: () => 'Reference in chat',
-    Icon: AIIcon,
+    Icon: MentionIcon,
     // Only show if AI analyst is not visible at the moment
     isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-    run: (reference: ViewActionArgs[Action.StartChatInAIAnalyst]) => {
-      // TODO:
-      // We want to keep track of the last focused prompt input in the AI analyst and
-      // when the user uses this action via the grid, we want to (open if closed)
-      // insert/append a reference to the selection in the last focused prompt input.
-      console.log('TODO(ayush): pass reference to AI analyst chat');
-      if (!pixiAppSettings.setAIAnalystState) return;
-      pixiAppSettings.setAIAnalystState((prev) => {
-        const newState = {
+    run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
+      // This is a little hacky, but if we emit the event immediately, the event
+      // listener will not be set up yet inside the Analyst because its not
+      // rendered yet. So we have to wait for a second.
+      if (pixiAppSettings.aiAnalystState?.showAIAnalyst) {
+        events.emit('aiAnalystAddReference', reference ?? '');
+      } else {
+        setTimeout(() => {
+          events.emit('aiAnalystAddReference', reference ?? '');
+        }, 0);
+        pixiAppSettings.setAIAnalystState?.((prev) => ({
           ...prev,
           showAIAnalyst: true,
-          initialPrompt: reference ? `@${reference} ` : '',
-          currentChat: { id: '', name: '', lastUpdated: Date.now(), messages: [] },
-        };
-        return newState;
-      });
+        }));
+      }
+
       pixiAppSettings.setContextMenu?.({});
     },
   },

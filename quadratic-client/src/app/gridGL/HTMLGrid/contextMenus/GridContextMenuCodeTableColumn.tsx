@@ -8,7 +8,7 @@ export function GridContextMenuCodeTableColumn() {
   const { cursorString } = useCursorPosition();
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.StartChatInAIAnalyst} actionArgs={cursorString} />
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={cursorString} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
