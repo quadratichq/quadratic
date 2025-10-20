@@ -1072,12 +1072,12 @@ When using a range, cell references in the formula will automatically adjust rel
         code_cell_position: {
           type: 'string',
           description:
-            'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10").',
+            'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
         },
         formula_string: {
           type: 'string',
           description:
-            'The formula which will run in the cell(s). If code_cell_position is a range, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
+            'The formula which will run in the cell(s). If code_cell_position is a range or collection, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
         },
       },
       required: ['sheet_name', 'code_cell_position', 'formula_string'],
