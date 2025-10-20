@@ -5,18 +5,13 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-const workosClientId = process.env.WORKOS_CLIENT_ID;
-
-if (!process.env.CI && !workosClientId) {
-  throw new Error('WORKOS_CLIENT_ID is not set in the .env file');
-}
-
 /**
  * Environment configuration for WorkOS
  */
 interface WorkOSEnvironment {
   name: 'staging' | 'preview';
   apiKey: string;
+  clientId: string;
 }
 
 /**
@@ -24,24 +19,28 @@ interface WorkOSEnvironment {
  */
 const getEnvironments = (): WorkOSEnvironment[] => {
   const stagingApiKey = process.env.WORKOS_STAGING_API_KEY;
+  const stagingClientId = process.env.WORKOS_STAGING_CLIENT_ID;
   const previewApiKey = process.env.WORKOS_PREVIEW_API_KEY;
+  const previewClientId = process.env.WORKOS_PREVIEW_CLIENT_ID;
 
   const environments: WorkOSEnvironment[] = [];
 
-  if (stagingApiKey && workosClientId) {
+  if (stagingApiKey && stagingClientId) {
     environments.push({
       name: 'staging',
       apiKey: stagingApiKey,
+      clientId: stagingClientId,
     });
   } else {
     console.warn('⚠️  WorkOS staging credentials not found in .env file');
     console.warn('   Required: WORKOS_STAGING_API_KEY, WORKOS_CLIENT_ID');
   }
 
-  if (previewApiKey && workosClientId) {
+  if (previewApiKey && previewClientId) {
     environments.push({
       name: 'preview',
       apiKey: previewApiKey,
+      clientId: previewClientId,
     });
   } else {
     console.warn('⚠️  WorkOS preview credentials not found in .env file');
@@ -70,7 +69,7 @@ interface EnsureUserOptions {
  */
 const createWorkOSClient = (env: WorkOSEnvironment): WorkOS => {
   return new WorkOS(env.apiKey, {
-    clientId: workosClientId,
+    clientId: env.clientId,
   });
 };
 
@@ -90,6 +89,17 @@ const ensureUserInEnvironment = async (env: WorkOSEnvironment, options: EnsureUs
     const existingUsers = await workos.userManagement.listUsers({ email: options.email });
 
     if (existingUsers.data && existingUsers.data.length > 0) {
+      const existingUser = existingUsers.data[0];
+
+      // Check if emailVerified is true, if not, update it
+      if (!existingUser.emailVerified) {
+        await workos.userManagement.updateUser({
+          userId: existingUser.id,
+          emailVerified: true,
+        });
+        console.log(`✓ Email verified status updated in ${env.name}: ${options.email}`);
+      }
+
       return;
     }
 
@@ -105,6 +115,7 @@ const ensureUserInEnvironment = async (env: WorkOSEnvironment, options: EnsureUs
     };
 
     await workos.userManagement.createUser(userData);
+    console.log(`✓ User created in ${env.name}: ${options.email}`);
   } catch (error) {
     console.error(`❌ Error ensuring user exists in ${env.name}:`, error);
     throw new Error(
