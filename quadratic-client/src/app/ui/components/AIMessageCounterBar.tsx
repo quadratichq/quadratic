@@ -25,7 +25,11 @@ const Component = () => {
   return (
     <div className="pt-1 text-center text-xs text-muted-foreground">
       {messagesLeftDisplay} message{messagesRemaining !== 1 ? 's' : ''} left on your plan.{' '}
-      <Link to={ROUTES.TEAM_BILLING(teamUuid)} className="text-blue-600 hover:text-blue-800 hover:underline">
+      <Link
+        to={ROUTES.TEAM_SETTINGS(teamUuid)}
+        reloadDocument
+        className="text-blue-600 hover:text-blue-800 hover:underline"
+      >
         Upgrade now
       </Link>
       .

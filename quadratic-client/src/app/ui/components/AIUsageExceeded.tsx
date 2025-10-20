@@ -1,6 +1,9 @@
+import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
+import { Link } from 'react-router';
 
 const divClassName =
   'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
@@ -9,6 +12,9 @@ interface AIUsageExceededProps {
   show: boolean;
 }
 export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
+  const {
+    team: { uuid: teamUuid },
+  } = useFileRouteLoaderData();
   if (!show) {
     return null;
   }
@@ -23,24 +29,26 @@ export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
             trackEvent('[AI].UsageExceeded.clickLearnMore', {
               ab_test: 'variant',
             });
-            // go to the team settings page in a new tab
-            window.open('/team/settings', '_blank');
           }}
           className="flex-1"
+          asChild
         >
-          Learn more
+          <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
+            Learn more
+          </Link>
         </Button>
         <Button
           onClick={() => {
             trackEvent('[AI].UsageExceeded.clickUpgrade', {
               ab_test: 'variant',
             });
-            // navigate to the team settings page
-            window.open('/team/settings', '_blank');
           }}
           className="flex-1"
+          asChild
         >
-          Upgrade to Pro
+          <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
+            Upgrade to Pro
+          </Link>
         </Button>
       </div>
     </div>
