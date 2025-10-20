@@ -1,4 +1,3 @@
-import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { events } from '@/app/events/events';
@@ -192,8 +191,6 @@ export const viewActionsSpec: ViewActionSpec = {
   [Action.AddReferenceToAIAnalyst]: {
     label: () => 'Reference in chat',
     Icon: MentionIcon,
-    // Only show if AI analyst is not visible at the moment
-    isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
     run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
       // This is a little hacky, but if we emit the event immediately, the event
       // listener will not be set up yet inside the Analyst because its not
