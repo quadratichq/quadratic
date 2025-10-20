@@ -3,7 +3,7 @@
 import { readFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureUserExists } from '../e2e/src/helpers/workos.helper.js';
+import { ensureUserExists } from './workos.helper.ts';
 
 interface User {
   email: string;
@@ -21,10 +21,10 @@ async function main() {
   console.log('🚀 Starting user creation/verification process...\n');
 
   try {
-    // Read users.json file
+    // Read test/scripts/users.json file
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const usersFilePath = join(__dirname, '..', 'users.json');
+    const usersFilePath = join(__dirname, 'test-users.json');
 
     const fileContent = await readFile(usersFilePath, 'utf-8');
     const usersData: UsersFile = JSON.parse(fileContent);
