@@ -9,16 +9,16 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
 import {
   detectMentionInText,
   getMentionCursorPosition,
   MentionsTextarea,
   useMentionsState,
-} from '@/shared/shadcn/ui/mentions-textarea';
+} from '@/app/ui/components/MentionsTextarea';
+import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
+import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';

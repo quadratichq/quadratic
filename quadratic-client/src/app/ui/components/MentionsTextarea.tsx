@@ -245,8 +245,9 @@ const MentionsTextarea = memo(
 
         if (mentionState.isOpen) {
           document.addEventListener('mousedown', handleClickOutside);
-          return () => document.removeEventListener('mousedown', handleClickOutside);
         }
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
       }, [mentionState.isOpen, setMentionState, textareaRef]);
 
       // Clone the child element and ensure the ref is properly attached

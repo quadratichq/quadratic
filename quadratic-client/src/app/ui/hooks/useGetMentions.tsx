@@ -1,9 +1,9 @@
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import type { MentionItem } from '@/app/ui/components/MentionsTextarea';
 import { useGetGridItems } from '@/app/ui/hooks/useGetGridItems';
 import { tableNameToRange } from '@/app/ui/menus/GoTo/GoTo';
 import { SheetIcon, TableIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import type { MentionItem } from '@/shared/shadcn/ui/mentions-textarea';
 
 export interface MentionGroup {
   heading: string;
