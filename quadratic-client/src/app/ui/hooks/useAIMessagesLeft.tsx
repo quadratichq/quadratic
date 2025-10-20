@@ -42,7 +42,7 @@ export const useAIMessagesLeft = () => {
       apiClient.teams.billing
         .aiUsage(teamUuid)
         .then((data) => {
-          if (data.billingLimit && data.currentPeriodUsage) {
+          if (typeof data.billingLimit == 'number' && typeof data.currentPeriodUsage === 'number') {
             setMessagesLeft(Math.max(data.billingLimit - data.currentPeriodUsage, 0));
             setLoadState('loaded');
           } else {
