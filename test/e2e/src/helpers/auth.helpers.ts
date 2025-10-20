@@ -2,7 +2,6 @@ import { expect, type Page } from '@playwright/test';
 import { USER_PASSWORD } from '../constants/auth';
 import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
-import { ensureUserExists } from './workos.helper';
 
 type LogInOptions = {
   emailPrefix: string;
@@ -70,13 +69,6 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   const email = `${options.emailPrefix}_${browserName}@quadratichq.com`;
 
   const loginPage = page.locator(`[name="email"]`);
-
-  await ensureUserExists({
-    email,
-    password: USER_PASSWORD,
-    firstName: 'E2E',
-    lastName: 'Test',
-  });
 
   // setup dialog alerts to be yes
   page.on('dialog', (dialog) => {
