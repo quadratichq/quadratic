@@ -122,7 +122,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         }
       }
     },
-    ({ onSet, setSelf }) => {
+    ({ onSet }) => {
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) {
           return;

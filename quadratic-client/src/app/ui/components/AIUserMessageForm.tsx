@@ -111,8 +111,6 @@ export const AIUserMessageForm = memo(
       if (initialContent) {
         setFiles(initialContent.filter((item) => isContentFile(item)) ?? []);
         setImportFiles([]);
-
-        console.log('fire intialContent', initialContent);
         setPrompt(
           initialContent
             .filter((item) => isContentText(item))
