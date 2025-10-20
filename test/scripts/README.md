@@ -24,7 +24,7 @@ This script ensures all E2E test users exist in WorkOS environments (staging and
 
 ### Usage
 
-Run the script to create/verify all users from `users.json`:
+Run the script to create/verify all users from `test-users.json`:
 
 ```bash
 npm run ensure-users
@@ -38,7 +38,7 @@ npx tsx scripts/ensureUserExists.ts
 
 ### What it does
 
-1. Reads all users from `../users.json`
+1. Reads all users from `test-users.json`
 2. For each user, ensures they exist in both staging and preview WorkOS environments
 3. Creates users if they don't exist
 4. Verifies email addresses if users already exist
@@ -54,7 +54,7 @@ npx tsx scripts/ensureUserExists.ts
 
 ### User Format
 
-Users are defined in `users.json` with the following structure:
+Users are defined in `test-users.json` with the following structure:
 
 ```json
 {
