@@ -16,7 +16,6 @@ interface WorkOSEnvironment {
 
 /**
  * Get WorkOS environment configurations from .env file
- *
  */
 const getEnvironments = (): WorkOSEnvironment[] => {
   const stagingApiKey = process.env.WORKOS_STAGING_API_KEY;
