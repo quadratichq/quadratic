@@ -106,7 +106,7 @@ export const AIAnalyst = memo(() => {
                   messageIndex={messagesCount}
                   showEmptyChatPromptSuggestions={true}
                 />
-                {messagesCount !== 0 && <AIMessageCounterBar />}
+                <AIMessageCounterBar />
               </div>
             </>
           )}
