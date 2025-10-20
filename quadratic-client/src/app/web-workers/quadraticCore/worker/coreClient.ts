@@ -815,7 +815,13 @@ class CoreClient {
         this.send({
           type: 'coreClientSetFormula',
           id: e.data.id,
-          response: core.setFormula(e.data.sheetId, e.data.selection, e.data.codeString, e.data.codeCellName),
+          transactionId: core.setFormula(
+            e.data.sheetId,
+            e.data.selection,
+            e.data.codeString,
+            e.data.codeCellName,
+            e.data.cursor
+          ),
         });
         return;
 

@@ -1455,11 +1455,12 @@ class Core {
     sheetId: string,
     selection: string,
     codeString: string,
-    codeCellName: string | undefined
+    codeCellName: string | undefined,
+    cursor: string
   ): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName);
+      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);
     }
