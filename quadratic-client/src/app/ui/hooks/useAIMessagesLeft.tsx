@@ -43,7 +43,7 @@ export const useAIMessagesLeft = () => {
         .aiUsage(teamUuid)
         .then((data) => {
           if (data.billingLimit && data.currentPeriodUsage) {
-            setMessagesLeft(data.billingLimit - data.currentPeriodUsage);
+            setMessagesLeft(Math.max(data.billingLimit - data.currentPeriodUsage, 0));
             setLoadState('loaded');
           } else {
             throw new Error('Unexpected data from the API.');
@@ -60,7 +60,7 @@ export const useAIMessagesLeft = () => {
   // AI analyst goes into loading state
   useEffect(() => {
     if (messagesLeft !== null && prevAiAnalyastLoading.current === false && aiAnalyastLoading === true) {
-      setMessagesLeft(messagesLeft - 1);
+      setMessagesLeft(Math.max(messagesLeft - 1, 0));
     }
     prevAiAnalyastLoading.current = aiAnalyastLoading;
   }, [aiAnalyastLoading, messagesLeft, setMessagesLeft]);
@@ -68,7 +68,7 @@ export const useAIMessagesLeft = () => {
   // AI assistant goes into loading state
   useEffect(() => {
     if (messagesLeft !== null && prevAiAssistantLoading.current === false && aiAssistantLoading === true) {
-      setMessagesLeft(messagesLeft - 1);
+      setMessagesLeft(Math.max(messagesLeft - 1, 0));
     }
     prevAiAssistantLoading.current = aiAssistantLoading;
   }, [aiAssistantLoading, messagesLeft, setMessagesLeft]);
