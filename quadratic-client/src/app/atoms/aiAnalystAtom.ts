@@ -20,6 +20,7 @@ import type { z } from 'zod';
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
+  activeSchemaConnectionUuid: string | undefined;
   showChatHistory: boolean;
   abortController?: AbortController;
   loading: boolean;
@@ -47,6 +48,7 @@ export interface AIAnalystState {
 
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: false,
+  activeSchemaConnectionUuid: undefined,
   showChatHistory: false,
   abortController: undefined,
   loading: false,
@@ -158,10 +160,27 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
       }));
     },
   });
-export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
 export const aiAnalystInitialPromptAtom = createSelector('initialPrompt');
+export const aiAnalystActiveSchemaConnectionUuidAtom = createSelector('activeSchemaConnectionUuid');
+
+export const showAIAnalystAtom = selector<boolean>({
+  key: 'showAIAnalystAtom',
+  get: ({ get }) => get(aiAnalystAtom).showAIAnalyst,
+  set: ({ set, get }, newValue) => {
+    const currentState = get(aiAnalystAtom);
+    const isShowing = currentState.showAIAnalyst;
+    const willShow = newValue instanceof DefaultValue ? currentState.showAIAnalyst : newValue;
+
+    set(aiAnalystAtom, (prev) => ({
+      ...prev,
+      showAIAnalyst: newValue instanceof DefaultValue ? prev.showAIAnalyst : newValue,
+      // Reset when hiding the AI Analyst
+      activeSchemaConnectionUuid: isShowing && !willShow ? undefined : prev.activeSchemaConnectionUuid,
+    }));
+  },
+});
 
 export const aiAnalystLoadingAtom = selector<boolean>({
   key: 'aiAnalystLoadingAtom',

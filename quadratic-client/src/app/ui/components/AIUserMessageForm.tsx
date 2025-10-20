@@ -10,6 +10,7 @@ import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMes
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -295,6 +296,13 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
+    const showWaypoints = useMemo(
+      () =>
+        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
+        importFiles.length === 0 &&
+        files.length === 0,
+      [context, importFiles, files]
+    );
 
     // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
@@ -364,8 +372,10 @@ export const AIUserMessageForm = memo(
             context={context}
             files={files}
             importFiles={importFiles}
+            showWaypoints={showWaypoints}
           />
         )}
+        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
