@@ -4,9 +4,10 @@ import * as dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
+
 const workosClientId = process.env.WORKOS_CLIENT_ID;
 
-if (!workosClientId) {
+if (!process.env.CI && !workosClientId) {
   throw new Error('WORKOS_CLIENT_ID is not set in the .env file');
 }
 
