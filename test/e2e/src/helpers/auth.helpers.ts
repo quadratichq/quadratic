@@ -2,12 +2,12 @@ import { expect, type Page } from '@playwright/test';
 import { USER_PASSWORD } from '../constants/auth';
 import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
+import { ensureUserExists } from './workos.helper';
 
 type LogInOptions = {
   emailPrefix: string;
   teamName?: string;
   route?: string;
-  createAccount?: boolean;
 };
 
 const handleHumanCheck = async (page: Page) => {
@@ -71,12 +71,12 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   const loginPage = page.locator(`[name="email"]`);
 
-  // to create a new account, only needed when adding a dedicated account for new test
-  if (options.createAccount) {
-    await signUp(page, { email });
-    await page.goto(buildUrl('/logout'));
-    await loginPage.waitFor({ timeout: 2 * 60 * 1000 });
-  }
+  await ensureUserExists({
+    email,
+    password: USER_PASSWORD,
+    firstName: 'E2E',
+    lastName: 'Test',
+  });
 
   // setup dialog alerts to be yes
   page.on('dialog', (dialog) => {
