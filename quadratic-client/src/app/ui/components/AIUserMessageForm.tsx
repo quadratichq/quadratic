@@ -22,6 +22,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent, isContentFile, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -306,6 +307,7 @@ export const AIUserMessageForm = memo(
     // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
     const handleClickMention = useCallback(() => {
+      trackEvent('[AIMentions].clickInsertMentionButton');
       const textarea = textareaRef.current;
       if (!textarea) return;
 

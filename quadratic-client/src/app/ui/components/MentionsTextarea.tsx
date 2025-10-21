@@ -1,5 +1,6 @@
 import { useGetMentions } from '@/app/ui/hooks/useGetMentions';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React, {
   cloneElement,
   forwardRef,
@@ -47,6 +48,7 @@ export const useMentionsState = () => {
   });
 };
 
+// Designed to be used with a <textarea> element as its child.
 const MentionsTextarea = memo(
   forwardRef<HTMLTextAreaElement, MentionsTextareaProps>(
     ({ textareaRef, mentionState, setMentionState, children }, ref) => {
@@ -301,6 +303,7 @@ const MentionsTextarea = memo(
                               mentionItemRefs.current[globalIndex] = el;
                             }}
                             onClick={() => {
+                              trackEvent('[AIMentions].selectMentionFromDropdown');
                               handleMentionSelect(mention);
                             }}
                             onMouseDown={(e) => e.preventDefault()}

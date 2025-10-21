@@ -8,6 +8,7 @@ import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CodeIcon, GoToIcon, MentionIcon } from '@/shared/components/Icons';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -192,6 +193,9 @@ export const viewActionsSpec: ViewActionSpec = {
     label: () => 'Reference in chat',
     Icon: MentionIcon,
     run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
+      trackEvent('[AIMentions].addReferenceFromGrid', {
+        showAIAnalyst: Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst),
+      });
       // This is a little hacky, but if we emit the event immediately, the event
       // listener will not be set up yet inside the Analyst because its not
       // rendered yet. So we have to wait for a second.
