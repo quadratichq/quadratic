@@ -35,7 +35,7 @@ const Component = () => {
 
   return (
     <div className="pt-1 text-center text-xs text-muted-foreground">
-      {messagesLeftDisplay} message{messagesRemaining !== 1 ? 's' : ''} left on your plan.{' '}
+      {messagesLeftDisplay} message{messagesRemaining !== 1 ? 's' : ''} left on your Free plan.{' '}
       <Link
         to={ROUTES.TEAM_SETTINGS(teamUuid)}
         reloadDocument

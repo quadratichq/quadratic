@@ -5,52 +5,33 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
 import { Link } from 'react-router';
 
-const divClassName =
-  'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
-
-interface AIUsageExceededProps {
-  show: boolean;
-}
-export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
+export const AIUsageExceeded = memo(() => {
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  if (!show) {
-    return null;
-  }
 
   return (
-    <div className={divClassName}>
-      Monthly AI free tier exceeded. <br></br>Upgrade to Quadratic Pro to continue using Quadratic AI.
-      <div className="mt-4 flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            trackEvent('[AI].UsageExceeded.clickLearnMore', {
-              ab_test: 'variant',
-            });
-          }}
-          className="flex-1"
-          asChild
-        >
-          <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
-            Learn more
-          </Link>
-        </Button>
-        <Button
-          onClick={() => {
-            trackEvent('[AI].UsageExceeded.clickUpgrade', {
-              ab_test: 'variant',
-            });
-          }}
-          className="flex-1"
-          asChild
-        >
-          <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
-            Upgrade to Pro
-          </Link>
-        </Button>
-      </div>
+    <div
+      className={
+        'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-center text-sm dark:border-yellow-800 dark:bg-yellow-950/50'
+      }
+    >
+      <h3 className="font-semibold">Monthly AI free tier exceeded</h3>
+      <p className="text-muted-foreground">Upgrade to a Pro plan to continue using Quadratic AI.</p>
+
+      <Button
+        onClick={() => {
+          trackEvent('[AI].UsageExceeded.clickUpgrade', {
+            ab_test: 'variant',
+          });
+        }}
+        className="mt-2 w-full"
+        asChild
+      >
+        <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
+          Upgrade to Pro
+        </Link>
+      </Button>
     </div>
   );
 });

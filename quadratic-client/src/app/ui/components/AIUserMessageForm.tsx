@@ -370,7 +370,7 @@ export const AIUserMessageForm = memo(
             onDragEnter={handleDrag}
           />
 
-          <AIUsageExceeded show={showAIUsageExceeded} />
+          {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
             show={editing}
