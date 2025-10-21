@@ -380,21 +380,16 @@ export function getMentionCursorPosition(textarea: HTMLTextAreaElement) {
 export function detectMentionInText(text: string, cursorPos: number) {
   const textBeforeCursor = text.substring(0, cursorPos);
   const atIndex = textBeforeCursor.lastIndexOf('@');
-
   if (atIndex === -1) return null;
 
-  // Check if there's a space after @ (not a mention)
-  const textAfterAt = textBeforeCursor.substring(atIndex + 1);
-  if (textAfterAt.includes(' ')) return null;
+  // Check if there's a space between @ and cursor (not a mention)
+  const textBetweenAtAndCursor = textBeforeCursor.substring(atIndex + 1);
+  if (textBetweenAtAndCursor.includes(' ')) return null;
 
-  // Check if we're still typing the mention (no space after @)
-  const textAfterCursor = text.substring(cursorPos);
-  const nextSpaceIndex = textAfterCursor.indexOf(' ');
-  const endOfText = textAfterCursor.length === 0;
-
-  if (nextSpaceIndex === 0 && !endOfText) return null;
-
-  const query = textAfterAt;
+  // Check if we're at a valid position for a mention
+  // A mention is valid if it's at the start of text or has a space before it
+  if (atIndex > 0 && textBeforeCursor[atIndex - 1] !== ' ' && textBeforeCursor[atIndex - 1] !== '\n') return null;
+  const query = textBetweenAtAndCursor;
   const startIndex = atIndex;
   const endIndex = cursorPos;
 
