@@ -1,6 +1,7 @@
 //! This component creates and edits a scheduled task.
 
 import { scheduledTaskEncode } from '@/app/quadratic-core/quadratic_core';
+import { ScheduledTaskHistory } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHistory';
 import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { ScheduledTaskType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskType';
 import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
@@ -10,7 +11,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback } from 'react';
 
 export const ScheduledTask = () => {
-  const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks } = useScheduledTasks();
+  const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, getHistory } = useScheduledTasks();
 
   // holds all data/fns for the cron expression
   const cronInterval = UseCronInterval(currentTask?.cronExpression);
@@ -47,6 +48,8 @@ export const ScheduledTask = () => {
     <div className="flex flex-col overflow-y-auto px-4 pb-2">
       <ScheduledTaskType cronRange={cronRange} />
       <ScheduledTaskInterval cronInterval={cronInterval} />
+
+      {currentTask && <ScheduledTaskHistory getHistory={getHistory} currentTaskUuid={currentTask.uuid} />}
 
       <div className="mt-4 flex flex-row justify-end gap-2">
         {currentTask && (

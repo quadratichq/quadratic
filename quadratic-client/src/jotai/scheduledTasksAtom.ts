@@ -6,7 +6,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
 import { atom, useAtom } from 'jotai';
-import type { ScheduledTask } from 'quadratic-shared/typesAndSchemasScheduledTasks';
+import type { ScheduledTask, ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -62,6 +62,7 @@ interface ScheduledTasksActions {
   currentTaskId: string | null;
   deleteScheduledTask: (taskId: string) => void;
   show: boolean;
+  getHistory: () => Promise<ScheduledTaskLog[]>;
 }
 
 export const useScheduledTasks = (): ScheduledTasksActions => {
@@ -130,6 +131,15 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
     [fileUuid, setScheduledTasks]
   );
 
+  const getHistory = useCallback(
+    async (pageNumber = 1, pageSize = 10) => {
+      console.log(fileUuid, currentTask?.uuid);
+      if (!fileUuid || !currentTask?.uuid) return [];
+      return scheduledTasksAPI.history(fileUuid, currentTask?.uuid ?? '', pageNumber, pageSize);
+    },
+    [fileUuid, currentTask?.uuid]
+  );
+
   return {
     show: scheduledTasks.show,
     showScheduledTasks,
@@ -140,5 +150,6 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
     currentTaskId: scheduledTasks.currentTaskId,
     saveScheduledTask,
     deleteScheduledTask,
+    getHistory,
   };
 };
