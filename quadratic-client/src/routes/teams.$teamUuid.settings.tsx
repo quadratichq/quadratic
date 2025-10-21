@@ -203,6 +203,7 @@ export const Component = () => {
                             team_uuid: team.uuid,
                           });
                         }}
+                        data-testid="upgrade-to-pro-button-on-team-settings"
                         className="mt-4 w-full"
                       >
                         <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade to Pro</Link>
