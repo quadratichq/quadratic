@@ -32,6 +32,9 @@ export function isLocalHostAddress(host: string): boolean {
   if (host.includes('localhost')) return true;
 
   // Check for local IP ranges
+  if (host === 'unknown') return true;
+
+  if (host === '::1') return true;
   if (host.startsWith('127.')) return true; // Loopback addresses
   if (host.includes('0.0.0.0')) return true; // Default route
   if (host.startsWith('169.254.')) return true; // Link-local addresses

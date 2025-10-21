@@ -10,6 +10,7 @@ import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMes
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -117,11 +118,15 @@ export const AIUserMessageForm = memo(
       [props.messageIndex, waitingOnMessageIndex]
     );
 
-    const handleClickForm = useCallback(() => {
-      if (editingOrDebugEditing) {
-        textareaRef.current?.focus();
-      }
-    }, [editingOrDebugEditing]);
+    const handleClickForm = useCallback(
+      (e: React.MouseEvent<HTMLFormElement>) => {
+        // Don't focus if clicking the model selector popover (hack)
+        if (editingOrDebugEditing && !(e.target as HTMLElement).closest('#ai-model-popover-content')) {
+          textareaRef.current?.focus();
+        }
+      },
+      [editingOrDebugEditing]
+    );
 
     const handleSubmit = useCallback(
       (prompt: string) => {
@@ -168,7 +173,6 @@ export const AIUserMessageForm = memo(
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         event.stopPropagation();
-
         if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
           event.preventDefault();
           if (loading || waitingOnMessageIndex !== undefined) return;
@@ -282,6 +286,13 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
+    const showWaypoints = useMemo(
+      () =>
+        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
+        importFiles.length === 0 &&
+        files.length === 0,
+      [context, importFiles, files]
+    );
 
     return (
       <div className="relative">
@@ -291,8 +302,10 @@ export const AIUserMessageForm = memo(
             context={context}
             files={files}
             importFiles={importFiles}
+            showWaypoints={showWaypoints}
           />
         )}
+        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
@@ -514,9 +527,8 @@ const AIUserMessageFormFooter = memo(
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex">
             <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
-
             <div className="flex items-center gap-3">
               <ConditionalWrapper
                 condition={prompt.length !== 0}
@@ -526,7 +538,15 @@ const AIUserMessageFormFooter = memo(
                   </TooltipPopover>
                 )}
               >
-                <Button size="icon-sm" className="rounded-full" onClick={handleClickSubmit} disabled={disabledSubmit}>
+                <Button
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClickSubmit(e);
+                  }}
+                  disabled={disabledSubmit}
+                >
                   <ArrowUpwardIcon />
                 </Button>
               </ConditionalWrapper>
