@@ -46,7 +46,7 @@ export const useAIMessagesLeft = () => {
             setMessagesLeft(Math.max(data.billingLimit - data.currentPeriodUsage, 0));
             setLoadState('loaded');
           } else {
-            throw new Error('Unexpected data from the API.');
+            throw new Error(`Unexpected data from the API: ${JSON.stringify(data)}`);
           }
         })
         .catch((err) => {

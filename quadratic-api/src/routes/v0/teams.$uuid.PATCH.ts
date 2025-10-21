@@ -41,7 +41,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
   if (settings && !permissions.includes('TEAM_MANAGE')) {
-    throw new ApiError(403, 'User does not have permission to edit this team settings.');
+    throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
   }
 
   // You can't change privacy settings without a paid plan
