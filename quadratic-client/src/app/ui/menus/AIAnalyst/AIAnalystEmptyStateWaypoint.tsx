@@ -11,7 +11,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
   }
 
   return (
-    <div className="relative select-none text-muted-foreground">
+    <div className="absolute left-0 right-0 top-full mt-2 select-none text-muted-foreground">
       <div className="ml-2.5 flex flex-col">
         <svg
           width="16"

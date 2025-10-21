@@ -11,10 +11,10 @@ import {
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
-  DraftIcon,
   EducationIcon,
   ExamplesIcon,
   ExternalLinkIcon,
+  FileIcon,
   FilePrivateIcon,
   FileSharedWithMeIcon,
   GroupIcon,
@@ -102,7 +102,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
-              <DraftIcon className={classNameIcons} />
+              <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
             {canEditTeam && (
