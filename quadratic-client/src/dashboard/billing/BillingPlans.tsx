@@ -12,10 +12,9 @@ type BillingPlansProps = {
   isOnPaidPlan: boolean;
   canManageBilling: boolean;
   teamUuid: string;
-  showActions?: boolean;
 };
 
-export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid, showActions }: BillingPlansProps) => {
+export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: BillingPlansProps) => {
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Free */}
@@ -92,70 +91,51 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid, showAct
           </div>
         </div>
 
-        {showActions && (
-          <ProPlanActions isOnPaidPlan={isOnPaidPlan} canManageBilling={canManageBilling} teamUuid={teamUuid} />
+        {!isOnPaidPlan ? (
+          <Button
+            disabled={!canManageBilling}
+            onClick={() => {
+              // TODO: event source prop for tracking
+              trackEvent('[TeamSettings].upgradeToProClicked', {
+                team_uuid: teamUuid,
+              });
+            }}
+            className="mt-4 w-full"
+            asChild
+          >
+            <Link to={`TODO: ROUTES.TEAM_BILLING(teamUuid)`}>Upgrade to Pro</Link>
+          </Button>
+        ) : (
+          <div className="mt-4 space-y-2">
+            <Button
+              disabled={!canManageBilling}
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[TeamSettings].manageBillingClicked', {
+                  team_uuid: teamUuid,
+                });
+              }}
+              asChild
+            >
+              <Link to={'/TODO:ROUTES.TEAM_BILLING(teamUuid)'}>Manage subscription</Link>
+            </Button>
+            {canManageBilling && <CancellationDialog teamUuid={teamUuid} />}
+          </div>
+        )}
+        {!canManageBilling && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Only{' '}
+            <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline">
+              the team owner
+            </Link>{' '}
+            can edit billing info.
+          </p>
         )}
       </div>
     </div>
   );
 };
-
-type ProPlanActionsProps = Omit<React.ComponentProps<typeof BillingPlans>, 'showActions'>;
-
-function ProPlanActions({ isOnPaidPlan, canManageBilling, teamUuid }: ProPlanActionsProps) {
-  // TODO: replace with link
-  const handleNavigateToStripePortal = () => {};
-
-  return (
-    <>
-      {!isOnPaidPlan ? (
-        <Button
-          disabled={!canManageBilling}
-          onClick={() => {
-            trackEvent('[TeamSettings].upgradeToProClicked', {
-              team_uuid: teamUuid,
-            });
-            // TODO: replace with link
-            // apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-            //   window.location.href = data.url;
-            // });
-          }}
-          className="mt-4 w-full"
-        >
-          Upgrade to Pro
-        </Button>
-      ) : (
-        <div className="mt-4 space-y-2">
-          <Button
-            disabled={!canManageBilling}
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              trackEvent('[TeamSettings].manageBillingClicked', {
-                team_uuid: teamUuid,
-              });
-              handleNavigateToStripePortal();
-            }}
-          >
-            Manage subscription
-          </Button>
-          {canManageBilling && (
-            <CancellationDialog teamUuid={teamUuid} handleNavigateToStripePortal={handleNavigateToStripePortal} />
-          )}
-        </div>
-      )}
-      {!canManageBilling && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Only{' '}
-          <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline">
-            the team owner
-          </Link>{' '}
-          can edit billing info.
-        </p>
-      )}
-    </>
-  );
-}
 
 /*
 

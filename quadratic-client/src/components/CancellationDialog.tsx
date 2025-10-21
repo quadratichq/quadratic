@@ -16,22 +16,18 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
 type CancellationStep = 'loading-eligibility' | 'offer-discount' | 'get-feedback' | 'applying-discount';
 
-export function CancellationDialog({
-  handleNavigateToStripePortal,
-  teamUuid,
-}: {
-  handleNavigateToStripePortal: () => void;
-  teamUuid: string;
-}) {
+export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<CancellationStep>('loading-eligibility');
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { loggedInUser } = useRootRouteLoaderData();
+  const navigate = useNavigate();
 
   // Load eligibility for retention discount when the dialog opens
   useEffect(() => {
@@ -101,14 +97,14 @@ export function CancellationDialog({
       }
 
       // Proceed to Stripe cancellation
-      handleNavigateToStripePortal();
+      navigate('TODO:ROUTES.TEAM_BILLING(teamUuid)');
     } catch (error) {
       console.error('Error submitting feedback:', error);
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [addGlobalSnackbar, feedback, handleNavigateToStripePortal, loggedInUser?.email]);
+  }, [addGlobalSnackbar, feedback, navigate, loggedInUser?.email]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

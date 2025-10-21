@@ -25,6 +25,7 @@ import {
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
+import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -55,6 +56,7 @@ import {
   useSearchParams,
   useSubmit,
 } from 'react-router';
+import { useSetRecoilState } from 'recoil';
 
 /**
  * Dashboard Navbar
@@ -72,7 +74,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       billing,
     },
   } = useDashboardRouteLoaderData();
-
+  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
@@ -186,17 +188,17 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               </div>
             </div>
 
-            <Button size="sm" className="w-full" asChild>
-              <Link
-                to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
-                onClick={() => {
-                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                    team_uuid: activeTeamUuid,
-                  });
-                }}
-              >
-                Upgrade to Pro
-              </Link>
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[DashboardSidebar].upgradeToProClicked', {
+                  team_uuid: activeTeamUuid,
+                });
+                setShowUpgradeDialog(true);
+              }}
+            >
+              Upgrade to Pro
             </Button>
           </div>
         )}

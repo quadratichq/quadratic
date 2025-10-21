@@ -122,12 +122,7 @@ export const Component = () => {
             <div>
               <div className="flex flex-col gap-4">
                 {/* Plan Comparison */}
-                <BillingPlans
-                  isOnPaidPlan={isOnPaidPlan}
-                  canManageBilling={canManageBilling}
-                  teamUuid={team.uuid}
-                  showActions={true}
-                />
+                <BillingPlans isOnPaidPlan={isOnPaidPlan} canManageBilling={canManageBilling} teamUuid={team.uuid} />
 
                 {/* Current Usage */}
                 <div>

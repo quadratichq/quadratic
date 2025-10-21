@@ -2,10 +2,10 @@ import { requireAuth, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
-import { conditionallyNavigateToUpgrade } from '@/routes/upgrade';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
+import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
@@ -107,9 +107,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
 
-      // Should we try to get the person to upgrade?
-      conditionallyNavigateToUpgrade(data, new URL(loaderArgs.request.url).pathname);
-
       return data;
     })
     .catch((error) => {
@@ -152,7 +149,12 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-
+  const {
+    activeTeam,
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
   // When the location changes, close the menu (if it's already open) and reset scroll
@@ -215,6 +217,12 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <ImportProgressList />
+        <UpgradeDialogWithPeriodicReminder
+          teamUuid={activeTeamUuid}
+          userMakingRequestTeamRole={activeTeam.userMakingRequest.teamRole}
+          lastSolicitationForProUpgrade={activeTeam.clientDataKv.lastSolicitationForProUpgrade}
+          billingStatus={activeTeam.billing.status}
+        />
       </TooltipProvider>
     </RecoilRoot>
   );

@@ -2,11 +2,9 @@ import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { SpinnerIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { RocketIcon } from '@radix-ui/react-icons';
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect, useState } from 'react';
 import { redirect, useLoaderData, useNavigate, type LoaderFunctionArgs } from 'react-router';
 
@@ -81,36 +79,4 @@ export const Component = () => {
       }
     />
   );
-};
-
-// Used in the dashboard loader to determine whether we want to automatically navigate to this page
-export const conditionallyNavigateToUpgrade = (data: ApiTypes['/v0/teams/:uuid.GET.response'], redirectTo: string) => {
-  const {
-    userMakingRequest: { teamRole },
-    clientDataKv,
-    team: { uuid: teamUuid },
-    billing: { status: billingStatus },
-  } = data;
-
-  // Not a team owner? Not relevant.
-  if (teamRole !== 'OWNER') return;
-
-  // Paid team? Not relevant.
-  if (billingStatus === 'ACTIVE') return;
-
-  // If the value exists, determine whether we should show the upgrade
-  const lastSolicitationForProUpgrade = clientDataKv?.lastSolicitationForProUpgrade;
-  if (typeof lastSolicitationForProUpgrade === 'string') {
-    // Has it been ___ days?
-    const lastSolicitationForProUpgradeDate = new Date(lastSolicitationForProUpgrade);
-    const secondsSinceLastSolicitation = Math.floor((Date.now() - lastSolicitationForProUpgradeDate.getTime()) / 1000);
-    if (secondsSinceLastSolicitation < 10) return;
-
-    // If it's been more than 30 days, navigate to the upgrade page
-    throw redirect(ROUTES.UPGRADE(teamUuid, redirectTo));
-  }
-
-  // If we get here, it means the user has never seen the upgrade.
-  // So we navigate them to the upgrade page
-  throw redirect(ROUTES.UPGRADE(teamUuid, redirectTo));
 };
