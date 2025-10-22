@@ -45,4 +45,17 @@ export const scheduledTasksAPI = {
       ApiSchemas['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response']
     );
   },
+
+  history: (
+    fileId: string,
+    taskId: string,
+    pageNumber: number,
+    pageSize: number
+  ): Promise<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response']> => {
+    return fetchFromApi(
+      `/v0/files/${fileId}/scheduled_task/${taskId}/log?page=${pageNumber}&limit=${pageSize}`,
+      { method: 'GET' },
+      ApiSchemas['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response']
+    );
+  },
 };

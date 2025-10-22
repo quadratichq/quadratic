@@ -40,6 +40,8 @@ export const ScheduledTaskLogSchema = z.object({
   createdDate: z.string().datetime(),
 });
 
+export type ScheduledTaskLog = z.infer<typeof ScheduledTaskLogSchema>;
+
 export const ApiSchemasScheduledTasks = {
   // List Scheduled Tasks
   '/v0/files/:uuid/scheduled_task.GET.response': z.array(ScheduledTaskSchema),
