@@ -10,6 +10,7 @@ import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMes
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -285,6 +286,14 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
+    const showWaypoints = useMemo(
+      () =>
+        uiContext === 'analyst' &&
+        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
+        importFiles.length === 0 &&
+        files.length === 0,
+      [context, importFiles, files, uiContext]
+    );
 
     return (
       <div className="relative">
@@ -294,8 +303,10 @@ export const AIUserMessageForm = memo(
             context={context}
             files={files}
             importFiles={importFiles}
+            showWaypoints={showWaypoints}
           />
         )}
+        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
@@ -359,7 +370,7 @@ export const AIUserMessageForm = memo(
             onDragEnter={handleDrag}
           />
 
-          <AIUsageExceeded show={showAIUsageExceeded} />
+          {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
             show={editing}

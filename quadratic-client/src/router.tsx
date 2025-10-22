@@ -121,6 +121,7 @@ export const router = createBrowserRouter(
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              <Route path="billing" lazy={() => import('./routes/teams.$teamUuid.billing')} />
             </Route>
           </Route>
         </Route>

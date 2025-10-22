@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import geoip from 'geoip-lite';
 import { isLocalHostAddress } from 'quadratic-shared/typesAndSchemasConnections';
+import { RESTRICTED_MODEL_COUNTRIES } from '../env-vars';
 import logger from './logger';
 
 /**
@@ -57,10 +58,9 @@ export function getCountryFromIp(ip: string): string {
 export function isRestrictedModelCountry(req: Request): boolean {
   const ip = getIpFromRequest(req);
   const countryCode = getCountryFromIp(ip);
-  const restrictedCountriesEnv = process.env.RESTRICTED_MODEL_COUNTRIES;
-  if (!restrictedCountriesEnv) {
+  if (!RESTRICTED_MODEL_COUNTRIES) {
     return false;
   }
-  const restrictedCountries = JSON.parse(restrictedCountriesEnv).map((c: string) => c.toUpperCase());
+  const restrictedCountries = RESTRICTED_MODEL_COUNTRIES.split(',').map((c) => c.trim().toUpperCase());
   return restrictedCountries.includes(countryCode.toUpperCase());
 }
