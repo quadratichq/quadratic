@@ -1647,7 +1647,8 @@ This tool should not be used to list the sheets in the file. The names of all sh
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The name of the new sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
         insert_before_sheet_name: {
           type: ['string', 'null'],
@@ -1682,7 +1683,8 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
         },
         name_of_new_sheet: {
           type: 'string',
-          description: 'The name of the new sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
       },
       required: ['sheet_name_to_duplicate', 'name_of_new_sheet'],
@@ -1711,7 +1713,8 @@ It requires the name of the sheet to rename and the new name. This must be a uni
         },
         new_name: {
           type: 'string',
-          description: 'The new name of the sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
       },
       required: ['sheet_name', 'new_name'],
