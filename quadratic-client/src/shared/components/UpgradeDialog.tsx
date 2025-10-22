@@ -23,7 +23,6 @@ export function UpgradeDialog({ teamUuid }: { teamUuid: string }) {
   // Track when the dialog opens so we know where it came from
   useEffect(() => {
     if (state.open) {
-      console.log('[UpgradeDialog].opened', state.eventSource);
       trackEvent('[UpgradeDialog].opened', { eventSource: state.eventSource });
     }
   }, [state]);
