@@ -153,8 +153,10 @@ export const Component = () => {
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const {
-    activeTeam,
     activeTeam: {
+      userMakingRequest: { teamRole: userMakingRequestTeamRole },
+      clientDataKv: { lastSolicitationForProUpgrade },
+      billing: { status: billingStatus },
       team: { uuid: activeTeamUuid },
     },
   } = useDashboardRouteLoaderData();
@@ -222,9 +224,9 @@ export const Component = () => {
         <ImportProgressList />
         <UpgradeDialogWithPeriodicReminder
           teamUuid={activeTeamUuid}
-          userMakingRequestTeamRole={activeTeam.userMakingRequest.teamRole}
-          lastSolicitationForProUpgrade={activeTeam.clientDataKv.lastSolicitationForProUpgrade}
-          billingStatus={activeTeam.billing.status}
+          userMakingRequestTeamRole={userMakingRequestTeamRole}
+          lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
+          billingStatus={billingStatus}
         />
       </TooltipProvider>
     </RecoilRoot>
