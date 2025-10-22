@@ -78,7 +78,6 @@ export const ROUTES = {
   LABS: '/labs',
   ONBOARDING_QUESTIONNAIRE: '/onboarding',
   ONBOARDING_VIDEO: '/onboarding-video',
-  UPGRADE: (teamUuid: string, redirectTo: string) => `/upgrade?team=${teamUuid}&redirect=${redirectTo}`,
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
