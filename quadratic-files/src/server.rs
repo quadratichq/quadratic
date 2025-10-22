@@ -21,6 +21,7 @@ use crate::file::get_files_to_process;
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
+use crate::synced_connection::background_workers::init_sync_workers;
 use crate::synced_connection::mixpanel::process_mixpanel_connections;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
@@ -33,7 +34,6 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 30;
-const SYNC_INTERVAL_M: u64 = 60;
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -206,20 +206,8 @@ pub(crate) async fn serve() -> Result<()> {
         }
     });
 
-    // Sync connections in a separate thread
-    tokio::spawn({
-        async move {
-            let mut interval = time::interval(Duration::from_secs(SYNC_INTERVAL_M * 60));
-
-            loop {
-                interval.tick().await;
-
-                if let Err(e) = process_mixpanel_connections(state.clone()).await {
-                    tracing::error!("Error syncing Mixpanel connections: {e}");
-                }
-            }
-        }
-    });
+    // in a separate thread, sync connections
+    init_sync_workers(state.clone()).await?;
 
     axum::serve(
         listener,

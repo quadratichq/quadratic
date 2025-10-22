@@ -12,6 +12,7 @@ pub mod revenue;
 pub struct MixpanelConnection {
     pub api_secret: String,
     pub project_id: String,
+    pub start_date: String,
 }
 
 #[derive(Debug, Clone)]

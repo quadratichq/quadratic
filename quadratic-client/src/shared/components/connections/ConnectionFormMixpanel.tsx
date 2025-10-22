@@ -2,27 +2,32 @@ import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/compon
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  ConnectionNameSchema,
-  ConnectionTypeDetailsMixpanelSchema,
-  ConnectionTypeSchema,
-} from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const ConnectionFormMixpanelSchema = z.object({
   name: ConnectionNameSchema,
   type: z.literal(ConnectionTypeSchema.enum.MIXPANEL),
-  ...ConnectionTypeDetailsMixpanelSchema.shape,
+  api_secret: z.string().min(1, { message: 'Required' }),
+  project_id: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
 });
 type FormValues = z.infer<typeof ConnectionFormMixpanelSchema>;
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+  console.log('connection', connection);
+
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'MIXPANEL',
     api_secret: connection?.typeDetails?.api_secret || '',
     project_id: connection?.typeDetails?.project_id || '',
+    start_date: connection?.typeDetails?.start_date || defaultStartDate,
   };
 
   const form = useForm<FormValues>({
@@ -73,6 +78,19 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
                 <FormLabel>Project ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="start_date"
+            render={({ field }) => (
+              <FormItem className="col-span-1">
+                <FormLabel>Start Collection Date</FormLabel>
+                <FormControl>
+                  <Input type="date" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

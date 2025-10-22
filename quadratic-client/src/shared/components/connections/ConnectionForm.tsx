@@ -34,6 +34,7 @@ export function ConnectionFormCreate({
   const submit = useSubmit();
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
+    console.log('formValues in handleSubmitForm:', formValues);
     const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);

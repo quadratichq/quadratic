@@ -22,14 +22,17 @@ use uuid::Uuid;
 use crate::{
     error::{FilesError, Result},
     state::State,
-    synced_connection::{SyncedConnectionKind, SyncedConnectionStatus},
+    synced_connection::{DateRange, SyncedConnectionKind, SyncedConnectionStatus},
 };
 
-const MAX_DAYS_TO_EXPORT: i64 = 90;
-const CHUNK_SIZE: u32 = 7; // 7 days
+const MAX_DAYS_TO_EXPORT: i64 = 365 * 2; // 2 years
+const CHUNK_SIZE: u32 = 30; // 30 days
 
 /// Process all Mixpanel connections.
-pub(crate) async fn process_mixpanel_connections(state: Arc<State>) -> Result<()> {
+pub(crate) async fn process_mixpanel_connections(
+    state: Arc<State>,
+    date_range: Option<DateRange>,
+) -> Result<()> {
     let connections = get_connections_by_type::<MixpanelConnection>(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
@@ -42,9 +45,16 @@ pub(crate) async fn process_mixpanel_connections(state: Arc<State>) -> Result<()
     // process each connection in a separate thread
     for connection in connections {
         let state = Arc::clone(&state);
+        let date_range = date_range.clone();
+
         tokio::spawn(async move {
-            if let Err(e) =
-                process_mixpanel_connection(state, connection.type_details, connection.uuid).await
+            if let Err(e) = process_mixpanel_connection(
+                state,
+                connection.type_details,
+                connection.uuid,
+                date_range,
+            )
+            .await
             {
                 tracing::error!(
                     "Error processing Mixpanel connection {}: {}",
@@ -63,6 +73,7 @@ pub(crate) async fn process_mixpanel_connection(
     state: Arc<State>,
     connection: MixpanelConnection,
     connection_id: Uuid,
+    date_range: Option<DateRange>,
 ) -> Result<()> {
     if !can_process_connection(state.clone(), connection_id).await? {
         tracing::info!("Skipping Mixpanel connection {}", connection_id);
@@ -75,14 +86,21 @@ pub(crate) async fn process_mixpanel_connection(
 
     let object_store = state.settings.object_store.clone();
     let prefix = object_store_path(connection_id, "events");
-    let (start_date, end_date) = dates(state.clone(), connection_id, "events").await;
-    let start_time = std::time::Instant::now();
 
     let MixpanelConnection {
         ref api_secret,
         ref project_id,
+        ref start_date,
     } = connection;
     let client = MixpanelClient::new(api_secret, project_id);
+    let start_collection_data = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
+        .unwrap_or_else(|_| chrono::Utc::now().date_naive());
+
+    let (start_date, end_date) = match date_range {
+        Some(date_range) => (date_range.start_date, start_collection_data),
+        None => dates(state.clone(), connection_id, "events").await,
+    };
+    let start_time = std::time::Instant::now();
 
     // split the date range into chunks
     let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
@@ -175,10 +193,14 @@ async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (Nai
     let end_date = today;
     let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT - 1);
 
+    tracing::info!("Start date 1: {}, End date 1: {}", start_date, end_date);
+
     // if we have any objects, use the last date processed
     if let Ok(Some(new_start_date)) = get_last_date_processed(&object_store, Some(&prefix)).await {
         start_date = new_start_date;
     };
+
+    tracing::info!("Start date: {}, End date: {}", start_date, end_date);
 
     (start_date, end_date)
 }
@@ -256,7 +278,7 @@ mod tests {
     #[ignore]
     async fn test_process_mixpanel() {
         let state = new_arc_state().await;
-        process_mixpanel_connections(state).await.unwrap();
+        process_mixpanel_connections(state, None).await.unwrap();
     }
 
     #[tokio::test]
