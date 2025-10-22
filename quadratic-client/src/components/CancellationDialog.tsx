@@ -2,6 +2,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { SpinnerIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -97,14 +98,13 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
       }
 
       // Proceed to Stripe cancellation
-      navigate('TODO:ROUTES.TEAM_BILLING(teamUuid)');
+      navigate(ROUTES.TEAM_BILLING(teamUuid));
     } catch (error) {
       console.error('Error submitting feedback:', error);
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
-    } finally {
       setIsLoading(false);
     }
-  }, [addGlobalSnackbar, feedback, navigate, loggedInUser?.email]);
+  }, [addGlobalSnackbar, feedback, navigate, loggedInUser?.email, teamUuid]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

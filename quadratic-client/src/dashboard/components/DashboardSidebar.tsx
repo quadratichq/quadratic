@@ -195,7 +195,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 trackEvent('[DashboardSidebar].upgradeToProClicked', {
                   team_uuid: activeTeamUuid,
                 });
-                setShowUpgradeDialog(true);
+                setShowUpgradeDialog({ open: true, eventSource: 'dashboard-sidebar' });
               }}
             >
               Upgrade to Pro

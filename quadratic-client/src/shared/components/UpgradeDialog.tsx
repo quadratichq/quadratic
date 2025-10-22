@@ -1,76 +1,60 @@
 import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { TeamSubscriptionStatus, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef } from 'react';
+import { useNavigation } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
-export const showUpgradeDialogAtom = atom<boolean>({
+// TODO: turn this into an env var
+const SOLICIT_UPGRADE_INTERVAL_SECONDS = 30;
+
+export const showUpgradeDialogAtom = atom<{ open: false; eventSource: null } | { open: true; eventSource: string }>({
   key: 'showUpgradeDialog',
-  default: false,
+  default: { open: false, eventSource: null },
 });
 
-// useEffect(() => {
-//   trackEvent('[UpgradePage].loaded');
-//   apiClient.teams.update(teamUuid, { clientDataKv: { lastSolicitationForProUpgrade: new Date().toISOString() } });
-// }, [teamUuid]);
-
-// const handleUpgrade = useCallback(async () => {
-//   trackEvent('[UpgradePage].clickUpgrade');
-//   setIsLoading(true);
-//   apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
-//     window.location.href = data.url;
-//   });
-// }, [teamUuid]);
-
-// const handleNoThanks = useCallback(async () => {
-//   trackEvent('[UpgradePage].clickNoThanks');
-//   setIsLoading(true);
-//   navigate(redirectTo);
-// }, [redirectTo, navigate]);
-
 export function UpgradeDialog({ teamUuid }: { teamUuid: string }) {
-  const [open, setOpen] = useRecoilState(showUpgradeDialogAtom);
+  const [state, setState] = useRecoilState(showUpgradeDialogAtom);
+  const navigation = useNavigation();
 
-  // Track when dialog opens programmatically
+  // Track when the dialog opens so we know where it came from
   useEffect(() => {
-    if (open) {
-      console.log('opened');
-      trackEvent('[UpgradeDialog].opened');
-    } else {
-      console.log('dismissed');
-      trackEvent('[UpgradeDialog].dismissed');
+    if (state.open) {
+      console.log('[UpgradeDialog].opened', state.eventSource);
+      trackEvent('[UpgradeDialog].opened', { eventSource: state.eventSource });
     }
-  }, [open]);
-
-  const props = {
-    // We hard-code these because we should only ever show this dialog if the right criteria are met.
-    isOnPaidPlan: false,
-    canManageBilling: true,
-
-    teamUuid,
-  };
+  }, [state]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
+      <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
         <DialogHeader>
           <DialogTitle>Upgrade to Pro</DialogTitle>
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>
         </DialogHeader>
         <div className="relative flex flex-col gap-8">
-          <BillingPlans {...props} />
+          <BillingPlans
+            teamUuid={teamUuid}
+            // We hard-code these because we should only ever show this dialog if the right criteria are met.
+            isOnPaidPlan={false}
+            canManageBilling={true}
+            eventSource={`UpgradeDialog-${state.eventSource}`}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-// TODO: turn this into an env var
-const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60;
-
-// Use on the dashboard when we want to periodically check
+/**
+ * This is the upgrade dialog, but with special logic to periodically show itself
+ * to the user based on the last time we solicited them.
+ *
+ * We use this on the dashboard only. The app uses the regular <UpgradeDialog />
+ */
 export const UpgradeDialogWithPeriodicReminder = ({
   teamUuid,
   userMakingRequestTeamRole,
@@ -113,7 +97,7 @@ export const UpgradeDialogWithPeriodicReminder = ({
       const secondsSinceLastSolicitation = Math.floor((epochNow - epochLastSolicitationForProUpgrade) / 1000);
       if (secondsSinceLastSolicitation > SOLICIT_UPGRADE_INTERVAL_SECONDS) {
         // Show the dialog, and update the date/time we last solicited them
-        setShowUpgradeDialog(true);
+        setShowUpgradeDialog({ open: true, eventSource: 'periodicSolitication' });
         apiClient.teams.update(teamUuid, {
           clientDataKv: { lastSolicitationForProUpgrade: new Date(epochNow).toISOString() },
         });

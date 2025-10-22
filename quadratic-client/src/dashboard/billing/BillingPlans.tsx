@@ -6,15 +6,18 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 type BillingPlansProps = {
   isOnPaidPlan: boolean;
   canManageBilling: boolean;
+  eventSource: string;
   teamUuid: string;
 };
 
-export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: BillingPlansProps) => {
+export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, teamUuid }: BillingPlansProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Free */}
@@ -23,7 +26,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: Billi
           <h3 className="text-lg font-semibold">Free plan</h3>
           {!isOnPaidPlan && <Badge>Current plan</Badge>}
         </div>
-        <div className="space-y-2 text-sm">
+        <div className="flex flex-col gap-2 text-sm">
           <div className="flex items-center justify-between">
             <span>Team members</span>
             <span className="font-medium">Limited</span>
@@ -45,11 +48,11 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: Billi
           <h3 className="text-lg font-semibold">Pro plan</h3>
           {isOnPaidPlan && <Badge>Current plan</Badge>}
         </div>
-        <div className="space-y-2 text-sm">
+        <div className="flex flex-col gap-2 text-sm">
           <div className="flex items-center justify-between">
             <span>Team members</span>
             <span className="text-sm font-medium">
-              $20 <span className="text-xs text-muted-foreground">/user/month</span>
+              $20 <span className="text-xs text-muted-foreground">/usr/month</span>
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -95,15 +98,13 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: Billi
           <Button
             disabled={!canManageBilling}
             onClick={() => {
-              // TODO: event source prop for tracking
-              trackEvent('[TeamSettings].upgradeToProClicked', {
-                team_uuid: teamUuid,
-              });
+              trackEvent('[Billing].upgradeToProClicked', { eventSource });
+              navigate(ROUTES.TEAM_BILLING(teamUuid));
             }}
             className="mt-4 w-full"
-            asChild
+            data-testid="billing-upgrade-to-pro-button"
           >
-            <Link to={`TODO: ROUTES.TEAM_BILLING(teamUuid)`}>Upgrade to Pro</Link>
+            Upgrade to Pro
           </Button>
         ) : (
           <div className="mt-4 space-y-2">
@@ -112,13 +113,11 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: Billi
               variant="outline"
               className="w-full"
               onClick={() => {
-                trackEvent('[TeamSettings].manageBillingClicked', {
-                  team_uuid: teamUuid,
-                });
+                trackEvent('[Billing].manageBillingClicked', { eventSource });
+                navigate(ROUTES.TEAM_BILLING(teamUuid));
               }}
-              asChild
             >
-              <Link to={'/TODO:ROUTES.TEAM_BILLING(teamUuid)'}>Manage subscription</Link>
+              Manage subscription
             </Button>
             {canManageBilling && <CancellationDialog teamUuid={teamUuid} />}
           </div>
@@ -136,55 +135,3 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, teamUuid }: Billi
     </div>
   );
 };
-
-/*
-
-TODO: Conditionally pass these in, because we may not actually want them in every context  
-          {!isOnPaidPlan ? (
-            <Button
-              disabled={!canManageBilling}
-              onClick={() => {
-                trackEvent('[TeamSettings].upgradeToProClicked', {
-                  team_uuid: team.uuid,
-                });
-                apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                  window.location.href = data.url;
-                });
-              }}
-              className="mt-4 w-full"
-            >
-              Upgrade to Pro
-            </Button>
-          ) : (
-            <div className="mt-4 space-y-2">
-              
-              <Button
-                disabled={!canManageBilling}
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  trackEvent('[TeamSettings].manageBillingClicked', {
-                    team_uuid: team.uuid,
-                  });
-                  handleNavigateToStripePortal();
-                }}
-              >
-                Manage subscription
-              </Button>
-              {canManageBilling && (
-                <CancellationDialog teamUuid={team.uuid} handleNavigateToStripePortal={handleNavigateToStripePortal} />
-              )}
-            </div>
-          )}
-          {!canManageBilling && (
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              You cannot edit billing details. Contact{' '}
-              <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
-                your team owner
-              </Link>
-              .
-            </p>
-          )} 
-
-
-*/

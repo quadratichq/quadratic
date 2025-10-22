@@ -123,7 +123,12 @@ export const Component = () => {
             <div>
               <div className="flex flex-col gap-4">
                 {/* Plan Comparison */}
-                <BillingPlans isOnPaidPlan={isOnPaidPlan} canManageBilling={canManageBilling} teamUuid={team.uuid} />
+                <BillingPlans
+                  isOnPaidPlan={isOnPaidPlan}
+                  canManageBilling={canManageBilling}
+                  teamUuid={team.uuid}
+                  eventSource="TeamSettings"
+                />
 
                 {/* Current Usage */}
                 <div>

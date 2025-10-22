@@ -115,7 +115,7 @@ export const upgradeToProPlan = async (page: Page) => {
     await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-    await expect(page.locator(`[data-testid="upgrade-to-pro-button-on-team-settings"]`)).toBeVisible({
+    await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).toBeVisible({
       timeout: 60 * 1000,
     });
 
@@ -128,7 +128,7 @@ export const upgradeToProPlan = async (page: Page) => {
     const proPlanCost = proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1];
 
     // Click 'Upgrade to Pro' to upgrade the account
-    await page.locator(`[data-testid="upgrade-to-pro-button-on-team-settings"]`).click({ timeout: 60 * 1000 });
+    await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
 
     // Assert that page was redirected to a Stripe integrated payment page
     await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
@@ -214,7 +214,7 @@ export const upgradeToProPlan = async (page: Page) => {
     await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Upgrade to Pro' button is no longer visible
-    await expect(page.locator(`[data-testid="upgrade-to-pro-button-on-team-settings"]`)).not.toBeVisible({
+    await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
       timeout: 60 * 1000,
     });
 
