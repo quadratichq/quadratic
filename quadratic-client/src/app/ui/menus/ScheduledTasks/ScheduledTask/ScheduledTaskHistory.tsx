@@ -1,11 +1,13 @@
 import { CheckIcon, ErrorIcon, HistoryIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { cn } from '@/shared/shadcn/utils';
 import type { ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE = 30;
 const SCROLL_THRESHOLD = 50;
+const REFRESH_INTERVAL_MS = 10000;
 
 interface ScheduledTaskHistoryProps {
   getHistory: (pageNumber?: number, pageSize?: number) => Promise<ScheduledTaskLog[]>;
@@ -18,9 +20,23 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isLoadingRef = useRef(false);
 
+  // remove all duplicates from the history (earlier runs with the same run_id
+  // replace later runs)
+  const filterHistory = useCallback((items: ScheduledTaskLog[]) => {
+    const uniqueItems = [];
+    const seenItems = new Set<string>();
+    for (const item of items) {
+      if (!seenItems.has(item.runId)) {
+        seenItems.add(item.runId);
+        uniqueItems.push(item);
+      }
+    }
+    return uniqueItems;
+  }, []);
+
+  // Fetch pages of history
   const fetchHistory = useCallback(
     async (pageNum: number, append = false) => {
       if (isLoadingRef.current) return;
@@ -36,10 +52,7 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
         const data = await getHistory(pageNum, PAGE_SIZE);
         setHistory((prev) => {
           if (append) {
-            // Filter out duplicates by checking existing IDs
-            const existingIds = new Set(prev.map((log) => log.id));
-            const newItems = data.filter((log) => !existingIds.has(log.id));
-            return [...prev, ...newItems];
+            return filterHistory([...prev, ...data]);
           }
           return data;
         });
@@ -61,73 +74,128 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
         }
       }
     },
-    [getHistory]
+    [filterHistory, getHistory]
   );
 
+  // Keep the first page up to date with the latest runs
   useEffect(() => {
+    const refreshFirstPage = async () => {
+      if (currentTaskUuid) {
+        const data = await getHistory(1, PAGE_SIZE);
+        setHistory((prev) => {
+          // Create a map of existing items by runId for quick lookup
+          const existingMap = new Map(prev.map((item) => [item.runId, item]));
+          const updated: ScheduledTaskLog[] = [];
+          const seenIds = new Set<string>();
+
+          // First, add new or updated items from the fresh data
+          for (const item of data) {
+            if (seenIds.has(item.runId)) continue;
+            seenIds.add(item.runId);
+
+            const existing = existingMap.get(item.runId);
+            // Only update if the item is new or status has changed
+            if (!existing || existing.status !== item.status) {
+              updated.push(item);
+            } else {
+              updated.push(existing);
+            }
+          }
+
+          // Then add remaining items that weren't in the fresh data
+          for (const item of prev) {
+            if (!seenIds.has(item.runId)) {
+              seenIds.add(item.runId);
+              updated.push(item);
+            }
+          }
+
+          return updated;
+        });
+      }
+    };
+    let interval: number | undefined;
     if (currentTaskUuid) {
       setPage(1);
       setHasMore(true);
       setHistory([]);
       fetchHistory(1, false);
+      interval = window.setInterval(refreshFirstPage, REFRESH_INTERVAL_MS);
     } else {
       setHistory([]);
       setLoading(false);
     }
-  }, [currentTaskUuid, fetchHistory]);
+    return () => {
+      if (interval) {
+        window.clearInterval(interval);
+        interval = undefined;
+      }
+    };
+  }, [currentTaskUuid, fetchHistory, getHistory]);
 
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container || isLoadingRef.current || !hasMore) return;
+  const handleScrollRef = useRef<((this: HTMLDivElement, ev: Event) => void) | null>(null);
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
+  const scrollContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      // Clean up previous listener
+      if (handleScrollRef.current && node) {
+        node.removeEventListener('scroll', handleScrollRef.current);
+      }
 
-    if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
-      const nextPage = page + 1;
-      fetchHistory(nextPage, true);
-    }
-  }, [hasMore, page, fetchHistory]);
+      if (!node) return;
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+      const handleScroll = () => {
+        if (isLoadingRef.current || !hasMore) return;
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+        const { scrollTop, scrollHeight, clientHeight } = node;
+        if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
+          fetchHistory(page + 1, true);
+        }
+      };
+
+      handleScrollRef.current = handleScroll;
+      node.addEventListener('scroll', handleScroll);
+    },
+    [hasMore, page, fetchHistory]
+  );
 
   const getStatusBadge = (status: ScheduledTaskLog['status']) => {
+    const baseClasses = 'h-5 px-1 py-0.5 text-[10px] rounded leading-4'; // smaller height and font
     switch (status) {
       case 'COMPLETED':
         return (
-          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-            <CheckIcon className="mr-1" />
+          <Badge variant="default" className={`bg-green-500 hover:bg-green-600 ${baseClasses}`}>
+            <CheckIcon className="mr-1 h-3 w-3" />
             Completed
           </Badge>
         );
       case 'FAILED':
         return (
-          <Badge variant="destructive">
-            <ErrorIcon className="mr-1" />
+          <Badge variant="destructive" className={baseClasses}>
+            <ErrorIcon className="mr-1 h-3 w-3" />
             Failed
           </Badge>
         );
       case 'RUNNING':
         return (
-          <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">
-            <SpinnerIcon className="mr-1" />
+          <Badge variant="default" className={`bg-blue-500 hover:bg-blue-600 ${baseClasses}`}>
+            <SpinnerIcon className="mr-1 h-3 w-3" />
             Running
           </Badge>
         );
       case 'PENDING':
         return (
-          <Badge variant="secondary">
-            <HistoryIcon className="mr-1" />
+          <Badge variant="secondary" className={baseClasses}>
+            <HistoryIcon className="mr-1 h-3 w-3" />
             Pending
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <Badge variant="outline" className={baseClasses}>
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -139,7 +207,6 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
     if (diffInSeconds < 60) return 'Just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
 
     return date.toLocaleDateString('en-US', {
       month: 'short',
@@ -176,29 +243,28 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
   }
 
   return (
-    <div className="mt-6 flex flex-col">
+    <div className="mt-6 flex min-h-0 flex-1 flex-col">
       <h3 className="mb-3 text-sm font-semibold">Run History</h3>
-      <div ref={scrollContainerRef} className="max-h-[300px] overflow-y-auto">
-        <div className="space-y-1 border">
-          {history.map((log) => (
-            <div key={log.id} className="py-2">
-              <div className="flex items-center gap-2">
-                {getStatusBadge(log.status)}
-                <span className="text-xs text-muted-foreground">{formatDate(log.createdDate)}</span>
-              </div>
-              {log.error && (
-                <div className="ml-1 mt-1">
-                  <p className="text-xs text-destructive">{log.error}</p>
-                </div>
+      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto border">
+        <div className="px-2">
+          {history.map((log, index) => (
+            <div
+              key={log.runId}
+              className={cn(
+                'group relative -mx-2 rounded px-2 py-2.5 transition-colors hover:bg-accent/30',
+                index !== history.length - 1 && 'border-b border-border/40'
               )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted-foreground">{formatDate(log.createdDate)}</span>
+                {getStatusBadge(log.status)}
+              </div>
             </div>
           ))}
-          {loadingMore && (
-            <div className="flex items-center justify-center py-3">
-              <SpinnerIcon className="text-muted-foreground" />
-              <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
-            </div>
-          )}
+          <div className={cn('flex items-center justify-center py-3', !loadingMore && 'invisible')}>
+            <SpinnerIcon className="text-muted-foreground" />
+            <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
+          </div>
         </div>
       </div>
     </div>

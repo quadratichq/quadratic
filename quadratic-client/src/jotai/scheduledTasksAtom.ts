@@ -133,7 +133,6 @@ export const useScheduledTasks = (): ScheduledTasksActions => {
 
   const getHistory = useCallback(
     async (pageNumber = 1, pageSize = 10) => {
-      console.log(fileUuid, currentTask?.uuid);
       if (!fileUuid || !currentTask?.uuid) return [];
       return scheduledTasksAPI.history(fileUuid, currentTask?.uuid ?? '', pageNumber, pageSize);
     },
