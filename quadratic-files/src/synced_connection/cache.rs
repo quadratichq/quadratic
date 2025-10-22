@@ -2,6 +2,7 @@
 //!
 //! Cache synced connection to avoid duplicate requests.
 
+use chrono::NaiveDate;
 use quadratic_rust_shared::cache::{Cache as CacheTrait, memory::MemoryCache};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -13,6 +14,7 @@ use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
 pub(crate) struct SyncedConnectionCache {
     pub(crate) synced_connection:
         Arc<Mutex<MemoryCache<Uuid, (SyncedConnectionKind, SyncedConnectionStatus)>>>,
+    pub(crate) synced_connection_dates: Arc<Mutex<MemoryCache<Uuid, Vec<NaiveDate>>>>,
 }
 
 impl SyncedConnectionCache {
@@ -20,6 +22,7 @@ impl SyncedConnectionCache {
     pub(crate) fn new() -> Self {
         Self {
             synced_connection: Arc::new(Mutex::new(MemoryCache::new())),
+            synced_connection_dates: Arc::new(Mutex::new(MemoryCache::new())),
         }
     }
 
@@ -82,6 +85,30 @@ impl SyncedConnectionCache {
         uuid: Uuid,
     ) -> Option<(SyncedConnectionKind, SyncedConnectionStatus)> {
         (*self.synced_connection.lock().await).delete(&uuid).await
+    }
+
+    /// Add a date to the cache
+    pub(crate) async fn add_date(&self, uuid: Uuid, date: NaiveDate) {
+        let mut dates = self.get_dates(uuid).await;
+
+        if dates.contains(&date) {
+            return;
+        }
+
+        dates.push(date);
+
+        (*self.synced_connection_dates.lock().await)
+            .create(&uuid, dates, None)
+            .await;
+    }
+
+    /// Get the dates from the cache
+    pub(crate) async fn get_dates(&self, uuid: Uuid) -> Vec<NaiveDate> {
+        (*self.synced_connection_dates.lock().await)
+            .get(&uuid)
+            .await
+            .cloned()
+            .unwrap_or_default()
     }
 }
 

@@ -22,7 +22,6 @@ use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
 use crate::synced_connection::background_workers::init_sync_workers;
-use crate::synced_connection::mixpanel::process_mixpanel_connections;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
     auth::get_middleware,

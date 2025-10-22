@@ -12,7 +12,7 @@ use chrono::NaiveDate;
 use quadratic_rust_shared::{
     quadratic_api::get_connections_by_type,
     synced::{
-        get_last_date_processed,
+        get_missing_date_ranges,
         mixpanel::{MixpanelConnection, client::MixpanelClient, events::ExportParams},
         upload,
     },
@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     error::{FilesError, Result},
     state::State,
-    synced_connection::{DateRange, SyncedConnectionKind, SyncedConnectionStatus},
+    synced_connection::{SyncKind, SyncedConnectionKind, SyncedConnectionStatus},
 };
 
 const MAX_DAYS_TO_EXPORT: i64 = 365 * 2; // 2 years
@@ -31,7 +31,7 @@ const CHUNK_SIZE: u32 = 30; // 30 days
 /// Process all Mixpanel connections.
 pub(crate) async fn process_mixpanel_connections(
     state: Arc<State>,
-    date_range: Option<DateRange>,
+    sync_kind: SyncKind,
 ) -> Result<()> {
     let connections = get_connections_by_type::<MixpanelConnection>(
         &state.settings.quadratic_api_uri,
@@ -45,14 +45,14 @@ pub(crate) async fn process_mixpanel_connections(
     // process each connection in a separate thread
     for connection in connections {
         let state = Arc::clone(&state);
-        let date_range = date_range.clone();
+        let sync_kind = sync_kind.clone();
 
         tokio::spawn(async move {
             if let Err(e) = process_mixpanel_connection(
                 state,
                 connection.type_details,
                 connection.uuid,
-                date_range,
+                sync_kind,
             )
             .await
             {
@@ -73,10 +73,10 @@ pub(crate) async fn process_mixpanel_connection(
     state: Arc<State>,
     connection: MixpanelConnection,
     connection_id: Uuid,
-    date_range: Option<DateRange>,
+    sync_kind: SyncKind,
 ) -> Result<()> {
     if !can_process_connection(state.clone(), connection_id).await? {
-        tracing::info!("Skipping Mixpanel connection {}", connection_id);
+        tracing::trace!("Skipping Mixpanel connection {}", connection_id);
         return Ok(());
     }
 
@@ -86,6 +86,7 @@ pub(crate) async fn process_mixpanel_connection(
 
     let object_store = state.settings.object_store.clone();
     let prefix = object_store_path(connection_id, "events");
+    let today = chrono::Utc::now().date_naive();
 
     let MixpanelConnection {
         ref api_secret,
@@ -93,90 +94,107 @@ pub(crate) async fn process_mixpanel_connection(
         ref start_date,
     } = connection;
     let client = MixpanelClient::new(api_secret, project_id);
-    let start_collection_data = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
+    let sync_start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
         .unwrap_or_else(|_| chrono::Utc::now().date_naive());
+    let mut date_ranges =
+        dates_to_sync(state.clone(), connection_id, "events", sync_start_date).await?;
 
-    let (start_date, end_date) = match date_range {
-        Some(date_range) => (date_range.start_date, start_collection_data),
-        None => dates(state.clone(), connection_id, "events").await,
-    };
+    if date_ranges.is_empty() {
+        return Ok(());
+    }
+
+    if sync_kind == SyncKind::Daily {
+        date_ranges = vec![(today, today)];
+    }
+
     let start_time = std::time::Instant::now();
-
-    // split the date range into chunks
-    let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
-    let total_chunks = chunks.len();
-
-    tracing::info!(
-        "Exporting Mixpanel events from {} to {} in {} {}-day chunks...",
-        start_date,
-        end_date,
-        total_chunks,
-        CHUNK_SIZE
-    );
-
     let mut total_files_processed = 0;
 
-    // Process each chunk in reverse order (most recent first)
-    for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
+    for (start_date, end_date) in date_ranges {
+        // split the date range into chunks
+        let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
+        let total_chunks = chunks.len();
+
         tracing::info!(
-            "Processing chunk {}/{}: {} to {}",
-            chunk_index + 1,
+            "Exporting Mixpanel events from {} to {} in {} {}-day chunks...",
+            start_date,
+            end_date,
             total_chunks,
-            chunk_start,
-            chunk_end
+            CHUNK_SIZE
         );
 
-        update_connection_status(
-            state.clone(),
-            connection_id,
-            SyncedConnectionKind::Mixpanel,
-            SyncedConnectionStatus::ApiRequest,
-        )
-        .await;
-
-        let params = ExportParams::new(chunk_start, chunk_end);
-        let parquet_data = client.export_events_streaming(params).await.map_err(|e| {
-            FilesError::SyncedConnection(format!(
-                "Failed to export events for chunk {}: {}",
+        // Process each chunk in reverse order (most recent first)
+        for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
+            tracing::info!(
+                "Processing chunk {}/{}: {} to {}",
                 chunk_index + 1,
-                e
-            ))
-        })?;
+                total_chunks,
+                chunk_start,
+                chunk_end
+            );
 
-        update_connection_status(
-            state.clone(),
-            connection_id,
-            SyncedConnectionKind::Mixpanel,
-            SyncedConnectionStatus::Upload,
-        )
-        .await;
+            update_connection_status(
+                state.clone(),
+                connection_id,
+                SyncedConnectionKind::Mixpanel,
+                SyncedConnectionStatus::ApiRequest,
+            )
+            .await;
 
-        let num_files = upload(&object_store, &prefix, parquet_data)
-            .await
-            .map_err(|e| {
+            let params = ExportParams::new(chunk_start, chunk_end);
+            let parquet_data = client.export_events_streaming(params).await.map_err(|e| {
                 FilesError::SyncedConnection(format!(
-                    "Failed to upload events for chunk {}: {}",
+                    "Failed to export events for chunk {}: {}",
                     chunk_index + 1,
                     e
                 ))
             })?;
 
-        total_files_processed += num_files;
+            update_connection_status(
+                state.clone(),
+                connection_id,
+                SyncedConnectionKind::Mixpanel,
+                SyncedConnectionStatus::Upload,
+            )
+            .await;
 
-        tracing::info!(
-            "Completed chunk {}/{}: processed {} files",
-            chunk_index + 1,
-            total_chunks,
-            num_files
-        );
+            let num_files = upload(&object_store, &prefix, parquet_data)
+                .await
+                .map_err(|e| {
+                    FilesError::SyncedConnection(format!(
+                        "Failed to upload events for chunk {}: {}",
+                        chunk_index + 1,
+                        e
+                    ))
+                })?;
+
+            total_files_processed += num_files;
+
+            tracing::info!(
+                "Completed chunk {}/{}: processed {} files",
+                chunk_index + 1,
+                total_chunks,
+                num_files
+            );
+
+            // add the dates to the cache
+            let mut current_date = chunk_start;
+
+            while current_date <= chunk_end {
+                state
+                    .synced_connection_cache
+                    .add_date(connection_id, current_date)
+                    .await;
+                current_date += chrono::Duration::days(1);
+            }
+        }
     }
 
     complete_connection_status(state.clone(), connection_id).await;
 
     tracing::info!(
-        "Processed {} Mixpanel files across {} chunks in {:?}",
+        "Processed {} Mixpanel files in {:?}",
         total_files_processed,
-        total_chunks,
         start_time.elapsed()
     );
 
@@ -186,26 +204,31 @@ pub(crate) async fn process_mixpanel_connection(
 }
 
 /// Get the start and end dates for a connection from the object store.
-async fn dates(state: Arc<State>, connection_id: Uuid, table_name: &str) -> (NaiveDate, NaiveDate) {
+async fn dates_to_sync(
+    state: Arc<State>,
+    connection_id: Uuid,
+    table_name: &str,
+    sync_start_date: NaiveDate,
+) -> Result<Vec<(NaiveDate, NaiveDate)>> {
     let object_store = state.settings.object_store.clone();
     let today = chrono::Utc::now().date_naive();
     let prefix = object_store_path(connection_id, table_name);
     let end_date = today;
-    let mut start_date = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT - 1);
+    let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
 
-    tracing::info!("Start date 1: {}, End date 1: {}", start_date, end_date);
+    let missing_date_ranges = get_missing_date_ranges(
+        &object_store,
+        Some(&prefix),
+        sync_start_date,
+        end_date,
+        dates_to_exclude,
+    )
+    .await?;
 
-    // if we have any objects, use the last date processed
-    if let Ok(Some(new_start_date)) = get_last_date_processed(&object_store, Some(&prefix)).await {
-        start_date = new_start_date;
-    };
-
-    tracing::info!("Start date: {}, End date: {}", start_date, end_date);
-
-    (start_date, end_date)
+    Ok(missing_date_ranges)
 }
 
-/// Split a date range into weekly chunks.
+/// Split a date range into `chunk_size` chunks.
 fn chunk_date_range(
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -278,7 +301,9 @@ mod tests {
     #[ignore]
     async fn test_process_mixpanel() {
         let state = new_arc_state().await;
-        process_mixpanel_connections(state, None).await.unwrap();
+        process_mixpanel_connections(state, SyncKind::Daily)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -371,12 +396,18 @@ mod tests {
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
         let table_name = "events";
-        let (start_date, end_date) = dates(state, connection_id, table_name).await;
-        let today = chrono::Utc::now().date_naive();
-        let expected_start = today - chrono::Duration::days(MAX_DAYS_TO_EXPORT - 1);
-
-        assert_eq!(end_date, today);
-        assert_eq!(start_date, expected_start);
+        let sync_start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let chunks = dates_to_sync(state, connection_id, table_name, sync_start_date)
+            .await
+            .unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(
+            chunks[0],
+            (
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()
+            )
+        );
     }
 
     #[test]

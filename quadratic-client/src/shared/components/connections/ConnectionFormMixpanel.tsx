@@ -88,7 +88,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="start_date"
             render={({ field }) => (
               <FormItem className="col-span-1">
-                <FormLabel>Start Collection Date</FormLabel>
+                <FormLabel>Sync Start Date</FormLabel>
                 <FormControl>
                   <Input type="date" autoComplete="off" {...field} />
                 </FormControl>

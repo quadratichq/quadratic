@@ -32,6 +32,7 @@ router.get(
     const connections = await dbClient.connection.findMany({
       where: {
         type: type as ConnectionType,
+        archived: null,
       },
       include: {
         team: { select: { uuid: true } },
