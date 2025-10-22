@@ -288,10 +288,11 @@ export const AIUserMessageForm = memo(
     );
     const showWaypoints = useMemo(
       () =>
+        uiContext === 'analyst' &&
         (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
         importFiles.length === 0 &&
         files.length === 0,
-      [context, importFiles, files]
+      [context, importFiles, files, uiContext]
     );
 
     return (
@@ -369,7 +370,7 @@ export const AIUserMessageForm = memo(
             onDragEnter={handleDrag}
           />
 
-          <AIUsageExceeded show={showAIUsageExceeded} />
+          {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
             show={editing}
