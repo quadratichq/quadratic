@@ -20,6 +20,7 @@ import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
+import { handleSentryReplays } from '@/shared/utils/sentry';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
@@ -163,6 +164,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
+
+  handleSentryReplays(data.team.settings.analyticsAi);
 
   startupTimer.end('file.loader');
   return data;

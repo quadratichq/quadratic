@@ -8,10 +8,12 @@ import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { PieChartIcon } from '@radix-ui/react-icons';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
@@ -28,7 +30,6 @@ export const Component = () => {
       users,
     },
   } = useDashboardRouteLoaderData();
-
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -200,10 +201,10 @@ export const Component = () => {
 
             <div>
               <SettingControl
-                label="Improve AI results"
+                label="Help improve Quadratic"
                 description={
                   <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    Enable the automated collection and analysis of some usage data.{' '}
                     <a
                       href={DOCUMENTATION_ANALYTICS_AI}
                       target="_blank"
@@ -220,8 +221,29 @@ export const Component = () => {
                 }}
                 checked={optimisticSettings.analyticsAi}
                 className="rounded-lg border border-border p-4 shadow-sm"
-                disabled={!teamPermissions.includes('TEAM_MANAGE')}
-              />
+                disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
+              >
+                {!isOnPaidPlan && (
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Button
+                      asChild
+                      variant="link"
+                      onClick={() => {
+                        trackEvent('[TeamSettings].upgradeToProClicked', {
+                          team_uuid: team.uuid,
+                          source: 'privacy_section',
+                        });
+                      }}
+                      size="sm"
+                      className="h-6"
+                      disabled={!canManageBilling}
+                    >
+                      <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade now</Link>
+                    </Button>
+                  </div>
+                )}
+              </SettingControl>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">
                   When using AI features your data is sent to our AI providers:
