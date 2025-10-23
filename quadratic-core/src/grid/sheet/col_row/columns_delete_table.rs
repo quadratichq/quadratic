@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    Pos, Rect,
+    Rect,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -60,17 +60,11 @@ impl Sheet {
     }
 
     /// Delete columns from data tables that are in the deleted columns range.
-    /// If the first column is in the deleted columns range, then the anchor
-    /// cell is moved to the right so it is in the proper place when the columns
-    /// are deleted.
     pub(crate) fn delete_tables_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &[i64],
     ) {
-        // we need to shift the anchor if the first column is deleted
-        let mut dt_to_shift_anchor = Vec::new();
-
         let mut dt_to_update = Vec::new();
 
         let all_pos_intersecting_columns =
@@ -80,32 +74,17 @@ impl Sheet {
                 if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                     return Ok(());
                 }
-
                 let output_rect = dt.output_rect(pos, false);
                 let mut old_dt: Option<DataTable> = None;
-                let mut new_anchor_x = None;
                 for col in columns {
-                    if *col == output_rect.min.x {
-                        if let Some(first_surviving_col) = output_rect.x_range().find(|col| !columns.contains(col))
-                        {
-                            new_anchor_x = Some(first_surviving_col);
-                        } else {
-                            // this should never happen
-                            dbgjs!("Unexpected error in check_delete_tables_columns: no surviving column found");
-                        }
-                    };
-
                     // delete the column
                     if old_dt.is_none() {
                         old_dt = Some(dt.clone());
                     }
 
-                    // we use the entire table as the reverse operation (which
-                    // is not super efficient, but easiest given the current
-                    // design. if we remove the anchors, we can use the
-                    // DataTableInsertColumn op instead)
                     if let Ok(col_to_delete) = u32::try_from(*col - output_rect.min.x) {
-                        let column_index = dt.get_column_index_from_display_index(col_to_delete, true);
+                        let column_index =
+                            dt.get_column_index_from_display_index(col_to_delete, true);
 
                         // mark sort dirty if the column is sorted
                         if dt.is_column_sorted(column_index as usize) {
@@ -116,14 +95,11 @@ impl Sheet {
                     }
                 }
 
-                if let Some(new_anchor_x) = new_anchor_x {
-                    dt_to_shift_anchor.push((index, pos, old_dt, new_anchor_x));
-                } else if let Some(old_dt) = old_dt {
+                if let Some(old_dt) = old_dt {
                     dt_to_update.push((index, pos, old_dt));
                 }
-
                 Ok(())
-            }){
+            }) {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
@@ -141,31 +117,11 @@ impl Sheet {
                     data_table: Some(old_dt),
                     index,
                 });
-        }
-
-        // ensure anchor cell survives by shifting it to the right of the deleted columns
-        for (index, pos, old_dt, new_anchor_x) in dt_to_shift_anchor {
-            if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
-                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
-                transaction.add_dirty_hashes_from_sheet_rect(
-                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                );
-                let new_pos = Pos::new(new_anchor_x, pos.y);
-                self.columns.move_cell_value(&pos, &new_pos);
-                transaction
-                    .reverse_operations
-                    .push(Operation::AddDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
-                        data_table: old_dt,
-                        cell_value,
-                        index: Some(index),
-                    });
-                transaction
-                    .reverse_operations
-                    .push(Operation::DeleteDataTable {
-                        sheet_pos: new_pos.to_sheet_pos(self.id),
-                    });
-            }
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteDataTable {
+                    sheet_pos: pos.to_sheet_pos(self.id),
+                });
         }
     }
 
@@ -267,8 +223,16 @@ impl Sheet {
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
+
             let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTable {
+                    old_sheet_pos: new_pos.to_sheet_pos(self.id),
+                    new_sheet_pos: pos.to_sheet_pos(self.id),
+                });
         }
     }
 }
@@ -335,18 +299,22 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 2);
 
-        // Delete middle column for A1
+        // Delete column B
         gc.delete_columns(sheet_id, vec![2], None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.redo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
 
         gc.undo(1, None, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 2, false);
+        assert_table_count(&gc, sheet_id, 1);
     }
 
     #[test]

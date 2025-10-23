@@ -106,26 +106,28 @@ impl Sheet {
                 }
 
                 Ok(())
-            })
-                && let Some(old_dt) = old_dt {
-                    transaction.add_from_code_run(
-                        self.id,
-                        pos,
-                        old_dt.is_image(),
-                        old_dt.is_html(),
-                    );
-                    transaction.add_dirty_hashes_from_sheet_rect(
-                        old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                    );
-                    transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetDataTable {
-                            sheet_pos: pos.to_sheet_pos(self.id),
-                            data_table: Some(old_dt),
-                            index,
-                        });
-                }
+            }) && let Some(old_dt) = old_dt
+            {
+                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_dirty_hashes_from_sheet_rect(
+                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                );
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetDataTable {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+                // the y + 1 is needed since the row will be inserted before the
+                // old table, so its position will be shifted down before it gets here
+                transaction
+                    .reverse_operations
+                    .push(Operation::DeleteDataTable {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                    });
+            }
         }
     }
 
@@ -136,20 +138,23 @@ impl Sheet {
         let min_row = rows.iter().min().unwrap_or(&1);
         for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
             if let Some(dt) = self.data_table_at(&pos)
-                && !dt.has_spill() && dt.is_html_or_image() {
-                    let output_rect = dt.output_rect(pos, false);
-                    let count = rows
-                        .iter()
-                        .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
-                        .count();
-                    if count > 0
-                        && let Some((width, height)) = dt.chart_output {
-                            let min = (height - count as u32).max(1);
-                            if min != height {
-                                dt_to_update.push((pos, Some((width, min))));
-                            }
-                        }
+                && !dt.has_spill()
+                && dt.is_html_or_image()
+            {
+                let output_rect = dt.output_rect(pos, false);
+                let count = rows
+                    .iter()
+                    .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
+                    .count();
+                if count > 0
+                    && let Some((width, height)) = dt.chart_output
+                {
+                    let min = (height - count as u32).max(1);
+                    if min != height {
+                        dt_to_update.push((pos, Some((width, min))));
+                    }
                 }
+            }
         }
 
         for (pos, chart_output) in dt_to_update.into_iter() {
@@ -219,6 +224,13 @@ impl Sheet {
             let new_pos = pos.translate(0, -shift_table, 1, 1);
             let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+
+            transaction
+                .reverse_operations
+                .push(Operation::MoveDataTable {
+                    old_sheet_pos: new_pos.to_sheet_pos(self.id),
+                    new_sheet_pos: pos.to_sheet_pos(self.id),
+                });
         }
     }
 }
@@ -261,7 +273,13 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![2, 3], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![2, 3],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -298,7 +316,13 @@ mod tests {
         // Attempt to delete rows that contain table UI
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![1],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_err()
         );
     }
@@ -314,7 +338,13 @@ mod tests {
         // Empty vector should return Ok
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
     }
@@ -342,6 +372,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![2, 1, 2, 3],
+                    false,
                     Default::default(),
                     &context
                 )
@@ -380,6 +411,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![1, 2, 3, 4, 5],
+                    false,
                     Default::default(),
                     &context
                 )
@@ -412,7 +444,13 @@ mod tests {
         // Delete some rows from the middle of the table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![3, 4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -453,7 +491,13 @@ mod tests {
         // Try to delete rows containing the readonly table
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![1, 2], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![1, 2],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_err()
         );
 
@@ -493,7 +537,13 @@ mod tests {
         // Delete row that intersects both tables
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -519,7 +569,13 @@ mod tests {
         // Delete rows that contain the chart
         assert!(
             sheet
-                .delete_rows(&mut transaction, vec![3, 4], Default::default(), &context)
+                .delete_rows(
+                    &mut transaction,
+                    vec![3, 4],
+                    false,
+                    Default::default(),
+                    &context
+                )
                 .is_ok()
         );
 
@@ -544,6 +600,7 @@ mod tests {
                 .delete_rows(
                     &mut transaction,
                     vec![3, 4, 5, 6],
+                    false,
                     Default::default(),
                     &context
                 )

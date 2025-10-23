@@ -2,12 +2,15 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, SheetPos, Value,
     a1::A1Selection,
-    cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    grid::{
+        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
+        js_types::JsSnackbarSeverity, unique_data_table_name,
+    },
+    util::now,
 };
 
 impl GridController {
@@ -25,27 +28,99 @@ impl GridController {
             _ => code,
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return vec![];
+        };
+        if sheet
+            .data_table_pos_that_contains(sheet_pos.into())
+            .is_some_and(|dt_pos| dt_pos != sheet_pos.into())
+        {
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                crate::wasm_bindings::js::jsClientMessage(
+                    "Cannot add code cell to table".to_string(),
+                    JsSnackbarSeverity::Error.to_string(),
+                );
+            }
+            // cannot set a code cell where there is already a data table anchor
+            return vec![];
+        }
 
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableOptionMeta {
-                    sheet_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
+        let existing_data_table = sheet.data_table_at(&sheet_pos.into());
+        let existing_data_table_index =
+            existing_data_table.and_then(|_| sheet.data_table_index(sheet_pos.into()));
+
+        let name = if let Some(dt) = existing_data_table {
+            dt.name.clone()
+        } else if let Some(code_cell_name) = code_cell_name {
+            unique_data_table_name(&code_cell_name, false, Some(sheet_pos), &self.a1_context).into()
+        } else {
+            let language_str = match language {
+                CodeCellLanguage::Formula => "Formula".to_string(),
+                CodeCellLanguage::Python => "Python".to_string(),
+                CodeCellLanguage::Javascript => "Javascript".to_string(),
+                CodeCellLanguage::Import => "Table".to_string(),
+                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
+            };
+            unique_data_table_name(&language_str, true, Some(sheet_pos), &self.a1_context).into()
+        };
+
+        let mut ops = vec![];
+        if let Some(existing_data_table) = existing_data_table
+            && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
+            && existing_code_run.language == language
+        {
+            ops.push(Operation::AddDataTableWithoutCellValue {
+                sheet_pos,
+                data_table: DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..existing_code_run.clone()
+                    }),
+                    name,
+                    ..existing_data_table.clone()
+                },
+                index: existing_data_table_index,
+            });
+        } else {
+            ops.push(Operation::AddDataTableWithoutCellValue {
+                sheet_pos,
+                data_table: DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        std_out: None,
+                        std_err: None,
+                        cells_accessed: CellsAccessed::default(),
+                        error: None,
+                        return_type: None,
+                        line_number: None,
+                        output_type: None,
+                    }),
+                    name,
+                    header_is_first_row: false,
                     show_name: None,
                     show_columns: None,
-                });
-            }
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single(CellValue::Blank),
+                    spill_value: false,
+                    spill_data_table: false,
+                    last_modified: now(),
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                },
+                index: None,
+            });
+        }
 
+        ops.push(Operation::ComputeCode { sheet_pos });
         ops
     }
 
@@ -185,16 +260,18 @@ mod test {
             None,
         );
         assert_eq!(operations.len(), 2);
+        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &operations[0] else {
+            panic!("Expected AddDataTableWithoutCellValue");
+        };
         assert_eq!(
-            operations[0],
-            Operation::SetCellValues {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-                values: CellValues::from(CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: "print('hello world')".to_string(),
-                })),
-            }
+            data_table.kind,
+            DataTableKind::CodeRun(CodeRun {
+                language: CodeCellLanguage::Python,
+                code: "print('hello world')".to_string(),
+                ..Default::default()
+            })
         );
+
         assert_eq!(
             operations[1],
             Operation::ComputeCode {

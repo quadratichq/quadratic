@@ -28,11 +28,7 @@ const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): strin
     return `"This cell contains an error"`;
   } else if (cell.kind === 'Html') {
     return `"This cell contains html"`;
-  } else if (cell.kind === 'Code') {
-    return `"This cell contains code"`;
   } else if (cell.kind === 'Image') {
-    return `"This cell contains an image"`;
-  } else if (cell.kind === 'Import') {
     return `"This cell contains an import"`;
   } else {
     if (cell.kind !== 'Blank') {

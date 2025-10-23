@@ -7,7 +7,11 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
+    CopyFormats,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
     grid::Sheet,
 };
 
@@ -41,6 +45,13 @@ impl Sheet {
                     {
                         dt.chart_output = Some((width + 1, height));
                         transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetChartCellSize {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                w: width,
+                                h: height,
+                            });
                     }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
@@ -56,6 +67,15 @@ impl Sheet {
                             dt.get_column_index_from_display_index(display_column_index, true);
                         let _ = dt.insert_column_sorted(column_index as usize, None, None);
                         transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        transaction
+                            .reverse_operations
+                            .push(Operation::DeleteDataTableColumns {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                columns: vec![column_index],
+                                flatten: false,
+                                select_table: false,
+                            });
+
                         if dt
                             .formats
                             .as_ref()
@@ -87,7 +107,6 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        // these are tables that were moved to the right by the insertion
         // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
         let mut data_tables_to_move_right = self
             .data_tables
@@ -98,21 +117,6 @@ impl Sheet {
                     (copy_formats == CopyFormats::Before && pos.x > column)
                         || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
                         || (copy_formats != CopyFormats::Before && pos.x >= column)
-                })
-            })
-            .collect::<Vec<_>>();
-
-        // these are tables that were moved but should have stayed in place (ie,
-        // a column was inserted instead of moving the table over)
-        let mut data_tables_to_move_back = self
-            .data_tables
-            .get_pos_in_columns_sorted(&[column], false)
-            .into_iter()
-            .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    (!dt.is_code() || dt.is_html_or_image())
-                        && copy_formats == CopyFormats::Before
-                        && pos.x == column
                 })
             })
             .collect::<Vec<_>>();
@@ -140,15 +144,13 @@ impl Sheet {
                 );
                 let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveDataTable {
+                        old_sheet_pos: new_pos.to_sheet_pos(self.id),
+                        new_sheet_pos: old_pos.to_sheet_pos(self.id),
+                    });
             }
-        }
-        // In the special case of CopyFormats::Before and column == pos.x, we
-        // need to move it back.
-        data_tables_to_move_back.sort_by(|(_, a), (_, b)| a.x.cmp(&b.x));
-        for (_, to) in data_tables_to_move_back {
-            let from = to.translate(1, 0, i64::MIN, i64::MIN);
-            self.columns.move_cell_value(&from, &to);
-            transaction.add_code_cell(self.id, to);
         }
     }
 }
@@ -304,20 +306,20 @@ mod tests {
 
         test_create_js_chart(&mut gc, sheet_id, pos![A1], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
-        test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
+        test_create_html_chart(&mut gc, sheet_id, pos![B6], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
         gc.insert_columns(sheet_id, 3, 1, true, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 4, 3, false);
 
         gc.undo(1, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 3, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 3, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 3, 3, false);
 
         gc.redo(1, None, false);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
-        assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
+        assert_chart_size(&gc, sheet_id, pos![B6], 4, 3, false);
     }
 
     #[test]

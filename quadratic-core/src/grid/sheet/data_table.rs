@@ -6,7 +6,7 @@ use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        CodeCellLanguage, CodeRun, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
     },
@@ -19,6 +19,16 @@ impl Sheet {
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
+    }
+
+    pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
+        self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
+    }
+
+    pub fn code_run_at_mut(&mut self, pos: &Pos) -> Option<&mut CodeRun> {
+        self.data_tables
+            .get_at_mut(pos)
+            .and_then(|dt| dt.code_run_mut())
     }
 
     /// Gets the index of the data table
@@ -90,6 +100,11 @@ impl Sheet {
         } else {
             false
         }
+    }
+
+    /// Returns anchor positions of data tables that intersect a rect
+    pub fn data_table_anchors_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.data_tables.iter_anchor_pos_in_rect(rect)
     }
 
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
@@ -266,7 +281,7 @@ impl Sheet {
     }
 
     /// Calls a function to mutate all code cells.
-    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeRun, SheetPos)) {
         let positions = self
             .data_tables
             .expensive_iter()
@@ -274,10 +289,8 @@ impl Sheet {
             .collect::<Vec<_>>();
         let sheet_id = self.id;
         for pos in positions.into_iter() {
-            if let Some(cell_value) = self.cell_value_mut(pos)
-                && let Some(code_cell_value) = cell_value.code_cell_value_mut()
-            {
-                func(code_cell_value, pos.to_sheet_pos(sheet_id));
+            if let Some(code_run) = self.code_run_at_mut(&pos) {
+                func(code_run, pos.to_sheet_pos(sheet_id));
             }
         }
     }
@@ -310,6 +323,8 @@ impl Sheet {
         });
     }
 
+    /// Returns data tables that intersect the selection and corresponding cells
+    /// and values
     pub fn data_tables_and_cell_values_in_rect(
         &self,
         bounds: &Rect,
@@ -317,7 +332,9 @@ impl Sheet {
         values: &mut Option<CellValues>,
         a1_context: &A1Context,
         selection: &A1Selection,
-        include_code_table_values: bool,
+
+        // todo: remove this parameter if it's not useful elsewhere
+        _include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
@@ -330,31 +347,10 @@ impl Sheet {
                 };
 
                 let rect_contains_anchor_pos = bounds.contains(data_table_pos);
-                let code_cell_value = self.cell_value(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if let (true, Some(value)) = (rect_contains_anchor_pos, code_cell_value) {
-                    // add the source cell to cells
-                    cells.set(
-                        (data_table_pos.x - bounds.min.x) as u32,
-                        (data_table_pos.y - bounds.min.y) as u32,
-                        value,
-                    );
-
-                    // add the data_table to data_tables
-                    if matches!(data_table.kind, DataTableKind::Import(_))
-                        || include_code_table_values
-                    {
-                        // include values for imports
-                        data_tables.insert(data_table_pos, data_table.clone());
-                    } else {
-                        // don't include values for code tables
-                        data_tables.insert(data_table_pos, data_table.clone_without_values());
-                    }
-
-                    if values.is_none() {
-                        return;
-                    }
+                if rect_contains_anchor_pos {
+                    data_tables.insert(data_table_pos, data_table.clone());
                 }
 
                 let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
@@ -644,13 +640,6 @@ mod test {
         );
 
         let old = sheet.set_data_table(pos, Some(data_table.clone()));
-        sheet.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "=1".to_string(),
-            }),
-        );
 
         (data_table, old)
     }

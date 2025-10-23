@@ -4,10 +4,10 @@ use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use rust_decimal::prelude::ToPrimitive;
 
-use crate::SheetRect;
 use crate::a1::A1Selection;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
+use crate::grid::{CodeRun, DataTableKind};
 use crate::{
     Array, CellValue, Pos, SheetPos,
     cell_values::CellValues,
@@ -18,13 +18,14 @@ use crate::{
     },
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeCellValue, DataTable,
-        NumericFormat, NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
+        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, DataTable, NumericFormat,
+        NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
         formats::SheetFormatUpdates, unique_data_table_name,
     },
     parquet::parquet_to_array,
     small_timestamp::SmallTimestamp,
 };
+use crate::{SheetRect, Value};
 use calamine::{
     Data as ExcelData, Error as CalamineError, HorizontalAlignment, NumberFormat,
     Reader as ExcelReader, Sheets, VerticalAlignment, open_workbook_from_rs,
@@ -142,7 +143,8 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                        let (cell_value, format_update) =
+                            CellValue::string_to_cell_value(value, false);
 
                         cell_values.set(x as u32, y, cell_value);
 
@@ -183,12 +185,8 @@ impl GridController {
             let cell_values: Array = cell_values.into();
 
             let import = Import::new(sanitize_table_name(file_name.into()));
-            let mut data_table = DataTable::from((
-                import.to_owned(),
-                Array::new_empty(cell_values.size()),
-                self.a1_context(),
-            ));
-            data_table.value = cell_values.into();
+            let mut data_table =
+                DataTable::from((import.to_owned(), cell_values, self.a1_context()));
 
             if !sheet_format_updates.is_default() {
                 data_table
@@ -205,10 +203,9 @@ impl GridController {
                 file_name,
                 a1_selection.to_string(None, self.a1_context())
             );
-            ops.push(Operation::AddDataTable {
+            ops.push(Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
-                cell_value: CellValue::Import(import),
                 index: None,
             });
             drop(sheet_format_updates);
@@ -382,12 +379,22 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        let cell_value = CellValue::Code(CodeCellValue {
-                            language: CodeCellLanguage::Formula,
-                            code: cell.to_string(),
-                        });
-
-                        sheet.columns.set_value(&pos, cell_value);
+                        sheet.data_table_insert_full(
+                            &sheet_pos.into(),
+                            DataTable::new(
+                                DataTableKind::CodeRun(CodeRun {
+                                    language: CodeCellLanguage::Formula,
+                                    code: cell.to_string(),
+                                    ..Default::default()
+                                }),
+                                &formula_start_name,
+                                Value::Single(CellValue::Blank),
+                                false,
+                                None,
+                                None,
+                                None,
+                            ),
+                        );
 
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
@@ -592,10 +599,9 @@ impl GridController {
             a1_selection.to_string(None, self.a1_context())
         );
 
-        let ops = vec![Operation::AddDataTable {
+        let ops = vec![Operation::AddDataTableWithoutCellValue {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
             data_table,
-            cell_value: CellValue::Import(import),
             index: None,
         }];
 
@@ -1408,21 +1414,19 @@ mod test {
         ];
         let context = gc.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
-        let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
         expected_data_table.apply_first_row_as_header();
 
         let data_table = match ops[0].clone() {
-            Operation::AddDataTable { data_table, .. } => data_table,
+            Operation::AddDataTableWithoutCellValue { data_table, .. } => data_table,
             _ => panic!("Expected AddDataTable operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTable {
+        let expected = Operation::AddDataTableWithoutCellValue {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
             data_table: expected_data_table,
-            cell_value,
             index: None,
         };
 
@@ -1455,7 +1459,7 @@ mod test {
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTable {
+            Operation::AddDataTableWithoutCellValue {
                 sheet_pos,
                 data_table,
                 ..
@@ -1524,12 +1528,11 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
         assert_eq!(sheet.cell_value((1, 6).into()), None);
-        assert_eq!(
-            sheet.cell_value((4, 2).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "C1:C5".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 2],
+            CodeCellLanguage::Formula,
+            "C1:C5".into(),
         );
         assert_eq!(sheet.cell_value((4, 1).into()), None);
     }
@@ -1798,13 +1801,13 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.cell_value((4, 3).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E3,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 3],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E3,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 3).into()),
             Some(CellValue::Date(
@@ -1812,25 +1815,25 @@ mod test {
             ))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 12],
+            CodeCellLanguage::Formula,
+            "D5-D10".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 12).into()),
             Some(CellValue::Number(3831163.into()))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 29).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E29,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 29],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E29,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 29).into()),
             Some(CellValue::Date(
@@ -1838,13 +1841,13 @@ mod test {
             ))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 67).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E67,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 67],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E67,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 67).into()),
             Some(CellValue::Date(
@@ -1975,12 +1978,11 @@ mod test {
             Some(CellValue::Text("Hosting & Platform Fees".to_string()))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 12],
+            CodeCellLanguage::Formula,
+            "D5-D10".into(),
         );
 
         let value = to_number(4, 14);
@@ -2009,12 +2011,7 @@ mod test {
 
         let formula_count = (5..20)
             .flat_map(|row| (4..10).map(move |col| (col, row)))
-            .filter(|(col, row)| {
-                matches!(
-                    sheet.cell_value((*col, *row).into()),
-                    Some(CellValue::Code(_))
-                )
-            })
+            .filter(|(col, row)| sheet.code_run_at(&Pos { x: *col, y: *row }).is_some())
             .count();
 
         assert!(

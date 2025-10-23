@@ -1,5 +1,9 @@
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
+    CopyFormats,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
     grid::Sheet,
 };
 
@@ -31,6 +35,13 @@ impl Sheet {
                     {
                         dt.chart_output = Some((width, height + 1));
                         transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetChartCellSize {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                w: width,
+                                h: height,
+                            });
                     }
                 } else {
                     // Adds rows to data tables if the row is inserted inside the
@@ -43,6 +54,14 @@ impl Sheet {
                         && let Ok(display_row_index) = usize::try_from(row - pos.y)
                     {
                         dt.insert_row(display_row_index, None)?;
+                        transaction
+                            .reverse_operations
+                            .push(Operation::DeleteDataTableRows {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                rows: vec![display_row_index as u32],
+                                flatten: false,
+                                select_table: false,
+                            });
 
                         if dt.sort.is_some() {
                             dt.sort_dirty = true;
@@ -107,6 +126,12 @@ impl Sheet {
                 );
                 let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::MoveDataTable {
+                        old_sheet_pos: old_pos.to_sheet_pos(self.id),
+                        new_sheet_pos: new_pos.to_sheet_pos(self.id),
+                    });
             }
         }
     }

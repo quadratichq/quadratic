@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::Range;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -129,7 +129,7 @@ macro_rules! row {
 macro_rules! pos {
     [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
     [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
-    [$sheet_id:ident ! $x:expr, $y:expr] => { pos![$x, $y].to_sheet_pos($sheet_id) };
+    [$sheet_id:ident ! $col:expr, $row:expr] => { pos![$col, $row].to_sheet_pos($sheet_id) };
     [$col:expr, $row:expr] => { $crate::Pos::new($col, $row) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
@@ -142,6 +142,9 @@ macro_rules! pos {
 
 /// Parses a cell rectangle in A1 notation.
 ///
+/// Expressions evaluating to sheet IDs are allowed but must be surrounded in
+/// parentheses if they are anything other than a single identifier.
+///
 /// # Examples
 ///
 /// ```
@@ -149,9 +152,19 @@ macro_rules! pos {
 /// assert_eq!(rect![A1:A1], Rect::new(1, 1, 1, 1));
 /// assert_eq!(rect![C6:D24], Rect::new(3, 6, 4, 24));
 /// assert_eq!(rect![C24:D6], Rect::new(3, 6, 4, 24));
+///
+/// // With a sheet ID (identifier)
+/// let my_sheet = SheetId::new();
+/// assert_eq!(rect![my_sheet!A1:C3], Rect::new(1, 1, 3, 3).to_sheet_rect(my_sheet));
+///
+/// // With a sheet ID (arbitrary expression)
+/// let some_tuple = (10, 20, my_sheet);
+/// assert_eq!(rect![(some_tuple.2)!A1:C3], Rect::new(1, 1, 3, 3).to_sheet_rect(some_tuple.2));
 /// ```
 #[macro_export]
 macro_rules! rect {
+    [$sheet_id:ident ! $corner1:ident : $corner2:ident] => { rect![($sheet_id) ! $corner1 : $corner2] };
+    [($sheet_id:expr) ! $corner1:ident : $corner2:ident] => { rect![$corner1 : $corner2].to_sheet_rect($sheet_id) };
     ($corner1:ident : $corner2:ident) => {
         $crate::Rect::new_span($crate::pos![$corner1], $crate::pos![$corner2])
     };
@@ -396,6 +409,18 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
     match b {
         Some(b) if b < a => (b, Some(a)),
         _ => (a, b),
+    }
+}
+
+// Returns the current UTC time.
+pub fn now() -> DateTime<Utc> {
+    #[cfg(target_family = "wasm")]
+    {
+        DateTime::from_timestamp_millis(crate::wasm_bindings::js::jsTimestamp() as i64).unwrap()
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+        Utc::now()
     }
 }
 

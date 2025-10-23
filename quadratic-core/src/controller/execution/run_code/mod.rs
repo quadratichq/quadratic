@@ -37,7 +37,7 @@ impl GridController {
     ) {
         transaction.current_sheet_pos = None;
         transaction.cells_accessed.clear();
-        transaction.waiting_for_async = None;
+        transaction.waiting_for_async = false;
 
         self.update_cells_accessed_cache(sheet_pos, &new_data_table);
 
@@ -254,30 +254,37 @@ impl GridController {
         };
 
         match &transaction.waiting_for_async {
-            None => {
+            false => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some(code_cell) => {
-                if !code_cell.language.is_code_language() {
-                    return Err(CoreError::UnhandledLanguage(
-                        "Transaction.complete called for an unhandled language".into(),
-                    ));
+            true => {
+                if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
+                    let Some(code_cell) = sheet.code_run_at(&current_sheet_pos.into()) else {
+                        return Err(CoreError::TransactionNotFound(
+                            "Expected code_cell to be defined in after_calculation_async".into(),
+                        ));
+                    };
+                    if !code_cell.language.is_code_language() {
+                        return Err(CoreError::UnhandledLanguage(
+                            "Transaction.complete called for an unhandled language".into(),
+                        ));
+                    }
+
+                    let new_data_table = self.js_code_result_to_code_cell_value(
+                        transaction,
+                        result,
+                        current_sheet_pos,
+                        code_cell.language.clone(),
+                        code_cell.code.clone(),
+                    );
+
+                    self.finalize_data_table(
+                        transaction,
+                        current_sheet_pos,
+                        Some(new_data_table),
+                        None,
+                    );
                 }
-
-                let new_data_table = self.js_code_result_to_code_cell_value(
-                    transaction,
-                    result,
-                    current_sheet_pos,
-                    code_cell.language.clone(),
-                    code_cell.code.clone(),
-                );
-
-                self.finalize_data_table(
-                    transaction,
-                    current_sheet_pos,
-                    Some(new_data_table),
-                    None,
-                );
             }
         }
 
@@ -313,51 +320,32 @@ impl GridController {
             return Ok(());
         };
 
-        // ensure the code_cell still exists
-        let Some(code_cell) = sheet.cell_value_ref(pos) else {
-            // cell may have been deleted before the async operation completed
-            return Ok(());
-        };
-        let CellValue::Code(code_cell_value) = code_cell else {
-            // code may have been replaced while waiting for async operation
+        let Some(code_run) = sheet.code_run_at(&pos) else {
+            // code run may have been deleted before the async operation completed
             return Ok(());
         };
 
-        let code_run = sheet
-            .data_table_at(&pos)
-            .and_then(|data_table| data_table.code_run());
+        let new_code_run = CodeRun {
+            language: code_run.language.to_owned(),
+            code: code_run.code.to_owned(),
+            error: Some(error.to_owned()),
+            return_type: None,
+            line_number: error
+                .span
+                .map(|span| span.line_number_of_str(&code_run.code) as u32),
+            output_type: code_run.output_type.clone(),
+            std_out: None,
+            std_err: Some(error.msg.to_string()),
 
-        let new_code_run = match code_run {
-            Some(old_code_run) => {
-                CodeRun {
-                    language: code_cell_value.language.to_owned(),
-                    code: code_cell_value.code.to_owned(),
-                    error: Some(error.to_owned()),
-                    return_type: None,
-                    line_number: old_code_run.line_number,
-                    output_type: old_code_run.output_type.clone(),
-                    std_out: None,
-                    std_err: Some(error.msg.to_string()),
-
-                    // keep the old cells_accessed to better rerun after an error
-                    cells_accessed: old_code_run.cells_accessed.clone(),
-                }
-            }
-            None => CodeRun {
-                language: code_cell_value.language.to_owned(),
-                code: code_cell_value.code.to_owned(),
-                error: Some(error.to_owned()),
-                return_type: None,
-                line_number: error
-                    .span
-                    .map(|span| span.line_number_of_str(&code_cell_value.code) as u32),
-                output_type: None,
-                std_out: None,
-                std_err: Some(error.msg.to_string()),
-                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
-            },
+            // use a combination of both the errored and old cells_accessed to
+            // maintain the best chance of rerunning after an error
+            cells_accessed: code_run
+                .cells_accessed
+                .clone()
+                .merge(std::mem::take(&mut transaction.cells_accessed)),
         };
-        let table_name = match code_cell_value.language {
+
+        let table_name = match code_run.language {
             CodeCellLanguage::Formula => "Formula1",
             CodeCellLanguage::Javascript => "JavaScript1",
             CodeCellLanguage::Python => "Python1",
@@ -528,29 +516,17 @@ mod test {
 
     use super::*;
     use crate::controller::transaction_types::JsCellValueResult;
-    use crate::grid::CodeCellValue;
+    use crate::test_create_code_table;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
     #[test]
     fn test_finalize_data_table() {
         let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A1];
 
         // manually set the CellValue::Code
-        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(
-            sheet_pos.into(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "delete me".to_string(),
-            }),
-        );
+        test_create_code_table(&mut gc, sheet_id, sheet_pos.into(), 1, 1);
 
         // manually create the transaction
         let transaction = &mut PendingTransaction::default();
@@ -569,11 +545,11 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_1",
+            "Table1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
-            Some(true),
-            Some(true),
+            Some(false),
+            Some(false),
             None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
@@ -584,12 +560,6 @@ mod test {
             sheet.data_table_at(&sheet_pos.into()),
             Some(&new_data_table)
         );
-
-        // todo: need a way to test the js functions as that replaced these
-        // let summary = transaction.send_transaction(true);
-        // assert_eq!(summary.code_cells_modified.len(), 1);
-        // assert!(summary.code_cells_modified.contains(&sheet_id));
-        // assert!(summary.generate_thumbnail);
 
         // replace the code_run with another code_run
         // manually create the transaction
@@ -609,11 +579,11 @@ mod test {
         };
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table_1",
+            "Table1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
-            Some(true),
-            Some(true),
+            Some(false),
+            Some(false),
             None,
         );
         new_data_table.column_headers = None;
@@ -622,6 +592,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
+
         assert_eq!(
             sheet.data_table_at(&sheet_pos.into()),
             Some(&new_data_table)

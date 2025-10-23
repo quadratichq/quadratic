@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::operation::Operation;
+use crate::Value;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::compression::CompressionFormat;
@@ -15,6 +16,7 @@ use crate::compression::SerializationFormat;
 use crate::compression::decompress_and_deserialize;
 use crate::compression::serialize_and_compress;
 use crate::controller::GridController;
+use crate::grid::CodeRun;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
 use crate::grid::Sheet;
@@ -26,7 +28,6 @@ use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::Borders;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::unique_data_table_name;
 use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
 lazy_static! {
@@ -372,56 +373,50 @@ impl GridController {
         Ok((clipboard, operations))
     }
 
-    /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
-    fn cell_values_from_clipboard_cells(
-        cells: &CellValues,
-        values: &CellValues,
-        special: PasteSpecial,
-    ) -> (Option<CellValues>, Vec<(u32, u32)>) {
-        match special {
-            PasteSpecial::Values => (Some(values.to_owned()), vec![]),
-            PasteSpecial::None => {
-                let code = cells
-                    .columns
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(x, col)| {
-                        col.iter()
-                            .filter_map(|(y, cell)| match cell {
-                                CellValue::Code(_) | CellValue::Import(_) => {
-                                    Some((x as u32, *y as u32))
-                                }
-                                _ => None,
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .collect::<Vec<_>>();
-                (Some(cells.to_owned()), code)
-            }
-            _ => (None, vec![]),
-        }
-    }
-
     fn clipboard_code_operations(
         &self,
         start_pos: SheetPos,
-        tables: Vec<(u32, u32)>,
         clipboard: &Clipboard,
-        cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
-            for (x, y) in tables.iter() {
+            for (pos, data_table) in clipboard.data_tables.iter() {
                 let source_pos = Pos {
-                    x: clipboard.origin.x + *x as i64,
-                    y: clipboard.origin.y + *y as i64,
+                    x: clipboard.origin.x + pos.x,
+                    y: clipboard.origin.y + pos.y,
                 };
 
                 let target_pos = Pos {
-                    x: start_pos.x + *x as i64,
-                    y: start_pos.y + *y as i64,
+                    x: start_pos.x + pos.x - clipboard.origin.x,
+                    y: start_pos.y + pos.y - clipboard.origin.y,
                 };
+
+                // need to skip any paste where the source contains a table or
+                // code except when the new data table overwrites the anchor cell
+                let output_rect = data_table.output_rect(target_pos, true);
+                if sheet
+                    .data_tables
+                    .iter_pos_in_rect(output_rect, false)
+                    .any(|pos| sheet.data_table_at(&pos).is_none())
+                {
+                    let message = format!(
+                        "Cannot place {} within a table",
+                        data_table.kind_as_string()
+                    );
+
+                    // report the attempt to paste to the user
+                    #[cfg(any(target_family = "wasm", test))]
+                    {
+                        let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        crate::wasm_bindings::js::jsClientMessage(
+                            message.clone(),
+                            severity.to_string(),
+                        );
+                    }
+
+                    return Err(Error::msg(message));
+                }
 
                 let paste_in_import = sheet
                     .iter_data_tables_in_rect(Rect::single_pos(target_pos))
@@ -441,7 +436,10 @@ impl GridController {
                     });
 
                 if paste_in_import {
-                    let message = "Cannot place table within a table";
+                    let message = format!(
+                        "Cannot place {} within a table",
+                        data_table.kind_as_string()
+                    );
 
                     #[cfg(any(target_family = "wasm", test))]
                     {
@@ -455,26 +453,50 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
-                if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
-                    let mut data_table = data_table.to_owned();
+                // adjust the code_runs if necessary
+                let data_table = if let Some(code_run) = data_table.code_run() {
+                    let mut adjusted_code_run = code_run.clone();
+                    match clipboard.operation {
+                        ClipboardOperation::Cut => adjusted_code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            source_pos.to_sheet_pos(clipboard.origin.sheet_id),
+                            RefAdjust::NO_OP,
+                        ),
+                        ClipboardOperation::Copy => adjusted_code_run.adjust_references(
+                            start_pos.sheet_id,
+                            &self.a1_context,
+                            target_pos.to_sheet_pos(start_pos.sheet_id),
+                            RefAdjust {
+                                sheet_id: None,
+                                dx: target_pos.x - pos.x,
+                                dy: target_pos.y - pos.y,
+                                relative_only: true,
 
-                    if matches!(clipboard.operation, ClipboardOperation::Copy) {
-                        let old_name = data_table.name().to_string();
-                        let new_name =
-                            unique_data_table_name(&old_name, false, None, self.a1_context());
-
-                        // update table name in paste cursor selection
-                        cursor.replace_table_name(&old_name, &new_name);
-
-                        data_table.name = new_name.into();
+                                // ignored
+                                x_start: 0,
+                                y_start: 0,
+                            },
+                        ),
                     }
 
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
-                        data_table: Some(data_table),
-                        index: usize::MAX,
-                    });
-                }
+                    if &adjusted_code_run != code_run {
+                        DataTable {
+                            kind: DataTableKind::CodeRun(adjusted_code_run),
+                            ..data_table.clone()
+                        }
+                    } else {
+                        data_table.to_owned()
+                    }
+                } else {
+                    data_table.to_owned()
+                };
+
+                ops.push(Operation::AddDataTableWithoutCellValue {
+                    sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                    data_table: data_table.clone(),
+                    index: None,
+                });
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
                 // with the data table's cells accessed or if the paste rectangle
@@ -716,19 +738,15 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let (values, tables) = GridController::cell_values_from_clipboard_cells(
-                    &clipboard.cells,
-                    &clipboard.values,
-                    special,
-                );
+                let cells = clipboard.cells.to_owned();
 
-                if let Some(values) = values {
+                if !cells.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
                         start_pos.to_sheet_pos(selection.sheet_id),
                         cell_value_pos,
                         cell_values,
-                        values,
+                        cells,
                         delete_value,
                     )?;
                     ops.extend(cell_value_ops);
@@ -736,9 +754,7 @@ impl GridController {
 
                 code_ops.extend(self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
-                    tables,
                     clipboard,
-                    &mut cursor,
                 )?);
 
                 let validations_ops = self.clipboard_validations_operations(
@@ -748,13 +764,9 @@ impl GridController {
                 ops.extend(validations_ops);
             }
             PasteSpecial::Values => {
-                let (values, _) = GridController::cell_values_from_clipboard_cells(
-                    &clipboard.cells,
-                    &clipboard.values,
-                    special,
-                );
+                let values = clipboard.values.to_owned();
 
-                if let Some(values) = values {
+                if !values.is_empty() {
                     let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
                         start_pos.to_sheet_pos(selection.sheet_id),
@@ -822,26 +834,37 @@ impl GridController {
         // collect the plain text clipboard cells
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
-                let (cell_value, format_update) = self.string_to_cell_value(value, true);
-                let is_code = matches!(cell_value, CellValue::Code(_));
-
-                if cell_value != CellValue::Blank {
-                    values.set(x as u32, y as u32, cell_value);
-                }
-
-                let pos = Pos {
-                    x: start_pos.x + x as i64,
-                    y: start_pos.y + y as i64,
-                };
-
-                if !format_update.is_default() {
-                    sheet_format_updates.set_format_cell(pos, format_update);
-                }
-
-                if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                if value.chars().next().unwrap_or(' ') == '=' {
+                    // code cell
+                    let sheet_pos = SheetPos::new(start_pos.sheet_id, x as i64, y as i64);
+                    compute_code_ops.push(Operation::AddDataTableWithoutCellValue {
+                        sheet_pos,
+                        data_table: DataTable::new(
+                            DataTableKind::CodeRun(CodeRun::new_formula(value.to_string())),
+                            "Formula1",
+                            Value::Single(CellValue::Blank),
+                            false,
+                            Some(true),
+                            Some(true),
+                            None,
+                        ),
+                        index: None,
                     });
+                    compute_code_ops.push(Operation::ComputeCode { sheet_pos });
+                } else {
+                    let (cell_value, format_update) = CellValue::string_to_cell_value(value, false);
+                    if cell_value != CellValue::Blank {
+                        values.set(x as u32, y as u32, cell_value);
+                    }
+
+                    let pos = Pos {
+                        x: start_pos.x + x as i64,
+                        y: start_pos.y + y as i64,
+                    };
+
+                    if !format_update.is_default() {
+                        sheet_format_updates.set_format_cell(pos, format_update);
+                    }
                 }
             });
         });
@@ -928,6 +951,25 @@ impl GridController {
         let mut borders = BordersUpdates::default();
         let source_columns = clipboard.cells.columns;
 
+        // remove code tables if their anchor cell overlap the paste area
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            sheet
+                .data_table_anchors_in_rect(Rect {
+                    min: insert_at,
+                    max: end_pos,
+                })
+                .filter(|pos| {
+                    sheet
+                        .data_table_at(pos)
+                        .is_some_and(|data_table| data_table.is_code())
+                })
+                .for_each(|pos| {
+                    ops.push(Operation::DeleteDataTable {
+                        sheet_pos: pos.to_sheet_pos(sheet_id),
+                    });
+                });
+        }
+
         // collect information for growing data tables
         let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
         let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
@@ -987,22 +1029,8 @@ impl GridController {
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&cols_y, cell) in col {
-                            if let CellValue::Code(code_cell) = cell {
-                                let original_pos = SheetPos {
-                                    x: clipboard.origin.x + cols_x as i64,
-                                    y: clipboard.origin.y + cols_y as i64,
-                                    sheet_id: clipboard.origin.sheet_id,
-                                };
-
-                                code_cell.adjust_references(
-                                    sheet_id,
-                                    self.a1_context(),
-                                    original_pos,
-                                    adjust,
-                                );
-                            }
                             // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
-                            else if should_expand_data_table && let Some(sheet) = sheet {
+                            if should_expand_data_table && let Some(sheet) = sheet {
                                 let new_x = tile_start_x + cols_x as i64;
                                 let new_y = tile_start_y + cols_y as i64;
                                 let current_pos = Pos::new(new_x, new_y);
@@ -1361,26 +1389,18 @@ mod test {
 
     #[test]
     fn paste_clipboard_with_formula() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         gc.set_cell_values(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!B1],
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
             false,
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            pos![sheet_id!A4],
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
@@ -1389,7 +1409,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![A4]),
             Some(CellValue::Number(6.into()))
         );
 
@@ -1407,14 +1427,21 @@ mod test {
             false,
         );
 
+        assert_code_language(
+            &gc,
+            pos![sheet_id!E9],
+            CodeCellLanguage::Formula,
+            "SUM(F6:F8)".to_string(),
+        );
+
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![E9]),
             Some(CellValue::Number(6.into()))
         );
     }
 
     #[test]
-    fn paste_clipboard_with_formula_across_sheets() {
+    fn paste_clipboard_across_sheets_with_formula() {
         let mut gc = GridController::new();
         gc.add_sheet(None, None, None, false);
         let sheet1 = gc.sheet_ids()[0];
@@ -1444,21 +1471,11 @@ mod test {
             false,
         );
 
-        print_sheet(gc.sheet(sheet1));
-
         let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
             gc.sheet(sheet_pos.sheet_id)
                 .get_code_cell_value(sheet_pos.into())
                 .unwrap()
                 .to_string()
-        };
-        let get_code_cell_source_str = |gc: &GridController, sheet_pos: SheetPos| {
-            gc.sheet(sheet_pos.sheet_id)
-                .cell_value(sheet_pos.into())
-                .unwrap()
-                .code_cell_value()
-                .unwrap()
-                .code
         };
 
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A4]));
@@ -1472,10 +1489,13 @@ mod test {
             .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
         gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None, false);
+
         // all references should have updated
-        assert_eq!(
+        assert_code_language(
+            &gc,
+            pos![sheet1!A3],
+            CodeCellLanguage::Formula,
             format!("SUM(#REF!, B3:B5, {s1}!C3, {s2}!C3)"),
-            get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have been re-evaluated
         assert_eq!(
@@ -1490,9 +1510,11 @@ mod test {
             .into();
         gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None, false);
         // all references should have stayed the same
-        assert_eq!(
+        assert_code_language(
+            &gc,
+            pos![sheet1!A3],
+            CodeCellLanguage::Formula,
             format!("SUM(B1:B3, B4:B6, {s1}!C4, {s2}!C4)"),
-            get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have the same value
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A3]));
@@ -1510,9 +1532,11 @@ mod test {
             false,
         );
         // all references should have updated
-        assert_eq!(
+        assert_code_language(
+            &gc,
+            pos![sheet2!A4],
+            CodeCellLanguage::Formula,
             format!("SUM(B2:B4, B5:B7, {s1}!C5, {s2}!C5)"),
-            get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
         // code cell should have been re-evaluated
         assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
@@ -1530,9 +1554,11 @@ mod test {
             false,
         );
         // all references should have updated to have a sheet name
-        assert_eq!(
+        assert_code_language(
+            &gc,
+            pos![sheet2!A4],
+            CodeCellLanguage::Formula,
             format!("SUM({s1}!B1:B3, {s1}!B4:B6, {s1}!C4, {s2}!C4)"),
-            get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
         // code cell should have the same value
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet2!A4]));
@@ -1767,13 +1793,12 @@ mod test {
             false,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        match sheet.cell_value(pos![G8]) {
-            Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, r#"q.cells("E6:F7", first_row_header=True)"#);
-            }
-            _ => panic!("expected code cell"),
-        }
+        assert_code_language(
+            &gc,
+            pos![sheet_id!G8],
+            CodeCellLanguage::Python,
+            r#"q.cells("E6:F7", first_row_header=True)"#.to_string(),
+        );
     }
 
     #[test]
@@ -1872,13 +1897,12 @@ mod test {
             false,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        match sheet.cell_value(pos![G8]) {
-            Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, r#"return q.cells("E6:F7");"#);
-            }
-            _ => panic!("expected code cell"),
-        }
+        assert_code_language(
+            &gc,
+            pos![sheet_id!G8],
+            CodeCellLanguage::Javascript,
+            r#"return q.cells("E6:F7");"#.to_string(),
+        );
     }
 
     #[test]
@@ -1921,7 +1945,7 @@ mod test {
         expect_js_call(
             "jsClientMessage",
             format!(
-                "Cannot place code within a table,{}",
+                "Cannot place JavaScript within a table,{}",
                 JsSnackbarSeverity::Error
             ),
             true,
@@ -2254,7 +2278,6 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
 
@@ -2272,13 +2295,11 @@ mod test {
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, js_clipboard.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, js_clipboard);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
 

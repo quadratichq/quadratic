@@ -96,6 +96,11 @@ impl SheetDataTables {
         self.data_tables.get(pos)
     }
 
+    /// Returns a mutable reference to the data table at the given position, if it exists.
+    pub fn get_at_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
     /// Returns the data table at the given position, if it exists, along with its index and position.
     pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
         self.data_tables.get_full(pos)
@@ -263,6 +268,26 @@ impl SheetDataTables {
                 .get(&data_table_pos)
                 .map(|data_table| (data_table_pos, data_table))
         })
+    }
+
+    /// Returns an iterator over all anchor positions in the sheet data tables
+    /// that intersect with a given rectangle.
+    pub fn iter_anchor_pos_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.cache
+            .single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .chain(
+                self.cache
+                    .multi_cell_tables
+                    .unique_values_in_rect(rect)
+                    .into_iter()
+                    .filter(|v| v.is_some_and(|v| self.data_tables.contains_key(&v)))
+                    .flatten(),
+            )
     }
 
     /// Returns an iterator over all positions in the sheet data tables that intersect with a given rectangle.
@@ -533,5 +558,14 @@ impl SheetDataTables {
     /// Returns true if the given rectangle has any content.
     pub fn has_content(&self, rect: Rect) -> bool {
         self.cache.has_content(rect)
+    }
+
+    pub fn has_content_except(&self, rect: Rect, pos: Pos) -> bool {
+        self.cache.has_content_except(rect, pos)
+    }
+
+    #[cfg(test)]
+    pub fn un_spilled_output_rects(&self) -> &SheetRegionMap {
+        &self.un_spilled_output_rects
     }
 }

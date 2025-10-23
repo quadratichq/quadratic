@@ -151,7 +151,6 @@ impl CellValues {
         vec
     }
 
-    #[cfg(test)]
     /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
     pub fn from_cell_value(value: CellValue) -> Self {
         let mut c = Self::new(1, 1);

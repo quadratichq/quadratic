@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -60,7 +60,7 @@ pub struct PendingTransaction {
     pub current_sheet_pos: Option<SheetPos>,
 
     /// whether we are awaiting an async call
-    pub waiting_for_async: Option<CodeCellValue>,
+    pub waiting_for_async: bool,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -132,7 +132,7 @@ impl Default for PendingTransaction {
             has_async: 0,
             cells_accessed: Default::default(),
             current_sheet_pos: None,
-            waiting_for_async: None,
+            waiting_for_async: false,
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,

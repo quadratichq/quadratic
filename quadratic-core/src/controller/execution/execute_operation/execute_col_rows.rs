@@ -1,12 +1,12 @@
 use itertools::Itertools;
 
 use crate::{
-    CellValue, CopyFormats, RefAdjust,
+    CopyFormats, RefAdjust,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{GridBounds, SheetId},
+    grid::{DataTableKind, GridBounds, SheetId},
 };
 
 use anyhow::{Result, bail};
@@ -18,8 +18,8 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().values() {
-            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
+            for (pos, dt) in sheet.data_tables.expensive_iter() {
+                if let DataTableKind::CodeRun(code) = &dt.kind {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
                     for &adj in adjustments {
@@ -31,10 +31,15 @@ impl GridController {
                         );
                     }
                     if code.code != new_code.code {
-                        transaction.operations.push_back(Operation::SetCellValues {
-                            sheet_pos,
-                            values: CellValue::Code(new_code).into(),
-                        });
+                        let mut data_table = dt.clone();
+                        data_table.kind = DataTableKind::CodeRun(new_code);
+                        transaction
+                            .operations
+                            .push_back(Operation::AddDataTableWithoutCellValue {
+                                sheet_pos,
+                                data_table,
+                                index: None,
+                            });
                         transaction
                             .operations
                             .push_back(Operation::ComputeCode { sheet_pos });
@@ -49,13 +54,20 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         columns: Vec<i64>,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_column = *columns.iter().min().unwrap_or(&1);
             let mut columns_to_adjust = columns.clone();
 
-            sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
+            sheet.delete_columns(
+                transaction,
+                columns,
+                ignore_tables,
+                copy_formats,
+                &self.a1_context,
+            );
 
             if let Some(sheet) = self.try_sheet(sheet_id)
                 && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
@@ -63,7 +75,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.x = min_column;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user_ai() {
@@ -88,10 +99,17 @@ impl GridController {
         if let Operation::DeleteColumn {
             sheet_id,
             column,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_columns(transaction, sheet_id, vec![column], copy_formats);
+            self.handle_delete_columns(
+                transaction,
+                sheet_id,
+                vec![column],
+                ignore_tables,
+                copy_formats,
+            );
             transaction.forward_operations.push(op);
         }
     }
@@ -100,10 +118,11 @@ impl GridController {
         if let Operation::DeleteColumns {
             sheet_id,
             columns,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_columns(transaction, sheet_id, columns, copy_formats);
+            self.handle_delete_columns(transaction, sheet_id, columns, ignore_tables, copy_formats);
             transaction.forward_operations.push(op);
         }
     }
@@ -114,13 +133,20 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
+        ignore_tables: bool,
         copy_formats: CopyFormats,
     ) -> Result<()> {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
 
-            sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
+            sheet.delete_rows(
+                transaction,
+                rows,
+                ignore_tables,
+                copy_formats,
+                &self.a1_context,
+            )?;
 
             if let Some(sheet) = self.try_sheet(sheet_id)
                 && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
@@ -128,7 +154,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.y = min_row;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user_ai() {
@@ -158,10 +183,17 @@ impl GridController {
         if let Operation::DeleteRow {
             sheet_id,
             row,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_rows(transaction, sheet_id, vec![row], copy_formats)?;
+            self.handle_delete_rows(
+                transaction,
+                sheet_id,
+                vec![row],
+                ignore_tables,
+                copy_formats,
+            )?;
             transaction.forward_operations.push(op);
             return Ok(());
         };
@@ -177,10 +209,11 @@ impl GridController {
         if let Operation::DeleteRows {
             sheet_id,
             rows,
+            ignore_tables,
             copy_formats,
         } = op.clone()
         {
-            self.handle_delete_rows(transaction, sheet_id, rows, copy_formats)?;
+            self.handle_delete_rows(transaction, sheet_id, rows, ignore_tables, copy_formats)?;
             transaction.forward_operations.push(op);
             return Ok(());
         };
@@ -192,11 +225,18 @@ impl GridController {
         if let Operation::InsertColumn {
             sheet_id,
             column,
+            ignore_tables,
             copy_formats,
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats, &self.a1_context);
+                sheet.insert_column(
+                    transaction,
+                    column,
+                    copy_formats,
+                    ignore_tables,
+                    &self.a1_context,
+                );
 
                 transaction.forward_operations.push(op);
             } else {
@@ -210,7 +250,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.x = column + 1;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user_ai() {
@@ -228,11 +267,18 @@ impl GridController {
         if let Operation::InsertRow {
             sheet_id,
             row,
+            ignore_tables,
             copy_formats,
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats, &self.a1_context);
+                sheet.insert_row(
+                    transaction,
+                    row,
+                    ignore_tables,
+                    copy_formats,
+                    &self.a1_context,
+                );
 
                 transaction.forward_operations.push(op);
             } else {
@@ -246,7 +292,6 @@ impl GridController {
                 let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                 sheet_rect.min.y = row + 1;
 
-                self.check_deleted_data_tables(transaction, &sheet_rect);
                 self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
                 if transaction.is_user_ai() {
@@ -293,12 +338,10 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
-        Value,
+        Array, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect, Value,
         a1::A1Selection,
-        cell_values::CellValues,
         grid::{
-            CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
+            CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
             sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
         },
         test_create_gc,
@@ -353,13 +396,8 @@ mod tests {
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "3".to_string()
         );
-
-        let single_formula = |formula_str: &str| {
-            CellValues::from(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: formula_str.to_string(),
-            }))
-        };
+        let old_dt = sheet.data_table_at(&pos![A1]).unwrap().clone();
+        let old_code_run = old_dt.code_run().unwrap().clone();
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
@@ -367,9 +405,17 @@ mod tests {
             &transaction.operations,
             &[
                 // first formula, y += 1 for y >= 2
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B$17 + $B18"),
+                Operation::AddDataTableWithoutCellValue {
+                    sheet_pos: pos![sheet_id!A1],
+                    data_table: DataTable {
+                        kind: DataTableKind::CodeRun(CodeRun {
+                            language: CodeCellLanguage::Formula,
+                            code: "B$17 + $B18".to_string(),
+                            ..old_code_run
+                        }),
+                        ..old_dt
+                    },
+                    index: None,
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
@@ -384,22 +430,30 @@ mod tests {
             &mut transaction,
             &[RefAdjust::new_insert_column(sheet_id, 5)],
         );
+
+        let Operation::AddDataTableWithoutCellValue {
+            data_table:
+                DataTable {
+                    kind: DataTableKind::CodeRun(code_run),
+                    ..
+                },
+            ..
+        } = &transaction.operations[0]
+        else {
+            panic!("Expected DataTableKind::CodeRun");
+        };
+        // first formula doesn't change because all X coordinates are < 5
+        // so no operations needed
+        //
+        // second formula, x += 1 for x >= 5
+        assert_eq!(code_run.code, "Sheet1!G1+Other!F1 - Nonexistent!F1");
         assert_eq!(
-            &transaction.operations,
-            &[
-                // first formula doesn't change because all X coordinates are < 5
-                // so no operations needed
-                //
-                // second formula, x += 1 for x >= 5
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("Sheet1!G1+Other!F1 - Nonexistent!F1"),
-                },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
-                },
-            ]
+            &transaction.operations[1],
+            &Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 1, 2)
+            }
         );
+        assert_eq!(transaction.operations.len(), 2);
     }
 
     #[test]
@@ -456,7 +510,7 @@ mod tests {
             cells_accessed,
         };
         let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
+            DataTableKind::CodeRun(code_run.clone()),
             "test",
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
@@ -476,16 +530,16 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
+        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &transaction.operations[0]
+        else {
+            panic!("Expected AddDataTableWithoutCellValue");
+        };
         assert_eq!(
-            transaction.operations[0],
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: r#"q.cells("B1:B3")"#.to_string()
-                })
-                .into(),
-            }
+            data_table.kind,
+            DataTableKind::CodeRun(CodeRun {
+                code: "q.cells(\"B1:B3\")".to_string(),
+                ..code_run
+            })
         );
     }
 
@@ -544,7 +598,7 @@ mod tests {
             cells_accessed,
         };
         let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
+            DataTableKind::CodeRun(code_run.clone()),
             "test",
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
@@ -553,7 +607,7 @@ mod tests {
             None,
         );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(data_table.clone()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -564,17 +618,15 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
         assert_eq!(transaction.operations.len(), 2);
-        assert_eq!(
-            transaction.operations[0],
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Javascript,
-                    code: r#"return q.cells("B1:B3");"#.to_string()
-                })
-                .into(),
-            }
-        );
+        let expected_code_run = CodeRun {
+            code: r#"return q.cells("B1:B3");"#.to_string(),
+            ..code_run
+        };
+        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &transaction.operations[0]
+        else {
+            panic!("Expected AddDataTableWithoutCellValue");
+        };
+        assert_eq!(data_table.kind, DataTableKind::CodeRun(expected_code_run));
     }
 
     #[test]
@@ -767,8 +819,8 @@ mod tests {
 
     #[test]
     fn delete_columns_rows_formulas() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
         gc.set_code_cell(
             pos![sheet_id!J10], // 10,10
@@ -782,12 +834,11 @@ mod tests {
         gc.delete_columns(sheet_id, vec![1, 3, 4, 5], None, false);
         gc.delete_rows(sheet_id, vec![2, 7, 8], None, false);
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos![F7]).unwrap(), // 6,10
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "$B5".to_owned(),
-            })
+        assert_code_language(
+            &gc,
+            pos![sheet_id!F7],
+            CodeCellLanguage::Formula,
+            "$B5".to_string(),
         );
     }
 
@@ -896,16 +947,12 @@ mod tests {
     }
 
     #[test]
-    fn delete_columns() {
+    fn test_content_delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A1],
             vec![vec!["A".into(), "B".into(), "C".into(), "D".into()]],
             None,
             false,
@@ -1135,15 +1182,10 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let _table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
-        print_first_sheet(&gc);
         gc.insert_columns(sheet_id, 3, 1, false, None, false);
 
-        // todo: this should be correct
-        // assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
-
-        // this is what happens (for now)
         assert_data_table_size(&gc, sheet_id, pos![c2], 3, 2, false);
     }
 }

@@ -3,24 +3,14 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{DataTableKind, NumericFormatKind};
+use crate::grid::{CodeCellLanguage, DataTableKind, NumericFormatKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
 
 impl GridController {
-    /// Convert string to a cell_value and generate necessary operations
-    /// TODO(ddimaria): remove this and reference CellValue::string_to_cell_value directly
-    pub(super) fn string_to_cell_value(
-        &self,
-        value: &str,
-        allow_code: bool,
-    ) -> (CellValue, FormatUpdate) {
-        CellValue::string_to_cell_value(value, allow_code, false)
-    }
-
     /// Generate operations for a user-initiated change to a cell value
     pub fn set_cell_values_operations(
         &mut self,
@@ -74,7 +64,17 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
+
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    if let Some(value) = value.strip_prefix("=") {
+                        ops.extend(self.set_code_cell_operations(
+                            pos.to_sheet_pos(sheet.id),
+                            CodeCellLanguage::Formula,
+                            value.to_string(),
+                            None,
+                        ));
+                        continue;
+                    }
                     let user_enter_percent = from_user_input
                         && sheet
                             .cell_format(pos)
@@ -82,11 +82,12 @@ impl GridController {
                             .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
 
                     let (cell_value, format_update) =
-                        CellValue::string_to_cell_value(&value, true, user_enter_percent);
+                        CellValue::string_to_cell_value(&value, user_enter_percent);
 
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
-                    let is_code = matches!(cell_value, CellValue::Code(_));
+                    // todo: this needs to be updated...probably adding to data tables
+                    let is_code = false;
                     let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
 
                     // (x,y) is within a data table (import / editable)
@@ -188,7 +189,6 @@ impl GridController {
                 let mut can_delete_column = false;
                 let mut save_data_table_anchors = vec![];
                 let mut delete_data_tables = vec![];
-                let mut data_tables_automatically_deleted = vec![];
 
                 for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect_sorted(rect)
                 {
@@ -235,10 +235,7 @@ impl GridController {
                         save_data_table_anchors.push(data_table_pos);
                     }
                     if can_delete_table {
-                        // we don't need to manually delete the table as
-                        // the SetCellValues operation below will do
-                        // this properly
-                        data_tables_automatically_deleted.push(data_table_pos);
+                        delete_data_tables.push(data_table_pos);
                     }
                     if can_delete_column {
                         // adjust for hidden columns, reverse the order to delete from right to left
@@ -258,9 +255,7 @@ impl GridController {
                             flatten: false,
                             select_table: false,
                         });
-                    } else if !delete_data_tables.contains(&data_table_pos)
-                        && !data_tables_automatically_deleted.contains(&data_table_pos)
-                    {
+                    } else if !delete_data_tables.contains(&data_table_pos) {
                         // find the intersection of the selection rect and the data table rect
                         if let Some(intersection) = rect.intersection(&data_table_rect) {
                             ops.push(Operation::SetDataTableAt {
@@ -385,10 +380,9 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
+        // todo: this is likely unnecessary as charts can currently only exist within DataTable outputs
         let handle_paste_table_in_import = |paste_table_in_import: &CellValue| {
             let cell_type = match paste_table_in_import {
-                CellValue::Code(_) => "code",
-                CellValue::Import(_) => "table",
                 CellValue::Image(_) => "chart",
                 CellValue::Html(_) => "chart",
                 _ => "unknown",
@@ -460,9 +454,9 @@ impl GridController {
                         .iter()
                         .flatten()
                         .find_map(|cell_value| {
-                            cell_value.as_ref().filter(|cv| {
-                                cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
-                            })
+                            cell_value
+                                .as_ref()
+                                .filter(|cv| cv.is_image() || cv.is_html())
                         });
 
                 if let Some(paste_table_in_import) = paste_table_in_import {
@@ -489,11 +483,7 @@ impl GridController {
                             let cell_value =
                                 values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
 
-                            if cell_value.is_code()
-                                || cell_value.is_import()
-                                || cell_value.is_image()
-                                || cell_value.is_html()
-                            {
+                            if cell_value.is_image() || cell_value.is_html() {
                                 return Err(Error::msg(handle_paste_table_in_import(&cell_value)));
                             }
 
@@ -537,10 +527,9 @@ mod test {
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
-    use crate::number::decimal_from_str;
-    use crate::test_util::*;
-    use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
+    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::{CellValue, SheetPos, a1::A1Selection};
+    use crate::{SheetRect, test_util::*};
 
     #[test]
     fn test() {
@@ -574,267 +563,13 @@ mod test {
     }
 
     #[test]
-    fn boolean_to_cell_value() {
-        let gc = GridController::test();
-
-        let (value, format_update) = gc.string_to_cell_value("true", true);
-        assert_eq!(value, true.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("false", true);
-        assert_eq!(value, false.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("TRUE", true);
-        assert_eq!(value, true.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("FALSE", true);
-        assert_eq!(value, false.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("tRue", true);
-        assert_eq!(value, true.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("FaLse", true);
-        assert_eq!(value, false.into());
-        assert!(format_update.is_default());
-    }
-
-    #[test]
-    fn number_to_cell_value() {
-        let gc = GridController::test();
-
-        let (value, format_update) = gc.string_to_cell_value("123", true);
-        assert_eq!(value, 123.into());
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("123.45", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("123.45").unwrap())
-        );
-        assert!(format_update.is_default());
-
-        let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("123456.78").unwrap())
-        );
-        assert_eq!(format_update.numeric_commas, Some(Some(true)));
-
-        let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("123456789.01").unwrap())
-        );
-        assert_eq!(format_update.numeric_commas, Some(Some(true)));
-
-        // currency with comma
-        let (value, format_update) = gc.string_to_cell_value("$123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // parentheses with comma
-        let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(format_update.numeric_commas, Some(Some(true)));
-
-        // parentheses with -ve
-        let (value, format_update) = gc.string_to_cell_value("(-123,456)", true);
-        assert_eq!(value, CellValue::Text("(-123,456)".to_string()));
-        assert!(format_update.is_default());
-
-        // currency with a space
-        let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // currency with a space and -ve outside
-        let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // currency with a space and -ve inside
-        let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // currency with parentheses outside
-        let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // currency with parentheses inside
-        let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // currency with parentheses and space
-        let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("-123456").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some("$".to_string()),
-            }))
-        );
-
-        // parentheses with -ve
-        let (value, format_update) = gc.string_to_cell_value("(-$123,456)", true);
-        assert_eq!(value, CellValue::Text("(-$123,456)".to_string()));
-        assert!(format_update.is_default());
-
-        // percent with a space
-        let (value, format_update) = gc.string_to_cell_value("123456 %", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("1234.56").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            }))
-        );
-
-        // percent with a comma
-        let (value, format_update) = gc.string_to_cell_value("123,456%", true);
-        assert_eq!(
-            value,
-            CellValue::Number(decimal_from_str("1234.56").unwrap())
-        );
-        assert_eq!(
-            format_update.numeric_format,
-            Some(Some(NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            }))
-        );
-    }
-
-    #[test]
-    fn formula_to_cell_value() {
-        let gc = GridController::test();
-
-        let (value, _) = gc.string_to_cell_value("=1+1", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1+1".to_string(),
-            })
-        );
-
-        let (value, _) = gc.string_to_cell_value("=1/0", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "1/0".to_string(),
-            })
-        );
-
-        let (value, _) = gc.string_to_cell_value("=A1+A2", true);
-        assert_eq!(
-            value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "A1+A2".to_string(),
-            })
-        );
-
-        let (value, _) = gc.string_to_cell_value("=A1+A2", false);
-        assert_eq!(value, CellValue::Text("A1+A2".to_string()));
-    }
-
-    #[test]
-    fn test_problematic_number() {
-        let gc = GridController::test();
-        let value = "980E92207901934";
-        let (cell_value, _) = gc.string_to_cell_value(value, true);
-        assert_eq!(cell_value.to_string(), value.to_string());
-    }
-
-    #[test]
     fn test_delete_cells_operations() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
-        gc.set_cell_value(sheet_pos, "hello".to_string(), None, false);
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!A2];
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None, true);
 
-        let sheet_pos_2 = SheetPos {
-            x: 2,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_2 = pos![sheet_id!B2];
         gc.set_code_cell(
             sheet_pos_2,
             CodeCellLanguage::Formula,
@@ -846,38 +581,31 @@ mod test {
 
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection, false);
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A2];
 
-        assert_eq!(operations.len(), 1);
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::new_blank(2, 1)
-            },]
+            vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: CellValues::new_blank(2, 1)
+                },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
+                }
+            ]
         );
     }
 
     #[test]
     fn test_delete_columns() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
-        gc.set_cell_value(sheet_pos, "hello".to_string(), None, false);
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!A2];
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None, true);
 
-        let sheet_pos_2 = SheetPos {
-            x: 2,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_2 = pos![sheet_id!B2];
         gc.set_code_cell(
             sheet_pos_2,
             CodeCellLanguage::Formula,
@@ -889,7 +617,11 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        assert_eq!(operations.len(), 2);
+        assert_eq!(operations.len(), 4);
+
+        // FYI: this ends up with two delete data tables since we don't track
+        // which ops are already created and both A2: and B return the existing
+        // table before it's deleted. todo: maybe improve this?
         assert_eq!(
             operations,
             vec![
@@ -897,9 +629,15 @@ mod test {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new_blank(1, 2)
                 },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
+                },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new_blank(2, 1)
+                },
+                Operation::DeleteDataTable {
+                    sheet_pos: sheet_pos_2,
                 },
             ]
         );

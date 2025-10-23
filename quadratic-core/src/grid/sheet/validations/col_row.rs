@@ -267,7 +267,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_remove_column() {
+    fn test_validations_remove_column() {
         clear_js_calls();
 
         let mut gc = GridController::default();
@@ -333,6 +333,7 @@ mod tests {
                 sheet_id,
                 column: 2,
                 copy_formats: Default::default(),
+                ignore_tables: false,
             }],
             None,
             TransactionName::Validation,
@@ -474,6 +475,7 @@ mod tests {
                 sheet_id,
                 row: 2,
                 copy_formats: Default::default(),
+                ignore_tables: false,
             }],
             None,
             TransactionName::Validation,
@@ -616,6 +618,7 @@ mod tests {
                 sheet_id,
                 column: 2,
                 copy_formats: CopyFormats::None,
+                ignore_tables: false,
             }],
             None,
             TransactionName::Validation,
@@ -758,6 +761,7 @@ mod tests {
                 sheet_id,
                 row: 3,
                 copy_formats: CopyFormats::None,
+                ignore_tables: false,
             }],
             None,
             TransactionName::Validation,

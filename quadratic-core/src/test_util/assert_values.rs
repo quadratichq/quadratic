@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{CellValue, Pos, controller::GridController, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::SheetId};
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
@@ -30,6 +30,13 @@ pub fn assert_display_cell_value_first_sheet(
     value: &str,
 ) {
     assert_display_cell_value(grid_controller, grid_controller.sheet_ids()[0], x, y, value);
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display(gc: &GridController, sheet_pos: SheetPos, value: &str) {
+    assert_display_cell_value(gc, sheet_pos.sheet_id, sheet_pos.x, sheet_pos.y, value);
 }
 
 /// Run an assertion that a cell value is equal to the given value
@@ -72,14 +79,27 @@ pub fn assert_display_cell_value_pos(
     assert_display_cell_value(grid_controller, sheet_id, pos.x, pos.y, value);
 }
 
+#[track_caller]
+#[cfg(test)]
+pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
+    let Some(code_run) = gc.sheet(pos.sheet_id).code_run_at(&pos.into()) else {
+        panic!("No code cell at {pos}");
+    };
+    assert_eq!(
+        value, code_run.code,
+        "Cell at {pos} does not have the value {:?}, it's actually {:?}",
+        value, code_run.code
+    );
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
 pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
-    let cell_value = sheet
-        .edit_code_value(Pos { x, y }, gc.a1_context())
-        .unwrap();
+    let Some(cell_value) = sheet.edit_code_value(Pos { x, y }, gc.a1_context()) else {
+        panic!("Expected code cell at {}", Pos { x, y });
+    };
 
     assert_eq!(
         value, cell_value.code_string,
