@@ -161,8 +161,6 @@ describe('POST /v0/files', () => {
         });
       }
 
-      // todo: fails here...
-
       // Attempt to create a 4th file and expect rejection
       await request(app)
         .post('/v0/files')
