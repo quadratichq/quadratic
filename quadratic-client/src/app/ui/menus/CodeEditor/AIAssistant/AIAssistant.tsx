@@ -1,5 +1,5 @@
 import { aiAssistantMessagesCountAtom } from '@/app/atoms/codeEditorAtom';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
+import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { AIAssistantMessages } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantMessages';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { memo, useRef } from 'react';
@@ -14,7 +14,7 @@ export const AIAssistant = memo(() => {
     <div className="grid h-full grid-rows-[1fr_auto]">
       <AIAssistantMessages textareaRef={textareaRef} />
 
-      <div className="flex h-full flex-col justify-end px-2 py-0.5">
+      <div className="flex h-full flex-col justify-end px-2 pb-1.5 pt-0.5">
         <AIAssistantUserMessageForm
           ref={textareaRef}
           autoFocusRef={autoFocusRef}
@@ -22,7 +22,7 @@ export const AIAssistant = memo(() => {
           messageIndex={messagesCount}
           uiContext="assistant-new-chat"
         />
-        <AIUserMessageFormDisclaimer />
+        <AIMessageCounterBar />
       </div>
     </div>
   );
