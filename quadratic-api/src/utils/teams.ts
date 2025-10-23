@@ -16,8 +16,8 @@ let keys: Promise<{ sshPublicKey: Uint8Array; sshPrivateKey: Uint8Array }> | nul
 export async function getKeys(): Promise<{ sshPublicKey: Uint8Array; sshPrivateKey: Uint8Array }> {
   if (keys === null || !isRunningInTest) {
     keys = generateSshKeys().then(({ privateKey, publicKey }) => {
-      const sshPublicKey = Uint8Array.from(Buffer.from(encryptFromEnv(publicKey)));
-      const sshPrivateKey = Uint8Array.from(Buffer.from(encryptFromEnv(privateKey)));
+      const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
+      const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
       return { sshPublicKey, sshPrivateKey };
     });
   }
