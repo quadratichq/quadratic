@@ -50,12 +50,12 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   await handleQuadraticLoading(page);
 
   // go to dashboard if in app
-  const dashboardLink = page.locator('[data-testid="back-to-dashboard-link"]');
-  await dashboardLink.waitFor({ state: 'visible', timeout: 60 * 1000 });
-  await dashboardLink.click({ timeout: 60 * 1000 });
-  await handleQuadraticLoading(page);
-  // Wait a while to ensure navigation completes
-  await page.waitForTimeout(5 * 1000);
+  // const dashboardLink = page.locator('[data-testid="back-to-dashboard-link"]');
+  // await dashboardLink.waitFor({ state: 'visible', timeout: 60 * 1000 });
+  // await dashboardLink.click({ timeout: 60 * 1000 });
+  // await handleQuadraticLoading(page);
+  // // Wait a while to ensure navigation completes
+  // await page.waitForTimeout(5 * 1000);
 
   // If onboarding video is shown, click "Skip" to proceed
   const getStartedHeader = page.locator('h1:has-text("Get started")');
