@@ -20,6 +20,7 @@ export const AIAssistant = memo(() => {
           autoFocusRef={autoFocusRef}
           textareaRef={textareaRef}
           messageIndex={messagesCount}
+          uiContext="assistant-new-chat"
         />
         <AIMessageCounterBar />
       </div>
