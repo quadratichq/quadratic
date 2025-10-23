@@ -108,6 +108,8 @@ export const AIUserMessageForm = memo(
     const [files, setFiles] = useState<FileContent[]>([]);
     const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
+    const isAnalyst = useMemo(() => uiContext.startsWith('analyst'), [uiContext]);
+
     useEffect(() => {
       if (initialContent) {
         setFiles(initialContent.filter((item) => isContentFile(item)) ?? []);
@@ -298,19 +300,20 @@ export const AIUserMessageForm = memo(
     );
     const showWaypoints = useMemo(
       () =>
-        uiContext === 'analyst' &&
+        isAnalyst &&
         (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
         importFiles.length === 0 &&
         files.length === 0,
-      [context, importFiles, files, uiContext]
+      [context, importFiles, files, isAnalyst]
     );
 
     // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
     const handleClickMention = useCallback(() => {
-      trackEvent('[AIMentions].clickInsertMentionButton');
       const textarea = textareaRef.current;
       if (!textarea) return;
+
+      trackEvent('[AIMentions].clickInsertMentionButton');
 
       // Get current cursor position
       const cursorPos = textarea.selectionStart || 0;
@@ -347,7 +350,6 @@ export const AIUserMessageForm = memo(
     // Apply _only_ for new
     useEffect(() => {
       const handleAddReference = (reference: string) => {
-        console.log('fire handleAddReference', reference);
         setPrompt((prev) => `${prev}${prev.length > 0 && !prev.endsWith(' ') ? ' ' : ''}@${reference} `);
         textareaRef.current?.focus();
       };
@@ -437,7 +439,7 @@ export const AIUserMessageForm = memo(
           />
 
           {/* Don't use @-mentions if we're not in the analyst */}
-          {uiContext.startsWith('analyst') ? (
+          {isAnalyst ? (
             <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
               {textarea}
             </MentionsTextarea>
@@ -463,11 +465,11 @@ export const AIUserMessageForm = memo(
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
-            handleClickMention={uiContext.startsWith('analyst') ? handleClickMention : undefined}
+            handleClickMention={handleClickMention}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
-            uiContext={uiContext}
+            isAnalyst={isAnalyst}
           />
         </form>
       </div>
@@ -544,11 +546,11 @@ interface AIUserMessageFormFooterProps {
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
-  handleClickMention: (() => void) | undefined;
+  handleClickMention: () => void;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
-  uiContext: AIUserMessageFormProps['uiContext'];
+  isAnalyst: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -568,7 +570,7 @@ const AIUserMessageFormFooter = memo(
     context,
     setContext,
     filesSupportedText,
-    uiContext,
+    isAnalyst,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -602,7 +604,7 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {uiContext.startsWith('analyst') && (
+            {isAnalyst && (
               <AIUserMessageFormConnectionsButton
                 disabled={disabled}
                 context={context}
@@ -610,7 +612,7 @@ const AIUserMessageFormFooter = memo(
                 textareaRef={textareaRef}
               />
             )}
-            {handleClickMention && (
+            {isAnalyst && (
               <TooltipPopover label="Reference data">
                 <Button
                   size="icon-sm"
