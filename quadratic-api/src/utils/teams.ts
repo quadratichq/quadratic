@@ -39,8 +39,8 @@ export async function createTeam<T extends Prisma.TeamSelect>(
   const result = await dbClient.team.create({
     data: {
       name,
-      sshPublicKey,
-      sshPrivateKey,
+      sshPublicKey: sshPublicKey as Uint8Array<ArrayBuffer>,
+      sshPrivateKey: sshPrivateKey as Uint8Array<ArrayBuffer>,
       UserTeamRole: {
         create: {
           userId: ownerUserId,
@@ -68,8 +68,8 @@ export async function getDecryptedTeam(team: Team): Promise<DecryptedTeam> {
     encryptedTeam = await dbClient.team.update({
       where: { id: encryptedTeam.id },
       data: {
-        sshPublicKey,
-        sshPrivateKey,
+        sshPublicKey: sshPublicKey as Uint8Array<ArrayBuffer>,
+        sshPrivateKey: sshPrivateKey as Uint8Array<ArrayBuffer>,
       },
     });
   }
