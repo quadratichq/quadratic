@@ -1481,6 +1481,22 @@ export interface CoreClientStartupTimer {
   end?: number;
 }
 
+export interface ClientCoreSetFormula {
+  type: 'clientCoreSetFormula';
+  id: number;
+  sheetId: string;
+  selection: string;
+  codeString: string;
+  codeCellName?: string;
+  cursor: string;
+}
+
+export interface CoreClientSetFormula {
+  type: 'coreClientSetFormula';
+  id: number;
+  transactionId: string | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1582,7 +1598,8 @@ export type ClientCoreMessage =
   | ClientCoreGetAICodeErrors
   | ClientCoreGetAITransactions
   | ClientCoreUndo
-  | ClientCoreRedo;
+  | ClientCoreRedo
+  | ClientCoreSetFormula;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1680,4 +1697,5 @@ export type CoreClientMessage =
   | CoreClientGetAITransactions
   | CoreClientUndoResponse
   | CoreClientRedoResponse
-  | CoreClientStartupTimer;
+  | CoreClientStartupTimer
+  | CoreClientSetFormula;

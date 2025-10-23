@@ -32,6 +32,7 @@ impl GridController {
         sheet.delete_columns(
             transaction,
             (col_start..=col_end).collect(),
+            false,
             Default::default(),
             &self.a1_context,
         );
@@ -40,7 +41,6 @@ impl GridController {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.x = min_column;
-            self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
         }
@@ -58,7 +58,7 @@ impl GridController {
         // insert new columns at the adjusted location
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for col in adjusted_to..=adjusted_to + col_end - col_start {
-                sheet.insert_column(transaction, col, CopyFormats::None, &self.a1_context);
+                sheet.insert_column(transaction, col, CopyFormats::None, false, &self.a1_context);
             }
         }
 
@@ -104,6 +104,7 @@ impl GridController {
             .delete_rows(
                 transaction,
                 (row_start..=row_end).collect(),
+                false,
                 Default::default(),
                 &self.a1_context,
             )
@@ -117,7 +118,6 @@ impl GridController {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.y = min_row;
-            self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
         }
@@ -135,7 +135,7 @@ impl GridController {
         // insert new rows at the adjusted location
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for row in adjusted_to..=adjusted_to + row_end - row_start {
-                sheet.insert_row(transaction, row, CopyFormats::None, &self.a1_context);
+                sheet.insert_row(transaction, row, false, CopyFormats::None, &self.a1_context);
             }
         }
 
