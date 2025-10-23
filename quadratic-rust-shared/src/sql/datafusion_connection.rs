@@ -1,6 +1,8 @@
-//! datafusion
+//! Datafusion Connection
 //!
 //! Functions to interact with datafusion
+//! Datafusion is a query engine for Apache Arrow/Parquet files.
+//! It is used to query the parquet files in the object store.
 
 use arrow::array::ArrayRef;
 use arrow_array::array::Array;

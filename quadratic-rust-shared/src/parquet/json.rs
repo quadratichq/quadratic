@@ -4,20 +4,20 @@
 //! using Arrow's built-in JSON reader, eliminating custom schema inference and
 //! type promotion logic.
 
-use std::collections::HashMap;
-use std::io::Cursor;
-use std::sync::Arc;
-
-use rayon::prelude::*;
-
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use arrow_json::{ReaderBuilder, reader::infer_json_schema};
 use bytes::Bytes;
+use rayon::prelude::*;
+use std::collections::HashMap;
+use std::io::Cursor;
+use std::sync::Arc;
 
 use crate::parquet::error::Parquet as ParquetError;
 use crate::parquet::utils::record_batch_to_parquet_bytes;
 use crate::{SharedError, error::Result};
+
+const INFER_SCHEMA_SAMPLE_SIZE: usize = 2000;
 
 fn error(e: impl ToString) -> SharedError {
     SharedError::Parquet(ParquetError::Json(e.to_string()))
@@ -34,7 +34,7 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
     // use Arrow's JSON schema inference with more samples to get better type detection
     let sample_json = json_lines
         .iter()
-        .take(2000)
+        .take(INFER_SCHEMA_SAMPLE_SIZE)
         .copied()
         .collect::<Vec<_>>()
         .join("\n");

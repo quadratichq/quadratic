@@ -248,7 +248,7 @@ pub(crate) async fn serve() -> Result<()> {
                 let stats = stats_state.stats.lock().await;
 
                 // push stats to the logs if there are files to process or connections are processing
-                if stats.last_query_time.is_some() || stats.num_connections_processing > 0 {
+                if stats.last_query_time.is_some() {
                     tracing::info!("{}", stats);
                 }
             }

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     Extension, Json,
     extract::{Path, Query},
@@ -13,7 +11,7 @@ use quadratic_rust_shared::{
     },
     synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
 };
-
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
@@ -21,10 +19,9 @@ use crate::{
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
+    sql::{Schema, SchemaQuery, query_generic, schema_generic},
     state::State,
 };
-
-use super::{Schema, SchemaQuery, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test_mixpanel(
@@ -100,6 +97,7 @@ mod tests {
         MixpanelConnection {
             api_secret: "test_secret".to_string(),
             project_id: "test_project_id".to_string(),
+            start_date: "2025-01-01".to_string(),
         }
     }
 
@@ -181,19 +179,5 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.0.id, connection_id);
-    }
-
-    #[tokio::test]
-    #[traced_test]
-    #[ignore]
-    async fn test_sync_mixpanel_basic() {
-        let connection_id = Uuid::new_v4();
-        let (_, headers) = new_team_id_with_header().await;
-        let state = Extension(Arc::new(new_state().await));
-        let claims = get_claims();
-
-        sync_mixpanel(Path(connection_id), headers, state, claims)
-            .await
-            .unwrap();
     }
 }

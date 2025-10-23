@@ -9,6 +9,7 @@ use crate::synced_connection::{SyncKind, mixpanel::process_mixpanel_connections}
 const DAILY_SYNC_INTERVAL_M: u64 = 60; // 1 hour
 const FULL_SYNC_INTERVAL_M: u64 = 1; // 1 minute
 
+/// Initialize the sync workers in separate threads.
 pub(crate) async fn init_sync_workers(state: Arc<State>) -> Result<()> {
     // sync daily connections in a separate thread
     let daily_sync_state = Arc::clone(&state);
@@ -24,7 +25,6 @@ pub(crate) async fn init_sync_workers(state: Arc<State>) -> Result<()> {
 /// Update all Mixpanel connections every DAILY_SYNC_INTERVAL_M minutes.
 pub(crate) async fn daily_sync_worker(state: Arc<State>) {
     let mut interval = time::interval(Duration::from_secs(DAILY_SYNC_INTERVAL_M * 60));
-    let today = chrono::Utc::now().date_naive();
 
     loop {
         interval.tick().await;

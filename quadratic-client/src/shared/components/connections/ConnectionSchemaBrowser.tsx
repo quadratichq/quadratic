@@ -76,7 +76,7 @@ export const ConnectionSchemaBrowser = ({
             <TableQueryAction
               query={
                 !isLoading && data && filteredTables[selectedTableIndex]
-                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
+                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: type })
                   : ''
               }
             />

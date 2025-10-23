@@ -64,10 +64,12 @@ pub fn new_s3_object_store(
 
 /// Create a new filesystem object store.
 pub fn new_filesystem_object_store(path: &str) -> Result<(Arc<dyn ObjectStore>, PathBuf)> {
+    println!("Creating filesystem object store at path: {}", path);
     let file_system = LocalFileSystem::new_with_prefix(path).map_err(object_store_error)?;
     let file_system_url = file_system
         .path_to_filesystem(&Path::from(path))
         .map_err(object_store_error)?;
+    println!("Filesystem object store URL: {:?}", file_system_url);
     let arc_file_system = Arc::new(file_system);
 
     Ok((arc_file_system, file_system_url))

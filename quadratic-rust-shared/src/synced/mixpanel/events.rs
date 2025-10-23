@@ -54,6 +54,7 @@ impl Default for ExportParams {
 
 impl MixpanelClient {
     /// Export raw event data using arrow-json for consistent schema handling with streaming
+    /// TODO(ddimaria): remove once we decide on the streaming approach
     pub async fn export_events(&self, params: ExportParams) -> Result<HashMap<String, Bytes>> {
         let url = format!("{}/export", self.data_export_url());
 
@@ -193,29 +194,29 @@ impl MixpanelClient {
             )));
         }
 
-        // Stream the response instead of loading all text into memory
+        // stream the response instead of loading all text into memory
         let mut stream = response.bytes_stream();
         let mut byte_buffer = Vec::new();
         let mut line_buffer = String::new();
         let grouped_json = Mutex::new(HashMap::<String, Vec<String>>::new());
 
-        // Process the stream chunk by chunk
+        // process the stream chunk by chunk
         while let Some(chunk_result) = stream.next().await {
             let chunk = chunk_result.map_err(|e| {
                 SharedError::Synced(format!("Failed to read response chunk: {}", e))
             })?;
 
-            // Add bytes to buffer
+            // add bytes to buffer
             byte_buffer.extend_from_slice(&chunk);
 
-            // Try to convert accumulated bytes to string, handling UTF-8 boundaries
+            // try to convert accumulated bytes to string, handling UTF-8 boundaries
             let (valid_string, remaining_bytes) = match std::str::from_utf8(&byte_buffer) {
                 Ok(s) => (s.to_string(), Vec::new()),
                 Err(e) => {
-                    // Find the last valid UTF-8 boundary
+                    // find the last valid UTF-8 boundary
                     let valid_up_to = e.valid_up_to();
                     if valid_up_to == 0 {
-                        // No valid UTF-8 at all, continue accumulating
+                        // no valid UTF-8 at all, continue accumulating
                         continue;
                     }
                     let valid_part =
@@ -227,20 +228,20 @@ impl MixpanelClient {
                 }
             };
 
-            // Update byte buffer with remaining bytes
+            // update byte buffer with remaining bytes
             byte_buffer = remaining_bytes;
 
-            // Add valid string to line buffer
+            // add valid string to line buffer
             line_buffer.push_str(&valid_string);
 
-            // Process complete lines from the line buffer
+            // process complete lines from the line buffer
             let lines_to_process = if line_buffer.ends_with('\n') {
-                // All lines are complete, process all and clear buffer
+                // all lines are complete, process all and clear buffer
                 let lines: Vec<String> = line_buffer.lines().map(|s| s.to_string()).collect();
                 line_buffer.clear();
                 lines
             } else {
-                // Last line might be incomplete, keep it in buffer
+                // last line might be incomplete, keep it in buffer
                 let mut lines: Vec<&str> = line_buffer.lines().collect();
                 if lines.is_empty() {
                     Vec::new()
@@ -252,7 +253,7 @@ impl MixpanelClient {
                 }
             };
 
-            // Process complete lines in parallel
+            // process complete lines in parallel
             if !lines_to_process.is_empty() {
                 let results: Vec<Result<Option<(String, String)>>> = lines_to_process
                     .iter()
@@ -280,7 +281,7 @@ impl MixpanelClient {
                     })
                     .collect();
 
-                // collect results and handle any errors
+                // collect results and handle any erros
                 for result in results {
                     // skip events without timestamps
                     if let Some((date_key, flattened_json)) = result? {
@@ -294,7 +295,7 @@ impl MixpanelClient {
             }
         }
 
-        // Process any remaining bytes in byte_buffer and line_buffer
+        // process any remaining bytes in byte_buffer and line_buffer
         if !byte_buffer.is_empty() {
             let remaining_str = std::str::from_utf8(&byte_buffer).map_err(|e| {
                 SharedError::Synced(format!("Invalid UTF-8 in remaining buffer: {}", e))

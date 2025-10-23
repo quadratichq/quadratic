@@ -95,6 +95,7 @@ pub fn record_batch_to_parquet_bytes(record_batch: RecordBatch) -> Result<Bytes>
     Ok(arrow_writer.into_inner()?.into())
 }
 
+/// Write a record batch to a writer using Arrow with direct Field to DataType conversion
 pub fn write_record_batch<W: Write + Send>(
     record_batch: RecordBatch,
     writer: W,

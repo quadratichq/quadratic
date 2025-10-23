@@ -5,13 +5,11 @@ use tokio::time::Instant;
 #[derive(Debug, Default)]
 pub(crate) struct Stats {
     pub(crate) last_query_time: Option<Instant>,
-    pub(crate) num_connections_processing: u64,
 }
 
 #[derive(Debug, Default, Serialize)]
 pub(crate) struct StatsResponse {
     pub(crate) last_processed_query: String,
-    pub(crate) num_connections_processing: u64,
 }
 
 impl Display for Stats {
@@ -23,7 +21,6 @@ impl Display for Stats {
 
         let stats = StatsResponse {
             last_processed_query,
-            num_connections_processing: self.num_connections_processing,
         };
 
         write!(

@@ -123,6 +123,7 @@ pub async fn get_missing_dates(
     Ok(missing_dates)
 }
 
+/// Get the missing date ranges in the object store.
 pub async fn get_missing_date_ranges(
     object_store: &Arc<dyn ObjectStore>,
     prefix: Option<&str>,
@@ -143,21 +144,21 @@ pub async fn get_missing_date_ranges(
     let mut range_start = missing_dates[0];
     let mut range_end = missing_dates[0];
 
-    for i in 1..missing_dates.len() {
-        let current_date = missing_dates[i];
+    for missing_date in missing_dates.into_iter().skip(1) {
+        let current_date = missing_date;
 
-        // Check if current date is the next day after range_end
+        // check if current date is the next day after range_end
         if current_date == range_end + chrono::Duration::days(1) {
             range_end = current_date;
         } else {
-            // Gap found, save current range and start a new one
+            // gap found, save current range and start a new one
             date_ranges.push((range_start, range_end));
             range_start = current_date;
             range_end = current_date;
         }
     }
 
-    // Don't forget to push the last range
+    // push the last range
     date_ranges.push((range_start, range_end));
 
     Ok(date_ranges)
