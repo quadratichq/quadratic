@@ -129,7 +129,7 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
 
     let mut possible_text_series = text_series.iter().map(|_| Some(vec![])).collect::<Vec<_>>();
 
-    series.iter().for_each(|(cell, _)| {
+    series.iter().for_each(|cell| {
         text_series.iter().enumerate().for_each(|(i, text_series)| {
             let cell_value = cell.to_string();
 

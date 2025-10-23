@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useAIModel, type MODEL_TYPE } from '@/app/ai/hooks/useAIModel';
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { AIIcon, ArrowDropDownIcon } from '@/shared/components/Icons';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
@@ -21,6 +23,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 type UIModels = 'default' | 'max' | 'others';
@@ -36,9 +39,12 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const { userMakingRequest } = useFileRouteLoaderData();
+  const {
+    userMakingRequest,
+    team: { uuid: teamUuid },
+  } = useFileRouteLoaderData();
   const restrictedModel = userMakingRequest.restrictedModel;
-
+  const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
@@ -69,154 +75,153 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   // Debug mode where any non-disabled model is shown
   if (debugShowAIModelMenu) {
     return (
-      <>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            disabled={loading}
-            className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
-          >
-            {selectedModelConfig.displayName}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={loading}
+          className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+        >
+          {selectedModelConfig.displayName}
 
-            <CaretDownIcon />
-          </DropdownMenuTrigger>
+          <CaretDownIcon />
+        </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="start" alignOffset={-4}>
-            {dropdownModels.map(([key, modelConfig]) => (
-              <DropdownMenuCheckboxItem
-                key={key}
-                checked={othersModelKey === key}
-                onCheckedChange={() => {
-                  setModel('others', key);
-                }}
-              >
-                <div className="flex w-full items-center justify-between text-xs">
-                  <span className="pr-4">
-                    {(debugShowAIModelMenu
-                      ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
-                      : '') + modelConfig.displayName}
-                  </span>
-                </div>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </>
+        <DropdownMenuContent align="end" className="w-80">
+          {dropdownModels.map(([key, modelConfig]) => (
+            <DropdownMenuCheckboxItem
+              key={key}
+              checked={othersModelKey === key}
+              onCheckedChange={() => {
+                setModel('others', key);
+              }}
+            >
+              <div className="flex w-full items-center justify-between text-xs">
+                <span className="pr-4">
+                  {(debugShowAIModelMenu
+                    ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
+                    : '') + modelConfig.displayName}
+                </span>
+              </div>
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   const isOthers = modelType !== 'default' && modelType !== 'max';
+  const radioGroupValue = isOthers ? othersModelKey : modelType;
 
   if (restrictedModel) {
     return null;
   }
 
   return (
-    <>
-      <DidYouKnowPopover
-        open={!loading && isOpenDidYouKnowDialog}
-        setOpen={() => setKnowsAboutModelPicker(true)}
-        title="AI model choices"
-        description="Fast is our fastest model. Max is the smartest and most capable."
-      >
-        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-          {/* Needs a min-width or it shifts as the popover closes */}
-          <PopoverTrigger
-            className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
-            onClick={(e) => {
-              setKnowsAboutModelPicker(true);
-              e.stopPropagation();
-            }}
-          >
-            {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
-            <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
-          </PopoverTrigger>
+    <DidYouKnowPopover
+      open={!loading && isOpenDidYouKnowDialog}
+      setOpen={() => setKnowsAboutModelPicker(true)}
+      title="AI model choices"
+      description="Fast is our fastest model. Max is the smartest and most capable."
+    >
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        {/* Needs a min-width or it shifts as the popover closes */}
+        <PopoverTrigger
+          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+          onClick={(e) => {
+            setKnowsAboutModelPicker(true);
+            e.stopPropagation();
+          }}
+        >
+          {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
+          <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+        </PopoverTrigger>
 
-          <PopoverContent className="flex w-80 flex-col gap-2" id="ai-model-popover-content">
-            <div className="mt-2 flex flex-col items-center">
-              <AIIcon className="mb-2 text-primary" size="lg" />
+        <PopoverContent className="flex w-80 flex-col gap-2 p-0" id="ai-model-popover-content">
+          <form>
+            <RadioGroup
+              value={radioGroupValue}
+              className="flex flex-col gap-0"
+              onValueChange={(value) => {
+                // Check if the value is a quadratic model type ('default', 'max')
+                if (value === 'default' || value === 'max') {
+                  setModel(value, defaultOthersModelKey);
+                } else {
+                  // Otherwise set as an 'others' with the specific key
+                  setModel('others', value as AIModelKey);
+                }
 
-              <h4 className="text-lg font-semibold">AI models</h4>
-
-              <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
-            </div>
-
-            <form className="flex flex-col gap-1 rounded border border-border text-sm">
-              <RadioGroup
-                value={modelType}
-                className="flex flex-col gap-0"
-                onValueChange={(value) => {
-                  if (value !== 'others') {
-                    setIsPopoverOpen(false);
-                  }
-                  setModel(value as MODEL_TYPE, defaultOthersModelKey);
-                }}
-              >
+                trackEvent('[AI].model.change', { model: value });
+                setIsPopoverOpen(false);
+              }}
+            >
+              <RadioGroupHeader>Quadratic AI models</RadioGroupHeader>
+              <div className="flex flex-col rounded text-sm">
                 {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
                   .filter(([mode]) => mode !== 'others')
                   .map(([mode, { label, description }], i) => (
-                    <Label
-                      className={cn(
-                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                        i !== 0 && 'border-t border-border'
-                      )}
-                      key={mode}
-                      htmlFor={`radio-${mode}`}
-                    >
-                      <RadioGroupItem value={mode} className="mr-2" id={`radio-${mode}`} />
-                      <strong className="font-bold">{label}</strong>
-                      <span className="ml-auto font-normal">{description}</span>
-                    </Label>
+                    <RadioGroupLineItem key={mode} value={mode} label={label} description={description} />
                   ))}
+              </div>
 
-                {/* Others section */}
-                <div className="border-t border-border">
-                  <Label
-                    className="flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
-                    htmlFor="radio-others"
-                  >
-                    <RadioGroupItem value="others" className="mr-2" id="radio-others" />
-                    <strong className="font-bold">Others</strong>
-                    <span className="ml-auto font-normal">Experimental models</span>
-                  </Label>
-                  {isOthers && (
-                    <div className="px-4 py-2">
-                      <RadioGroup
-                        value={othersModelKey}
-                        className="flex flex-col gap-1"
-                        onValueChange={(value) => {
-                          const modelEntry = othersModels.find(([key]) => key === value);
-                          if (modelEntry) {
-                            const [, modelConfig] = modelEntry;
-                            trackEvent('[AI].model.change', { model: modelConfig.model });
-                            setModel('others', value as AIModelKey);
-                            setIsPopoverOpen(false);
-                          }
-                        }}
-                      >
-                        {othersModels.map(([modelKey, modelConfig]) => (
-                          <Label
-                            className="flex cursor-pointer items-center px-2 py-1.5 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground"
-                            key={modelKey}
-                            htmlFor={`radio-${modelKey}`}
-                            onClick={() => {
-                              if (modelKey === othersModelKey) {
-                                setIsPopoverOpen(false);
-                              }
-                            }}
-                          >
-                            <RadioGroupItem value={modelKey} className="mr-2" id={`radio-${modelKey}`} />
-                            <span>{modelConfig.displayName}</span>
-                          </Label>
-                        ))}
-                      </RadioGroup>
-                    </div>
-                  )}
-                </div>
-              </RadioGroup>
-            </form>
-          </PopoverContent>
-        </Popover>
-      </DidYouKnowPopover>
-    </>
+              <hr className="my-2 border-border" />
+
+              <RadioGroupHeader>
+                Other AI models{' '}
+                {!isOnPaidPlan && (
+                  <span className="font-normal">
+                    (exclusive to Pro,{' '}
+                    <Link to={ROUTES.TEAM_BILLING(teamUuid)} className="text-primary hover:underline">
+                      upgrade now
+                    </Link>
+                    )
+                  </span>
+                )}
+              </RadioGroupHeader>
+
+              <div className="flex flex-col rounded text-sm">
+                {othersModels.map(([modelKey, modelConfig], i) => (
+                  <RadioGroupLineItem
+                    key={modelKey}
+                    value={modelKey}
+                    label={modelConfig.displayName}
+                    description={modelConfig.displayProvider ?? 'C'}
+                    disabled={!isOnPaidPlan}
+                  />
+                ))}
+              </div>
+            </RadioGroup>
+          </form>
+        </PopoverContent>
+      </Popover>
+    </DidYouKnowPopover>
   );
 });
+
+function RadioGroupHeader({ children }: { children: React.ReactNode }) {
+  return <h5 className="mb-0 px-4 pb-2 pt-2 text-xs font-medium text-muted-foreground">{children}</h5>;
+}
+
+function RadioGroupLineItem({
+  value,
+  label,
+  description,
+  disabled,
+}: {
+  value: string;
+  label: string;
+  description: string;
+  disabled?: boolean;
+}) {
+  return (
+    <Label
+      className={
+        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground'
+      }
+      key={value}
+      htmlFor={`radio-${value}`}
+    >
+      <RadioGroupItem disabled={disabled} value={value} className="mr-2" id={`radio-${value}`} />
+      <strong className="font-medium">{label}</strong>
+      <span className="ml-auto font-normal text-muted-foreground">{description}</span>
+    </Label>
+  );
+}

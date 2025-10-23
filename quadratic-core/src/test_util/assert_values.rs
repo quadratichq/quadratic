@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{CellValue, Pos, controller::GridController, grid::SheetId};
+use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::SheetId};
 
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
@@ -30,6 +30,13 @@ pub fn assert_display_cell_value_first_sheet(
     value: &str,
 ) {
     assert_display_cell_value(grid_controller, grid_controller.sheet_ids()[0], x, y, value);
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display(gc: &GridController, sheet_pos: SheetPos, value: &str) {
+    assert_display_cell_value(gc, sheet_pos.sheet_id, sheet_pos.x, sheet_pos.y, value);
 }
 
 /// Run an assertion that a cell value is equal to the given value
@@ -72,14 +79,27 @@ pub fn assert_display_cell_value_pos(
     assert_display_cell_value(grid_controller, sheet_id, pos.x, pos.y, value);
 }
 
+#[track_caller]
+#[cfg(test)]
+pub fn assert_code(gc: &GridController, pos: SheetPos, value: &str) {
+    let Some(code_run) = gc.sheet(pos.sheet_id).code_run_at(&pos.into()) else {
+        panic!("No code cell at {pos}");
+    };
+    assert_eq!(
+        value, code_run.code,
+        "Cell at {pos} does not have the value {:?}, it's actually {:?}",
+        value, code_run.code
+    );
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
 pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
-    let cell_value = sheet
-        .edit_code_value(Pos { x, y }, gc.a1_context())
-        .unwrap();
+    let Some(cell_value) = sheet.edit_code_value(Pos { x, y }, gc.a1_context()) else {
+        panic!("Expected code cell at {}", Pos { x, y });
+    };
 
     assert_eq!(
         value, cell_value.code_string,
@@ -138,10 +158,9 @@ mod tests {
     fn test_assert_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a test cell
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".into(), None, false);
 
         // Test the assertion passes when values match
         assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Text("test".to_string()));
@@ -151,10 +170,9 @@ mod tests {
     fn test_assert_display_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a test cell
-        sheet.set_cell_value(pos![A1], CellValue::Text("display test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "display test".into(), None, false);
 
         // Test the assertion passes when values match
         assert_display_cell_value(&gc, sheet_id, 1, 1, "display test");
@@ -164,12 +182,11 @@ mod tests {
     fn test_assert_cell_value_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a row of test cells
-        sheet.set_cell_value(pos![A1], CellValue::Text("one".to_string()));
-        sheet.set_cell_value(pos![B1], CellValue::Text("two".to_string()));
-        sheet.set_cell_value(pos![C1], CellValue::Text("three".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "two".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!C1], "three".into(), None, false);
 
         // Test the assertion passes for a row
         assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["one", "two", "three"]);
