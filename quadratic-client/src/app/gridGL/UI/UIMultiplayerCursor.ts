@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
@@ -12,12 +13,22 @@ const FILL_ALPHA = 0.05;
 const CURSOR_INPUT_ALPHA = 0.333 / ALPHA;
 
 export class UIMultiPlayerCursor extends Graphics {
-  dirty = false;
+  dirty = true;
 
   constructor() {
     super();
     this.alpha = ALPHA;
+    events.on('multiplayerCursor', this.setDirty);
   }
+
+  destroy() {
+    events.off('multiplayerCursor', this.setDirty);
+    super.destroy();
+  }
+
+  private setDirty = () => {
+    this.dirty = true;
+  };
 
   private drawCursor({
     color,
@@ -34,7 +45,6 @@ export class UIMultiPlayerCursor extends Graphics {
   }) {
     const sheet = sheets.sheet;
     let { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
-
     if (editing) {
       const cellEdit = document.querySelector(`.multiplayer-cell-edit-${sessionId}`) as HTMLDivElement;
       // it's possible that we run this before react creates the DOM element with this class
