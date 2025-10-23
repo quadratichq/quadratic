@@ -4,8 +4,6 @@ use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use rust_decimal::prelude::ToPrimitive;
 
-use crate::SheetRect;
-use crate::Value;
 use crate::a1::A1Selection;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
@@ -27,6 +25,7 @@ use crate::{
     parquet::parquet_to_array,
     small_timestamp::SmallTimestamp,
 };
+use crate::{SheetRect, Value};
 use calamine::{
     Data as ExcelData, Error as CalamineError, HorizontalAlignment, NumberFormat,
     Reader as ExcelReader, Sheets, VerticalAlignment, open_workbook_from_rs,

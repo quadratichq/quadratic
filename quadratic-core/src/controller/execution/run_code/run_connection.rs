@@ -1,13 +1,30 @@
 use anyhow::Result;
 
 use crate::{
-    RunError, RunErrorMsg, SheetPos,
+    Pos, Rect, RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
+    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, Sheet, SheetId},
 };
 
 impl GridController {
+    /// Returns a string of cells for a connection. For more than one cell, the
+    /// cells are comma-delimited.
+    pub fn get_cells_comma_delimited_string(sheet: &Sheet, rect: Rect) -> String {
+        let mut response = String::new();
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                if let Some(cell) = sheet.display_value(Pos { x, y }) {
+                    if !response.is_empty() {
+                        response.push(',');
+                    }
+                    response.push_str(&cell.to_get_cells());
+                }
+            }
+        }
+        response
+    }
+
     /// Attempts to replace handlebars with the actual value from the grid
     fn replace_handlebars(
         &self,
@@ -37,25 +54,32 @@ impl GridController {
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
             let selection = A1Selection::parse_a1(content, default_sheet_id, context)?;
 
-            let Some(pos) = selection.try_to_pos(context) else {
+            // connections support either one cell or a 1d range of cells (ie,
+            // one column or row), which are entered as a comma-delimited list
+            // of entries (e.g., "2,3,10,1,...") in the query
+
+            if !selection.is_1d_range(context) {
                 return Err(A1Error::WrongCellCount(
-                    "Connections only supports one cell".to_string(),
+                    "Connections only supports one cell or a 1d range of cells".to_string(),
                 ));
-            };
+            }
 
             let Some(sheet) = self.try_sheet(selection.sheet_id) else {
                 return Err(A1Error::SheetNotFound);
             };
 
-            let value = sheet
-                .display_value(pos)
-                .map(|value| value.to_display())
-                .unwrap_or_default();
+            let rects = sheet.selection_to_rects(&selection, false, false, true, context);
+            if rects.len() > 1 {
+                return Err(A1Error::WrongCellCount(
+                    "Connections only supports one cell or a 1d range of cells".to_string(),
+                ));
+            }
+            let rect = rects[0];
+            result.push_str(&Self::get_cells_comma_delimited_string(sheet, rect));
 
             transaction
                 .cells_accessed
-                .add_sheet_pos(SheetPos::new(sheet.id, pos.x, pos.y));
-            result.push_str(&value);
+                .add_sheet_rect(rect.to_sheet_rect(sheet.id));
 
             last_match_end = whole_match.end();
         }
@@ -112,14 +136,14 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{
         Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        grid::{CodeCellLanguage, SheetId},
+        grid::{CodeCellLanguage, ConnectionKind, SheetId},
+        test_util::*,
     };
 
     #[test]
@@ -258,5 +282,61 @@ mod tests {
 
         test_error(&mut gc, r#"{{'Sheet 2'!A2}}"#, sheet_id);
         test_error(&mut gc, r#"{{'Sheet 2'!$A$2}}"#, sheet_id);
+    }
+
+    #[test]
+    fn test_get_cells_for_connections() {
+        use crate::Rect;
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Test single cell
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
+
+        assert_eq!(
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1")
+            ),
+            "test"
+        );
+
+        // Test multiple cells in the same row
+        gc.set_cell_value(pos![sheet_id!A2], "123".to_string(), None, false);
+        assert_eq!(
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:A2")
+            ),
+            "test,123"
+        );
+
+        // Test multiple cells in the same column
+        gc.set_cell_value(pos![sheet_id!B1], "456".to_string(), None, false);
+        assert_eq!(
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:B1")
+            ),
+            "test,456"
+        );
+
+        // test code cells
+        gc.set_code_cell(
+            pos![sheet_id!C1],
+            CodeCellLanguage::Formula,
+            "=A2 * 2".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            GridController::get_cells_comma_delimited_string(
+                gc.sheet(sheet_id),
+                Rect::test_a1("A1:C1")
+            ),
+            "test,456,246"
+        );
     }
 }

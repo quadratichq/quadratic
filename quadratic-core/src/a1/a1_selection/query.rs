@@ -441,6 +441,46 @@ impl A1Selection {
             || (one_cell && range.is_single_cell(a1_context))
     }
 
+    /// Returns true if the selection is a 1d range (ie, a list of columns or rows)
+    pub fn is_1d_range(&self, a1_context: &A1Context) -> bool {
+        if self.ranges.len() != 1 {
+            return false;
+        }
+        let Some(range) = self.ranges.first() else {
+            return false;
+        };
+
+        // checks if the range is a single cell
+        if range.is_single_cell(a1_context) {
+            return true;
+        }
+
+        // checks if the range is a single column or row range
+        if let CellRefRange::Sheet { range: sheet_range } = &range
+            && ((sheet_range.start.col() == sheet_range.end.col()
+                && sheet_range.start.col() != UNBOUNDED)
+                || (sheet_range.start.row() == sheet_range.end.row()
+                    && sheet_range.start.row() != UNBOUNDED))
+        {
+            return true;
+        }
+
+        // checks table ranges
+        if let CellRefRange::Table { range: table_range } = &range
+            && let Some(table) = a1_context.try_table(&table_range.table_name)
+        {
+            // a single column in a table
+            if matches!(table_range.col_range, ColRange::Col(_)) {
+                return true;
+            }
+            // the entire table with a table width == 1
+            if matches!(table_range.col_range, ColRange::All) && table.bounds.width() == 1 {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Returns true if the selection can insert column or row:
     /// The selection is a single range AND
     /// 1. is a column or row selection OR
@@ -1900,5 +1940,50 @@ mod tests {
         assert!(!A1Selection::test_a1("1:").can_insert_column_row());
         assert!(!A1Selection::test_a1("B2:").can_insert_column_row());
         assert!(!A1Selection::test_a1("*").can_insert_column_row());
+    }
+
+    #[test]
+    fn test_is_1d_range() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A"], Rect::test_a1("A1:A4")), // Single column table
+                ("Table2", &["A", "B"], Rect::test_a1("C1:D4")), // Multi-column table
+            ],
+        );
+
+        // Test single column selections
+        assert!(A1Selection::test_a1("A").is_1d_range(&context));
+        assert!(A1Selection::test_a1("B").is_1d_range(&context));
+
+        // Test single row selections
+        assert!(A1Selection::test_a1("1").is_1d_range(&context));
+        assert!(A1Selection::test_a1("2").is_1d_range(&context));
+
+        // Test single cell selections
+        assert!(A1Selection::test_a1("A1").is_1d_range(&context));
+        assert!(A1Selection::test_a1("B2").is_1d_range(&context));
+
+        // Test a range of columns
+        assert!(A1Selection::test_a1("A3:C3").is_1d_range(&context));
+        assert!(A1Selection::test_a1("D10:E10").is_1d_range(&context));
+
+        // Test a range of rows
+        assert!(A1Selection::test_a1("A3:A5").is_1d_range(&context));
+        assert!(A1Selection::test_a1("D10:D12").is_1d_range(&context));
+
+        // Test table selections
+        assert!(A1Selection::test_a1_context("Table1", &context).is_1d_range(&context)); // Single column table
+        assert!(!A1Selection::test_a1_context("Table2", &context).is_1d_range(&context)); // Multi-column table
+        assert!(A1Selection::test_a1_context("Table2[A]", &context).is_1d_range(&context)); // Single column from table
+
+        // Test non-1D ranges (should be false)
+        assert!(!A1Selection::test_a1("A:B").is_1d_range(&context)); // Multiple columns
+        assert!(!A1Selection::test_a1("1:2").is_1d_range(&context)); // Multiple rows
+        assert!(!A1Selection::test_a1("A1:B2").is_1d_range(&context)); // Rectangle
+        assert!(!A1Selection::test_a1("A1,B2").is_1d_range(&context)); // Multiple cells
+        assert!(!A1Selection::test_a1("A,B").is_1d_range(&context)); // Multiple columns
+        assert!(!A1Selection::test_a1("1,2").is_1d_range(&context)); // Multiple rows
+        assert!(!A1Selection::test_a1("*").is_1d_range(&context)); // All cells
     }
 }
