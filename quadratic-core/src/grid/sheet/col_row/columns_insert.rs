@@ -26,16 +26,18 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         column: i64,
         copy_formats: CopyFormats,
+        ignore_tables: bool,
         a1_context: &A1Context,
     ) {
         // mark hashes of old columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        self.check_insert_tables_columns(transaction, column, copy_formats);
-
         self.columns.insert_column(column);
 
-        self.adjust_insert_tables_columns(transaction, column, copy_formats);
+        if !ignore_tables {
+            self.check_insert_tables_columns(transaction, column, copy_formats);
+            self.adjust_insert_tables_columns(transaction, column, copy_formats);
+        }
 
         // update formatting (fn has maths to find column_inserted)
         self.formats.insert_column(column, copy_formats);
@@ -67,6 +69,7 @@ impl Sheet {
                     sheet_id: self.id,
                     column,
                     copy_formats,
+                    ignore_tables: true,
                 });
         }
 
@@ -124,6 +127,7 @@ mod tests {
             &mut transaction,
             1,
             CopyFormats::None,
+            false,
             &A1Context::default(),
         );
 
@@ -168,6 +172,7 @@ mod tests {
             &mut transaction,
             2,
             CopyFormats::None,
+            false,
             &A1Context::default(),
         );
 
@@ -197,6 +202,7 @@ mod tests {
             &mut transaction,
             3,
             CopyFormats::None,
+            false,
             &A1Context::default(),
         );
 
@@ -224,6 +230,7 @@ mod tests {
             &mut transaction,
             2,
             CopyFormats::None,
+            false,
             &A1Context::default(),
         );
         assert_eq!(sheet.offsets.column_width(1), 100.0);

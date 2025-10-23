@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
 
 mod same;
-mod value;
 
 pub use same::SameValue;
 

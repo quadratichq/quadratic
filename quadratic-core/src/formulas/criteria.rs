@@ -109,9 +109,7 @@ impl Criterion {
             },
             CellValue::Error(_) => false,
             CellValue::Html(_) => false,
-            CellValue::Code(_) => false,
             CellValue::Image(_) => false,
-            CellValue::Import(_) => false,
         }
     }
 
@@ -122,13 +120,14 @@ impl Criterion {
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         if let Some(range) = output_values_range
-            && range.inner.size() != eval_range.inner.size() {
-                return Err(RunErrorMsg::ExactArraySizeMismatch {
-                    expected: eval_range.inner.size(),
-                    got: range.inner.size(),
-                }
-                .with_span(range.span));
+            && range.inner.size() != eval_range.inner.size()
+        {
+            return Err(RunErrorMsg::ExactArraySizeMismatch {
+                expected: eval_range.inner.size(),
+                got: range.inner.size(),
             }
+            .with_span(range.span));
+        }
         let output_values_range = output_values_range.unwrap_or(eval_range);
 
         Ok(std::iter::zip(
