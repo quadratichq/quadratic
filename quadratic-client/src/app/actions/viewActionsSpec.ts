@@ -196,19 +196,27 @@ export const viewActionsSpec: ViewActionSpec = {
       trackEvent('[AIMentions].addReferenceFromGrid', {
         showAIAnalyst: Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst),
       });
-      // This is a little hacky, but if we emit the event immediately, the event
+
+      // Note: if we we emit `aiAnalystAddReference` immediately, the event
       // listener will not be set up yet inside the Analyst because its not
-      // rendered yet. So we have to wait for a second.
-      if (pixiAppSettings.aiAnalystState?.showAIAnalyst) {
+      // rendered yet. So if it's closed, we have to wait for it to be ready.
+      const emitReferenceEvent = () => {
         events.emit('aiAnalystAddReference', reference ?? '');
+      };
+      if (pixiAppSettings.aiAnalystState?.showAIAnalyst) {
+        // AIAnalyst is already shown, emit immediately
+        emitReferenceEvent();
       } else {
-        setTimeout(() => {
-          events.emit('aiAnalystAddReference', reference ?? '');
-        }, 0);
+        // AIAnalyst needs to be shown first, wait for it to be ready
         pixiAppSettings.setAIAnalystState?.((prev) => ({
           ...prev,
           showAIAnalyst: true,
         }));
+        const handleReady = () => {
+          events.off('aiAnalystReady', handleReady);
+          emitReferenceEvent();
+        };
+        events.on('aiAnalystReady', handleReady);
       }
 
       pixiAppSettings.setContextMenu?.({});

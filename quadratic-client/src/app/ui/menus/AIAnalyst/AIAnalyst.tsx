@@ -36,6 +36,13 @@ export const AIAnalyst = memo(() => {
     }
   }, [showAIAnalyst]);
 
+  // Emit ready event when AIAnalyst is rendered
+  useEffect(() => {
+    if (showAIAnalyst && !presentationMode) {
+      events.emit('aiAnalystReady');
+    }
+  }, [showAIAnalyst, presentationMode]);
+
   const handleResize = useCallback(
     (event: MouseEvent) => {
       const panel = aiPanelRef.current;
