@@ -29,3 +29,12 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
 
   return false; // not on a paid plan
 };
+
+export const fileCountForTeam = async (team: Team | DecryptedTeam): Promise<number> => {
+  return await dbClient.file.count({
+    where: {
+      ownerTeamId: team.id,
+      deleted: false,
+    },
+  });
+};

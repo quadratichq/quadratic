@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb, createUsers } from '../../tests/testDataGenerator';
+import { clearDb, createFile as createFileData, createUsers, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
 const validPayload = {
   name: 'new_file_with_name',
@@ -122,6 +122,60 @@ describe('POST /v0/files', () => {
         .expect(expectValidResponse)
         .expect((res) => {
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
+        });
+    });
+  });
+
+  describe('file limit for paid plan', () => {
+    it('rejects creating a file when paid team has reached the 3 file limit', async () => {
+      // Create a new user and team for this test
+      const [limitTestUser] = await createUsers(['limit_test_user']);
+
+      const limitTeam = await dbClient.team.create({
+        data: {
+          name: 'limit_test_team',
+          uuid: '00000000-0000-4000-8000-000000000002',
+          UserTeamRole: {
+            create: [
+              {
+                userId: limitTestUser.id,
+                role: 'OWNER',
+              },
+            ],
+          },
+        },
+      });
+
+      // Upgrade team to paid plan
+      await upgradeTeamToPro(limitTeam.id);
+
+      // Create 3 files (the limit)
+      for (let i = 0; i < 3; i++) {
+        await createFileData({
+          data: {
+            uuid: `00000000-0000-0000-0000-0000000000${i.toString().padStart(2, '0')}`,
+            name: `Test File ${i}`,
+            creatorUserId: limitTestUser.id,
+            ownerTeamId: limitTeam.id,
+          },
+        });
+      }
+
+      // todo: fails here...
+
+      // Attempt to create a 4th file and expect rejection
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'file_over_limit',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000002',
+        })
+        .set('Authorization', 'Bearer ValidToken limit_test_user')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe('Team has reached the maximum number of files for the paid plan.');
         });
     });
   });

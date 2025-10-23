@@ -2,12 +2,14 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { MAX_FILE_COUNT_FOR_PAID_PLAN } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { fileCountForTeam, getIsOnPaidPlan } from '../../utils/billing';
 import { createFile } from '../../utils/createFile';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -32,9 +34,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
 
   // Check that the team exists and the user can create in it
   const {
-    team: { id: teamId },
+    team,
     userMakingRequest: { permissions: teamPermissions },
   } = await getTeam({ uuid: teamUuid, userId });
+
+  const teamId = team.id;
+
+  const isPaidPlan = await getIsOnPaidPlan(team);
+
+  if (isPaidPlan && MAX_FILE_COUNT_FOR_PAID_PLAN && (await fileCountForTeam(team)) >= MAX_FILE_COUNT_FOR_PAID_PLAN) {
+    throw new ApiError(403, 'Team has reached the maximum number of files for the paid plan.');
+  }
+
   const canView = teamPermissions.includes('TEAM_VIEW');
   const canEdit = teamPermissions.includes('TEAM_EDIT');
 
