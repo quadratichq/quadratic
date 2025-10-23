@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos, Value,
+    CellValue, RefAdjust, SheetPos, Value,
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -100,6 +100,83 @@ impl GridController {
         }
 
         ops.push(Operation::ComputeCode { sheet_pos });
+        ops
+    }
+
+    pub fn set_formula_operations(
+        &self,
+        selection: A1Selection,
+        code_string: String,
+        code_cell_name: Option<String>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        let rects = selection.rects(&self.a1_context);
+        if rects.is_empty() {
+            return ops;
+        }
+        let first_pos = rects[0].min.to_sheet_pos(selection.sheet_id);
+        rects.iter().for_each(|rect| {
+            for x in rect.min.x..=rect.max.x {
+                for y in rect.min.y..=rect.max.y {
+                    let sheet_pos = SheetPos {
+                        x,
+                        y,
+                        sheet_id: selection.sheet_id,
+                    };
+
+                    let name = code_cell_name
+                        .clone()
+                        .unwrap_or_else(|| format!("{}1", CodeCellLanguage::Formula.as_string()));
+                    let mut code_run = CodeRun {
+                        language: CodeCellLanguage::Formula,
+                        code: code_string.clone(),
+                        ..Default::default()
+                    };
+                    if first_pos != sheet_pos {
+                        let ref_adjust = RefAdjust {
+                            sheet_id: Some(first_pos.sheet_id),
+                            relative_only: true,
+                            dx: x - first_pos.x,
+                            dy: y - first_pos.y,
+                            x_start: 0,
+                            y_start: 0,
+                        };
+                        code_run.adjust_references(
+                            selection.sheet_id,
+                            self.a1_context(),
+                            sheet_pos,
+                            ref_adjust,
+                        );
+                    }
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(DataTable {
+                            kind: DataTableKind::CodeRun(code_run),
+                            name: CellValue::Text(name),
+                            header_is_first_row: false,
+                            show_name: None,
+                            show_columns: None,
+                            column_headers: None,
+                            sort: None,
+                            sort_dirty: false,
+                            display_buffer: None,
+                            value: Value::Single(CellValue::Blank),
+                            spill_value: false,
+                            spill_data_table: false,
+                            last_modified: now(),
+                            alternating_colors: true,
+                            formats: None,
+                            borders: None,
+                            chart_pixel_output: None,
+                            chart_output: None,
+                        }),
+                        index: usize::MAX,
+                        ignore_old_data_table: false,
+                    });
+                    ops.push(Operation::ComputeCode { sheet_pos });
+                }
+            }
+        });
         ops
     }
 
