@@ -18,7 +18,10 @@ use super::{
 };
 
 pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
-    Ok(Sheet {
+    let columns = import_column_builder(sheet.columns);
+    let data_tables = import_data_table_builder(sheet.data_tables, &columns)?;
+
+    let sheet = Sheet {
         id: SheetId::from_str(&sheet.id.id)?,
         name: sheet.name,
         color: sheet.color,
@@ -28,11 +31,13 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         offsets: SheetOffsets::import(sheet.offsets),
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
-        columns: import_column_builder(sheet.columns),
-        data_tables: import_data_table_builder(sheet.data_tables)?,
+        columns,
+        data_tables,
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
-    })
+    };
+
+    Ok(sheet)
 }
 
 pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {

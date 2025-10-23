@@ -93,7 +93,7 @@ pub(crate) fn find_date_series(options: &SeriesOptions) -> Option<Vec<CellValue>
         (0, 0, 1)
     } else {
         let (CellValue::Date(first), CellValue::Date(second)) =
-            (&options.series[0].0, &options.series[1].0)
+            (&options.series[0], &options.series[1])
         else {
             return None;
         };
@@ -102,7 +102,7 @@ pub(crate) fn find_date_series(options: &SeriesOptions) -> Option<Vec<CellValue>
 
         for i in 2..options.series.len() {
             let (CellValue::Date(first), CellValue::Date(second)) =
-                (&options.series[i - 1].0, &options.series[i].0)
+                (&options.series[i - 1], &options.series[i])
             else {
                 return None;
             };
@@ -116,12 +116,12 @@ pub(crate) fn find_date_series(options: &SeriesOptions) -> Option<Vec<CellValue>
         diff
     };
     let last = if options.negative {
-        &options.series[0]
+        options.series[0].to_owned()
     } else {
-        &options.series[options.series.len() - 1]
+        options.series[options.series.len() - 1].to_owned()
     };
 
-    let CellValue::Date(mut last) = last.0 else {
+    let CellValue::Date(mut last) = last else {
         return None;
     };
 
@@ -139,7 +139,7 @@ pub(crate) fn find_date_series(options: &SeriesOptions) -> Option<Vec<CellValue>
 
 #[cfg(test)]
 mod tests {
-    use crate::{Pos, grid::series::find_auto_complete};
+    use crate::grid::series::find_auto_complete;
 
     use super::*;
     use chrono::NaiveDate;
@@ -148,8 +148,8 @@ mod tests {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
     }
 
-    fn date(year: i32, month: u32, day: u32) -> (CellValue, Option<Pos>) {
-        (CellValue::Date(naked_date(year, month, day)), None)
+    fn date(year: i32, month: u32, day: u32) -> CellValue {
+        CellValue::Date(naked_date(year, month, day))
     }
 
     #[test]

@@ -20,11 +20,12 @@ import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
+import { handleSentryReplays } from '@/shared/utils/sentry';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
@@ -72,7 +73,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   };
 
   // initialize the core module within client
-  const initializeCore = async () => {
+  const initializeCoreClient = async () => {
     startupTimer.start('file.loader.initCoreClient');
     await initCoreClient();
     startupTimer.end('file.loader.initCoreClient');
@@ -90,7 +91,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     loadFileFromApi(uuid, isVersionHistoryPreview),
     loadPixi(),
     initWorkers(),
-    initializeCore(),
+    initializeCoreClient(),
   ]);
 
   // we were redirected to login, so we don't need to do anything else
@@ -143,6 +144,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
+
     if (
       !isVersionHistoryPreview &&
       !data.file.thumbnail &&
@@ -163,11 +165,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
 
+  handleSentryReplays(data.team.settings.analyticsAi);
+
   startupTimer.end('file.loader');
   return data;
 };
 
-export const Component = () => {
+export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
@@ -209,7 +213,7 @@ export const Component = () => {
       <QuadraticAppDebugSettings />
     </RecoilRoot>
   );
-};
+});
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

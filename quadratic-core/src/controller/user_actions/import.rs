@@ -21,8 +21,8 @@ impl GridController {
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_csv_operations(
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_csv_operations(
             sheet_id,
             file,
             file_name,
@@ -36,7 +36,7 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports an Excel file into the grid.
@@ -49,15 +49,15 @@ impl GridController {
         file_name: &str,
         cursor: Option<String>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_excel_operations(file, file_name)?;
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_excel_operations(file, file_name)?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports a Parquet file into the grid.
@@ -73,15 +73,16 @@ impl GridController {
         cursor: Option<String>,
         updater: Option<impl Fn(&str, u32, u32)>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
+    ) -> Result<String> {
+        let (ops, response_prompt) =
+            self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 }
 
@@ -91,11 +92,8 @@ pub(crate) mod tests {
 
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, SheetPos, Span,
-        controller::operations::operation::Operation,
-        grid::{CodeCellLanguage, CodeCellValue},
-        number::decimal_from_str,
-        test_util::*,
-        wasm_bindings::js::clear_js_calls,
+        controller::operations::operation::Operation, grid::CodeCellLanguage,
+        number::decimal_from_str, test_util::*, wasm_bindings::js::clear_js_calls,
     };
 
     use chrono::{NaiveDate, NaiveDateTime};
@@ -295,7 +293,7 @@ pub(crate) mod tests {
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
                 csv.as_bytes(),
@@ -360,13 +358,13 @@ pub(crate) mod tests {
             sheet.cell_value((7, 2).into()).unwrap(),
             CellValue::Number(decimal_from_str("1").unwrap())
         );
-        assert_eq!(
-            sheet.cell_value((8, 2).into()).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "0/0".to_string()
-            })
+        assert_code_language(
+            &gc,
+            pos![sheet_id!8,2],
+            CodeCellLanguage::Formula,
+            "0/0".to_string(),
         );
+
         assert_eq!(
             sheet.display_value((8, 2).into()).unwrap(),
             CellValue::Error(Box::new(RunError {
@@ -423,13 +421,10 @@ pub(crate) mod tests {
         for y in y_start..=y_end {
             let pos = Pos { x: 1, y };
             // all cells should be formula code cells
-            let code_cell = sheet.cell_value(pos).unwrap();
-            match &code_cell {
-                CellValue::Code(code_cell_value) => {
-                    assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
-                }
-                _ => panic!("expected code cell"),
-            }
+            let code_cell = sheet
+                .code_run_at(&pos)
+                .unwrap_or_else(|| panic!("expected code cell"));
+            assert_eq!(code_cell.language, CodeCellLanguage::Formula);
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet

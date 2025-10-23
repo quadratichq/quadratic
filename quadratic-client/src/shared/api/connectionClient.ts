@@ -31,7 +31,7 @@ const SqlSchema = z.object({
     })
   ),
 });
-type SqlSchemaResponse = z.infer<typeof SqlSchema>;
+export type SqlSchemaResponse = z.infer<typeof SqlSchema>;
 
 const StaticIpsSchema = z.object({
   static_ips: z.array(z.string()),

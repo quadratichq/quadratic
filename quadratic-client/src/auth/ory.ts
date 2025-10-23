@@ -150,10 +150,4 @@ export const oryClient: AuthClient = {
   async resetPassword(_) {
     throw new Error('resetPassword called in Ory');
   },
-  async sendMagicAuthCode(_) {
-    throw new Error('sendMagicAuthCode called in Ory');
-  },
-  async authenticateWithMagicCode(_) {
-    throw new Error('authenticateWithMagicCode called in Ory');
-  },
 };

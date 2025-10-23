@@ -52,14 +52,13 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::*;
     use crate::{
-        CellValue, Rect, SheetPos,
-        cellvalue::Import,
+        Rect, SheetPos,
         controller::{
             active_transactions::transaction_name::TransactionName,
             user_actions::import::tests::{simple_csv, simple_csv_at},
         },
-        test_util::print_table_in_rect,
     };
 
     use super::*;
@@ -69,8 +68,6 @@ mod tests {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
-
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 12));
 
         let dest_pos = pos![F1];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
@@ -90,32 +87,23 @@ mod tests {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos),
-            Some(CellValue::Import(Import::new(file_name.to_string())))
-        );
-
-        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        assert_import(&gc, sheet_pos, file_name, 4, 12);
 
         let dest_pos = pos![F4];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
 
-        let ops = vec![Operation::MoveCells {
-            source: data_table.output_sheet_rect(sheet_pos, true),
-            dest: sheet_dest_pos,
-            columns: false,
-            rows: false,
-        }];
-        gc.start_user_ai_transaction(ops, None, TransactionName::MoveCells, false);
-        print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+        gc.move_cells(
+            data_table.output_sheet_rect(sheet_pos, true),
+            sheet_dest_pos,
+            false,
+            false,
+            None,
+            false,
+        );
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
         assert!(gc.sheet(sheet_id).data_table_at(&pos).is_none());
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(dest_pos),
-            Some(CellValue::Import(Import::new(file_name.to_string())))
-        );
-        assert!(gc.sheet(sheet_id).data_table_at(&dest_pos).is_some());
+        assert_import(&gc, sheet_dest_pos, file_name, 4, 12);
     }
 }

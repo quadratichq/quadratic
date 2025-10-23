@@ -107,6 +107,7 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormula,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
@@ -514,6 +515,29 @@ class QuadraticCore {
     });
   }
 
+  setFormula(options: {
+    sheetId: string;
+    selection: string;
+    codeString: string;
+    codeCellName?: string;
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormula) => {
+        resolve(message.transactionId);
+      };
+      this.send({
+        type: 'clientCoreSetFormula',
+        id,
+        sheetId: options.sheetId,
+        selection: options.selection,
+        codeString: options.codeString,
+        codeCellName: options.codeCellName,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -556,15 +580,16 @@ class QuadraticCore {
 
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
-  ): Promise<{
-    contents?: ArrayBufferLike;
-    version?: string;
-    error?: string;
-  }> => {
+  ): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> => {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientImportFile) => {
-        resolve(message);
+        resolve({
+          contents: message.contents,
+          version: message.version,
+          error: message.error,
+          responsePrompt: message.responsePrompt,
+        });
       };
       this.send(
         {

@@ -1,10 +1,10 @@
 #[cfg(test)]
 use crate::{
-    CellValue, Pos,
+    Pos,
     controller::{
         GridController, transaction_types::JsCellValueResult, transaction_types::JsCodeResult,
     },
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId},
 };
 
 #[cfg(test)]
@@ -89,7 +89,7 @@ pub fn test_create_html_chart(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_data_table_size, sheet};
+    use crate::test_util::*;
 
     use super::*;
 
@@ -105,16 +105,17 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos, width, height);
 
         // Verify code cell was created
-        let sheet = sheet(&gc, sheet_id);
-        let cell_value = sheet.cell_value(pos).unwrap();
-        assert!(matches!(
-            cell_value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Javascript,
-                code: ref c,
-            }) if c == "code"
-        ));
-        assert!(sheet.data_table_at(&pos).unwrap().is_image());
+        assert_code_language(
+            &gc,
+            pos.to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            "code".to_string(),
+        );
+        assert!(
+            gc.data_table_at(pos.to_sheet_pos(sheet_id))
+                .unwrap()
+                .is_image()
+        );
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }
 
@@ -131,14 +132,12 @@ mod tests {
 
         // Verify code cell was created
         let sheet = sheet(&gc, sheet_id);
-        let cell_value = sheet.cell_value(pos).unwrap();
-        assert!(matches!(
-            cell_value,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: ref c,
-            }) if c == "<html></html>"
-        ));
+        assert_code_language(
+            &gc,
+            pos.to_sheet_pos(sheet_id),
+            CodeCellLanguage::Python,
+            "<html></html>".to_string(),
+        );
         assert!(sheet.data_table_at(&pos).unwrap().is_html());
         assert_data_table_size(&gc, sheet_id, pos, width as usize, height as usize, false);
     }

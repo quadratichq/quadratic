@@ -13,10 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
-export const FeedbackMenu = () => {
+export const FeedbackMenu = memo(() => {
   const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
   // We'll keep the user's state around unless they explicitly cancel or things submitted successfully
   const [value, setValue] = useLocalStorage('feedback-message', '');
@@ -120,4 +120,4 @@ export const FeedbackMenu = () => {
       </DialogContent>
     </Dialog>
   );
-};
+});

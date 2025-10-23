@@ -142,6 +142,8 @@ export const workosClient: AuthClient = {
     const client = await getClient();
     await client.signOut({ navigate: false });
     await disposeClient();
+    // Clear the custom workos-has-session cookie
+    document.cookie = 'workos-has-session=; Max-Age=0; Path=/; Secure; SameSite=None';
   },
 
   /**
@@ -231,17 +233,6 @@ export const workosClient: AuthClient = {
   async resetPassword(args) {
     await apiClient.auth.resetPassword(args);
     await disposeClient();
-  },
-
-  async sendMagicAuthCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode(args);
-    await handlePendingAuthenticationToken(pendingAuthenticationToken);
-  },
-
-  async authenticateWithMagicCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithMagicCode(args);
-    await handlePendingAuthenticationToken(pendingAuthenticationToken);
-    await handleRedirectTo();
   },
 };
 

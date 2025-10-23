@@ -19,7 +19,7 @@ services:
       - all
 
   postgres:
-    image: postgres:15
+    image: postgres:17.4
     container_name: postgres
     restart: always
     ports:
@@ -390,7 +390,7 @@ services:
   # databases to be used for testing by the connection service - postgres, mysql, mssql
 
   postgres-connection:
-    image: postgres:15
+    image: postgres:17.4
     restart: always
     container_name: postgres-connection
     ports:

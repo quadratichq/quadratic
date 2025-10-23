@@ -9,21 +9,22 @@ import {
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
+import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
-import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
+import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
+import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
-import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
-import CodeEditor from '@/app/ui/menus/CodeEditor';
-import CommandPalette from '@/app/ui/menus/CommandPalette';
-import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
-import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
-import SheetBar from '@/app/ui/menus/SheetBar';
-import Toolbar from '@/app/ui/menus/Toolbar';
+import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
+import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
+import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
+import { ConnectionsMenu } from '@/app/ui/menus/ConnectionsMenu/ConnectionsMenu';
+import { FeedbackMenu } from '@/app/ui/menus/FeedbackMenu/FeedbackMenu';
+import { SheetBar } from '@/app/ui/menus/SheetBar/SheetBar';
+import { Toolbar } from '@/app/ui/menus/Toolbar/Toolbar';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
 import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
@@ -125,6 +126,7 @@ export default function QuadraticUI() {
           }}
         >
           {canEditFile && isAuthenticated && <AIAnalyst />}
+          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

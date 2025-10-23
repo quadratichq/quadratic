@@ -137,9 +137,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::DateTime(dt) => Ok(dt.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
-            CellValue::Code(_) => Ok(String::new()),
             CellValue::Image(_) => Ok(String::new()),
-            CellValue::Import(_) => Ok(String::new()),
         }
     }
 }
@@ -180,9 +178,7 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(Decimal::zero()),
-            CellValue::Code(_) => Ok(Decimal::zero()),
             CellValue::Image(_) => Ok(Decimal::zero()),
-            CellValue::Import(_) => Ok(Decimal::zero()),
         }
     }
 }

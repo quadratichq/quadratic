@@ -4,8 +4,10 @@ use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use rust_decimal::prelude::ToPrimitive;
 
+use crate::a1::A1Selection;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
+use crate::grid::{CodeRun, DataTableKind};
 use crate::{
     Array, CellValue, Pos, SheetPos,
     cell_values::CellValues,
@@ -16,13 +18,14 @@ use crate::{
     },
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeCellValue, DataTable,
-        NumericFormat, NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
+        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, DataTable, NumericFormat,
+        NumericFormatKind, Sheet, SheetId, fix_names::sanitize_table_name,
         formats::SheetFormatUpdates, unique_data_table_name,
     },
     parquet::parquet_to_array,
     small_timestamp::SmallTimestamp,
 };
+use crate::{SheetRect, Value};
 use calamine::{
     Data as ExcelData, Error as CalamineError, HorizontalAlignment, NumberFormat,
     Reader as ExcelReader, Sheets, VerticalAlignment, open_workbook_from_rs,
@@ -112,7 +115,7 @@ impl GridController {
         insert_at: Pos,
         delimiter: Option<u8>,
         create_table: Option<bool>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -140,7 +143,8 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                        let (cell_value, format_update) =
+                            CellValue::string_to_cell_value(value, false);
 
                         cell_values.set(x as u32, y, cell_value);
 
@@ -169,6 +173,7 @@ impl GridController {
         }
 
         let mut ops = vec![];
+        let response_prompt;
 
         let apply_first_row_as_header = match create_table {
             Some(true) => true,
@@ -180,12 +185,8 @@ impl GridController {
             let cell_values: Array = cell_values.into();
 
             let import = Import::new(sanitize_table_name(file_name.into()));
-            let mut data_table = DataTable::from((
-                import.to_owned(),
-                Array::new_empty(cell_values.size()),
-                self.a1_context(),
-            ));
-            data_table.value = cell_values.into();
+            let mut data_table =
+                DataTable::from((import.to_owned(), cell_values, self.a1_context()));
 
             if !sheet_format_updates.is_default() {
                 data_table
@@ -195,14 +196,33 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
-            ops.push(Operation::AddDataTable {
+            let output_rect = data_table.output_rect(sheet_pos.into(), true);
+            let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+            response_prompt = format!(
+                "Imported {} as a data table at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table,
-                cell_value: CellValue::Import(import),
-                index: None,
+                data_table: Some(data_table),
+                index: usize::MAX,
+                ignore_old_data_table: true,
             });
             drop(sheet_format_updates);
         } else {
+            let a1_selection = A1Selection::from_rect(SheetRect::from_numbers(
+                sheet_pos.x,
+                sheet_pos.y,
+                cell_values.w as i64,
+                cell_values.h as i64,
+                sheet_id,
+            ));
+            response_prompt = format!(
+                "Imported {} as a flat data in sheet at {}",
+                file_name,
+                a1_selection.to_string(None, self.a1_context())
+            );
             ops.push(Operation::SetCellValues {
                 sheet_pos,
                 values: cell_values,
@@ -214,7 +234,7 @@ impl GridController {
             });
         }
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 
     /// Imports an Excel file into the grid.
@@ -222,8 +242,9 @@ impl GridController {
         &mut self,
         file: &[u8],
         file_name: &str,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let mut ops: Vec<Operation> = vec![];
+        let mut response_prompt = format!("Imported {} as sheets - ", file_name);
         let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
         let xlsx_range_to_pos = |(row, col)| Pos {
             x: col as i64 + 1,
@@ -331,7 +352,7 @@ impl GridController {
                     let sheet = gc
                         .try_sheet_mut(sheet_id)
                         .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
-                    sheet.columns.set_value(&pos, cell_value);
+                    sheet.set_value(pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -359,12 +380,22 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        let cell_value = CellValue::Code(CodeCellValue {
-                            language: CodeCellLanguage::Formula,
-                            code: cell.to_string(),
-                        });
-
-                        sheet.columns.set_value(&pos, cell_value);
+                        sheet.data_table_insert_full(
+                            sheet_pos.into(),
+                            DataTable::new(
+                                DataTableKind::CodeRun(CodeRun {
+                                    language: CodeCellLanguage::Formula,
+                                    code: cell.to_string(),
+                                    ..Default::default()
+                                }),
+                                &formula_start_name,
+                                Value::Single(CellValue::Blank),
+                                false,
+                                None,
+                                None,
+                                None,
+                            ),
+                        );
 
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
@@ -524,6 +555,12 @@ impl GridController {
         }
 
         for (index, sheet) in gc.grid.sheets.into_values().enumerate() {
+            if index == 0 {
+                response_prompt += &sheet.name;
+            } else {
+                response_prompt += &format!(", {}", sheet.name);
+            }
+
             // replace the first sheet if the grid is empty
             if index == 0 && self.grid.is_empty() {
                 ops.push(Operation::ReplaceSheet {
@@ -537,7 +574,7 @@ impl GridController {
             }
         }
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 
     /// Imports a Parquet file into the grid.
@@ -548,21 +585,29 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         updater: Option<impl Fn(&str, u32, u32)>,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, String)> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
-        let ops = vec![Operation::AddDataTable {
+        let output_rect = data_table.output_rect(insert_at, true);
+        let a1_selection = A1Selection::from_rect(output_rect.to_sheet_rect(sheet_id));
+        let response_prompt = format!(
+            "Imported {} as a data table at {}",
+            file_name,
+            a1_selection.to_string(None, self.a1_context())
+        );
+
+        let ops = vec![Operation::SetDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
-            data_table,
-            cell_value: CellValue::Import(import),
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         }];
 
-        Ok(ops)
+        Ok((ops, response_prompt))
     }
 }
 
@@ -752,7 +797,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                         excel_serial_to_date_time(f64_val, true, false, false)
                     };
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(&pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -782,7 +827,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 {
                     let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(&pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -805,7 +850,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, true, true);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_date_format(active_format) {
@@ -819,7 +864,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, false, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_time_format(active_format) {
@@ -833,7 +878,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, false, true, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else {
@@ -875,7 +920,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_date_format(format_string) {
@@ -888,7 +933,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_time_format(format_string) {
@@ -901,7 +946,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else {
@@ -1354,7 +1399,7 @@ mod test {
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 SIMPLE_CSV.as_bytes(),
@@ -1371,22 +1416,21 @@ mod test {
         ];
         let context = gc.a1_context();
         let import = Import::new(sanitize_table_name(file_name.into()));
-        let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
         expected_data_table.apply_first_row_as_header();
 
         let data_table = match ops[0].clone() {
-            Operation::AddDataTable { data_table, .. } => data_table,
-            _ => panic!("Expected AddDataTable operation"),
+            Operation::SetDataTable { data_table, .. } => data_table,
+            _ => panic!("Expected SetDataTable operation"),
         };
-        expected_data_table.last_modified = data_table.last_modified;
+        expected_data_table.last_modified = data_table.as_ref().unwrap().last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTable {
+        let expected = Operation::SetDataTable {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
-            data_table: expected_data_table,
-            cell_value,
-            index: None,
+            data_table: Some(expected_data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
 
         assert_eq!(ops.len(), 1);
@@ -1405,7 +1449,7 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 sheet_id,
                 csv.as_bytes(),
@@ -1418,16 +1462,16 @@ mod test {
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTable {
+            Operation::SetDataTable {
                 sheet_pos,
                 data_table,
                 ..
             } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected SetDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 1),
+            data_table.as_ref().unwrap().cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }
@@ -1487,12 +1531,11 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
         assert_eq!(sheet.cell_value((1, 6).into()), None);
-        assert_eq!(
-            sheet.cell_value((4, 2).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "C1:C5".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 2],
+            CodeCellLanguage::Formula,
+            "C1:C5".into(),
         );
         assert_eq!(sheet.cell_value((4, 1).into()), None);
     }
@@ -1761,13 +1804,13 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.cell_value((4, 3).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E3,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 3],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E3,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 3).into()),
             Some(CellValue::Date(
@@ -1775,25 +1818,25 @@ mod test {
             ))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 12],
+            CodeCellLanguage::Formula,
+            "D5-D10".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 12).into()),
             Some(CellValue::Number(3831163.into()))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 29).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E29,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 29],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E29,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 29).into()),
             Some(CellValue::Date(
@@ -1801,13 +1844,13 @@ mod test {
             ))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 67).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E67,-1)".into()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 67],
+            CodeCellLanguage::Formula,
+            "EOMONTH(E67,-1)".into(),
         );
+
         assert_eq!(
             sheet.display_value((4, 67).into()),
             Some(CellValue::Date(
@@ -1938,12 +1981,11 @@ mod test {
             Some(CellValue::Text("Hosting & Platform Fees".to_string()))
         );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".to_string()
-            }))
+        assert_code_language(
+            &gc,
+            pos![sheet_id!4, 12],
+            CodeCellLanguage::Formula,
+            "D5-D10".into(),
         );
 
         let value = to_number(4, 14);
@@ -1972,12 +2014,7 @@ mod test {
 
         let formula_count = (5..20)
             .flat_map(|row| (4..10).map(move |col| (col, row)))
-            .filter(|(col, row)| {
-                matches!(
-                    sheet.cell_value((*col, *row).into()),
-                    Some(CellValue::Code(_))
-                )
-            })
+            .filter(|(col, row)| sheet.code_run_at(&Pos { x: *col, y: *row }).is_some())
             .count();
 
         assert!(
@@ -2177,25 +2214,21 @@ mod test {
 
         // test date format detection
         let pos6 = pos![F1];
-        sheet
-            .columns
-            .set_value(&pos6, CellValue::Number(44926.into())); // Excel serial date
+        sheet.set_value(pos6, CellValue::Number(44926.into())); // Excel serial date
         import_excel_number_format_string(sheet, pos6, "yyyy-mm-dd");
         assert!(sheet.formats.date_time.get(pos6).is_some());
         // The date format should be applied but the value might not be automatically converted in this context
 
         // test time format detection
         let pos7 = pos![G1];
-        sheet
-            .columns
-            .set_value(&pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
+        sheet.set_value(pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
         import_excel_number_format_string(sheet, pos7, "hh:mm:ss");
         assert!(sheet.formats.date_time.get(pos7).is_some());
 
         // test datetime format detection
         let pos8 = pos![H1];
-        sheet.columns.set_value(
-            &pos8,
+        sheet.set_value(
+            pos8,
             CellValue::Number(decimal_from_str("44926.5").unwrap()),
         );
         import_excel_number_format_string(sheet, pos8, "yyyy-mm-dd hh:mm:ss");

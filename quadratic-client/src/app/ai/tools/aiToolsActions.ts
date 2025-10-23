@@ -9,6 +9,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { events } from '@/app/events/events';
@@ -39,7 +40,6 @@ import {
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
-import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import Color from 'color';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -275,18 +275,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent('Unable to retrieve database schemas. Access to team is required.')];
     }
 
-    // Import the connection client
-    let connectionClient;
-    try {
-      connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
-    } catch (error) {
-      return [
-        createTextContent(
-          'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.'
-        ),
-      ];
-    }
-
     // Get all team connections or specific ones
     let connections;
     try {
@@ -313,50 +301,13 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
 
     try {
-      // Get schemas for each connection
-      const schemas = await Promise.all(
-        connections.map(async (connection) => {
-          try {
-            const schema = await connectionClient.schemas.get(
-              connection.type,
-              connection.uuid,
-              teamUuid,
-              true,
-              GET_SCHEMA_TIMEOUT
-            );
-
-            if (!schema) {
-              return {
-                connectionId: connection.uuid,
-                connectionName: connection.name,
-                connectionType: connection.type,
-                semanticDescription: connection.semanticDescription,
-                error: 'No schema data returned from connection service',
-              };
-            }
-
-            return {
-              connectionId: connection.uuid,
-              connectionName: connection.name,
-              connectionType: connection.type,
-              semanticDescription: connection.semanticDescription,
-              schema: schema,
-            };
-          } catch (error) {
-            console.warn(`[GetDatabaseSchemas] Failed to get schema for connection ${connection.uuid}:`, error);
-            return {
-              connectionId: connection.uuid,
-              connectionName: connection.name,
-              connectionType: connection.type,
-              semanticDescription: connection.semanticDescription,
-              error: `Failed to retrieve schema: ${error instanceof Error ? error.message : String(error)}`,
-            };
-          }
-        })
+      // Get info for each connection
+      const connectionsInfo = await Promise.all(
+        connections.map((connection) => getConnectionTableInfo(connection, teamUuid))
       );
 
       // Filter out null results
-      if (schemas.length === 0) {
+      if (connectionsInfo.length === 0) {
         return [
           createTextContent(
             'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.'
@@ -365,31 +316,11 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       // Format the response
-      const schemaText = schemas
-        .map((item) => {
-          if ('error' in item) {
-            return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nError: ${item.error}\n`;
-          }
-
-          const tablesInfo =
-            item.schema?.tables
-              ?.map((table: any) => {
-                const columnsInfo =
-                  table.columns
-                    ?.map((col: any) => `  - ${col.name}: ${col.type}${col.is_nullable ? ' (nullable)' : ''}`)
-                    .join('\n') || '  No columns found';
-                return `Table: ${table.name} (Schema: ${table.schema || 'public'})\n${columnsInfo}`;
-              })
-              .join('\n\n') || 'No tables found';
-
-          return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nDatabase: ${item.schema?.database || 'Unknown'}\n\n${tablesInfo}\n`;
-        })
-        .filter(Boolean)
-        .join('\n---\n\n');
+      const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
       // Add connection summary for future reference
-      const connectionSummary = schemas
-        .filter((item) => item && !('error' in item))
+      const connectionSummary = connectionsInfo
+        .filter((item) => item && !item.error)
         .map((item) => `- ${item!.connectionName} (${item!.connectionType}): ${item!.connectionId}`)
         .join('\n');
 
@@ -459,42 +390,22 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing set sql code cell value tool: ${e}`)];
     }
   },
-  [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
+  [AITool.SetFormulaCellValue]: async (args) => {
     try {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const selection = sheets.stringToSelection(code_cell_position, sheetId);
-      if (!selection.isSingleSelection(sheets.jsA1Context)) {
-        return [createTextContent('Invalid formula cell position, this should be a single cell, not a range')];
-      }
-      const { x, y } = selection.getCursor();
-
-      if (formula_string.startsWith('=')) {
-        formula_string = formula_string.slice(1);
-      }
-
-      const transactionId = await quadraticCore.setCodeCellValue({
+      const transactionId = await quadraticCore.setFormula({
         sheetId,
-        x,
-        y,
+        selection: code_cell_position,
         codeString: formula_string,
-        language: 'Formula',
-        isAi: true,
       });
-
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
-
-        // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
-        if (tableCodeCell) {
-          const width = tableCodeCell.w;
-          const height = tableCodeCell.h;
-          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
-        }
-
-        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
-        return result;
+        return [
+          createTextContent(
+            `Successfully set formula cells in ${code_cell_position}. The results of the formula cells are contained with the context above.`
+          ),
+        ];
       } else {
         return [createTextContent('Error executing set formula cell value tool')];
       }
@@ -616,6 +527,13 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [
       createTextContent(
         'User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.'
+      ),
+    ];
+  },
+  [AITool.EmptyChatPromptSuggestions]: async () => {
+    return [
+      createTextContent(
+        'Empty chat prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.'
       ),
     ];
   },

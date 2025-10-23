@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.20.1",
+  "version": "0.20.5",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -49,7 +49,6 @@
     "gen:proto": "npx protoc --ts_opt use_proto_field_name --ts_out=./src/app/web-workers/multiplayerWebWorker/proto -I=./../quadratic-rust-shared/src/protobuf/proto/transaction.proto ./../quadratic-rust-shared/src/protobuf/proto/transaction.proto/*.proto"
   },
   "dependencies": {
-    "@amplitude/analytics-browser": "^2.12.1",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@hookform/resolvers": "^4.1.3",
@@ -61,7 +60,7 @@
     "@radix-ui/react-icons": "^1.3.2",
     "@sentry/react": "^10.10.0",
     "@szhsin/react-menu": "^4.0.2",
-    "@workos-inc/authkit-js": "0.13.0",
+    "@workos-inc/authkit-js": "0.14.0",
     "bignumber.js": "^9.2.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
@@ -72,6 +71,7 @@
     "eventemitter3": "^5.0.1",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^3.1.0",
+    "hls.js": "^1.6.12",
     "localforage": "^1.10.0",
     "mixpanel-browser": "2.67.0",
     "monaco-editor": "^0.52.2",
@@ -125,7 +125,7 @@
     "fake-indexeddb": "^6.0.0",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
-    "happy-dom": "^17.4.4",
+    "happy-dom": "^20.0.0",
     "madge": "^8.0.0",
     "msdf-bmfont-xml": "^2.7.0",
     "msw": "^2.4.11",
@@ -137,7 +137,7 @@
     "sass": "^1.86.3",
     "tailwindcss": "^3.3.5",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.8.2",
+    "typescript": "^5.9.2",
     "vite": "^7.0.3",
     "vite-plugin-checker": "^0.10.0",
     "vite-plugin-svgr": "^4.3.0",

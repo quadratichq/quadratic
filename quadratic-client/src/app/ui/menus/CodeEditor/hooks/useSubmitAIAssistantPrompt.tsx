@@ -26,6 +26,7 @@ import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
+  isAIPromptMessage,
   isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -34,7 +35,7 @@ import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadrat
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
-const MAX_TOOL_CALL_ITERATIONS = 25;
+const MAX_TOOL_CALL_ITERATIONS = 200;
 
 export type SubmitAIAssistantPromptArgs = {
   messageSource: string;
@@ -145,7 +146,7 @@ export function useSubmitAIAssistantPrompt() {
 
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               currentContent.text = currentContent.text.trim();
@@ -290,7 +291,7 @@ export function useSubmitAIAssistantPrompt() {
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {

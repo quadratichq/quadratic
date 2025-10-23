@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
+  aiAnalystImportFilesToGridLoadingAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
@@ -14,32 +15,41 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useState } from 'react';
+import { forwardRef, memo, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
+const IMPORT_FILE_TYPES = ['.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
+const ALL_FILE_TYPES = [...ANALYST_FILE_TYPES, ...IMPORT_FILE_TYPES];
 
 export const AIAnalystUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
-    const { initialContext, ...rest } = props;
+    const [context, setContext] = useState<Context>(props.initialContext ?? defaultAIAnalystContext);
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
-    const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
-    const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+    const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
-    const handleSubmit = useCallback(
-      ({ content }: SubmitPromptArgs) => {
-        trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
-        submitPrompt({
-          messageSource: 'User',
-          content,
-          context,
-          messageIndex: props.messageIndex,
-        });
-      },
-      [context, props.messageIndex, submitPrompt, userMessagesCount]
+    const handleSubmit = useRecoilCallback(
+      ({ snapshot }) =>
+        async ({ content, context, importFiles }: SubmitPromptArgs) => {
+          const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
+          trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+
+          submitPrompt({
+            messageSource: 'User',
+            content,
+            context,
+            messageIndex: props.messageIndex,
+            importFiles,
+          });
+
+          if (!props.initialContext) {
+            setContext((prev) => ({ ...prev, connection: undefined }));
+          }
+        },
+      [props.initialContext, props.messageIndex, submitPrompt]
     );
 
     const formOnKeyDown = useRecoilCallback(
@@ -54,24 +64,27 @@ export const AIAnalystUserMessageForm = memo(
     );
 
     return (
-      <AIUserMessageForm
-        {...rest}
-        ref={ref}
-        abortController={abortController}
-        loading={loading}
-        setLoading={setLoading}
-        isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
-        fileTypes={ANALYST_FILE_TYPES}
-        submitPrompt={handleSubmit}
-        formOnKeyDown={formOnKeyDown}
-        ctx={{
-          initialContext,
-          context,
-          setContext,
-        }}
-        waitingOnMessageIndex={waitingOnMessageIndex}
-        maxHeight="275px"
-      />
+      <div className="flex h-full flex-col justify-center gap-2">
+        <AIUserMessageForm
+          {...props}
+          ref={ref}
+          abortController={abortController}
+          loading={loading}
+          setLoading={setLoading}
+          cancelDisabled={importFilesToGridLoading}
+          context={context}
+          setContext={setContext}
+          isChatFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
+          isImportFileSupported={(extension) => IMPORT_FILE_TYPES.includes(extension)}
+          fileTypes={ALL_FILE_TYPES}
+          submitPrompt={handleSubmit}
+          formOnKeyDown={formOnKeyDown}
+          waitingOnMessageIndex={waitingOnMessageIndex}
+          maxHeight="275px"
+          filesSupportedText="PDF, Image, CSV, Excel and Parquet"
+          uiContext="analyst"
+        />
+      </div>
     );
   })
 );
