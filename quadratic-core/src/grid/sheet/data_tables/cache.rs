@@ -124,9 +124,10 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                            && table.language != CodeCellLanguage::Import {
-                                return true;
-                            }
+                            && table.language != CodeCellLanguage::Import
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -162,8 +163,19 @@ impl SheetDataTablesCache {
             )
     }
 
-    pub fn has_content(&self, rect: Rect) -> bool {
-        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content(rect)
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content_in_rect(rect)
+    }
+
+    /// Checks for any tables in the rect except for the given position
+    pub fn has_content_except(&self, rect: Rect, except: Pos) -> bool {
+        self.single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .any(|(rect, _)| rect.iter().any(|p| p != except))
+            || self
+                .multi_cell_tables
+                .nondefault_rects_in_rect(rect)
+                .any(|(_, pos)| pos.is_some_and(|p| p != except))
     }
 }
 
@@ -356,7 +368,7 @@ impl MultiCellTablesCache {
         self.multi_cell_tables_empty.get(pos).is_some()
     }
 
-    pub fn has_content(&self, rect: Rect) -> bool {
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.multi_cell_tables.intersects(rect)
     }
 }
@@ -400,8 +412,6 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
         print_first_sheet(&gc);
-
-        dbg!(sheet_data_tables_cache);
 
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
@@ -455,9 +465,8 @@ mod tests {
 
         gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None, false);
 
-        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
-
-        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+        test_create_data_table(&mut gc, sheet_id, pos![E5], 3, 3);
+        test_create_data_table(&mut gc, sheet_id, pos![J10], 3, 3);
 
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
@@ -465,7 +474,7 @@ mod tests {
             .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
             .collect::<Vec<_>>();
 
-        assert_eq!(tables, vec![pos![2, 2], pos![5, 5]]);
+        assert_eq!(tables, vec![pos![B2], pos![E5]]);
     }
 
     #[test]

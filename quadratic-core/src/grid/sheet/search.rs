@@ -31,7 +31,6 @@ impl Sheet {
         pos: Pos,
         case_sensitive: bool,
         whole_cell: bool,
-        search_code: bool,
     ) -> Option<String> {
         match cell_value {
             CellValue::Text(text) => {
@@ -86,20 +85,6 @@ impl Sheet {
                     None
                 }
             }
-            CellValue::Code(code) => {
-                if search_code {
-                    let code = &code.code;
-                    if (case_sensitive && code.contains(query))
-                        || (!case_sensitive && code.to_lowercase().contains(query))
-                    {
-                        Some(code.to_string())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
             _ => None,
         }
     }
@@ -110,7 +95,6 @@ impl Sheet {
         query: &String,
         case_sensitive: bool,
         whole_cell: bool,
-        search_code: bool,
     ) -> Vec<JsSheetPosText> {
         self.columns
             .expensive_iter()
@@ -122,7 +106,6 @@ impl Sheet {
                         Pos { x: *x, y: *y },
                         case_sensitive,
                         whole_cell,
-                        search_code,
                     )
                     .map(|text| JsSheetPosText {
                         sheet_id: self.id.to_string(),
@@ -140,72 +123,92 @@ impl Sheet {
         query: &String,
         case_sensitive: bool,
         whole_cell: bool,
+        search_code: bool,
     ) -> Vec<JsSheetPosText> {
         let mut results = vec![];
         self.data_tables
             .expensive_iter()
-            .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
-            .for_each(|(data_table_pos, data_table)| match &data_table.value {
-                Value::Single(v) => {
-                    if let Some(text) = self.compare_cell_value(
-                        v,
-                        query,
-                        *data_table_pos,
-                        case_sensitive,
-                        whole_cell,
-                        false, // data_tables can never have code within them (although that would be cool if they did ;)
-                    ) {
-                        results.push(JsSheetPosText {
-                            sheet_id: self.id.to_string(),
-                            x: data_table_pos.x,
-                            y: data_table_pos.y,
-                            text: Some(text),
-                        });
-                    }
+            .for_each(|(data_table_pos, data_table)| {
+                if search_code
+                    && let Some(code_run) = data_table.code_run()
+                    && ((case_sensitive && code_run.code.contains(query))
+                        || (!case_sensitive && code_run.code.to_lowercase().contains(query)))
+                {
+                    results.push(JsSheetPosText {
+                        sheet_id: self.id.to_string(),
+                        x: data_table_pos.x,
+                        y: data_table_pos.y,
+                        text: Some(code_run.code.to_string()),
+                    });
                 }
-                Value::Array(array) => {
-                    let y_adjustment = data_table.y_adjustment(true);
 
-                    let reverse_display_buffer = data_table.get_reverse_display_buffer();
+                // we can return early if the data table has a spill or error
+                // (todo: maybe search the error as well?)
+                if data_table.has_spill() || data_table.has_error() {
+                    return;
+                }
 
-                    for y in 0..array.size().h.get() {
-                        let display_row = data_table.get_display_index_from_reverse_display_buffer(
-                            y as u64,
-                            reverse_display_buffer.as_ref(),
-                        );
+                match &data_table.value {
+                    Value::Single(v) => {
+                        if let Some(text) = self.compare_cell_value(
+                            v,
+                            query,
+                            *data_table_pos,
+                            case_sensitive,
+                            whole_cell,
+                        ) {
+                            results.push(JsSheetPosText {
+                                sheet_id: self.id.to_string(),
+                                x: data_table_pos.x,
+                                y: data_table_pos.y,
+                                text: Some(text),
+                            });
+                        }
+                    }
+                    Value::Array(array) => {
+                        let y_adjustment = data_table.y_adjustment(true);
 
-                        for x in 0..array.size().w.get() {
-                            let column_display = data_table.header_display(x as usize);
-                            if !column_display {
-                                continue;
-                            }
+                        let reverse_display_buffer = data_table.get_reverse_display_buffer();
 
-                            let cell_value = array.get(x, y).unwrap();
-                            if let Some(text) = self.compare_cell_value(
-                                cell_value,
-                                query,
-                                Pos {
-                                    x: data_table_pos.x + x as i64,
-                                    y: data_table_pos.y + y as i64,
-                                },
-                                case_sensitive,
-                                whole_cell,
-                                false, // data_tables can never have code within them (although that would be cool if they did ;)
-                            ) {
-                                let y = data_table_pos.y + y_adjustment + display_row as i64;
-                                if y >= data_table_pos.y {
-                                    results.push(JsSheetPosText {
-                                        sheet_id: self.id.to_string(),
+                        for y in 0..array.size().h.get() {
+                            let display_row = data_table
+                                .get_display_index_from_reverse_display_buffer(
+                                    y as u64,
+                                    reverse_display_buffer.as_ref(),
+                                );
+
+                            for x in 0..array.size().w.get() {
+                                let column_display = data_table.header_display(x as usize);
+                                if !column_display {
+                                    continue;
+                                }
+
+                                let cell_value = array.get(x, y).unwrap();
+                                if let Some(text) = self.compare_cell_value(
+                                    cell_value,
+                                    query,
+                                    Pos {
                                         x: data_table_pos.x + x as i64,
-                                        y,
-                                        text: Some(text),
-                                    });
+                                        y: data_table_pos.y + y as i64,
+                                    },
+                                    case_sensitive,
+                                    whole_cell,
+                                ) {
+                                    let y = data_table_pos.y + y_adjustment + display_row as i64;
+                                    if y >= data_table_pos.y {
+                                        results.push(JsSheetPosText {
+                                            sheet_id: self.id.to_string(),
+                                            x: data_table_pos.x + x as i64,
+                                            y,
+                                            text: Some(text),
+                                        });
+                                    }
                                 }
                             }
                         }
                     }
+                    Value::Tuple(_) => {} // Tuples are not spilled onto the grid);
                 }
-                Value::Tuple(_) => {} // Tuples are not spilled onto the grid);
             });
         results
     }
@@ -223,8 +226,8 @@ impl Sheet {
         };
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
-        let mut results = self.search_cell_values(&query, case_sensitive, whole_cell, search_code);
-        results.extend(self.search_data_tables(&query, case_sensitive, whole_cell));
+        let mut results = self.search_cell_values(&query, case_sensitive, whole_cell);
+        results.extend(self.search_data_tables(&query, case_sensitive, whole_cell, search_code));
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {
@@ -272,7 +275,7 @@ impl Sheet {
                     text.push(cell.to_string());
                 }
             }
-        } else if let Some(column) = self.columns.get_column(pos.x) {
+        } else if let Some(column) = self.get_column(pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
@@ -309,14 +312,14 @@ mod test {
     use crate::{
         Array, SheetPos,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
     };
 
     #[test]
     fn simple_search() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet.set_cell_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
         let results = sheet.search(&"hello".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(
@@ -345,8 +348,8 @@ mod test {
     #[test]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Text("HELLO".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: -10, y: -11 }, CellValue::Text("HELLO".into()));
         let results = sheet.search(
             &"hello".into(),
             &SearchOptions {
@@ -408,8 +411,8 @@ mod test {
     #[test]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("hello world".into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("hello world".into()));
         let results = sheet.search(
             &"hello".into(),
             &SearchOptions {
@@ -486,8 +489,8 @@ mod test {
     #[test]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
-        sheet.set_cell_value(
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
+        sheet.set_value(
             Pos { x: -10, y: -11 },
             CellValue::Text("HELLO world".into()),
         );
@@ -544,8 +547,8 @@ mod test {
     #[test]
     fn search_numbers() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1234.into()));
+        sheet.set_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Number(1234.into()));
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(
@@ -731,13 +734,6 @@ mod test {
     #[test]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 1, y: 2 },
-            CellValue::Code(CodeCellValue {
-                code: "hello".into(),
-                language: CodeCellLanguage::Python,
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "hello".into(),
@@ -883,9 +879,9 @@ mod test {
     #[test]
     fn neighbor_text_single_column() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
         assert_eq!(neighbors, vec!["A".to_string(), "C".to_string()]);
@@ -894,9 +890,9 @@ mod test {
     #[test]
     fn neighbor_text_with_gaps() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
         assert!(neighbors.iter().any(|t| t == &"A".to_string()));
@@ -906,7 +902,7 @@ mod test {
     #[test]
     fn neighbor_text_no_neighbors() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
         assert!(neighbors.is_empty());
@@ -915,10 +911,10 @@ mod test {
     #[test]
     fn neighbor_text_deduplication() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 4 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 1, y: 4 }, CellValue::Text("B".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
         assert_eq!(neighbors, vec!["A".to_string(), "B".to_string()]);
@@ -927,10 +923,10 @@ mod test {
     #[test]
     fn neighbor_text_multiple_columns() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text("C".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("C".into()));
+        sheet.set_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
         assert_eq!(neighbors, vec!["A".to_string(), "D".to_string()]);
@@ -947,7 +943,7 @@ mod test {
     fn max_neighbor_text() {
         let mut sheet = Sheet::test();
         for y in 0..MAX_NEIGHBOR_TEXT + 10 {
-            sheet.set_cell_value(Pos { x: 1, y: y as i64 }, CellValue::Text(y.to_string()));
+            sheet.set_value(Pos { x: 1, y: y as i64 }, CellValue::Text(y.to_string()));
         }
         let neighbors = sheet.neighbor_text(Pos {
             x: 1,
@@ -961,7 +957,7 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![E15], CellValue::Text("hello".into()));
+        sheet.set_value(pos![E15], CellValue::Text("hello".into()));
 
         let neighbors = sheet.neighbor_text(pos![E12]);
         assert_eq!(

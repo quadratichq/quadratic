@@ -1,7 +1,9 @@
+#[cfg(test)]
 use crate::controller::GridController;
 
 /// Prints the names of the operations in the last undo transaction.
 #[allow(clippy::format_in_format_args)]
+#[cfg(test)]
 pub fn print_last_undo_transaction_names(gc: &GridController) {
     let undo = gc.undo_stack().last().expect("No undo stack");
     println!("__Last undo ops__");
@@ -15,6 +17,7 @@ pub fn print_last_undo_transaction_names(gc: &GridController) {
 }
 
 /// Prints the operations in the last undo transaction.
+#[cfg(test)]
 pub fn print_last_undo_transactions(gc: &GridController) {
     let undo = gc.undo_stack().last().expect("No redo stack");
     println!("__Last undo ops__");
@@ -26,6 +29,7 @@ pub fn print_last_undo_transactions(gc: &GridController) {
 
 /// Prints the names of the operations in the last redo transaction.
 #[allow(clippy::format_in_format_args)]
+#[cfg(test)]
 pub fn print_last_redo_transaction_names(gc: &GridController) {
     let redo = gc.redo_stack().last().expect("No redo stack");
     println!("__Last redo ops__");
@@ -40,6 +44,7 @@ pub fn print_last_redo_transaction_names(gc: &GridController) {
 
 /// Prints the operations in the last redo transaction.
 #[allow(clippy::format_in_format_args)]
+#[cfg(test)]
 pub fn print_last_redo_transactions(gc: &GridController) {
     let redo = gc.redo_stack().last().expect("No redo stack");
     println!("__Last redo ops__");

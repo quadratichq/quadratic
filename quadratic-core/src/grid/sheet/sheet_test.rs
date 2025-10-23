@@ -5,7 +5,7 @@ use super::Sheet;
 use crate::{
     Array, ArraySize, CellValue, Pos, Value,
     cellvalue::Import,
-    grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
     number::decimal_from_str,
 };
 
@@ -22,7 +22,7 @@ impl Sheet {
             CellValue::Text(s.to_string())
         };
 
-        self.set_cell_value(Pos { x, y }, value);
+        self.set_value(Pos { x, y }, value);
     }
 
     /// Sets values in a rectangle starting at (x, y) with width w and height h.
@@ -45,15 +45,7 @@ impl Sheet {
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
-    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
-        self.set_cell_value(
-            crate::Pos { x, y },
-            crate::CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "".to_string(),
-            }),
-        );
-
+    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: CellValue) {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
@@ -107,14 +99,6 @@ impl Sheet {
                 }
             }
         }
-        self.set_cell_value(
-            Pos { x, y },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "code".to_string(),
-            }),
-        );
-
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
@@ -144,14 +128,6 @@ impl Sheet {
     }
 
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
-        self.set_cell_value(
-            Pos { x, y },
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "code".to_string(),
-            }),
-        );
-
         let array_size = ArraySize::new(w, h).unwrap();
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
@@ -193,13 +169,6 @@ impl Sheet {
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
     pub fn test_set_chart(&mut self, pos: Pos, w: u32, h: u32) {
-        self.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Javascript,
-                code: "code".to_string(),
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "code".to_string(),
@@ -227,13 +196,6 @@ impl Sheet {
 
     /// Sets a JS chart at the given position with the given width and height (in cells).
     pub fn test_set_chart_html(&mut self, pos: Pos, w: u32, h: u32) {
-        self.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Python,
-                code: "code".to_string(),
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "code".to_string(),
@@ -269,12 +231,6 @@ impl Sheet {
         show_name: Option<bool>,
         show_columns: Option<bool>,
     ) {
-        self.set_cell_value(
-            pos,
-            CellValue::Import(Import {
-                file_name: "test".to_string(),
-            }),
-        );
         let value = Value::Array(Array::new_empty(ArraySize::new(w, h).unwrap()));
         self.set_data_table(
             pos,
