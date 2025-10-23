@@ -87,8 +87,7 @@ mod tests {
     #[test]
     fn test_commit_offsets_resize() {
         let mut gc = GridController::test();
-        let sheet = gc.grid_mut().first_sheet_mut();
-        let sheet_id = sheet.id;
+        let sheet_id = gc.grid().first_sheet_id();
         let old_size = 100.0;
         let new_size = 200.0;
 

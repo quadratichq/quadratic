@@ -34,6 +34,14 @@ pub enum TrackedOperation {
     GridToDataTable {
         selection: String,
     },
+    MoveDataTable {
+        from: String,
+        to: String,
+    },
+    SwitchDataTableKind {
+        selection: String,
+        kind: String,
+    },
 
     /// Table structure changes (AI only needs to know the operation type and position)
     DataTableColumnsChanged {

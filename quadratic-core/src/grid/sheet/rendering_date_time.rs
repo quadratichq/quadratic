@@ -79,14 +79,13 @@ mod tests {
     fn render_cell_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
         let pos = pos![A1];
         let date_time = "%Y-%m-%d %H:%M:%S".to_string();
         let value = CellValue::DateTime(
             NaiveDateTime::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z")
                 .unwrap(),
         );
-        sheet.set_cell_value(pos, value);
+        gc.sheet_mut(sheet_id).set_value(pos, value);
         let sheet = gc.sheet(sheet_id);
         let rendering = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(rendering.len(), 1);

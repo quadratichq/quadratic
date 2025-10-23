@@ -107,6 +107,7 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormula,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
@@ -510,6 +511,29 @@ class QuadraticCore {
         cursor: sheets.getCursorPosition(),
         codeCellName: options.codeCellName,
         isAi: options.isAi,
+      });
+    });
+  }
+
+  setFormula(options: {
+    sheetId: string;
+    selection: string;
+    codeString: string;
+    codeCellName?: string;
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormula) => {
+        resolve(message.transactionId);
+      };
+      this.send({
+        type: 'clientCoreSetFormula',
+        id,
+        sheetId: options.sheetId,
+        selection: options.selection,
+        codeString: options.codeString,
+        codeCellName: options.codeCellName,
+        cursor: sheets.getCursorPosition(),
       });
     });
   }

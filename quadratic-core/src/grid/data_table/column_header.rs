@@ -319,10 +319,6 @@ mod test {
             spill_value: false,
             spill_data_table: false,
         };
-        sheet.set_cell_value(
-            pos,
-            Some(CellValue::Import(Import::new("test.csv".to_string()))),
-        );
         sheet.set_data_table(pos, Some(t.clone()));
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
@@ -378,10 +374,6 @@ mod test {
             spill_data_table: false,
         };
         t.apply_default_header();
-        sheet.set_cell_value(
-            pos,
-            Some(CellValue::Import(Import::new("test.csv".to_string()))),
-        );
         sheet.set_data_table(pos, Some(t.clone()));
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),

@@ -13,7 +13,7 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
         ((0, 0, 1), Duration::zero())
     } else {
         let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-            (&options.series[0].0, &options.series[1].0)
+            (&options.series[0], &options.series[1])
         else {
             return None;
         };
@@ -23,7 +23,7 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
 
         for i in 2..options.series.len() {
             let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-                (&options.series[i - 1].0, &options.series[i].0)
+                (&options.series[i - 1], &options.series[i])
             else {
                 return None;
             };
@@ -38,12 +38,12 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
         (diff_in_date, diff_in_time)
     };
     let last = if options.negative {
-        &options.series[0]
+        options.series[0].to_owned()
     } else {
-        &options.series[options.series.len() - 1]
+        options.series[options.series.len() - 1].to_owned()
     };
 
-    let CellValue::DateTime(mut last) = last.0 else {
+    let CellValue::DateTime(mut last) = last else {
         return None;
     };
 
@@ -76,7 +76,7 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
 
-    use crate::{Pos, grid::series::find_auto_complete};
+    use crate::grid::series::find_auto_complete;
 
     use super::*;
 
@@ -87,14 +87,11 @@ mod tests {
         hour: u32,
         minute: u32,
         second: u32,
-    ) -> (CellValue, Option<Pos>) {
-        (
-            CellValue::DateTime(NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(year, month, day).unwrap(),
-                NaiveTime::from_hms_opt(hour, minute, second).unwrap(),
-            )),
-            None,
-        )
+    ) -> CellValue {
+        CellValue::DateTime(NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(year, month, day).unwrap(),
+            NaiveTime::from_hms_opt(hour, minute, second).unwrap(),
+        ))
     }
 
     #[test]
