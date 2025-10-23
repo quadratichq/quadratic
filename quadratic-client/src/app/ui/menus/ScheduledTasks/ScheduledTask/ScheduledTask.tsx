@@ -45,7 +45,7 @@ export const ScheduledTask = () => {
   }, [currentTask, deleteScheduledTask, showScheduledTasks]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 pb-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-2">
       <div className="flex-shrink-0">
         <ScheduledTaskType cronRange={cronRange} />
         <ScheduledTaskInterval cronInterval={cronInterval} />
@@ -53,7 +53,7 @@ export const ScheduledTask = () => {
 
       {currentTask && <ScheduledTaskHistory getHistory={getHistory} currentTaskUuid={currentTask.uuid} />}
 
-      <div className="mt-4 flex flex-shrink-0 flex-row justify-end gap-2">
+      <div className="flex flex-shrink-0 flex-row justify-end gap-2 pb-2">
         {currentTask && (
           <Button onClick={onDelete} variant="outline-destructive" className="mr-auto">
             Delete

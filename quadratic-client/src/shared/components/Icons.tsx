@@ -175,6 +175,10 @@ export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
 };
 
+export const CheckCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_circle</Icon>;
+};
+
 export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
 };
@@ -540,6 +544,10 @@ export const SaveAndRunIcon: IconComponent = (props) => {
 
 export const SaveAndRunStopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
+};
+
+export const ScheduleIcon: IconComponent = (props) => {
+  return <Icon {...props}>schedule</Icon>;
 };
 
 export const ScientificIcon: IconComponent = (props) => {

@@ -1,5 +1,4 @@
-import { CheckIcon, ErrorIcon, HistoryIcon, SpinnerIcon } from '@/shared/components/Icons';
-import { Badge } from '@/shared/shadcn/ui/badge';
+import { CheckCircleIcon, ErrorIcon, ScheduleIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import type { ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
@@ -159,114 +158,97 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
     [hasMore, page, fetchHistory]
   );
 
-  const getStatusBadge = (status: ScheduledTaskLog['status']) => {
-    const baseClasses = 'h-5 px-1 py-0.5 text-[10px] rounded leading-4'; // smaller height and font
-    switch (status) {
-      case 'COMPLETED':
-        return (
-          <Badge variant="default" className={`bg-green-500 hover:bg-green-600 ${baseClasses}`}>
-            <CheckIcon className="mr-1 h-3 w-3" />
-            Completed
-          </Badge>
-        );
-      case 'FAILED':
-        return (
-          <Badge variant="destructive" className={baseClasses}>
-            <ErrorIcon className="mr-1 h-3 w-3" />
-            Failed
-          </Badge>
-        );
-      case 'RUNNING':
-        return (
-          <Badge variant="default" className={`bg-blue-500 hover:bg-blue-600 ${baseClasses}`}>
-            <SpinnerIcon className="mr-1 h-3 w-3" />
-            Running
-          </Badge>
-        );
-      case 'PENDING':
-        return (
-          <Badge variant="secondary" className={baseClasses}>
-            <HistoryIcon className="mr-1 h-3 w-3" />
-            Pending
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className={baseClasses}>
-            {status}
-          </Badge>
-        );
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="mt-6 space-y-3">
-        <h3 className="text-sm font-semibold">Run History</h3>
-        <div className="space-y-1 border">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-2 py-2">
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (history.length === 0) {
-    return (
-      <div className="mt-6">
-        <h3 className="mb-3 text-sm font-semibold">Run History</h3>
-        <p className="text-sm text-muted-foreground">No runs yet</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="mt-6 flex min-h-0 flex-1 flex-col">
-      <h3 className="mb-3 text-sm font-semibold">Run History</h3>
-      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto border">
-        <div className="px-2">
-          {history.map((log, index) => (
-            <div
-              key={log.runId}
-              className={cn(
-                'group relative -mx-2 rounded px-2 py-2.5 transition-colors hover:bg-accent/30',
-                index !== history.length - 1 && 'border-b border-border/40'
-              )}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-muted-foreground">{formatDate(log.createdDate)}</span>
-                {getStatusBadge(log.status)}
-              </div>
-            </div>
-          ))}
-          <div className={cn('flex items-center justify-center py-3', !loadingMore && 'invisible')}>
-            <SpinnerIcon className="text-muted-foreground" />
-            <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
-          </div>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <h3 className="text-sm font-medium">Run history</h3>
+      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto rounded border px-2 py-1 shadow-sm">
+        {loading ? (
+          [1, 2, 3].map((i) => <RowItemLoader key={i} />)
+        ) : history.length === 0 ? (
+          <p className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No runs yet</p>
+        ) : (
+          <>
+            {history.map((log, index) => (
+              <RowItem key={log.runId} status={log.status} created={log.createdDate} />
+            ))}
+
+            <RowItemLoader className={cn(!loadingMore && 'invisible')} />
+          </>
+        )}
       </div>
     </div>
   );
 };
+
+function RowItemLoader({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex h-9 w-full items-center gap-2 py-2', className)}>
+      <div className="flex h-5 w-5 items-center justify-center">
+        <Skeleton className="h-4 w-4 rounded-full" />
+      </div>
+      <Skeleton className="h-3 w-24" />
+      <Skeleton className="ml-auto h-3 w-12" />
+    </div>
+  );
+}
+
+function RowItem({ status, created }: { status: ScheduledTaskLog['status']; created: string }) {
+  const baseClasses = 'flex items-center gap-2 h-9 w-full text-xs rounded leading-4 font-medium'; // smaller height and font
+  const datetime = <time dateTime={created}>{formatDate(created)}</time>;
+
+  if (status === 'COMPLETED') {
+    return (
+      <span className={cn(baseClasses, 'text-muted-foreground')}>
+        <CheckCircleIcon />
+        {datetime}
+        <span className="ml-auto">Completed</span>
+      </span>
+    );
+  }
+  if (status === 'FAILED') {
+    return (
+      <span className={cn(baseClasses, 'text-destructive')}>
+        <ErrorIcon />
+        {datetime}
+        <span className="ml-auto">Failed</span>
+      </span>
+    );
+  }
+  if (status === 'RUNNING') {
+    return (
+      <span className={cn(baseClasses, `text-primary`)}>
+        <SpinnerIcon />
+        {datetime}
+        <span className="ml-auto">Running</span>
+      </span>
+    );
+  }
+  if (status === 'PENDING') {
+    return (
+      <span className={baseClasses}>
+        <ScheduleIcon />
+        {datetime}
+        <span className="ml-auto">Pending</span>
+      </span>
+    );
+  }
+  return null;
+}
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
