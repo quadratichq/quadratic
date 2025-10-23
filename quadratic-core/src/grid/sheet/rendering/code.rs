@@ -455,9 +455,7 @@ mod tests {
 
         // add an image to a code run and then send it to the client
         let sheet = gc.sheet_mut(sheet_id);
-        let pos = (0, 0).into();
-        let image = "image".to_string();
-        let code = CellValue::Image(image.clone());
+        let pos = (1, 1).into();
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "".to_string(),
@@ -472,14 +470,13 @@ mod tests {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Single(CellValue::Image(image.clone())),
+            Value::Single(CellValue::Image("image".to_string())),
             false,
             Some(false),
             Some(false),
             None,
         );
         sheet.set_data_table(pos, Some(data_table));
-        sheet.set_cell_value(pos, code);
         sheet.send_all_images();
         expect_js_call(
             "jsSendImage",

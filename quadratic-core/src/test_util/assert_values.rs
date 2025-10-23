@@ -158,10 +158,9 @@ mod tests {
     fn test_assert_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a test cell
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".into(), None, false);
 
         // Test the assertion passes when values match
         assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Text("test".to_string()));
@@ -171,10 +170,9 @@ mod tests {
     fn test_assert_display_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a test cell
-        sheet.set_cell_value(pos![A1], CellValue::Text("display test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "display test".into(), None, false);
 
         // Test the assertion passes when values match
         assert_display_cell_value(&gc, sheet_id, 1, 1, "display test");
@@ -184,12 +182,11 @@ mod tests {
     fn test_assert_cell_value_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // Set up a row of test cells
-        sheet.set_cell_value(pos![A1], CellValue::Text("one".to_string()));
-        sheet.set_cell_value(pos![B1], CellValue::Text("two".to_string()));
-        sheet.set_cell_value(pos![C1], CellValue::Text("three".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "two".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!C1], "three".into(), None, false);
 
         // Test the assertion passes for a row
         assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["one", "two", "three"]);

@@ -149,12 +149,6 @@ pub struct DataTableSchema {
     pub display_buffer: Option<Vec<u64>>,
 
     #[serde(skip_serializing_if = "is_false", default)]
-    pub spill_value: bool,
-
-    #[serde(skip_serializing_if = "is_false", default)]
-    pub spill_data_table: bool,
-
-    #[serde(skip_serializing_if = "is_false", default)]
     pub alternating_colors: bool,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]

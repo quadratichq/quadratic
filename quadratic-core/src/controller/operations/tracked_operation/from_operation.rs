@@ -75,15 +75,6 @@ impl TrackedOperation {
                 name: get_table_name(Some(data_table)),
                 deleted: false,
             }),
-            Operation::AddDataTableWithoutCellValue {
-                sheet_pos,
-                data_table,
-                ..
-            } => Some(Self::SetDataTable {
-                selection: data_table_to_selection(Some(data_table), *sheet_pos, gc),
-                name: get_table_name(Some(data_table)),
-                deleted: false,
-            }),
             Operation::DeleteDataTable { sheet_pos } => Some(Self::DeleteDataTable {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
@@ -347,18 +338,15 @@ impl TrackedOperation {
                 to: sheet_pos_to_selection(*new_sheet_pos, gc),
             }),
 
-            Operation::SwitchDataTableKindWithoutCellValue { sheet_pos, kind } => {
-                Some(Self::SwitchDataTableKind {
-                    selection: sheet_pos_to_selection(*sheet_pos, gc),
-                    kind: kind.to_string(),
-                })
-            }
+            Operation::SwitchDataTableKind { sheet_pos, kind } => Some(Self::SwitchDataTableKind {
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
+                kind: kind.to_string(),
+            }),
 
             // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }
             | Operation::SetChartCellSize { .. }
             | Operation::SetDataTableAt { .. }
-            | Operation::SwitchDataTableKind { .. }
             | Operation::DataTableMeta { .. }
             | Operation::DataTableOptionMeta { .. }
             | Operation::DataTableFormats { .. }

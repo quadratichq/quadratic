@@ -264,6 +264,7 @@ impl GridController {
                         current_sheet_pos,
                         Some(data_table),
                         None,
+                        false,
                     );
                 }
             }

@@ -106,65 +106,57 @@ enum GridFile {
 }
 
 impl GridFile {
-    // Upgrade to the next version
-    fn upgrade_next(self) -> Result<GridFile> {
-        let next = match self {
-            GridFile::V1_12 { grid } => GridFile::V1_12 { grid },
-            GridFile::V1_11 { grid } => GridFile::V1_12 {
-                grid: v1_11::upgrade(grid)?,
-            },
-            GridFile::V1_10 { grid } => GridFile::V1_11 {
-                grid: v1_10::upgrade(grid)?,
-            },
-            GridFile::V1_9 { grid } => GridFile::V1_10 {
-                grid: v1_9::upgrade(grid)?,
-            },
-            GridFile::V1_8 { grid } => GridFile::V1_9 {
-                grid: v1_8::upgrade(grid)?,
-            },
-            GridFile::V1_7_1 { grid } => GridFile::V1_8 {
-                grid: v1_7_1::upgrade(grid)?,
-            },
-            GridFile::V1_7 { grid } => GridFile::V1_7_1 {
-                grid: v1_7::upgrade(grid)?,
-            },
-            GridFile::V1_6 { grid } => GridFile::V1_7 {
-                grid: v1_6::file::upgrade(grid)?,
-            },
-            GridFile::V1_5 { grid } => GridFile::V1_6 {
-                grid: v1_5::file::upgrade(grid)?,
-            },
-            GridFile::V1_4 { grid } => GridFile::V1_5 {
-                grid: v1_4::file::upgrade(grid)?,
-            },
-            GridFile::V1_3 { grid } => GridFile::V1_4 {
-                grid: v1_3::file::upgrade(grid)?,
-            },
-        };
-
-        Ok(next)
+    fn into_latest(self) -> Result<current::GridSchema> {
+        match self.upgrade_to_latest() {
+            Ok(GridFile::V1_12 { grid }) => Ok(grid),
+            _ => anyhow::bail!("Failed to upgrade to latest version"),
+        }
     }
 
-    // recursively upgrade from any version to the latest
-    fn into_latest(self) -> Result<current::GridSchema> {
-        let mut file = self;
-
-        loop {
-            if let GridFile::V1_12 { grid } = file {
-                // Sanity check to ensure that the above GridFile is the current version.
-                // This is to break tests the the current version isn't updated.
-                if grid.version != Some(CURRENT_VERSION.into()) {
-                    anyhow::bail!(
-                        "into_latest() is not checking for the current version. Expected: {:?}, Got: {:?}",
-                        CURRENT_VERSION,
-                        grid.version
-                    );
-                }
-
-                return Ok(grid);
+    // Upgrade to the latest version
+    fn upgrade_to_latest(self) -> Result<GridFile> {
+        match self {
+            GridFile::V1_12 { grid } => Ok(GridFile::V1_12 { grid }),
+            GridFile::V1_11 { grid } => GridFile::V1_12 {
+                grid: v1_11::upgrade(grid)?,
             }
-
-            file = file.upgrade_next()?;
+            .upgrade_to_latest(),
+            GridFile::V1_10 { grid } => GridFile::V1_11 {
+                grid: v1_10::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_9 { grid } => GridFile::V1_10 {
+                grid: v1_9::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_8 { grid } => GridFile::V1_9 {
+                grid: v1_8::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_7_1 { grid } => GridFile::V1_8 {
+                grid: v1_7_1::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_7 { grid } => GridFile::V1_7_1 {
+                grid: v1_7::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_6 { grid } => GridFile::V1_7 {
+                grid: v1_6::file::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_5 { grid } => GridFile::V1_6 {
+                grid: v1_5::file::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_4 { grid } => GridFile::V1_5 {
+                grid: v1_4::file::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
+            GridFile::V1_3 { grid } => GridFile::V1_4 {
+                grid: v1_3::file::upgrade(grid)?,
+            }
+            .upgrade_to_latest(),
         }
     }
 }
@@ -331,7 +323,6 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_8 { .. }
             | GridFile::V1_9 { .. }
             | GridFile::V1_10 { .. }
-            | GridFile::V1_11 { .. }
     );
 
     let file = json.into_latest()?;
@@ -680,7 +671,10 @@ mod tests {
             .code_run()
             .unwrap();
         assert_eq!(code.language, CodeCellLanguage::Python);
-        assert_eq!(code.code, "q.cells(\"A1:A14\")".to_string());
+        assert_eq!(
+            code.code,
+            "q.cells(\"A1:A14\", first_row_header=False)".to_string()
+        );
 
         let code = sheet1
             .data_tables

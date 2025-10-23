@@ -163,8 +163,8 @@ impl SheetDataTablesCache {
             )
     }
 
-    pub fn has_content(&self, rect: Rect) -> bool {
-        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content(rect)
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content_in_rect(rect)
     }
 
     /// Checks for any tables in the rect except for the given position
@@ -368,7 +368,7 @@ impl MultiCellTablesCache {
         self.multi_cell_tables_empty.get(pos).is_some()
     }
 
-    pub fn has_content(&self, rect: Rect) -> bool {
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.multi_cell_tables.intersects(rect)
     }
 }
@@ -412,8 +412,6 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
         print_first_sheet(&gc);
-
-        dbg!(sheet_data_tables_cache);
 
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));

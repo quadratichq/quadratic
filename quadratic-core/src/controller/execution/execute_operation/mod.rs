@@ -69,11 +69,6 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
-                Operation::AddDataTableWithoutCellValue { .. } => {
-                    Self::handle_execution_operation_result(
-                        self.execute_add_data_table_without_cell_value(transaction, op),
-                    );
-                }
                 Operation::MoveDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_move_data_table(transaction, op),
                 ),
@@ -86,11 +81,6 @@ impl GridController {
                 Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_flatten_data_table(transaction, op),
                 ),
-                Operation::SwitchDataTableKindWithoutCellValue { .. } => {
-                    Self::handle_execution_operation_result(
-                        self.execute_code_data_table_to_data_table(transaction, op),
-                    );
-                }
                 Operation::SwitchDataTableKind { .. } => Self::handle_execution_operation_result(
                     self.execute_code_data_table_to_data_table(transaction, op),
                 ),
@@ -143,7 +133,9 @@ impl GridController {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
                 Operation::SetDataTable { .. } => {
-                    self.execute_set_data_table(transaction, op);
+                    Self::handle_execution_operation_result(
+                        self.execute_set_data_table(transaction, op),
+                    );
                 }
                 Operation::SetCellFormatsA1 { .. } => {
                     self.execute_set_cell_formats_a1(transaction, op);

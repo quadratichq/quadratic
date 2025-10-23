@@ -77,10 +77,11 @@ pub fn test_create_raw_data_table(
     sheet_pos: SheetPos,
     data_table: DataTable,
 ) -> DataTable {
-    let op = Operation::AddDataTableWithoutCellValue {
+    let op = Operation::SetDataTable {
         sheet_pos,
-        data_table,
-        index: None,
+        data_table: Some(data_table),
+        index: usize::MAX,
+        ignore_old_data_table: true,
     };
     gc.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     gc.data_table_at(sheet_pos).unwrap().clone()

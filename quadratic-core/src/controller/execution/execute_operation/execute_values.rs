@@ -1,7 +1,7 @@
+use crate::SheetRect;
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::{Pos, SheetRect};
 
 impl GridController {
     pub(crate) fn execute_set_cell_values(
@@ -10,67 +10,57 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetCellValues { sheet_pos, values } = op {
-            match self.grid.try_sheet_mut(sheet_pos.sheet_id) {
-                None => (), // sheet may have been deleted
-                Some(sheet) => {
-                    // update individual cell values and collect old_values
-                    let old_values = sheet.merge_cell_values(
-                        transaction,
-                        sheet_pos.into(),
-                        &values,
-                        &self.a1_context,
-                    );
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) else {
+                return;
+            };
 
-                    if old_values == values {
-                        return;
-                    }
+            // update individual cell values and collect old_values
+            let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+            if old_values == values {
+                return;
+            }
 
-                    let min = sheet_pos.into();
-                    let sheet_rect = SheetRect {
-                        sheet_id: sheet_pos.sheet_id,
-                        min,
-                        max: Pos {
-                            x: min.x - 1 + values.w.max(old_values.w) as i64,
-                            y: min.y - 1 + values.h.max(old_values.h) as i64,
-                        },
-                    };
+            let sheet_rect = SheetRect::from_numbers(
+                sheet_pos.x,
+                sheet_pos.y,
+                values.w.max(old_values.w) as i64,
+                values.h.max(old_values.h) as i64,
+                sheet_pos.sheet_id,
+            );
 
-                    self.check_deleted_data_tables(transaction, &sheet_rect);
-                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
-                    self.add_compute_operations(transaction, sheet_rect, None);
-                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
+            self.check_deleted_data_tables(transaction, &sheet_rect);
+            self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+            self.check_validations(transaction, sheet_rect);
+            self.add_compute_operations(transaction, sheet_rect, None);
+            self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
-                    transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-                    if transaction.is_user_ai()
-                        && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
-                    {
-                        let rows_to_resize =
-                            sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
-                        if !rows_to_resize.is_empty() {
-                            transaction
-                                .resize_rows
-                                .entry(sheet_pos.sheet_id)
-                                .or_default()
-                                .extend(rows_to_resize);
-                        }
-                    }
+            transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+            self.thumbnail_dirty_sheet_rect(transaction, sheet_rect);
 
-                    if transaction.is_user_ai_undo_redo() {
-                        transaction.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(sheet_rect);
-
-                        transaction
-                            .forward_operations
-                            .push(Operation::SetCellValues { sheet_pos, values });
-
-                        transaction
-                            .reverse_operations
-                            .push(Operation::SetCellValues {
-                                sheet_pos,
-                                values: old_values,
-                            });
-                    }
+            if transaction.is_user_ai()
+                && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
+            {
+                let rows_to_resize = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                if !rows_to_resize.is_empty() {
+                    transaction
+                        .resize_rows
+                        .entry(sheet_pos.sheet_id)
+                        .or_default()
+                        .extend(rows_to_resize);
                 }
+            }
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCellValues { sheet_pos, values });
+
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: old_values,
+                    });
             }
         }
     }

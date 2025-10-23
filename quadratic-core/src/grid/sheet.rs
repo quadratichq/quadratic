@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use validations::Validations;
 
 use super::bounds::GridBounds;
-use super::column::Column;
 use super::ids::SheetId;
 use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
@@ -43,10 +42,11 @@ pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
-#[cfg(test)]
-pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
+
+#[cfg(test)]
+pub mod sheet_test;
 
 const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
 lazy_static! {
@@ -57,21 +57,21 @@ lazy_static! {
 /// Sheet in a file.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
-    pub id: SheetId,
-    pub name: String,
-    pub color: Option<String>,
-    pub order: String,
+    pub(crate) id: SheetId,
+    pub(crate) name: String,
+    pub(crate) color: Option<String>,
+    pub(crate) order: String,
 
-    pub offsets: SheetOffsets,
+    pub(crate) offsets: SheetOffsets,
 
-    pub columns: SheetColumns,
+    pub(crate) columns: SheetColumns,
 
-    pub data_tables: SheetDataTables,
+    pub(crate) data_tables: SheetDataTables,
 
     /// Formatting for the entire sheet.
-    pub formats: SheetFormatting,
+    pub(crate) formats: SheetFormatting,
 
-    pub validations: Validations,
+    pub(crate) validations: Validations,
 
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
@@ -81,7 +81,7 @@ pub struct Sheet {
 
     pub(super) rows_resize: ResizeMap,
 
-    pub borders: Borders,
+    pub(crate) borders: Borders,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -138,30 +138,6 @@ impl Sheet {
         Ok(())
     }
 
-    /// Replaces a sheet name when referenced in code cells.
-    pub fn replace_sheet_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        let sheet_id = SheetId::new();
-        let old_a1_context = A1Context::with_single_sheet(old_name, sheet_id);
-        let new_a1_context = A1Context::with_single_sheet(new_name, sheet_id);
-        self.replace_names_in_code_cells(&old_a1_context, &new_a1_context);
-    }
-
-    /// Replaces any number of sheet names and table names when referenced in
-    /// code cells.
-    pub fn replace_names_in_code_cells(
-        &mut self,
-        old_a1_context: &A1Context,
-        new_a1_context: &A1Context,
-    ) {
-        self.update_code_cells(|code_cell_value, pos| {
-            code_cell_value.replace_sheet_name_in_cell_references(
-                old_a1_context,
-                new_a1_context,
-                pos,
-            );
-        });
-    }
-
     /// Returns true if the cell at Pos is at a vertical edge of a table.
     pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
@@ -211,7 +187,9 @@ impl Sheet {
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = self.cell_value_ref(pos) {
+        if let Some(cell_value) = self.cell_value_ref(pos)
+            && !matches!(cell_value, CellValue::Blank)
+        {
             return Some(cell_value.clone());
         }
 
@@ -301,11 +279,6 @@ impl Sheet {
     pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
         self.cell_value(pos)
             .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
-    }
-
-    /// Returns a mutable reference to the cell value at the Pos in column.values.
-    pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
-        self.columns.get_value_mut(&pos)
     }
 
     /// Returns the cell value at a position using both `column.values` and
@@ -422,11 +395,6 @@ impl Sheet {
         }
     }
 
-    /// Returns a column of a sheet from the column index.
-    pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
-        self.columns.get_column(index)
-    }
-
     /// Returns the sheet id as a string.
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
@@ -512,41 +480,11 @@ impl Sheet {
     pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
         self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
-
-    /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
-    /// and did not previously exist (so no change is needed).
-    #[cfg(test)]
-    pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
-        self.columns.set_value(&pos, value)
-    }
-
-    /// Populates the current sheet with random values
-    /// Should only be used for testing (as it will not propagate in multiplayer)
-    #[cfg(test)]
-    pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        use crate::number::decimal_from_str;
-        use rand::Rng;
-
-        self.columns.clear();
-        let mut rng = rand::rng();
-        for x in rect.x_range() {
-            for y in rect.y_range() {
-                let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value(
-                    (x, y).into(),
-                    CellValue::Number(decimal_from_str(&value).unwrap()),
-                );
-            }
-        }
-        self.recalculate_bounds(a1_context);
-    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use chrono::NaiveDateTime;
 
     use super::*;
     use crate::a1::A1Selection;
@@ -592,7 +530,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        let _ = sheet.set_cell_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
+        sheet.set_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -696,7 +634,7 @@ mod test {
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        let _ = sheet.set_cell_value(
+        sheet.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Text(String::from("abc")),
         );
@@ -711,7 +649,7 @@ mod test {
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        sheet.set_cell_value(
+        sheet.set_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Number(decimal_from_str("11.100000000000000000").unwrap()),
         );
@@ -842,54 +780,53 @@ mod test {
 
     #[test]
     fn cell_format_summary() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
+        let (mut gc, sheet_id, _) = test_setup_basic();
 
-        let format_summary = sheet.cell_format_summary((2, 1).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
-        let value = sheet.cell_format_summary((2, 1).into());
+        gc.sheet_mut(sheet_id)
+            .formats
+            .bold
+            .set(Pos { x: 2, y: 1 }, Some(true));
+        let value = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
             ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 
-        let format_summary = sheet.cell_format_summary((2, 1).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
-        let value = sheet.cell_format_summary((2, 1).into());
+        gc.sheet_mut(sheet_id)
+            .formats
+            .italic
+            .set(Pos { x: 2, y: 1 }, Some(true));
+        let value = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into());
+        let existing_cell_format_summary = gc.sheet(sheet_id).cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
 
-        sheet.set_cell_value(
-            Pos { x: 0, y: 0 },
-            CellValue::Date(NaiveDate::from_str("2024-12-21").unwrap()),
-        );
-        let format_summary = sheet.cell_format_summary((0, 0).into());
+        gc.set_cell_value(pos![sheet_id!2,2], "2024-12-21".to_string(), None, false);
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 2).into());
         assert_eq!(format_summary.cell_type, Some(CellType::Date));
 
-        sheet.set_cell_value(
-            Pos { x: 1, y: 0 },
+        gc.sheet_mut(sheet_id).set_value(
+            (2, 3).into(),
             CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
             ),
         );
-        let format_summary = sheet.cell_format_summary((1, 0).into());
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 3).into());
         assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
 
-        sheet.set_cell_value(
-            Pos { x: 2, y: 0 },
-            CellValue::Time(NaiveTime::parse_from_str("1:23 pm", "%-I:%M %p").unwrap()),
-        );
-        let format_summary = sheet.cell_format_summary((2, 0).into());
+        gc.set_cell_value(pos![sheet_id!2,4], "1:23 pm".to_string(), None, false);
+        let format_summary = gc.sheet(sheet_id).cell_format_summary((2, 4).into());
         assert_eq!(format_summary.cell_type, None);
     }
 
@@ -898,15 +835,15 @@ mod test {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
         assert_eq!(sheet.display_value(pos), None);
-        sheet.set_cell_value(pos, CellValue::Blank);
+        sheet.set_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
     }
 
     #[test]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
+        sheet.set_value(pos![A1], "test");
+        sheet.set_value(pos![A3], "test");
         assert_eq!(
             sheet.get_rows_with_wrap_in_column(1, false),
             Vec::<i64>::new()
@@ -921,8 +858,8 @@ mod test {
     #[test]
     fn test_get_rows_with_wrap_in_rect() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
+        sheet.set_value(pos![A1], "test");
+        sheet.set_value(pos![A3], "test");
         let rect = Rect {
             min: pos![A1],
             max: pos![A4],
@@ -941,7 +878,7 @@ mod test {
     #[test]
     fn js_cell_value() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_value(Pos { x: 0, y: 0 }, "test");
         let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
         assert_eq!(
             js_cell_value,
@@ -956,7 +893,7 @@ mod test {
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
+        sheet.set_value(pos, "test");
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -968,7 +905,7 @@ mod test {
         );
 
         let pos = pos![B2];
-        sheet.set_cell_value(pos, CellValue::Image("image string".to_string()));
+        sheet.set_value(pos, CellValue::Image("image string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -980,7 +917,7 @@ mod test {
         );
 
         let pos = pos![C3];
-        sheet.set_cell_value(pos, CellValue::Html("html string".to_string()));
+        sheet.set_value(pos, CellValue::Html("html string".to_string()));
         let js_cell_value_pos = sheet.js_cell_value_pos(pos);
         assert_eq!(
             js_cell_value_pos,
@@ -1157,7 +1094,7 @@ mod test {
             Some(true),
             None,
         );
-        sheet.data_table_insert_full(&anchor_pos, dt);
+        sheet.data_table_insert_full(anchor_pos, dt);
 
         // Test row edges
         assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
@@ -1186,7 +1123,7 @@ mod test {
             None,
         );
         dt_no_ui.show_name = Some(false);
-        sheet.data_table_insert_full(&pos![E5], dt_no_ui);
+        sheet.data_table_insert_full(pos![E5], dt_no_ui);
 
         // Test edges without UI
         assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge

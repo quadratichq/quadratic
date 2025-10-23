@@ -646,7 +646,7 @@ mod tests {
             let data_table = sheet.data_table_at(&pos![E1]).unwrap();
 
             // Check basic properties
-            // assert_eq!(data_table.name, "Table_2".into());
+            assert_eq!(data_table.name, "Table_2".into());
             assert!(!data_table.header_is_first_row);
             assert_eq!(data_table.value, Value::Array(values_no_header.into()));
 

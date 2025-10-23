@@ -32,12 +32,12 @@ impl Sheet {
         // mark hashes of old columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
+        self.columns.insert_column(column);
+
         if !ignore_tables {
             self.check_insert_tables_columns(transaction, column, copy_formats);
             self.adjust_insert_tables_columns(transaction, column, copy_formats);
         }
-
-        self.columns.insert_column(column);
 
         // update formatting (fn has maths to find column_inserted)
         self.formats.insert_column(column, copy_formats);

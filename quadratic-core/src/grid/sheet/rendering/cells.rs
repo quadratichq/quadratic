@@ -313,21 +313,19 @@ mod tests {
     fn test_has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         let rect = Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 100, y: 100 },
         };
-        assert!(!sheet.has_render_cells(rect));
+        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
 
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        assert!(sheet.has_render_cells(rect));
+        gc.set_cell_value(pos![sheet_id!1,2], "test".into(), None, false);
+        assert!(gc.sheet(sheet_id).has_render_cells(rect));
 
-        sheet
-            .columns
+        gc.sheet_mut(sheet_id)
             .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
-        assert!(!sheet.has_render_cells(rect));
+        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
 
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
@@ -340,7 +338,7 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_data_table(
+        gc.sheet_mut(sheet_id).set_data_table(
             Pos { x: 2, y: 3 },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
@@ -352,12 +350,11 @@ mod tests {
                 None,
             )),
         );
-        assert!(sheet.has_render_cells(rect));
+        assert!(gc.sheet(sheet_id).has_render_cells(rect));
 
         let selection = A1Selection::from_xy(2, 3, sheet_id);
         gc.delete_cells(&selection, None, false);
-        let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.has_render_cells(rect));
+        assert!(!gc.sheet(sheet_id).has_render_cells(rect));
     }
 
     #[test]
@@ -365,33 +362,39 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
-        sheet
+        let pos = pos![1, 2];
+        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "test".into(), None, false);
+        gc.sheet_mut(sheet_id).formats.bold.set(pos, Some(true));
+        gc.sheet_mut(sheet_id)
             .formats
             .align
-            .set(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
-        sheet
+            .set(pos, Some(CellAlign::Center));
+        gc.sheet_mut(sheet_id)
             .formats
             .vertical_align
-            .set(Pos { x: 1, y: 2 }, Some(CellVerticalAlign::Middle));
-        sheet
+            .set(pos, Some(CellVerticalAlign::Middle));
+        gc.sheet_mut(sheet_id)
             .formats
             .wrap
-            .set(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
-        sheet.formats.italic.set(Pos { x: 1, y: 3 }, Some(true));
-        sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
-        sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
-        sheet.set_cell_value(
+            .set(pos, Some(CellWrap::Wrap));
+
+        gc.set_cell_value(pos![sheet_id!1,3], "123".into(), None, false);
+        gc.sheet_mut(sheet_id)
+            .formats
+            .italic
+            .set(pos![1, 3], Some(true));
+
+        gc.sheet_mut(sheet_id)
+            .set_value(pos![2, 4], CellValue::Html("html".to_string()));
+        gc.set_cell_value(pos![sheet_id!2,5], "true".into(), None, false);
+        gc.sheet_mut(sheet_id).set_value(
             Pos { x: 2, y: 6 },
             CellValue::Error(Box::new(RunError {
                 span: None,
                 msg: RunErrorMsg::Spill,
             })),
         );
-        let _ = sheet.set_cell_value(
+        gc.sheet_mut(sheet_id).set_value(
             Pos { x: 3, y: 3 },
             CellValue::Error(Box::new(RunError {
                 span: None,

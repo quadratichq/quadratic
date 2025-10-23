@@ -72,10 +72,11 @@ impl GridController {
             None,
         );
 
-        let op = Operation::AddDataTableWithoutCellValue {
+        let op = Operation::SetDataTable {
             sheet_pos: SheetPos::new(sheet_id, x, y),
-            data_table,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
@@ -102,10 +103,11 @@ impl GridController {
             None,
         );
 
-        let op = Operation::AddDataTableWithoutCellValue {
+        let op = Operation::SetDataTable {
             sheet_pos,
-            data_table,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }

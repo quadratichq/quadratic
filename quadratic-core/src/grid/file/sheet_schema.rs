@@ -28,31 +28,33 @@ pub enum SheetSchema {
 impl SheetSchema {
     /// Imports a Sheet from the schema.
     pub fn into_latest(self) -> Result<Sheet> {
+        self.upgrade_to_latest()
+    }
+
+    fn upgrade_to_latest(self) -> Result<Sheet> {
         match self {
             SheetSchema::V1_12(sheet) => import_sheet(sheet),
-            SheetSchema::V1_11(sheet) => import_sheet(v1_11::upgrade_sheet(sheet)),
-            SheetSchema::V1_10(sheet) => {
-                import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(sheet)))
+            SheetSchema::V1_11(sheet) => {
+                SheetSchema::V1_12(v1_11::upgrade_sheet(sheet)).upgrade_to_latest()
             }
-            SheetSchema::V1_9(sheet) => import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(
-                v1_9::upgrade_sheet(sheet),
-            ))),
-            SheetSchema::V1_8(sheet) => import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(
-                v1_9::upgrade_sheet(v1_8::upgrade_sheet(sheet)),
-            ))),
-            SheetSchema::V1_7_1(sheet) => import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(
-                v1_9::upgrade_sheet(v1_8::upgrade_sheet(v1_7_1::upgrade_sheet(sheet))),
-            ))),
-            SheetSchema::V1_7(sheet) => import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(
-                v1_9::upgrade_sheet(v1_8::upgrade_sheet(v1_7_1::upgrade_sheet(
-                    v1_7::upgrade_sheet(sheet),
-                ))),
-            ))),
-            SheetSchema::V1_6(sheet) => import_sheet(v1_11::upgrade_sheet(v1_10::upgrade_sheet(
-                v1_9::upgrade_sheet(v1_8::upgrade_sheet(v1_7_1::upgrade_sheet(
-                    v1_7::upgrade_sheet(v1_6::file::upgrade_sheet(sheet)?),
-                ))),
-            ))),
+            SheetSchema::V1_10(sheet) => {
+                SheetSchema::V1_11(v1_10::upgrade_sheet(sheet)).upgrade_to_latest()
+            }
+            SheetSchema::V1_9(sheet) => {
+                SheetSchema::V1_10(v1_9::upgrade_sheet(sheet)).upgrade_to_latest()
+            }
+            SheetSchema::V1_8(sheet) => {
+                SheetSchema::V1_9(v1_8::upgrade_sheet(sheet)).upgrade_to_latest()
+            }
+            SheetSchema::V1_7_1(sheet) => {
+                SheetSchema::V1_8(v1_7_1::upgrade_sheet(sheet)).upgrade_to_latest()
+            }
+            SheetSchema::V1_7(sheet) => {
+                SheetSchema::V1_7_1(v1_7::upgrade_sheet(sheet)).upgrade_to_latest()
+            }
+            SheetSchema::V1_6(sheet) => {
+                SheetSchema::V1_7(v1_6::file::upgrade_sheet(sheet)?).upgrade_to_latest()
+            }
         }
     }
 }
@@ -70,7 +72,7 @@ mod test {
     #[test]
     fn test_export_sheet() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());
+        sheet.set_value(pos![A1], "Hello, world!".to_string());
         let schema = export_sheet(sheet.clone());
         let imported = schema.into_latest().unwrap();
         assert_eq!(sheet, imported);

@@ -1398,27 +1398,27 @@ mod test {
     #[test]
     fn boolean_to_cell_value() {
         let (value, format_update) = CellValue::string_to_cell_value("true", true);
-        assert_eq!(value, true.into());
+        assert_eq!(value, CellValue::Logical(true));
         assert!(format_update.is_default());
 
         let (value, format_update) = CellValue::string_to_cell_value("false", true);
-        assert_eq!(value, false.into());
+        assert_eq!(value, CellValue::Logical(false));
         assert!(format_update.is_default());
 
         let (value, format_update) = CellValue::string_to_cell_value("TRUE", true);
-        assert_eq!(value, true.into());
+        assert_eq!(value, CellValue::Logical(true));
         assert!(format_update.is_default());
 
         let (value, format_update) = CellValue::string_to_cell_value("FALSE", true);
-        assert_eq!(value, false.into());
+        assert_eq!(value, CellValue::Logical(false));
         assert!(format_update.is_default());
 
         let (value, format_update) = CellValue::string_to_cell_value("tRue", true);
-        assert_eq!(value, true.into());
+        assert_eq!(value, CellValue::Logical(true));
         assert!(format_update.is_default());
 
         let (value, format_update) = CellValue::string_to_cell_value("FaLse", true);
-        assert_eq!(value, false.into());
+        assert_eq!(value, CellValue::Logical(false));
         assert!(format_update.is_default());
     }
 

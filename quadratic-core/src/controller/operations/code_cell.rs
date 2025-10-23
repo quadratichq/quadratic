@@ -6,10 +6,7 @@ use crate::{
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{
-        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId,
-        js_types::JsSnackbarSeverity, unique_data_table_name,
-    },
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId},
     util::now,
 };
 
@@ -22,16 +19,13 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let parse_ctx = self.a1_context();
-        let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
-            _ => code,
-        };
+        let mut ops = vec![];
 
         let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
             // sheet may have been deleted in a multiplayer operation
-            return vec![];
+            return ops;
         };
+
         if sheet
             .data_table_pos_that_contains(sheet_pos.into())
             .is_some_and(|dt_pos| dt_pos != sheet_pos.into())
@@ -39,64 +33,48 @@ impl GridController {
             if cfg!(target_family = "wasm") || cfg!(test) {
                 crate::wasm_bindings::js::jsClientMessage(
                     "Cannot add code cell to table".to_string(),
-                    JsSnackbarSeverity::Error.to_string(),
+                    crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
                 );
             }
             // cannot set a code cell where there is already a data table anchor
-            return vec![];
+            return ops;
         }
 
-        let existing_data_table = sheet.data_table_at(&sheet_pos.into());
-        let existing_data_table_index =
-            existing_data_table.and_then(|_| sheet.data_table_index(sheet_pos.into()));
-
-        let name = if let Some(dt) = existing_data_table {
-            dt.name.clone()
-        } else if let Some(code_cell_name) = code_cell_name {
-            unique_data_table_name(&code_cell_name, false, Some(sheet_pos), &self.a1_context).into()
-        } else {
-            let language_str = match language {
-                CodeCellLanguage::Formula => "Formula".to_string(),
-                CodeCellLanguage::Python => "Python".to_string(),
-                CodeCellLanguage::Javascript => "Javascript".to_string(),
-                CodeCellLanguage::Import => "Table".to_string(),
-                CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
-            };
-            unique_data_table_name(&language_str, true, Some(sheet_pos), &self.a1_context).into()
+        let code = match language {
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, self.a1_context(), sheet_pos),
+            _ => code,
         };
 
-        let mut ops = vec![];
-        if let Some(existing_data_table) = existing_data_table
+        if let Some((existing_data_table_index, existing_data_table)) =
+            sheet.data_table_full_at(&sheet_pos.into())
             && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
             && existing_code_run.language == language
         {
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table: DataTable {
+                data_table: Some(DataTable {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
                         ..existing_code_run.clone()
                     }),
-                    name,
                     ..existing_data_table.clone()
-                },
+                }),
                 index: existing_data_table_index,
+                ignore_old_data_table: false,
             });
         } else {
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            let name = CellValue::Text(
+                code_cell_name.unwrap_or_else(|| format!("{}1", language.as_string())),
+            );
+
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table: DataTable {
+                data_table: Some(DataTable {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
-                        std_out: None,
-                        std_err: None,
-                        cells_accessed: CellsAccessed::default(),
-                        error: None,
-                        return_type: None,
-                        line_number: None,
-                        output_type: None,
+                        ..Default::default()
                     }),
                     name,
                     header_is_first_row: false,
@@ -115,8 +93,9 @@ impl GridController {
                     borders: None,
                     chart_pixel_output: None,
                     chart_output: None,
-                },
-                index: None,
+                }),
+                index: usize::MAX,
+                ignore_old_data_table: false,
             });
         }
 
@@ -249,22 +228,21 @@ mod test {
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
-        let pos = Pos { x: 0, y: 0 };
-        sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "delete me".to_string(), None, false);
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id),
+            sheet_pos,
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
         );
         assert_eq!(operations.len(), 2);
-        let Operation::AddDataTableWithoutCellValue { data_table, .. } = &operations[0] else {
-            panic!("Expected AddDataTableWithoutCellValue");
+        let Operation::SetDataTable { data_table, .. } = &operations[0] else {
+            panic!("Expected SetDataTable");
         };
         assert_eq!(
-            data_table.kind,
+            data_table.as_ref().unwrap().kind,
             DataTableKind::CodeRun(CodeRun {
                 language: CodeCellLanguage::Python,
                 code: "print('hello world')".to_string(),
@@ -272,12 +250,7 @@ mod test {
             })
         );
 
-        assert_eq!(
-            operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-            }
-        );
+        assert_eq!(operations[1], Operation::ComputeCode { sheet_pos });
     }
 
     #[test]

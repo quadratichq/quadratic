@@ -41,7 +41,6 @@ impl GridController {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.x = min_column;
-            self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
         }
@@ -119,7 +118,6 @@ impl GridController {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
             let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
             sheet_rect.min.y = min_row;
-            self.check_deleted_data_tables(transaction, &sheet_rect);
             self.update_spills_in_sheet_rect(transaction, &sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
         }

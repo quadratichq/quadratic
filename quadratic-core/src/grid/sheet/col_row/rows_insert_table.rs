@@ -124,7 +124,7 @@ impl Sheet {
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
+                let dirty_rects = self.data_table_insert_before(index, new_pos, data_table).3;
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations

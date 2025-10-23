@@ -203,10 +203,11 @@ impl GridController {
                 file_name,
                 a1_selection.to_string(None, self.a1_context())
             );
-            ops.push(Operation::AddDataTableWithoutCellValue {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                data_table,
-                index: None,
+                data_table: Some(data_table),
+                index: usize::MAX,
+                ignore_old_data_table: true,
             });
             drop(sheet_format_updates);
         } else {
@@ -351,7 +352,7 @@ impl GridController {
                     let sheet = gc
                         .try_sheet_mut(sheet_id)
                         .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
-                    sheet.columns.set_value(&pos, cell_value);
+                    sheet.set_value(pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
@@ -380,7 +381,7 @@ impl GridController {
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
                         sheet.data_table_insert_full(
-                            &sheet_pos.into(),
+                            sheet_pos.into(),
                             DataTable::new(
                                 DataTableKind::CodeRun(CodeRun {
                                     language: CodeCellLanguage::Formula,
@@ -599,10 +600,11 @@ impl GridController {
             a1_selection.to_string(None, self.a1_context())
         );
 
-        let ops = vec![Operation::AddDataTableWithoutCellValue {
+        let ops = vec![Operation::SetDataTable {
             sheet_pos: SheetPos::from((insert_at, sheet_id)),
-            data_table,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         }];
 
         Ok((ops, response_prompt))
@@ -795,7 +797,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                         excel_serial_to_date_time(f64_val, true, false, false)
                     };
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(&pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -825,7 +827,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 {
                     let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
                     if let Some(new_value) = converted_value {
-                        sheet.columns.set_value(&pos, new_value);
+                        sheet.set_value(pos, new_value);
                     }
                 }
             }
@@ -848,7 +850,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, true, true);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_date_format(active_format) {
@@ -862,7 +864,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, true, false, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else if is_excel_time_format(active_format) {
@@ -876,7 +878,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             let converted_value =
                                 excel_serial_to_date_time(f64_val, false, true, false);
                             if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
+                                sheet.set_value(pos, new_value);
                             }
                         }
                     } else {
@@ -918,7 +920,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_date_format(format_string) {
@@ -931,7 +933,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else if is_excel_time_format(format_string) {
@@ -944,7 +946,7 @@ fn import_excel_number_format_string(sheet: &mut Sheet, pos: Pos, format_string:
         {
             let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
             if let Some(new_value) = converted_value {
-                sheet.columns.set_value(&pos, new_value);
+                sheet.set_value(pos, new_value);
             }
         }
     } else {
@@ -1418,16 +1420,17 @@ mod test {
         expected_data_table.apply_first_row_as_header();
 
         let data_table = match ops[0].clone() {
-            Operation::AddDataTableWithoutCellValue { data_table, .. } => data_table,
-            _ => panic!("Expected AddDataTable operation"),
+            Operation::SetDataTable { data_table, .. } => data_table,
+            _ => panic!("Expected SetDataTable operation"),
         };
-        expected_data_table.last_modified = data_table.last_modified;
+        expected_data_table.last_modified = data_table.as_ref().unwrap().last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTableWithoutCellValue {
+        let expected = Operation::SetDataTable {
             sheet_pos: SheetPos::new(sheet_id, 1, 1),
-            data_table: expected_data_table,
-            index: None,
+            data_table: Some(expected_data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
 
         assert_eq!(ops.len(), 1);
@@ -1459,16 +1462,16 @@ mod test {
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTableWithoutCellValue {
+            Operation::SetDataTable {
                 sheet_pos,
                 data_table,
                 ..
             } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected SetDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 1),
+            data_table.as_ref().unwrap().cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }
@@ -2211,25 +2214,21 @@ mod test {
 
         // test date format detection
         let pos6 = pos![F1];
-        sheet
-            .columns
-            .set_value(&pos6, CellValue::Number(44926.into())); // Excel serial date
+        sheet.set_value(pos6, CellValue::Number(44926.into())); // Excel serial date
         import_excel_number_format_string(sheet, pos6, "yyyy-mm-dd");
         assert!(sheet.formats.date_time.get(pos6).is_some());
         // The date format should be applied but the value might not be automatically converted in this context
 
         // test time format detection
         let pos7 = pos![G1];
-        sheet
-            .columns
-            .set_value(&pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
+        sheet.set_value(pos7, CellValue::Number(decimal_from_str("0.5").unwrap())); // 12:00:00 in Excel time
         import_excel_number_format_string(sheet, pos7, "hh:mm:ss");
         assert!(sheet.formats.date_time.get(pos7).is_some());
 
         // test datetime format detection
         let pos8 = pos![H1];
-        sheet.columns.set_value(
-            &pos8,
+        sheet.set_value(
+            pos8,
             CellValue::Number(decimal_from_str("44926.5").unwrap()),
         );
         import_excel_number_format_string(sheet, pos8, "yyyy-mm-dd hh:mm:ss");

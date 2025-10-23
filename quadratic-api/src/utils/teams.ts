@@ -12,12 +12,17 @@ export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
 };
 
 // keys singleton
-let keys: Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> | null = null;
-export async function getKeys(): Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> {
+let keys: Promise<{ sshPublicKey: Uint8Array; sshPrivateKey: Uint8Array }> | null = null;
+export async function getKeys(): Promise<{ sshPublicKey: Uint8Array; sshPrivateKey: Uint8Array }> {
   if (keys === null || !isRunningInTest) {
     keys = generateSshKeys().then(({ privateKey, publicKey }) => {
-      const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
-      const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
+      const publicKeyBuffer = Buffer.from(encryptFromEnv(publicKey));
+      const privateKeyBuffer = Buffer.from(encryptFromEnv(privateKey));
+      // Create new ArrayBuffer and copy data to ensure Uint8Array<ArrayBuffer> type
+      const sshPublicKey = new Uint8Array(new ArrayBuffer(publicKeyBuffer.length));
+      sshPublicKey.set(publicKeyBuffer);
+      const sshPrivateKey = new Uint8Array(new ArrayBuffer(privateKeyBuffer.length));
+      sshPrivateKey.set(privateKeyBuffer);
       return { sshPublicKey, sshPrivateKey };
     });
   }
@@ -34,8 +39,8 @@ export async function createTeam<T extends Prisma.TeamSelect>(
   const result = await dbClient.team.create({
     data: {
       name,
-      sshPublicKey,
-      sshPrivateKey,
+      sshPublicKey: sshPublicKey as Uint8Array<ArrayBuffer>,
+      sshPrivateKey: sshPrivateKey as Uint8Array<ArrayBuffer>,
       UserTeamRole: {
         create: {
           userId: ownerUserId,
@@ -63,8 +68,8 @@ export async function getDecryptedTeam(team: Team): Promise<DecryptedTeam> {
     encryptedTeam = await dbClient.team.update({
       where: { id: encryptedTeam.id },
       data: {
-        sshPublicKey,
-        sshPrivateKey,
+        sshPublicKey: sshPublicKey as Uint8Array<ArrayBuffer>,
+        sshPrivateKey: sshPrivateKey as Uint8Array<ArrayBuffer>,
       },
     });
   }

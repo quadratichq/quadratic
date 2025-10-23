@@ -396,8 +396,7 @@ impl GridController {
                 // code except when the new data table overwrites the anchor cell
                 let output_rect = data_table.output_rect(target_pos, true);
                 if sheet
-                    .data_tables
-                    .iter_pos_in_rect(output_rect, false)
+                    .data_tables_pos_intersect_rect(output_rect, false)
                     .any(|pos| sheet.data_table_at(&pos).is_none())
                 {
                     let message = format!(
@@ -492,10 +491,11 @@ impl GridController {
                     data_table.to_owned()
                 };
 
-                ops.push(Operation::AddDataTableWithoutCellValue {
+                ops.push(Operation::SetDataTable {
                     sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
-                    data_table: data_table.clone(),
-                    index: None,
+                    data_table: Some(data_table),
+                    index: usize::MAX,
+                    ignore_old_data_table: true,
                 });
 
                 // For a cut, only rerun the code if the cut rectangle overlaps
@@ -837,9 +837,9 @@ impl GridController {
                 if value.chars().next().unwrap_or(' ') == '=' {
                     // code cell
                     let sheet_pos = SheetPos::new(start_pos.sheet_id, x as i64, y as i64);
-                    compute_code_ops.push(Operation::AddDataTableWithoutCellValue {
+                    compute_code_ops.push(Operation::SetDataTable {
                         sheet_pos,
-                        data_table: DataTable::new(
+                        data_table: Some(DataTable::new(
                             DataTableKind::CodeRun(CodeRun::new_formula(value.to_string())),
                             "Formula1",
                             Value::Single(CellValue::Blank),
@@ -847,8 +847,9 @@ impl GridController {
                             Some(true),
                             Some(true),
                             None,
-                        ),
-                        index: None,
+                        )),
+                        index: usize::MAX,
+                        ignore_old_data_table: true,
                     });
                     compute_code_ops.push(Operation::ComputeCode { sheet_pos });
                 } else {
@@ -954,10 +955,7 @@ impl GridController {
         // remove code tables if their anchor cell overlap the paste area
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             sheet
-                .data_table_anchors_in_rect(Rect {
-                    min: insert_at,
-                    max: end_pos,
-                })
+                .data_tables_pos_intersect_rect(Rect::new_span(insert_at, end_pos), false)
                 .filter(|pos| {
                     sheet
                         .data_table_at(pos)
@@ -1164,7 +1162,7 @@ mod test {
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
-    use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
+    use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::*;
@@ -1946,7 +1944,7 @@ mod test {
             "jsClientMessage",
             format!(
                 "Cannot place JavaScript within a table,{}",
-                JsSnackbarSeverity::Error
+                crate::grid::js_types::JsSnackbarSeverity::Error
             ),
             true,
         );

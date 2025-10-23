@@ -1,6 +1,6 @@
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
-pub use column::{Column, ColumnData};
+pub use column::Column;
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
 pub use data_table::*;
 pub use formats::Format;
@@ -16,7 +16,6 @@ pub use sheet::Sheet;
 pub use sheet_formatting::SheetFormatting;
 pub use sheet_region_map::SheetRegionMap;
 
-use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 
@@ -100,7 +99,7 @@ impl Grid {
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;
-            let _ = sheet.set_cell_value(Pos { x, y }, value.clone());
+            sheet.set_value(Pos { x, y }, value.clone());
         }
         ret
     }
