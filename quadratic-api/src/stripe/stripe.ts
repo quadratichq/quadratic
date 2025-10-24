@@ -82,7 +82,7 @@ export const createBillingPortalSession = async (teamUuid: string, returnUrlBase
   });
 };
 
-export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrlBase: string) => {
+export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrl: string) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -106,8 +106,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: `${returnUrlBase}/teams/${teamUuid}/settings?subscription=created&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${returnUrlBase}`,
+    success_url: returnUrl,
+    cancel_url: returnUrl,
   });
 };
 
