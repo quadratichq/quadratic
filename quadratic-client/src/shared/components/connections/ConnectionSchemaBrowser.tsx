@@ -1,35 +1,51 @@
-import { ChevronRightIcon, CloseIcon, CopyIcon, RefreshIcon, type IconComponent } from '@/shared/components/Icons';
+import {
+  ChevronRightIcon,
+  CloseIcon,
+  CopyIcon,
+  MoreHorizIcon,
+  RefreshIcon,
+  type IconComponent,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
+
+type SchemaBrowserTableAction = {
+  label: string;
+  onClick: (args: { table: Table; tableQuery: string }) => void;
+  Icon: IconComponent;
+};
+export type SchemaBrowserTableActionOnClick = Parameters<SchemaBrowserTableAction['onClick']>[0];
 
 type ConnectionSchemaBrowserProps = {
   eventSource: string;
   teamUuid: string;
   type: ConnectionType;
   additionalActions?: React.ReactNode;
-  additionalDropdownItems?: Array<{
-    label: string;
-    onClick: (args: { tableQuery: string; tableName: string }) => void;
-    Icon: IconComponent;
-  }>;
+  tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
 };
 
 export const ConnectionSchemaBrowser = ({
   additionalActions,
-  additionalDropdownItems,
+  tableActions,
   eventSource,
   teamUuid,
   type,
@@ -122,7 +138,7 @@ export const ConnectionSchemaBrowser = ({
             data={table}
             key={index}
             connectionType={type}
-            additionalDropdownItems={additionalDropdownItems}
+            tableActions={tableActions}
             eventSource={eventSource}
           />
         ))}
@@ -175,31 +191,17 @@ function TableListItem({
   index,
   data,
   connectionType,
-  additionalDropdownItems,
+  tableActions,
   eventSource,
 }: {
   index: number;
   data: Table;
   connectionType: ConnectionType;
-  additionalDropdownItems: ConnectionSchemaBrowserProps['additionalDropdownItems'];
+  tableActions: ConnectionSchemaBrowserProps['tableActions'];
   eventSource: string;
 }) {
   const { name, columns } = data;
   const [isExpanded, setIsExpanded] = useState(false);
-  const [contextMenuOpen, setContextMenuOpen] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-
-  // Close context menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setContextMenuOpen(false);
-    };
-
-    if (contextMenuOpen) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [contextMenuOpen]);
 
   const handleTableClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -210,16 +212,9 @@ function TableListItem({
     [eventSource]
   );
 
-  const handleRightClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      trackEvent('[ConnectionSchemaBrowser].rightClickTable', { eventSource });
-      setContextMenuPosition({ x: e.clientX, y: e.clientY });
-      setContextMenuOpen(true);
-    },
-    [eventSource]
-  );
+  const handleDropdownClick = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].clickDropdown', { eventSource });
+  }, [eventSource]);
 
   const handleDropdownMenuItemClick = useCallback(
     ({
@@ -227,90 +222,48 @@ function TableListItem({
       onClick,
     }: {
       label: string;
-      onClick: NonNullable<ConnectionSchemaBrowserProps['additionalDropdownItems']>[number]['onClick'];
+      onClick: NonNullable<ConnectionSchemaBrowserProps['tableActions']>[number]['onClick'];
     }) => {
       trackEvent('[ConnectionSchemaBrowser].clickDropdownItem', { eventSource, label });
       onClick({
-        tableName: name,
+        table: data,
         tableQuery: getTableQuery({ table: data, connectionType }),
       });
     },
-    [eventSource, name, data, connectionType]
+    [eventSource, data, connectionType]
   );
-
-  const handleCopyNameClick = useCallback(() => {
-    trackEvent('[ConnectionSchemaBrowser].clickCopyName', { eventSource });
-    navigator.clipboard.writeText(name);
-  }, [name, eventSource]);
-
-  const handleCopyQueryClick = useCallback(() => {
-    trackEvent('[ConnectionSchemaBrowser].clickCopyQuery', { eventSource });
-    const query = getTableQuery({ table: data, connectionType });
-    navigator.clipboard.writeText(query);
-  }, [eventSource, data, connectionType]);
 
   return (
     <div className="group relative">
       <button
-        className={
-          'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 pr-2 font-normal hover:bg-accent'
-        }
+        className={cn(
+          'flex h-7 w-full min-w-0 flex-initial cursor-default select-text items-center pl-2 font-normal hover:bg-accent',
+          tableActions ? 'pr-10' : 'pr-3'
+        )}
         onClick={handleTableClick}
-        onContextMenu={handleRightClick}
       >
         <div className="-ml-0.5 flex h-6 w-6 flex-none items-center">
           <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
         </div>
         <div className="truncate leading-normal">{name}</div>
-        <div className="ml-2 flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
+        <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
       </button>
-
-      {/* Context Menu */}
-      {contextMenuOpen && (
-        <div
-          className="fixed z-50 min-w-[160px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-          style={{
-            left: contextMenuPosition.x,
-            top: contextMenuPosition.y,
-          }}
-          onBlur={() => setContextMenuOpen(false)}
-        >
-          {additionalDropdownItems && (
-            <>
-              {additionalDropdownItems.map(({ label, onClick, Icon }) => (
-                <button
-                  key={label}
-                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => {
-                    handleDropdownMenuItemClick({ label, onClick });
-                    setContextMenuOpen(false);
-                  }}
-                >
-                  <Icon className="mr-2 h-4 w-4" /> {label}
-                </button>
+      {tableActions && (
+        <div className="absolute right-2 top-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
+                <MoreHorizIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {tableActions.map(({ label, onClick, Icon }) => (
+                <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
+                  <Icon className="mr-2" /> {label}
+                </DropdownMenuItem>
               ))}
-              <div className="my-1 h-px bg-border" />
-            </>
-          )}
-
-          <button
-            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              handleCopyNameClick();
-              setContextMenuOpen(false);
-            }}
-          >
-            <CopyIcon className="mr-2 h-4 w-4" /> Copy name
-          </button>
-          <button
-            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              handleCopyQueryClick();
-              setContextMenuOpen(false);
-            }}
-          >
-            <CopyIcon className="mr-2 h-4 w-4" /> Copy query
-          </button>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
 
@@ -319,8 +272,8 @@ function TableListItem({
           {columns.length ? (
             columns.map(({ name, type, is_nullable }, k) => (
               <li key={k} className="border border-l border-transparent border-l-border pl-0.5">
-                <div className="flex w-full items-center justify-between py-0.5 pl-2">
-                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30">{name}</div>
+                <div className="flex w-full items-center justify-between gap-1 py-0.5 pl-2">
+                  <div className="truncate">{name}</div>
 
                   <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                     {type}
@@ -339,6 +292,23 @@ function TableListItem({
     </div>
   );
 }
+
+export const SCHEMA_BROWSER_TABLE_ACTIONS: Record<string, SchemaBrowserTableAction> = {
+  COPY_NAME: {
+    label: 'Copy name',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+  COPY_QUERY: {
+    label: 'Copy query',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+} as const;
 
 function getTableQuery({ table: { name, schema }, connectionType }: { table: Table; connectionType: ConnectionType }) {
   switch (connectionType) {
