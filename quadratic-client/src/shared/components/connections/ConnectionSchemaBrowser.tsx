@@ -237,7 +237,7 @@ function TableListItem({
     <div className="group relative">
       <button
         className={cn(
-          'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 font-normal hover:bg-accent',
+          'flex h-7 w-full min-w-0 flex-initial cursor-default select-text items-center pl-2 font-normal hover:bg-accent',
           tableActions ? 'pr-10' : 'pr-3'
         )}
         onClick={handleTableClick}
