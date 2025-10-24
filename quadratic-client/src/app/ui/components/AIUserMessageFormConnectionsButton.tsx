@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
@@ -97,10 +96,10 @@ export const AIUserMessageFormConnectionsButton = memo(
         </TooltipPopover>
 
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
-          <DropdownMenuLabel className="text-sm font-semibold">Connections</DropdownMenuLabel>
+          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Connections</div>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
             <SettingsIcon className="flex-shrink-0" />
-            <span className="ml-auto truncate">Add or manage</span>
+            <span className="truncate">Add or manage</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (
@@ -116,7 +115,7 @@ export const AIUserMessageFormConnectionsButton = memo(
                     className={`gap-4 ${isActive ? 'bg-accent text-accent-foreground' : ''}`}
                   >
                     <LanguageIcon language={connection.type} className="flex-shrink-0" />
-                    <span className="ml-auto truncate">{connection.name}</span>
+                    <span className="truncate">{connection.name}</span>
                   </DropdownMenuItem>
                 );
               })}
