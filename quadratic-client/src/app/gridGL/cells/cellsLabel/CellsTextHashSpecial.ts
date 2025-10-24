@@ -1,13 +1,14 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { drawCheckbox, drawDropdown, type SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { drawCheckbox, drawDropdown, drawEmoji, type SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   RenderCheckbox,
   RenderDropdown,
+  RenderEmoji,
   RenderSpecial,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import type { Point } from 'pixi.js';
@@ -16,6 +17,17 @@ import { Container } from 'pixi.js';
 export class CellsTextHashSpecial extends Container<SpecialSprite> {
   clear() {
     this.removeChildren();
+  }
+
+  private async drawEmojis(emojis: RenderEmoji[]) {
+    for (const emoji of emojis) {
+      const emojiSprite = await drawEmoji(emoji);
+      if (emojiSprite) {
+        this.addChild(emojiSprite);
+      } else {
+        console.error(`Failed to draw emoji: ${emoji.codePoint}`);
+      }
+    }
   }
 
   private drawCheckboxes(checkboxes: RenderCheckbox[]) {
@@ -35,6 +47,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
     if (special) {
       this.drawCheckboxes(special.checkboxes);
       this.drawDropdowns(special.dropdowns);
+      this.drawEmojis(special.emojis);
     }
   }
 

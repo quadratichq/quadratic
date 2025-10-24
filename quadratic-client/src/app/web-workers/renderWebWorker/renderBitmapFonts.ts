@@ -14,6 +14,7 @@ export interface RenderBitmapChar {
   kerning: Record<string, number>;
   uvs: Float32Array;
   frame: { x: number; y: number; width: number; height: number };
+  specialCodePoint?: number;
 }
 
 export interface RenderBitmapFont {

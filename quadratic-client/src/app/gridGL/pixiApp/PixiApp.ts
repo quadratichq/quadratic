@@ -13,7 +13,6 @@ import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { content } from '@/app/gridGL/pixiApp/Content';
-import { emojis } from '@/app/gridGL/pixiApp/emojis/emojis';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
@@ -60,8 +59,6 @@ export class PixiApp {
     this.momentumDetector = new MomentumScrollDetector();
 
     events.on('debugFlags', this.setViewportDirty);
-
-    emojis.ensureCharacter(0x1f600);
   }
 
   init = (): Promise<void> => {

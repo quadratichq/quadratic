@@ -1,8 +1,10 @@
 //! Handles drawing of checkbox and dropdown sprites.
 
+import { emojis, SCALE_EMOJI } from '@/app/gridGL/pixiApp/emojis/emojis';
 import type {
   RenderCheckbox,
   RenderDropdown,
+  RenderEmoji,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Assets, MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
 
@@ -13,7 +15,7 @@ export const DROPDOWN_PADDING = [5, 8];
 export interface SpecialSprite extends Sprite {
   column: number;
   row: number;
-  type: 'checkbox' | 'dropdown';
+  type: 'checkbox' | 'dropdown' | 'emoji';
 
   checkbox?: boolean;
 
@@ -63,5 +65,21 @@ export const drawDropdown = (options: RenderDropdown) => {
   sprite.rectangle = dropdownRectangle(options.x, options.y);
   sprite.alpha = 0.5;
   sprite.position.set(options.x, options.y + DROPDOWN_PADDING[1]);
+  return sprite;
+};
+
+export const drawEmoji = (options: RenderEmoji): SpecialSprite => {
+  const texture = emojis.getCharacter(options.codePoint);
+  if (!texture) throw new Error(`Expected emoji texture: ${options.codePoint}`);
+
+  const sprite = new Sprite(texture) as SpecialSprite;
+  sprite.column = -1;
+  sprite.row = -1;
+  sprite.type = 'emoji';
+  sprite.width = (options.width / 2) * SCALE_EMOJI;
+  sprite.height = (options.height / 2) * SCALE_EMOJI;
+  sprite.rectangle = new Rectangle(-1, -1, 0, 0);
+  sprite.position.set(options.x, options.y);
+  sprite.anchor.set(0.5);
   return sprite;
 };

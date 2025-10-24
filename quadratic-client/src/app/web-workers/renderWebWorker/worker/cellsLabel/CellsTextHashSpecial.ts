@@ -3,11 +3,12 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { checkboxRectangle, dropdownRectangle } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import type { Rectangle } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 export interface RenderSpecial {
   checkboxes: RenderCheckbox[];
   dropdowns: RenderDropdown[];
+  emojis: RenderEmoji[];
 }
 
 export interface RenderCheckbox {
@@ -29,16 +30,26 @@ export interface RenderDropdown {
   y: number;
 }
 
+export interface RenderEmoji {
+  codePoint: number;
+
+  // this is the rectangle where the emoji will be rendered (relative to the hash)
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export class CellsTextHashSpecial {
   // hashmap of x,y coordinates to checkboxes
   special: RenderSpecial;
 
   constructor() {
-    this.special = { checkboxes: [], dropdowns: [] };
+    this.special = { checkboxes: [], dropdowns: [], emojis: [] };
   }
 
   clear = () => {
-    this.special = { checkboxes: [], dropdowns: [] };
+    this.special = { checkboxes: [], dropdowns: [], emojis: [] };
   };
 
   addCheckbox = (column: number, row: number, x: number, y: number, value: boolean) => {
@@ -49,8 +60,14 @@ export class CellsTextHashSpecial {
     this.special.dropdowns.push({ column, row, x, y });
   };
 
+  addEmojis = (emojis: RenderEmoji[]) => {
+    this.special.emojis.push(...emojis);
+  };
+
   isEmpty = () => {
-    return this.special.checkboxes.length === 0 && this.special.dropdowns.length === 0;
+    return (
+      this.special.checkboxes.length === 0 && this.special.dropdowns.length === 0 && this.special.emojis.length === 0
+    );
   };
 
   // Extends the view rectangle (bounds) to include any special cells
@@ -65,6 +82,10 @@ export class CellsTextHashSpecial {
     this.special.dropdowns.forEach((dropdown) => {
       const r = dropdownRectangle(dropdown.x, dropdown.y);
       const bounds = new Bounds();
+      bounds.addRectangle(r);
+    });
+    this.special.emojis.forEach((emoji) => {
+      const r = new Rectangle(emoji.x, emoji.y, emoji.width, emoji.height);
       bounds.addRectangle(r);
     });
     bounds.updateRectangle(rectangle);

@@ -9,6 +9,7 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { emojiCodePoints } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import type {
@@ -26,6 +27,7 @@ import {
   splitTextToCharacters,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/bitmapTextUtils';
 import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import type { RenderEmoji } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
 import type { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
 import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
@@ -144,6 +146,8 @@ export class CellLabel {
   private tableName: boolean;
   private columnHeader: boolean;
 
+  emojis: RenderEmoji[];
+
   private getText = (cell: JsRenderCell) => {
     let text = '';
     switch (cell?.special) {
@@ -204,6 +208,8 @@ export class CellLabel {
       this.text = cell.value === 'true' ? 'TRUE' : 'FALSE';
       cell.align = cell.align ?? 'center';
     }
+
+    this.emojis = [];
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
@@ -450,8 +456,26 @@ export class CellLabel {
         spaceCount = 0;
         continue;
       }
-      const charData = data.chars[charCode];
-      if (!charData) continue;
+      let charData = data.chars[charCode];
+      // if not a normal character and not an emoji character, then we don't render it
+      if (!charData) {
+        if (emojiCodePoints.includes(charCode)) {
+          charData = {
+            specialCodePoint: charCode,
+            textureUid: 0,
+            textureHeight: data.size,
+            xAdvance: data.size,
+            xOffset: 0,
+            yOffset: data.size / 2,
+            origWidth: data.size,
+            kerning: {},
+            uvs: new Float32Array([]), // just placeholder
+            frame: { x: 0, y: 0, width: data.size, height: data.size },
+          };
+        } else {
+          continue;
+        }
+      }
 
       const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
@@ -654,6 +678,14 @@ export class CellLabel {
 
         // update line width to the actual width of the text rendered after the clip
         this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
+      } else if (char.charData.specialCodePoint !== undefined) {
+        this.emojis.push({
+          x: charLeft + (charRight - charLeft) / 2,
+          y: charTop + (charBottom - charTop) / 2,
+          codePoint: char.charData.specialCodePoint,
+          width: char.charData.frame.width,
+          height: char.charData.frame.height,
+        });
       } else {
         textLeft = Math.min(textLeft, charLeft);
         textRight = Math.max(textRight, charRight);
