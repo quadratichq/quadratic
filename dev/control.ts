@@ -268,6 +268,7 @@ export class Control {
   }
 
   async runCore(restart?: boolean) {
+    if (this.cli.options.noRust) return;
     if (this.quitting) return;
     this.status.core = false;
     this.ui.print("core");
@@ -693,7 +694,6 @@ export class Control {
   }
 
   async start(ui: UI) {
-    exec("rm -rf quadratic-client/src/app/quadratic-core");
     this.ui = ui;
     this.checkServices();
     this.runNpmInstall();

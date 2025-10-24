@@ -153,7 +153,9 @@ export class UI {
         this.write("\n");
         this.statusItem("client");
         this.statusItem("api");
-        this.statusItem("core");
+        if (!this.cli.options.noRust) {
+            this.statusItem("core");
+        }
         this.statusItem("multiplayer");
         this.statusItem("files");
         this.statusItem("connection");
