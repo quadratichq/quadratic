@@ -1,4 +1,3 @@
-import killPort from "kill-port";
 import {
   ChildProcessWithoutNullStreams,
   exec,
@@ -7,6 +6,7 @@ import {
 import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
 import { UI } from "./ui.js";
+import { killPort } from './utils.js';
 export class Control {
   private cli: CLI;
   private ui: UI;
@@ -273,10 +273,6 @@ export class Control {
     this.ui.print("core");
     await this.kill("core");
 
-    // this function is called more than once,
-    // so we need to check if it's the first run
-    let firstRun = true;
-
     this.signals.core = new AbortController();
     this.core = spawn(
       "npm",
@@ -298,12 +294,6 @@ export class Control {
           success: ["[Finished running. Exit status: 0", "ready to publish"],
           error: "error[",
           start: ["> quadratic", "[Running "],
-        },
-        () => {
-          if (firstRun && !restart) {
-            this.runNpmInstall();
-            firstRun = false;
-          }
         },
       ),
     );
@@ -361,17 +351,25 @@ export class Control {
 
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
+    if (this.cli.options.noRust) {
+      this.multiplayer = spawn("./quadratic-multiplayer", [], {
+        signal: this.signals.multiplayer.signal,
+        cwd: "quadratic-multiplayer/target/debug",
+        env: { ...process.env, RUST_LOG: "info" },
+      });
+    } else {
     this.multiplayer = spawn(
       "cargo",
       this.cli.options.multiplayer
-        ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
-        : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
-      {
-        signal: this.signals.multiplayer.signal,
-        cwd: "quadratic-multiplayer",
-        env: { ...process.env, RUST_LOG: "info" },
-      },
-    );
+          ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
+          : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
+        {
+          signal: this.signals.multiplayer.signal,
+          cwd: "quadratic-multiplayer",
+          env: { ...process.env, RUST_LOG: "info" },
+        },
+      );
+    }
     this.ui.printOutput("multiplayer", (data) =>
       this.handleResponse("multiplayer", data, {
         success: "listening on",
@@ -404,17 +402,25 @@ export class Control {
     } catch (e) {}
 
     this.signals.files = new AbortController();
-    this.files = spawn(
-      "cargo",
-      this.cli.options.files
-        ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
-        : ["run", "-p", "quadratic-files", "--target-dir=target"],
-      {
+    if (this.cli.options.noRust) {
+      this.files = spawn("./quadratic-files", [], {
         signal: this.signals.files.signal,
-        cwd: "quadratic-files",
+        cwd: "quadratic-files/target/debug",
         env: { ...process.env, RUST_LOG: "info" },
-      },
-    );
+      });
+    } else {
+      this.files = spawn(
+        "cargo",
+        this.cli.options.files
+          ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
+          : ["run", "-p", "quadratic-files", "--target-dir=target"],
+        {
+          signal: this.signals.files.signal,
+          cwd: "quadratic-files",
+          env: { ...process.env, RUST_LOG: "info" },
+        },
+      );
+    }
     this.ui.printOutput("files", (data) => {
       this.handleResponse("files", data, {
         success: "listening on",
@@ -519,17 +525,26 @@ export class Control {
     } catch (e) {}
 
     this.signals.connection = new AbortController();
-    this.connection = spawn(
-      "cargo",
-      this.cli.options.connection
-        ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
-        : ["run", "-p", "quadratic-connection", "--target-dir=target"],
-      {
+
+    if (this.cli.options.noRust) {
+      this.connection = spawn("./quadratic-connection", [], {
         signal: this.signals.connection.signal,
-        cwd: "quadratic-connection",
+        cwd: "quadratic-connection/target/debug",
         env: { ...process.env, RUST_LOG: "info" },
-      },
-    );
+      });
+    } else {
+      this.connection = spawn(
+        "cargo",
+        this.cli.options.connection
+          ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
+          : ["run", "-p", "quadratic-connection", "--target-dir=target"],
+        {
+          signal: this.signals.connection.signal,
+          cwd: "quadratic-connection",
+          env: { ...process.env, RUST_LOG: "info" },
+        },
+      );
+    }
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
         success: "listening on",
@@ -681,6 +696,7 @@ export class Control {
     exec("rm -rf quadratic-client/src/app/quadratic-core");
     this.ui = ui;
     this.checkServices();
+    this.runNpmInstall();
     this.runRust();
     this.runPython();
     this.runShared();
