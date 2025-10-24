@@ -73,7 +73,6 @@ export class CLI {
 
     program.parse();
     this.options = program.opts();
-    console.log(this.options);
     this.options.client = !program.opts().react;
     if (this.options.all) {
       this.options.api = true;
