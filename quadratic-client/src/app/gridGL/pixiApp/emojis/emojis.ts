@@ -1,3 +1,4 @@
+import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { emojiCodePoints } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { BaseTexture, Rectangle, Texture } from 'pixi.js';
 
@@ -91,6 +92,12 @@ class Emojis {
       }
     }
     this.currentLocation = { baseTexture: newBaseTexture, x: nextX, y: nextY };
+
+    if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+      console.log(
+        `[Emojis] texture pages: ${this.baseTextures.length}, current location: ${x}/${PAGE_SIZE}, ${y}/${PAGE_SIZE}`
+      );
+    }
     return texture;
   }
 
