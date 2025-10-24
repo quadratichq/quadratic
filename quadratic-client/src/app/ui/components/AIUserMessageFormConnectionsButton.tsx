@@ -1,15 +1,14 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { DatabaseIcon } from '@/shared/components/Icons';
+import { DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
@@ -97,23 +96,30 @@ export const AIUserMessageFormConnectionsButton = memo(
           </DropdownMenuTrigger>
         </TooltipPopover>
 
-        <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="max-w-xs">
-          <DropdownMenuItem onClick={handleManageConnections} className="pl-8">
-            Manage…
+        <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
+          <DropdownMenuLabel className="text-sm font-semibold">Connections</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
+            <SettingsIcon className="flex-shrink-0" />
+            <span className="ml-auto truncate">Add or manage</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (
             <>
               <DropdownMenuSeparator />
 
-              <DropdownMenuRadioGroup value={context.connection?.id ?? ''} onValueChange={handleClickConnection}>
-                {connections.map((connection) => (
-                  <DropdownMenuRadioItem key={connection.uuid} value={connection.uuid} className="gap-4">
-                    <span className="truncate">{connection.name}</span>
-                    <LanguageIcon language={connection.type} className="ml-auto flex-shrink-0" />
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
+              {connections.map((connection) => {
+                const isActive = context.connection?.id === connection.uuid;
+                return (
+                  <DropdownMenuItem
+                    key={connection.uuid}
+                    onClick={() => handleClickConnection(connection.uuid)}
+                    className={`gap-4 ${isActive ? 'bg-accent text-accent-foreground' : ''}`}
+                  >
+                    <LanguageIcon language={connection.type} className="flex-shrink-0" />
+                    <span className="ml-auto truncate">{connection.name}</span>
+                  </DropdownMenuItem>
+                );
+              })}
             </>
           )}
         </DropdownMenuContent>
