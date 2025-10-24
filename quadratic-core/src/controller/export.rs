@@ -150,7 +150,7 @@ impl GridController {
 
                         // data table output
                         if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos)
-                            && let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos)
+                            && let Some(code_cell_value) = data_table.code_run()
                         {
                             let is_formula = code_cell_value.language == CodeCellLanguage::Formula;
 

@@ -15,7 +15,7 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, Sheet, SheetId, js_types::JsValidationWarning,
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -31,92 +31,92 @@ type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
-    pub id: Uuid,
+    pub(crate) id: Uuid,
 
     /// a name for the transaction for user display purposes
-    pub transaction_name: TransactionName,
+    pub(crate) transaction_name: TransactionName,
 
     /// Previous selection, represented as a serialized `` cursor sent as part of this transaction
-    pub cursor: Option<String>,
+    pub(crate) cursor: Option<String>,
 
-    pub source: TransactionSource,
+    pub(crate) source: TransactionSource,
 
     /// pending operations
-    pub operations: VecDeque<Operation>,
+    pub(crate) operations: VecDeque<Operation>,
 
     /// undo operations
-    pub reverse_operations: Vec<Operation>,
+    pub(crate) reverse_operations: Vec<Operation>,
 
     /// list of operations to share with other players
-    pub forward_operations: Vec<Operation>,
+    pub(crate) forward_operations: Vec<Operation>,
 
     /// tracks whether there are any async calls (which changes how the transaction is finalized)
-    pub has_async: i64,
+    pub(crate) has_async: i64,
 
     /// used by Code Cell execution to track dependencies
-    pub cells_accessed: CellsAccessed,
+    pub(crate) cells_accessed: CellsAccessed,
 
     /// save code_cell info for async calls
-    pub current_sheet_pos: Option<SheetPos>,
+    pub(crate) current_sheet_pos: Option<SheetPos>,
 
-    /// whether we are awaiting an async call
-    pub waiting_for_async: Option<CodeCellValue>,
+    /// whether we are awaiting an async call for a code cell
+    pub(crate) waiting_for_async_code_cell: bool,
 
     /// whether transaction is complete
-    pub complete: bool,
+    pub(crate) complete: bool,
 
     /// whether to generate a thumbnail after transaction completes
-    pub generate_thumbnail: bool,
+    pub(crate) generate_thumbnail: bool,
 
     /// cursor saved for an Undo or Redo
-    pub cursor_undo_redo: Option<String>,
+    pub(crate) cursor_undo_redo: Option<String>,
 
     /// sheets w/updated validations
-    pub validations: HashSet<SheetId>,
+    pub(crate) validations: HashSet<SheetId>,
 
     /// sheets w/updated validations warnings
-    pub validations_warnings: HashMap<SheetId, SheetValidationsWarnings>,
+    pub(crate) validations_warnings: HashMap<SheetId, SheetValidationsWarnings>,
 
     /// sheets w/updated rows to resize
-    pub resize_rows: HashMap<SheetId, HashSet<i64>>,
+    pub(crate) resize_rows: HashMap<SheetId, HashSet<i64>>,
 
     /// which hashes are dirty
-    pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
+    pub(crate) dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
     /// sheets with updated borders
-    pub sheet_borders: HashSet<SheetId>,
+    pub(crate) sheet_borders: HashSet<SheetId>,
 
     /// code cells to update in a1_context
-    pub code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+    pub(crate) code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
 
     /// code cells to update
-    pub code_cells: HashMap<SheetId, HashSet<Pos>>,
+    pub(crate) code_cells: HashMap<SheetId, HashSet<Pos>>,
 
     /// html cells to update
-    pub html_cells: HashMap<SheetId, HashSet<Pos>>,
+    pub(crate) html_cells: HashMap<SheetId, HashSet<Pos>>,
 
     /// image cells to update
-    pub image_cells: HashMap<SheetId, HashSet<Pos>>,
+    pub(crate) image_cells: HashMap<SheetId, HashSet<Pos>>,
 
     /// sheets w/updated fill cells
-    pub fill_cells: HashSet<SheetId>,
+    pub(crate) fill_cells: HashSet<SheetId>,
 
     /// sheets w/updated info
-    pub sheet_info: HashSet<SheetId>,
+    pub(crate) sheet_info: HashSet<SheetId>,
 
     // offsets modified (sheet_id -> SheetOffsets)
-    pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+    pub(crate) offsets_modified: HashMap<SheetId, SheetOffsets>,
 
-    pub offsets_reloaded: HashSet<SheetId>,
+    pub(crate) offsets_reloaded: HashSet<SheetId>,
 
     // update selection after transaction completes
-    pub update_selection: Option<String>,
+    pub(crate) update_selection: Option<String>,
 
     // updates to the content cache per sheet
-    pub sheet_content_cache: HashSet<SheetId>,
+    pub(crate) sheet_content_cache: HashSet<SheetId>,
 
     /// sheets that need updated SheetDataTablesCache
-    pub sheet_data_tables_cache: HashSet<SheetId>,
+    pub(crate) sheet_data_tables_cache: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -132,7 +132,7 @@ impl Default for PendingTransaction {
             has_async: 0,
             cells_accessed: Default::default(),
             current_sheet_pos: None,
-            waiting_for_async: None,
+            waiting_for_async_code_cell: false,
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.set_value(pos![1, 1], "A1".to_string());
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
@@ -802,7 +802,7 @@ mod tests {
     #[test]
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.set_value(pos![1, 1], "A1".to_string());
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
