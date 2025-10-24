@@ -39,12 +39,14 @@ type ConnectionSchemaBrowserProps = {
   teamUuid: string;
   type: ConnectionType;
   additionalActions?: React.ReactNode;
+  hideRefreshButton?: boolean;
   tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
 };
 
 export const ConnectionSchemaBrowser = ({
   additionalActions,
+  hideRefreshButton = false,
   tableActions,
   eventSource,
   teamUuid,
@@ -92,11 +94,13 @@ export const ConnectionSchemaBrowser = ({
           </div>
           <div className="flex flex-row-reverse items-center gap-1">
             {additionalActions}
-            <TooltipPopover label="Reload schema">
-              <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
-                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
-              </Button>
-            </TooltipPopover>
+            {!hideRefreshButton && (
+              <TooltipPopover label="Reload schema">
+                <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                  <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+                </Button>
+              </TooltipPopover>
+            )}
           </div>
         </div>
         <div className="relative">
