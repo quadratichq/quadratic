@@ -4,6 +4,7 @@ import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
@@ -44,7 +45,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           e.preventDefault();
           const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
           if (hasReachedLimit) {
-            window.alert('You have reached the maximum number of files allowed for your team.');
+            showUpgradeDialog('fileLimitReached');
             return;
           }
           navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));

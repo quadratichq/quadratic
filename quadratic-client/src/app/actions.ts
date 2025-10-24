@@ -1,11 +1,12 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import type { SubmitFunction } from 'react-router';
-import type { SetterOrUpdater } from 'recoil';
+import { type SetterOrUpdater } from 'recoil';
 
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
@@ -71,7 +72,7 @@ export const createNewFileAction = {
   async run({ teamUuid }: { teamUuid: string }) {
     const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
     if (hasReachedLimit) {
-      window.alert('You have reached the maximum number of files allowed for your team.');
+      showUpgradeDialog('fileLimitReached');
       return;
     }
     window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
@@ -83,7 +84,12 @@ export const duplicateFileAction = {
   // If you're logged in and you can see the file, you can duplicate it
   isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
     isAuthenticated && filePermissions.includes('FILE_VIEW'),
-  async run({ fileUuid }: { fileUuid: string }) {
+  async run({ fileUuid, teamUuid }: { fileUuid: string; teamUuid: string }) {
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
     window.open(ROUTES.FILE_DUPLICATE(fileUuid), '_blank');
   },
 };

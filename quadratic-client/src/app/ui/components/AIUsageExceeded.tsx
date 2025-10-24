@@ -1,11 +1,11 @@
-import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useSetAtom } from 'jotai';
 import { memo } from 'react';
-import { useSetRecoilState } from 'recoil';
 
 export const AIUsageExceeded = memo(() => {
-  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
   return (
     <div

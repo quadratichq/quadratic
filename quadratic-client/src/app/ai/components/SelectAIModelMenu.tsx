@@ -5,8 +5,8 @@ import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalyst
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
-import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
@@ -20,10 +20,11 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import { useSetAtom } from 'jotai';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 type UIModels = 'default' | 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
@@ -46,7 +47,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
-  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const { modelType, othersModelKey, setModel, selectedModelConfig, defaultOthersModelKey } = useAIModel();
 
   const modelConfigs = useMemo(() => {

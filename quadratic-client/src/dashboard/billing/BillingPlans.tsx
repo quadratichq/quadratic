@@ -39,6 +39,10 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
             <span>Connections</span>
             <span className="font-medium">Limited</span>
           </div>
+          <div className="flex items-center justify-between">
+            <span>Maximum files</span>
+            <span className="font-medium">Limited</span>
+          </div>
         </div>
       </div>
 
@@ -78,6 +82,10 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           </div>
           <div className="flex items-center justify-between">
             <span>Connections</span>
+            <span className="text-right text-sm font-medium">Unlimited</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Maximum files</span>
             <span className="text-right text-sm font-medium">Unlimited</span>
           </div>
           <div className="flex items-center justify-between">
