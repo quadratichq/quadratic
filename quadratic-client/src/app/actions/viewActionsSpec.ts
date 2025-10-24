@@ -1,12 +1,14 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
+import { CodeIcon, GoToIcon, MentionIcon } from '@/shared/components/Icons';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -30,7 +32,12 @@ type ViewActionSpec = Pick<
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
   | Action.ToggleAIAnalyst
+  | Action.AddReferenceToAIAnalyst
 >;
+
+export type ViewActionArgs = {
+  [Action.AddReferenceToAIAnalyst]: string;
+};
 
 export const viewActionsSpec: ViewActionSpec = {
   [Action.CmdClick]: {
@@ -180,6 +187,39 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
+    },
+  },
+  [Action.AddReferenceToAIAnalyst]: {
+    label: () => 'Reference in chat',
+    Icon: MentionIcon,
+    run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
+      trackEvent('[AIMentions].addReferenceFromGrid', {
+        showAIAnalyst: Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst),
+      });
+
+      // Note: if we we emit `aiAnalystAddReference` immediately, the event
+      // listener will not be set up yet inside the Analyst because its not
+      // rendered yet. So if it's closed, we have to wait for it to be ready.
+      const emitReferenceEvent = () => {
+        events.emit('aiAnalystAddReference', reference ?? '');
+      };
+      if (pixiAppSettings.aiAnalystState?.showAIAnalyst) {
+        // AIAnalyst is already shown, emit immediately
+        emitReferenceEvent();
+      } else {
+        // AIAnalyst needs to be shown first, wait for it to be ready
+        pixiAppSettings.setAIAnalystState?.((prev) => ({
+          ...prev,
+          showAIAnalyst: true,
+        }));
+        const handleReady = () => {
+          events.off('aiAnalystReady', handleReady);
+          emitReferenceEvent();
+        };
+        events.on('aiAnalystReady', handleReady);
+      }
+
+      pixiAppSettings.setContextMenu?.({});
     },
   },
 };
