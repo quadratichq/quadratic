@@ -50,6 +50,9 @@ class InlineEditorMonaco {
   autocompleteList?: string[];
   autocompleteShowingList = false;
 
+  // used for emoji picker dropdown
+  emojiShowingList = false;
+
   // Helper function to get the model without having to check if editor or model
   // is defined.
   private getModel(): editor.ITextModel {
@@ -65,6 +68,10 @@ class InlineEditorMonaco {
 
   setShowingList(showing: boolean) {
     this.autocompleteShowingList = showing;
+  }
+
+  setShowingEmojiList(showing: boolean) {
+    this.emojiShowingList = showing;
   }
 
   // Gets the value of the inline editor.
@@ -627,8 +634,8 @@ class InlineEditorMonaco {
 
   // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode
   private convertEmojis() {
-    // Skip if we're in formula mode or already processing
-    if (inlineEditorHandler.formula || this.processingEmojiConversion) {
+    // Skip if we're in formula mode, already processing, or emoji dropdown is showing
+    if (inlineEditorHandler.formula || this.processingEmojiConversion || this.emojiShowingList) {
       return;
     }
 
