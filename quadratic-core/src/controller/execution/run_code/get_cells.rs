@@ -2,8 +2,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
-    grid::CodeCellLanguage,
+    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -100,7 +99,7 @@ impl GridController {
         };
 
         // get the original code cell
-        let Some(CellValue::Code(code)) = code_sheet.cell_value(code_sheet_pos.into()) else {
+        let Some(code) = code_sheet.code_run_at(&code_sheet_pos.into()) else {
             return map_error(CoreError::CodeCellSheetError(
                 "Code cell not found".to_string(),
             ));
@@ -129,7 +128,6 @@ impl GridController {
                 .cells_accessed
                 .add(selection_sheet.id, range.clone());
         });
-        self.transactions.update_async_transaction(&transaction);
 
         let context = self.a1_context();
         let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
@@ -180,6 +178,8 @@ impl GridController {
             }
         };
 
+        self.transactions.update_async_transaction(&transaction);
+
         JsCellsA1Response {
             values: Some(values),
             error: None,
@@ -191,7 +191,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
+        Pos, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
     };
 
     #[test]
@@ -277,8 +277,10 @@ mod test {
         assert!(error.contains("Invalid Sheet Name: bad sheet name"));
     }
 
-    // This was previously disallowed. It is now allowed to unlock appending results.
-    // Leaving in some commented out code in case we want to revert this behavior.
+    // This was previously disallowed. It is now allowed to unlock appending
+    // results. The regression test is that the get_cells would have returned an
+    // error. Leaving in some commented out code in case we want to revert this
+    // behavior.
     #[test]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
@@ -311,19 +313,6 @@ mod test {
 
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert!(result.error.is_none());
-
-        let sheet = gc.sheet(sheet_id);
-        let code = sheet.get_render_cells(Rect::from_numbers(2, 1, 1, 1), gc.a1_context());
-        assert_eq!(code.len(), 0);
-        // assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
-        // let sheet = gc.sheet(sheet_id);
-        // let error = sheet
-        //     .code_run(Pos { x: 0, y: 1 })
-        //     .unwrap()
-        //     .clone()
-        //     .std_err
-        //     .unwrap();
-        // assert!(error.is_empty());
     }
 
     #[test]

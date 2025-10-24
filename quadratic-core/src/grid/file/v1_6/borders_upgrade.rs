@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     color::Rgba,
     grid::{
-        ColumnData,
         block::SameValue,
+        column::ColumnData,
         file::v1_7,
         sheet::borders::{
             BorderStyleCell, BorderStyleTimestamp, CellBorderLine, borders_old::OldBorders,

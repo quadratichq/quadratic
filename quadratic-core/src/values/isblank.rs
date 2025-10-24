@@ -67,7 +67,7 @@ mod tests {
         assert!(!(Value::from(0)).is_blank());
         assert!(!(Value::from(1)).is_blank());
 
-        let a = Array::from_random_floats(crate::ArraySize::new(1, 2).unwrap());
+        let a = Array::from(vec![vec!["1.0", "2.0"]]);
         assert!(!Value::Array(a.clone()).is_blank());
         let mut b = Array::new_empty(crate::ArraySize::new(4, 3).unwrap());
         assert!(Value::Array(b.clone()).is_blank());
