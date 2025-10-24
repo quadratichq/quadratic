@@ -34,9 +34,11 @@ export async function killPort(port, method = 'tcp') {
             }
         }
         else {
-            // macOS/Linux: Use lsof to find and kill the process in one go
-            // This is faster than checking first then killing
-            const command = `lsof -ti ${method}:${port} | xargs -r kill -9 2>/dev/null || true`;
+            // macOS/Linux: Use lsof to find and kill the process listening on the port
+            // For TCP, we use -sTCP:LISTEN to only match processes that are listening, not just connected
+            // For UDP, there's no LISTEN state, so we match any process using the port
+            const stateFilter = method === 'tcp' ? '-sTCP:LISTEN' : '';
+            const command = `lsof -ti ${method}:${port} ${stateFilter} | xargs -r kill -9 2>/dev/null || true`;
             await execAsync(command);
         }
     }

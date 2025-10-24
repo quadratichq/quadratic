@@ -153,6 +153,7 @@ export class UI {
         this.write("\n");
         this.statusItem("client");
         this.statusItem("api");
+        // we don't need to show core since we're not compiling it
         if (!this.cli.options.noRust) {
             this.statusItem("core");
         }
