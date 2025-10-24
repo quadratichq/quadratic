@@ -3,6 +3,7 @@
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { emojiMap } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
@@ -43,6 +44,7 @@ export const PADDING_FOR_INLINE_EDITOR = 5;
 class InlineEditorMonaco {
   editor?: editor.IStandaloneCodeEditor;
   private suggestionWidgetShowing: boolean = false;
+  private processingEmojiConversion = false;
 
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
@@ -550,7 +552,10 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.resetKeyboardPosition();
       pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
     });
-    this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
+    this.editor.onDidChangeModelContent(() => {
+      this.convertEmojis();
+      inlineEditorEvents.emit('valueChanged', this.get());
+    });
   }
 
   /// Returns true if the autocomplete suggestion is probably showing.
@@ -618,6 +623,63 @@ class InlineEditorMonaco {
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
       },
     ]);
+  }
+
+  // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode
+  private convertEmojis() {
+    // Skip if we're in formula mode or already processing
+    if (inlineEditorHandler.formula || this.processingEmojiConversion) {
+      return;
+    }
+
+    if (!this.editor) {
+      return;
+    }
+
+    const model = this.getModel();
+    const value = model.getValue();
+    const position = this.getPosition();
+
+    // Look for completed emoji shortcodes (:name:) before the cursor
+    const textBeforeCursor = value.substring(0, model.getOffsetAt(position));
+
+    // Match the last potential emoji shortcode
+    const emojiRegex = /:([a-z0-9_-]+):$/;
+    const match = textBeforeCursor.match(emojiRegex);
+
+    if (match) {
+      const emojiName = match[1];
+      const emoji = emojiMap[emojiName as keyof typeof emojiMap];
+
+      if (emoji) {
+        // Prevent recursive calls
+        this.processingEmojiConversion = true;
+
+        // Calculate the range to replace
+        const startOffset = textBeforeCursor.length - match[0].length;
+        const endOffset = textBeforeCursor.length;
+        const startPosition = model.getPositionAt(startOffset);
+        const endPosition = model.getPositionAt(endOffset);
+        const range = new monaco.Range(
+          startPosition.lineNumber,
+          startPosition.column,
+          endPosition.lineNumber,
+          endPosition.column
+        );
+
+        // Replace the shortcode with the emoji
+        model.applyEdits([{ range, text: emoji }]);
+
+        // Move cursor to after the emoji
+        const newCursorPosition = model.getPositionAt(startOffset + emoji.length);
+        this.editor.setPosition(newCursorPosition);
+
+        // Reset the flag after a short delay
+        setTimeout(() => {
+          this.processingEmojiConversion = false;
+        }, 10);
+      }
+    }
   }
 }
 
