@@ -26,7 +26,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
             fill="currentColor"
           />
         </svg>
-        <h3 className="mt-2 text-sm">Upload a file</h3>
+        <h3 className="mt-2 text-sm">File uploads</h3>
         <p className="hidden text-xs">PDF, Image, CSV, Excel, or Parquet</p>
       </div>
       <div className="absolute left-11 top-0 flex flex-row gap-2.5">
@@ -49,7 +49,7 @@ export const AIAnalystEmptyStateWaypoint = memo(() => {
             <LanguageIcon language="mysql" />
             <LanguageIcon language="mssql" />
           </div>
-          <h3 className="mt-2 text-sm">Chat with data connection</h3>
+          <h3 className="mt-2 text-sm">Data connections</h3>
           <p className="hidden text-xs">Support for Postgres, MySQL, MSSQL, & more.</p>
         </div>
       </div>
