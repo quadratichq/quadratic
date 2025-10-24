@@ -3,6 +3,7 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
 import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
@@ -37,9 +38,20 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
   return (
     <div className="flex flex-row-reverse gap-2">
-      <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
-        <Button variant="default">New file</Button>
-      </Link>
+      <Button
+        variant="default"
+        onClick={async (e) => {
+          e.preventDefault();
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+          if (hasReachedLimit) {
+            window.alert('You have reached the maximum number of files allowed for your team.');
+            return;
+          }
+          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));
+        }}
+      >
+        New file
+      </Button>
       <input
         ref={fileInputRef}
         type="file"

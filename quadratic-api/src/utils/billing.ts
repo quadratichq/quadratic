@@ -44,7 +44,7 @@ const fileCountForTeam = async (team: Team | DecryptedTeam): Promise<number> => 
 export const teamHasReachedFileLimit = async (team: Team | DecryptedTeam): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
 
-  if (!isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
+  if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
     return false;
   }
 

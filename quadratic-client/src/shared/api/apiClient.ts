@@ -120,14 +120,12 @@ export const apiClient = {
         );
       },
     },
-    fileLimit: {
-      get(uuid: string) {
-        return fetchFromApi(
-          `/v0/teams/${uuid}/file-limit`,
-          { method: 'GET' },
-          ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
-        );
-      },
+    fileLimit(uuid: string) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}/file-limit`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
+      );
     },
   },
 

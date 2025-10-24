@@ -1,5 +1,6 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { getActionFileDelete } from '@/routes/api.files.$uuid';
+import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -67,7 +68,12 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  run({ teamUuid }: { teamUuid: string }) {
+  async run({ teamUuid }: { teamUuid: string }) {
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+    if (hasReachedLimit) {
+      window.alert('You have reached the maximum number of files allowed for your team.');
+      return;
+    }
     window.open(ROUTES.CREATE_FILE(teamUuid, { private: true }), '_blank');
   },
 };
