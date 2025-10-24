@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { content } from '@/app/gridGL/pixiApp/Content';
+import { useCursorPosition } from '@/app/ui/hooks/useCursorPosition';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
 
@@ -14,6 +15,7 @@ export function GridContextMenuCell() {
   const [rowAvailable, setRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
   const [canRunSelection, setCanRunSelection] = useState(false);
+  const { cursorStringWithSheetName } = useCursorPosition();
 
   useEffect(() => {
     const updateCursor = () => {
@@ -41,6 +43,7 @@ export function GridContextMenuCell() {
   return (
     <ContextMenuBase>
       {canRunSelection && <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />}
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={cursorStringWithSheetName} />
 
       <DropdownMenuSeparator />
 
