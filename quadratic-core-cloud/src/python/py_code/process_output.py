@@ -72,6 +72,30 @@ def to_html_with_cdn(self):
     )
     return html
 
+def setup_plotly_patch():
+    """
+    Patch Plotly to prevent browser opening and capture HTML output instead.
+    This should be called before user code executes.
+    """
+    try:
+        import plotly.io
+        from plotly.basedatatypes import BaseFigure
+        
+        # Set default renderer to prevent browser opening
+        plotly.io.renderers.default = "browser"
+        
+        # Patch the browser opening function to do nothing
+        def _noop_open_html(*args, **kwargs):
+            pass
+        
+        plotly.io._base_renderers.open_html_in_browser = _noop_open_html
+        
+        # Override the show method to convert to HTML with CDN
+        BaseFigure.show = to_html_with_cdn
+    except ImportError:
+        # Plotly not installed, nothing to patch
+        pass
+
 def process_output_value(output_value):
     # return array_output if output is an array
     array_output = None

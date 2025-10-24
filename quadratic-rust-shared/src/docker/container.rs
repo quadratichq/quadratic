@@ -75,6 +75,7 @@ impl Container {
         env_vars: Option<Vec<String>>,
         cmd: Option<Vec<String>>,
         timeout_seconds: Option<i64>,
+        binds: Option<Vec<String>>,
     ) -> Result<Self> {
         // Pull the image if it doesn't exist locally
         Self::pull_image_if_needed(&docker, image).await?;
@@ -88,6 +89,7 @@ impl Container {
 
         let host_config = HostConfig {
             extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
+            binds,
             ..Default::default()
         };
 
@@ -396,6 +398,7 @@ pub mod tests {
             Some(container_name),
             Some(env_vars),
             Some(vec!["sleep".to_string(), "30".to_string()]),
+            None,
             None,
         )
         .await

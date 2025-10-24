@@ -183,6 +183,22 @@ impl Controller {
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
         ];
 
+        // Mount volume to persist Python packages between container runs
+        // This mounts a host directory to the container's /root/.local where pip installs packages
+        let python_packages_dir = std::env::var("PYTHON_PACKAGES_DIR").unwrap_or_else(|_| {
+            // Use absolute path - Docker requires it for volume mounts
+            // The controller runs from the quadratic-cloud-controller directory already
+            let current_dir =
+                std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            let path = current_dir.join("python-packages");
+            path.to_string_lossy().to_string()
+        });
+        info!(
+            "Mounting Python packages directory: {}",
+            python_packages_dir
+        );
+        let binds = vec![format!("{}:/root/.local", python_packages_dir)];
+
         let container = Container::try_new(
             container_id,
             file_id,
@@ -193,6 +209,7 @@ impl Controller {
             Some(env_vars),
             None,
             Some(DEFAULT_TIMEOUT_SECONDS),
+            Some(binds),
         )
         .await
         .map_err(|e| Self::error("create_worker", e))?;

@@ -11,10 +11,11 @@ def auto_install(package):
         import shutil
         python_exe = shutil.which("python3") or shutil.which("python")
         if python_exe:
-            subprocess.check_call([python_exe, "-m", "pip", "install", "--break-system-packages", package])
+            # Use --user to install to /root/.local (mounted volume) and --break-system-packages for Python 3.11+
+            subprocess.check_call([python_exe, "-m", "pip", "install", "--user", "--break-system-packages", package])
         else:
-            # Fallback: try direct pip with --break-system-packages flag
-            subprocess.check_call(["pip", "install", "--break-system-packages", package])
+            # Fallback: try direct pip with both flags
+            subprocess.check_call(["pip", "install", "--user", "--break-system-packages", package])
         __import__(package)
 
 # Function to extract import statements using AST and auto-install

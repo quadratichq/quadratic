@@ -69,6 +69,14 @@ pub(crate) fn execute(
         let quadratic = c_string(QUADRATIC)?;
         py.run(&quadratic, Some(&globals), None)?;
 
+        // load process_output module and setup plotly patch before user code runs
+        let c_process_output = c_string(PROCESS_OUTPUT_CODE)?;
+        py.run(&c_process_output, Some(&globals), None)?;
+
+        // setup plotly patch to prevent browser opening
+        let c_setup_plotly = c_string("setup_plotly_patch()")?;
+        py.run(&c_setup_plotly, Some(&globals), None)?;
+
         // always wrap code in async function for consistency
         // helper function to indent code
         let indent_code = |code: &str| -> String {
@@ -115,10 +123,6 @@ with redirect_stdout(__quadratic_std_out__):
         // we know has_expression is true since we early return above
         let c_result = c_string("__quadratic_result__")?;
         let result = py.eval(&c_result, Some(&globals), None)?;
-
-        // process the output code
-        let c_process_output = c_string(PROCESS_OUTPUT_CODE)?;
-        py.run(&c_process_output, Some(&globals), None)?;
 
         // set the result as a variable and call the function
         let locals = pyo3::types::PyDict::new(py);
@@ -360,5 +364,24 @@ None
         assert_eq!(result.transaction_id, "test");
         assert_eq!(result.std_out, Some("Nothing\n".to_string()));
         assert!(result.success);
+    }
+
+    #[test]
+    fn test_execute_python_plotly() {
+        let code = r#"
+import plotly.express as px
+import pandas as pd
+
+df = pd.DataFrame({
+    "x": [1, 2, 3],
+    "y": [4, 5, 6],
+})
+
+fig = px.scatter(df, x="x", y="y")
+fig.show()
+"#;
+        let result = test_execute(code);
+
+        assert_eq!(result.transaction_id, "test");
     }
 }
