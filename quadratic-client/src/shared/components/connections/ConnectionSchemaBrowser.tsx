@@ -1,31 +1,17 @@
-import {
-  ChevronRightIcon,
-  CloseIcon,
-  CopyIcon,
-  MoreHorizIcon,
-  RefreshIcon,
-  type IconComponent,
-} from '@/shared/components/Icons';
+import { ChevronRightIcon, CloseIcon, CopyIcon, RefreshIcon, type IconComponent } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
 type ConnectionSchemaBrowserProps = {
@@ -200,6 +186,20 @@ function TableListItem({
 }) {
   const { name, columns } = data;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenuOpen(false);
+    };
+
+    if (contextMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenuOpen]);
 
   const handleTableClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -210,9 +210,16 @@ function TableListItem({
     [eventSource]
   );
 
-  const handleDropdownClick = useCallback(() => {
-    trackEvent('[ConnectionSchemaBrowser].clickDropdown', { eventSource });
-  }, [eventSource]);
+  const handleRightClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      trackEvent('[ConnectionSchemaBrowser].rightClickTable', { eventSource });
+      setContextMenuPosition({ x: e.clientX, y: e.clientY });
+      setContextMenuOpen(true);
+    },
+    [eventSource]
+  );
 
   const handleDropdownMenuItemClick = useCallback(
     ({
@@ -246,9 +253,10 @@ function TableListItem({
     <div className="group relative">
       <button
         className={
-          'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 pr-10 font-normal hover:bg-accent'
+          'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 pr-2 font-normal hover:bg-accent'
         }
         onClick={handleTableClick}
+        onContextMenu={handleRightClick}
       >
         <div className="-ml-0.5 flex h-6 w-6 flex-none items-center">
           <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
@@ -256,44 +264,63 @@ function TableListItem({
         <div className="truncate leading-normal">{name}</div>
         <div className="ml-2 flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
       </button>
-      <div className="absolute right-2 top-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
-              <MoreHorizIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {additionalDropdownItems && (
-              <>
-                {additionalDropdownItems.map(({ label, onClick, Icon }) => (
-                  <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
-                    <Icon className="mr-2" /> {label}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-              </>
-            )}
 
-            <DropdownMenuItem onClick={handleCopyNameClick}>
-              <CopyIcon className="mr-2" /> Copy name
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleCopyQueryClick}>
-              <CopyIcon className="mr-2" /> Copy query
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Context Menu */}
+      {contextMenuOpen && (
+        <div
+          className="fixed z-50 min-w-[160px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          style={{
+            left: contextMenuPosition.x,
+            top: contextMenuPosition.y,
+          }}
+          onBlur={() => setContextMenuOpen(false)}
+        >
+          {additionalDropdownItems && (
+            <>
+              {additionalDropdownItems.map(({ label, onClick, Icon }) => (
+                <button
+                  key={label}
+                  className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => {
+                    handleDropdownMenuItemClick({ label, onClick });
+                    setContextMenuOpen(false);
+                  }}
+                >
+                  <Icon className="mr-2 h-4 w-4" /> {label}
+                </button>
+              ))}
+              <div className="my-1 h-px bg-border" />
+            </>
+          )}
+
+          <button
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              handleCopyNameClick();
+              setContextMenuOpen(false);
+            }}
+          >
+            <CopyIcon className="mr-2 h-4 w-4" /> Copy name
+          </button>
+          <button
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              handleCopyQueryClick();
+              setContextMenuOpen(false);
+            }}
+          >
+            <CopyIcon className="mr-2 h-4 w-4" /> Copy query
+          </button>
+        </div>
+      )}
 
       {isExpanded && (
         <ul className={cn('pl-8 pr-2')}>
           {columns.length ? (
             columns.map(({ name, type, is_nullable }, k) => (
               <li key={k} className="border border-l border-transparent border-l-border pl-0.5">
-                <div className="flex w-full items-center gap-1 py-0.5 pl-2">
-                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
-                    {name}
-                  </div>
+                <div className="flex w-full items-center justify-between py-0.5 pl-2">
+                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30">{name}</div>
 
                   <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                     {type}
