@@ -61,8 +61,9 @@ async function handler(req: Request, res: Response) {
   const monthlyPriceId = await getMonthlyPriceId();
 
   // If the client gave us a redirect URL, use that. Otherwise, fallback to team settings
-  const returnUrl =
-    typeof redirect === 'string' ? redirect : `${req.headers.origin || 'http://localhost:3000'}/teams/${uuid}/settings`;
+  const returnUrl = new URL(
+    typeof redirect === 'string' ? redirect : `${req.headers.origin || 'http://localhost:3000'}/teams/${uuid}/settings`
+  );
   const session = await createCheckoutSession(uuid, monthlyPriceId, returnUrl);
 
   if (!session.url) {

@@ -82,7 +82,7 @@ export const createBillingPortalSession = async (teamUuid: string, returnUrlBase
   });
 };
 
-export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrl: string) => {
+export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrl: URL) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -96,6 +96,11 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   // get the number of users on the team
   const numUsersOnTeam = await getTeamSeatQuantity(team.id);
 
+  // Set the callback URLs
+  const successUrl = new URL(returnUrl);
+  successUrl.searchParams.set('subscription', 'created');
+  successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}'); // Stripe will swap out this value
+
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
     line_items: [
@@ -106,8 +111,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: returnUrl,
-    cancel_url: returnUrl,
+    success_url: successUrl.toString(),
+    cancel_url: returnUrl.toString(),
   });
 };
 
