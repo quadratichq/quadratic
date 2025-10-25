@@ -97,9 +97,13 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   const numUsersOnTeam = await getTeamSeatQuantity(team.id);
 
   // Set the callback URLs
+  const cancel_url = returnUrl.toString();
   const successUrl = new URL(returnUrl);
   successUrl.searchParams.set('subscription', 'created');
-  successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}'); // Stripe will swap out this value
+  // Stripe will swap out this value, but you can't URL encode it or it won't work
+  // so we have to manually set it (we set a search param above, so we know we
+  // can just append `&...`)
+  const success_url = successUrl.toString() + '&session_id={CHECKOUT_SESSION_ID}';
 
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
@@ -111,8 +115,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: successUrl.toString(),
-    cancel_url: returnUrl.toString(),
+    success_url,
+    cancel_url,
   });
 };
 
