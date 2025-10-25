@@ -4,7 +4,6 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -12,6 +11,7 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
+import { ConnectionsMenu } from '@/app/ui/menus/BottomBar/ConnectionsMenu';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React from 'react';
 import { Link } from 'react-router';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
@@ -32,7 +32,6 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -72,6 +71,7 @@ export const QuadraticSidebar = () => {
             </SidebarToggle>
           </SidebarTooltip>
         )}
+        {canDoTeamsStuff && <ConnectionsMenu triggerIcon={<DatabaseIcon />} />}
 
         {canEditFile && (
           <SidebarTooltip
@@ -80,14 +80,6 @@ export const QuadraticSidebar = () => {
           >
             <SidebarToggle pressed={showCodeEditor} onPressedChange={() => toggleCodeEditor.run()}>
               {toggleCodeEditor.Icon && <toggleCodeEditor.Icon />}
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-
-        {canDoTeamsStuff && (
-          <SidebarTooltip label="Connections">
-            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
-              <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>
         )}

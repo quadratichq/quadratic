@@ -15,6 +15,7 @@ import {
   MentionsTextarea,
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
@@ -100,6 +101,7 @@ export const AIUserMessageForm = memo(
       uiContext,
     } = props;
 
+    const { connections } = useConnectionsFetcher();
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
@@ -360,6 +362,27 @@ export const AIUserMessageForm = memo(
         events.off('aiAnalystAddReference', handleAddReference);
       };
     }, [uiContext]);
+
+    // Listen for setting the connection in the context
+    useEffect(() => {
+      const handleSetConnection = (uuid: string) => {
+        const connection = connections.find((connection) => connection.uuid === uuid);
+        if (connection === undefined) {
+          return;
+        }
+        console.log('setting context', uuid);
+        setContext?.((prev) => ({
+          ...prev,
+          connection: { type: connection.type, id: connection.uuid, name: connection.name },
+        }));
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystSetConnection', handleSetConnection);
+      }
+      return () => {
+        events.off('aiAnalystSetConnection', handleSetConnection);
+      };
+    }, [uiContext, setContext, connections]);
 
     const textarea = (
       <Textarea

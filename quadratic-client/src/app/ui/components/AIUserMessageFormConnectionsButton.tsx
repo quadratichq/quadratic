@@ -101,7 +101,7 @@ export const AIUserMessageFormConnectionsButton = memo(
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
             <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-            <span className="truncate">Add or manage connections</span>
+            <span className="truncate">Add or manage…</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (
