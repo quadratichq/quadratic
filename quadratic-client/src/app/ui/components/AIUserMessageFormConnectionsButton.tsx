@@ -1,17 +1,19 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
+import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -96,10 +98,10 @@ export const AIUserMessageFormConnectionsButton = memo(
         </TooltipPopover>
 
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
-          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Connections</div>
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
-            <SettingsIcon className="flex-shrink-0" />
-            <span className="truncate">Add or manage</span>
+            <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+            <span className="truncate">Add or manage connections</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (
@@ -112,10 +114,11 @@ export const AIUserMessageFormConnectionsButton = memo(
                   <DropdownMenuItem
                     key={connection.uuid}
                     onClick={() => handleClickConnection(connection.uuid)}
-                    className={`gap-4 ${isActive ? 'bg-accent text-accent-foreground' : ''}`}
+                    className={`gap-4`}
                   >
                     <LanguageIcon language={connection.type} className="flex-shrink-0" />
                     <span className="truncate">{connection.name}</span>
+                    <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
                   </DropdownMenuItem>
                 );
               })}
