@@ -103,14 +103,19 @@ pub async fn process_transaction(
         .get_async_transaction(transaction_uuid);
 
     if let Ok(async_transaction) = async_transaction
-        && let Some(waiting_for_async) = async_transaction.waiting_for_async
+        && let Some(sheet_pos) = async_transaction.current_sheet_pos
+        && let Some(code_run) = grid
+            .lock()
+            .await
+            .try_sheet(sheet_pos.sheet_id)
+            .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
     {
         // run code
-        match waiting_for_async.language {
+        match &code_run.language {
             CodeCellLanguage::Python => {
                 run_python(
                     Arc::clone(&grid),
-                    &waiting_for_async.code,
+                    &code_run.code,
                     &transaction_id,
                     Box::new(get_cells),
                 )
@@ -119,7 +124,7 @@ pub async fn process_transaction(
             CodeCellLanguage::Javascript => {
                 run_javascript(
                     Arc::clone(&grid),
-                    &waiting_for_async.code,
+                    &code_run.code,
                     &transaction_id,
                     Box::new(get_cells),
                 )
@@ -128,8 +133,8 @@ pub async fn process_transaction(
             CodeCellLanguage::Connection { kind, id } => {
                 run_connection(
                     Arc::clone(&grid),
-                    &waiting_for_async.code,
-                    kind,
+                    &code_run.code,
+                    *kind,
                     &id,
                     &transaction_id,
                     &team_id,
@@ -171,9 +176,9 @@ mod tests {
     use super::*;
 
     use quadratic_core::{
-        CellValue,
+        CellValue, Pos, Value,
         controller::{GridController, operations::operation::Operation},
-        grid::{CodeCellLanguage, CodeCellValue},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         number::decimal_from_str,
         pos,
     };
@@ -184,15 +189,36 @@ mod tests {
         let mut grid_lock = grid.lock().await;
         let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
         let to_number = |s: &str| CellValue::Number(decimal_from_str(s).unwrap());
-        let to_code = |s: &str| CellValue::Code(CodeCellValue::new(language, s.to_string()));
         let team_id = "test_team_id".to_string();
         let token = "M2M_AUTH_TOKEN".to_string();
 
         // set A1 to 1
         sheet.set_cell_values(pos![A1].into(), to_number("1").into());
 
-        // set B2 to a Python cell
-        sheet.set_cell_values(pos![A2].into(), to_code(code).into());
+        // set A2 to a code cell by creating a DataTable with CodeRun
+        let code_run = CodeRun {
+            language,
+            code: code.to_string(),
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "TestCodeCell",
+            Value::Single(CellValue::Blank),
+            false,
+            Some(false),
+            Some(false),
+            None,
+        );
+
+        sheet.data_table_insert_full(Pos { x: 1, y: 2 }, data_table); // A2
 
         // generate the operation
         let operation = Operation::ComputeCode {
@@ -237,5 +263,46 @@ mod tests {
             javascript_value,
             CellValue::Number(decimal_from_str("11").unwrap())
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_code_cell_setup() {
+        // Test that we can properly set up a code cell using DataTable instead of CellValue::Code
+        let grid = Arc::new(Mutex::new(GridController::test()));
+        let sheet_id = grid.lock().await.sheet_ids()[0];
+        let mut grid_lock = grid.lock().await;
+        let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
+
+        // Create a code run
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "test_code".to_string(),
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "TestCodeCell",
+            Value::Single(CellValue::Blank),
+            false,
+            Some(false),
+            Some(false),
+            None,
+        );
+
+        sheet.data_table_insert_full(Pos { x: 1, y: 2 }, data_table); // A2
+
+        // Verify the code run was set up correctly
+        let retrieved_code_run = sheet.code_run_at(&Pos { x: 1, y: 2 });
+        assert!(retrieved_code_run.is_some());
+        let retrieved_code_run = retrieved_code_run.unwrap();
+        assert_eq!(retrieved_code_run.code, "test_code");
+        assert_eq!(retrieved_code_run.language, CodeCellLanguage::Python);
     }
 }
