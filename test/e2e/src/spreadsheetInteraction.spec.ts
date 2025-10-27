@@ -2655,7 +2655,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Assert you are on the Login page via text assertions
-  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
+  await expect(page.getByText(`Sign in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log back in to delete the file we created
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
