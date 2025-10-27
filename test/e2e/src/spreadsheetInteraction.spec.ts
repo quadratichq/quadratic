@@ -4254,10 +4254,6 @@ test('Theme Customization', async ({ page }) => {
   // Member page elements for accent color changes
   const inviteButtonEl = page.getByRole(`button`, { name: `Invite` });
 
-  // Settings page elements for accent color changes
-  const settingsUpgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
-  const privateSwitchEl = page.getByRole(`switch`, { name: `Improve AI results` });
-
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -4319,9 +4315,11 @@ test('Theme Customization', async ({ page }) => {
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
 
     // Assert the 'Upgrade to Pro' button has the expected accent color
+    const settingsUpgradeButtonEl = page.locator('[data-testid="upgrade-to-pro-button-on-team-settings"]');
     await expect(settingsUpgradeButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Assert the 'Privacy' switch toggle has the expected accent color
+    const privateSwitchEl = page.getByRole('switch', { name: 'Help improve Quadratic' });
     await expect(privateSwitchEl).toHaveCSS(`background-color`, theme.color);
 
     // Return to homepage
