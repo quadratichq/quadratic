@@ -58,7 +58,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Install uv - a fast Python package installer
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    /root/.cargo/bin/uv --version
+
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install common Python packages that are frequently used in Quadratic
