@@ -96,16 +96,16 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   // get the number of users on the team
   const numUsersOnTeam = await getTeamSeatQuantity(team.id);
 
-  // Set the callback URLs
-  const cancel_url = returnUrl.toString();
-  const successUrl = new URL(returnUrl);
+  // Set the callback URL on success
+  //
   // We track `subscription=created` via google analytics, so any URL that has
   // that search param will get tracked as a signup in stripe.
+  //
+  // Stripe will swap out the `session_id` value, but you can't URL encode it or
+  // it won't work. So we have to manually set it.
+  const successUrl = new URL(returnUrl);
   successUrl.searchParams.set('subscription', 'created');
-  // Stripe will swap out this value, but you can't URL encode it or it won't work
-  // so we have to manually set it (we set a search param above, so we know we
-  // can just append `&...`)
-  const success_url = successUrl.toString() + '&session_id={CHECKOUT_SESSION_ID}';
+  const successUrlStr = successUrl.toString() + '&session_id={CHECKOUT_SESSION_ID}';
 
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
@@ -117,8 +117,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url,
-    cancel_url,
+    success_url: successUrlStr,
+    cancel_url: returnUrl.toString(),
   });
 };
 
