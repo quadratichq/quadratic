@@ -99,6 +99,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   // Set the callback URLs
   const cancel_url = returnUrl.toString();
   const successUrl = new URL(returnUrl);
+  // We track `subscription=created` via google analytics, so any URL that has
+  // that search param will get tracked as a signup in stripe.
   successUrl.searchParams.set('subscription', 'created');
   // Stripe will swap out this value, but you can't URL encode it or it won't work
   // so we have to manually set it (we set a search param above, so we know we
