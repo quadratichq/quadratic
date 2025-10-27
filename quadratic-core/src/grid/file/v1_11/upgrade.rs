@@ -109,6 +109,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
         rows_resize: sheet.rows_resize,
         borders: sheet.borders,
         formats: sheet.formats,
+        merge_cells: v1_12::MergeCellsSchema::default(),
     }
 }
 

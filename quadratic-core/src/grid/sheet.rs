@@ -17,6 +17,7 @@ use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
 use crate::constants::SHEET_NAME;
 use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
+use crate::grid::sheet::merge_cells::MergeCells;
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -38,6 +39,7 @@ pub mod data_table;
 pub mod data_tables;
 mod format_summary;
 pub mod formats;
+pub mod merge_cells;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -82,6 +84,8 @@ pub struct Sheet {
     pub(super) rows_resize: ResizeMap,
 
     pub(crate) borders: Borders,
+
+    pub(crate) merge_cells: MergeCells,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -100,6 +104,7 @@ impl Sheet {
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
             borders: Borders::default(),
+            merge_cells: MergeCells::default(),
         }
     }
 

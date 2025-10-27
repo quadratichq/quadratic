@@ -18,6 +18,7 @@ use crate::{
                 BordersUpdates,
                 borders_old::{BorderStyleCellUpdates, SheetBorders},
             },
+            merge_cells::MergeCellsUpdate,
             validations::validation::Validation,
         },
     },
@@ -451,5 +452,10 @@ pub enum Operation {
 
         #[serde(default)]
         ignore_tables: bool,
+    },
+
+    SetMergeCells {
+        sheet_id: SheetId,
+        merge_cells_updates: MergeCellsUpdate,
     },
 }

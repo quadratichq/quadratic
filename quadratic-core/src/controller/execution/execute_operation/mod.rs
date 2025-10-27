@@ -32,6 +32,7 @@ mod execute_cursor;
 mod execute_data_table;
 mod execute_formats;
 mod execute_formats_old;
+mod execute_merge_cells;
 mod execute_move_cells;
 mod execute_offsets;
 mod execute_sheets;
@@ -222,6 +223,8 @@ impl GridController {
 
                 Operation::MoveColumns { .. } => self.execute_move_columns(transaction, op),
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
+
+                Operation::SetMergeCells { .. } => self.execute_set_merge_cells(transaction, op),
             }
         }
 

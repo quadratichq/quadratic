@@ -60,6 +60,7 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
   };
 
 class CoreClient {
@@ -96,6 +97,7 @@ class CoreClient {
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
+    self.sendMergeCells = coreClient.sendMergeCells;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
@@ -1000,6 +1002,10 @@ class CoreClient {
 
   sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {
     this.send({ type: 'coreClientStartupTimer', name, ...data });
+  };
+
+  sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+    this.send({ type: 'coreClientMergeCells', sheetId, mergeCells }, mergeCells.buffer);
   };
 }
 

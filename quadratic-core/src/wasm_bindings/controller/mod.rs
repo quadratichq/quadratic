@@ -88,6 +88,9 @@ impl GridController {
 
                             // sends all borders to the client
                             sheet.send_sheet_borders();
+
+                            // sends all merge cells to the client
+                            sheet.send_merge_cells();
                         }
                     });
 
