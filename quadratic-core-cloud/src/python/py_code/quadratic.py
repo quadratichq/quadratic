@@ -14,7 +14,16 @@ q = Q()
 
 class micropip:
     async def install(self, package: str):
-        pip.main(["install", package])
+        import subprocess
+        import shutil
+        # Use uv for fast package installation
+        uv_exe = shutil.which("uv")
+        if uv_exe:
+            subprocess.check_call([uv_exe, "pip", "install", "--user", package])
+        else:
+            # Fallback to pip if uv is not available
+            import pip
+            pip.main(["install", package])
 
 micropip = micropip()
         
