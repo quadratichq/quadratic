@@ -255,6 +255,31 @@ impl SheetColumns {
     pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.has_cell_value.intersects(rect)
     }
+
+    /// Returns true if the given rectangle has any content.
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.has_cell_value.intersects(rect)
+    }
+
+    /// Returns an iterator over the content in the given rectangle.
+    pub fn iter_content_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.has_cell_value
+            .nondefault_rects_in_rect(rect)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+    }
+
+    /// Returns an iterator over the content in the sheet.
+    pub fn iter_content(&self) -> impl Iterator<Item = Pos> {
+        self.has_cell_value
+            .nondefault_rects_in_rect(Rect::new(1, 1, UNBOUNDED, UNBOUNDED))
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+    }
 }
 
 impl Sheet {
@@ -299,36 +324,6 @@ impl Sheet {
                 }
             }
         }
-    }
-
-    /// Returns a reference to has_cell_value cache to send to the client.
-    pub fn has_cell_value_ref(&self) -> &Contiguous2D<Option<bool>> {
-        &self.has_cell_value
-    }
-
-    /// Returns true if the given rectangle has any content.
-    pub fn has_content(&self, rect: Rect) -> bool {
-        self.has_cell_value.intersects(rect)
-    }
-
-    /// Returns an iterator over the content in the given rectangle.
-    pub fn iter_content_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.has_cell_value
-            .nondefault_rects_in_rect(rect)
-            .flat_map(|(rect, _)| {
-                rect.x_range()
-                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
-            })
-    }
-
-    /// Returns an iterator over the content in the sheet.
-    pub fn iter_content(&self) -> impl Iterator<Item = Pos> {
-        self.has_cell_value
-            .nondefault_rects_in_rect(Rect::new(1, 1, UNBOUNDED, UNBOUNDED))
-            .flat_map(|(rect, _)| {
-                rect.x_range()
-                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
-            })
     }
 }
 
