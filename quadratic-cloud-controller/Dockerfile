@@ -50,9 +50,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install uv - a fast Python package installer
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    /root/.cargo/bin/uv --version
+    /root/.local/bin/uv --version
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.local/bin:${PATH}"
 
 COPY --from=builder /quadratic/quadratic-cloud-controller/target/release/quadratic-cloud-controller .
 

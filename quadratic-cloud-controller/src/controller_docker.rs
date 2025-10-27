@@ -252,3 +252,18 @@ impl Controller {
         ControllerError::Docker(format!("{func_name}: {}", error.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::new_state;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_worker() {
+        let state = new_state().await;
+        let controller = Controller::new(state).await.unwrap();
+        let file_id = Uuid::new_v4();
+        controller.create_worker(file_id).await.unwrap();
+    }
+}
