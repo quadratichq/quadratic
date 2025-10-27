@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, SheetPos, SheetRect,
+    SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -198,11 +198,6 @@ impl GridController {
         if let Operation::ComputeCodeSelection { selection } = op {
             let mut new_ops = Vec::new();
 
-            // TODO: these loops are super expensive. Once we move all code to
-            // data_tables, we can use the cache instead. We can't use the cache
-            // now, since the cache is not populated until after the code is
-            // executed.
-
             if let Some(selection) = selection {
                 let sheet_id = selection.sheet_id;
                 let Some(sheet) = self.try_sheet(sheet_id) else {
@@ -210,26 +205,31 @@ impl GridController {
                     return;
                 };
 
-                // loop through the positions in the selection
+                // Use the cache to efficiently find all code runs in the selection
                 for rect in selection.rects_unbounded(self.a1_context()) {
-                    sheet.columns.iter_content_in_rect(rect).for_each(|pos| {
-                        if matches!(sheet.cell_value(pos), Some(CellValue::Code(_))) {
+                    sheet
+                        .data_tables
+                        .get_code_runs_in_rect(rect, false)
+                        .for_each(|(_, pos, _)| {
                             new_ops.push(Operation::ComputeCode {
                                 sheet_pos: pos.to_sheet_pos(sheet_id),
                             });
-                        }
-                    });
+                        });
                 }
             } else {
+                // Recompute all code cells in all sheets
                 let sheets = self.sheets();
                 for sheet in sheets {
-                    sheet.columns.iter_content().for_each(|pos| {
-                        if matches!(sheet.cell_value(pos), Some(CellValue::Code(_))) {
-                            new_ops.push(Operation::ComputeCode {
-                                sheet_pos: pos.to_sheet_pos(sheet.id),
+                    if let Some(bounds) = sheet.data_tables.finite_bounds() {
+                        sheet
+                            .data_tables
+                            .get_code_runs_in_rect(bounds, false)
+                            .for_each(|(_, pos, _)| {
+                                new_ops.push(Operation::ComputeCode {
+                                    sheet_pos: pos.to_sheet_pos(sheet.id),
+                                });
                             });
-                        }
-                    });
+                    }
                 }
             }
             transaction.operations.extend(new_ops);
@@ -240,7 +240,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, CellValue, Pos, SheetPos, SheetPos,
+        CellValue, SheetPos,
         a1::A1Selection,
         controller::{
             GridController,
