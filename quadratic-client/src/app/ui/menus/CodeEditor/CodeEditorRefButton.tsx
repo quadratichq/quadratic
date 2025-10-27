@@ -29,7 +29,7 @@ export const CodeEditorRefButton = () => {
       } else {
         // for connections, we currently only support one cursor position
         if (codeCellIsAConnection(codeEditor.language)) {
-          setDisabled(!sheets.sheet.cursor.isSingleSelection());
+          setDisabled(!sheets.sheet.cursor.isSingleSelection() && !sheets.sheet.cursor.is1dRange());
         } else {
           setDisabled(false);
         }
@@ -48,7 +48,7 @@ export const CodeEditorRefButton = () => {
       !disabled
         ? `Insert ${relative ? 'relative ' : ''}cell reference`
         : codeCellIsAConnection(codeEditor.language)
-          ? `Select only one cell to insert cell reference.`
+          ? `Select only one cell or a 1d range of cells to insert cell reference.`
           : `Select cells on the grid to insert cell reference.`,
     [codeEditor.language, disabled, relative]
   );

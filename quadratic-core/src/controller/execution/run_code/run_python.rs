@@ -1,7 +1,6 @@
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{CodeCellLanguage, CodeCellValue},
 };
 
 impl GridController {
@@ -13,11 +12,7 @@ impl GridController {
     ) {
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code: code.clone(),
-        };
-        transaction.waiting_for_async = Some(code_cell);
+        transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
 
         if !transaction.is_server()
@@ -43,7 +38,8 @@ mod tests {
             execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::js_types::JsRenderCell,
+        grid::{CodeCellLanguage, js_types::JsRenderCell},
+        test_util::*,
     };
 
     #[test]
@@ -72,16 +68,9 @@ mod tests {
         })
         .ok();
 
-        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
+        assert_code_language(&gc, sheet_pos, CodeCellLanguage::Python, code);
         let pos = sheet_pos.into();
-        let code_cell = sheet.cell_value(pos).unwrap();
-        match code_cell {
-            CellValue::Code(code_cell) => {
-                assert_eq!(code_cell.language, CodeCellLanguage::Python);
-                assert_eq!(code_cell.code, code);
-            }
-            _ => panic!("expected code cell"),
-        }
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
         sheet
             .data_tables
             .modify_data_table_at(&pos, |dt| {

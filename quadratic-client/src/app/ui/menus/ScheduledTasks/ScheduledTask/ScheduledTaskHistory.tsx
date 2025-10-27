@@ -35,6 +35,23 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
     return uniqueItems;
   }, []);
 
+  // Mark old RUNNING/PENDING jobs as FAILED if there's a newer run
+  const markSupplantedJobsAsFailed = useCallback((items: ScheduledTaskLog[]) => {
+    if (items.length === 0) return items;
+
+    const mostRecentRunId = items[0].runId;
+    return items.map((item, index) => {
+      if (index === 0) return item;
+
+      // If this is an older run and it's still RUNNING or PENDING, mark it as FAILED
+      if (item.runId !== mostRecentRunId && (item.status === 'RUNNING' || item.status === 'PENDING')) {
+        return { ...item, status: 'FAILED' as const };
+      }
+
+      return item;
+    });
+  }, []);
+
   // Fetch pages of history
   const fetchHistory = useCallback(
     async (pageNum: number, append = false) => {
@@ -50,10 +67,8 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
       try {
         const data = await getHistory(pageNum, PAGE_SIZE);
         setHistory((prev) => {
-          if (append) {
-            return filterHistory([...prev, ...data]);
-          }
-          return data;
+          const merged = append ? filterHistory([...prev, ...data]) : data;
+          return markSupplantedJobsAsFailed(merged);
         });
         setHasMore(data.length === PAGE_SIZE);
         if (append) {
@@ -73,7 +88,7 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
         }
       }
     },
-    [filterHistory, getHistory]
+    [filterHistory, getHistory, markSupplantedJobsAsFailed]
   );
 
   // Keep the first page up to date with the latest runs
@@ -109,7 +124,7 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
             }
           }
 
-          return updated;
+          return markSupplantedJobsAsFailed(updated);
         });
       }
     };
@@ -130,7 +145,7 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
         interval = undefined;
       }
     };
-  }, [currentTaskUuid, fetchHistory, getHistory]);
+  }, [currentTaskUuid, fetchHistory, getHistory, markSupplantedJobsAsFailed]);
 
   const handleScrollRef = useRef<((this: HTMLDivElement, ev: Event) => void) | null>(null);
 

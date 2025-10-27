@@ -30,7 +30,7 @@ impl From<&Sheet> for SheetContentCache {
 }
 
 impl SheetContentCache {
-    pub fn has_content(&self, pos: Pos) -> bool {
+    pub fn has_content_at_pos(&self, pos: Pos) -> bool {
         // we can use is is_some() since the bool is always true
         self.has_cell_value.get(pos).is_some()
     }
@@ -87,7 +87,7 @@ impl SheetContentCache {
 
     #[wasm_bindgen(js_name = "hasContent")]
     pub fn js_has_content(&self, col: i32, row: i32) -> bool {
-        self.has_content(Pos {
+        self.has_content_at_pos(Pos {
             x: col as i64,
             y: row as i64,
         })

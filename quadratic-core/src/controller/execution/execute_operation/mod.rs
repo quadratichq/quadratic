@@ -69,7 +69,9 @@ impl GridController {
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
-
+                Operation::MoveDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_move_data_table(transaction, op),
+                ),
                 Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table(transaction, op),
                 ),
@@ -134,7 +136,9 @@ impl GridController {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
                 Operation::SetDataTable { .. } => {
-                    self.execute_set_data_table(transaction, op);
+                    Self::handle_execution_operation_result(
+                        self.execute_set_data_table(transaction, op),
+                    );
                 }
                 Operation::SetCellFormatsA1 { .. } => {
                     self.execute_set_cell_formats_a1(transaction, op);
