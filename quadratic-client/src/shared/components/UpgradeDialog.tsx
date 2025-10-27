@@ -8,8 +8,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigation } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
-// TODO: turn this into an env var
-const SOLICIT_UPGRADE_INTERVAL_SECONDS = 30;
+// Default to 7 days if there's no env var
+const SOLICIT_UPGRADE_INTERVAL_SECONDS = import.meta.env.VITE_SOLICIT_UPGRADE_INTERVAL_SECONDS ?? 60 * 60 * 24 * 7;
 
 export const showUpgradeDialogAtom = atom<{ open: false; eventSource: null } | { open: true; eventSource: string }>({
   key: 'showUpgradeDialog',
