@@ -26,6 +26,8 @@ export const GridContextMenuDataTable = () => {
 
   return (
     <ContextMenuBase>
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={contextMenu.table?.name ?? ''} />
+      <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
       <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
