@@ -22,6 +22,7 @@ use crate::{
         },
     },
     selection::OldSelection,
+    util::is_false,
 };
 
 /// Description of changes to make to a file.
@@ -40,12 +41,17 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    /// Adds, deletes or replaces a data table at a specific SheetPos.
     SetDataTable {
         sheet_pos: SheetPos,
         data_table: Option<DataTable>,
         index: usize,
+
+        // If true, the old data table properties will not be preserved
+        #[serde(skip_serializing_if = "is_false", default)]
+        ignore_old_data_table: bool,
     },
-    /// Adds or replaces a data table at a specific SheetPos.
+    /// **Deprecated** (Sept 2025) and replaced with SetDataTable
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
@@ -74,13 +80,16 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    MoveDataTable {
+        old_sheet_pos: SheetPos,
+        new_sheet_pos: SheetPos,
+    },
     FlattenDataTable {
         sheet_pos: SheetPos,
     },
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,
-        value: CellValue,
     },
     GridToDataTable {
         sheet_rect: SheetRect,
@@ -380,6 +389,9 @@ pub enum Operation {
         // this is used to properly redo an InsertColumn operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Deletes a row.
     DeleteRow {
@@ -389,18 +401,27 @@ pub enum Operation {
         // this is used to properly redo an InsertRow operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Inserts a column.
     InsertColumn {
         sheet_id: SheetId,
         column: i64,
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     /// Inserts a row.
     InsertRow {
         sheet_id: SheetId,
         row: i64,
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
 
     MoveColumns {
@@ -422,6 +443,9 @@ pub enum Operation {
         // this is used to properly redo an InsertColumn operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
     DeleteRows {
         sheet_id: SheetId,
@@ -430,5 +454,8 @@ pub enum Operation {
         // this is used to properly redo an InsertRow operation
         #[serde(default)]
         copy_formats: CopyFormats,
+
+        #[serde(default)]
+        ignore_tables: bool,
     },
 }

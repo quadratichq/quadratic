@@ -20,7 +20,7 @@ use ts_rs::TS;
 #[derive(Default, Debug, Serialize, Deserialize, Clone, TS, PartialEq)]
 pub struct JsCellValueResult(pub String, pub u8);
 
-#[derive(Default, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
 pub struct JsCodeResult {
     pub transaction_id: String,
     pub success: bool,

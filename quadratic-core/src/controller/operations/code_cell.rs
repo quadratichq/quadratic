@@ -2,12 +2,12 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, RefAdjust, SheetPos, Value,
     a1::A1Selection,
-    cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId},
+    util::now,
 };
 
 impl GridController {
@@ -19,34 +19,164 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let parse_ctx = self.a1_context();
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return ops;
+        };
+
+        if sheet
+            .data_table_pos_that_contains(sheet_pos.into())
+            .is_some_and(|dt_pos| dt_pos != sheet_pos.into())
+        {
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                crate::wasm_bindings::js::jsClientMessage(
+                    "Cannot add code cell to table".to_string(),
+                    crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
+                );
+            }
+            // cannot set a code cell where there is already a data table anchor
+            return ops;
+        }
+
         let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, self.a1_context(), sheet_pos),
             _ => code,
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
-
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none()
+        if let Some((existing_data_table_index, existing_data_table)) =
+            sheet.data_table_full_at(&sheet_pos.into())
+            && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
+            && existing_code_run.language == language
         {
-            ops.push(Operation::DataTableOptionMeta {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                name: Some(code_cell_name),
-                alternating_colors: None,
-                columns: None,
-                show_name: None,
-                show_columns: None,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..existing_code_run.clone()
+                    }),
+                    ..existing_data_table.clone()
+                }),
+                index: existing_data_table_index,
+                ignore_old_data_table: false,
+            });
+        } else {
+            let name = CellValue::Text(
+                code_cell_name.unwrap_or_else(|| format!("{}1", language.as_string())),
+            );
+
+            ops.push(Operation::SetDataTable {
+                sheet_pos,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..Default::default()
+                    }),
+                    name,
+                    header_is_first_row: false,
+                    show_name: None,
+                    show_columns: None,
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single(CellValue::Blank),
+                    spill_value: false,
+                    spill_data_table: false,
+                    last_modified: now(),
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                }),
+                index: usize::MAX,
+                ignore_old_data_table: false,
             });
         }
 
+        ops.push(Operation::ComputeCode { sheet_pos });
+        ops
+    }
+
+    pub fn set_formula_operations(
+        &self,
+        selection: A1Selection,
+        code_string: String,
+        code_cell_name: Option<String>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        let rects = selection.rects(&self.a1_context);
+        if rects.is_empty() {
+            return ops;
+        }
+        let first_pos = rects[0].min.to_sheet_pos(selection.sheet_id);
+        rects.iter().for_each(|rect| {
+            for x in rect.min.x..=rect.max.x {
+                for y in rect.min.y..=rect.max.y {
+                    let sheet_pos = SheetPos {
+                        x,
+                        y,
+                        sheet_id: selection.sheet_id,
+                    };
+
+                    let name = code_cell_name
+                        .clone()
+                        .unwrap_or_else(|| format!("{}1", CodeCellLanguage::Formula.as_string()));
+                    let mut code_run = CodeRun {
+                        language: CodeCellLanguage::Formula,
+                        code: code_string.clone(),
+                        ..Default::default()
+                    };
+                    if first_pos != sheet_pos {
+                        let ref_adjust = RefAdjust {
+                            sheet_id: Some(first_pos.sheet_id),
+                            relative_only: true,
+                            dx: x - first_pos.x,
+                            dy: y - first_pos.y,
+                            x_start: 0,
+                            y_start: 0,
+                        };
+                        code_run.adjust_references(
+                            selection.sheet_id,
+                            self.a1_context(),
+                            sheet_pos,
+                            ref_adjust,
+                        );
+                    }
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(DataTable {
+                            kind: DataTableKind::CodeRun(code_run),
+                            name: CellValue::Text(name),
+                            header_is_first_row: false,
+                            show_name: None,
+                            show_columns: None,
+                            column_headers: None,
+                            sort: None,
+                            sort_dirty: false,
+                            display_buffer: None,
+                            value: Value::Single(CellValue::Blank),
+                            spill_value: false,
+                            spill_data_table: false,
+                            last_modified: now(),
+                            alternating_colors: true,
+                            formats: None,
+                            borders: None,
+                            chart_pixel_output: None,
+                            chart_output: None,
+                        }),
+                        index: usize::MAX,
+                        ignore_old_data_table: false,
+                    });
+                    ops.push(Operation::ComputeCode { sheet_pos });
+                }
+            }
+        });
         ops
     }
 
@@ -175,33 +305,29 @@ mod test {
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
-        let pos = Pos { x: 0, y: 0 };
-        sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "delete me".to_string(), None, false);
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id),
+            sheet_pos,
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
         );
         assert_eq!(operations.len(), 2);
+        let Operation::SetDataTable { data_table, .. } = &operations[0] else {
+            panic!("Expected SetDataTable");
+        };
         assert_eq!(
-            operations[0],
-            Operation::SetCellValues {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-                values: CellValues::from(CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: "print('hello world')".to_string(),
-                })),
-            }
+            data_table.as_ref().unwrap().kind,
+            DataTableKind::CodeRun(CodeRun {
+                language: CodeCellLanguage::Python,
+                code: "print('hello world')".to_string(),
+                ..Default::default()
+            })
         );
-        assert_eq!(
-            operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-            }
-        );
+
+        assert_eq!(operations[1], Operation::ComputeCode { sheet_pos });
     }
 
     #[test]

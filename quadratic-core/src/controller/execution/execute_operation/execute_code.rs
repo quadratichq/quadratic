@@ -119,7 +119,16 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-
+            self.thumbnail_dirty_sheet_rect(
+                transaction,
+                SheetRect::from_numbers(
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    w as i64,
+                    h as i64,
+                    sheet_pos.sheet_id,
+                ),
+            );
             if transaction.is_user_ai_undo_redo() {
                 transaction.forward_operations.push(op);
 
@@ -130,15 +139,6 @@ impl GridController {
                         w: original.map(|(w, _)| w).unwrap_or(w),
                         h: original.map(|(_, h)| h).unwrap_or(h),
                     });
-
-                let sheet_rect = SheetRect::from_numbers(
-                    sheet_pos.x,
-                    sheet_pos.y,
-                    w as i64,
-                    h as i64,
-                    sheet_pos.sheet_id,
-                );
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
             }
         }
 
@@ -155,25 +155,36 @@ impl GridController {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
+
             let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
                 // sheet may have been deleted in a multiplayer operation
                 return;
             };
-            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(sheet_pos.into()) {
-                match code_cell_value.language {
-                    CodeCellLanguage::Python => {
-                        self.run_python(transaction, sheet_pos, code_cell_value.code);
-                    }
-                    CodeCellLanguage::Formula => {
-                        self.run_formula(transaction, sheet_pos, code_cell_value.code);
-                    }
-                    CodeCellLanguage::Connection { kind, id } => {
-                        self.run_connection(transaction, sheet_pos, code_cell_value.code, kind, id);
-                    }
-                    CodeCellLanguage::Javascript => {
-                        self.run_javascript(transaction, sheet_pos, code_cell_value.code);
-                    }
-                    CodeCellLanguage::Import => {} // no-op
+
+            let (language, code) = match sheet.code_run_at(&sheet_pos.into()) {
+                Some(code_run) => (code_run.language.to_owned(), code_run.code.to_owned()),
+                None => {
+                    dbgjs!(format!("No code run found at {sheet_pos:?}"));
+                    return;
+                }
+            };
+
+            match language {
+                CodeCellLanguage::Python => {
+                    self.run_python(transaction, sheet_pos, code);
+                }
+                CodeCellLanguage::Formula => {
+                    self.run_formula(transaction, sheet_pos, code);
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    self.run_connection(transaction, sheet_pos, code, kind, id);
+                }
+                CodeCellLanguage::Javascript => {
+                    self.run_javascript(transaction, sheet_pos, code);
+                }
+                CodeCellLanguage::Import => {
+                    dbgjs!(format!("Import code run found at {sheet_pos:?}"));
+                    // no-op
                 }
             }
         }
@@ -229,7 +240,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, Pos, SheetPos,
+        CellValue, CellValue, Pos, SheetPos, SheetPos,
         a1::A1Selection,
         controller::{
             GridController,
@@ -239,70 +250,69 @@ mod tests {
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
     };
 
     #[test]
-    fn test_spilled_output_over_normal_cell() {
+    fn test_simple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "2".into(), None, false);
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos![sheet_id!A3],
             CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
             None,
             false,
         );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Text("one".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("two".into()))
-        );
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 3 }), None);
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Text("one".into()))
-        );
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Text("two".into()))
-        );
+        assert_display(&gc, pos![sheet_id!A3], "1");
+        assert_display(&gc, pos![sheet_id!A4], "2");
+    }
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            "cause spill".to_string(),
+    #[test]
+    fn test_spilled_output_over_normal_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(pos![sheet_id!A1], "one".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "two".into(), None, false);
+        gc.set_code_cell(
+            pos![sheet_id!B1],
+            CodeCellLanguage::Formula,
+            "A1:A2".to_string(),
+            None,
             None,
             false,
         );
+        assert_code_language(
+            &gc,
+            pos![sheet_id!B1],
+            CodeCellLanguage::Formula,
+            "A1:A2".to_string(),
+        );
+
+        assert_display(&gc, pos![sheet_id!A1], "one");
+        assert_display(&gc, pos![sheet_id!A2], "two");
+        assert_display(&gc, pos![sheet_id!A3], "");
+
+        assert_display(&gc, pos![sheet_id!B1], "one");
+        assert_display(&gc, pos![sheet_id!B2], "two");
+        assert_display(&gc, pos![sheet_id!B3], "");
+
+        gc.set_cell_value(pos![sheet_id!B2], "cause spill".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 2 }),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Text("cause spill".into()))
         );
 
-        assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Blank)
-        );
+        assert_display(&gc, pos![sheet_id!B1], "");
+        assert_eq!(sheet.display_value(pos![B1]), Some(CellValue::Blank));
 
-        let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 });
+        let code_cell = sheet.data_table_at(&pos![B1]);
         assert!(code_cell.unwrap().has_spill());
     }
 

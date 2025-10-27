@@ -60,6 +60,7 @@ export const QuadraticSidebar = () => {
             to="/"
             reloadDocument
             className="group relative flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-border"
+            data-testid="back-to-dashboard-link"
           >
             <QuadraticLogo />
             {isRunningAsyncAction && (

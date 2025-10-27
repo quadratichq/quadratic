@@ -5,7 +5,7 @@ use crate::{
         GridController, active_transactions::transaction_name::TransactionName,
         operations::operation::Operation,
     },
-    grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, SheetId},
+    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId},
 };
 
 /// Creates a Python code table with output of w x h cells with values 0, 1, ..., w * h - 1.
@@ -33,12 +33,6 @@ pub fn test_create_code_table_with_values(
     values: &[&str],
 ) -> DataTable {
     use crate::number::decimal_from_str;
-
-    let cell_value = CellValue::Code(CodeCellValue {
-        language: CodeCellLanguage::Python,
-        code: "code".to_string(),
-    });
-
     let array_size = ArraySize::new(w, h).unwrap();
     let mut array = Array::new_empty(array_size);
     for (i, s) in values.iter().enumerate() {
@@ -74,17 +68,23 @@ pub fn test_create_code_table_with_values(
         None,
     );
 
-    let op = Operation::AddDataTable {
-        sheet_pos: pos.to_sheet_pos(sheet_id),
-        data_table,
-        cell_value,
-        index: None,
+    test_create_raw_data_table(gc, pos.to_sheet_pos(sheet_id), data_table)
+}
+
+#[cfg(test)]
+pub fn test_create_raw_data_table(
+    gc: &mut GridController,
+    sheet_pos: SheetPos,
+    data_table: DataTable,
+) -> DataTable {
+    let op = Operation::SetDataTable {
+        sheet_pos,
+        data_table: Some(data_table),
+        index: usize::MAX,
+        ignore_old_data_table: true,
     };
     gc.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
-
-    gc.data_table_at(pos.to_sheet_pos(sheet_id))
-        .unwrap()
-        .clone()
+    gc.data_table_at(sheet_pos).unwrap().clone()
 }
 
 #[cfg(test)]

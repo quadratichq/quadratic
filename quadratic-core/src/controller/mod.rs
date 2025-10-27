@@ -115,10 +115,6 @@ impl GridController {
         &self.grid
     }
 
-    pub fn grid_mut(&mut self) -> &mut Grid {
-        &mut self.grid
-    }
-
     pub fn into_grid(self) -> Grid {
         self.grid
     }
@@ -227,16 +223,30 @@ impl GridController {
 
         self
     }
-}
 
-impl GridController {
     /// Returns the undo stack for testing purposes
+    #[cfg(test)]
     pub fn undo_stack(&self) -> &Vec<Transaction> {
         &self.undo_stack
     }
 
     /// Returns the redo stack for testing purposes
+    #[cfg(test)]
     pub fn redo_stack(&self) -> &Vec<Transaction> {
         &self.redo_stack
+    }
+
+    /// Sets the ID of the first sheet.
+    ///
+    /// This method is incredibly dubious and should only be used for testing.
+    #[cfg(test)]
+    pub fn set_first_sheet_id(&mut self, new_id: SheetId) {
+        let (_old_id, mut sheet) = self
+            .grid
+            .sheets
+            .swap_remove_index(0)
+            .expect("no first sheet");
+        sheet.id = new_id;
+        self.grid.add_sheet(Some(sheet));
     }
 }

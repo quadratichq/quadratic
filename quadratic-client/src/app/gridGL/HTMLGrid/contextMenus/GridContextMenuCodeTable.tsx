@@ -18,6 +18,7 @@ export function GridContextMenuCodeTable() {
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.AddReferenceToAIAnalyst} actionArgs={contextMenu.table?.name ?? ''} />
 
       <DropdownMenuSeparator />
 

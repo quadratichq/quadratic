@@ -471,6 +471,10 @@ export const ManageSearch: IconComponent = (props) => {
   return <Icon {...props}>manage_search</Icon>;
 };
 
+export const MentionIcon: IconComponent = (props) => {
+  return <Icon {...props}>alternate_email</Icon>;
+};
+
 export const MenuIcon: IconComponent = (props) => {
   return <Icon {...props}>menu</Icon>;
 };
