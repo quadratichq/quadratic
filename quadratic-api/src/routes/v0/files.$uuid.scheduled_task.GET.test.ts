@@ -44,7 +44,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return 403 when user lacks FILE_EDIT permission', async () => {
+    it('should return 403 when user lacks FILE_VIEW and TEAM_VIEW permissions', async () => {
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task`)
         .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`);
@@ -55,7 +55,7 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
   });
 
   describe('File Permission Checks', () => {
-    it('should succeed when user has FILE_EDIT permission (file owner)', async () => {
+    it('should succeed when user has FILE_VIEW and TEAM_VIEW permissions (file owner)', async () => {
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
