@@ -4,16 +4,13 @@ jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
-import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
-
-// Helper function to generate expected serialized Buffer format for HTTP responses
-const expectSerializedBuffer = (data: any) => Array.from(Buffer.from(JSON.stringify(data)));
+import dbClient from '../../dbClient';
+import { clearDb, createUser, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
 
 describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   let testUser: any;
-  let otherUser: any;
   let testFile: any;
   let testTeam: any;
   let uniqueId: string;
@@ -125,15 +122,87 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       expect(response.status).toBe(401);
     });
+  });
 
-    it('should return 403 when user lacks FILE_EDIT permission', async () => {
+  describe('Permission Checks', () => {
+    const validUpdateData = {
+      cronExpression: '0 1 * * *',
+      operations: Array.from(Buffer.from(JSON.stringify({ action: 'updated', type: 'hourly' }))),
+    };
+
+    it('should return 403 when user lacks FILE_EDIT permission (but has TEAM_EDIT)', async () => {
+      // Make the file private so team permissions don't grant file edit
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      // Create a user with EDITOR team role (has TEAM_EDIT) but no file role
+      const editorUser = await createUser({ auth0Id: `editor-user-${uniqueId}` });
+
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: editorUser.id,
+          teamId: testTeam.id,
+          role: 'EDITOR',
+        },
+      });
+
+      // Explicitly give them VIEWER role on the file so they don't get FILE_EDIT
+      await dbClient.userFileRole.create({
+        data: {
+          userId: editorUser.id,
+          fileId: testFile.id,
+          role: 'VIEWER',
+        },
+      });
+
       const response = await request(app)
         .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
-        .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`)
+        .set('Authorization', `Bearer ValidToken editor-user-${uniqueId}`)
         .send(validUpdateData);
 
       expect(response.status).toBe(403);
       expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user lacks TEAM_EDIT permission (but has FILE_EDIT)', async () => {
+      // Create a user with VIEWER team role (no TEAM_EDIT) but give them EDITOR on the file (has FILE_EDIT)
+      const viewerUser = await createUser({ auth0Id: `viewer-user-${uniqueId}` });
+
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: viewerUser.id,
+          teamId: testTeam.id,
+          role: 'VIEWER',
+        },
+      });
+
+      await dbClient.userFileRole.create({
+        data: {
+          userId: viewerUser.id,
+          fileId: testFile.id,
+          role: 'EDITOR',
+        },
+      });
+
+      const response = await request(app)
+        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken viewer-user-${uniqueId}`)
+        .send(validUpdateData);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should succeed when user has both FILE_EDIT and TEAM_EDIT permission', async () => {
+      const response = await request(app)
+        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
+        .send(validUpdateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.cronExpression).toBe(validUpdateData.cronExpression);
     });
   });
 
