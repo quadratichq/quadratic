@@ -78,16 +78,21 @@ export const workosClient: AuthClient = {
    * Login the user in Workos and create a new session.
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void> {
+    const { redirectTo, isSignupFlow } = args;
     const client = await getClient();
     let state = undefined;
-    if (args.redirectTo && args.redirectTo !== '/') {
+    if (redirectTo && redirectTo !== '/') {
       state = {
-        redirectTo: args.redirectTo,
+        redirectTo,
       };
     }
-    await client.signIn({
-      state: state ? JSON.stringify(state) : undefined,
-    });
+    if (isSignupFlow) {
+      await client.signUp({ state: state ? JSON.stringify(state) : undefined });
+    } else {
+      await client.signIn({
+        state: state ? JSON.stringify(state) : undefined,
+      });
+    }
   },
 
   /**
