@@ -2,12 +2,16 @@
 
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { AddIcon, ArrowBackIcon, CloseIcon } from '@/shared/components/Icons';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 
 type View = 'create' | 'list' | 'details';
 
 export const ScheduledTasksHeader = () => {
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const { closeScheduledTasks, showScheduledTasks, scheduledTasks, newScheduledTask } = useScheduledTasks();
 
   const view: View =
@@ -35,7 +39,7 @@ export const ScheduledTasksHeader = () => {
         {view === 'list' ? 'Scheduled tasks' : view === 'create' ? 'New scheduled task' : 'Edit scheduled task'}
       </h3>
       <div className="flex items-center gap-1">
-        {view === 'list' && (
+        {view === 'list' && teamPermissions?.includes('TEAM_EDIT') && (
           <TooltipPopover label="New">
             <Button
               variant="ghost"

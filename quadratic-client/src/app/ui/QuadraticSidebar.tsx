@@ -51,6 +51,7 @@ export const QuadraticSidebar = () => {
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
+  const canViewTeam = isAvailableArgs.teamPermissions?.includes('TEAM_VIEW');
 
   return (
     <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent md:flex">
@@ -104,7 +105,7 @@ export const QuadraticSidebar = () => {
 
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
-        {canEditFile && (
+        {canViewTeam && (
           <SidebarTooltip label="Scheduled tasks">
             <SidebarToggle
               pressed={showScheduledTasks.show}

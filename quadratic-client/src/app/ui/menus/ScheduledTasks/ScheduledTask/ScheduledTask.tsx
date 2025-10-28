@@ -7,10 +7,17 @@ import { ScheduledTaskType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/S
 import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { useCronRange } from '@/app/ui/menus/ScheduledTasks/useCronRange';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
+import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback } from 'react';
+import { Link } from 'react-router';
 
 export const ScheduledTask = () => {
+  const {
+    team: { uuid: teamUuid },
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, getHistory } = useScheduledTasks();
 
   // holds all data/fns for the cron expression
@@ -44,15 +51,24 @@ export const ScheduledTask = () => {
     }
   }, [currentTask, deleteScheduledTask, showScheduledTasks]);
 
+  if (!teamPermissions?.includes('TEAM_EDIT')) {
+    return (
+      <div className="mt-4 px-4 text-center text-muted-foreground">
+        You do not have permission to edit scheduled tasks for this file’s team.{' '}
+        <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline" reloadDocument>
+          Ask your team owner for permission.
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-2">
       <div className="flex-shrink-0">
         <ScheduledTaskType cronRange={cronRange} />
         <ScheduledTaskInterval cronInterval={cronInterval} />
       </div>
-
       {currentTask && <ScheduledTaskHistory getHistory={getHistory} currentTaskUuid={currentTask.uuid} />}
-
       <div className="flex flex-shrink-0 flex-row justify-end gap-2 pb-2">
         {currentTask && (
           <Button onClick={onDelete} variant="outline-destructive" className="mr-auto">
