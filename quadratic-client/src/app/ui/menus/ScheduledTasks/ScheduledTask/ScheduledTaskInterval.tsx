@@ -146,6 +146,12 @@ export const ScheduledTaskInterval = (props: Props) => {
                 max={59}
                 id="minute-picker"
                 defaultValue={localMinute ?? ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (e.target.value !== '' && (isNaN(value) || value < 0 || value > 59)) {
+                    e.target.value = String(Math.max(0, Math.min(59, value || 0)));
+                  }
+                }}
                 onBlur={(e) => changeHoursMinute(e.target.value)}
                 className=""
                 onKeyDown={(e) => {
