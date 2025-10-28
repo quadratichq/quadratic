@@ -72,7 +72,6 @@ export const ScheduledTaskType = (props: Props) => {
               triggerError={!!rangeError}
               changeCursor={true}
               readOnly={false}
-              onlyCurrentSheet={sheetId}
             />
           )}
         </div>
