@@ -43,11 +43,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
 
   const {
     file: { id: fileId },
-    userMakingRequest: { filePermissions },
+    userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
   if (!filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, "You don't have access to this file");
+  }
+  if (!teamPermissions?.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You don’t have proper access to this team');
   }
 
   const result = await createScheduledTask({
