@@ -146,7 +146,6 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const loaderData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData | null;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
@@ -176,8 +175,7 @@ export const Component = () => {
     };
   }, [revalidator]);
 
-  // we keep the loading UI if the auth failed (loader will return null)
-  useRemoveInitialLoadingUI(!loaderData);
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>
