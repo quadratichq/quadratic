@@ -110,11 +110,11 @@ export const oryClient: AuthClient = {
 
   /**
    * Tries to get a token for the current user from the Ory client.
-   * If the token is still valid, it'll pull it from a cache. If it’s expired,
+   * If the token is still valid, it'll pull it from a cache. If it's expired,
    * it will fail and we will manually redirect the user to ory to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect(skipRedirect?: boolean) {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request) {
     try {
       const session = await getSession();
       if (session && session.tokenized) {
@@ -124,8 +124,9 @@ export const oryClient: AuthClient = {
       }
     } catch (e) {
       if (!skipRedirect) {
-        const { pathname, search } = new URL(window.location.href);
-        await this.login({ redirectTo: pathname + search, href: window.location.href });
+        const href = request ? request.url : window.location.href;
+        const { pathname, search } = new URL(href);
+        await this.login({ redirectTo: pathname + search, href });
       }
     }
     return '';
