@@ -155,6 +155,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 }}
               />
               minutes
+              <div className="text-sm">{getLocalTimeZoneAbbreviation()}</div>
             </div>
           )}
           {cronType === 'custom' && (
