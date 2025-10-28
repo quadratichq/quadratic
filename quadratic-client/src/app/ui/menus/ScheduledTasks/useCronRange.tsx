@@ -28,8 +28,9 @@ export const useCronRange = (operations?: number[]): CronRange => {
   useEffect(() => {
     if (operations) {
       const range = scheduledTaskDecode(new Uint8Array(operations));
+      console.log(range);
       if (!range) {
-        setTask('run-sheet-cells');
+        setTask('run-all-code');
       } else if (range.isAllSelected()) {
         setTask('run-sheet-cells');
       } else {

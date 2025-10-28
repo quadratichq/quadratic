@@ -34,7 +34,7 @@ const EmptyScheduledTasksList = () => {
   );
 };
 
-const getScheduledTaskName = ({ className, operations }: { className: string; operations: number[] }) => {
+const getScheduledTaskName = (operations: number[]) => {
   try {
     const decoded = scheduledTaskDecode(new Uint8Array(operations));
 
@@ -65,9 +65,7 @@ const ScheduledTasksListBody = () => {
             onClick={() => showScheduledTasks(task.uuid)}
             autoFocus={i === 0}
           >
-            <span className="font-medium">
-              {getScheduledTaskName({ className: 'block flex-grow text-left', operations: task.operations })}
-            </span>
+            <span className="font-medium">{getScheduledTaskName(task.operations)}</span>
             <span className="w-10/12 truncate text-left text-xs text-muted-foreground">
               {getCronToListEntry(task.cronExpression)}
             </span>
