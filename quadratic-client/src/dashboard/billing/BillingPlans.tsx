@@ -52,7 +52,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           <div className="flex items-center justify-between">
             <span>Team members</span>
             <span className="text-sm font-medium">
-              $20 <span className="text-xs text-muted-foreground">/usr/month</span>
+              $20 <span className="text-xs text-muted-foreground">/user/month</span>
             </span>
           </div>
           <div className="flex items-center justify-between">
