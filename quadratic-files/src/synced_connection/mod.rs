@@ -207,7 +207,9 @@ mod tests {
         assert!(status.is_none());
     }
 
+    // TODO(ddimaria): remove this ignore once we have parquet files mocked
     #[tokio::test]
+    #[ignore]
     async fn test_dates_returns_correct_range() {
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
