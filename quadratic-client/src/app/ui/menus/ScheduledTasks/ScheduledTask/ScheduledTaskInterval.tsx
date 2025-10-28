@@ -168,7 +168,7 @@ export const ScheduledTaskInterval = (props: Props) => {
               />
               {cronError && <p className="text-xs text-destructive">{cronError}</p>}
               <p className="mt-1 text-xs text-muted-foreground">
-                See the{' '}
+                All cron times in GMT. See the{' '}
                 <a href={DOCUMENTATION_CRON} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                   documentation
                 </a>{' '}
