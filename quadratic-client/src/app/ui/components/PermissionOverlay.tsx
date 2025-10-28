@@ -43,8 +43,8 @@ export function PermissionOverlay() {
           <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT(location.pathname)}>Sign up</Link>
           </Button>
-          <Button size="sm" onClick={handleDuplicate}>
-            Duplicate file
+          <Button size="sm">
+            <Link to={ROUTES.FILE_DUPLICATE(fileUuid)}>Duplicate file</Link>
           </Button>
         </div>
       </FixedBottomAlert>
