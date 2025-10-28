@@ -103,14 +103,19 @@ pub async fn process_transaction(
 
     println!("async_transaction: {:?}", async_transaction);
 
-    if let Ok(async_transaction) = async_transaction
+    let code_run_clone = if let Ok(async_transaction) = async_transaction
         && let Some(sheet_pos) = async_transaction.current_sheet_pos
-        && let Some(code_run) = grid
-            .lock()
+    {
+        grid.lock()
             .await
             .try_sheet(sheet_pos.sheet_id)
             .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
-    {
+            .cloned()
+    } else {
+        None
+    };
+
+    if let Some(code_run) = code_run_clone {
         println!("code_run: {:?}", code_run);
         // run code
         match &code_run.language {
