@@ -10,6 +10,10 @@ export const MIDNIGHT_LOCAL_MINUTE = new Date(0, 0, 0, 0, 0, 0).getUTCMinutes();
 
 export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute' | 'custom';
 
+export const CRON_LIMIT_INTERVAL_ENV_MODES = ['production'];
+const CRON_ERROR_TOO_FREQUENT = 'cannot run more frequently than once per hour';
+const CRON_MIN_INTERVAL_MS = 1000 * 60 * 60;
+
 export const getLocalTimeZoneAbbreviation = (): string => {
   return (
     new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
@@ -101,7 +105,21 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
       _setCustomCron(input);
       try {
         // ensure the cron expression is valid before updating the actual cron expression
-        CronExpressionParser.parse(input);
+        const parsed = CronExpressionParser.parse(input);
+
+        // In production, check if cron runs more frequently than once per hour
+        if (CRON_LIMIT_INTERVAL_ENV_MODES.includes(import.meta.env.MODE)) {
+          const interval1 = parsed.next();
+          const interval2 = parsed.next();
+          const diffMs = interval2.getTime() - interval1.getTime();
+          const diffHours = diffMs / CRON_MIN_INTERVAL_MS;
+
+          if (diffHours < 1) {
+            setCronError(CRON_ERROR_TOO_FREQUENT);
+            return;
+          }
+        }
+
         setCronError(undefined);
         setCron(input);
       } catch (e: any) {
@@ -135,6 +153,11 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
 
   const changeInterval = useCallback(
     (every: string) => {
+      if (import.meta.env.MODE === 'production' && every === 'minute') {
+        setCronError(CRON_ERROR_TOO_FREQUENT);
+        return;
+      }
+
       if (every === 'days') {
         const { hour: convertedHour, minute: convertedMinute } = hourMinuteLocalToUTC(0, 0);
         setCron(`${convertedMinute} ${convertedHour} * * 1-7`);
