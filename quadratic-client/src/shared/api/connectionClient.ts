@@ -38,17 +38,6 @@ const StaticIpsSchema = z.object({
 });
 type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
-// This might get called on a public file (where the user might not be
-// logged in but can still access the file). If they're not logged in,
-// we won't make the request (to prevent the redirect). It'll fail silently
-const requireLogin = async () => {
-  const loggedIn = await authClient.isAuthenticated();
-  if (!loggedIn) {
-    console.log("User is not logged in, so we won't make a request to the connection service.");
-    return null;
-  }
-};
-
 export const connectionClient = {
   schemas: {
     // ignore case of connection type
@@ -78,7 +67,14 @@ export const connectionClient = {
       forceCacheRefresh: boolean = false,
       timeout: number = 60000
     ): Promise<SqlSchemaResponse | null> => {
-      await requireLogin();
+      // This might get called on a public file (where the user might not be
+      // logged in but can still access the file). If they're not logged in,
+      // we won't make the request (to prevent the redirect). It'll fail silently
+      const loggedIn = await authClient.isAuthenticated();
+      if (!loggedIn) {
+        console.log("User is not logged in, so we won't make a request to the connection service.");
+        return null;
+      }
 
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);

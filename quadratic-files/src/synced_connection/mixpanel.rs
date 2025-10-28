@@ -50,13 +50,15 @@ pub(crate) async fn process_mixpanel_connections(
 
         tokio::spawn(async move {
             if let Err(e) = process_mixpanel_connection(
-                state,
+                Arc::clone(&state),
                 connection.type_details,
                 connection.uuid,
                 sync_kind,
             )
             .await
             {
+                state.clone().stats.lock().await.num_connections_processing -= 1;
+
                 tracing::error!(
                     "Error processing Mixpanel connection {}: {}",
                     connection.uuid,

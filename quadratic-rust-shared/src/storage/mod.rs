@@ -11,7 +11,6 @@ use crate::{SharedError, error::Result, storage::error::Storage as StorageError}
 
 pub mod error;
 pub mod file_system;
-// #[cfg(feature = "object-store")]
 pub mod object_store;
 pub mod s3;
 

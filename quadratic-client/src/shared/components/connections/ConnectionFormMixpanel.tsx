@@ -20,8 +20,6 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-  console.log('connection', connection);
-
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'MIXPANEL',

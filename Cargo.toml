@@ -17,6 +17,7 @@ repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
 version = "0.20.5"
 
+# TODO(ddimaria): add shared dependencies here
 [workspace.dependencies]
 
 [profile.release]
