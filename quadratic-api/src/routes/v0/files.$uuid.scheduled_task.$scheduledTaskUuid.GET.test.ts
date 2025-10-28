@@ -1,7 +1,7 @@
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }]));
 
-import type { ScheduledTaskStatus } from '.prisma/client';
+import type { ScheduledTaskStatus } from '@prisma/client';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
@@ -65,7 +65,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return 403 when user lacks FILE_EDIT permission', async () => {
+    it('should return 403 when user lacks both FILE_VIEW and TEAM_VIEW permissions', async () => {
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`);
@@ -76,13 +76,77 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   });
 
   describe('File Permission Checks', () => {
-    it('should succeed when user has FILE_EDIT permission (file owner)', async () => {
+    it('should succeed when user has FILE_VIEW and TEAM_VIEW permissions (file owner)', async () => {
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('uuid', testScheduledTask.uuid);
+    });
+
+    it('should return 403 when user has FILE_VIEW but lacks TEAM_VIEW permission', async () => {
+      // Create a private file where a user has FILE_VIEW but no team role
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      // Create a user with file role but no team role
+      const fileOnlyUser = await dbClient.user.create({
+        data: {
+          auth0Id: `file-only-user-${uniqueId}`,
+          email: `file-only-user-${uniqueId}@test.com`,
+        },
+      });
+
+      // Give them VIEWER role on the file
+      await dbClient.userFileRole.create({
+        data: {
+          userId: fileOnlyUser.id,
+          fileId: testFile.id,
+          role: 'VIEWER',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken file-only-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user has TEAM_VIEW but lacks FILE_VIEW permission', async () => {
+      // Create another user from a different team
+      const otherUser = await dbClient.user.create({
+        data: {
+          auth0Id: `other-team-user-${uniqueId}`,
+          email: `other-team-user-${uniqueId}@test.com`,
+        },
+      });
+
+      // Add them to the test team as a VIEWER (has TEAM_VIEW but no FILE_VIEW)
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: otherUser.id,
+          teamId: testFile.ownerTeamId!,
+          role: 'VIEWER',
+        },
+      });
+
+      // File remains private to the original user
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken other-team-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
     });
   });
 
