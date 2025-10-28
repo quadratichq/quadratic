@@ -6,7 +6,7 @@ import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { clearDb, createFile, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createUser, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
@@ -72,8 +72,71 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     });
   });
 
-  describe('File Permission Checks', () => {
-    it('should succeed when user has FILE_EDIT permission (file owner)', async () => {
+  describe('Permission Checks', () => {
+    it('should return 403 when user lacks FILE_EDIT permission (but has TEAM_EDIT)', async () => {
+      // Make the file private so team permissions don't grant file edit
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      // Create a user with EDITOR team role (has TEAM_EDIT) but no file role
+      const editorUser = await createUser({ auth0Id: `editor-user-${uniqueId}` });
+
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: editorUser.id,
+          teamId: testTeam.id,
+          role: 'EDITOR',
+        },
+      });
+
+      // Explicitly give them VIEWER role on the file so they don't get FILE_EDIT
+      await dbClient.userFileRole.create({
+        data: {
+          userId: editorUser.id,
+          fileId: testFile.id,
+          role: 'VIEWER',
+        },
+      });
+
+      const response = await request(app)
+        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken editor-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user lacks TEAM_EDIT permission (but has FILE_EDIT)', async () => {
+      // Create a user with VIEWER team role (no TEAM_EDIT) but give them EDITOR on the file (has FILE_EDIT)
+      const viewerUser = await createUser({ auth0Id: `viewer-user-${uniqueId}` });
+
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: viewerUser.id,
+          teamId: testTeam.id,
+          role: 'VIEWER',
+        },
+      });
+
+      await dbClient.userFileRole.create({
+        data: {
+          userId: viewerUser.id,
+          fileId: testFile.id,
+          role: 'EDITOR',
+        },
+      });
+
+      const response = await request(app)
+        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .set('Authorization', `Bearer ValidToken viewer-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should succeed when user has both FILE_EDIT and TEAM_EDIT permission', async () => {
       const response = await request(app)
         .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
