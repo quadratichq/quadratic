@@ -5,7 +5,7 @@ import { toUint8Array } from 'quadratic-shared/utils/Uint8Array';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { clearDb, createFile, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createUser, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
 // Helper function to generate expected serialized Buffer format for HTTP responses
@@ -62,6 +62,75 @@ describe('GET /v0/files/:uuid/scheduled_task', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return 403 when user has FILE_VIEW but lacks TEAM_VIEW permission', async () => {
+      // Create a private file where a user has FILE_VIEW but no team role
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      // Create a user with file role but no team role
+      const fileOnlyUser = await createUser({ auth0Id: `file-only-user-${uniqueId}` });
+
+      // Give them VIEWER role on the file
+      await dbClient.userFileRole.create({
+        data: {
+          userId: fileOnlyUser.id,
+          fileId: testFile.id,
+          role: 'VIEWER',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .set('Authorization', `Bearer ValidToken file-only-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user has TEAM_VIEW but lacks FILE_VIEW permission', async () => {
+      // Make the file private (owned by the creator) so team members don't get automatic access
+      await dbClient.file.update({
+        where: { id: testFile.id },
+        data: { ownerUserId: testUser.id },
+      });
+
+      // Create a user with team role but no file access
+      const teamOnlyUser = await createUser({ auth0Id: `team-only-user-${uniqueId}` });
+
+      // Give them VIEWER role on the team (they have TEAM_VIEW)
+      await dbClient.userTeamRole.create({
+        data: {
+          userId: teamOnlyUser.id,
+          teamId: testTeam.id,
+          role: 'VIEWER',
+        },
+      });
+
+      // Make sure they have no file access
+      // Note: since they're not the creator and have no userFileRole,
+      // they won't have FILE_VIEW on a private file
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .set('Authorization', `Bearer ValidToken team-only-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user lacks both FILE_VIEW and TEAM_VIEW permissions', async () => {
+      // Create a user with neither file nor team access
+      await createUser({ auth0Id: `no-access-user-${uniqueId}` });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .set('Authorization', `Bearer ValidToken no-access-user-${uniqueId}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
     });
   });
 

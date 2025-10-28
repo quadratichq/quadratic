@@ -36,7 +36,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
-  if (!filePermissions.includes(FILE_VIEW) && !teamPermissions?.includes(TEAM_VIEW)) {
+  if (!filePermissions.includes(FILE_VIEW) || !teamPermissions?.includes(TEAM_VIEW)) {
     throw new ApiError(403, 'Permission denied');
   }
 
