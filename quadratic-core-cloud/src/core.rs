@@ -41,7 +41,6 @@ pub async fn process_transaction(
     team_id: String,
     token: String,
 ) -> Result<Uuid> {
-    tracing::info!("Processing transaction: {operations:?}");
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
     let tx_get_cells_request = Arc::new(Mutex::new(tx_get_cells_request));
@@ -102,6 +101,8 @@ pub async fn process_transaction(
         .active_transactions()
         .get_async_transaction(transaction_uuid);
 
+    println!("async_transaction: {:?}", async_transaction);
+
     if let Ok(async_transaction) = async_transaction
         && let Some(sheet_pos) = async_transaction.current_sheet_pos
         && let Some(code_run) = grid
@@ -110,6 +111,7 @@ pub async fn process_transaction(
             .try_sheet(sheet_pos.sheet_id)
             .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
     {
+        println!("code_run: {:?}", code_run);
         // run code
         match &code_run.language {
             CodeCellLanguage::Python => {
@@ -178,13 +180,13 @@ mod tests {
     use quadratic_core::{
         CellValue, Pos, Value,
         controller::{GridController, operations::operation::Operation},
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, Grid},
         number::decimal_from_str,
         pos,
     };
 
     async fn test_language(language: CodeCellLanguage, code: &str) -> CellValue {
-        let grid = Arc::new(Mutex::new(GridController::test()));
+        let grid = Arc::new(Mutex::new(GridController::from_grid(Grid::test(), 0)));
         let sheet_id = grid.lock().await.sheet_ids()[0];
         let mut grid_lock = grid.lock().await;
         let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
@@ -265,7 +267,7 @@ mod tests {
         );
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn test_code_cell_setup() {
         // Test that we can properly set up a code cell using DataTable instead of CellValue::Code
         let grid = Arc::new(Mutex::new(GridController::test()));

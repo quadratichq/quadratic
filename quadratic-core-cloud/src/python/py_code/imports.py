@@ -11,8 +11,9 @@ def auto_install(package):
         import shutil
         uv_exe = shutil.which("uv")
         if uv_exe:
-            # Use uv pip install with --user flag to install to /root/.local (mounted volume)
-            subprocess.check_call([uv_exe, "pip", "install", "--user", package])
+            # Use uv pip install with --prefix to install to /root/.local (mounted volume for persistence)
+            # This is equivalent to pip's --user flag
+            subprocess.check_call([uv_exe, "pip", "install", "--prefix", "/root/.local", package])
         else:
             # Fallback to python -m pip if uv is not available
             python_exe = shutil.which("python3") or shutil.which("python")

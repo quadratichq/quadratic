@@ -383,7 +383,6 @@ impl Worker {
             operations,
             None,
             TransactionName::Unknown,
-            // team_id.to_string(),
             team_id,
             token,
         )
@@ -428,7 +427,7 @@ mod tests {
     use quadratic_rust_shared::storage::Storage;
     use std::{str::FromStr, time::Duration};
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn test_worker_startup() {
         let file_id = Uuid::parse_str("d87f4037-fb48-4b6e-abf0-178c725e464d").unwrap();
         let sheet_id = SheetId::from_str("b8718a71-e4b1-49bb-8f32-f0d931850cfd").unwrap();

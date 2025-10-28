@@ -27,12 +27,18 @@ pub(crate) async fn run_python(
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
 ) -> Result<()> {
+    println!("\nRunning Python code: {}", code);
     let js_code_result = execute(code, transaction_id, get_cells)?;
+    println!("\njs_code_result: {:?}", js_code_result);
 
-    grid.lock()
+    let tmp = grid
+        .lock()
         .await
         .calculation_complete(js_code_result)
-        .map_err(|e| CoreCloudError::Core(e.to_string()))
+        .map_err(|e| CoreCloudError::Core(e.to_string()));
+
+    println!("\ncalculation_complete result: {:?}", tmp);
+    tmp
 }
 
 pub(crate) fn execute(
@@ -152,6 +158,7 @@ with redirect_stdout(__quadratic_std_out__):
 
             // first, try to extract as a 2D array
             // if that fails, try to extract as a 1D array as a 2D array
+
             let typed_array_output =
                 match processed_result.extract::<Vec<Vec<(pyo3::Bound<pyo3::PyAny>, u8)>>>() {
                     Ok(output) => output,
@@ -259,6 +266,7 @@ mod tests {
     use std::time::Instant;
 
     use super::*;
+    use serial_test::serial;
 
     fn test_get_cells(a1: String) -> Result<JsCellsA1Response> {
         println!("get_cells: {:?}", a1);
@@ -279,6 +287,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_execute_yfinance() {
         let code = r#"
 # time the execution
@@ -312,6 +321,7 @@ output
     }
 
     #[test]
+    #[serial]
     fn test_execute_micropip() {
         let code = r#"
 import micropip
@@ -330,6 +340,7 @@ fake.name()
     }
 
     #[test]
+    #[serial]
     fn test_execute_python_error() {
         let code = r#"
 not python code on line 2
@@ -353,6 +364,7 @@ not python code on line 2
     }
 
     #[test]
+    #[serial]
     fn test_execute_python_std_out() {
         let code = r#"
 print("Nothing")
@@ -367,6 +379,7 @@ None
     }
 
     #[test]
+    #[serial]
     fn test_execute_python_plotly() {
         let code = r#"
 import plotly.express as px

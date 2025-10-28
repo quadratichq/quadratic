@@ -111,7 +111,6 @@ mod tests {
     use quadratic_core::cell_values::CellValues;
     use quadratic_core::{CellValue, SheetPos, grid::SheetId};
     use std::str::FromStr;
-    use std::time::Duration;
 
     #[tokio::test]
     async fn test_multiplayer() {
@@ -150,8 +149,5 @@ mod tests {
             .unwrap();
 
         println!("transaction id: {:?}", id);
-
-        // wait 1 minute to show presence in the demo
-        tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }

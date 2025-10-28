@@ -58,10 +58,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Install uv - a fast Python package installer
+# Install to /usr/local/bin instead of /root/.local/bin to avoid conflict with volume mount
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    /root/.local/bin/uv --version
+    mv /root/.local/bin/uv /usr/local/bin/uv && \
+    mv /root/.local/bin/uvx /usr/local/bin/uvx && \
+    uv --version
 
-ENV PATH="/root/.local/bin:${PATH}"
+# Set PYTHONPATH to include /root/.local where user packages are installed
+# This ensures Python can find packages installed with uv pip install --prefix /root/.local
+ENV PYTHONPATH="/root/.local/lib/python3.12/site-packages:${PYTHONPATH}"
 
 # Install common Python packages that are frequently used in Quadratic
 RUN uv pip install --system --break-system-packages \

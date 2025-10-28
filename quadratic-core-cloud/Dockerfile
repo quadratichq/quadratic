@@ -25,8 +25,38 @@ RUN cargo build --release
 ###########################################################################################
 FROM debian:stable-slim AS runtime
 
-COPY --from=builder /quadratic/quadratic-core-cloud/target/release/quadratic-core-cloud .
+# Install runtime dependencies including Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \  
+  ca-certificates \
+  python3 \
+  python3-venv \
+  libpython3.12 \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt install -y ca-certificates
+# Install uv - a fast Python package installer
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    /root/.local/bin/uv --version
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Install common Python packages that are frequently used in Quadratic
+RUN uv pip install --system --break-system-packages \
+  pandas \
+  numpy \
+  matplotlib \
+  seaborn \
+  scipy \
+  requests \
+  openpyxl \
+  xlsxwriter \
+  plotly \
+  scikit-learn \
+  statsmodels \
+  nltk \
+  regex \
+  faker
+
+COPY --from=builder /quadratic/quadratic-core-cloud/target/release/quadratic-core-cloud .
 
 CMD ["./quadratic-core-cloud"]
