@@ -157,15 +157,16 @@ export const workosClient: AuthClient = {
    * Get the access token for the current authenticated user.
    * If the user is not authenticated, redirect to the login page.
    */
-  async getTokenOrRedirect(skipRedirect?: boolean): Promise<string> {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request): Promise<string> {
     try {
       const client = await getClient();
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
       if (!skipRedirect) {
-        const url = new URL(window.location.href);
-        await this.login({ redirectTo: url.toString(), href: window.location.href });
+        const href = request ? request.url : window.location.href;
+        const url = new URL(href);
+        await this.login({ redirectTo: url.toString(), href });
         await waitForAuthClientToRedirect();
       }
     }

@@ -61,7 +61,7 @@ type LoaderData = {
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  const { activeTeamUuid } = await requireAuth();
+  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
 
   const { params, request } = loaderArgs;
 
