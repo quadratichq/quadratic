@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { ROUTES } from '@/shared/constants/routes';
 import { captureEvent } from '@sentry/react';
@@ -165,6 +166,7 @@ export const workosClient: AuthClient = {
       if (!skipRedirect) {
         const url = new URL(window.location.href);
         await this.login({ redirectTo: url.toString(), href: window.location.href });
+        await waitForAuthClientToRedirect();
       }
     }
     return '';

@@ -24,11 +24,7 @@ import {
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // You can't duplicate a file if you're not logged in, regardless of your
   // access to the OG file itself.
-  const { activeTeamUuid } = await requireAuth();
-
-  if (!activeTeamUuid) {
-    return { teams: undefined };
-  }
+  await requireAuth();
 
   const fileUuid = loaderArgs.params.uuid as string;
   const data = await apiClient.teams.list();
@@ -50,7 +46,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
 export const Component = () => {
   const { uuid: fileUuid } = useParams() as { uuid: string };
   const { teams } = useLoaderData() as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
-  const [selectedTeamUuid, setSelectedTeamUuid] = useState<string>(teams === undefined ? '' : teams[0].team.uuid);
+  const [selectedTeamUuid, setSelectedTeamUuid] = useState<string>(teams[0].team.uuid);
   const navigation = useNavigation();
   const submit = useSubmit();
   const isLoading = useMemo(() => navigation.state !== 'idle', [navigation.state]);
@@ -64,13 +60,7 @@ export const Component = () => {
     submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
   }, [fileUuid, selectedTeamUuid, submit]);
 
-  // not loaded is a hack to prevent an error message while the page is being
-  // redirected (we can probably avoid this be removing the intermediary /login
-  // route)
-  const notLoaded = teams === undefined;
-  useRemoveInitialLoadingUI(notLoaded);
-
-  if (notLoaded) return null;
+  useRemoveInitialLoadingUI();
 
   return (
     <div className="flex h-full items-center justify-center">

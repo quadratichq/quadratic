@@ -60,12 +60,8 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response | null> => {
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   const { activeTeamUuid } = await requireAuth();
-
-  if (!activeTeamUuid) {
-    return null;
-  }
 
   const { params, request } = loaderArgs;
 
@@ -182,7 +178,6 @@ export const Component = () => {
 
   // we keep the loading UI if the auth failed (loader will return null)
   useRemoveInitialLoadingUI(!loaderData);
-  if (!loaderData) return null;
 
   return (
     <RecoilRoot>
