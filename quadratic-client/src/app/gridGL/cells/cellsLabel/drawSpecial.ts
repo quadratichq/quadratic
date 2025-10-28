@@ -69,8 +69,8 @@ export const drawDropdown = (options: RenderDropdown) => {
 };
 
 export const drawEmoji = (options: RenderEmoji): SpecialSprite => {
-  const texture = emojis.getCharacter(options.codePoint);
-  if (!texture) throw new Error(`Expected emoji texture: ${options.codePoint}`);
+  const texture = emojis.getCharacter(options.emoji);
+  if (!texture) throw new Error(`Expected emoji texture: ${options.emoji}`);
 
   const sprite = new Sprite(texture) as SpecialSprite;
   sprite.column = -1;

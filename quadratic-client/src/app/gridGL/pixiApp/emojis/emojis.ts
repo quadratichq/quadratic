@@ -1,5 +1,4 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
-import { emojiCodePoints } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { BaseTexture, Rectangle, Texture } from 'pixi.js';
 
 const PAGE_SIZE = 1024;
@@ -20,8 +19,8 @@ class Emojis {
   // we keep pages of base textures using the PAGE_SIZE x PAGE_SIZE canvas(es)
   private baseTextures: BaseTexture[] = [];
 
-  // this holds individual character textures
-  private emojiTextures: Map<number, Texture> = new Map();
+  // this holds individual character textures (keyed by full emoji string)
+  private emojiTextures: Map<string, Texture> = new Map();
 
   // this tracks the current location in the base textures
   private currentLocation: CurrentLocation = { baseTexture: -1, x: 0, y: 0 };
@@ -46,10 +45,10 @@ class Emojis {
     return this.baseTextures.length - 1;
   }
 
-  ensureCharacter(character: number): Texture | undefined {
+  ensureCharacter(emoji: string): Texture | undefined {
     this.initialize();
 
-    let texture = this.emojiTextures.get(character);
+    let texture = this.emojiTextures.get(emoji);
     if (texture) {
       return texture;
     }
@@ -69,7 +68,6 @@ class Emojis {
     context.textBaseline = 'middle';
 
     // Draw the emoji character centered in the cell
-    const emoji = String.fromCodePoint(character);
     context.clearRect(x, y, CHARACTER_SIZE, CHARACTER_SIZE);
     context.fillText(emoji, x + CHARACTER_SIZE / 2, y + CHARACTER_SIZE / 2);
 
@@ -77,7 +75,7 @@ class Emojis {
 
     // Create a new Texture from the baseTexture at the specific location
     texture = new Texture(this.baseTextures[baseTexture], new Rectangle(x, y, CHARACTER_SIZE, CHARACTER_SIZE));
-    this.emojiTextures.set(character, texture);
+    this.emojiTextures.set(emoji, texture);
 
     let newBaseTexture = baseTexture;
     let nextX = x + CHARACTER_SIZE;
@@ -101,18 +99,15 @@ class Emojis {
     return texture;
   }
 
-  getCharacter(character: number): Texture | undefined {
+  getCharacter(emoji: string): Texture | undefined {
     this.initialize();
-    return this.ensureCharacter(character);
+    return this.ensureCharacter(emoji);
   }
 
   // call this to see the base textures in the browser
   test() {
     this.initialize();
 
-    for (const character of emojiCodePoints) {
-      this.ensureCharacter(character);
-    }
     const GAP = 10;
     for (let index = 0; index < this.baseTextures.length; index++) {
       const baseTexture = this.baseTextures[index];

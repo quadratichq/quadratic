@@ -9,7 +9,7 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { emojiCodePoints } from '@/app/gridGL/pixiApp/emojis/emojiMap';
+import { emojiStrings } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import type {
@@ -459,9 +459,32 @@ export class CellLabel {
       let charData = data.chars[charCode];
       // if not a normal character and not an emoji character, then we don't render it
       if (!charData) {
-        if (emojiCodePoints.includes(charCode)) {
+        // Check if this is a known emoji (including multi-codepoint emojis with variation selectors)
+        let isEmoji = emojiStrings.has(char);
+        let emojiToRender = char;
+        let skipNextChar = false;
+
+        // If not found, try adding variation selector-16 (common for colored emojis)
+        // This handles cases where Array.from() splits ❤️ into ['❤', '️']
+        if (!isEmoji && char.length === 1) {
+          const nextChar = i + 1 < charsInput.length ? charsInput[i + 1] : '';
+          const withVariationSelector = char + '\uFE0F';
+
+          // Check if next char is a variation selector and the combo is a known emoji
+          if (nextChar === '\uFE0F' && emojiStrings.has(withVariationSelector)) {
+            isEmoji = true;
+            emojiToRender = withVariationSelector;
+            skipNextChar = true; // Skip the variation selector in the next iteration
+          } else if (emojiStrings.has(withVariationSelector)) {
+            // Sometimes the variation selector might not be split as a separate char
+            isEmoji = true;
+            emojiToRender = withVariationSelector;
+          }
+        }
+
+        if (isEmoji) {
           charData = {
-            specialCodePoint: charCode,
+            specialEmoji: emojiToRender,
             textureUid: 0,
             textureHeight: data.size,
             xAdvance: data.size,
@@ -472,7 +495,15 @@ export class CellLabel {
             uvs: new Float32Array([]), // just placeholder
             frame: { x: 0, y: 0, width: data.size, height: data.size },
           };
-        } else {
+
+          // Skip the next character if we consumed it as part of this emoji
+          if (skipNextChar) {
+            i++;
+            spacesRemoved++;
+          }
+        }
+
+        if (!charData) {
           continue;
         }
       }
@@ -678,11 +709,11 @@ export class CellLabel {
 
         // update line width to the actual width of the text rendered after the clip
         this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
-      } else if (char.charData.specialCodePoint !== undefined) {
+      } else if (char.charData.specialEmoji !== undefined) {
         this.emojis.push({
           x: charLeft + (charRight - charLeft) / 2,
           y: charTop + (charBottom - charTop) / 2,
-          codePoint: char.charData.specialCodePoint,
+          emoji: char.charData.specialEmoji,
           width: char.charData.frame.width,
           height: char.charData.frame.height,
         });

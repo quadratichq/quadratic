@@ -31,7 +31,7 @@ export interface RenderDropdown {
 }
 
 export interface RenderEmoji {
-  codePoint: number;
+  emoji: string;
 
   // this is the rectangle where the emoji will be rendered (relative to the hash)
   x: number;

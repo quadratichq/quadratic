@@ -1832,7 +1832,5 @@ export const emojiMap = {
   open_for_business: '🈺',
 };
 
-// Array of all unique emoji codepoints for quick character lookup
-export const emojiCodePoints: number[] = Array.from(new Set(Object.values(emojiMap))).map(
-  (emoji) => emoji.codePointAt(0) as number
-);
+// Set of all unique emoji strings for quick character lookup
+export const emojiStrings: Set<string> = new Set(Object.values(emojiMap));
