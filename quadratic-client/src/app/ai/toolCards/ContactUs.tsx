@@ -46,12 +46,12 @@ export const ContactUs = memo(({ toolCall: { loading }, className }: { toolCall:
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Tell us what’s wrong and we’ll get in touch. Or, consider starting afresh with AI.
+        Tell us what’s wrong and we’ll get in touch. Or, consider starting fresh with AI.
       </p>
 
       <div className="mt-2 flex gap-2">
         <Button size="sm" variant="default" onClick={handleContactClick}>
-          Provide feedback
+          Contact us
         </Button>
         <Button size="sm" variant="outline" onClick={handleNewChatClick}>
           Start a new chat
