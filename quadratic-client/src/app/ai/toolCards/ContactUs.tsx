@@ -1,6 +1,6 @@
 import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowFeedbackMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MailIcon } from '@/shared/components/Icons';
+import { HelpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
@@ -27,8 +27,8 @@ export const ContactUs = memo(({ toolCall: { loading }, className }: { toolCall:
     });
   }, [setCurrentChat]);
 
-  const icon = <MailIcon />;
-  const label = 'Get help from our team';
+  const icon = <HelpIcon />;
+  const label = 'Things not working as expected?';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading className={className} />;
@@ -36,26 +36,25 @@ export const ContactUs = memo(({ toolCall: { loading }, className }: { toolCall:
 
   return (
     <div
-      className={`flex min-w-0 select-none flex-col gap-2 rounded border border-border bg-background p-3 text-sm shadow-sm ${className}`}
+      className={`flex min-w-0 select-none flex-col gap-1 rounded border border-border bg-background p-3 text-sm shadow-sm ${className}`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <div className="flex h-6 w-6 shrink-0 items-center justify-center">{icon}</div>
         <div className="flex-1">
           <div className="font-bold">{label}</div>
         </div>
       </div>
 
-      <div className="text-xs text-muted-foreground">
-        <div>Provide your feedback and we'll get in touch soon.</div>
-        <div className="mt-1">Contact us or consider starting a new chat to give the AI a fresh start.</div>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Tell us what’s wrong and we’ll get in touch. Or, consider starting afresh with AI.
+      </p>
 
-      <div className="mt-1 flex gap-2">
+      <div className="mt-2 flex gap-2">
         <Button size="sm" variant="default" onClick={handleContactClick}>
-          Contact us
+          Provide feedback
         </Button>
         <Button size="sm" variant="outline" onClick={handleNewChatClick}>
-          New chat
+          Start a new chat
         </Button>
       </div>
     </div>
