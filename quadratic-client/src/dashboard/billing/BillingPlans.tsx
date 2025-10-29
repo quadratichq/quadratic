@@ -107,7 +107,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
             disabled={!canManageBilling}
             onClick={() => {
               trackEvent('[Billing].upgradeToProClicked', { eventSource });
-              navigate(ROUTES.TEAM_BILLING(teamUuid));
+              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid));
             }}
             className="mt-4 w-full"
             data-testid="billing-upgrade-to-pro-button"
@@ -122,7 +122,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
               className="w-full"
               onClick={() => {
                 trackEvent('[Billing].manageBillingClicked', { eventSource });
-                navigate(ROUTES.TEAM_BILLING(teamUuid));
+                navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
               }}
             >
               Manage subscription

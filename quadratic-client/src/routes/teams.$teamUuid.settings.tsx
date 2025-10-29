@@ -244,7 +244,7 @@ export const Component = () => {
                       className="h-6"
                       disabled={!canManageBilling}
                     >
-                      <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade now</Link>
+                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
                     </Button>
                   </div>
                 )}
