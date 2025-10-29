@@ -23,7 +23,7 @@ export interface AuthClient {
   login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void>;
   handleSigninRedirect(href: string): Promise<void>;
   logout(): Promise<void>;
-  getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
+  getTokenOrRedirect(skipRedirect?: boolean, request?: Request): Promise<string>;
 }
 
 const getAuthClient = (): AuthClient => {
@@ -59,9 +59,9 @@ export const authClient: AuthClient = {
     const client = getAuthClient();
     return client.logout();
   },
-  async getTokenOrRedirect(skipRedirect?: boolean) {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request) {
     const client = getAuthClient();
-    return client.getTokenOrRedirect(skipRedirect);
+    return client.getTokenOrRedirect(skipRedirect, request);
   },
 };
 
@@ -72,10 +72,10 @@ export const authClient: AuthClient = {
  * parameter that allows login to redirect back to current page upon successful
  * authentication.
  */
-export async function requireAuth() {
+export async function requireAuth(request?: Request) {
   // If the user is authenticated, make sure we have a valid token
   // before we load any of the app
-  await authClient.getTokenOrRedirect();
+  await authClient.getTokenOrRedirect(false, request);
 
   // If the user is authenticated, make sure we have a team to work with
   const activeTeamUuid = await getOrInitializeActiveTeam();

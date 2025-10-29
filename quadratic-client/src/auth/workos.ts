@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { ROUTES } from '@/shared/constants/routes';
 import { captureEvent } from '@sentry/react';
@@ -27,6 +28,10 @@ function getBaseDomain(hostname: string): string {
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
 let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = null;
+
+// Store the state from the redirect callback
+let redirectState: Record<string, any> | null = null;
+
 async function getClient() {
   if (!clientPromise) {
     clientPromise = (async () => {
@@ -36,6 +41,9 @@ async function getClient() {
         redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
         apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
         https: isLocalhost ? undefined : true,
+        onRedirectCallback: (params) => {
+          redirectState = params.state;
+        },
       });
       await client.initialize();
       return client;
@@ -78,17 +86,20 @@ export const workosClient: AuthClient = {
    * Login the user in Workos and create a new session.
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void> {
-    console.log('login', args);
+    const { redirectTo, isSignupFlow } = args;
     const client = await getClient();
-    let state = undefined;
-    if (args.redirectTo && args.redirectTo !== '/') {
-      state = {
-        redirectTo: args.redirectTo,
-      };
+
+    // Only include state if we have a redirectTo that's not '/'
+    const options: { state?: any } = {};
+    if (redirectTo && redirectTo !== '/') {
+      options.state = { redirectTo };
     }
-    await client.signIn({
-      state: state ? JSON.stringify(state) : undefined,
-    });
+
+    if (isSignupFlow) {
+      await client.signUp(options);
+    } else {
+      await client.signIn(options);
+    }
   },
 
   /**
@@ -97,38 +108,37 @@ export const workosClient: AuthClient = {
    */
   async handleSigninRedirect(href: string): Promise<void> {
     try {
-      // Client initialization happens in getClient() and processes the callback
       const client = await getClient();
       if (!client.getUser()) {
         throw new Error('No user found after signin redirect');
       }
 
-      const url = new URL(href);
-      const state = url.searchParams.get('state');
-
       let redirectTo = window.location.origin;
 
-      if (state) {
-        try {
-          const stateObj = JSON.parse(decodeURIComponent(state));
-          if (!!stateObj && typeof stateObj === 'object') {
-            if ('closeOnComplete' in stateObj && stateObj.closeOnComplete) {
-              window.close();
-              return;
-            }
-            if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
-              redirectTo = stateObj.redirectTo;
-            }
-          }
-        } catch {
-          // Invalid state, just use default redirectTo
+      if (redirectState) {
+        if ('closeOnComplete' in redirectState && redirectState.closeOnComplete) {
+          window.close();
+          return;
         }
+        if (
+          'redirectTo' in redirectState &&
+          !!redirectState.redirectTo &&
+          typeof redirectState.redirectTo === 'string'
+        ) {
+          redirectTo = redirectState.redirectTo;
+        }
+        // Clear the state after using it
+        redirectState = null;
+      } else {
+        // Fallback: Check URL parameters
+        const url = new URL(href);
+        const stateParam = url.searchParams.get('state');
       }
 
       window.location.assign(redirectTo);
     } catch (error) {
       console.error('WorkOS signin redirect failed:', error);
-      throw error; // Let the loader's catch block handle it
+      throw error;
     }
   },
 
@@ -147,15 +157,17 @@ export const workosClient: AuthClient = {
    * Get the access token for the current authenticated user.
    * If the user is not authenticated, redirect to the login page.
    */
-  async getTokenOrRedirect(skipRedirect?: boolean): Promise<string> {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request): Promise<string> {
     try {
       const client = await getClient();
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
       if (!skipRedirect) {
-        const url = new URL(window.location.href);
-        await this.login({ redirectTo: url.toString(), href: window.location.href });
+        const href = request ? request.url : window.location.href;
+        const url = new URL(href);
+        await this.login({ redirectTo: url.toString(), href });
+        await waitForAuthClientToRedirect();
       }
     }
     return '';
