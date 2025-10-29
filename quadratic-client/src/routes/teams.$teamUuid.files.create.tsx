@@ -17,7 +17,7 @@ const getFailUrl = (path: string = '/') => {
 export const shouldRevalidate = () => false;
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  await requireAuth();
+  await requireAuth(loaderArgs.request);
 
   const { request, params } = loaderArgs;
 
