@@ -14,6 +14,7 @@ import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
+import { handleSentryReplays } from '@/shared/utils/sentry';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
@@ -60,7 +61,8 @@ type LoaderData = {
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  const { activeTeamUuid } = await requireAuth();
+  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
+
   const { params, request } = loaderArgs;
 
   // Check the URL for a team UUID. If there's one, use that as it’s what the
@@ -133,6 +135,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   registerEventAnalyticsData({
     isOnPaidPlan: activeTeam.billing.status === 'ACTIVE',
   });
+
+  handleSentryReplays(activeTeam.team.settings.analyticsAi);
 
   return { teams, userMakingRequest, eduStatus, activeTeam };
 };

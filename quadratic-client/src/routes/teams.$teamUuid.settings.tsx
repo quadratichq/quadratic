@@ -31,7 +31,6 @@ export const Component = () => {
       users,
     },
   } = useDashboardRouteLoaderData();
-
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -198,17 +197,16 @@ export const Component = () => {
                     {!isOnPaidPlan ? (
                       <Button
                         disabled={!canManageBilling}
+                        asChild
                         onClick={() => {
                           trackEvent('[TeamSettings].upgradeToProClicked', {
                             team_uuid: team.uuid,
                           });
-                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                            window.location.href = data.url;
-                          });
                         }}
+                        data-testid="upgrade-to-pro-button-on-team-settings"
                         className="mt-4 w-full"
                       >
-                        Upgrade to Pro
+                        <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade to Pro</Link>
                       </Button>
                     ) : (
                       <div className="mt-4 space-y-2">
@@ -321,10 +319,10 @@ export const Component = () => {
 
             <div>
               <SettingControl
-                label="Improve AI results"
+                label="Help improve Quadratic"
                 description={
                   <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    Enable the automated collection and analysis of some usage data.{' '}
                     <a
                       href={DOCUMENTATION_ANALYTICS_AI}
                       target="_blank"
@@ -341,8 +339,29 @@ export const Component = () => {
                 }}
                 checked={optimisticSettings.analyticsAi}
                 className="rounded-lg border border-border p-4 shadow-sm"
-                disabled={!teamPermissions.includes('TEAM_MANAGE')}
-              />
+                disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
+              >
+                {!isOnPaidPlan && (
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Button
+                      asChild
+                      variant="link"
+                      onClick={() => {
+                        trackEvent('[TeamSettings].upgradeToProClicked', {
+                          team_uuid: team.uuid,
+                          source: 'privacy_section',
+                        });
+                      }}
+                      size="sm"
+                      className="h-6"
+                      disabled={!canManageBilling}
+                    >
+                      <Link to={ROUTES.TEAM_BILLING(team.uuid)}>Upgrade now</Link>
+                    </Button>
+                  </div>
+                )}
+              </SettingControl>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">
                   When using AI features your data is sent to our AI providers:

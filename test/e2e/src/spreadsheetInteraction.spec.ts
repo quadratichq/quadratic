@@ -2655,7 +2655,7 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Assert you are on the Login page via text assertions
-  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
+  await expect(page.getByText(`Sign in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log back in to delete the file we created
   await logIn(page, { emailPrefix: `e2e_sheet_logout` });
@@ -4147,6 +4147,12 @@ test('Spill Auto-Fix', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix_pre.png`);
+
+  //--------------------------------
   // Spill_Auto_Fix
   //--------------------------------
 
@@ -4167,15 +4173,13 @@ test('Spill Auto-Fix', async ({ page }) => {
     .click({ timeout: 60 * 1000 });
 
   // Wait a moment for auto-fix spill to apply
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(2 * 1000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`);
 
   //--------------------------------
   // Clean up:
@@ -4250,10 +4254,6 @@ test('Theme Customization', async ({ page }) => {
   // Member page elements for accent color changes
   const inviteButtonEl = page.getByRole(`button`, { name: `Invite` });
 
-  // Settings page elements for accent color changes
-  const settingsUpgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
-  const privateSwitchEl = page.getByRole(`switch`, { name: `Improve AI results` });
-
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -4315,9 +4315,11 @@ test('Theme Customization', async ({ page }) => {
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible();
 
     // Assert the 'Upgrade to Pro' button has the expected accent color
+    const settingsUpgradeButtonEl = page.locator('[data-testid="upgrade-to-pro-button-on-team-settings"]');
     await expect(settingsUpgradeButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Assert the 'Privacy' switch toggle has the expected accent color
+    const privateSwitchEl = page.getByRole('switch', { name: 'Help improve Quadratic' });
     await expect(privateSwitchEl).toHaveCSS(`background-color`, theme.color);
 
     // Return to homepage

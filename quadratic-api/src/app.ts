@@ -9,8 +9,7 @@ import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
 import winston from 'winston';
-import authRouter from './auth/router/authRouter';
-import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 import logger, { format } from './utils/logger';
@@ -31,9 +30,6 @@ app.use(helmet());
 
 // cookie parser for auth routes
 app.use(cookieParser());
-
-// workos auth
-app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
 
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
@@ -135,6 +131,9 @@ async function registerRoutes() {
 
       try {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
+        if (!Array.isArray(callbacks)) {
+          throw new Error(`Route module must export an array of callbacks, got ${typeof callbacks}`);
+        }
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (error) {

@@ -169,15 +169,15 @@ impl Sheet {
 mod test {
     use crate::{
         CellValue, Pos, Value,
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
+        grid::{CodeRun, DataTable, DataTableKind, Sheet},
     };
 
     #[test]
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_column(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_column(0, 0, false, true), None);
@@ -194,8 +194,8 @@ mod test {
         assert_eq!(sheet.find_next_column(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_column(1, 2, true, false), Some(0));
 
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 3, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 3, y: 2 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_column(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_column(2, 2, false, false), Some(4));
@@ -207,8 +207,8 @@ mod test {
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_row(0, 0, false, true), None);
@@ -225,8 +225,8 @@ mod test {
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_row(1, 2, true, false), Some(0));
 
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.set_cell_value(Pos { x: 2, y: 3 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_value(Pos { x: 2, y: 3 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_row(2, 2, false, false), Some(4));
@@ -252,13 +252,6 @@ mod test {
     fn find_next_column_with_chart() {
         let mut sheet = Sheet::test();
         let dt = chart_5x5_dt();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -279,21 +272,7 @@ mod test {
     #[test]
     fn find_next_column_with_two_tables() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
-        sheet.set_cell_value(
-            Pos { x: 20, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -316,13 +295,6 @@ mod test {
     fn find_next_row_with_table() {
         let mut sheet = Sheet::test();
         let dt = chart_5x5_dt();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
@@ -343,21 +315,7 @@ mod test {
     #[test]
     fn find_next_row_with_two_tables() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { x: 5, y: 5 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
-        sheet.set_cell_value(
-            Pos { x: 5, y: 20 },
-            CellValue::Code(CodeCellValue::new(
-                CodeCellLanguage::Javascript,
-                "".to_string(),
-            )),
-        );
         sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
         let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);

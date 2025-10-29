@@ -8,7 +8,7 @@ use crate::{
     grid::Grid,
     grid::SheetId,
     grid::column_header::DataTableColumnHeader,
-    grid::{CodeCellLanguage, CodeCellValue, CodeRun},
+    grid::{CodeCellLanguage, CodeRun},
     grid::{DataTable, DataTableKind},
     viewport::ViewportBuffer,
 };
@@ -37,11 +37,6 @@ impl GridController {
         h: u32,
         n: Vec<&str>,
     ) {
-        let cell_value = CellValue::Code(CodeCellValue {
-            language: CodeCellLanguage::Formula,
-            code: "code".to_string(),
-        });
-
         let array_size = ArraySize::new(w, h).unwrap();
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
@@ -77,11 +72,11 @@ impl GridController {
             None,
         );
 
-        let op = Operation::AddDataTable {
+        let op = Operation::SetDataTable {
             sheet_pos: SheetPos::new(sheet_id, x, y),
-            data_table,
-            cell_value,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
@@ -95,9 +90,6 @@ impl GridController {
         show_name: Option<bool>,
         show_columns: Option<bool>,
     ) {
-        let cell_value = CellValue::Import(Import {
-            file_name: "test".to_string(),
-        });
         let array = Array::new_empty(ArraySize::new(w, h).unwrap());
         let data_table = DataTable::new(
             DataTableKind::Import(Import {
@@ -111,11 +103,11 @@ impl GridController {
             None,
         );
 
-        let op = Operation::AddDataTable {
+        let op = Operation::SetDataTable {
             sheet_pos,
-            data_table,
-            cell_value,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         };
         self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }

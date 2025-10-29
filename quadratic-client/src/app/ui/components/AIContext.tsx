@@ -1,5 +1,5 @@
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getFileTypeFromName } from '@/app/helpers/files';
@@ -17,7 +17,7 @@ import {
 } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface AIContextProps {
   context: Context;
@@ -33,11 +33,13 @@ export const AIContext = memo(
   ({ context, setContext, files, setFiles, importFiles, setImportFiles, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const { connections } = useConnectionsFetcher();
+    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
     const handleOnClickConnection = useCallback(() => {
+      setAIAnalystActiveSchemaConnectionUuid(undefined);
       setContext?.((prev) => ({ ...prev, connection: undefined }));
       textareaRef.current?.focus();
-    }, [setContext, textareaRef]);
+    }, [setContext, textareaRef, setAIAnalystActiveSchemaConnectionUuid]);
 
     const handleOnClickFileContext = useCallback(
       (index: number) => {
@@ -71,8 +73,14 @@ export const AIContext = memo(
               primary={connection.name}
               primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
               secondary={''}
-              onClick={handleOnClickConnection}
-              noClose={disabled}
+              onRemove={handleOnClickConnection}
+              onClick={() => {
+                setAIAnalystActiveSchemaConnectionUuid((prevUuid) => {
+                  return prevUuid && prevUuid === connection.uuid ? undefined : connection.uuid;
+                });
+                textareaRef.current?.focus();
+              }}
+              disabled={disabled}
             />
           ))}
 
@@ -81,7 +89,7 @@ export const AIContext = memo(
             key={`${index}-${file.fileName}`}
             disabled={disabled}
             file={file}
-            onClick={() => handleOnClickFileContext(index)}
+            onRemove={() => handleOnClickFileContext(index)}
           />
         ))}
 
@@ -90,8 +98,8 @@ export const AIContext = memo(
             key={`${index}-${file.name}`}
             primary={file.name}
             secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
-            noClose={disabled}
-            onClick={() => handleOnClickImportFileContext(index)}
+            disabled={disabled}
+            onRemove={() => handleOnClickImportFileContext(index)}
           />
         ))}
 
@@ -100,7 +108,7 @@ export const AIContext = memo(
             key={`${index}-${file.name}`}
             primary={file.name}
             secondary={getFileTypeFromName(file.name) ?? 'Unknown'}
-            noClose={disabled}
+            disabled={disabled}
           />
         ))}
 
@@ -114,12 +122,20 @@ interface ContextPillProps {
   primary: string;
   primaryIcon?: React.ReactNode;
   secondary: string;
+  onRemove?: () => void;
+  disabled?: boolean;
   onClick?: () => void;
-  noClose: boolean;
 }
-const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }: ContextPillProps) => {
+const ContextPill = memo(({ disabled, primary, primaryIcon, secondary, onRemove, onClick }: ContextPillProps) => {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
+    <Tag
+      className={cn(
+        'flex h-5 items-center self-stretch rounded border border-border px-1 text-xs',
+        onClick && !disabled && 'cursor-pointer'
+      )}
+      {...(onClick && { onClick, disabled })}
+    >
       <span className="flex items-center gap-1">
         {primaryIcon}
         <span className="max-w-48 truncate">{primary}</span>
@@ -127,34 +143,37 @@ const ContextPill = memo(({ primary, primaryIcon, secondary, onClick, noClose }:
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 
-      {!noClose && (
+      {!disabled && onRemove && (
         <Button
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
           variant="ghost"
-          onClick={onClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
         >
           <CloseIcon className="!h-4 !w-4 !text-xs" />
         </Button>
       )}
-    </div>
+    </Tag>
   );
 });
 
 interface FileContextPillProps {
   disabled: boolean;
   file: FileContent;
-  onClick: () => void;
+  onRemove: () => void;
 }
-const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps) => {
+const FileContextPill = memo(({ disabled, file, onRemove }: FileContextPillProps) => {
   return (
     <HoverCard open={isSupportedImageMimeType(file.mimeType) ? undefined : false}>
       <HoverCardTrigger>
         <ContextPill
           primary={file.fileName}
           secondary={getFileTypeLabel(file.mimeType)}
-          noClose={disabled}
-          onClick={onClick}
+          disabled={disabled}
+          onRemove={onRemove}
         />
       </HoverCardTrigger>
       <HoverCardContent className="w-48 overflow-hidden p-0" side="top">
@@ -189,5 +208,5 @@ const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
     return null;
   }
 
-  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" noClose={true} />;
+  return <ContextPill key="codeCell" primary={tableName ?? 'Untitled'} secondary="Code" disabled={true} />;
 });

@@ -9,12 +9,20 @@ import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
+import {
+  detectMentionInText,
+  getMentionCursorPosition,
+  MentionsTextarea,
+  useMentionsState,
+} from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
+import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent, isContentFile, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -40,6 +48,7 @@ export interface AIUserMessageFormWrapperProps {
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
+  uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
 }
 
 export interface SubmitPromptArgs {
@@ -53,7 +62,6 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
   cancelDisabled: boolean;
-  uiContext: 'analyst' | 'assistant';
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
@@ -100,17 +108,22 @@ export const AIUserMessageForm = memo(
     const [files, setFiles] = useState<FileContent[]>([]);
     const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
+    const isAnalyst = useMemo(() => uiContext.startsWith('analyst'), [uiContext]);
+
     useEffect(() => {
-      setFiles(initialContent?.filter((item) => isContentFile(item)) ?? []);
-      setImportFiles([]);
-      setPrompt(
-        initialContent
-          ?.filter((item) => isContentText(item))
-          .map((item) => item.text)
-          .join('\n') ?? ''
-      );
+      if (initialContent) {
+        setFiles(initialContent.filter((item) => isContentFile(item)) ?? []);
+        setImportFiles([]);
+        setPrompt(
+          initialContent
+            .filter((item) => isContentText(item))
+            .map((item) => item.text)
+            .join('\n')
+        );
+      }
+
       setContext?.(initialContext ? { ...initialContext } : {});
-    }, [initialContent, initialContext, setContext]);
+    }, [initialContent, initialContext, setContext, setPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -285,6 +298,88 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
+    const showWaypoints = useMemo(
+      () =>
+        isAnalyst &&
+        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
+        importFiles.length === 0 &&
+        files.length === 0,
+      [context, importFiles, files, isAnalyst]
+    );
+
+    // Mentions-related state & functionality
+    const [mentionState, setMentionState] = useMentionsState();
+    const handleClickMention = useCallback(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      trackEvent('[AIMentions].clickInsertMentionButton');
+
+      // Get current cursor position
+      const cursorPos = textarea.selectionStart || 0;
+      const currentValue = prompt;
+
+      // Insert @ at cursor position
+      const beforeCursor = currentValue.substring(0, cursorPos);
+      const afterCursor = currentValue.substring(cursorPos);
+      const newValue = beforeCursor + '@' + afterCursor;
+
+      setPrompt(newValue);
+
+      // Trigger mention detection using shared utilities
+      const mention = detectMentionInText(newValue, cursorPos + 1);
+      if (mention) {
+        const position = getMentionCursorPosition(textarea);
+        setMentionState((prev) => ({
+          ...prev,
+          isOpen: true,
+          query: mention.query,
+          startIndex: mention.startIndex,
+          endIndex: mention.endIndex,
+          position,
+          selectedIndex: 0,
+        }));
+      }
+
+      // Focus and position cursor after @
+      textarea.focus();
+      textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+    }, [textareaRef, prompt, setMentionState]);
+
+    // Listen for when the user uses the "Reference in chat" action via the grid
+    // Apply _only_ for new
+    useEffect(() => {
+      const handleAddReference = (reference: string) => {
+        setPrompt((prev) => `${prev}${prev.length > 0 && !prev.endsWith(' ') ? ' ' : ''}@${reference} `);
+        textareaRef.current?.focus();
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystAddReference', handleAddReference);
+      }
+      return () => {
+        events.off('aiAnalystAddReference', handleAddReference);
+      };
+    }, [uiContext]);
+
+    const textarea = (
+      <Textarea
+        ref={textareaRef}
+        value={prompt}
+        className={cn(
+          'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
+          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+          (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+        )}
+        onChange={handlePromptChange}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+        placeholder={uiContext.startsWith('analyst') ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        autoHeight={true}
+        maxHeight={maxHeight}
+        disabled={waitingOnMessageIndex !== undefined}
+        onDragEnter={handleDrag}
+      />
+    );
 
     return (
       <div className="relative">
@@ -294,8 +389,10 @@ export const AIUserMessageForm = memo(
             context={context}
             files={files}
             importFiles={importFiles}
+            showWaypoints={showWaypoints}
           />
         )}
+        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
@@ -341,25 +438,16 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
           />
 
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-              editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-              (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
-            )}
-            onChange={handlePromptChange}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-            autoHeight={true}
-            maxHeight={maxHeight}
-            disabled={waitingOnMessageIndex !== undefined}
-            onDragEnter={handleDrag}
-          />
+          {/* Don't use @-mentions if we're not in the analyst */}
+          {isAnalyst ? (
+            <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
+              {textarea}
+            </MentionsTextarea>
+          ) : (
+            textarea
+          )}
 
-          <AIUsageExceeded show={showAIUsageExceeded} />
+          {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
             show={editing}
@@ -367,16 +455,21 @@ export const AIUserMessageForm = memo(
             waitingOnMessageIndex={waitingOnMessageIndex}
             textareaRef={textareaRef}
             prompt={prompt}
-            submitPrompt={handleSubmit}
+            setPrompt={setPrompt}
+            submitPrompt={() => {
+              handleSubmit(prompt);
+              setPrompt('');
+            }}
             abortPrompt={abortPrompt}
             disabled={disabled}
             cancelDisabled={cancelDisabled}
             handleFiles={handleFiles}
             fileTypes={fileTypes}
+            handleClickMention={handleClickMention}
             context={context}
             setContext={setContext}
             filesSupportedText={filesSupportedText}
-            uiContext={uiContext}
+            isAnalyst={isAnalyst}
           />
         </form>
       </div>
@@ -448,14 +541,16 @@ interface AIUserMessageFormFooterProps {
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
+  setPrompt: (prompt: React.SetStateAction<string>) => void;
   submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
+  handleClickMention: () => void;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
-  uiContext: AIUserMessageFormProps['uiContext'];
+  isAnalyst: boolean;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -466,14 +561,16 @@ const AIUserMessageFormFooter = memo(
     waitingOnMessageIndex,
     textareaRef,
     prompt,
+    setPrompt,
     submitPrompt,
     abortPrompt,
     handleFiles,
     fileTypes,
+    handleClickMention,
     context,
     setContext,
     filesSupportedText,
-    uiContext,
+    isAnalyst,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -507,13 +604,26 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {uiContext === 'analyst' && (
+            {isAnalyst && (
               <AIUserMessageFormConnectionsButton
                 disabled={disabled}
                 context={context}
                 setContext={setContext}
                 textareaRef={textareaRef}
               />
+            )}
+            {isAnalyst && (
+              <TooltipPopover label="Reference data">
+                <Button
+                  size="icon-sm"
+                  className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={handleClickMention}
+                >
+                  <MentionIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </div>
 

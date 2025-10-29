@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((1, 1).into(), "test");
+        sheet.set_value((1, 1).into(), "test");
         let selection = A1Selection::test_a1("A1");
 
         let list = ValidationList {

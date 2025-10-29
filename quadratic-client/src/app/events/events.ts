@@ -173,6 +173,8 @@ interface EventTypes {
   setDirty: (dirty: DirtyObject) => void;
 
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
+  aiAnalystAddReference: (reference: string) => void;
+  aiAnalystReady: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
