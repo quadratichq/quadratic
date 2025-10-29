@@ -422,7 +422,7 @@ describe('POST /v0/files', () => {
           name: 'Team File 1',
           creatorUserId: teamUser1.id,
           ownerTeamId: teamLimitTeam.id,
-          ownerUserId: teamUser1.id,
+          ownerUserId: null,
         },
       });
 
@@ -432,7 +432,7 @@ describe('POST /v0/files', () => {
           name: 'Team File 2',
           creatorUserId: teamUser2.id,
           ownerTeamId: teamLimitTeam.id,
-          ownerUserId: teamUser2.id,
+          ownerUserId: null,
         },
       });
 
@@ -442,7 +442,7 @@ describe('POST /v0/files', () => {
           name: 'Team File 3',
           creatorUserId: teamUser3.id,
           ownerTeamId: teamLimitTeam.id,
-          ownerUserId: teamUser3.id,
+          ownerUserId: null,
         },
       });
 
