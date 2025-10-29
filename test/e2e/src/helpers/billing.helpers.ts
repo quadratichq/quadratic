@@ -322,7 +322,7 @@ export const deleteMemberFromProPlan = async (
       await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
       // Assert that the 'Cancel Subscription' button appears
-      await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
+      await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
       // Assert that the page reflects the base Pro plan cost
       await expect(page.getByText(`$20.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
@@ -436,7 +436,7 @@ export const cancelProPlan = async (page: Page) => {
     await expect(page.getByText(`Invoice history`)).toBeVisible({ timeout: 60 * 1000 });
 
     // Click 'Cancel subscription' button
-    await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
+    await page.locator(`[data-testid="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
     // Assert that the page to confirm the cancellation appears
     await expect(page).toHaveTitle(/Cancel subscription/);

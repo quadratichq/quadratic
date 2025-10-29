@@ -447,7 +447,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the page reflects the increased cost due to new members
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
@@ -547,7 +547,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
   // Assert that the page to confirm the cancellation appears
   await expect(page).toHaveTitle(/Cancel subscription/);

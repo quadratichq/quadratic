@@ -109,7 +109,13 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full" onClick={handleOpenDialog}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={handleOpenDialog}
+          data-testid="cancel-subscription"
+        >
           Cancel subscription
         </Button>
       </DialogTrigger>
