@@ -8,8 +8,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigation } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
-// Default to 7 days if there's no env var
-const SOLICIT_UPGRADE_INTERVAL_SECONDS = import.meta.env.VITE_SOLICIT_UPGRADE_INTERVAL_SECONDS ?? 60 * 60 * 24 * 7;
+const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export const showUpgradeDialogAtom = atom<{ open: false; eventSource: null } | { open: true; eventSource: string }>({
   key: 'showUpgradeDialog',
@@ -96,7 +95,7 @@ export const UpgradeDialogWithPeriodicReminder = ({
       const secondsSinceLastSolicitation = Math.floor((epochNow - epochLastSolicitationForProUpgrade) / 1000);
       if (secondsSinceLastSolicitation > SOLICIT_UPGRADE_INTERVAL_SECONDS) {
         // Show the dialog, and update the date/time we last solicited them
-        setShowUpgradeDialog({ open: true, eventSource: 'periodicSolitication' });
+        setShowUpgradeDialog({ open: true, eventSource: 'periodicSolicitation' });
         apiClient.teams.update(teamUuid, {
           clientDataKv: { lastSolicitationForProUpgrade: new Date(epochNow).toISOString() },
         });
