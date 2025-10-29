@@ -136,6 +136,7 @@ impl GridController {
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "importParquetIntoExistingFile")]
+    #[allow(clippy::too_many_arguments)]
     pub fn js_import_parquet_into_existing_file(
         &mut self,
         file: Vec<u8>,

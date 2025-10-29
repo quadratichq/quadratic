@@ -117,8 +117,8 @@ impl GridController {
             dt.alternating_colors = original.alternating_colors;
             dt.formats = original.formats.clone();
             dt.borders = original.borders.clone();
-            dt.show_name = original.show_name.clone();
-            dt.show_columns = original.show_columns.clone();
+            dt.show_name = original.show_name;
+            dt.show_columns = original.show_columns;
             dt.sort = original.sort.clone();
 
             // only copy the column headers and display buffer if the lengths are the same
@@ -130,6 +130,7 @@ impl GridController {
     }
 
     /// Imports a CSV file into the grid.
+    #[allow(clippy::too_many_arguments)]
     pub fn import_csv_operations(
         &mut self,
         sheet_id: SheetId,
