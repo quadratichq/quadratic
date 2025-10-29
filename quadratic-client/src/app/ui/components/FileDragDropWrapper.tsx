@@ -154,7 +154,6 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
           column = userMessage.table.x;
           row = userMessage.table.y;
         }
-        console.log({ column, row });
         const insertAt = { x: column, y: row } as JsCoordinate;
         handleFileImport({ files: Array.from(files), insertAt, sheetId, cursor, isOverwrite: !!userMessage?.table });
       }
