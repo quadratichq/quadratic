@@ -146,7 +146,7 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isTeamPrivateFilesRoute);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;

@@ -286,7 +286,7 @@ function SidebarNavLinkCreateButton({
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
           onClick={async (e) => {
             e.preventDefault();
-            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
             if (hasReachedLimit) {
               showUpgradeDialog('fileLimitReached');
               return;

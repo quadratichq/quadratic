@@ -39,20 +39,31 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 3 private files for the user
+    // Create 2 team files (no ownerUserId)
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000010',
-        name: 'File 1',
+        name: 'Team File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
-        ownerUserId: userId,
+        ownerUserId: null,
       },
     });
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000011',
-        name: 'File 2',
+        name: 'Team File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+      },
+    });
+
+    // Create 3 private files for the user
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000012',
+        name: 'Private File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -60,8 +71,17 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000012',
-        name: 'File 3',
+        uuid: '00000000-0000-0000-0000-000000000013',
+        name: 'Private File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: userId,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000014',
+        name: 'Private File 3',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -69,7 +89,7 @@ describe('fileCountForTeam', () => {
     });
 
     const count = await fileCountForTeam(team, userId);
-    expect(count.totalTeamFiles).toBe(3);
+    expect(count.totalTeamFiles).toBe(2);
     expect(count.userPrivateFiles).toBe(3);
   });
 
@@ -81,21 +101,44 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 2 active private files and 1 deleted private file
+    // Create 2 active team files and 1 deleted team file
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000020',
-        name: 'Active File 1',
+        name: 'Active Team File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
-        ownerUserId: userId,
+        ownerUserId: null,
         deleted: false,
       },
     });
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000021',
-        name: 'Active File 2',
+        name: 'Active Team File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+        deleted: false,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000022',
+        name: 'Deleted Team File',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+        deleted: true,
+        deletedDate: new Date(),
+      },
+    });
+
+    // Create 2 active private files and 1 deleted private file
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000023',
+        name: 'Active Private File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -104,8 +147,18 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000022',
-        name: 'Deleted File',
+        uuid: '00000000-0000-0000-0000-000000000024',
+        name: 'Active Private File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: userId,
+        deleted: false,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000025',
+        name: 'Deleted Private File',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -127,11 +180,35 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 3 deleted private files
+    // Create 2 deleted team files
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000030',
-        name: 'Deleted File 1',
+        name: 'Deleted Team File 1',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+        deleted: true,
+        deletedDate: new Date(),
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000031',
+        name: 'Deleted Team File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+        deleted: true,
+        deletedDate: new Date(),
+      },
+    });
+
+    // Create 2 deleted private files
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000032',
+        name: 'Deleted Private File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -141,8 +218,8 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000031',
-        name: 'Deleted File 2',
+        uuid: '00000000-0000-0000-0000-000000000033',
+        name: 'Deleted Private File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -171,11 +248,20 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 2 private files for team1
+    // Create 1 team file and 2 private files for team1
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000040',
-        name: 'Team 1 File 1',
+        name: 'Team 1 Team File',
+        creatorUserId: userId,
+        ownerTeamId: team1.id,
+        ownerUserId: null,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000041',
+        name: 'Team 1 Private File 1',
         creatorUserId: userId,
         ownerTeamId: team1.id,
         ownerUserId: userId,
@@ -183,28 +269,37 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000041',
-        name: 'Team 1 File 2',
+        uuid: '00000000-0000-0000-0000-000000000042',
+        name: 'Team 1 Private File 2',
         creatorUserId: userId,
         ownerTeamId: team1.id,
         ownerUserId: userId,
       },
     });
 
-    // Create 3 private files for team2
+    // Create 2 team files and 3 private files for team2
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000050',
-        name: 'Team 2 File 1',
+        name: 'Team 2 Team File 1',
         creatorUserId: userId,
         ownerTeamId: team2.id,
-        ownerUserId: userId,
+        ownerUserId: null,
       },
     });
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000051',
-        name: 'Team 2 File 2',
+        name: 'Team 2 Team File 2',
+        creatorUserId: userId,
+        ownerTeamId: team2.id,
+        ownerUserId: null,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000052',
+        name: 'Team 2 Private File 1',
         creatorUserId: userId,
         ownerTeamId: team2.id,
         ownerUserId: userId,
@@ -212,8 +307,17 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000052',
-        name: 'Team 2 File 3',
+        uuid: '00000000-0000-0000-0000-000000000053',
+        name: 'Team 2 Private File 2',
+        creatorUserId: userId,
+        ownerTeamId: team2.id,
+        ownerUserId: userId,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000054',
+        name: 'Team 2 Private File 3',
         creatorUserId: userId,
         ownerTeamId: team2.id,
         ownerUserId: userId,
@@ -223,9 +327,9 @@ describe('fileCountForTeam', () => {
     const count1 = await fileCountForTeam(team1, userId);
     const count2 = await fileCountForTeam(team2, userId);
 
-    expect(count1.totalTeamFiles).toBe(2);
+    expect(count1.totalTeamFiles).toBe(1);
     expect(count1.userPrivateFiles).toBe(2);
-    expect(count2.totalTeamFiles).toBe(3);
+    expect(count2.totalTeamFiles).toBe(2);
     expect(count2.userPrivateFiles).toBe(3);
   });
 
@@ -246,11 +350,40 @@ describe('fileCountForTeam', () => {
       ],
     });
 
-    // Create 2 private files by user1
+    // Create 3 team files (no ownerUserId)
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000060',
-        name: 'User 1 File 1',
+        name: 'Team File 1',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000061',
+        name: 'Team File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000062',
+        name: 'Team File 3',
+        creatorUserId: user2Id,
+        ownerTeamId: team.id,
+        ownerUserId: null,
+      },
+    });
+
+    // Create 2 private files by user1
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000063',
+        name: 'User 1 Private File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -258,8 +391,8 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000061',
-        name: 'User 1 File 2',
+        uuid: '00000000-0000-0000-0000-000000000064',
+        name: 'User 1 Private File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
         ownerUserId: userId,
@@ -269,8 +402,8 @@ describe('fileCountForTeam', () => {
     // Create 3 private files by user2
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000062',
-        name: 'User 2 File 1',
+        uuid: '00000000-0000-0000-0000-000000000065',
+        name: 'User 2 Private File 1',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
         ownerUserId: user2Id,
@@ -278,8 +411,8 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000063',
-        name: 'User 2 File 2',
+        uuid: '00000000-0000-0000-0000-000000000066',
+        name: 'User 2 Private File 2',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
         ownerUserId: user2Id,
@@ -287,8 +420,8 @@ describe('fileCountForTeam', () => {
     });
     await createFile({
       data: {
-        uuid: '00000000-0000-0000-0000-000000000064',
-        name: 'User 2 File 3',
+        uuid: '00000000-0000-0000-0000-000000000067',
+        name: 'User 2 Private File 3',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
         ownerUserId: user2Id,
@@ -298,12 +431,12 @@ describe('fileCountForTeam', () => {
     const count1 = await fileCountForTeam(team, userId);
     const count2 = await fileCountForTeam(team, user2Id);
 
-    // User 1 perspective: 5 total team files, 2 private files owned by user1
-    expect(count1.totalTeamFiles).toBe(5);
+    // User 1 perspective: 3 team files (shared, no owner), 2 private files owned by user1
+    expect(count1.totalTeamFiles).toBe(3);
     expect(count1.userPrivateFiles).toBe(2);
 
-    // User 2 perspective: 5 total team files, 3 private files owned by user2
-    expect(count2.totalTeamFiles).toBe(5);
+    // User 2 perspective: 3 team files (shared, no owner), 3 private files owned by user2
+    expect(count2.totalTeamFiles).toBe(3);
     expect(count2.userPrivateFiles).toBe(3);
   });
 });
@@ -394,49 +527,59 @@ describe('teamHasReachedFileLimit', () => {
       ],
     });
 
-    // Create 3 team files total (team limit is 3)
-    // User 1 creates 1, user 2 creates 2
+    // Create 3 team files (team limit is 3)
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0102-000000000001',
-        name: 'File 1',
+        name: 'Team File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
-        ownerUserId: userId,
+        ownerUserId: null,
       },
     });
 
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0102-000000000002',
-        name: 'File 2',
+        name: 'Team File 2',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
-        ownerUserId: user2Id,
+        ownerUserId: null,
       },
     });
 
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0102-000000000003',
-        name: 'File 3',
+        name: 'Team File 3',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
-        ownerUserId: user2Id,
+        ownerUserId: null,
+      },
+    });
+
+    // Create 1 private file for user 1
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0102-000000000004',
+        name: 'Private File 1',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
 
     // User 1 has reached their private limit (1 file)
     expect(await hasReachedFileLimit(team, userId, true)).toBe(true);
 
-    // Team has reached the team file limit (3 files)
+    // Team has reached the team file limit (3 team files)
     expect(await hasReachedFileLimit(team, userId, false)).toBe(true);
 
     // Without parameter, defaults to team limit check (true since 3 out of 3)
     expect(await hasReachedFileLimit(team, userId)).toBe(true);
 
-    // User 2 has 2 private files, so they HAVE exceeded the limit of 1
-    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(true);
+    // User 2 has 0 private files, so they have NOT exceeded the limit of 1
+    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(false);
   });
 
   it('allows team file creation when only private limit is reached', async () => {
@@ -498,45 +641,44 @@ describe('teamHasReachedFileLimit', () => {
       ],
     });
 
-    // Create 3 files from different users (team limit is 3)
+    // Create 3 team files (team limit is 3)
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0104-000000000001',
-        name: 'File 1',
+        name: 'Team File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
-        ownerUserId: userId,
+        ownerUserId: null,
       },
     });
 
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0104-000000000002',
-        name: 'File 2',
+        name: 'Team File 2',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
-        ownerUserId: user2Id,
+        ownerUserId: null,
       },
     });
 
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0104-000000000003',
-        name: 'File 3',
+        name: 'Team File 3',
         creatorUserId: user3Id,
         ownerTeamId: team.id,
-        ownerUserId: user3Id,
+        ownerUserId: null,
       },
     });
 
-    // Team has reached team file limit (3 files)
+    // Team has reached team file limit (3 team files)
     expect(await hasReachedFileLimit(team, userId, false)).toBe(true);
 
-    // But each user has NOT reached their private limit (each has only 1 file, limit is 1)
-    // Actually they HAVE reached it, since they each have 1 file and limit is 1
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(true);
-    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(true);
-    expect(await hasReachedFileLimit(team, user3Id, true)).toBe(true);
+    // But each user has NOT reached their private limit (each has 0 private files, limit is 1)
+    expect(await hasReachedFileLimit(team, userId, true)).toBe(false);
+    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(false);
+    expect(await hasReachedFileLimit(team, user3Id, true)).toBe(false);
   });
 
   it('returns false when neither limit is reached', async () => {

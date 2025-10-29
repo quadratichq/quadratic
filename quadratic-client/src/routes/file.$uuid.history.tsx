@@ -21,6 +21,7 @@ import {
   Link,
   useFetcher,
   useLoaderData,
+  useMatch,
   useParams,
   useRevalidator,
   useRouteError,
@@ -78,10 +79,12 @@ export const Component = () => {
   );
   const btnsDisabled = useMemo(() => isLoading || !activeCheckpoint, [activeCheckpoint, isLoading]);
 
+  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(data.activeTeamUuid)));
+
   const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isTeamPrivateFilesRoute);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
@@ -101,7 +104,7 @@ export const Component = () => {
     });
 
     fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-  }, [activeCheckpoint, fetcher, teamUuid, uuid]);
+  }, [activeCheckpoint, fetcher, isTeamPrivateFilesRoute, teamUuid, uuid]);
 
   const handleDownload = useCallback(() => {
     if (!activeCheckpoint) return;

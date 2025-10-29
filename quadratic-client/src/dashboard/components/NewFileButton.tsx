@@ -43,7 +43,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         variant="default"
         onClick={async (e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
           if (hasReachedLimit) {
             showUpgradeDialog('fileLimitReached');
             return;

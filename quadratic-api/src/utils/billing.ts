@@ -38,6 +38,7 @@ export const fileCountForTeam = async (
     where: {
       ownerTeamId: team.id,
       deleted: false,
+      ownerUserId: null,
     },
   });
 

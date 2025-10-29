@@ -5,7 +5,7 @@ import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import type { SubmitFunction } from 'react-router';
+import { matchPath, type SubmitFunction } from 'react-router';
 import { type SetterOrUpdater } from 'recoil';
 
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
@@ -70,7 +70,7 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ teamUuid }: { teamUuid: string }) {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
@@ -85,7 +85,8 @@ export const duplicateFileAction = {
   isAvailable: ({ isAuthenticated, filePermissions }: IsAvailableArgs) =>
     isAuthenticated && filePermissions.includes('FILE_VIEW'),
   async run({ fileUuid, teamUuid }: { fileUuid: string; teamUuid: string }) {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid);
+    const isTeamPrivateFilesRoute = Boolean(matchPath(ROUTES.TEAM_FILES_PRIVATE(teamUuid), window.location.pathname));
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isTeamPrivateFilesRoute);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
