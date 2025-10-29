@@ -210,19 +210,17 @@ mod tests {
 
         let mut g = GridController::new();
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
         for x in 1..=3 {
             for y in 1..=3 {
-                let _ = sheet.set_cell_value(Pos { x, y }, x * 3 + y);
+                g.set_cell_value(pos![sheet_id!x,y], (x * 3 + y).to_string(), None, false);
                 println!(
                     "({},{})={:?}",
                     x,
                     y,
-                    sheet.cell_value(Pos { x, y }).unwrap()
+                    g.sheet(sheet_id).cell_value(Pos { x, y }).unwrap()
                 );
             }
         }
-        let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![A10].to_sheet_pos(sheet_id));
         assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
@@ -267,9 +265,8 @@ mod tests {
         {
             let mut g = GridController::new();
             let sheet_id = g.sheet_ids()[0];
-            let sheet = &mut g.sheet_mut(sheet_id);
             for y in 1..=11 {
-                let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
+                g.set_cell_value(pos![sheet_id!1,y], (y - 1).to_string(), None, false);
             }
             assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(A1:A10, \"<=5\")"));
         }
@@ -368,9 +365,8 @@ mod tests {
         // Test that blank cells are ignored
         let mut g = GridController::new();
         let sheet_id = g.sheet_ids()[0];
-        let sheet = &mut g.sheet_mut(sheet_id);
         for y in 1..=11 {
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
+            g.set_cell_value(pos![sheet_id!1,y], (y - 1).to_string(), None, false);
         }
         assert_eq!("6", eval_to_string(&g, "COUNTIF(A1:A10, \"<=5\")"));
     }

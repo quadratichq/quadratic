@@ -24,3 +24,9 @@ export const gemini_2_5_flash_lite_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.025,
   rate_per_million_cache_write_tokens: 1,
 };
+export const claude_haiku_4_5_20251001_rate: AIRates = {
+  rate_per_million_input_tokens: 1,
+  rate_per_million_output_tokens: 5,
+  rate_per_million_cache_read_tokens: 0.1,
+  rate_per_million_cache_write_tokens: 1.25,
+};

@@ -768,6 +768,7 @@ test('Custom DateTime Options', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the correct format was applied to the cell 01-02-2024
+  await page.waitForTimeout(30 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('custom_datetime_options_for_day_month_year.png');
 
   //--------------------------------
@@ -889,6 +890,7 @@ test('Data Validation', async ({ page }) => {
   //--------------------------------
   // Assert the Python cell (0, 1) correctly updates to FALSE
   await gotoCells(page, { a1: 'E5' });
+  await page.waitForTimeout(30 * 1000);
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__checkbox_false.png`);
 
   //--------------------------------
@@ -1145,6 +1147,7 @@ test('Download Sheet', async ({ page }) => {
     const screenshot = tab.replace(/[^a-zA-Z0-9]/g, '');
 
     // Take screenshot of canvas element
+    await page.waitForTimeout(30 * 1000);
     await expect(page.locator(`canvas[id="QuadraticCanvasID"]`)).toHaveScreenshot(`${screenshot}-pre.png`, {
       maxDiffPixelRatio: 0.01,
     });
@@ -4144,6 +4147,12 @@ test('Spill Auto-Fix', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix_pre.png`);
+
+  //--------------------------------
   // Spill_Auto_Fix
   //--------------------------------
 
@@ -4164,15 +4173,13 @@ test('Spill Auto-Fix', async ({ page }) => {
     .click({ timeout: 60 * 1000 });
 
   // Wait a moment for auto-fix spill to apply
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(2 * 1000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the spill auto-fix worked correctly (another set of 1,2,3,4 shifts right)
-  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`spill_auto_fix.png`);
 
   //--------------------------------
   // Clean up:

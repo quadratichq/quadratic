@@ -2,7 +2,7 @@ use super::current;
 use crate::{
     CellValue, Duration,
     cellvalue::Import,
-    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    grid::{CodeCellLanguage, ConnectionKind},
     number::decimal_from_str,
 };
 use rust_decimal::Decimal;
@@ -37,10 +37,6 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::Text(text) => current::CellValueSchema::Text(text),
         CellValue::Number(number) => export_cell_value_number(number),
         CellValue::Html(html) => current::CellValueSchema::Html(html),
-        CellValue::Code(cell_code) => current::CellValueSchema::Code(current::CodeCellSchema {
-            code: cell_code.code,
-            language: export_code_cell_language(cell_code.language),
-        }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
         CellValue::Instant(instant) => current::CellValueSchema::Instant(instant.to_string()),
         CellValue::Duration(duration) => current::CellValueSchema::Duration(duration.to_string()),
@@ -51,9 +47,6 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
             current::CellValueSchema::Error(current::RunErrorSchema::from_grid_run_error(*error))
         }
         CellValue::Image(image) => current::CellValueSchema::Image(image),
-        CellValue::Import(import) => current::CellValueSchema::Import(current::ImportSchema {
-            file_name: import.file_name,
-        }),
     }
 }
 
@@ -98,10 +91,6 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::Text(text) => CellValue::Text(text),
         current::CellValueSchema::Number(number) => import_cell_value_number(number),
         current::CellValueSchema::Html(html) => CellValue::Html(html),
-        current::CellValueSchema::Code(code_cell) => CellValue::Code(CodeCellValue {
-            code: code_cell.code,
-            language: import_code_cell_language(code_cell.language),
-        }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),
         current::CellValueSchema::Instant(instant) => {
             CellValue::Instant(serde_json::from_str(&instant).unwrap_or_default())
@@ -114,9 +103,6 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::DateTime(dt) => CellValue::DateTime(dt),
         current::CellValueSchema::Error(error) => CellValue::Error(Box::new(error.into())),
         current::CellValueSchema::Image(text) => CellValue::Image(text),
-        current::CellValueSchema::Import(current::ImportSchema { file_name }) => {
-            CellValue::Import(Import::new(file_name))
-        }
     }
 }
 

@@ -225,6 +225,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                     setMessages(newMessages);
                   })
                 }
+                uiContext="analyst-edit-chat"
               />
             ) : isToolResultMessage(message) ? (
               message.content.map((result, resultIndex) => (
@@ -245,6 +246,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       setMessages(newMessages);
                     })
                   }
+                  uiContext="analyst-edit-chat"
                 />
               ))
             ) : (

@@ -121,11 +121,14 @@ export const router = createBrowserRouter(
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              <Route path="billing" lazy={() => import('./routes/teams.$teamUuid.billing')} />
             </Route>
           </Route>
         </Route>
 
-        <Route path={ROUTES.ONBOARDING} lazy={() => import('./routes/onboarding')} />
+        <Route path={ROUTES.ONBOARDING_QUESTIONNAIRE} lazy={() => import('./routes/onboarding')} />
+        <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
+
         <Route path="*" lazy={() => import('./routes/404')} />
       </Route>
 

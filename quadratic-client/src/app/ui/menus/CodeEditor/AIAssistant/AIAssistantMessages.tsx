@@ -144,6 +144,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 initialContent={message.content}
                 textareaRef={textareaRef}
                 messageIndex={index}
+                uiContext="assistant-edit-chat"
               />
             ) : isToolResultMessage(message) ? (
               message.content.map((result, index) => (
@@ -152,6 +153,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                   initialContent={result.content}
                   textareaRef={textareaRef}
                   messageIndex={index}
+                  uiContext="assistant-edit-chat"
                 />
               ))
             ) : (

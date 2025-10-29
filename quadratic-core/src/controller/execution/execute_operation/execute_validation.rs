@@ -1,6 +1,5 @@
 use uuid::Uuid;
 
-use crate::SheetRect;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -8,6 +7,7 @@ use crate::controller::operations::operation::Operation;
 use crate::grid::SheetId;
 use crate::grid::js_types::JsValidationWarning;
 use crate::grid::sheet::validations::validation::Validation;
+use crate::{Pos, SheetRect};
 
 impl GridController {
     /// Updates validations that need to be updated or deleted when a selection
@@ -75,20 +75,36 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: SheetRect,
     ) {
-        let validations: Vec<Validation>;
-        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
-            validations = sheet
-                .validations
-                .in_rect((sheet_rect).into(), self.a1_context())
-                .iter()
-                .map(|v| (*v).clone())
-                .collect();
-        } else {
-            validations = vec![];
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_rect.sheet_id) else {
+            return;
         };
 
-        for validation in validations {
-            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, &validation);
+        for x in sheet_rect.x_range() {
+            for y in sheet_rect.y_range() {
+                let value_pos = Pos::new(x, y);
+                if let Some(validation) =
+                    sheet
+                        .validations
+                        .validate(sheet, value_pos, &self.a1_context)
+                {
+                    transaction.validation_warning_added(
+                        sheet.id,
+                        JsValidationWarning {
+                            pos: value_pos,
+                            validation: Some(validation.id),
+                            style: Some(validation.error.style.clone()),
+                        },
+                    );
+                    sheet
+                        .validations
+                        .set_warning(value_pos.to_sheet_pos(sheet.id), Some(validation.id));
+                } else if sheet.validations.has_warning(value_pos) {
+                    transaction.validation_warning_deleted(sheet.id, value_pos);
+                    sheet
+                        .validations
+                        .set_warning(value_pos.to_sheet_pos(sheet.id), None);
+                }
+            }
         }
     }
 
@@ -502,10 +518,10 @@ impl GridController {
 mod tests {
     use super::*;
 
+    use crate::a1::A1Selection;
     use crate::grid::js_types::JsHashValidationWarnings;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, a1::A1Selection};
     use crate::{Pos, test_util::*};
 
     #[test]
@@ -514,8 +530,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
         let validation = Validation {
             id: Uuid::new_v4(),
@@ -591,8 +606,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!A1], "test".to_string(), None, false);
 
         // set validation
         let validation = Validation {
@@ -732,34 +746,29 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "invalid".to_string(), None, false);
 
-        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
+        test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![A1], "".to_string());
+        gc.sheet_mut(sheet_id)
+            .set_value(sheet_pos.into(), "".to_string());
 
         let mut transaction = PendingTransaction::default();
-        gc.check_validations(
-            &mut transaction,
-            SheetRect::single_sheet_pos(pos![sheet_id!A1]),
-        );
+        gc.check_validations(&mut transaction, SheetRect::single_sheet_pos(sheet_pos));
 
         assert_eq!(
-            transaction.forward_operations,
-            vec![Operation::SetValidationWarning {
-                sheet_pos: pos![sheet_id!A1],
-                validation_id: None,
-            }]
-        );
-
-        assert_eq!(
-            transaction.reverse_operations,
-            vec![Operation::SetValidationWarning {
-                sheet_pos: pos![sheet_id!A1],
-                validation_id: Some(validation.id),
-            }]
+            transaction
+                .validations_warnings
+                .entry(sheet_id)
+                .or_default()
+                .get(&sheet_pos.into()),
+            Some(&JsValidationWarning {
+                pos: sheet_pos.into(),
+                style: None,
+                validation: None,
+            })
         );
     }
 
@@ -819,8 +828,6 @@ mod tests {
                 .ranges,
             A1Selection::test_a1("A2:B2,B1").ranges
         );
-
-        dbg!(&gc.undo_stack);
 
         gc.undo(1, None, false);
         let sheet = gc.sheet(sheet_id);

@@ -135,6 +135,9 @@ async function registerRoutes() {
 
       try {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
+        if (!Array.isArray(callbacks)) {
+          throw new Error(`Route module must export an array of callbacks, got ${typeof callbacks}`);
+        }
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (error) {

@@ -7,7 +7,6 @@ use crate::Pos;
 use crate::controller::GridController;
 use crate::grid::{Grid, SheetId};
 use crate::wasm_bindings::capture_core_error;
-use crate::wasm_bindings::js::jsImportProgress;
 
 #[wasm_bindgen]
 impl GridController {
@@ -122,7 +121,7 @@ impl GridController {
         let sheet_id = grid.add_sheet(None);
         let insert_at = pos![A1];
         let mut grid_controller = GridController::from_grid(grid, 0);
-        let updater = Some(jsImportProgress);
+        let updater = Some(crate::wasm_bindings::js::jsImportProgress);
 
         grid_controller
             .import_parquet(
@@ -153,7 +152,7 @@ impl GridController {
             let insert_at = serde_json::from_str::<Pos>(insert_at)
                 .map_err(|e| format!("Unable to parse Pos: {e}"))?;
 
-            let updater = Some(jsImportProgress);
+            let updater = Some(crate::wasm_bindings::js::jsImportProgress);
 
             let response_prompt = self
                 .import_parquet(

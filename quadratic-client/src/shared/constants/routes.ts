@@ -4,7 +4,6 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
-  ONBOARDING: '/onboarding',
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_WITH_REDIRECT: (href?: string) =>
@@ -63,6 +62,7 @@ export const ROUTES = {
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
+  TEAM_BILLING: (teamUuid: string) => `/teams/${teamUuid}/billing`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
@@ -76,6 +76,8 @@ export const ROUTES = {
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
+  ONBOARDING_QUESTIONNAIRE: '/onboarding',
+  ONBOARDING_VIDEO: '/onboarding-video',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,

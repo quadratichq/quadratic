@@ -111,12 +111,11 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 fn test_formula_cell_ref() {
     let mut g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
-    let sheet = g.sheet_mut(sheet_id);
-    sheet.set_cell_value(pos![B1], 1);
-    sheet.set_cell_value(pos![B2], 10);
-    sheet.set_cell_value(pos![B3], 100);
-    sheet.set_cell_value(pos![B4], 1000);
-    sheet.set_cell_value(pos![B5], 10000);
+    g.set_cell_value(pos![sheet_id!B1], "1".into(), None, false);
+    g.set_cell_value(pos![sheet_id!B2], "10".into(), None, false);
+    g.set_cell_value(pos![sheet_id!B3], "100".into(), None, false);
+    g.set_cell_value(pos![sheet_id!B4], "1000".into(), None, false);
+    g.set_cell_value(pos![sheet_id!B5], "10000".into(), None, false);
 
     assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B1:B5)"));
     assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B:B)"));
@@ -177,10 +176,9 @@ fn test_formula_blank_array_parsing() {
 fn test_formula_array_op() {
     let mut g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
-    let sheet = g.sheet_mut(sheet_id);
     for x in 1..=4 {
         for y in 1..=4 {
-            let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+            g.set_cell_value(pos![sheet_id!x,y], (x * 10 + y).to_string(), None, false);
         }
     }
 
@@ -287,8 +285,7 @@ fn test_leading_equals() {
 fn test_hyphen_after_cell_ref() {
     let mut g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
-    let sheet = g.sheet_mut(sheet_id);
-    sheet.set_cell_value(pos![Z1], 30);
+    g.set_cell_value(pos![sheet_id!Z1], "30".into(), None, false);
     assert_eq!("25", eval_to_string(&g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&g, "Z1-5"));
 }
@@ -401,10 +398,10 @@ fn test_sheet_references() {
     let name2 = "My Other Sheet".to_string();
     g.set_sheet_name(id2, name2.clone(), None, false);
 
-    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
-    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
-    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A3], 7);
-    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A4], 70);
+    g.set_cell_value(pos![id1!A1], "42".into(), None, false);
+    g.set_cell_value(pos![id1!A3], "6".into(), None, false);
+    g.set_cell_value(pos![id2!A3], "7".into(), None, false);
+    g.set_cell_value(pos![id2!A4], "70".into(), None, false);
 
     let pos1 = Pos::ORIGIN.to_sheet_pos(id1);
     let pos2 = Pos::ORIGIN.to_sheet_pos(id2);

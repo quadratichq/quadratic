@@ -10,7 +10,6 @@ import {
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
-import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -83,10 +82,7 @@ export const AIAnalystUserMessageForm = memo(
           waitingOnMessageIndex={waitingOnMessageIndex}
           maxHeight="275px"
           filesSupportedText="PDF, Image, CSV, Excel and Parquet"
-          uiContext="analyst"
         />
-
-        <AIAnalystEmptyStateWaypoint />
       </div>
     );
   })
