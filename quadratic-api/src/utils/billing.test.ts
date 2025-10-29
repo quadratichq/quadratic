@@ -36,13 +36,14 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 3 files for the team
+    // Create 3 private files for the user
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000010',
         name: 'File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -51,6 +52,7 @@ describe('fileCountForTeam', () => {
         name: 'File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -59,6 +61,7 @@ describe('fileCountForTeam', () => {
         name: 'File 3',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
 
@@ -75,13 +78,14 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 2 active files and 1 deleted file
+    // Create 2 active private files and 1 deleted private file
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000020',
         name: 'Active File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
         deleted: false,
       },
     });
@@ -91,6 +95,7 @@ describe('fileCountForTeam', () => {
         name: 'Active File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
         deleted: false,
       },
     });
@@ -100,6 +105,7 @@ describe('fileCountForTeam', () => {
         name: 'Deleted File',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
         deleted: true,
         deletedDate: new Date(),
       },
@@ -118,13 +124,14 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 3 deleted files
+    // Create 3 deleted private files
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000030',
         name: 'Deleted File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
         deleted: true,
         deletedDate: new Date(),
       },
@@ -135,6 +142,7 @@ describe('fileCountForTeam', () => {
         name: 'Deleted File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
         deleted: true,
         deletedDate: new Date(),
       },
@@ -160,13 +168,14 @@ describe('fileCountForTeam', () => {
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 2 files for team1
+    // Create 2 private files for team1
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000040',
         name: 'Team 1 File 1',
         creatorUserId: userId,
         ownerTeamId: team1.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -175,16 +184,18 @@ describe('fileCountForTeam', () => {
         name: 'Team 1 File 2',
         creatorUserId: userId,
         ownerTeamId: team1.id,
+        ownerUserId: userId,
       },
     });
 
-    // Create 3 files for team2
+    // Create 3 private files for team2
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000050',
         name: 'Team 2 File 1',
         creatorUserId: userId,
         ownerTeamId: team2.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -193,6 +204,7 @@ describe('fileCountForTeam', () => {
         name: 'Team 2 File 2',
         creatorUserId: userId,
         ownerTeamId: team2.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -201,6 +213,7 @@ describe('fileCountForTeam', () => {
         name: 'Team 2 File 3',
         creatorUserId: userId,
         ownerTeamId: team2.id,
+        ownerUserId: userId,
       },
     });
 
@@ -230,13 +243,14 @@ describe('fileCountForTeam', () => {
       ],
     });
 
-    // Create 2 files by user1
+    // Create 2 private files by user1
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000060',
         name: 'User 1 File 1',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
     await createFile({
@@ -245,16 +259,18 @@ describe('fileCountForTeam', () => {
         name: 'User 1 File 2',
         creatorUserId: userId,
         ownerTeamId: team.id,
+        ownerUserId: userId,
       },
     });
 
-    // Create 3 files by user2
+    // Create 3 private files by user2
     await createFile({
       data: {
         uuid: '00000000-0000-0000-0000-000000000062',
         name: 'User 2 File 1',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
+        ownerUserId: user2Id,
       },
     });
     await createFile({
@@ -263,6 +279,7 @@ describe('fileCountForTeam', () => {
         name: 'User 2 File 2',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
+        ownerUserId: user2Id,
       },
     });
     await createFile({
@@ -271,17 +288,18 @@ describe('fileCountForTeam', () => {
         name: 'User 2 File 3',
         creatorUserId: user2Id,
         ownerTeamId: team.id,
+        ownerUserId: user2Id,
       },
     });
 
     const count1 = await fileCountForTeam(team, userId);
     const count2 = await fileCountForTeam(team, user2Id);
 
-    // User 1 perspective: 5 total team files, 2 created by user1
+    // User 1 perspective: 5 total team files, 2 private files owned by user1
     expect(count1.totalTeamFiles).toBe(5);
     expect(count1.userPrivateFiles).toBe(2);
 
-    // User 2 perspective: 5 total team files, 3 created by user2
+    // User 2 perspective: 5 total team files, 3 private files owned by user2
     expect(count2.totalTeamFiles).toBe(5);
     expect(count2.userPrivateFiles).toBe(3);
   });

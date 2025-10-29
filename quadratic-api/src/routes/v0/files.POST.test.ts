@@ -260,6 +260,7 @@ describe('POST /v0/files', () => {
           name: 'User 1 File 1',
           creatorUserId: multiUser1.id,
           ownerTeamId: multiTeam.id,
+          ownerUserId: multiUser1.id,
         },
       });
 

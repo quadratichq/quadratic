@@ -44,7 +44,7 @@ export const fileCountForTeam = async (
   const userPrivateFiles = await dbClient.file.count({
     where: {
       ownerTeamId: team.id,
-      creatorUserId: userId,
+      ownerUserId: userId,
       deleted: false,
     },
   });
