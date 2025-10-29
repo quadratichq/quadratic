@@ -1,6 +1,8 @@
 import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { WarningIcon } from '@/shared/components/Icons';
+import { Alert, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -42,14 +44,15 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
       <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
         <DialogHeader>
           <DialogTitle>Upgrade to Pro</DialogTitle>
-          {reasonText && (
-            <div className="mb-2 rounded bg-yellow-100 px-3 py-2 text-center text-sm font-semibold text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200">
-              {reasonText}
-            </div>
-          )}
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>
         </DialogHeader>
-        <div className="relative flex flex-col gap-8">
+        <div className="relative flex flex-col gap-2">
+          {reasonText && (
+            <Alert variant="warning">
+              <WarningIcon />
+              <AlertTitle className="mb-0">{reasonText}</AlertTitle>
+            </Alert>
+          )}
           <BillingPlans
             teamUuid={teamUuid}
             // We hard-code these because we should only ever show this dialog if the right criteria are met.
