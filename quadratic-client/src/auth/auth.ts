@@ -23,13 +23,7 @@ export interface AuthClient {
   login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }): Promise<void>;
   handleSigninRedirect(href: string): Promise<void>;
   logout(): Promise<void>;
-  getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
-  loginWithPassword(args: { email: string; password: string }): Promise<void>;
-  loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }): Promise<void>;
-  signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }): Promise<void>;
-  verifyEmail(args: { pendingAuthenticationToken: string; code: string }): Promise<void>;
-  sendResetPassword(args: { email: string }): Promise<void>;
-  resetPassword(args: { token: string; password: string }): Promise<void>;
+  getTokenOrRedirect(skipRedirect?: boolean, request?: Request): Promise<string>;
 }
 
 const getAuthClient = (): AuthClient => {
@@ -65,33 +59,9 @@ export const authClient: AuthClient = {
     const client = getAuthClient();
     return client.logout();
   },
-  async getTokenOrRedirect(skipRedirect?: boolean) {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request) {
     const client = getAuthClient();
-    return client.getTokenOrRedirect(skipRedirect);
-  },
-  async loginWithPassword(args: { email: string; password: string }) {
-    const client = getAuthClient();
-    return client.loginWithPassword(args);
-  },
-  async loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }) {
-    const client = getAuthClient();
-    return client.loginWithOAuth(args);
-  },
-  async signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }) {
-    const client = getAuthClient();
-    return client.signupWithPassword(args);
-  },
-  async verifyEmail(args: { pendingAuthenticationToken: string; code: string }) {
-    const client = getAuthClient();
-    return client.verifyEmail(args);
-  },
-  async sendResetPassword(args: { email: string }) {
-    const client = getAuthClient();
-    return client.sendResetPassword(args);
-  },
-  async resetPassword(args: { token: string; password: string }) {
-    const client = getAuthClient();
-    return client.resetPassword(args);
+    return client.getTokenOrRedirect(skipRedirect, request);
   },
 };
 
@@ -102,10 +72,10 @@ export const authClient: AuthClient = {
  * parameter that allows login to redirect back to current page upon successful
  * authentication.
  */
-export async function requireAuth() {
+export async function requireAuth(request?: Request) {
   // If the user is authenticated, make sure we have a valid token
   // before we load any of the app
-  await authClient.getTokenOrRedirect();
+  await authClient.getTokenOrRedirect(false, request);
 
   // If the user is authenticated, make sure we have a team to work with
   const activeTeamUuid = await getOrInitializeActiveTeam();
