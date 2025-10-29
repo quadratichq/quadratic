@@ -74,95 +74,104 @@ pub async fn process_transaction(
         Ok(())
     });
 
-    // get_cells function, blocking is required here
-    let get_cells = move |a1: String| {
-        tokio::task::block_in_place(|| {
-            Handle::current().block_on(async {
-                // send the request
-                tx_get_cells_request.lock().await.send(a1).await?;
+    // closure factory to create get_cells for each iteration
+    let tx_req = Arc::clone(&tx_get_cells_request);
+    let rx_resp = Arc::clone(&rx_get_cells_response);
+    let create_get_cells = || {
+        let tx = Arc::clone(&tx_req);
+        let rx = Arc::clone(&rx_resp);
+        move |a1: String| {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(async {
+                    // send the request
+                    tx.lock().await.send(a1).await?;
 
-                // receive and return the response
-                rx_get_cells_response
-                    .lock()
-                    .await
-                    .recv()
-                    .await
-                    .ok_or_else(|| {
+                    // receive and return the response
+                    rx.lock().await.recv().await.ok_or_else(|| {
                         CoreCloudError::Python("Error receiving get_cells response".to_string())
                     })
+                })
             })
-        })
-    };
-
-    // get the async transaction
-    let async_transaction = grid
-        .lock()
-        .await
-        .active_transactions()
-        .get_async_transaction(transaction_uuid);
-
-    println!("async_transaction: {:?}", async_transaction);
-
-    let code_run_clone = if let Ok(async_transaction) = async_transaction
-        && let Some(sheet_pos) = async_transaction.current_sheet_pos
-    {
-        grid.lock()
-            .await
-            .try_sheet(sheet_pos.sheet_id)
-            .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
-            .cloned()
-    } else {
-        None
-    };
-
-    if let Some(code_run) = code_run_clone {
-        println!("code_run: {:?}", code_run);
-        // run code
-        match &code_run.language {
-            CodeCellLanguage::Python => {
-                run_python(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    &transaction_id,
-                    Box::new(get_cells),
-                )
-                .await
-            }
-            CodeCellLanguage::Javascript => {
-                run_javascript(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    &transaction_id,
-                    Box::new(get_cells),
-                )
-                .await
-            }
-            CodeCellLanguage::Connection { kind, id } => {
-                run_connection(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    *kind,
-                    &id,
-                    &transaction_id,
-                    &team_id,
-                    &token,
-                )
-                .await
-            }
-            // maybe skip these below?
-            CodeCellLanguage::Formula => todo!(),
-            CodeCellLanguage::Import => todo!(),
-        }?;
-
-        // Abort the task
-        task_handle.abort();
-
-        // wait for the task to finish
-        if let Err(e) = task_handle.await
-            && !e.is_cancelled()
-        {
-            return Err(CoreCloudError::Core(e.to_string()));
         }
+    };
+
+    // loop until error
+    loop {
+        // get the async transaction
+        let async_transaction = grid
+            .lock()
+            .await
+            .active_transactions()
+            .get_async_transaction(transaction_uuid);
+
+        println!("async_transaction: {:?}", async_transaction);
+
+        let code_run_clone = if let Ok(async_transaction) = async_transaction
+            && let Some(sheet_pos) = async_transaction.current_sheet_pos
+        {
+            grid.lock()
+                .await
+                .try_sheet(sheet_pos.sheet_id)
+                .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
+                .cloned()
+        } else {
+            None
+        };
+
+        if let Some(code_run) = code_run_clone {
+            println!("code_run: {:?}", code_run);
+            // run code
+            match &code_run.language {
+                CodeCellLanguage::Python => {
+                    run_python(
+                        Arc::clone(&grid),
+                        &code_run.code,
+                        &transaction_id,
+                        Box::new(create_get_cells()),
+                    )
+                    .await?
+                }
+                CodeCellLanguage::Javascript => {
+                    run_javascript(
+                        Arc::clone(&grid),
+                        &code_run.code,
+                        &transaction_id,
+                        Box::new(create_get_cells()),
+                    )
+                    .await?
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    run_connection(
+                        Arc::clone(&grid),
+                        &code_run.code,
+                        *kind,
+                        &id,
+                        &transaction_id,
+                        &team_id,
+                        &token,
+                    )
+                    .await?
+                }
+                // maybe skip these below?
+                CodeCellLanguage::Formula => todo!(),
+                CodeCellLanguage::Import => todo!(),
+            }
+
+            // Continue looping - don't abort task yet
+        } else {
+            // No more code_run, break out of loop
+            break;
+        }
+    }
+
+    // Abort the task
+    task_handle.abort();
+
+    // wait for the task to finish
+    if let Err(e) = task_handle.await
+        && !e.is_cancelled()
+    {
+        return Err(CoreCloudError::Core(e.to_string()));
     }
 
     // // Return the grid
