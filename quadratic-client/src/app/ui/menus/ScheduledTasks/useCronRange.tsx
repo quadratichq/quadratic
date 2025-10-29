@@ -28,7 +28,6 @@ export const useCronRange = (operations?: number[]): CronRange => {
   useEffect(() => {
     if (operations) {
       const range = scheduledTaskDecode(new Uint8Array(operations));
-      console.log(range);
       if (!range) {
         setTask('run-all-code');
       } else if (range.isAllSelected()) {
@@ -68,7 +67,6 @@ export const useCronRange = (operations?: number[]): CronRange => {
   }, [range]);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
-    console.log('changing selection...');
     if (selection) {
       setRange(selection);
       setRangeError(undefined);
