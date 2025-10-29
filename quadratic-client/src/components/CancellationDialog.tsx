@@ -98,7 +98,7 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
       }
 
       // Proceed to Stripe cancellation
-      navigate(ROUTES.TEAM_BILLING(teamUuid));
+      navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
     } catch (error) {
       console.error('Error submitting feedback:', error);
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
