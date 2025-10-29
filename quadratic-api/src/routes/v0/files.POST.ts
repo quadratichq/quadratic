@@ -39,8 +39,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
 
   const teamId = team.id;
 
-  if (await teamHasReachedFileLimit(team)) {
-    throw new ApiError(403, 'Team has reached the maximum number of files for the paid plan.');
+  if (await teamHasReachedFileLimit(team, userId)) {
+    throw new ApiError(403, 'Team has reached the maximum number of files for the free plan. Upgrade to continue.');
   }
 
   const canView = teamPermissions.includes('TEAM_VIEW');

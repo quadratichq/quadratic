@@ -30,24 +30,39 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
   return false; // not on a paid plan
 };
 
-const fileCountForTeam = async (team: Team | DecryptedTeam): Promise<number> => {
-  return await dbClient.file.count({
+export const fileCountForTeam = async (
+  team: Team | DecryptedTeam,
+  userId: number
+): Promise<{ totalTeamFiles: number; userPrivateFiles: number }> => {
+  const totalTeamFiles = await dbClient.file.count({
     where: {
       ownerTeamId: team.id,
       deleted: false,
     },
   });
+
+  const userPrivateFiles = await dbClient.file.count({
+    where: {
+      ownerTeamId: team.id,
+      creatorUserId: userId,
+      deleted: false,
+    },
+  });
+
+  return { totalTeamFiles, userPrivateFiles };
 };
 
 /// Returns true if the team has reached its file limit and requires a paid plan
 /// to continue adding files
-export const teamHasReachedFileLimit = async (team: Team | DecryptedTeam): Promise<boolean> => {
+export const teamHasReachedFileLimit = async (team: Team | DecryptedTeam, userId: number): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
 
   if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
     return false;
   }
 
-  const fileCount = await fileCountForTeam(team);
-  return fileCount >= MAX_FILE_COUNT_FOR_PAID_PLAN;
+  const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
+  const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
+
+  return totalTeamFiles >= maxTotalFiles || userPrivateFiles >= maxUserPrivateFiles;
 };

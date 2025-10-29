@@ -44,7 +44,7 @@ export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
     : Number(process.env.BILLING_AI_USAGE_LIMIT)
   : undefined;
 export const MAX_FILE_COUNT_FOR_PAID_PLAN = process.env.MAX_FILE_COUNT_FOR_PAID_PLAN
-  ? Number(process.env.MAX_FILE_COUNT_FOR_PAID_PLAN)
+  ? process.env.MAX_FILE_COUNT_FOR_PAID_PLAN.split(',').map(Number)
   : undefined;
 
 // Required

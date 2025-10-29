@@ -25,7 +25,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
 
   const { team } = await getTeam({ uuid, userId });
-  const hasReachedLimit = await teamHasReachedFileLimit(team);
+  const hasReachedLimit = await teamHasReachedFileLimit(team, userId);
 
   return res.status(200).json({ hasReachedLimit });
 }
