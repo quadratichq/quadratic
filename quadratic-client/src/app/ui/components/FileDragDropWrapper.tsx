@@ -43,18 +43,22 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
     let topLeft: JsCoordinate;
     let bottomRight: JsCoordinate;
+    const gridHeadings = content.headings.headingSize;
     if (table) {
       const tableBounds = table.tableBounds;
       topLeft = pixiApp.viewport.toScreen(
-        Math.max(tableBounds.left, viewportBounds.left),
-        Math.max(tableBounds.top, viewportBounds.top)
+        Math.max(tableBounds.left, viewportBounds.left + gridHeadings.width),
+        Math.max(tableBounds.top, viewportBounds.top + gridHeadings.height)
       );
       bottomRight = pixiApp.viewport.toScreen(
         Math.min(tableBounds.right, viewportBounds.right),
         Math.min(tableBounds.bottom, viewportBounds.bottom)
       );
     } else {
-      topLeft = pixiApp.viewport.toScreen(viewportBounds.left, viewportBounds.top);
+      topLeft = pixiApp.viewport.toScreen(
+        viewportBounds.left + gridHeadings.width,
+        viewportBounds.top + gridHeadings.height
+      );
       bottomRight = pixiApp.viewport.toScreen(viewportBounds.right, viewportBounds.bottom);
     }
     const targetRectangle = new Rectangle(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
