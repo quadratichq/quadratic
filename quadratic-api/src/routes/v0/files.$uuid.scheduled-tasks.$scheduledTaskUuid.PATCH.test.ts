@@ -7,9 +7,9 @@ import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { clearDb, createUser, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response'];
 
-describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
+describe('PATCH /v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid', () => {
   let testUser: any;
   let testFile: any;
   let testTeam: any;
@@ -35,7 +35,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .patch(`/v0/files/invalid-uuid/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/invalid-uuid/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -44,7 +44,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for invalid scheduled task UUID parameter format', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/invalid-uuid`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/invalid-uuid`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -53,7 +53,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for both invalid UUID parameters', async () => {
       const response = await request(app)
-        .patch('/v0/files/invalid-uuid/scheduled_task/invalid-task-uuid')
+        .patch('/v0/files/invalid-uuid/scheduled-tasks/invalid-task-uuid')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -62,7 +62,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for missing cronExpression', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
@@ -73,7 +73,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for empty cronExpression', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '',
@@ -85,7 +85,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for missing operations', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 1 * * *',
@@ -97,7 +97,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     it('should return 400 for invalid cron expression', async () => {
       // Test with a clearly invalid cron expression
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: 'not a valid cron expression',
@@ -117,7 +117,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 401 for unauthenticated requests', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .send(validUpdateData);
 
       expect(response.status).toBe(401);
@@ -158,7 +158,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken editor-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -187,7 +187,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken viewer-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -197,7 +197,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should succeed when user has both FILE_EDIT and TEAM_EDIT permission', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -214,7 +214,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .patch(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -223,7 +223,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 500 for non-existent scheduled task', async () => {
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/12345678-1234-1234-1234-123456789012`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/12345678-1234-1234-1234-123456789012`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(validUpdateData);
 
@@ -239,7 +239,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       };
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(updateData);
 
@@ -253,7 +253,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     });
     it('should preserve other fields when updating', async () => {
       const originalResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       // Add a small delay to ensure different timestamps
@@ -265,7 +265,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       };
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(updateData);
 
@@ -302,7 +302,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       };
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(updateData);
 
@@ -352,7 +352,7 @@ describe('PATCH /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       };
 
       const response = await request(app)
-        .patch(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .patch(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send(updateData);
 

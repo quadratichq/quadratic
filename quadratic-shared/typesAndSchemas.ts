@@ -465,7 +465,7 @@ export const ApiSchemas = {
   ...ApiSchemasConnections,
 
   /**
-   * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled_task/*`)
+   * Scheduled Tasks (which are all under `/v0/files/:uuid/scheduled-tasks/*`)
    */
   ...ApiSchemasScheduledTasks,
 

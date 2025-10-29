@@ -29,7 +29,7 @@ const createScheduledTaskSchema = z.object({
 
 export type CreateScheduledTaskSchema = z.infer<typeof createScheduledTaskSchema>;
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.POST.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled-tasks.POST.response']>) {
   const validatedData = parseRequest(req, createScheduledTaskSchema);
 
   const {

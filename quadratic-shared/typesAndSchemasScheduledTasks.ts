@@ -44,28 +44,28 @@ export type ScheduledTaskLog = z.infer<typeof ScheduledTaskLogSchema>;
 
 export const ApiSchemasScheduledTasks = {
   // List Scheduled Tasks
-  '/v0/files/:uuid/scheduled_task.GET.response': z.array(ScheduledTaskSchema),
+  '/v0/files/:uuid/scheduled-tasks.GET.response': z.array(ScheduledTaskSchema),
 
   // Create a Scheduled Task
-  '/v0/files/:uuid/scheduled_task.POST.request': z.object({
+  '/v0/files/:uuid/scheduled-tasks.POST.request': z.object({
     cronExpression: ScheduledTaskCronExpressionSchema,
     operations: ScheduledTaskOperationsSchema,
   }),
-  '/v0/files/:uuid/scheduled_task.POST.response': ScheduledTaskSchema,
+  '/v0/files/:uuid/scheduled-tasks.POST.response': ScheduledTaskSchema,
 
   // Get a Scheduled Task
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response': ScheduledTaskSchema,
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response': ScheduledTaskSchema,
 
   // Update a Scheduled Task
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.request': z.object({
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.PATCH.request': z.object({
     cronExpression: ScheduledTaskCronExpressionSchema,
     operations: ScheduledTaskOperationsSchema,
   }),
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.PATCH.response': ScheduledTaskSchema,
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.PATCH.response': ScheduledTaskSchema,
 
   // Delete a Scheduled Task
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response': z.object({ message: z.string() }),
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.DELETE.response': z.object({ message: z.string() }),
 
   // List Scheduled Task Logs
-  '/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response': z.array(ScheduledTaskLogSchema),
+  '/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid/log.GET.response': z.array(ScheduledTaskLogSchema),
 };

@@ -27,7 +27,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid UUID parameter format', async () => {
       const response = await request(app)
-        .post('/v0/files/invalid-uuid/scheduled_task')
+        .post('/v0/files/invalid-uuid/scheduled-tasks')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -39,7 +39,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should return 400 when cronExpression is missing', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
@@ -50,7 +50,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should return 400 when operations is missing', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -93,7 +93,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
       });
 
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken editor-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -124,7 +124,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
       });
 
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken viewer-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -136,7 +136,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should succeed when user has both FILE_EDIT and TEAM_EDIT permission', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -155,7 +155,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   describe('Successful Task Creation', () => {
     it('should create scheduled task with simple cron expression', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *', // Daily at midnight
@@ -179,7 +179,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should create scheduled task with complex cron expression', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '30 14 * * 1-5', // 2:30 PM on weekdays
@@ -239,7 +239,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
       };
 
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 2 * * *', // Daily at 2 AM
@@ -266,7 +266,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should return 400 for invalid cron expression', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: 'invalid cron',
@@ -278,7 +278,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should return 401 for unauthenticated requests', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .send({
           cronExpression: '0 0 * * *',
           operations: Array.from(Buffer.from(JSON.stringify({ action: 'test' }))),
@@ -291,7 +291,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
   describe('Response Format', () => {
     it('should return correctly formatted response', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -325,7 +325,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
 
     it('should validate nextRunTime is in the future', async () => {
       const response = await request(app)
-        .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
         .send({
           cronExpression: '0 0 * * *',
@@ -352,7 +352,7 @@ describe('POST /v0/files/:uuid/scheduled-tasks', () => {
     cronExpressions.forEach(({ cron, description }) => {
       it(`should handle ${description} (${cron})`, async () => {
         const response = await request(app)
-          .post(`/v0/files/${testFile.uuid}/scheduled_task`)
+          .post(`/v0/files/${testFile.uuid}/scheduled-tasks`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`)
           .send({
             cronExpression: cron,
