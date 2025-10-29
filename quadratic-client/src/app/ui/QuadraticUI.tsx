@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
@@ -49,6 +50,7 @@ export default function QuadraticUI() {
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const { showConnectionsPanel } = useRecoilValue(connectionsPanelAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
@@ -126,7 +128,7 @@ export default function QuadraticUI() {
           }}
         >
           {canEditFile && isAuthenticated && <AIAnalyst />}
-          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
+          {canEditFile && isAuthenticated && !presentationMode && showConnectionsPanel && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

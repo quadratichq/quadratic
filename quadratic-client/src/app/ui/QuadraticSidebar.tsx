@@ -3,8 +3,8 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
 import {
-  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React from 'react';
 import { Link } from 'react-router';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
@@ -32,7 +32,7 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [{ showConnectionsPanel }, setConnectionsPanel] = useRecoilState(connectionsPanelAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -86,7 +86,12 @@ export const QuadraticSidebar = () => {
 
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
-            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
+            <SidebarToggle
+              pressed={showConnectionsPanel}
+              onPressedChange={() =>
+                setConnectionsPanel((prev) => ({ ...prev, showConnectionsPanel: !prev.showConnectionsPanel }))
+              }
+            >
               <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>

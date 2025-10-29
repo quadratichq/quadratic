@@ -42,6 +42,7 @@ type ConnectionSchemaBrowserProps = {
   hideRefreshButton?: boolean;
   tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
+  showHeader?: boolean;
 };
 
 export const ConnectionSchemaBrowser = ({
@@ -52,6 +53,7 @@ export const ConnectionSchemaBrowser = ({
   teamUuid,
   type,
   uuid,
+  showHeader = true,
 }: ConnectionSchemaBrowserProps) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
 
@@ -79,30 +81,32 @@ export const ConnectionSchemaBrowser = ({
   return (
     <div className="h-full overflow-auto text-sm">
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 truncate">
-            {data && data.type ? (
-              <>
-                <div className="flex h-6 w-6 flex-shrink-0 items-center">
-                  <LanguageIcon language={data.type} />
-                </div>
-                <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
-              </>
-            ) : (
-              <Skeleton className="h-4 w-24" />
-            )}
+        {showHeader && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 truncate">
+              {data && data.type ? (
+                <>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center">
+                    <LanguageIcon language={data.type} />
+                  </div>
+                  <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
+                </>
+              ) : (
+                <Skeleton className="h-4 w-24" />
+              )}
+            </div>
+            <div className="flex flex-row-reverse items-center gap-1">
+              {additionalActions}
+              {!hideRefreshButton && (
+                <TooltipPopover label="Reload schema">
+                  <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                    <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+                  </Button>
+                </TooltipPopover>
+              )}
+            </div>
           </div>
-          <div className="flex flex-row-reverse items-center gap-1">
-            {additionalActions}
-            {!hideRefreshButton && (
-              <TooltipPopover label="Reload schema">
-                <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
-                  <RefreshIcon className={cn(isLoading && 'animate-spin')} />
-                </Button>
-              </TooltipPopover>
-            )}
-          </div>
-        </div>
+        )}
         <div className="relative">
           <Input
             ref={inputRef}
@@ -111,7 +115,7 @@ export const ConnectionSchemaBrowser = ({
               setFilterQuery(e.target.value);
             }}
             placeholder="Filter tables"
-            className="h-8"
+            className="h-9"
             disabled={disabled}
           />
           {filterQuery && (
