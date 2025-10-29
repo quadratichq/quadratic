@@ -1,8 +1,8 @@
 //! This is the interval component for the scheduled task.
 
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { ScheduledTaskInputGroup } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInputGroup';
 import {
-  CRON_LIMIT_INTERVAL_ENV_MODES,
   getLocalTimeZoneAbbreviation,
   type CronInterval,
   type ScheduledTaskIntervalType,
@@ -16,9 +16,7 @@ import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { cn } from '@/shared/shadcn/utils';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ...(!CRON_LIMIT_INTERVAL_ENV_MODES.includes(import.meta.env.MODE)
-    ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]]
-    : []),
+  ...(debugFlag('debug') ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]] : []),
   ['hour', 'Every hour'],
   ['days', 'Every day'],
   ['custom', 'Custom cron'],

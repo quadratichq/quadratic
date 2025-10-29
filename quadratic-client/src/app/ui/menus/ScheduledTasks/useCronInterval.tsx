@@ -1,5 +1,6 @@
 //! Stores data for the ScheduledTaskInterval component.
 
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { joinListWith } from '@/shared/components/JointListWith';
 import CronExpressionParser, { CronFieldCollection, type DayOfWeekRange } from 'cron-parser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -10,7 +11,6 @@ export const MIDNIGHT_LOCAL_MINUTE = new Date(0, 0, 0, 0, 0, 0).getUTCMinutes();
 
 export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute' | 'custom';
 
-export const CRON_LIMIT_INTERVAL_ENV_MODES = ['production'];
 const CRON_ERROR_TOO_FREQUENT = 'cannot run more frequently than once per hour';
 const CRON_MIN_INTERVAL_MS = 1000 * 60 * 60;
 
@@ -21,6 +21,8 @@ export const getLocalTimeZoneAbbreviation = (): string => {
       .find((part) => part.type === 'timeZoneName')?.value ?? ''
   );
 };
+
+const isDebug = debugFlag('debug');
 
 export interface CronInterval {
   cron: string;
@@ -108,7 +110,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
         const parsed = CronExpressionParser.parse(input);
 
         // In production, check if cron runs more frequently than once per hour
-        if (CRON_LIMIT_INTERVAL_ENV_MODES.includes(import.meta.env.MODE)) {
+        if (isDebug) {
           const interval1 = parsed.next();
           const interval2 = parsed.next();
           const diffMs = interval2.getTime() - interval1.getTime();
