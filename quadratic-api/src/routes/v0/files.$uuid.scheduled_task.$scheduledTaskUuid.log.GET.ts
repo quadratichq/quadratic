@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema, TeamPermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
@@ -9,7 +9,8 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getScheduledTask, getScheduledTaskLogs } from '../../utils/scheduledTasks';
-const { FILE_EDIT } = FilePermissionSchema.enum;
+const { FILE_VIEW } = FilePermissionSchema.enum;
+const { TEAM_VIEW } = TeamPermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -38,11 +39,11 @@ async function handler(
   } = req;
 
   const {
-    userMakingRequest: { filePermissions },
+    userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
-  if (!filePermissions.includes(FILE_EDIT)) {
-    throw new ApiError(403, "You don't have access to this file");
+  if (!filePermissions.includes(FILE_VIEW) || !teamPermissions?.includes(TEAM_VIEW)) {
+    throw new ApiError(403, 'Permission denied');
   }
 
   // Verify the scheduled task exists (this will throw 500 if not found)

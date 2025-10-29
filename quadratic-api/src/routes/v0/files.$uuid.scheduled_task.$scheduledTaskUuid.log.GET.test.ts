@@ -4,24 +4,23 @@ jest.mock('@workos-inc/node', () => workosMock([{ id: 'user1' }, { id: 'user2' }
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
+import dbClient from '../../dbClient';
 import { clearDb, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTaskLog } from '../../utils/scheduledTasks';
 
 type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
-type ScheduledTaskLogResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log.GET.response'];
 
 describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
   let testUser: any;
   let otherUser: any;
   let testFile: any;
-  let testTeam: any;
   let uniqueId: string;
   let testScheduledTask: ScheduledTaskResponse;
 
   beforeEach(async () => {
     await clearDb();
 
-    ({ uniqueId, testUser, testTeam, testFile } = await createUserTeamAndFile());
+    ({ uniqueId, testUser, testFile } = await createUserTeamAndFile());
     testScheduledTask = await scheduledTask(testUser.id, testFile.id);
 
     // Create another user for permission testing
@@ -68,10 +67,44 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid/log', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return 403 when user lacks FILE_EDIT permission', async () => {
+    it('should return 403 when user lacks both FILE_VIEW and TEAM_VIEW permissions', async () => {
       const response = await request(app)
         .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
-        .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`);
+        .set('Authorization', `Bearer ValidToken ${otherUser.auth0Id}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user has FILE_VIEW but lacks TEAM_VIEW permission', async () => {
+      // Create another user and share the file with them (so they have FILE_VIEW but not TEAM_VIEW)
+      const { testUser: sharedUser } = await createUserTeamAndFile();
+
+      // Share the file with this user as a viewer
+      await dbClient.userFileRole.create({
+        data: {
+          fileId: testFile.id,
+          userId: sharedUser.id,
+          role: 'VIEWER',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .set('Authorization', `Bearer ValidToken ${sharedUser.auth0Id}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.message).toBe('Permission denied');
+    });
+
+    it('should return 403 when user has TEAM_VIEW but lacks FILE_VIEW permission', async () => {
+      // Create another user in a different team (they won't have file access)
+      const { testUser: teamMember } = await createUserTeamAndFile();
+
+      // This user is in a team but doesn't have access to our test file
+      const response = await request(app)
+        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}/log`)
+        .set('Authorization', `Bearer ValidToken ${teamMember.auth0Id}`);
 
       expect(response.status).toBe(403);
       expect(response.body.error.message).toBe('Permission denied');

@@ -3,9 +3,12 @@ import { scheduledTaskDecode } from '@/app/quadratic-core/quadratic_core';
 import { getCronToListEntry } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ArrowRightIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useAtomValue } from 'jotai';
+import { Link } from 'react-router';
 
 export const ScheduledTasksList = () => {
   const scheduledTasks = useAtomValue(scheduledTasksAtom);
@@ -16,9 +19,13 @@ export const ScheduledTasksList = () => {
 };
 
 const EmptyScheduledTasksList = () => {
+  const {
+    team: { uuid: teamUuid },
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const { newScheduledTask } = useScheduledTasks();
   return (
-    <div className="flex h-full flex-col items-center justify-center text-center">
+    <div className="flex h-full flex-col items-center justify-center px-4 text-center">
       <ScheduledTasksIcon size="lg" className="mb-4 text-muted-foreground" />
       <h4 className="font-bold">No scheduled tasks</h4>
       <p className="mt-1 text-muted-foreground">
@@ -27,9 +34,20 @@ const EmptyScheduledTasksList = () => {
           Learn more.
         </a>
       </p>
-      <Button className="mt-4" onClick={() => newScheduledTask()}>
-        Schedule a task
-      </Button>
+      {teamPermissions?.includes('TEAM_EDIT') ? (
+        <Button className="mt-4" onClick={() => newScheduledTask()}>
+          Schedule a task
+        </Button>
+      ) : (
+        <>
+          <p className="mt-3 text-muted-foreground">
+            You do not have permission to edit scheduled tasks for this file’s team.{' '}
+            <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} reloadDocument className="underline">
+              Ask your team owner for permission.
+            </Link>
+          </p>
+        </>
+      )}
     </div>
   );
 };

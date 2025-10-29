@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema, TeamPermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import {
   ScheduledTaskCronExpressionSchema,
   ScheduledTaskOperationsSchema,
@@ -13,6 +13,7 @@ import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getScheduledTask, updateScheduledTask } from '../../utils/scheduledTasks';
 const { FILE_EDIT } = FilePermissionSchema.enum;
+const { TEAM_EDIT } = TeamPermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -38,10 +39,10 @@ async function handler(req: RequestWithUser, res: Response<any>) {
   } = req;
 
   const {
-    userMakingRequest: { filePermissions },
+    userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
-  if (!filePermissions.includes(FILE_EDIT)) {
+  if (!filePermissions.includes(FILE_EDIT) || !teamPermissions?.includes(TEAM_EDIT)) {
     throw new ApiError(403, 'Permission denied');
   }
 
