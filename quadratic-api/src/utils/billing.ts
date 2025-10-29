@@ -52,9 +52,15 @@ export const fileCountForTeam = async (
   return { totalTeamFiles, userPrivateFiles };
 };
 
-/// Returns true if the team has reached its file limit and requires a paid plan
+/// Returns true if the user has reached its file limit and requires a paid plan
 /// to continue adding files
-export const teamHasReachedFileLimit = async (team: Team | DecryptedTeam, userId: number): Promise<boolean> => {
+/// If isPrivate is provided, only checks the relevant limit for that file type
+/// If isPrivate is not provided, checks against team file limit
+export const hasReachedFileLimit = async (
+  team: Team | DecryptedTeam,
+  userId: number,
+  isPrivate?: boolean
+): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
 
   if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
@@ -64,5 +70,9 @@ export const teamHasReachedFileLimit = async (team: Team | DecryptedTeam, userId
   const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
   const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
 
-  return totalTeamFiles >= maxTotalFiles || userPrivateFiles >= maxUserPrivateFiles;
+  if (!isPrivate) {
+    return totalTeamFiles >= maxTotalFiles;
+  }
+
+  return userPrivateFiles >= maxUserPrivateFiles;
 };

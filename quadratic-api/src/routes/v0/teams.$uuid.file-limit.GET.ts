@@ -6,7 +6,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
-import { teamHasReachedFileLimit } from '../../utils/billing';
+import { hasReachedFileLimit } from '../../utils/billing';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -25,7 +25,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
 
   const { team } = await getTeam({ uuid, userId });
-  const hasReachedLimit = await teamHasReachedFileLimit(team, userId);
+  const hasReachedLimit = await hasReachedFileLimit(team, userId);
 
   return res.status(200).json({ hasReachedLimit });
 }
