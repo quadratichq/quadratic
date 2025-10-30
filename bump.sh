@@ -32,6 +32,9 @@ TYPE=$1
 RUST=(
   "Cargo.toml"
   "quadratic-connection/Cargo.toml"
+  "quadratic-cloud-controller/Cargo.toml"
+  "quadratic-cloud-worker/Cargo.toml"
+  "quadratic-core-cloud/Cargo.toml"
   "quadratic-core/Cargo.toml"
   "quadratic-files/Cargo.toml"
   "quadratic-multiplayer/Cargo.toml"

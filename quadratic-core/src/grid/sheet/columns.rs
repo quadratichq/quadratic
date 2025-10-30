@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, btree_map};
 
 use crate::{
     Array, CellValue, CopyFormats, Pos, Rect,
+    a1::UNBOUNDED,
     grid::{Column, Contiguous2D, Sheet},
 };
 
@@ -253,6 +254,31 @@ impl SheetColumns {
     /// Returns true if the given rectangle has any content.
     pub(crate) fn has_content_in_rect(&self, rect: Rect) -> bool {
         self.has_cell_value.intersects(rect)
+    }
+
+    /// Returns true if the given rectangle has any content.
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.has_cell_value.intersects(rect)
+    }
+
+    /// Returns an iterator over the content in the given rectangle.
+    pub fn iter_content_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.has_cell_value
+            .nondefault_rects_in_rect(rect)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+    }
+
+    /// Returns an iterator over the content in the sheet.
+    pub fn iter_content(&self) -> impl Iterator<Item = Pos> {
+        self.has_cell_value
+            .nondefault_rects_in_rect(Rect::new(1, 1, UNBOUNDED, UNBOUNDED))
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
     }
 }
 

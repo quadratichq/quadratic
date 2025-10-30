@@ -12,6 +12,7 @@
     "clean": "npx rimraf node_modules dist build target"
   },
   "dependencies": {
+    "cron-parser": "^5.4.0",
     "zod": "^3.25.3"
   },
   "devDependencies": {

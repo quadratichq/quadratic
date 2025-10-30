@@ -1,5 +1,5 @@
 use crate::error::{MpError, Result};
-use crate::message::response::{BinaryTransaction, MessageResponse};
+use quadratic_rust_shared::multiplayer::message::response::MessageResponse;
 
 use prost::Message;
 use quadratic_rust_shared::protobuf::quadratic::transaction::{
@@ -44,7 +44,13 @@ pub(crate) fn encode_message(message: MessageResponse) -> Result<Vec<u8>> {
         MessageResponse::BinaryTransactions { transactions } => {
             let transactions = transactions
                 .into_iter()
-                .map(|transaction| transaction.into())
+                .map(|transaction| ReceiveTransaction {
+                    r#type: "BinaryTransaction".to_string(),
+                    id: transaction.id.to_string(),
+                    file_id: transaction.file_id.to_string(),
+                    sequence_num: transaction.sequence_num,
+                    operations: transaction.operations,
+                })
                 .collect::<Vec<ReceiveTransaction>>();
 
             let response = ReceiveTransactions {
@@ -57,17 +63,5 @@ pub(crate) fn encode_message(message: MessageResponse) -> Result<Vec<u8>> {
         _ => Err(MpError::ReceivingMessage(
             "Cannot encode message into protobuf".into(),
         )),
-    }
-}
-
-impl From<BinaryTransaction> for ReceiveTransaction {
-    fn from(binary_transaction: BinaryTransaction) -> Self {
-        ReceiveTransaction {
-            r#type: "BinaryTransaction".to_string(),
-            id: binary_transaction.id.to_string(),
-            file_id: binary_transaction.file_id.to_string(),
-            sequence_num: binary_transaction.sequence_num,
-            operations: binary_transaction.operations,
-        }
     }
 }

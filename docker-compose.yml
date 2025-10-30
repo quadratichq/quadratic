@@ -199,8 +199,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      quadratic-client:
-        condition: service_healthy
+      # quadratic-client:
+      #   condition: service_healthy
       quadratic-api:
         condition: service_started
     profiles:

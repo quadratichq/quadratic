@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use crate::Pos;
 use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
+use crate::grid::SheetId;
 
 use super::{A1Selection, CellRefRange};
 
@@ -375,13 +378,13 @@ impl A1Selection {
                             }
                             ColRange::Col(col) => {
                                 if table.show_columns
-                                    && let Some(col_index) = table.try_col_index(col) {
-                                        start = Some((
-                                            table.bounds.min.x + col_index,
-                                            table.bounds.min.y
-                                                + if table.show_name { 1 } else { 0 },
-                                        ));
-                                    }
+                                    && let Some(col_index) = table.try_col_index(col)
+                                {
+                                    start = Some((
+                                        table.bounds.min.x + col_index,
+                                        table.bounds.min.y + if table.show_name { 1 } else { 0 },
+                                    ));
+                                }
                             }
                             ColRange::ColRange(start_col, _) => {
                                 if let Some(col_index) = table.try_col_index(start_col) {
@@ -508,6 +511,15 @@ impl A1Selection {
         let mut new_selection = self.clone();
         new_selection.ranges.extend(other.ranges.clone());
         new_selection
+    }
+
+    /// Selects the entire sheet. (Note: doesn't check whether the SheetId
+    /// exists, only if it is valid)
+    pub fn select_sheet(&mut self, sheet_id: String) -> Result<(), String> {
+        self.sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.ranges.clear();
+        self.ranges.push(CellRefRange::ALL);
+        Ok(())
     }
 }
 
@@ -1003,5 +1015,13 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::test_a1("B2"), CellRefRange::test_a1("D")]
         );
+    }
+
+    #[test]
+    fn test_select_sheet() {
+        let mut selection = A1Selection::default(SheetId::TEST);
+        selection.select_sheet(SheetId::TEST.to_string()).unwrap();
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
+        assert_eq!(selection.sheet_id, SheetId::TEST);
     }
 }
