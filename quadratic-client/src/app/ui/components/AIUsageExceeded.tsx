@@ -1,14 +1,11 @@
-import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
-import { Link } from 'react-router';
+import { useSetRecoilState } from 'recoil';
 
 export const AIUsageExceeded = memo(() => {
-  const {
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
 
   return (
     <div
@@ -21,16 +18,13 @@ export const AIUsageExceeded = memo(() => {
 
       <Button
         onClick={() => {
-          trackEvent('[AI].UsageExceeded.clickUpgrade', {
-            ab_test: 'variant',
-          });
+          setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded' });
+          trackEvent('[AI].UsageExceeded.clickUpgrade');
         }}
         className="mt-2 w-full"
-        asChild
+        size="sm"
       >
-        <Link to={ROUTES.TEAM_SETTINGS(teamUuid)} reloadDocument>
-          Upgrade to Pro
-        </Link>
+        Upgrade to Pro
       </Button>
     </div>
   );
