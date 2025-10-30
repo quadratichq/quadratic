@@ -1,11 +1,9 @@
 import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useAIMessagesLeft } from '@/app/ui/hooks/useAIMessagesLeft';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
-import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { memo } from 'react';
-import { Link } from 'react-router';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIMessageCounterBar = memo(() => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
@@ -18,9 +16,7 @@ export const AIMessageCounterBar = memo(() => {
 const Component = () => {
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const messagesRemaining = useAIMessagesLeft();
-  const {
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
 
   // We conditionally render this component here because if we are going to show
   // show it, we want to fetch its data early so its accurate for new users
@@ -36,13 +32,14 @@ const Component = () => {
   return (
     <div className="pt-1 text-center text-xs text-muted-foreground">
       {messagesLeftDisplay} message{messagesRemaining !== 1 ? 's' : ''} left on your Free plan.{' '}
-      <Link
-        to={ROUTES.TEAM_SETTINGS(teamUuid)}
-        reloadDocument
-        className="text-blue-600 hover:text-blue-800 hover:underline"
+      <button
+        className="text-primary hover:underline"
+        onClick={() => {
+          setShowUpgradeDialog({ open: true, eventSource: 'AIMessageCounterBar' });
+        }}
       >
         Upgrade now
-      </Link>
+      </button>
       .
     </div>
   );
