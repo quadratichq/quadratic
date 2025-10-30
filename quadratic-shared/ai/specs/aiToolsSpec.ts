@@ -537,6 +537,7 @@ export const AIToolsArgsSchema = {
     // No parameters needed, but we include a dummy property for schema compatibility.
     // Should we fix this now? Not sure why param would be required.
     acknowledged: booleanSchema.nullable().optional(),
+  }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
   }),
@@ -2781,6 +2782,7 @@ This should be used to help frustrated users get direct support from the Quadrat
 The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
 and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
 It provides both a "Contact us" button and a "New chat" button for the user.\n`,
+  },
   [AITool.OptimizePrompt]: {
     sources: ['OptimizePrompt'],
     aiModelModes: ['disabled', 'fast', 'max'],
