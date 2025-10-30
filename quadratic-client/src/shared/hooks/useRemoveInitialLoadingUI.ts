@@ -2,10 +2,8 @@ import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useLayoutEffect } from 'react';
 
-export function useRemoveInitialLoadingUI(skip: boolean = false) {
+export function useRemoveInitialLoadingUI() {
   useLayoutEffect(() => {
-    if (skip) return;
-
     // Get the initial start time (in ms) so we can track the load time
     const startTime = document.documentElement.getAttribute('data-loading-start');
 
@@ -24,6 +22,6 @@ export function useRemoveInitialLoadingUI(skip: boolean = false) {
         });
       }
     }
-  }, [skip]);
+  }, []);
   return null;
 }

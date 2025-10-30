@@ -8,7 +8,10 @@ use bytes::Bytes;
 
 use super::Storage;
 use crate::{
-    aws::s3::{download_object, upload_object},
+    aws::{
+        client,
+        s3::{download_object, upload_object},
+    },
     error::Result,
 };
 
@@ -17,6 +20,39 @@ use crate::{
 pub struct S3Config {
     pub client: Client,
     pub bucket: String,
+    pub region: String,
+    pub access_key_id: String,
+    pub secret_access_key: String,
+    pub is_local: bool,
+}
+
+impl S3Config {
+    pub async fn new(
+        bucket: String,
+        region: String,
+        access_key_id: String,
+        secret_access_key: String,
+        provider_name: &'static str,
+        is_local: bool,
+    ) -> Self {
+        let client = client(
+            &access_key_id,
+            &secret_access_key,
+            &region,
+            provider_name,
+            is_local,
+        )
+        .await;
+
+        Self {
+            client,
+            bucket,
+            region,
+            access_key_id,
+            secret_access_key,
+            is_local,
+        }
+    }
 }
 
 /// S3
@@ -31,7 +67,7 @@ impl Storage for S3 {
 
     /// Read the file from the S3 bucket and return the bytes.
     async fn read(&self, key: &str) -> Result<Bytes> {
-        let S3Config { client, bucket } = &self.config;
+        let S3Config { client, bucket, .. } = &self.config;
 
         let file = download_object(client, bucket, key)
             .await
@@ -49,7 +85,7 @@ impl Storage for S3 {
 
     /// Write the bytes to the S3 bucket.
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
-        let S3Config { client, bucket } = &self.config;
+        let S3Config { client, bucket, .. } = &self.config;
 
         upload_object(client, bucket, key, data)
             .await

@@ -1,5 +1,6 @@
 use http::HeaderMap;
 use quadratic_rust_shared::{
+    auth::jwt::authorize_m2m,
     quadratic_api::{Connection as ApiConnection, Team, get_connection, get_team},
     sql::UsesSsh,
 };
@@ -14,9 +15,23 @@ pub(crate) async fn get_api_connection<T: DeserializeOwned>(
     email: &str,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<T>> {
     let base_url = state.settings.quadratic_api_uri.to_owned();
-    let connection = get_connection(&base_url, jwt, email, connection_id, team_id).await?;
+    let m2m_token = state.settings.m2m_auth_token.clone();
+    let (is_internal, token) = match authorize_m2m(headers, &m2m_token) {
+        Ok(_token) => (true, m2m_token),
+        Err(_) => (false, jwt.to_string()),
+    };
+    let connection = get_connection(
+        &base_url,
+        &token,
+        email,
+        connection_id,
+        team_id,
+        is_internal,
+    )
+    .await?;
 
     Ok(connection)
 }
