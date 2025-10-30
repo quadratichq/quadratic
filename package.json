@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.20.5",
+  "version": "0.21.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -71,6 +71,7 @@
     "docker:down": "docker compose --profile all --env-file .env.docker down",
     "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af",
     "e2e:test": "cd test/e2e && npm run docker:test",
+    "e2e:test:bail": "cd test/e2e && npm run docker:bail",
     "e2e:update": "cd test/e2e && npm run docker:update",
     "e2e:ui": "cd test/e2e && npm run test:ui",
     "e2e:headed": "cd test/e2e && npm run test:headed",
