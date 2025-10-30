@@ -242,6 +242,7 @@ pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) ->
     Ok(response.json::<Team>().await?)
 }
 
+/// Handle a response from the quadratic API server in a consistent way.
 fn handle_response(response: &Response) -> Result<()> {
     match response.status() {
         StatusCode::OK => Ok(()),

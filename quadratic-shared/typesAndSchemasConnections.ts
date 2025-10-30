@@ -130,6 +130,31 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
 
 /**
  * =============================================================================
+ * Schemas for synced connections
+ * =============================================================================
+ */
+export const SyncedConnectionSchema = z.object({
+  id: z.number(),
+  connectionId: z.number(),
+  percentCompleted: z.number(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
+  updatedDate: z.string().datetime(),
+});
+export type SyncedConnection = z.infer<typeof SyncedConnectionSchema>;
+
+export const SyncedConnectionLogSchema = z.object({
+  id: z.number(),
+  syncedConnectionId: z.number(),
+  runId: z.string(),
+  syncedDates: z.array(z.string()),
+  status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
+  error: z.string().optional(),
+  createdDate: z.string().datetime(),
+});
+export type SyncedConnectionLog = z.infer<typeof SyncedConnectionLogSchema>;
+
+/**
+ * =============================================================================
  * Export
  * =============================================================================
  */
@@ -186,4 +211,13 @@ export const ApiSchemasConnections = {
 
   // Get all connections (internal)
   '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
+
+  // Get synced connection
+  '/v0/synced-connections/:syncedConnectionId.GET.response': SyncedConnectionSchema,
+
+  // Get all synced connections (internal)
+  '/v0/internal/synced-connections.GET.response': SyncedConnectionSchema,
+
+  // Get synced connection log
+  '/v0/synced-connections/:syncedConnectionId/log.GET.response': SyncedConnectionLogSchema,
 };

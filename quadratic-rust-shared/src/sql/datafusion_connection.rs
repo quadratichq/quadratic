@@ -138,7 +138,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
         &mut self,
         client: &mut Self::Conn,
         sql: &str,
-        _max_bytes: Option<u64>,
+        max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let df = client.sql(sql).await.map_err(query_error)?;
         // test helper
@@ -150,17 +150,29 @@ impl<'a> Connection<'a> for DatafusionConnection {
         }
 
         let mut total_records = 0;
+        let mut total_bytes = 0;
+        let mut over_the_limit = false;
         let buffer = Vec::new();
         let mut writer = ArrowWriter::try_new(buffer, batches[0].schema(), None)?;
 
+        // enforce max bytes
         for batch in &batches {
             total_records += batch.num_rows();
+            total_bytes += batch.get_array_memory_size() as u64;
+
+            if let Some(max_bytes) = max_bytes
+                && total_bytes > max_bytes
+            {
+                over_the_limit = true;
+                break;
+            }
+
             writer.write(batch)?;
         }
 
         let parquet = writer.into_inner()?;
 
-        Ok((parquet.into(), false, total_records))
+        Ok((parquet.into(), over_the_limit, total_records))
     }
 
     /// Get the schema of a datafusion database
