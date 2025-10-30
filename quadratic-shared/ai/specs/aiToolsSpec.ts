@@ -973,7 +973,7 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
 IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
 - The Connection ID must be from an available database connection in the team.\n
 - Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
 - Write SQL queries that reference the database tables and schemas provided in context.\n
@@ -998,7 +998,7 @@ SQL code cell placement instructions:\n
         connection_kind: {
           type: 'string',
           description:
-            'The kind of the sql code cell, this can be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.',
+            'The kind of the sql code cell, this can be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.',
         },
         code_cell_position: {
           type: 'string',
@@ -1036,7 +1036,7 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
 IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
 - The Connection ID must be from an available database connection in the team.\n
 - Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
 - Write SQL queries that reference the database tables and schemas provided in context.\n

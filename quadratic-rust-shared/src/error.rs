@@ -5,6 +5,8 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
+use std::sync::PoisonError;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -38,6 +40,10 @@ pub enum SharedError {
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
+    #[cfg(feature = "parquet")]
+    #[error("Error with Parquet: {0}")]
+    Parquet(crate::parquet::error::Parquet),
+
     #[error("Error with Pubsub: {0}")]
     PubSub(String),
 
@@ -54,6 +60,10 @@ pub enum SharedError {
     #[cfg(feature = "storage")]
     #[error("Error with Storage: {0}")]
     Storage(crate::storage::error::Storage),
+
+    #[cfg(feature = "synced")]
+    #[error("Error with Synced: {0}")]
+    Synced(String),
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
@@ -86,5 +96,31 @@ impl From<serde_json::Error> for SharedError {
 impl From<uuid::Error> for SharedError {
     fn from(error: uuid::Error) -> Self {
         SharedError::Uuid(error.to_string())
+    }
+}
+
+#[cfg(feature = "parquet")]
+impl From<parquet::errors::ParquetError> for SharedError {
+    fn from(error: parquet::errors::ParquetError) -> Self {
+        SharedError::Parquet(crate::parquet::error::Parquet::Unknown(error.to_string()))
+    }
+}
+
+#[cfg(feature = "parquet")]
+impl From<crate::parquet::error::Parquet> for SharedError {
+    fn from(error: crate::parquet::error::Parquet) -> Self {
+        SharedError::Parquet(error)
+    }
+}
+
+impl From<std::io::Error> for SharedError {
+    fn from(error: std::io::Error) -> Self {
+        SharedError::Generic(format!("IO error: {}", error))
+    }
+}
+
+impl<T> From<PoisonError<T>> for SharedError {
+    fn from(error: PoisonError<T>) -> Self {
+        SharedError::Generic(format!("Poison error: {}", error))
     }
 }
