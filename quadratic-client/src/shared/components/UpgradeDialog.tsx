@@ -11,8 +11,7 @@ import type { TeamSubscriptionStatus, UserTeamRole } from 'quadratic-shared/type
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigation } from 'react-router';
 
-// Default to 7 days if there's no env var
-const SOLICIT_UPGRADE_INTERVAL_SECONDS = import.meta.env.VITE_SOLICIT_UPGRADE_INTERVAL_SECONDS ?? 60 * 60 * 24 * 7;
+const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 interface UpgradeDialogProps {
   teamUuid: string;

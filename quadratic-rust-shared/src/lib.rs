@@ -39,6 +39,9 @@ pub mod sql;
 #[cfg(feature = "storage")]
 pub mod storage;
 
+#[cfg(feature = "synced")]
+pub mod synced;
+
 pub mod utils;
 
 #[cfg(any(test, feature = "test", feature = "benchmark"))]

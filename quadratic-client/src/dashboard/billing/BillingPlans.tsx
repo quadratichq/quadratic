@@ -72,8 +72,8 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
                       <DialogTitle>AI message limits</DialogTitle>
                     </DialogHeader>
                     <p className="text-sm text-muted-foreground">
-                      We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to limit
-                      unreasonable use and abuse.
+                      We currently don’t charge for AI usage on the Pro plan. We reserve the right to limit unreasonable
+                      use and abuse.
                     </p>
                   </DialogContent>
                 </Dialog>
