@@ -6,7 +6,7 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
+import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
@@ -23,8 +23,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 type UIModels = 'default' | 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
@@ -47,7 +46,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
-
+  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
   const { modelType, othersModelKey, setModel, selectedModelConfig, defaultOthersModelKey } = useAIModel();
 
   const modelConfigs = useMemo(() => {
@@ -169,9 +168,12 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 {!isOnPaidPlan && (
                   <span className="font-normal">
                     (exclusive to Pro,{' '}
-                    <Link to={ROUTES.TEAM_BILLING(teamUuid)} className="text-primary hover:underline">
+                    <button
+                      onClick={() => setShowUpgradeDialog({ open: true, eventSource: 'SelectAIModelMenu' })}
+                      className="text-primary hover:underline"
+                    >
                       upgrade now
-                    </Link>
+                    </button>
                     )
                   </span>
                 )}
