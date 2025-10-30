@@ -9,7 +9,7 @@ import { redirect, type LoaderFunctionArgs } from 'react-router';
  * /team/connections?initial-connection-type=MYSQL -> /teams/:teamUuid/connections?initial-connection-type=MYSQL
  */
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
+  const { activeTeamUuid } = await requireAuth();
   const { params } = loaderArgs;
   const path = params['*'];
   const { search } = new URL(loaderArgs.request.url);

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.21.0"
+version = "0.20.5"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -25,7 +25,9 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
 ] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
     "auth",
+    "cache",
     "environment",
+    "object_store",
     "protobuf",
     "pubsub",
     "quadratic-api",

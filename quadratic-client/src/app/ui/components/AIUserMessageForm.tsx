@@ -8,6 +8,7 @@ import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { AIUserMessageFormOptimizeButton } from '@/app/ui/components/AIUserMessageFormOptimizeButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import {
   detectMentionInText,
@@ -456,10 +457,7 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
             prompt={prompt}
             setPrompt={setPrompt}
-            submitPrompt={() => {
-              handleSubmit(prompt);
-              setPrompt('');
-            }}
+            submitPrompt={handleSubmit}
             abortPrompt={abortPrompt}
             disabled={disabled}
             cancelDisabled={cancelDisabled}
@@ -625,6 +623,12 @@ const AIUserMessageFormFooter = memo(
                 </Button>
               </TooltipPopover>
             )}
+            <AIUserMessageFormOptimizeButton
+              disabled={disabled}
+              prompt={prompt}
+              setPrompt={setPrompt}
+              textareaRef={textareaRef}
+            />
           </div>
 
           <div className="flex">
