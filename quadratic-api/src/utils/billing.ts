@@ -4,6 +4,7 @@ import dbClient from '../dbClient';
 import { isRunningInTest, MAX_FILE_COUNT_FOR_PAID_PLAN } from '../env-vars';
 import { updateBilling } from '../stripe/stripe';
 import type { DecryptedTeam } from '../utils/teams';
+import logger from './logger';
 
 export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
   if (isRunningInTest) {
@@ -63,13 +64,15 @@ export const hasReachedFileLimit = async (
   isPrivate?: boolean
 ): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
-
+  logger.info({ isPaidPlan, MAX_FILE_COUNT_FOR_PAID_PLAN });
   if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
     return false;
   }
 
   const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
   const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
+
+  logger.info({ totalTeamFiles, userPrivateFiles, maxTotalFiles, maxUserPrivateFiles });
 
   if (!isPrivate) {
     return totalTeamFiles >= maxTotalFiles;
