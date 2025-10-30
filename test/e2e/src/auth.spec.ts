@@ -12,9 +12,7 @@ test('Log In', async ({ page }) => {
   // Assert:
   //--------------------------------
   // brought to home page
-  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveURL(/teams/);
 });
 
@@ -41,13 +39,10 @@ test('Log Out', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert you're successfully logged out
-  await expect(page.locator(`[name="email"]`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 });
 
-// need a better way to test this, since creating users is more difficult in QA
-test.skip('Sign Up', async ({ page }) => {
+test('Sign Up', async ({ page }) => {
   //--------------------------------
   // Sign Up
   //--------------------------------
@@ -64,16 +59,12 @@ test.skip('Sign Up', async ({ page }) => {
     .locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_signup_"))')
     .click({ timeout: 60 * 1000 });
   await page.getByText('logout', { exact: true }).click({ timeout: 60 * 1000 });
-  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({
-    timeout: 2000,
-  });
+  await expect(page.getByText(`Log in to Quadratic`)).toBeVisible({ timeout: 2000 });
 
   // Log In
   await logIn(page, { emailPrefix });
 
   // Assert we can successfully log in
-  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveURL(/teams/);
 });
