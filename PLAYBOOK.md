@@ -5,6 +5,7 @@
 - [Reverting a Deployment](#reverting-a-deployment)
 - [Adding/Modifying Environment Variables](#addingmodifying-environment-variables)
 - [SSH into a Preview Branch](#ssh-into-a-preview-branch)
+- [Recording a session for future network debugging (HAR)](#recording-a-session-for-future-network-debugging-har)
 
 
 ## Deploying QA
@@ -64,3 +65,8 @@
    1. View live logs: docker logs -f `CONTAINER ID`
    1. View live tail logs: docker logs -f --tail 100 `CONTAINER ID`
    1. Enter into the container: docker exec -it `CONTAINER ID` bash
+
+## Recording a session for future network debugging (HAR)
+This should be used where production failed to deploy but you want to record the network activities before reverting.
+
+See: https://support.zendesk.com/hc/en-us/articles/4408828867098-Generating-a-HAR-file-for-troubleshooting#h_01HRFHNXRB4YH4BMMGN6VEAYWB
