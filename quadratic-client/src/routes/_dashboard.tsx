@@ -60,13 +60,8 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response | null> => {
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   const { activeTeamUuid } = await requireAuth();
-
-  if (!activeTeamUuid) {
-    return null;
-  }
-
   const { params, request } = loaderArgs;
 
   // Check the URL for a team UUID. If there's one, use that as it’s what the
@@ -150,7 +145,6 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const loaderData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData | null;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
@@ -180,9 +174,7 @@ export const Component = () => {
     };
   }, [revalidator]);
 
-  // we keep the loading UI if the auth failed (loader will return null)
-  useRemoveInitialLoadingUI(!loaderData);
-  if (!loaderData) return null;
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>

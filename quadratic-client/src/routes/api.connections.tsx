@@ -2,6 +2,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ROUTES } from '@/shared/constants/routes';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -63,6 +64,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const { teamUuid, body } = data as CreateConnectionAction;
     try {
       const result = await apiClient.connections.create({ teamUuid, body });
+
       return { ok: true, connectionUuid: result.uuid };
     } catch (e) {
       console.error(e);
@@ -73,7 +75,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (data.action === 'update-connection') {
     try {
       const { connectionUuid, teamUuid, body } = data as UpdateConnectionAction;
+
       await apiClient.connections.update({ teamUuid, connectionUuid, body });
+
       return { ok: true };
     } catch (e) {
       console.error(e);
@@ -126,7 +130,7 @@ export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction
 export const getUpdateConnectionAction = (
   connectionUuid: string,
   teamUuid: string,
-  body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request']
+  body: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.PUT.request'] & { type: ConnectionType }
 ) => {
   return {
     json: {

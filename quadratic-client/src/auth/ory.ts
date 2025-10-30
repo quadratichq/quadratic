@@ -1,12 +1,13 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { VITE_ORY_HOST } from '@/env-vars';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
 import { captureEvent } from '@sentry/react';
 
+const ORY_HOST = import.meta.env.VITE_ORY_HOST;
+
 // verify all Ory env variables are set
-if (!VITE_ORY_HOST) {
+if (!ORY_HOST) {
   const message = 'Ory variables are not configured correctly.';
   captureEvent({
     message,
@@ -15,7 +16,7 @@ if (!VITE_ORY_HOST) {
 }
 
 const config = new Configuration({
-  basePath: VITE_ORY_HOST,
+  basePath: ORY_HOST,
   baseOptions: {
     withCredentials: true,
   },
@@ -79,7 +80,7 @@ export const oryClient: AuthClient = {
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
     const urlSegment = args.isSignupFlow ? 'registration' : 'login';
-    const url = new URL(`${VITE_ORY_HOST}/self-service/${urlSegment}/browser`);
+    const url = new URL(`${ORY_HOST}/self-service/${urlSegment}/browser`);
     url.searchParams.set('return_to', args.redirectTo);
 
     // redirect to the login/signup flow
@@ -129,5 +130,24 @@ export const oryClient: AuthClient = {
       }
     }
     return '';
+  },
+
+  async loginWithPassword(_) {
+    throw new Error('loginWithPassword called in Ory');
+  },
+  async loginWithOAuth(_) {
+    throw new Error('loginWithOAuth called in Ory');
+  },
+  async signupWithPassword(_) {
+    throw new Error('signupWithPassword called in Ory');
+  },
+  async verifyEmail(_) {
+    throw new Error('verifyEmail called in Ory');
+  },
+  async sendResetPassword(_) {
+    throw new Error('sendResetPassword called in Ory');
+  },
+  async resetPassword(_) {
+    throw new Error('resetPassword called in Ory');
   },
 };

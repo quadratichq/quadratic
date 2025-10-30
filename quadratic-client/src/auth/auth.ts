@@ -24,6 +24,12 @@ export interface AuthClient {
   handleSigninRedirect(href: string): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
+  loginWithPassword(args: { email: string; password: string }): Promise<void>;
+  loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }): Promise<void>;
+  signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }): Promise<void>;
+  verifyEmail(args: { pendingAuthenticationToken: string; code: string }): Promise<void>;
+  sendResetPassword(args: { email: string }): Promise<void>;
+  resetPassword(args: { token: string; password: string }): Promise<void>;
 }
 
 const getAuthClient = (): AuthClient => {
@@ -62,6 +68,30 @@ export const authClient: AuthClient = {
   async getTokenOrRedirect(skipRedirect?: boolean) {
     const client = getAuthClient();
     return client.getTokenOrRedirect(skipRedirect);
+  },
+  async loginWithPassword(args: { email: string; password: string }) {
+    const client = getAuthClient();
+    return client.loginWithPassword(args);
+  },
+  async loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }) {
+    const client = getAuthClient();
+    return client.loginWithOAuth(args);
+  },
+  async signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }) {
+    const client = getAuthClient();
+    return client.signupWithPassword(args);
+  },
+  async verifyEmail(args: { pendingAuthenticationToken: string; code: string }) {
+    const client = getAuthClient();
+    return client.verifyEmail(args);
+  },
+  async sendResetPassword(args: { email: string }) {
+    const client = getAuthClient();
+    return client.sendResetPassword(args);
+  },
+  async resetPassword(args: { token: string; password: string }) {
+    const client = getAuthClient();
+    return client.resetPassword(args);
   },
 };
 

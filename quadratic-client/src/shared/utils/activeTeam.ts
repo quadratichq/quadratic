@@ -18,7 +18,6 @@
 //   7. TAB1: They will be redirected to `/teams/bar` (not `foo` which they were just looking at
 //
 // This is a bit of an edge case, but it's good to be aware of how this works.
-import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 
 const KEY = 'activeTeamUuid';
@@ -47,12 +46,6 @@ export async function getOrInitializeActiveTeam(): Promise<string> {
   if (activeTeamPromise) return activeTeamPromise;
 
   activeTeamPromise = (async () => {
-    // ensure we're authenticated to avoid showing the error page
-    const isAuthenticated = await authClient.isAuthenticated();
-
-    // if the user is not authenticated, we want to avoid any API calls
-    if (!isAuthenticated) return '';
-
     // FYI: if there's a UUID in localstorage, it doesn’t necessarily mean the
     // user has access to it (maybe they were removed from a team, so they'll
     // get a 4xx in the UI).

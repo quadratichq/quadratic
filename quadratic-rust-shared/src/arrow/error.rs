@@ -10,8 +10,14 @@ use crate::SharedError;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Arrow {
+    #[error("Error converting string to array: {0}")]
+    ConvertString(String),
+
     #[error("Arrow error: {0}")]
     External(String),
+
+    #[error("Object store error: {0}")]
+    ObjectStore(String),
 }
 
 impl From<arrow::error::ArrowError> for SharedError {
