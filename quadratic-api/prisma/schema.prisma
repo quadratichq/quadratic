@@ -162,6 +162,7 @@ enum ConnectionType {
     MARIADB
     NEON
     SUPABASE
+    MIXPANEL
 }
 
 model Connection {
@@ -290,6 +291,7 @@ enum AIChatSource {
     PDFImport                     @map("pdf_import")
     ModelRouter                   @map("model_router")
     WebSearch                     @map("web_search")
+    OptimizePrompt                @map("optimize_prompt")
 }
 
 enum AIChatMessageType {

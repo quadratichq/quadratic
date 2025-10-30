@@ -307,6 +307,10 @@ export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
 };
 
+export const EnhancePromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>wand_stars</Icon>;
+};
+
 export const ErrorIcon: IconComponent = (props) => {
   return <Icon {...props}>error</Icon>;
 };
@@ -461,6 +465,10 @@ export const MailIcon: IconComponent = (props) => {
 
 export const ManageSearch: IconComponent = (props) => {
   return <Icon {...props}>manage_search</Icon>;
+};
+
+export const MentionIcon: IconComponent = (props) => {
+  return <Icon {...props}>alternate_email</Icon>;
 };
 
 export const MenuIcon: IconComponent = (props) => {

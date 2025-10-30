@@ -390,42 +390,22 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing set sql code cell value tool: ${e}`)];
     }
   },
-  [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
+  [AITool.SetFormulaCellValue]: async (args) => {
     try {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const selection = sheets.stringToSelection(code_cell_position, sheetId);
-      if (!selection.isSingleSelection(sheets.jsA1Context)) {
-        return [createTextContent('Invalid formula cell position, this should be a single cell, not a range')];
-      }
-      const { x, y } = selection.getCursor();
-
-      if (formula_string.startsWith('=')) {
-        formula_string = formula_string.slice(1);
-      }
-
-      const transactionId = await quadraticCore.setCodeCellValue({
+      const transactionId = await quadraticCore.setFormula({
         sheetId,
-        x,
-        y,
+        selection: code_cell_position,
         codeString: formula_string,
-        language: 'Formula',
-        isAi: true,
       });
-
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
-
-        // After execution, adjust viewport to show full output if it exists
-        const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
-        if (tableCodeCell) {
-          const width = tableCodeCell.w;
-          const height = tableCodeCell.h;
-          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
-        }
-
-        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
-        return result;
+        return [
+          createTextContent(
+            `Successfully set formula cells in ${code_cell_position}. The results of the formula cells are contained with the context above.`
+          ),
+        ];
       } else {
         return [createTextContent('Error executing set formula cell value tool')];
       }
@@ -1274,5 +1254,8 @@ export const aiToolsActions: AIToolActionsRecord = {
     } catch (e) {
       return [createTextContent(`Error executing redo tool: ${e}`)];
     }
+  },
+  [AITool.OptimizePrompt]: async (args) => {
+    return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
   },
 } as const;

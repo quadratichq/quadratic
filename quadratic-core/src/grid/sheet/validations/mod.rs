@@ -24,11 +24,11 @@ pub mod warnings;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Validations {
-    #[serde(default)]
-    pub validations: Vec<Validation>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub(crate) validations: Vec<Validation>,
 
-    #[serde(default)]
-    pub warnings: HashMap<Pos, Uuid>,
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub(crate) warnings: HashMap<Pos, Uuid>,
 }
 
 impl Validations {

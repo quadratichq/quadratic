@@ -110,7 +110,6 @@ impl Sheet {
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
-    /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         data_table.cell_value_at(
@@ -148,103 +147,51 @@ impl Sheet {
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
-        let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
-            Some(cell_value)
+        if let Some((code_pos, data_table)) = self.data_table_that_contains(pos)
+            && let DataTableKind::CodeRun(code_run) = &data_table.kind
+        {
+            let mut code: String = code_run.code.clone();
+
+            // replace internal cell references with a1 notation
+            if matches!(code_run.language, CodeCellLanguage::Formula) {
+                let replaced = convert_rc_to_a1(&code, a1_context, code_pos.to_sheet_pos(self.id));
+                code = replaced;
+            }
+
+            let evaluation_result = match &code_run.error {
+                Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                None => Some(serde_json::to_string(&data_table.value).unwrap_or("".into())),
+            };
+
+            let spill_error =
+                match data_table.has_spill() {
+                    true => Some(self.find_spill_error_reasons(
+                        &data_table.output_rect(code_pos, true),
+                        code_pos,
+                    )),
+                    false => None,
+                };
+
+            let return_info = Some(JsReturnInfo {
+                line_number: code_run.line_number,
+                output_type: code_run.output_type.clone(),
+            });
+
+            Some(JsCodeCell {
+                x: code_pos.x,
+                y: code_pos.y,
+                code_string: code,
+                language: code_run.language.clone(),
+                std_err: code_run.std_err.clone(),
+                std_out: code_run.std_out.clone(),
+                evaluation_result,
+                spill_error,
+                return_info,
+                cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                last_modified: data_table.last_modified.timestamp_millis(),
+            })
         } else {
-            match self.data_table_pos_that_contains_result(pos) {
-                Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
-                        code_pos = data_table_pos;
-                        Some(code_value)
-                    } else {
-                        None
-                    }
-                }
-                Err(_) => None,
-            }
-        };
-
-        match cell_value?.code_cell_value() {
-            Some(mut code_cell_value) => {
-                // replace internal cell references with a1 notation
-                if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    let replaced = convert_rc_to_a1(
-                        &code_cell_value.code,
-                        a1_context,
-                        code_pos.to_sheet_pos(self.id),
-                    );
-                    code_cell_value.code = replaced;
-                }
-
-                if let Some(data_table) = self.data_table_at(&code_pos) {
-                    let evaluation_result =
-                        serde_json::to_string(&data_table.value).unwrap_or("".into());
-                    let spill_error = if data_table.has_spill() {
-                        Some(self.find_spill_error_reasons(
-                            &data_table.output_rect(code_pos, true),
-                            code_pos,
-                        ))
-                    } else {
-                        None
-                    };
-
-                    match &data_table.kind {
-                        DataTableKind::CodeRun(code_run) => {
-                            let evaluation_result = if let Some(error) = &code_run.error {
-                                Some(serde_json::to_string(error).unwrap_or("".into()))
-                            } else {
-                                Some(evaluation_result)
-                            };
-
-                            Some(JsCodeCell {
-                                x: code_pos.x,
-                                y: code_pos.y,
-                                code_string: code_cell_value.code,
-                                language: code_cell_value.language,
-                                std_err: code_run.std_err.clone(),
-                                std_out: code_run.std_out.clone(),
-                                evaluation_result,
-                                spill_error,
-                                return_info: Some(JsReturnInfo {
-                                    line_number: code_run.line_number,
-                                    output_type: code_run.output_type.clone(),
-                                }),
-                                cells_accessed: Some(code_run.cells_accessed.clone().into()),
-                                last_modified: data_table.last_modified.timestamp_millis(),
-                            })
-                        }
-                        DataTableKind::Import(_) => Some(JsCodeCell {
-                            x: code_pos.x,
-                            y: code_pos.y,
-                            code_string: code_cell_value.code,
-                            language: code_cell_value.language,
-                            std_err: None,
-                            std_out: None,
-                            evaluation_result: Some(evaluation_result),
-                            spill_error,
-                            return_info: None,
-                            cells_accessed: None,
-                            last_modified: 0,
-                        }),
-                    }
-                } else {
-                    Some(JsCodeCell {
-                        x: code_pos.x,
-                        y: code_pos.y,
-                        code_string: code_cell_value.code,
-                        language: code_cell_value.language,
-                        std_err: None,
-                        std_out: None,
-                        evaluation_result: None,
-                        spill_error: None,
-                        return_info: None,
-                        cells_accessed: None,
-                        last_modified: 0,
-                    })
-                }
-            }
-            _ => None,
+            None
         }
     }
 }
@@ -255,7 +202,7 @@ mod test {
     use crate::{
         Array, SheetPos, Value,
         controller::GridController,
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
+        grid::{CodeCellLanguage, CodeRun, js_types::JsRenderCellSpecial},
     };
     use std::vec;
 
@@ -264,13 +211,6 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(
-            Pos { x: 1, y: 1 },
-            CellValue::Code(CodeCellValue {
-                code: "=".to_string(),
-                language: CodeCellLanguage::Formula,
-            }),
-        );
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=".to_string(),
@@ -467,13 +407,6 @@ mod test {
         dt.chart_output = Some((2, 2));
 
         let pos = Pos { x: 1, y: 1 };
-        sheet.set_cell_value(
-            pos,
-            CellValue::Code(CodeCellValue {
-                code: "".to_string(),
-                language: CodeCellLanguage::Javascript,
-            }),
-        );
         sheet.set_data_table(pos, Some(dt.clone()));
 
         assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));

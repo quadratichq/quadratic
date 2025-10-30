@@ -62,6 +62,7 @@ export enum AITool {
   RemoveValidations = 'remove_validation',
   Undo = 'undo',
   Redo = 'redo',
+  OptimizePrompt = 'optimize_prompt',
 }
 
 export const AIToolSchema = z.enum([
@@ -115,6 +116,7 @@ export const AIToolSchema = z.enum([
   AITool.RemoveValidations,
   AITool.Undo,
   AITool.Redo,
+  AITool.OptimizePrompt,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -528,6 +530,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
+  }),
+  [AITool.OptimizePrompt]: z.object({
+    optimized_prompt: stringSchema,
   }),
 } as const;
 
@@ -973,7 +978,7 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
 IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
 - The Connection ID must be from an available database connection in the team.\n
 - Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
 - Write SQL queries that reference the database tables and schemas provided in context.\n
@@ -998,7 +1003,7 @@ SQL code cell placement instructions:\n
         connection_kind: {
           type: 'string',
           description:
-            'The kind of the sql code cell, this can be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.',
+            'The kind of the sql code cell, this can be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.',
         },
         code_cell_position: {
           type: 'string',
@@ -1036,7 +1041,7 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
 IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query.
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE, NEON or MIXPANEL.\n
 - The Connection ID must be from an available database connection in the team.\n
 - Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
 - Write SQL queries that reference the database tables and schemas provided in context.\n
@@ -1052,7 +1057,7 @@ SQL code cell placement instructions:\n
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
+Sets the value of a formula cell (or multiple formula cells in a range) and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
 Provide a name for the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed).\n
@@ -1060,6 +1065,7 @@ Note: we only rename the formula cell if its new. Otherwise we keep the old name
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
 Do not attempt to add formulas to data tables, it will result in an error.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+When using a range, cell references in the formula will automatically adjust relatively for each cell (like copy-paste in spreadsheets). Use $ for absolute references (e.g., $A$1) when you want references to stay fixed.\n
 `,
     parameters: {
       type: 'object',
@@ -1071,11 +1077,12 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
         code_cell_position: {
           type: 'string',
           description:
-            'The position of the formula cell in the current open sheet, in a1 notation. This should be a single cell, not a range.',
+            'The position of the formula cell(s) in the current open sheet, in a1 notation. This can be a single cell (e.g., "A1") or a range (e.g., "A1:A10") or a collection (e.g., "A1,A2:B2,A3").',
         },
         formula_string: {
           type: 'string',
-          description: 'The formula which will run in the cell',
+          description:
+            'The formula which will run in the cell(s). If code_cell_position is a range or collection, cell references will adjust relatively for each cell (e.g., formula "A1" applied to range B1:B3 becomes "A1", "A2", "A3"). Use $ for absolute references (e.g., "$A$1" stays fixed for all cells).',
         },
       },
       required: ['sheet_name', 'code_cell_position', 'formula_string'],
@@ -1085,10 +1092,18 @@ This tool is for formulas only. For Python and Javascript code, use set_code_cel
     prompt: `
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
 Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
-set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
+set_formula_cell_value function requires formula_string and the cell position (single cell or range in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
 Don't prefix formulas with \`=\` in formula cells.\n
+
+Multiple formula cells with relative referencing:\n
+- When setting multiple formulas at once, you can use a range for code_cell_position (e.g., "A1:A10").\n
+- Cell references in the formula will automatically adjust relatively for each cell, just like when you copy and paste a formula in a spreadsheet.\n
+- Example: If you apply formula "SUM(A1)" to range B1:B3, it becomes "SUM(A1)" in B1, "SUM(A2)" in B2, and "SUM(A3)" in B3.\n
+- To keep a reference fixed across all cells, use absolute references with $ (e.g., "$A$1" stays as "$A$1" in all cells).\n
+- Mixed references are supported: "$A1" keeps column A fixed but row adjusts, "A$1" keeps row 1 fixed but column adjusts.\n
+- Use ranges when you need to apply a formula pattern to multiple cells, such as calculations down a column or across a row.\n
 
 Formulas placement instructions:\n
 - The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
@@ -1105,6 +1120,7 @@ Examples:
 - Finding the max/min value
 - Basic arithmetic operations
 - Joining strings
+- Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
 `,
   },
   [AITool.MoveCells]: {
@@ -2732,5 +2748,69 @@ If the user's redo request is multiple transactions, use the count parameter to 
 This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
 Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
 If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+  },
+  [AITool.OptimizePrompt]: {
+    sources: ['OptimizePrompt'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+The output MUST be a bulleted list with specific sections covering the task, output creation, and any other relevant details.\n
+Use the spreadsheet context to make instructions specific and actionable.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        optimized_prompt: {
+          type: 'string',
+          description: 'The restructured prompt as a bulleted list with clear step-by-step instructions',
+        },
+      },
+      required: ['optimized_prompt'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
+    prompt: `
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the instructions specific.\n
+
+REQUIRED OUTPUT FORMAT - a bulleted list with these sections:\n
+
+- Task: [Detailed description of what analysis/calculation to perform, specifying exactly what data to analyze from which table/sheet. Be specific about what aspects of the data to examine.]\n
+- Create: [Specify what output format to generate - code for metrics summaries, charts, tables, etc. If the user doesn't clearly define the output format, make a recommendation like "metrics summaries and relevant charts" based on the task.]\n
+- [Any other relevant details like placement location, specific requirements, or constraints]\n
+
+Rules for creating the output:\n
+1. Always start with "- Task:" describing WHAT to analyze and WHERE the data is (use actual table/sheet names from context)\n
+2. Always include "- Create:" describing the output format (metrics, charts, tables, code, etc.)\n
+3. Be specific about the analysis details - don't just say "analyze data", say WHAT aspects to analyze\n
+4. If the user doesn't specify output format, recommend appropriate formats (metrics, charts, summaries)\n
+5. Add any other relevant bullet points for placement, constraints, or special requirements\n
+6. Use actual table names and sheet names from the context when available\n
+7. Default placement to "an open location right of existing data" if not specified\n
+8. IMPORTANT: Use plain text only - NO markdown formatting like **bold**, *italics*, or any other formatting. Just use dashes and plain text.\n
+
+Example transformations:\n
+
+Original: "graph my sales"\n
+Context: Sales_Data table exists with columns: date, revenue, region\n
+Optimized:\n
+- Task: Analyze sales trends over time using the Sales_Data table, examining revenue patterns across different dates and regions\n
+- Create: Generate a line chart showing revenue trends, with additional summary metrics for total and average sales\n
+- Place results in an open location right of existing data\n
+
+Original: "analyze customer data"\n
+Context: Customers table with columns: age, purchase_count, total_spent\n
+Optimized:\n
+- Task: Analyze customer demographics and purchase behavior using the Customers table, examining relationships between age, purchase frequency, and spending patterns\n
+- Create: Generate summary metrics (average age, total purchases, spending distribution) and create charts showing customer segmentation and purchase trends\n
+- Place results in an open location right of existing data\n
+
+Original: "calculate totals for revenue"\n
+Context: Revenue column in Sheet1\n
+Optimized:\n
+- Task: Calculate sum totals for the Revenue column in Sheet1\n
+- Create: Display the total as a single cell value with a label\n
+- Place the result directly below the Revenue column\n
+
+Be specific, detailed, and actionable in every bullet point.\n`,
   },
 } as const;

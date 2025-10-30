@@ -8,6 +8,7 @@ pub(crate) struct Stats {
     pub(crate) files_to_process_in_pubsub: u64,
     pub(crate) channels_to_truncate_in_pubsub: u64,
     pub(crate) last_truncated_transaction_time: Option<DateTime<Utc>>,
+    pub(crate) num_connections_processing: u64,
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -18,6 +19,7 @@ pub(crate) struct StatsResponse {
     pub(crate) last_truncated_transaction_time: String,
     pub(crate) last_truncated_transaction_elapsed: String,
     pub(crate) channels_to_truncate_in_pubsub: u64,
+    pub(crate) num_connections_processing: u64,
 }
 
 impl From<&Stats> for StatsResponse {
@@ -35,6 +37,7 @@ impl From<&Stats> for StatsResponse {
             last_truncated_transaction_time: to_rfc3339(stats.last_truncated_transaction_time),
             last_truncated_transaction_elapsed,
             channels_to_truncate_in_pubsub: stats.channels_to_truncate_in_pubsub,
+            num_connections_processing: stats.num_connections_processing,
         }
     }
 }

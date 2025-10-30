@@ -451,9 +451,8 @@ mod tests {
 
         let mut g = GridController::new();
         let sheet_id = g.sheet_ids()[0];
-        let sheet = g.sheet_mut(sheet_id);
-        let _ = sheet.set_cell_value(pos![A6], "text");
-        let _ = sheet.set_cell_value(pos![A7], "text");
+        g.set_cell_value(pos![sheet_id!A6], "text".into(), None, false);
+        g.set_cell_value(pos![sheet_id!A7], "text".into(), None, false);
         // One bad cell reference on its own doesn't cause an error because it's
         // a 1x1 array.
         assert_eq!("12", eval_to_string(&g, "SUM(12, A6)"));
