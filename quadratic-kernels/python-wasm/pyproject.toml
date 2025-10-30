@@ -7,10 +7,10 @@ readme = "README.md"
 packages = [{ include = "quadratic_py" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-numpy = ">=1.23.0"
+python = "^3.13"
+numpy = ">=1.27.0"
 nest-asyncio = ">=1.6.0"
-pandas = ">=1.4.3"
+pandas = ">=2.1.0"
 python-dateutil = ">=2.8.2"
 pytz = ">=2022.1"
 requests = ">=2.31.0"

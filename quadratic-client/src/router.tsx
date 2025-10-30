@@ -32,9 +32,13 @@ export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
+        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
+        <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
+        <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
-        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} Component={EmptyComponent} />
+        <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
+        <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
       </Route>
 
       <Route id={ROUTE_LOADER_IDS.ROOT} lazy={() => import('./routes/_root')} HydrateFallback={EmptyComponent}>
@@ -117,13 +121,17 @@ export const router = createBrowserRouter(
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
-              <Route path="billing" lazy={() => import('./routes/teams.$teamUuid.billing')} />
+              <Route path="billing/manage" lazy={() => import('./routes/teams.$teamUuid.billing.manage')} />
+              <Route path="billing/subscribe" lazy={() => import('./routes/teams.$teamUuid.billing.subscribe')} />
             </Route>
           </Route>
         </Route>
 
         <Route path={ROUTES.ONBOARDING_QUESTIONNAIRE} lazy={() => import('./routes/onboarding')} />
         <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
+
+        {/* For development purposes only */}
+        <Route path="__preview__/*" lazy={() => import('./routes/__preview__')} />
 
         <Route path="*" lazy={() => import('./routes/404')} />
       </Route>

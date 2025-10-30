@@ -99,6 +99,10 @@ export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
 };
 
+export const AsteriskIcon: IconComponent = (props) => {
+  return <Icon {...props}>asterisk</Icon>;
+};
+
 export const AttachFileIcon: IconComponent = (props) => {
   return <Icon {...props}>attach_file</Icon>;
 };
@@ -305,6 +309,10 @@ export const ExploreSchemaIcon: IconComponent = (props) => {
 
 export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
+};
+
+export const EnhancePromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>wand_stars</Icon>;
 };
 
 export const ErrorIcon: IconComponent = (props) => {
