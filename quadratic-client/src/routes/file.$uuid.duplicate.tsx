@@ -24,7 +24,7 @@ import {
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // You can't duplicate a file if you're not logged in, regardless of your
   // access to the OG file itself.
-  await requireAuth(loaderArgs.request);
+  await requireAuth();
 
   const fileUuid = loaderArgs.params.uuid as string;
   const data = await apiClient.teams.list();

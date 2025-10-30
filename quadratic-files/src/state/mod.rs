@@ -15,6 +15,7 @@ use tokio::sync::Mutex;
 use crate::config::Config;
 use crate::error::Result;
 use crate::state::settings::Settings;
+use crate::synced_connection::cache::SyncedConnectionCache;
 
 use self::pubsub::PubSub;
 use self::stats::Stats;
@@ -24,6 +25,7 @@ pub(crate) struct State {
     pub(crate) pubsub: Mutex<PubSub>,
     pub(crate) settings: Settings,
     pub(crate) stats: Mutex<Stats>,
+    pub(crate) synced_connection_cache: SyncedConnectionCache,
 }
 
 impl State {
@@ -37,8 +39,9 @@ impl State {
 
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
-            settings: Settings::new(config, jwks).await,
+            settings: Settings::new(config, jwks).await?,
             stats: Mutex::new(Stats::new()),
+            synced_connection_cache: SyncedConnectionCache::new(),
         })
     }
 }

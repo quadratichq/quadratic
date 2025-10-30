@@ -8,6 +8,8 @@ use uuid::Uuid;
 
 use crate::error::{Result, SharedError};
 
+pub const ADMIN_PERMS: &[FilePermRole] = &[FilePermRole::FileView, FilePermRole::FileEdit];
+
 // This is only a partial mapping as permission is all that is needed from the
 // incoming json struct.
 #[derive(Debug, Deserialize)]
@@ -81,9 +83,27 @@ pub async fn get_file_perms(
     base_url: &str,
     jwt: String,
     file_id: Uuid,
+    m2m_token: Option<&str>,
 ) -> Result<(Vec<FilePermRole>, u64)> {
-    let url = format!("{base_url}/v0/files/{file_id}");
-    let client = get_client(&url, &jwt);
+    let (permissions, sequence_num) = match m2m_token {
+        Some(token) => {
+            let checkpoint = get_file_checkpoint(base_url, token, &file_id).await?;
+            (ADMIN_PERMS.to_vec(), checkpoint.sequence_number)
+        }
+        None => get_user_file_perms(base_url, jwt, file_id).await?,
+    };
+
+    Ok((permissions, sequence_num))
+}
+
+/// Retrieve user file perms from the quadratic API server.
+pub async fn get_user_file_perms(
+    base_url: &str,
+    jwt: String,
+    file_id: Uuid,
+) -> Result<(Vec<FilePermRole>, u64)> {
+    let file_url = format!("{base_url}/v0/files/{file_id}");
+    let client = get_client(&file_url, &jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;
@@ -147,8 +167,6 @@ pub struct Connection<T> {
     pub uuid: Uuid,
     pub name: String,
     pub r#type: String,
-    pub created_date: String,
-    pub updated_date: String,
     pub type_details: T,
 }
 
@@ -159,11 +177,16 @@ pub async fn get_connection<T: DeserializeOwned>(
     email: &str,
     connection_id: &Uuid,
     team_id: &Uuid,
+    is_internal: bool,
 ) -> Result<Connection<T>> {
-    let encoded_email = encode(email);
-    let url = format!(
-        "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
-    );
+    let url = if is_internal {
+        format!("{base_url}/v0/internal/connection/{connection_id}")
+    } else {
+        let encoded_email = encode(email);
+        format!(
+            "{base_url}/v0/internal/user/{encoded_email}/teams/{team_id}/connections/{connection_id}"
+        )
+    };
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
@@ -177,6 +200,28 @@ pub async fn get_connection<T: DeserializeOwned>(
     handle_response(&response)?;
 
     Ok(response.json::<Connection<T>>().await?)
+}
+
+/// Retrieve user's connection from the quadratic API server.
+pub async fn get_connections_by_type<T: DeserializeOwned>(
+    base_url: &str,
+    jwt: &str,
+    connection_type: &str,
+) -> Result<Vec<Connection<T>>> {
+    let url = format!("{base_url}/v0/internal/connection?type={connection_type}");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(format!(
+            "Connection {connection_type} not found"
+        )));
+    }
+
+    handle_response(&response)?;
+
+    Ok(response.json::<Vec<Connection<T>>>().await?)
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]

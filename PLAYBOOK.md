@@ -2,6 +2,7 @@
 # DevOps Playbook
 
 - [Deploying QA](#deploying-qa)
+- [Reverting a Deployment](#reverting-a-deployment)
 - [Adding/Modifying Environment Variables](#addingmodifying-environment-variables)
 - [SSH into a Preview Branch](#ssh-into-a-preview-branch)
 
@@ -16,6 +17,13 @@
 1. Monitor the deployment within the Github Actions
 1. Manually validate the basic features are working: dashboard, grid, connections, multiplayer, files
 1. Merge `main` back into `qa`
+
+## Reverting a Deployment
+1. git checkout qa
+1. git checkout -b "revert-to-v0.20.5"
+1. git revert --no-commit v0.20.5..HEAD
+1. git commit -m "Revert deployment to v0.20.5"
+1. git push --set-upstream origin revert-to-v0.20.5
 
 ## Adding/Modifying Environment Variables
 
