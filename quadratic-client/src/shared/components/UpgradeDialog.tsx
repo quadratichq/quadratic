@@ -27,6 +27,9 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
     if (state.open) {
       trackEvent('[UpgradeDialog].opened', { eventSource: state.eventSource });
     }
+    if (state.eventSource === 'fileLimitReached') {
+      trackEvent('[Billing].files.exceededBillingLimit', { location: 'UpgradeDialog' });
+    }
   }, [state]);
 
   const upgradeTitle = useMemo(() => {
