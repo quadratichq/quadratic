@@ -4,8 +4,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
+import { Icon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
@@ -98,6 +101,7 @@ export const TopBarUsers = () => {
   return (
     <>
       <div className="flex flex-row-reverse items-stretch gap-2 self-stretch">
+        <CronAvatar />
         <DropdownMenu>
           <DropdownMenuTrigger
             data-testid="top-bar-users-dropdown-trigger"
@@ -227,6 +231,79 @@ export const TopBarUsers = () => {
     </>
   );
 };
+
+function CronAvatar() {
+  const [open, setOpen] = useState(false);
+  const { scheduledTasks, showScheduledTasks } = useScheduledTasks();
+
+  const isInDocument = false;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          className={cn(
+            'relative h-6 min-w-6 items-center justify-center self-center rounded-full !bg-muted-foreground p-0 text-sm font-normal lg:flex',
+            isInDocument && '!bg-success'
+          )}
+          onClick={() => setOpen(true)}
+        >
+          <Icon className="text-background">android</Icon>
+          {isInDocument && (
+            <span
+              className={cn(
+                'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background',
+                isInDocument && 'bg-success'
+              )}
+            />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 text-center text-sm">
+        <div className="relative mb-2 mt-2 inline-flex items-center justify-center rounded-full border border-border p-2">
+          <Icon size="lg" className="text-">
+            android
+          </Icon>
+          <span
+            className={cn(
+              'absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background',
+              'bg-success'
+            )}
+          />
+        </div>
+        <h3 className="font-bold">Scheduled tasks agent</h3>
+        <p>Enters your sheet and executes any tasks you have scheduled. </p>
+        <div className="mt-4 flex flex-col gap-2">
+          {scheduledTasks.tasks.length > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                showScheduledTasks();
+
+                setOpen(false);
+              }}
+            >
+              View scheduled tasks
+            </Button>
+          ) : (
+            <Button
+              // variant="primary"
+              onClick={() => {
+                showScheduledTasks(CREATE_TASK_ID);
+                setOpen(false);
+              }}
+            >
+              Create scheduled task
+            </Button>
+          )}
+          <Button size="sm" variant="link">
+            Learn more
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function UserAvatar({
   email,
