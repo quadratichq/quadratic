@@ -29,10 +29,19 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
     }
   }, [state]);
 
+  const upgradeTitle = useMemo(() => {
+    switch (state.eventSource) {
+      case 'fileLimitReached':
+        return 'Upgrade to Pro to create more files';
+      default:
+        return 'Upgrade to Pro';
+    }
+  }, [state.eventSource]);
+
   const reasonText = useMemo(() => {
     switch (state.eventSource) {
       case 'fileLimitReached':
-        return 'Upgrade to the Pro plan to create more files.';
+        return 'You have reached the maximum number of files allowed for your team.';
       default:
         return undefined;
     }
@@ -42,7 +51,7 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
     <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
       <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
         <DialogHeader>
-          <DialogTitle>Upgrade to Pro</DialogTitle>
+          <DialogTitle>{upgradeTitle}</DialogTitle>
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>
         </DialogHeader>
         <div className="relative flex flex-col gap-2">
