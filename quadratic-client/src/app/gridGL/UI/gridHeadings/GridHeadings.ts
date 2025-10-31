@@ -230,7 +230,7 @@ export class GridHeadings extends Container {
           }
 
           // show only when selected or not intersects one of the selected numbers
-          if (!intersectsLast) {
+          if (!intersectsLast && column > 0) {
             const text = getColumnA1Notation(column);
             this.labels.add({ text, x: xPosition, y });
             lastLabel = { left, right, selected };
@@ -383,7 +383,7 @@ export class GridHeadings extends Container {
         }
 
         // show only when selected or not intersects one of the selected numbers
-        if (!intersectsLast) {
+        if (!intersectsLast && row > 0) {
           const text = row.toString();
           this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
           lastLabel = { top, bottom, selected };

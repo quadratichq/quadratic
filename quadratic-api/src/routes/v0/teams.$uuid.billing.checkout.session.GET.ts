@@ -16,6 +16,9 @@ export default [
       params: z.object({
         uuid: z.string().uuid(),
       }),
+      query: z.object({
+        redirect: z.string().url().optional(),
+      }),
     })
   ),
   validateAccessToken,
@@ -26,6 +29,7 @@ export default [
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
+    query: { redirect },
     user: { id: userId, email },
   } = req as RequestWithUser;
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
@@ -56,7 +60,11 @@ async function handler(req: Request, res: Response) {
 
   const monthlyPriceId = await getMonthlyPriceId();
 
-  const session = await createCheckoutSession(uuid, monthlyPriceId, req.headers.origin || 'http://localhost:3000');
+  // If the client gave us a redirect URL, use that. Otherwise, fallback to team settings
+  const returnUrl = new URL(
+    typeof redirect === 'string' ? redirect : `${req.headers.origin || 'http://localhost:3000'}/teams/${uuid}/settings`
+  );
+  const session = await createCheckoutSession(uuid, monthlyPriceId, returnUrl);
 
   if (!session.url) {
     return res.status(500).json({ error: { message: 'Failed to create checkout session' } });

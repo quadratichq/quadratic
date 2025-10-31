@@ -62,6 +62,8 @@ export enum AITool {
   RemoveValidations = 'remove_validation',
   Undo = 'undo',
   Redo = 'redo',
+  ContactUs = 'contact_us',
+  OptimizePrompt = 'optimize_prompt',
 }
 
 export const AIToolSchema = z.enum([
@@ -115,6 +117,8 @@ export const AIToolSchema = z.enum([
   AITool.RemoveValidations,
   AITool.Undo,
   AITool.Redo,
+  AITool.ContactUs,
+  AITool.OptimizePrompt,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -528,6 +532,14 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
+  }),
+  [AITool.ContactUs]: z.object({
+    // No parameters needed, but we include a dummy property for schema compatibility.
+    // Should we fix this now? Not sure why param would be required.
+    acknowledged: booleanSchema.nullable().optional(),
+  }),
+  [AITool.OptimizePrompt]: z.object({
+    optimized_prompt: stringSchema,
   }),
 } as const;
 
@@ -1658,7 +1670,8 @@ This tool should not be used to list the sheets in the file. The names of all sh
       properties: {
         sheet_name: {
           type: 'string',
-          description: 'The name of the new sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
         insert_before_sheet_name: {
           type: ['string', 'null'],
@@ -1693,7 +1706,8 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
         },
         name_of_new_sheet: {
           type: 'string',
-          description: 'The name of the new sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
       },
       required: ['sheet_name_to_duplicate', 'name_of_new_sheet'],
@@ -1722,7 +1736,8 @@ It requires the name of the sheet to rename and the new name. This must be a uni
         },
         new_name: {
           type: 'string',
-          description: 'The new name of the sheet. This must be a unique name.',
+          description:
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
         },
       },
       required: ['sheet_name', 'new_name'],
@@ -1760,7 +1775,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1789,7 +1804,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -2740,5 +2755,96 @@ If the user's redo request is multiple transactions, use the count parameter to 
 This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
 Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
 If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+  },
+  [AITool.ContactUs]: {
+    sources: ['AIAnalyst', 'AIAssistant'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides a way for users to get help from the Quadratic team when experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+The tool displays a contact form with options to reach out to the team or start a new chat.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        acknowledged: {
+          type: ['boolean', 'null'],
+          description: 'Optional acknowledgment flag',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ContactUs],
+    prompt: `
+This tool provides a way for users to get help from the Quadratic team when they are experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+This should be used to help frustrated users get direct support from the Quadratic team.\n
+The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
+and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
+It provides both a "Contact us" button and a "New chat" button for the user.\n`,
+  },
+  [AITool.OptimizePrompt]: {
+    sources: ['OptimizePrompt'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+The output MUST be a bulleted list with specific sections covering the task, output creation, and any other relevant details.\n
+Use the spreadsheet context to make instructions specific and actionable.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        optimized_prompt: {
+          type: 'string',
+          description: 'The restructured prompt as a bulleted list with clear step-by-step instructions',
+        },
+      },
+      required: ['optimized_prompt'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.OptimizePrompt],
+    prompt: `
+This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
+You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the instructions specific.\n
+
+REQUIRED OUTPUT FORMAT - a bulleted list with these sections:\n
+
+- Task: [Detailed description of what analysis/calculation to perform, specifying exactly what data to analyze from which table/sheet. Be specific about what aspects of the data to examine.]\n
+- Create: [Specify what output format to generate - code for metrics summaries, charts, tables, etc. If the user doesn't clearly define the output format, make a recommendation like "metrics summaries and relevant charts" based on the task.]\n
+- [Any other relevant details like placement location, specific requirements, or constraints]\n
+
+Rules for creating the output:\n
+1. Always start with "- Task:" describing WHAT to analyze and WHERE the data is (use actual table/sheet names from context)\n
+2. Always include "- Create:" describing the output format (metrics, charts, tables, code, etc.)\n
+3. Be specific about the analysis details - don't just say "analyze data", say WHAT aspects to analyze\n
+4. If the user doesn't specify output format, recommend appropriate formats (metrics, charts, summaries)\n
+5. Add any other relevant bullet points for placement, constraints, or special requirements\n
+6. Use actual table names and sheet names from the context when available\n
+7. Default placement to "an open location right of existing data" if not specified\n
+8. IMPORTANT: Use plain text only - NO markdown formatting like **bold**, *italics*, or any other formatting. Just use dashes and plain text.\n
+
+Example transformations:\n
+
+Original: "graph my sales"\n
+Context: Sales_Data table exists with columns: date, revenue, region\n
+Optimized:\n
+- Task: Analyze sales trends over time using the Sales_Data table, examining revenue patterns across different dates and regions\n
+- Create: Generate a line chart showing revenue trends, with additional summary metrics for total and average sales\n
+- Place results in an open location right of existing data\n
+
+Original: "analyze customer data"\n
+Context: Customers table with columns: age, purchase_count, total_spent\n
+Optimized:\n
+- Task: Analyze customer demographics and purchase behavior using the Customers table, examining relationships between age, purchase frequency, and spending patterns\n
+- Create: Generate summary metrics (average age, total purchases, spending distribution) and create charts showing customer segmentation and purchase trends\n
+- Place results in an open location right of existing data\n
+
+Original: "calculate totals for revenue"\n
+Context: Revenue column in Sheet1\n
+Optimized:\n
+- Task: Calculate sum totals for the Revenue column in Sheet1\n
+- Create: Display the total as a single cell value with a label\n
+- Place the result directly below the Revenue column\n
+
+Be specific, detailed, and actionable in every bullet point.\n`,
   },
 } as const;

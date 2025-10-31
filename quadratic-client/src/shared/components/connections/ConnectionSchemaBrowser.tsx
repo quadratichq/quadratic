@@ -16,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -28,22 +27,27 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
+type SchemaBrowserTableAction = {
+  label: string;
+  onClick: (args: { table: Table; tableQuery: string }) => void;
+  Icon: IconComponent;
+};
+export type SchemaBrowserTableActionOnClick = Parameters<SchemaBrowserTableAction['onClick']>[0];
+
 type ConnectionSchemaBrowserProps = {
   eventSource: string;
   teamUuid: string;
   type: ConnectionType;
   additionalActions?: React.ReactNode;
-  additionalDropdownItems?: Array<{
-    label: string;
-    onClick: (args: { tableQuery: string; tableName: string }) => void;
-    Icon: IconComponent;
-  }>;
+  hideRefreshButton?: boolean;
+  tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
 };
 
 export const ConnectionSchemaBrowser = ({
   additionalActions,
-  additionalDropdownItems,
+  hideRefreshButton = false,
+  tableActions,
   eventSource,
   teamUuid,
   type,
@@ -90,11 +94,13 @@ export const ConnectionSchemaBrowser = ({
           </div>
           <div className="flex flex-row-reverse items-center gap-1">
             {additionalActions}
-            <TooltipPopover label="Reload schema">
-              <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
-                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
-              </Button>
-            </TooltipPopover>
+            {!hideRefreshButton && (
+              <TooltipPopover label="Reload schema">
+                <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                  <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+                </Button>
+              </TooltipPopover>
+            )}
           </div>
         </div>
         <div className="relative">
@@ -136,7 +142,7 @@ export const ConnectionSchemaBrowser = ({
             data={table}
             key={index}
             connectionType={type}
-            additionalDropdownItems={additionalDropdownItems}
+            tableActions={tableActions}
             eventSource={eventSource}
           />
         ))}
@@ -189,13 +195,13 @@ function TableListItem({
   index,
   data,
   connectionType,
-  additionalDropdownItems,
+  tableActions,
   eventSource,
 }: {
   index: number;
   data: Table;
   connectionType: ConnectionType;
-  additionalDropdownItems: ConnectionSchemaBrowserProps['additionalDropdownItems'];
+  tableActions: ConnectionSchemaBrowserProps['tableActions'];
   eventSource: string;
 }) {
   const { name, columns } = data;
@@ -220,80 +226,58 @@ function TableListItem({
       onClick,
     }: {
       label: string;
-      onClick: NonNullable<ConnectionSchemaBrowserProps['additionalDropdownItems']>[number]['onClick'];
+      onClick: NonNullable<ConnectionSchemaBrowserProps['tableActions']>[number]['onClick'];
     }) => {
       trackEvent('[ConnectionSchemaBrowser].clickDropdownItem', { eventSource, label });
       onClick({
-        tableName: name,
+        table: data,
         tableQuery: getTableQuery({ table: data, connectionType }),
       });
     },
-    [eventSource, name, data, connectionType]
+    [eventSource, data, connectionType]
   );
-
-  const handleCopyNameClick = useCallback(() => {
-    trackEvent('[ConnectionSchemaBrowser].clickCopyName', { eventSource });
-    navigator.clipboard.writeText(name);
-  }, [name, eventSource]);
-
-  const handleCopyQueryClick = useCallback(() => {
-    trackEvent('[ConnectionSchemaBrowser].clickCopyQuery', { eventSource });
-    const query = getTableQuery({ table: data, connectionType });
-    navigator.clipboard.writeText(query);
-  }, [eventSource, data, connectionType]);
 
   return (
     <div className="group relative">
       <button
-        className={
-          'flex h-7 w-full min-w-0 flex-initial cursor-default items-center pl-2 pr-10 font-normal hover:bg-accent'
-        }
+        className={cn(
+          'flex h-7 w-full min-w-0 flex-initial cursor-default select-text items-center pl-2 font-normal hover:bg-accent',
+          tableActions ? 'pr-10' : 'pr-3'
+        )}
         onClick={handleTableClick}
       >
         <div className="-ml-0.5 flex h-6 w-6 flex-none items-center">
           <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
         </div>
         <div className="truncate leading-normal">{name}</div>
-        <div className="ml-2 flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
+        <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
       </button>
-      <div className="absolute right-2 top-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
-              <MoreHorizIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {additionalDropdownItems && (
-              <>
-                {additionalDropdownItems.map(({ label, onClick, Icon }) => (
-                  <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
-                    <Icon className="mr-2" /> {label}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            <DropdownMenuItem onClick={handleCopyNameClick}>
-              <CopyIcon className="mr-2" /> Copy name
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleCopyQueryClick}>
-              <CopyIcon className="mr-2" /> Copy query
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {tableActions && (
+        <div className="absolute right-2 top-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
+                <MoreHorizIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {tableActions.map(({ label, onClick, Icon }) => (
+                <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
+                  <Icon className="mr-2" /> {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       {isExpanded && (
         <ul className={cn('pl-8 pr-2')}>
           {columns.length ? (
             columns.map(({ name, type, is_nullable }, k) => (
               <li key={k} className="border border-l border-transparent border-l-border pl-0.5">
-                <div className="flex w-full items-center gap-1 py-0.5 pl-2">
-                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
-                    {name}
-                  </div>
+                <div className="flex w-full items-center justify-between gap-1 py-0.5 pl-2">
+                  <div className="truncate">{name}</div>
 
                   <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                     {type}
@@ -312,6 +296,23 @@ function TableListItem({
     </div>
   );
 }
+
+export const SCHEMA_BROWSER_TABLE_ACTIONS: Record<string, SchemaBrowserTableAction> = {
+  COPY_NAME: {
+    label: 'Copy name',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+  COPY_QUERY: {
+    label: 'Copy query',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+} as const;
 
 function getTableQuery({ table: { name, schema }, connectionType }: { table: Table; connectionType: ConnectionType }) {
   switch (connectionType) {

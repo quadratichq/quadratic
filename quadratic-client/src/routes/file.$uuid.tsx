@@ -15,6 +15,7 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -211,6 +212,7 @@ export const Component = memo(() => {
       <QuadraticApp />
       <Outlet />
       <QuadraticAppDebugSettings />
+      <UpgradeDialog teamUuid={teamUuid} />
     </RecoilRoot>
   );
 });
