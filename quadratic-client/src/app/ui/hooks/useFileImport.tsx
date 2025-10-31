@@ -36,6 +36,7 @@ export function useFileImport() {
       cursor,
       isPrivate = true,
       teamUuid,
+      isOverwrite,
     }: {
       files?: File[];
       sheetId?: string;
@@ -43,6 +44,7 @@ export function useFileImport() {
       cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
       isPrivate?: boolean;
       teamUuid?: string;
+      isOverwrite?: boolean;
     }) => {
       quadraticCore.initWorker();
 
@@ -174,6 +176,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               isAi: false,
+              isOverwrite,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);
