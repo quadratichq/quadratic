@@ -275,8 +275,6 @@ function SidebarNavLinkCreateButton({
   isPrivate: boolean;
   teamUuid: string;
 }) {
-  const navigate = useNavigate();
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -291,7 +289,7 @@ function SidebarNavLinkCreateButton({
               showUpgradeDialog('fileLimitReached');
               return;
             }
-            navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));
+            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
           }}
         >
           <AddIcon />

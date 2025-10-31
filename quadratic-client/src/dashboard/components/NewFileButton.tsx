@@ -48,7 +48,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             showUpgradeDialog('fileLimitReached');
             return;
           }
-          navigate(ROUTES.CREATE_FILE(teamUuid, { private: isPrivate }));
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
         New file
