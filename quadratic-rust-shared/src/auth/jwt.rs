@@ -7,6 +7,7 @@ use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation, decode, decode_header,
     encode, jwk,
+    Algorithm, DecodingKey, Header, TokenData, Validation, decode, decode_header, jwk,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -132,9 +133,12 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
         header: Header::default(),
         claims: Claims {
             email: "m2m@quadratic.com".into(),
+<<<<<<< HEAD
             sub: "m2m".into(),
             iss: "m2m".into(),
             iat: 0,
+=======
+>>>>>>> origin/qa
             exp: 0,
         },
     })
@@ -152,6 +156,11 @@ pub fn extract_m2m_token(headers: &HeaderMap) -> Option<String> {
 
 pub mod tests {
     #![allow(unused)]
+<<<<<<< HEAD
+=======
+    use http::HeaderValue;
+
+>>>>>>> origin/qa
     use super::*;
 
     pub const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSlhXUjc4NlBGVjJUNkZBQU5NQ0tGOFRUIn0.eyJlbWFpbCI6ImF5dXNoQGdtYWlsLmNvbSIsImlzcyI6Imh0dHBzOi8vYXBpLndvcmtvcy5jb20vdXNlcl9tYW5hZ2VtZW50L2NsaWVudF8wMUpYV1I3OEcxUlM5NDNTSlpHOUc5S0ZEVyIsInN1YiI6InVzZXJfMDFLNEVaQzYzMUdHSEZLQjVWWEVBUlBCMEciLCJzaWQiOiJzZXNzaW9uXzAxSzRFWkM2UFlTRUI1SldTS0ZEWkZHV0RCIiwianRpIjoiMDFLNEVaQ0pZRjkxNzk3Rk1HMTUyRFc0OEgiLCJleHAiOjE3NTcxNDQ2MDQsImlhdCI6MTc1NzE0NDMwNH0.g22z76GKyuKctRZ4FPzWvEbNAOC1yEvnHCzSVRp7x58vfAo1X8qjXfI7sNNHHK6HsDMKjX6OOl74g1rjGTlSPc5kJYeoU6BLpB3Y_WamAe3YranIE5oxbhU37MJiOYoyHF9gZA08sJVH0T20rTDigPitlX3H1FpLMX_iQRAblLJalgrtgQgYpyKLc354n2k_YXcJD_6j8wVFn93DSJYeyQONSwl5BTftYDO-vvz0k3nIpQpPsgjzDy-SsNDkJFNHpcEFdIh2FQkQT2JDUjmIfhijYeMCy9VoSxCP17La6ErTvZh8gCeyEw2XRIktK3xt58BOxQvsVrtXXuoW0y9Kag";
@@ -177,5 +186,27 @@ pub mod tests {
             result.unwrap_err(),
             SharedError::Auth(Auth::Jwt("ExpiredSignature".into()))
         );
+    }
+
+    #[tokio::test]
+    async fn test_m2m() {
+        let m2m_token = "m2m_token";
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "authorization",
+            format!("Bearer {}", m2m_token).parse().unwrap(),
+        );
+
+        let result = authorize_m2m(&headers, m2m_token);
+        assert!(result.is_ok());
+
+        let result = authorize_m2m(&headers, "");
+        assert!(result.is_err());
+
+        let result = extract_m2m_token(&headers).unwrap();
+        assert_eq!(result, String::from(m2m_token));
+
+        let result = extract_m2m_token(&HeaderMap::new());
+        assert!(result.is_none());
     }
 }

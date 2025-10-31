@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Extension, Json,
     extract::{Path, Query},
@@ -24,7 +26,7 @@ use super::{Schema, SchemaQuery, query_generic, schema_generic_with_ssh};
 /// Test the connection to the database.
 pub(crate) async fn test(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     Json(mut connection): Json<MySqlConnection>,
 ) -> Result<Json<TestResponse>> {
@@ -57,7 +59,7 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
@@ -75,7 +77,7 @@ pub(crate) async fn query(
 }
 
 pub(crate) async fn query_with_connection(
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     sql_query: Json<SqlQuery>,
     mut connection: MySqlConnection,
 ) -> Result<impl IntoResponse> {
@@ -93,7 +95,7 @@ pub(crate) async fn query_with_connection(
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
@@ -159,8 +161,6 @@ mod tests {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
             type_details,
         }
     }
@@ -176,7 +176,7 @@ mod tests {
     #[traced_test]
     async fn mysql_schema() {
         let api_connection = get_connection(false);
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let params = SchemaQuery::forced_cache_refresh();
         let response = schema_generic_with_ssh(api_connection, state, params)
             .await
@@ -361,7 +361,7 @@ mod tests {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), connection.type_details)
             .await
@@ -442,8 +442,9 @@ mod tests {
             query: "select * from all_native_data_types order by id limit 1".into(),
             connection_id,
         };
-        let mut state = Extension(new_state().await);
-        state.settings.max_response_bytes = 0;
+        let mut test_state = new_state().await;
+        test_state.settings.max_response_bytes = 0;
+        let state = Extension(Arc::new(test_state));
         let connection = get_connection(false);
         let data = query_with_connection(state, Json(sql_query), connection.type_details)
             .await
@@ -461,7 +462,7 @@ mod tests {
     async fn mysql_test_connection_with_ssh() {
         let connection = get_connection(true);
         let result = query_with_connection(
-            Extension(new_state().await),
+            Extension(Arc::new(new_state().await)),
             Json(SqlQuery {
                 query: "SELECT * FROM INFORMATION_SCHEMA.COLUMNS LIMIT 1".into(),
                 connection_id: Uuid::new_v4(),

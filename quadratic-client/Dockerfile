@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   clang \
   protobuf-compiler \
   libprotobuf-dev \
+  pkg-config \
+  libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -73,6 +75,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   clang \
   protobuf-compiler \
   libprotobuf-dev \
+  pkg-config \
+  libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic

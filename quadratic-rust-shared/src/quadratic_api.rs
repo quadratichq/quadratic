@@ -168,8 +168,6 @@ pub struct Connection<T> {
     pub uuid: Uuid,
     pub name: String,
     pub r#type: String,
-    pub created_date: String,
-    pub updated_date: String,
     pub type_details: T,
 }
 
@@ -204,6 +202,28 @@ pub async fn get_connection<T: DeserializeOwned>(
     let response = handle_response(response).await?;
 
     Ok(response.json::<Connection<T>>().await?)
+}
+
+/// Retrieve user's connection from the quadratic API server.
+pub async fn get_connections_by_type<T: DeserializeOwned>(
+    base_url: &str,
+    jwt: &str,
+    connection_type: &str,
+) -> Result<Vec<Connection<T>>> {
+    let url = format!("{base_url}/v0/internal/connection?type={connection_type}");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(format!(
+            "Connection {connection_type} not found"
+        )));
+    }
+
+    handle_response(&response)?;
+
+    Ok(response.json::<Vec<Connection<T>>>().await?)
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]

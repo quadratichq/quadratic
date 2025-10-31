@@ -458,7 +458,10 @@ pub(crate) mod tests {
             .socket
             .unwrap();
 
+<<<<<<< HEAD
         println!("request: {:?}", &request);
+=======
+>>>>>>> origin/qa
         let handled = handle_message(
             request,
             state.clone(),

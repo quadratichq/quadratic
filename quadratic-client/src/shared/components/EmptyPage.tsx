@@ -22,7 +22,7 @@ type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
   source?: string;
 };
 export function EmptyPage(props: EmptyPageProps) {
-  const { error, title, description, source, Icon, actions, showLoggedInUser } = props;
+  const { error, title, description, source, Icon, actions, showLoggedInUser, className } = props;
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
 
@@ -48,8 +48,15 @@ export function EmptyPage(props: EmptyPageProps) {
 
   // Content is centered on the page (should always be rendered in the root layout)
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center">
-      <EmptyState title={title} description={description} actions={actions} Icon={Icon} isError={Boolean(error)} />
+    <div className={'flex h-full w-full flex-col items-center justify-center'}>
+      <EmptyState
+        title={title}
+        description={description}
+        actions={actions}
+        Icon={Icon}
+        isError={Boolean(error)}
+        className={className}
+      />
       {loggedInUser && showLoggedInUser && (
         <div className="mx-auto mt-12 max-w-96 border-t border-border pt-2">
           <div className="mx-auto flex items-center gap-2 rounded-md pt-2 text-left text-sm">

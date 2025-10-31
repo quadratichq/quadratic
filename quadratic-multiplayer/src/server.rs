@@ -16,6 +16,7 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
+use quadratic_rust_shared::auth::jwt::{authorize, extract_m2m_token, get_jwks};
 use quadratic_rust_shared::{
     ErrorLevel,
     auth::jwt::{get_jwks, tests::TOKEN},
@@ -25,6 +26,7 @@ use quadratic_rust_shared::{
     },
     net::websocket_server::{pre_connection::PreConnection, server::WebsocketServer},
 };
+use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use std::{ops::ControlFlow, time::Duration};
 use tokio::{sync::Mutex, time};
@@ -184,6 +186,19 @@ async fn ws_handler(
             return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
         }
     }
+    // check if the connection is m2m service connection
+    // strip "Bearer " from the token
+    let m2m_token = extract_m2m_token(&headers);
+    let pre_connection = PreConnection::new(jwt, m2m_token);
+
+    tracing::info!(
+        "New connection {}, `{user_agent}` at {addr}",
+        pre_connection.id
+    );
+
+    // upgrade the connection
+    let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.

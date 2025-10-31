@@ -6,6 +6,7 @@ export class CLI {
         program
             .name("node dev")
             .description("Runs the Quadratic dev server. By default, only React runs in watch mode.")
+            .option("-u, --noRust", "Run without recompiling any Rust packages")
             .option("-a, --api", "Watch the quadratic-api directory")
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")

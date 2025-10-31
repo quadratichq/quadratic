@@ -4,6 +4,23 @@ use crate::error::{MpError, Result};
 use crate::state::State;
 
 #[derive(Debug, Clone, PartialEq)]
+pub(crate) struct PreConnection {
+    pub(crate) id: Uuid,
+    pub(crate) jwt: Option<String>,
+    pub(crate) m2m_token: Option<String>,
+}
+
+impl PreConnection {
+    pub(crate) fn new(jwt: Option<String>, m2m_token: Option<String>) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            jwt,
+            m2m_token,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Connection {
     pub(crate) id: Uuid,
     pub(crate) session_id: Uuid,
