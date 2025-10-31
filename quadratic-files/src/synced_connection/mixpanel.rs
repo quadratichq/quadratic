@@ -9,10 +9,11 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use quadratic_rust_shared::{
-    quadratic_api::get_connections_by_type,
+    quadratic_api::get_synced_connections_by_type,
     synced::{
+        chunk_date_range, dates_to_sync,
         mixpanel::{MixpanelConnection, client::MixpanelClient, events::ExportParams},
-        upload,
+        object_store_path, upload,
     },
 };
 use uuid::Uuid;
@@ -22,8 +23,7 @@ use crate::{
     state::State,
     synced_connection::{
         SyncKind, SyncedConnectionKind, SyncedConnectionStatus, can_process_connection,
-        chunk_date_range, complete_connection_status, dates_to_sync, object_store_path,
-        start_connection_status, update_connection_status,
+        complete_connection_status, start_connection_status, update_connection_status,
     },
 };
 
@@ -34,7 +34,7 @@ pub(crate) async fn process_mixpanel_connections(
     state: Arc<State>,
     sync_kind: SyncKind,
 ) -> Result<()> {
-    let connections = get_connections_by_type::<MixpanelConnection>(
+    let connections = get_synced_connections_by_type::<MixpanelConnection>(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
         "MIXPANEL",
@@ -48,6 +48,7 @@ pub(crate) async fn process_mixpanel_connections(
         let state = Arc::clone(&state);
         let sync_kind = sync_kind.clone();
 
+        // process the connection in a separate thread
         tokio::spawn(async move {
             if let Err(e) = process_mixpanel_connection(
                 Arc::clone(&state),
@@ -99,8 +100,15 @@ pub(crate) async fn process_mixpanel_connection(
     let client = MixpanelClient::new(api_secret, project_id);
     let sync_start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
         .unwrap_or_else(|_| chrono::Utc::now().date_naive());
-    let mut date_ranges =
-        dates_to_sync(state.clone(), connection_id, "events", sync_start_date).await?;
+    let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
+    let mut date_ranges = dates_to_sync(
+        &object_store,
+        connection_id,
+        "events",
+        sync_start_date,
+        dates_to_exclude,
+    )
+    .await?;
 
     if date_ranges.is_empty() {
         return Ok(());
@@ -112,6 +120,7 @@ pub(crate) async fn process_mixpanel_connection(
 
     let start_time = std::time::Instant::now();
     let mut total_files_processed = 0;
+    let mut dates_processed = Vec::new();
 
     for (start_date, end_date) in date_ranges {
         // split the date range into chunks
@@ -188,12 +197,13 @@ pub(crate) async fn process_mixpanel_connection(
                     .synced_connection_cache
                     .add_date(connection_id, current_date)
                     .await;
+                dates_processed.push(current_date);
                 current_date += chrono::Duration::days(1);
             }
         }
     }
 
-    complete_connection_status(state.clone(), connection_id).await;
+    complete_connection_status(state.clone(), connection_id, dates_processed).await;
 
     tracing::info!(
         "Processed {} Mixpanel files in {:?} for connection {}",

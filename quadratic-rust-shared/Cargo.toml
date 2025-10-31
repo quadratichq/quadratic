@@ -99,7 +99,7 @@ memory = []
 net = ["russh", "russh-config", "tokio", "tokio-util"]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
-quadratic-api = ["reqwest", "urlencoding"]
+quadratic-api = ["reqwest", "tracing","urlencoding"]
 record-request-mock = []
 sql = [
   "arrow",
