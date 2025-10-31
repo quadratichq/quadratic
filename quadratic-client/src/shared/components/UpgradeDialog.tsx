@@ -32,7 +32,7 @@ export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
   const reasonText = useMemo(() => {
     switch (state.eventSource) {
       case 'fileLimitReached':
-        return 'You have reached the maximum number of files allowed for your team.';
+        return 'Upgrade to the Pro plan to create more files.';
       default:
         return undefined;
     }

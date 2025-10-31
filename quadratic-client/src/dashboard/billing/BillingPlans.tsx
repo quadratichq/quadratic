@@ -33,7 +33,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           </div>
           <div className="flex items-center justify-between">
             <span>AI messages</span>
-            <span className="font-medium">Limited</span>
+            <span className="font-medium">10 / month</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Connections</span>
@@ -41,7 +41,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           </div>
           <div className="flex items-center justify-between">
             <span>Maximum files</span>
-            <span className="font-medium">Limited</span>
+            <span className="font-medium">3 team + 1 personal</span>
           </div>
         </div>
       </div>
