@@ -1,22 +1,25 @@
 import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { WarningIcon } from '@/shared/components/Icons';
+import { Alert, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom, useSetAtom } from 'jotai';
 import type { TeamSubscriptionStatus, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigation } from 'react-router';
-import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
 const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-export const showUpgradeDialogAtom = atom<{ open: false; eventSource: null } | { open: true; eventSource: string }>({
-  key: 'showUpgradeDialog',
-  default: { open: false, eventSource: null },
-});
+interface UpgradeDialogProps {
+  teamUuid: string;
+}
 
-export function UpgradeDialog({ teamUuid }: { teamUuid: string }) {
-  const [state, setState] = useRecoilState(showUpgradeDialogAtom);
+export function UpgradeDialog({ teamUuid }: UpgradeDialogProps) {
+  const [state, setState] = useAtom(showUpgradeDialogAtom);
+
   const navigation = useNavigation();
 
   // Track when the dialog opens so we know where it came from
@@ -24,16 +27,43 @@ export function UpgradeDialog({ teamUuid }: { teamUuid: string }) {
     if (state.open) {
       trackEvent('[UpgradeDialog].opened', { eventSource: state.eventSource });
     }
+    if (state.eventSource === 'fileLimitReached') {
+      trackEvent('[Billing].files.exceededBillingLimit', { location: 'UpgradeDialog' });
+    }
   }, [state]);
+
+  const upgradeTitle = useMemo(() => {
+    switch (state.eventSource) {
+      case 'fileLimitReached':
+        return 'Upgrade to Pro to create more files';
+      default:
+        return 'Upgrade to Pro';
+    }
+  }, [state.eventSource]);
+
+  const reasonText = useMemo(() => {
+    switch (state.eventSource) {
+      case 'fileLimitReached':
+        return 'You have reached the maximum number of files allowed for your team.';
+      default:
+        return undefined;
+    }
+  }, [state.eventSource]);
 
   return (
     <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
       <DialogContent className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}>
         <DialogHeader>
-          <DialogTitle>Upgrade to Pro</DialogTitle>
+          <DialogTitle>{upgradeTitle}</DialogTitle>
           <DialogDescription>Be sure to unlock all the individual and team features of Quadratic.</DialogDescription>
         </DialogHeader>
-        <div className="relative flex flex-col gap-8">
+        <div className="relative flex flex-col gap-2">
+          {reasonText && (
+            <Alert variant="warning">
+              <WarningIcon />
+              <AlertTitle className="mb-0">{reasonText}</AlertTitle>
+            </Alert>
+          )}
           <BillingPlans
             teamUuid={teamUuid}
             // We hard-code these because we should only ever show this dialog if the right criteria are met.
@@ -65,7 +95,7 @@ export const UpgradeDialogWithPeriodicReminder = ({
   billingStatus: TeamSubscriptionStatus | undefined;
 }) => {
   const ranAlready = useRef<boolean>(false);
-  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
   useEffect(() => {
     // Only run this once

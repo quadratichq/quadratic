@@ -33,11 +33,15 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           </div>
           <div className="flex items-center justify-between">
             <span>AI messages</span>
-            <span className="font-medium">Limited</span>
+            <span className="font-medium">10/month</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Connections</span>
             <span className="font-medium">Limited</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Files</span>
+            <span className="font-medium">3 team + 1 personal</span>
           </div>
         </div>
       </div>
@@ -51,9 +55,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
         <div className="flex flex-col gap-2 text-sm">
           <div className="flex items-center justify-between">
             <span>Team members</span>
-            <span className="text-sm font-medium">
-              $20 <span className="text-xs text-muted-foreground">/user/month</span>
-            </span>
+            <span className="text-sm font-medium">$20/user/month</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">AI messages</span>
@@ -78,6 +80,10 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
           </div>
           <div className="flex items-center justify-between">
             <span>Connections</span>
+            <span className="text-right text-sm font-medium">Unlimited</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Files</span>
             <span className="text-right text-sm font-medium">Unlimited</span>
           </div>
           <div className="flex items-center justify-between">
