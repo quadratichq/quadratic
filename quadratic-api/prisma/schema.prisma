@@ -20,6 +20,7 @@ model User {
     UserTeamRole        UserTeamRole[]
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
+    TutorialBonusPrompt TutorialBonusPrompt[]
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
@@ -324,4 +325,15 @@ model AnalyticsAIChatMessage {
     @@index([chatId, messageIndex])
     @@index([chatId])
     @@index([model])
+}
+
+model TutorialBonusPrompt {
+    id             Int      @id @default(autoincrement())
+    userId         Int      @map("user_id")
+    user           User     @relation(fields: [userId], references: [id])
+    category       String
+    promptsAwarded Int      @map("prompts_awarded")
+    awardedDate    DateTime @default(now()) @map("awarded_date")
+
+    @@unique([userId, category])
 }
