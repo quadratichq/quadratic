@@ -64,3 +64,19 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
 export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
   return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
 };
+
+/**
+ * Gets all bonus prompts for a user from the TutorialBonusPrompt table
+ * @param userId The ID of the user to get bonus prompts for
+ * @returns An array of all tutorial bonus prompts for the user
+ */
+export const getAllBonusPromptsForUser = async (userId: number) => {
+  return await dbClient.tutorialBonusPrompt.findMany({
+    where: {
+      userId,
+    },
+    orderBy: {
+      awardedDate: 'desc',
+    },
+  });
+};

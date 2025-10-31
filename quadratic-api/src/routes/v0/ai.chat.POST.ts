@@ -75,6 +75,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // and the message is a user prompt, not a tool result
   if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
     const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
+    const bonus = await
     exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
 
     if (exceededBillingLimit) {
