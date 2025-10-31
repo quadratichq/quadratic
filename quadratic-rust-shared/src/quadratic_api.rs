@@ -221,8 +221,6 @@ pub async fn get_connections_by_type<T: DeserializeOwned>(
         )));
     }
 
-    handle_response(&response)?;
-
     Ok(response.json::<Vec<Connection<T>>>().await?)
 }
 

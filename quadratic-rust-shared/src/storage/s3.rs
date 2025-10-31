@@ -99,7 +99,7 @@ impl Storage for S3 {
 
     /// Generate a presigned URL
     async fn presigned_url(&self, data: &str) -> Result<String> {
-        let S3Config { client, bucket } = &self.config;
+        let S3Config { client, bucket, .. } = &self.config;
         let presigning_config = PresigningConfig::builder()
             .expires_in(Duration::from_secs(60 * 5)) // Valid for 5 minutes
             .build()

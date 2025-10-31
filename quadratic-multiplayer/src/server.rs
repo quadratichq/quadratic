@@ -16,7 +16,6 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_rust_shared::auth::jwt::{authorize, extract_m2m_token, get_jwks};
 use quadratic_rust_shared::{
     ErrorLevel,
     auth::jwt::{get_jwks, tests::TOKEN},
@@ -26,7 +25,6 @@ use quadratic_rust_shared::{
     },
     net::websocket_server::{pre_connection::PreConnection, server::WebsocketServer},
 };
-use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use std::{ops::ControlFlow, time::Duration};
 use tokio::{sync::Mutex, time};
@@ -163,6 +161,11 @@ async fn ws_handler(
     cookie: Option<TypedHeader<headers::Cookie>>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
+    let user_agent_str = user_agent
+        .as_ref()
+        .map(|ua| ua.to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
     let pre_connection = WebsocketServer::authenticate(
         user_agent,
         addr,
@@ -175,6 +178,12 @@ async fn ws_handler(
 
     match pre_connection {
         Ok(pre_connection) => {
+            tracing::info!(
+                "New connection {}, `{}` at {addr}",
+                pre_connection.id,
+                user_agent_str
+            );
+
             // upgrade the connection
             let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
             ws.on_upgrade(move |socket| {
@@ -183,22 +192,9 @@ async fn ws_handler(
         }
         Err(error) => {
             tracing::warn!("Error authorizing user: {:?}", error);
-            return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
+            (StatusCode::BAD_REQUEST, "Invalid token").into_response()
         }
     }
-    // check if the connection is m2m service connection
-    // strip "Bearer " from the token
-    let m2m_token = extract_m2m_token(&headers);
-    let pre_connection = PreConnection::new(jwt, m2m_token);
-
-    tracing::info!(
-        "New connection {}, `{user_agent}` at {addr}",
-        pre_connection.id
-    );
-
-    // upgrade the connection
-    let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.

@@ -288,15 +288,9 @@ mod tests {
     async fn user_gets_assigned_indices() {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
-<<<<<<< HEAD
         let mut user = new_user(0);
         let mut user2 = new_user(1);
         let mut user3 = new_user(2);
-=======
-        let mut user = new_user();
-        let mut user2 = new_user();
-        let mut user3 = new_user();
->>>>>>> origin/qa
         let connection = PreConnection::new(None, None);
         let connection2 = PreConnection::new(None, None);
         let connection3 = PreConnection::new(None, None);

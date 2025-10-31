@@ -126,12 +126,13 @@ impl From<uuid::Error> for SharedError {
     }
 }
 
-<<<<<<< HEAD
 #[cfg(feature = "storage")]
 impl From<crate::storage::error::Storage> for SharedError {
     fn from(error: crate::storage::error::Storage) -> Self {
         SharedError::Storage(error)
-=======
+    }
+}
+
 #[cfg(feature = "parquet")]
 impl From<parquet::errors::ParquetError> for SharedError {
     fn from(error: parquet::errors::ParquetError) -> Self {
@@ -155,6 +156,5 @@ impl From<std::io::Error> for SharedError {
 impl<T> From<PoisonError<T>> for SharedError {
     fn from(error: PoisonError<T>) -> Self {
         SharedError::Generic(format!("Poison error: {}", error))
->>>>>>> origin/qa
     }
 }
