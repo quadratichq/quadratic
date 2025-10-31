@@ -45,7 +45,7 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
     let (schema, _) = infer_json_schema(&mut cursor, Some(1000))?;
 
     // post-process schema to handle problematic types for real-world JSON
-    // and onvert problematic types to Utf8 to handle mixed data types
+    // and convert problematic types to Utf8 to handle mixed data types
     let fixed_fields: Vec<Field> = schema
         .fields()
         .iter()
@@ -55,10 +55,12 @@ pub fn inferred_schema_from_json_lines(json_lines: &[&str]) -> Result<Arc<Schema
                 DataType::Null => DataType::Utf8,
                 // convert complex types that can vary to Utf8 for safety
                 DataType::Struct(_) | DataType::List(_) | DataType::Map(_, _) => DataType::Utf8,
+                // convert Int64 to Float64 to handle cases where the same field might be
+                // inferred as Int64 in some batches and Float64 in others
+                // this ensures schema consistency across all Parquet files
+                DataType::Int64 => DataType::Float64,
                 // keep simple, consistent types
-                DataType::Boolean | DataType::Int64 | DataType::Float64 | DataType::Utf8 => {
-                    field.data_type().clone()
-                }
+                DataType::Boolean | DataType::Float64 | DataType::Utf8 => field.data_type().clone(),
                 // convert everything else to Utf8 for maximum compatibility
                 _ => DataType::Utf8,
             };
@@ -292,5 +294,29 @@ mod tests {
         for (_, parquet_data) in result {
             assert!(!parquet_data.is_empty());
         }
+    }
+
+    #[test]
+    fn test_int64_float64_schema_consistency() {
+        // This test demonstrates that fields which could be inferred as Int64 or Float64
+        // will always be converted to Float64 for schema consistency across batches
+        let json_lines = vec![
+            r#"{"$browser_version": 120, "user_id": "123"}"#,
+            r#"{"$browser_version": 121, "user_id": "456"}"#,
+            r#"{"$browser_version": 122, "user_id": "789"}"#,
+        ];
+
+        let schema = inferred_schema_from_json_lines(&json_lines).unwrap();
+        let browser_version_field = schema.field_with_name("$browser_version").unwrap();
+
+        // Int64 should be converted to Float64 to ensure consistency
+        assert_eq!(browser_version_field.data_type(), &DataType::Float64);
+        assert!(browser_version_field.is_nullable());
+
+        let result = json_lines_to_parquet_bytes(schema, &json_lines);
+        assert!(result.is_ok());
+
+        let parquet_bytes = result.unwrap();
+        assert!(!parquet_bytes.is_empty());
     }
 }
