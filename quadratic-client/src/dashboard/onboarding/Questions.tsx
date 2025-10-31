@@ -1,16 +1,14 @@
+import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import {
-  ControlCheckboxInline,
   ControlCheckboxInputOther,
   ControlCheckboxStacked,
   ControlLinkInline,
   ControlLinkStacked,
 } from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/onboarding';
+import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
-  AIIcon,
   ArrowRightIcon,
-  BlockIcon,
-  DatabaseIcon,
   EducationIcon,
   PersonalIcon,
   SpinnerIcon,
@@ -19,6 +17,7 @@ import {
 } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef } from 'react';
@@ -53,8 +52,26 @@ export const OnboardingResponseV1Schema = z.object({
   'goals[]': z.array(z.string()),
   'goals[]-other': z.string().optional(),
 });
-
 export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;
+
+export const OnboardingResponseV2Schema = z.object({
+  __version: z.literal(2),
+  __createdAt: z.string().datetime(),
+  use: z.enum(['work', 'personal', 'education']),
+
+  // Only for work/education
+  'team-size': z.string().optional(),
+  role: z.string().optional(),
+  'role-other': z.string().optional(),
+
+  'connections[]': z.array(z.string()).optional(),
+  'connections[]-other': z.string().optional(),
+  'team-name': z.string(),
+  'team-invites[]': z.array(z.string()).optional(),
+  'team-plan': z.literal('free').or(z.literal('pro')),
+});
+export type OnboardingResponseV2 = z.infer<typeof OnboardingResponseV1Schema>;
+
 type QuestionProps = {
   title: string;
   subtitle?: string;
@@ -62,9 +79,9 @@ type QuestionProps = {
 };
 
 export const questionStackIdsByUse: Record<string, string[]> = {
-  work: ['use', 'work-role', 'languages[]', 'goals[]'],
-  personal: ['use', 'personal-uses[]', 'languages[]', 'goals[]'],
-  education: ['use', 'education-identity', 'education-subjects[]', 'languages[]', 'goals[]'],
+  work: ['use', 'team-size', 'role', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
+  personal: ['use', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
+  education: ['use', 'team-size', 'role', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
 };
 
 export const questionsById: Record<
@@ -107,8 +124,8 @@ export const questionsById: Record<
     },
   },
 
-  // Work
-  'work-role': {
+  // Work / Education
+  role: {
     title: 'What best describes your role?',
     optionsByValue: {
       'data-analytics': 'Data / Analytics',
@@ -146,130 +163,27 @@ export const questionsById: Record<
       );
     },
   },
-
-  // Personal
-  'personal-uses[]': {
-    title: 'What are you planning to use Quadratic for?',
-    subtitle: 'Select all that apply',
+  'team-size': {
+    title: 'How many people are on your team?',
     optionsByValue: {
-      'personal-finance': 'Personal finance',
-      'trading-investing': 'Trading / Investing',
-      'side-projects-hobbies': 'Side projects / Hobbies',
-      'learn-code': 'Learning to code',
-      ai: 'Getting better at AI',
-      other: 'Other',
-    },
-    Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
-
-      return (
-        <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-2"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
-            <QuestionFormFooter disabled={!isValid} />
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-
-  // Education
-  'education-identity': {
-    title: 'What best describes you?',
-    optionsByValue: {
-      'university-student': 'University student',
-      'high-school-student': 'High school student',
-      'educator-professor': 'Educator / Professor',
-      researcher: 'Researcher',
-      'bootcamp-self-taught': 'Bootcamp / Self-taught',
-      other: 'Other',
+      '1': 'Just me',
+      '2-5': '2-5',
+      '5-20': '5-20',
+      '20-250': '20-250',
+      '250-10000': '250-10,000',
+      '10000+': '10,000+',
     },
     Form: (props) => {
       const [searchParams] = useSearchParams();
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-
       return (
         <Question title={props.title}>
           <QuestionForm className="grid grid-cols-2 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <Link
-                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
-                  key={value}
-                  onClick={() => setOther(false)}
-                >
-                  <ControlLinkInline>{label}</ControlLinkInline>
-                </Link>
-              )
-            )}
-            <QuestionFormFooter disabled={!other} />
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-  'education-subjects[]': {
-    title: 'What subject areas are you working in?',
-    subtitle: 'Select all that apply',
-    optionsByValue: {
-      math: 'Math',
-      'finance-economics': 'Finance / Economics',
-      'physics-engineering': 'Physics / Engineering',
-      'computer-science-ai': 'Computer Science / AI',
-      'business-marketing': 'Business / Marketing',
-      'social-sciences': 'Social Sciences',
-      other: 'Other',
-    },
-    Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
-
-      return (
-        <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-2"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
-            <QuestionFormFooter disabled={!isValid} />
+            {Object.entries(props.optionsByValue).map(([value, label]) => (
+              <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                <ControlLinkInline key={value}>{label}</ControlLinkInline>
+              </Link>
+            ))}
+            <QuestionFormFooter />
           </QuestionForm>
         </Question>
       );
@@ -277,35 +191,60 @@ export const questionsById: Record<
   },
 
   // Shared
-  'languages[]': {
-    title: 'Which languages are you proficient in?',
-    subtitle: 'Select all that apply',
+  'connections[]': {
+    title: 'Which data sources would you want to connect to?',
+    subtitle: 'Select any option you’d be interested in.',
     optionsByValue: {
-      formulas: 'Formulas',
-      python: 'Python',
-      javascript: 'JavaScript',
-      sql: 'SQL',
-      ai: 'AI / Vibe coding',
+      // TODO: pull from our list
+      ...Object.keys(connectionsByType).reduce(
+        (acc, key) => ({
+          ...acc,
+          // TODO: fix type
+          // @ts-expect-error - we know this is a valid key
+          [key]: connectionsByType[key].name,
+        }),
+        {}
+      ),
+      ...Object.keys(potentialConnectionsByType).reduce(
+        (acc, key) => ({
+          ...acc,
+          // TODO: fix type
+          // @ts-expect-error - we know this is a valid key
+          [key]: potentialConnectionsByType[key].name,
+        }),
+        {}
+      ),
+      // other: 'Other…',
     },
     Form: (props) => {
       const languageClassName = 'h-10 w-10';
-      const languageIconByValue: Record<string, React.ReactNode> = {
-        formulas: <LanguageIcon language="formula" className={languageClassName} />,
-        python: <LanguageIcon language="python" className={languageClassName} />,
-        javascript: <LanguageIcon language="javascript" className={languageClassName} />,
-        sql: <DatabaseIcon size="lg" className={cn(languageClassName, 'text-orange-500')} />,
-        ai: <AIIcon size="lg" className={cn(languageClassName, 'text-green-500')} />,
-        none: <BlockIcon size="lg" className={cn(languageClassName, 'text-red-500')} />,
-      };
+      const [other, setOther] = useRecoilState(otherCheckboxAtom);
+      // const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
+      // const languageIconByValue: Record<string, React.ReactNode> = {
+      //   formulas: <LanguageIcon language="formula" className={languageClassName} />,
+      //   python: <LanguageIcon language="python" className={languageClassName} />,
+      //   javascript: <LanguageIcon language="javascript" className={languageClassName} />,
+      //   sql: <DatabaseIcon size="lg" className={cn(languageClassName, 'text-orange-500')} />,
+      //   ai: <AIIcon size="lg" className={cn(languageClassName, 'text-green-500')} />,
+      //   none: <BlockIcon size="lg" className={cn(languageClassName, 'text-red-500')} />,
+      // };
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                {languageIconByValue[value]}
-                {label}
-              </ControlCheckboxStacked>
-            ))}
+            {Object.entries(props.optionsByValue).map(([value, label]) =>
+              /* we don't have a stacked 'other' right now... */
+              value === 'OTHER' ? (
+                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
+                  <LanguageIcon language={value} className={languageClassName} />
+                  {label}
+                </ControlCheckboxInputOther>
+              ) : (
+                <ControlCheckboxStacked name={props.id} value={value} key={value}>
+                  <LanguageIcon language={value} className={languageClassName} />
+                  {label}
+                </ControlCheckboxStacked>
+              )
+            )}
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
@@ -316,47 +255,86 @@ export const questionsById: Record<
       );
     },
   },
-  'goals[]': {
-    title: 'What are you looking to accomplish in Quadratic?',
-    subtitle: 'Select all that apply',
+  'team-name': {
+    title: 'What would you like to name your team?',
+    subtitle: 'This will appear as your workspace in the app.',
     optionsByValue: {
-      'ai-analysis': 'AI analysis',
-      'db-connections': 'Database connections',
-      'api-integrations': 'API integrations',
-      'data-cleaning': 'Data cleaning',
-      'data-analysis': 'Data analysis',
-      'data-modeling': 'Data modeling',
-      'data-visualization': 'Data visualization',
-      other: 'Other',
+      // TODO: consider making this optional
+      'team-name': 'Team name',
     },
     Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
+      const inputRef = useRef<HTMLInputElement>(null);
+
+      useEffect(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, []);
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-1"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
+          <QuestionForm className="">
+            <Input
+              ref={inputRef}
+              className="h-12 w-full text-lg"
+              type="text"
+              name={props.id}
+              placeholder="Enter a name"
+              autoFocus
+              onChange={(e) => {
+                setIsValid(e.target.value.length > 0);
+              }}
+            />
             <QuestionFormFooter disabled={!isValid} />
           </QuestionForm>
-          {isValid && <FreePromptsMsg isLastQuestion={true} />}
+
+          {isValid && false /* TODO: put on last step */ && <FreePromptsMsg isLastQuestion={true} />}
+        </Question>
+      );
+    },
+  },
+  'team-invites[]': {
+    title: 'Who would you like to invite to your team?',
+    subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
+    // TODO: maybe don't need these?
+    optionsByValue: {
+      'team-invites[]': 'Team invites',
+    },
+    Form: (props) => {
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          <QuestionForm className="flex flex-col gap-2">
+            <Input key={1} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="john@example.com" />
+            <Input key={2} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="jane@example.com" />
+            <Input key={3} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="john@example.com" />
+            <QuestionFormFooter />
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
+  'team-plan': {
+    title: 'Which plan would you like?',
+    subtitle: 'Get started for free, or subscribe for full access.',
+    optionsByValue: {
+      free: 'Free',
+      pro: 'Pro',
+    },
+    Form: (props) => {
+      const [searchParams] = useSearchParams();
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          {/* Need the team UUID here */}
+          <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid="123" eventSource="onboarding" />
+          <QuestionForm className="-mt-6 grid grid-cols-2 gap-4">
+            {Object.entries(props.optionsByValue).map(([value, label]) => (
+              <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                <ControlLinkInline>{label}</ControlLinkInline>
+              </Link>
+            ))}
+
+            <QuestionFormFooter />
+          </QuestionForm>
         </Question>
       );
     },
@@ -547,7 +525,11 @@ function QuestionForm({
 
         // Otherwise update the search params and reset the current form
         setSearchParams(newSearchParams);
-        form.reset();
+        // Give the animation time to complete first so we don't see the reset
+        // TODO: consider a better way to do this
+        setTimeout(() => {
+          form.reset();
+        }, 1000);
       }}
       className={className}
     >

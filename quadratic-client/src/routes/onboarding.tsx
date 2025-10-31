@@ -1,6 +1,4 @@
-import { requireAuth } from '@/auth/auth';
-import { getPrompt } from '@/dashboard/onboarding/getPrompt';
-import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
+import { OnboardingResponseV2Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -22,7 +20,7 @@ import { RecoilRoot } from 'recoil';
  * That is derived as a count of 2 questions: [use, role]
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireAuth();
+  // await requireAuth();
 
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
@@ -94,17 +92,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Parse and validate the payload against the v1 schema
-  const result = OnboardingResponseV1Schema.safeParse({
-    __version: 1,
+  const result = OnboardingResponseV2Schema.safeParse({
+    __version: 2,
     __createdAt: new Date().toISOString(),
     ...formJson,
   });
 
+  console.log('result', result);
+
+  let doThing = false;
+  if (doThing) return;
+
+  // TODO: pick out name and other things
+
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];
-  let prompt = '';
+
   if (result.success) {
-    prompt = getPrompt(result.data);
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
@@ -158,5 +162,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Hard-redirect user to a new file
-  return redirectDocument(`/files/create?private=false${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''}`);
+  return redirectDocument(`/files/create?private=false`);
 };
