@@ -90,7 +90,7 @@ pub async fn get<T: DeserializeOwned>(url: &str, jwt: &str, error_message: &str)
         return Err(SharedError::QuadraticApi(error_message.into()));
     }
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     Ok(response.json::<T>().await?)
 }
@@ -167,7 +167,7 @@ pub async fn set_file_checkpoint(
         .send()
         .await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
     Ok(deserialized)
@@ -291,7 +291,7 @@ pub async fn create_synced_connection_log(
         .send()
         .await?;
 
-    handle_response(&response)?;
+    let response = handle_response(response).await?;
 
     let synced_connection_log = response.json::<SyncedConnectionLogResponse>().await?;
 
@@ -313,16 +313,40 @@ pub async fn get_team(base_url: &str, jwt: &str, email: &str, team_id: &Uuid) ->
     get::<Team>(&url, jwt, &error_message).await
 }
 
-/// Handle a response from the quadratic API server in a consistent way.
-fn handle_response(response: &Response) -> Result<()> {
-    match response.status() {
-        StatusCode::OK => Ok(()),
-        StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi("Forbidden".into())),
-        StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
-        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("Not found".into())),
-        _ => Err(SharedError::QuadraticApi(format!(
-            "Unexpected response: {response:?}"
-        ))),
+/// Extract the response body from a response.
+async fn extract_response_body(response: Response) -> String {
+    response
+        .text()
+        .await
+        .unwrap_or_else(|_| "Unable to read response body".to_string())
+}
+
+/// Handle a response from the quadratic API server.
+async fn handle_response(response: Response) -> Result<Response> {
+    let status = response.status();
+    match status {
+        StatusCode::OK => Ok(response),
+        StatusCode::BAD_REQUEST
+        | StatusCode::FORBIDDEN
+        | StatusCode::UNAUTHORIZED
+        | StatusCode::NOT_FOUND => {
+            let body = extract_response_body(response).await;
+            let error_msg = match status {
+                StatusCode::BAD_REQUEST => format!("Bad request: {}", body),
+                StatusCode::FORBIDDEN => format!("Forbidden: {}", body),
+                StatusCode::UNAUTHORIZED => format!("Unauthorized: {}", body),
+                StatusCode::NOT_FOUND => format!("Not found: {}", body),
+                _ => unreachable!(),
+            };
+            Err(SharedError::QuadraticApi(error_msg))
+        }
+        _ => {
+            let body = extract_response_body(response).await;
+            Err(SharedError::QuadraticApi(format!(
+                "Unexpected response status {}: {}",
+                status, body
+            )))
+        }
     }
 }
 
