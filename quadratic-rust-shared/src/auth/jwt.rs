@@ -133,12 +133,9 @@ pub fn authorize_m2m(headers: &HeaderMap, expected_token: &str) -> Result<TokenD
         header: Header::default(),
         claims: Claims {
             email: "m2m@quadratic.com".into(),
-<<<<<<< HEAD
             sub: "m2m".into(),
             iss: "m2m".into(),
             iat: 0,
-=======
->>>>>>> origin/qa
             exp: 0,
         },
     })
