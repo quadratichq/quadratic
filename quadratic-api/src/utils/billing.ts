@@ -64,7 +64,7 @@ export const hasReachedFileLimit = async (
   isPrivate?: boolean
 ): Promise<boolean> => {
   const isPaidPlan = await getIsOnPaidPlan(team);
-  logger.info({ isPaidPlan, MAX_FILE_COUNT_FOR_PAID_PLAN });
+  logger.info(`isPaidPlan: ${isPaidPlan}, MAX_FILE_COUNT_FOR_PAID_PLAN: ${MAX_FILE_COUNT_FOR_PAID_PLAN}`);
   if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
     return false;
   }
@@ -72,7 +72,9 @@ export const hasReachedFileLimit = async (
   const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
   const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
 
-  logger.info({ totalTeamFiles, userPrivateFiles, maxTotalFiles, maxUserPrivateFiles });
+  logger.info(
+    `totalTeamFiles: ${totalTeamFiles}, userPrivateFiles: ${userPrivateFiles}, maxTotalFiles: ${maxTotalFiles}, maxUserPrivateFiles: ${maxUserPrivateFiles}`
+  );
 
   if (!isPrivate) {
     return totalTeamFiles >= maxTotalFiles;
