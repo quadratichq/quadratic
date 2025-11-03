@@ -43,7 +43,6 @@ export const OnboardingChecklist = () => {
     [setShowCellTypeMenu, claimBonusPrompt]
   );
 
-  console.log({ showOnboardingChecklist, bonusPrompts });
   if (!showOnboardingChecklist || !bonusPrompts) {
     return null;
   }
