@@ -1,4 +1,4 @@
-import { OnboardingResponseV2Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
+import { OnboardingResponseV2Schema, Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -8,6 +8,7 @@ import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFu
 import { RecoilRoot } from 'recoil';
 
 /**
+ * TODO: refactor this.
  * Each question is a form. We track progress in the URL search params.
  * Each key corresponds to a question (one question per form).
  * In cases where multiple answers are possible, that's because the
@@ -27,15 +28,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const currentUse = searchParams.get('use');
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
-  const currentQuestionStackIds = currentUse ? questionStackIdsByUse[currentUse] : [];
+  const currentQuestionStackIds = Object.entries(questionsById)
+    .filter(([id, { excludeForUse }]) => {
+      // if (currentUse === null) return false;
+      if (excludeForUse) {
+        return !excludeForUse.includes(currentUse ?? '');
+      }
+      return true;
+    })
+    .map(([id]) => id);
   const currentIndex = uniqueKeys.size;
-  const currentId = currentUse
+  const currentId = currentQuestionStackIds[currentIndex]
     ? currentQuestionStackIds[currentIndex]
-      ? currentQuestionStackIds[currentIndex]
-      : currentQuestionStackIds[currentIndex - 1]
-    : 'use';
-  const currentQuestionNumber = currentQuestionStackIds.indexOf(currentId);
-  const currentQuestionsTotal = currentQuestionStackIds.length - 1;
+    : Object.keys(questionsById)[0];
+
+  const currentQuestionNumber = currentIndex + 1; // currentQuestionStackIds.length > 0 ? currentQuestionStackIds.indexOf(currentId) + 1 : 1;
+  const currentQuestionsTotal = currentQuestionStackIds.length;
 
   const out = {
     currentId,
@@ -45,6 +53,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     currentQuestionsTotal,
     isLastQuestion: currentQuestionStackIds.indexOf(currentId) === currentQuestionStackIds.length - 1,
   };
+  console.log(out);
   return out;
 };
 

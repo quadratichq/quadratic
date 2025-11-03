@@ -1,4 +1,4 @@
-import { BillingPlans } from '@/dashboard/billing/BillingPlans';
+import { BillingPlans, FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
 import {
   ControlCheckboxInputOther,
   ControlCheckboxStacked,
@@ -9,18 +9,18 @@ import { useOnboardingLoaderData } from '@/routes/onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
   ArrowRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   EducationIcon,
   PersonalIcon,
   SpinnerIcon,
-  StarShineIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 import { z } from 'zod';
@@ -76,18 +76,33 @@ type QuestionProps = {
   title: string;
   subtitle?: string;
   optionsByValue: Record<string, string>;
-};
-
-export const questionStackIdsByUse: Record<string, string[]> = {
-  work: ['use', 'team-size', 'role', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
-  personal: ['use', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
-  education: ['use', 'team-size', 'role', 'connections[]', 'team-name', 'team-invites[]', 'team-plan'],
+  excludeForUse?: string[];
 };
 
 export const questionsById: Record<
   string,
   QuestionProps & { Form: (props: QuestionProps & { id: string }) => React.ReactNode }
 > = {
+  instructions: {
+    title: 'Welcome to Quadratic!',
+    subtitle:
+      'Connect to your data, chat with AI, and share the results with your team — all in a familiar spreadsheet interface.',
+    optionsByValue: {
+      foo: 'I want to use Quadratic to analyze data',
+    },
+    Form: (props) => {
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          <QuestionForm className="">
+            <ImageCarousel />
+            <FreePromptsMsg isLastQuestion={false} />
+            <input type="hidden" name={props.id} value="" />
+            <QuestionFormFooter />
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
   use: {
     title: 'How will you use Quadratic?',
     subtitle: 'Your answers help personalize your experience.',
@@ -97,6 +112,7 @@ export const questionsById: Record<
       education: 'Education',
     },
     Form: (props) => {
+      const [searchParams] = useSearchParams();
       const iconsByValue: Record<string, React.ReactNode> = {
         work: <WorkIcon size="lg" className="text-primary" />,
         personal: <PersonalIcon size="lg" className="text-primary" />,
@@ -107,7 +123,7 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
             {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <Link key={value} to={`./?${props.id}=${value}`}>
+              <Link key={value} to={`./?${searchParams.toString()}&${props.id}=${value}`}>
                 <ControlLinkStacked>
                   {iconsByValue[value]}
                   <span className="relative flex items-center">
@@ -117,8 +133,8 @@ export const questionsById: Record<
                 </ControlLinkStacked>
               </Link>
             ))}
+            <QuestionFormFooter disabled={true} />
           </QuestionForm>
-          <FreePromptsMsg isLastQuestion={false} />
         </Question>
       );
     },
@@ -127,6 +143,7 @@ export const questionsById: Record<
   // Work / Education
   role: {
     title: 'What best describes your role?',
+    excludeForUse: ['personal'],
     optionsByValue: {
       'data-analytics': 'Data / Analytics',
       product: 'Product',
@@ -139,6 +156,7 @@ export const questionsById: Record<
       'ml-ai': 'Machine Learning / AI',
       other: 'Other',
     },
+
     Form: (props) => {
       const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
@@ -165,6 +183,7 @@ export const questionsById: Record<
   },
   'team-size': {
     title: 'How many people are on your team?',
+    excludeForUse: ['personal'],
     optionsByValue: {
       '1': 'Just me',
       '2-5': '2-5',
@@ -183,7 +202,7 @@ export const questionsById: Record<
                 <ControlLinkInline key={value}>{label}</ControlLinkInline>
               </Link>
             ))}
-            <QuestionFormFooter />
+            <QuestionFormFooter disabled={true} />
           </QuestionForm>
         </Question>
       );
@@ -305,8 +324,20 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="flex flex-col gap-2">
             <Input key={1} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="john@example.com" />
-            <Input key={2} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="jane@example.com" />
-            <Input key={3} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="john@example.com" />
+            <Input
+              key={2}
+              className="h-12 w-full text-lg"
+              type="text"
+              name={props.id}
+              placeholder="alice@example.com"
+            />
+            <Input
+              key={3}
+              className="h-12 w-full text-lg"
+              type="text"
+              name={props.id}
+              placeholder="susan@example.com"
+            />
             <QuestionFormFooter />
           </QuestionForm>
         </Question>
@@ -321,20 +352,53 @@ export const questionsById: Record<
       pro: 'Pro',
     },
     Form: (props) => {
+      // const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
       const [searchParams] = useSearchParams();
+      const className = cn(
+        'h-full w-full group relative rounded shadow-sm border border-border p-4 hover:border-primary'
+      );
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          {/* Need the team UUID here */}
-          <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid="123" eventSource="onboarding" />
-          <QuestionForm className="-mt-6 grid grid-cols-2 gap-4">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
-                <ControlLinkInline>{label}</ControlLinkInline>
-              </Link>
-            ))}
+          {/* <QuestionForm>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                className={cn(className, selectedPlan === 'free' && 'border-primary')}
+                onClick={() => setSelectedPlan('free')}
+              >
+                <FreePlan className="flex h-full flex-col">
+                  <div className="mt-auto flex items-center justify-center">
+                    <CheckBoxIcon className={cn(selectedPlan === 'free' ? 'text-primary' : 'text-muted-foreground')} />
+                  </div>
+                </FreePlan>
+              </button>
 
+              <button
+                type="button"
+                className={cn(className, selectedPlan === 'pro' && 'border-primary')}
+                onClick={() => setSelectedPlan('pro')}
+              >
+                <ProPlan></ProPlan>
+                {selectedPlan === 'pro' && <CheckBoxIcon className="absolute right-4 top-5 text-primary" />}
+              </button>
+            </div>
             <QuestionFormFooter />
-          </QuestionForm>
+          </QuestionForm> */}
+          {/* TODO: Need the team UUID here */}
+          <div className="grid grid-cols-2 gap-4">
+            <a href={`./?${searchParams.toString()}&${props.id}=free`} className={className}>
+              <FreePlan />
+              <ArrowRightIcon className="absolute right-4 top-5 opacity-20 group-hover:scale-125 group-hover:text-primary group-hover:opacity-100" />
+            </a>
+
+            <a href={`./?${searchParams.toString()}&${props.id}=pro`} className={className}>
+              <ProPlan />
+              <ArrowRightIcon className="absolute right-4 top-5 opacity-20 group-hover:scale-125 group-hover:text-primary group-hover:opacity-100" />
+            </a>
+          </div>
+          <div className="hidden">
+            <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid="123" eventSource="onboarding" />
+          </div>
         </Question>
       );
     },
@@ -358,15 +422,15 @@ export function Questions() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
+      <div className="mx-auto flex max-w-xl flex-col gap-10 pt-10">
         <Logo />
 
-        <div className="relative w-full max-w-xl transition-all">
+        <div className="relative w-full transition-all">
           <div className="relative min-h-[4rem]">
             {questionIds.map((id) => {
               const { Form, ...props } = questionsById[id];
               const isASubsequentQuestion =
-                currentId === 'use' ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
+                currentIndex === 0 ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
               return (
                 <div
                   key={id}
@@ -397,37 +461,39 @@ export function Questions() {
 function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
   const navigate = useNavigate();
   const fetcher = useFetcher({ key: FETCHER_KEY });
-  const { currentId, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
+  const { currentIndex, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
   const btnClassName = 'select-none';
   const isSubmitting = fetcher.state !== 'idle';
 
   return (
     <div
       className={cn(
-        'col-span-full grid grid-cols-2 items-center justify-between gap-4 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
+        'col-span-full items-center justify-center gap-4 pb-10 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
       )}
     >
-      <div
+      {/* <div
         className={cn(
+          'hidden',
           'flex select-none items-center gap-2 text-sm text-muted-foreground',
-          currentId === 'use' && 'invisible opacity-0'
+          currentIndex === 0 && 'invisible opacity-0'
         )}
       >
         <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
         Question {currentQuestionNumber} / {currentQuestionsTotal}
-      </div>
-      <div className="flex items-center justify-end gap-2">
+      </div> */}
+      <div className="flex w-full items-center justify-center gap-4">
         {isSubmitting ? (
           <SpinnerIcon className="mr-4 text-primary" />
         ) : (
           <Button
             type="reset"
+            disabled={currentIndex === 0}
             onClick={(e) => {
               navigate(-1);
             }}
             size="lg"
-            variant="ghost"
-            className={cn(btnClassName, 'text-muted-foreground')}
+            variant="secondary"
+            className={cn(btnClassName, 'text-muted-foregroundz')}
           >
             Back
           </Button>
@@ -441,12 +507,15 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
 }
 
 function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
-  return (
-    <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
-      <StarShineIcon className="mr-2" />
-      {isLastQuestion ? <>You've unlocked free prompts!</> : <>You'll be rewarded free prompts on completion!</>}
-    </aside>
-  );
+  // TODO: probably just gonna remove this, because you don't get anything for doing it
+  // we make you.
+  return null;
+  // return (
+  //   <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
+  //     <StarShineIcon className="mr-2" />
+  //     {isLastQuestion ? <>You've unlocked free prompts!</> : <>You'll be rewarded free prompts on completion!</>}
+  //   </aside>
+  // );
 }
 
 function Logo() {
@@ -535,5 +604,74 @@ function QuestionForm({
     >
       {children}
     </fetcher.Form>
+  );
+}
+
+function ImageCarousel() {
+  const images = [1, 2, 3, 4];
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index);
+  };
+
+  return (
+    <div className="relative w-full overflow-hidden rounded-lg">
+      <div
+        className="flex transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((src, index) => (
+          <div key={index} className="min-w-full flex-shrink-0">
+            <img
+              src={`/onboarding/${src}.jpg`}
+              alt={`Quadratic ${index + 1}`}
+              className="w-full object-cover"
+              width="512"
+              height="288"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation buttons */}
+      <button
+        type="button"
+        onClick={goToPrevious}
+        className="absolute left-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-opacity hover:bg-black/70"
+        aria-label="Previous image"
+      >
+        <ChevronLeftIcon size="lg" />
+      </button>
+      <button
+        type="button"
+        onClick={goToNext}
+        className="absolute right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-opacity hover:bg-black/70"
+        aria-label="Next image"
+      >
+        <ChevronRightIcon size="lg" />
+      </button>
+
+      {/* Indicator dots */}
+      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+        {images.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => goToSlide(index)}
+            className={cn('h-2 w-2 rounded-full transition-all', currentIndex === index ? 'bg-white' : 'bg-white/50')}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
