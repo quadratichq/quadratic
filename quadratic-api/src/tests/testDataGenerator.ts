@@ -249,6 +249,7 @@ export async function clearDb() {
     dbClient.connection.deleteMany(),
     dbClient.userTeamRole.deleteMany(),
     dbClient.teamInvite.deleteMany(),
+    dbClient.tutorialBonusPrompt.deleteMany(),
     dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
