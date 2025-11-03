@@ -121,6 +121,13 @@ export const apiClient = {
         );
       },
     },
+    fileLimit(uuid: string, isPrivate: boolean) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}/file-limit?private=${isPrivate}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
+      );
+    },
   },
 
   files: {
