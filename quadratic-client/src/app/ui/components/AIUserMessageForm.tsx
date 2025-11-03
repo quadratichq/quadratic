@@ -17,7 +17,6 @@ import {
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -299,14 +298,6 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
-    const showWaypoints = useMemo(
-      () =>
-        isAnalyst &&
-        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
-        importFiles.length === 0 &&
-        files.length === 0,
-      [context, importFiles, files, isAnalyst]
-    );
 
     // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
@@ -390,10 +381,8 @@ export const AIUserMessageForm = memo(
             context={context}
             files={files}
             importFiles={importFiles}
-            showWaypoints={showWaypoints}
           />
         )}
-        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
