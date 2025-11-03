@@ -4,6 +4,7 @@ import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
+import { OnboardingChecklist } from '@/app/ui/components/OnboardingChecklist';
 import { Search } from '@/app/ui/components/Search';
 import type { MouseEvent } from 'react';
 import { memo, useCallback, useState } from 'react';
@@ -73,6 +74,7 @@ export const QuadraticGrid = memo(() => {
       <ScrollBars />
       <Search />
       <ImportProgress />
+      <OnboardingChecklist />
     </div>
   );
 });
