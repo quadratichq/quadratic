@@ -1,20 +1,47 @@
-import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { bonusPromptsAtom, claimBonusPromptAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { openLink } from '@/app/helpers/links';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const OnboardingChecklist = () => {
   const bonusPrompts = useAtomValue(bonusPromptsAtom);
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
   const hideChecklist = useSetAtom(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
+  const claimBonusPrompt = useSetAtom(claimBonusPromptAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   // Fetch bonus prompts on mount
   useEffect(() => {
     fetchBonusPrompts({ type: 'fetch' });
   }, [fetchBonusPrompts]);
+
+  const handleItemClick = useCallback(
+    (category: string, received: boolean) => {
+      // Only handle clicks on unchecked items
+      if (received) return;
+
+      switch (category) {
+        case 'demo-connection':
+          // Open the cell type menu with connections pre-selected
+          setShowCellTypeMenu('connections');
+          break;
+        case 'watch-tutorial':
+          // Open the Quadratic 101 video
+          openLink('https://www.quadratichq.com/quadratic-101');
+          claimBonusPrompt(category);
+          break;
+        default:
+          console.warn(`Unknown category: ${category}`);
+      }
+    },
+    [setShowCellTypeMenu, claimBonusPrompt]
+  );
 
   console.log({ showOnboardingChecklist, bonusPrompts });
   if (!showOnboardingChecklist || !bonusPrompts) {
@@ -48,9 +75,17 @@ export const OnboardingChecklist = () => {
       <p className="mb-4 text-sm text-muted-foreground">Complete tasks to earn free prompts.</p>
 
       {/* Checklist items */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {bonusPrompts.map((prompt) => (
-          <div key={prompt.category} className="flex items-center gap-3">
+          <div
+            key={prompt.category}
+            className={cn(
+              'flex items-center gap-3 rounded-md px-2 py-1 transition-colors',
+              !prompt.received && 'cursor-pointer hover:bg-muted/50',
+              prompt.received && 'opacity-70'
+            )}
+            onClick={() => handleItemClick(prompt.category, prompt.received)}
+          >
             {/* Checkmark circle */}
             <div
               className={cn(
@@ -66,7 +101,7 @@ export const OnboardingChecklist = () => {
 
             {/* Badge */}
             <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-medium text-white">
-              Earn {prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
+              Earn{prompt.received ? 'ed' : ''} {prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
             </span>
           </div>
         ))}
