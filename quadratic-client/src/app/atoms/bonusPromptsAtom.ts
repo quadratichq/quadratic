@@ -5,7 +5,6 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 type BonusPrompt = ApiTypes['/v0/user/tutorialBonusPrompt.GET.response']['bonusPrompts'][number];
 
-// Private atom to store the bonus prompts data
 const bonusPromptsDataAtom = atom<BonusPrompt[] | null>(null);
 
 // Async atom that fetches bonus prompts from the API and updates the cache

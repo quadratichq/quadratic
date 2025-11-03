@@ -1,47 +1,43 @@
-import { bonusPromptsAtom, claimBonusPromptAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
-import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { openLink } from '@/app/helpers/links';
+import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
 
 export const OnboardingChecklist = () => {
   const bonusPrompts = useAtomValue(bonusPromptsAtom);
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
   const hideChecklist = useSetAtom(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
-  const claimBonusPrompt = useSetAtom(claimBonusPromptAtom);
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+
+  const watchTutorial = useWatchTutorial();
+  const promptAITutorial = usePromptAITutorial();
 
   // Fetch bonus prompts on mount
   useEffect(() => {
     fetchBonusPrompts({ type: 'fetch' });
   }, [fetchBonusPrompts]);
 
-  const handleItemClick = useCallback(
-    (category: string, received: boolean) => {
-      // Only handle clicks on unchecked items
-      if (received) return;
+  const handleItemClick = useCallback((category: string, received: boolean) => {
+    // Only handle clicks on unchecked items
+    if (received) return;
 
-      switch (category) {
-        case 'demo-connection':
-          // Open the cell type menu with connections pre-selected
-          setShowCellTypeMenu('connections');
-          break;
-        case 'watch-tutorial':
-          // Open the Quadratic 101 video
-          openLink('https://www.quadratichq.com/quadratic-101');
-          claimBonusPrompt(category);
-          break;
-        default:
-          console.warn(`Unknown category: ${category}`);
-      }
-    },
-    [setShowCellTypeMenu, claimBonusPrompt]
-  );
+    switch (category) {
+      case 'prompt-ai':
+        promptAITutorial(category);
+        break;
+      case 'demo-connection':
+        console.log('TODO');
+        break;
+      case 'watch-tutorial':
+        watchTutorial();
+        break;
+      default:
+        console.warn(`Unknown category: ${category}`);
+    }
+  }, []);
 
   if (!showOnboardingChecklist || !bonusPrompts) {
     return null;
