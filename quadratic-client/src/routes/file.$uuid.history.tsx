@@ -21,7 +21,6 @@ import {
   Link,
   useFetcher,
   useLoaderData,
-  useMatch,
   useParams,
   useRevalidator,
   useRouteError,
@@ -30,14 +29,21 @@ import {
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'] & {
   activeTeamUuid: string;
+  isPrivate: boolean;
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData> => {
   const { activeTeamUuid } = await requireAuth();
   const { params } = loaderArgs;
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.files.checkpoints.list(uuid);
-  return { ...data, activeTeamUuid };
+  const [checkpointsData, fileData] = await Promise.all([
+    apiClient.files.checkpoints.list(uuid),
+    apiClient.files.get(uuid),
+  ]);
+
+  const isPrivate = !!fileData.file.ownerUserId;
+
+  return { ...checkpointsData, activeTeamUuid, isPrivate };
 };
 
 export const Component = () => {
@@ -79,12 +85,10 @@ export const Component = () => {
   );
   const btnsDisabled = useMemo(() => isLoading || !activeCheckpoint, [activeCheckpoint, isLoading]);
 
-  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(data.activeTeamUuid)));
-
   const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isTeamPrivateFilesRoute);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, data.isPrivate);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
@@ -95,7 +99,7 @@ export const Component = () => {
       checkpointId: activeCheckpoint.id,
     });
 
-    const data = getActionFileDuplicate({
+    const duplicateAction = getActionFileDuplicate({
       teamUuid,
       isPrivate: true,
       redirect: true,
@@ -103,8 +107,8 @@ export const Component = () => {
       checkpointDataUrl: activeCheckpoint.dataUrl,
     });
 
-    fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-  }, [activeCheckpoint, fetcher, isTeamPrivateFilesRoute, teamUuid, uuid]);
+    fetcher.submit(duplicateAction, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+  }, [activeCheckpoint, fetcher, data.isPrivate, teamUuid, uuid]);
 
   const handleDownload = useCallback(() => {
     if (!activeCheckpoint) return;
