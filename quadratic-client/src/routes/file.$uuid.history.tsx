@@ -29,21 +29,15 @@ import {
 
 type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'] & {
   activeTeamUuid: string;
-  isPrivate: boolean;
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData> => {
   const { activeTeamUuid } = await requireAuth();
   const { params } = loaderArgs;
   const { uuid } = params as { uuid: string };
-  const [checkpointsData, fileData] = await Promise.all([
-    apiClient.files.checkpoints.list(uuid),
-    apiClient.files.get(uuid),
-  ]);
+  const checkpointsData = await apiClient.files.checkpoints.list(uuid);
 
-  const isPrivate = !!fileData.file.ownerUserId;
-
-  return { ...checkpointsData, activeTeamUuid, isPrivate };
+  return { ...checkpointsData, activeTeamUuid };
 };
 
 export const Component = () => {
@@ -88,7 +82,7 @@ export const Component = () => {
   const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, data.isPrivate);
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
     if (hasReachedLimit) {
       showUpgradeDialog('fileLimitReached');
       return;
@@ -108,7 +102,7 @@ export const Component = () => {
     });
 
     fetcher.submit(duplicateAction, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-  }, [activeCheckpoint, fetcher, data.isPrivate, teamUuid, uuid]);
+  }, [activeCheckpoint, fetcher, teamUuid, uuid]);
 
   const handleDownload = useCallback(() => {
     if (!activeCheckpoint) return;
