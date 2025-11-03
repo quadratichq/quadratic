@@ -368,7 +368,7 @@ export const AIUserMessageForm = memo(
         value={prompt}
         className={cn(
           'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+          editingOrDebugEditing ? 'min-h-14' : '!max-h-none overflow-hidden',
           (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
         )}
         onChange={handlePromptChange}
@@ -378,6 +378,7 @@ export const AIUserMessageForm = memo(
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
+        readOnly={!editingOrDebugEditing}
         onDragEnter={handleDrag}
       />
     );
