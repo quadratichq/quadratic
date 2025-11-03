@@ -30,24 +30,25 @@
 ## Adding/Modifying Environment Variables
 
 1. Modify environment variables
-1. Modify the relevant variables in .env.example and .env.test as well
-1. Modify the environment variables in the [self hosting repo](https://github.com/quadratichq/quadratic-selfhost).
+2. For API variables, update env-vars.ts and use `ensureEnvVarExists` if the env is necessary for all builds
+3. Modify the relevant variables in .env.example and .env.test as well
+4. Modify the environment variables in the [self hosting repo](https://github.com/quadratichq/quadratic-selfhost).
    1. Create a PR, modify the environment variables in .env.aws, .env.aws-preview, .env.local
-   1. Modify the variables in docker-compose.yml
-   1. Merge PR into `main` as preview branches always pull from the main branch
-1. If this is an existing PR, close and open the PR to trigger a new infrastructure deployment
-1. Add a message to Slack in the `#engineering` channel about the changes
-1. For `preview`:
+   2. Modify the variables in docker-compose.yml
+   3. Merge PR into `main` as preview branches always pull from the main branch
+5. If this is an existing PR, close and open the PR to trigger a new infrastructure deployment
+6. Add a message to Slack in the `#engineering` channel about the changes
+7. For `preview`:
    1. Log into the `Quadratic Development` AWS account (`us-west-2`)
-   1. Navigate to the `Paramater Store` service
-   1. Create or locate the environment variable (e.g. `/quadratic-development/ANTHROPIC_API_KEY`)
-   1. Set the value and save
-1. For `qa` and `prod`:
+   2. Navigate to the `Paramater Store` service
+   3. Create or locate the environment variable (e.g. `/quadratic-development/ANTHROPIC_API_KEY`)
+   4. Set the value and save
+8. For `qa` and `prod`:
    1. Log into Pulumi (likely through the Github SSO) (https://app.pulumi.com/quadratic)
-   3. Click on the `Environments` link in the left-hand sidebar
-   4. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
-   5. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
-   6. Click on the `Save` button
+   2. Click on the `Environments` link in the left-hand sidebar
+   3. Click the appropriate environment (`*-development` for `qa`, `*-production` for `prod`)
+   4. Edit the values in the `environmentVariables:` section on the `Environment definition` text area
+   5. Click on the `Save` button
 
 ## SSH into a Preview Branch
 1. Locate the PR number in Github
