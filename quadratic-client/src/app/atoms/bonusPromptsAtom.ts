@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
 import { atom } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -51,6 +52,7 @@ export const claimBonusPromptAtom = atom(null, async (get, set, category: string
   try {
     const result = await apiClient.user.tutorialBonusPrompt.claim({ category });
     set(bonusPromptsAtom, { type: 'claim', category });
+    events.emit('aiAnalystMessagesLeftRefresh');
     return result;
   } catch (error) {
     console.error('Failed to claim bonus prompt:', error);

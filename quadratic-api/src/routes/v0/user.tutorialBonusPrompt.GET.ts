@@ -54,10 +54,29 @@ async function handler(
       }
     }
 
-    // Sort: active ones first, inactive ones at the end
+    // Sort: active ones in BONUS_PROMPTS order, then inactive ones
+    const bonusPromptsOrder = Object.keys(BONUS_PROMPTS);
     bonusPrompts.sort((a, b) => {
-      if (a.active === b.active) return 0;
-      return a.active ? -1 : 1;
+      // First, sort by active status (active first)
+      if (a.active !== b.active) {
+        return a.active ? -1 : 1;
+      }
+
+      // Within the same active status, sort by BONUS_PROMPTS order
+      const aIndex = bonusPromptsOrder.indexOf(a.category);
+      const bIndex = bonusPromptsOrder.indexOf(b.category);
+
+      // If both are in BONUS_PROMPTS, sort by their position
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+
+      // If only one is in BONUS_PROMPTS, it comes first
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+
+      // If neither is in BONUS_PROMPTS, maintain current order
+      return 0;
     });
 
     return res.status(200).json({

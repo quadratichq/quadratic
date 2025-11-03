@@ -175,6 +175,7 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystMessagesLeftRefresh: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

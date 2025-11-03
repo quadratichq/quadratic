@@ -75,20 +75,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   let exceededBillingLimit = false;
   const exceededBy = BillingAIUsageLimitExceeded(usage);
 
+  const bonusRemaining = (await getBonusPromptsRemaining(userId)) ?? 0;
+
   // include bonus prompts in the calculation
   if (exceededBy > 0) {
-    const bonusRemaining = await getBonusPromptsRemaining(userId);
-    if (exceededBy < bonusRemaining) {
-      exceededBillingLimit = true;
-    } else {
-      exceededBillingLimit = true;
-    }
+    exceededBillingLimit = exceededBy < bonusRemaining;
   }
   const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
 
   const data = {
     exceededBillingLimit,
-    billingLimit: BILLING_AI_USAGE_LIMIT,
+    billingLimit: BILLING_AI_USAGE_LIMIT + bonusRemaining,
     currentPeriodUsage,
   };
   return res.status(200).json(data);

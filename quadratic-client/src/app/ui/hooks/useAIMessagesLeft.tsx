@@ -1,6 +1,7 @@
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
 import { useEffect, useRef, useState } from 'react';
 import { atom, useRecoilState, useRecoilValue } from 'recoil';
@@ -72,6 +73,22 @@ export const useAIMessagesLeft = () => {
     }
     prevAiAssistantLoading.current = aiAssistantLoading;
   }, [aiAssistantLoading, messagesLeft, setMessagesLeft]);
+
+  useEffect(() => {
+    const refresh = async () => {
+      const data = await apiClient.teams.billing.aiUsage(teamUuid);
+      if (typeof data.billingLimit == 'number' && typeof data.currentPeriodUsage === 'number') {
+        setMessagesLeft(Math.max(data.billingLimit - data.currentPeriodUsage, 0));
+        setLoadState('loaded');
+      } else {
+        throw new Error(`Unexpected data from the API: ${JSON.stringify(data)}`);
+      }
+    };
+    events.on('aiAnalystMessagesLeftRefresh', refresh);
+    return () => {
+      events.off('aiAnalystMessagesLeftRefresh', refresh);
+    };
+  }, [setMessagesLeft, teamUuid, setLoadState]);
 
   return messagesLeft;
 };
