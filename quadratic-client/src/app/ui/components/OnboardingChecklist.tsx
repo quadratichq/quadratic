@@ -74,6 +74,7 @@ export const OnboardingChecklist = () => {
       <div className="space-y-1">
         {bonusPrompts.map((prompt) => (
           <div
+            id={`onboarding-checklist-item-${prompt.category}`}
             key={prompt.category}
             className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-muted/50"
             onClick={() => handleItemClick(prompt.category, prompt.received)}

@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
+import confetti from 'canvas-confetti';
 import { atom } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
@@ -46,12 +47,30 @@ export const bonusPromptsAtom = atom(
   }
 );
 
+// confetti celebration for checklist items
+const celebrateChecklistItem = (category: string) => {
+  const element = document.getElementById(`onboarding-checklist-item-${category}`);
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+  const x = (rect.left + rect.width / 2) / window.innerWidth;
+  const y = rect.bottom / window.innerHeight;
+
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { x, y },
+    zIndex: 10000,
+  });
+};
+
 // Write-only atom for claiming bonus prompts (calls API and updates state)
 export const claimBonusPromptAtom = atom(null, async (get, set, category: string) => {
   try {
     const result = await apiClient.user.tutorialBonusPrompt.claim({ category });
     set(bonusPromptsAtom, { type: 'claim', category });
     events.emit('aiAnalystMessagesLeftRefresh');
+    celebrateChecklistItem(category);
     return result;
   } catch (error) {
     console.error('Failed to claim bonus prompt:', error);
