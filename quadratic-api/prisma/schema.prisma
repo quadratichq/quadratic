@@ -22,6 +22,8 @@ model User {
     AnalyticsAIChat     AnalyticsAIChat[]
     TutorialBonusPrompt TutorialBonusPrompt[]
 
+    usedBonusPrompts Int @default(0) @map("used_bonus_prompts")
+
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
     clientDataKv Json @default("{}") @map("client_data_kv")

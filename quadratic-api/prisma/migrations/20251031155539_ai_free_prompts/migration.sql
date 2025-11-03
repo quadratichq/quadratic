@@ -14,3 +14,6 @@ CREATE UNIQUE INDEX "TutorialBonusPrompt_user_id_category_key" ON "TutorialBonus
 
 -- AddForeignKey
 ALTER TABLE "TutorialBonusPrompt" ADD CONSTRAINT "TutorialBonusPrompt_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "used_bonus_prompts" INTEGER NOT NULL DEFAULT 0;

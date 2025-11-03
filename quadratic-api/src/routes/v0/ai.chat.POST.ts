@@ -16,7 +16,12 @@ import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
-import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import {
+  BillingAIUsageLimitExceeded,
+  BillingAIUsageMonthlyForUserInTeam,
+  consumeBonusPrompt as consumeBonusPrompts,
+  getBonusPromptsRemaining,
+} from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -75,8 +80,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   // and the message is a user prompt, not a tool result
   if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
     const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
-    const bonus = await
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+    const exceededBy = BillingAIUsageLimitExceeded(usage);
+
+    if (exceededBy > 0) {
+      const bonusRemaining = await getBonusPromptsRemaining(userId);
+
+      if (exceededBy < bonusRemaining) {
+        await consumeBonusPrompts(userId, exceededBy);
+      } else {
+        exceededBillingLimit = true;
+      }
+    }
 
     if (exceededBillingLimit) {
       const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {

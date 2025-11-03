@@ -59,24 +59,55 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
 /**
  * Checks if the user has exceeded the AI message usage limit
  * @param monthlyUsage Array of monthly AI message usage, sorted by most recent month first
- * @returns True if the user has exceeded the limit, false otherwise
+ * @returns The number of messages exceeded by (0 if not exceeded)
  */
-export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
-  return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
+export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]): number => {
+  const currentUsage = BillingAIUsageForCurrentMonth(monthlyUsage) ?? 0;
+  const limit = BILLING_AI_USAGE_LIMIT ?? Infinity;
+  const exceeded = currentUsage - limit;
+  return exceeded > 0 ? exceeded : 0;
 };
 
 /**
- * Gets all bonus prompts for a user from the TutorialBonusPrompt table
+ * Gets the total bonus prompts awarded to a user
  * @param userId The ID of the user to get bonus prompts for
- * @returns An array of all tutorial bonus prompts for the user
+ * @returns The total number of bonus prompts awarded
  */
-export const getAllBonusPromptsForUser = async (userId: number) => {
-  return await dbClient.tutorialBonusPrompt.findMany({
+export const getTotalBonusPromptsAwarded = async (userId: number): Promise<number> => {
+  const bonusPrompts = await dbClient.tutorialBonusPrompt.findMany({
     where: {
       userId,
     },
-    orderBy: {
-      awardedDate: 'desc',
-    },
+  });
+
+  return bonusPrompts.reduce((total: number, prompt: any) => total + prompt.promptsAwarded, 0);
+};
+
+/**
+ * Gets the remaining bonus prompts for a user in a team context
+ * @param userId The ID of the user to get bonus prompts for
+ * @returns The number of bonus prompts remaining
+ */
+export const getBonusPromptsRemaining = async (userId: number): Promise<number> => {
+  const user = await dbClient.user.findUnique({
+    where: { id: userId },
+    select: { usedBonusPrompts: true },
+  });
+
+  const totalAwarded = await getTotalBonusPromptsAwarded(userId);
+  const used = user?.usedBonusPrompts ?? 0;
+
+  return Math.max(0, totalAwarded - used);
+};
+
+/**
+ * Consumes a bonus prompt for a user by incrementing their used_bonus_prompts counter
+ * @param userId The ID of the user consuming a bonus prompt
+ * @returns The updated user object with the incremented counter
+ */
+export const consumeBonusPrompt = async (userId: number, amount: number) => {
+  return await dbClient.user.update({
+    where: { id: userId },
+    data: { usedBonusPrompts: { increment: amount } },
   });
 };
