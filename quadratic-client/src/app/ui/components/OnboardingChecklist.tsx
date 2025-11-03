@@ -22,19 +22,16 @@ export const OnboardingChecklist = () => {
   }, [fetchBonusPrompts]);
 
   const handleItemClick = useCallback(
-    (category: string, received: boolean) => {
-      // Only handle clicks on unchecked items
-      if (received) return;
-
+    (category: string, repeat: boolean) => {
       switch (category) {
         case 'prompt-ai':
-          promptAITutorial();
+          promptAITutorial(repeat);
           break;
         case 'demo-connection':
           console.log('TODO');
           break;
         case 'watch-tutorial':
-          watchTutorial();
+          watchTutorial(repeat);
           break;
         default:
           console.warn(`Unknown category: ${category}`);
@@ -78,10 +75,7 @@ export const OnboardingChecklist = () => {
         {bonusPrompts.map((prompt) => (
           <div
             key={prompt.category}
-            className={cn(
-              'flex items-center gap-3 rounded-md px-2 py-1 transition-colors',
-              !prompt.received && 'cursor-pointer hover:bg-muted/50'
-            )}
+            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-muted/50"
             onClick={() => handleItemClick(prompt.category, prompt.received)}
           >
             {/* Checkmark circle */}

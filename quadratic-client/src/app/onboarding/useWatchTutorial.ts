@@ -9,8 +9,13 @@ const CATEGORY = 'watch-tutorial';
 export const useWatchTutorial = () => {
   const claimBonusPrompt = useSetAtom(claimBonusPromptAtom);
 
-  return useCallback(() => {
-    openLink('https://www.quadratichq.com/quadratic-101');
-    claimBonusPrompt(CATEGORY);
-  }, [claimBonusPrompt]);
+  return useCallback(
+    (repeat: boolean = false) => {
+      openLink('https://www.quadratichq.com/quadratic-101');
+      if (!repeat) {
+        claimBonusPrompt(CATEGORY);
+      }
+    },
+    [claimBonusPrompt]
+  );
 };

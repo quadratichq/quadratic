@@ -15,10 +15,13 @@ export const usePromptAITutorial = () => {
     setState('add-prompt');
   }, []);
 
-  return useCallback(() => {
-    if (state === 'not-started') {
-      start();
-    }
-    console.log('TODO', CATEGORY);
-  }, [start, state]);
+  return useCallback(
+    (repeat: boolean = false) => {
+      if (state === 'not-started') {
+        start();
+      }
+      console.log('TODO', CATEGORY, 'repeat:', repeat);
+    },
+    [start, state]
+  );
 };
