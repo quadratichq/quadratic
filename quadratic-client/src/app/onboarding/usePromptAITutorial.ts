@@ -1,5 +1,24 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useCallback, useState } from 'react';
+
 const CATEGORY = 'prompt-ai';
+type State = 'not-started' | 'ai-open' | 'add-prompt';
 
 export const usePromptAITutorial = () => {
-  console.log('TODO');
+  const [state, setState] = useState<State>('not-started');
+
+  const start = useCallback(() => {
+    setState('ai-open');
+  }, []);
+
+  const addPrompt = useCallback(() => {
+    setState('add-prompt');
+  }, []);
+
+  return useCallback(() => {
+    if (state === 'not-started') {
+      start();
+    }
+    console.log('TODO', CATEGORY);
+  }, [start, state]);
 };

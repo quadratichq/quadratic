@@ -1,4 +1,5 @@
 import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -20,24 +21,27 @@ export const OnboardingChecklist = () => {
     fetchBonusPrompts({ type: 'fetch' });
   }, [fetchBonusPrompts]);
 
-  const handleItemClick = useCallback((category: string, received: boolean) => {
-    // Only handle clicks on unchecked items
-    if (received) return;
+  const handleItemClick = useCallback(
+    (category: string, received: boolean) => {
+      // Only handle clicks on unchecked items
+      if (received) return;
 
-    switch (category) {
-      case 'prompt-ai':
-        promptAITutorial(category);
-        break;
-      case 'demo-connection':
-        console.log('TODO');
-        break;
-      case 'watch-tutorial':
-        watchTutorial();
-        break;
-      default:
-        console.warn(`Unknown category: ${category}`);
-    }
-  }, []);
+      switch (category) {
+        case 'prompt-ai':
+          promptAITutorial();
+          break;
+        case 'demo-connection':
+          console.log('TODO');
+          break;
+        case 'watch-tutorial':
+          watchTutorial();
+          break;
+        default:
+          console.warn(`Unknown category: ${category}`);
+      }
+    },
+    [promptAITutorial, watchTutorial]
+  );
 
   if (!showOnboardingChecklist || !bonusPrompts) {
     return null;
@@ -76,8 +80,7 @@ export const OnboardingChecklist = () => {
             key={prompt.category}
             className={cn(
               'flex items-center gap-3 rounded-md px-2 py-1 transition-colors',
-              !prompt.received && 'cursor-pointer hover:bg-muted/50',
-              prompt.received && 'opacity-70'
+              !prompt.received && 'cursor-pointer hover:bg-muted/50'
             )}
             onClick={() => handleItemClick(prompt.category, prompt.received)}
           >
@@ -92,10 +95,19 @@ export const OnboardingChecklist = () => {
             </div>
 
             {/* Task name */}
-            <span className="flex-1 text-sm">{prompt.name}</span>
+            <span className={cn('flex-1 text-sm', prompt.received && 'text-muted-foreground line-through')}>
+              {prompt.name}
+            </span>
 
             {/* Badge */}
-            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-medium text-white">
+            <span
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                prompt.received && prompt.prompts === 1
+                  ? 'border-blue-600 bg-white text-blue-600 dark:bg-white dark:text-blue-600'
+                  : 'border-blue-600 bg-blue-600 text-white'
+              )}
+            >
               Earn{prompt.received ? 'ed' : ''} {prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
             </span>
           </div>
