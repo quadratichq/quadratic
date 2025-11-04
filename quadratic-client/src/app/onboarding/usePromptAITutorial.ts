@@ -35,7 +35,7 @@ export const usePromptAITutorial = () => {
         });
         setCallout({
           callouts: [
-            { id: 'ai-analyst-user-message-form', side: 'right', text: 'Submit the prompt to try Quadratic AI' },
+            { id: 'ai-analyst-user-message-form', side: 'right', text: 'Submit a prompt to try Quadratic AI' },
           ],
         });
         events.emit(
