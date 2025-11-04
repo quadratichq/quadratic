@@ -2768,10 +2768,10 @@ The tool displays a contact form with options to reach out to the team or start 
       properties: {
         acknowledged: {
           type: ['boolean', 'null'],
-          description: 'Optional acknowledgment flag',
+          description: 'Acknowledgment flag (can be null or boolean)',
         },
       },
-      required: [],
+      required: ['acknowledged'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.ContactUs],
