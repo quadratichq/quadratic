@@ -9,6 +9,8 @@ import { useOnboardingLoaderData } from '@/routes/onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
   ArrowRightIcon,
+  CheckBoxEmptyIcon,
+  CheckBoxIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   EducationIcon,
@@ -332,19 +334,26 @@ export const questionsById: Record<
     Form: (props) => {
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="flex flex-col gap-2">
-            <Input key={1} className="h-12 w-full text-lg" type="text" name={props.id} placeholder="john@example.com" />
+          <QuestionForm className="flex flex-col gap-2 md:grid md:grid-cols-2">
+            <Input
+              key={1}
+              className="h-12 w-full text-lg"
+              type="email"
+              name={props.id}
+              placeholder="john@example.com"
+            />
             <Input
               key={2}
               className="h-12 w-full text-lg"
-              type="text"
+              type="email"
               name={props.id}
               placeholder="alice@example.com"
             />
+            <Input key={3} className="h-12 w-full text-lg" type="email" name={props.id} placeholder="bob@example.com" />
             <Input
               key={3}
               className="h-12 w-full text-lg"
-              type="text"
+              type="email"
               name={props.id}
               placeholder="susan@example.com"
             />
@@ -362,40 +371,48 @@ export const questionsById: Record<
       pro: 'Pro',
     },
     Form: (props) => {
-      // const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
+      const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
       const [searchParams] = useSearchParams();
       const className = cn(
         'h-full w-full group relative rounded shadow-sm border border-border p-4 hover:border-primary'
       );
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          {/* <QuestionForm>
+          <QuestionForm>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                className={cn(className, selectedPlan === 'free' && 'border-primary')}
+                className={cn(className, selectedPlan === 'free' && 'border-primary bg-accent')}
                 onClick={() => setSelectedPlan('free')}
               >
-                <FreePlan className="flex h-full flex-col">
-                  <div className="mt-auto flex items-center justify-center">
-                    <CheckBoxIcon className={cn(selectedPlan === 'free' ? 'text-primary' : 'text-muted-foreground')} />
-                  </div>
-                </FreePlan>
+                <FreePlan className="h-full" />
+
+                {selectedPlan === 'free' ? (
+                  <CheckBoxIcon className="absolute right-4 top-5 text-primary" />
+                ) : (
+                  <CheckBoxEmptyIcon className="absolute right-4 top-5 text-border" />
+                )}
               </button>
 
               <button
                 type="button"
-                className={cn(className, selectedPlan === 'pro' && 'border-primary')}
+                className={cn(className, selectedPlan === 'pro' && 'border-primary bg-accent')}
                 onClick={() => setSelectedPlan('pro')}
               >
-                <ProPlan></ProPlan>
-                {selectedPlan === 'pro' && <CheckBoxIcon className="absolute right-4 top-5 text-primary" />}
+                <ProPlan />
+                {selectedPlan === 'pro' ? (
+                  <CheckBoxIcon className="absolute right-4 top-5 text-primary" />
+                ) : (
+                  <CheckBoxEmptyIcon className="absolute right-4 top-5 text-border" />
+                )}
               </button>
             </div>
+            <input type="hidden" name={props.id} value={selectedPlan} />
             <QuestionFormFooter />
-          </QuestionForm> */}
+          </QuestionForm>
           {/* TODO: Need the team UUID here */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid hidden grid-cols-2 gap-4">
             <a href={`./?${searchParams.toString()}&${props.id}=free`} className={className}>
               <FreePlan />
               <ArrowRightIcon className="absolute right-4 top-5 opacity-20 group-hover:scale-125 group-hover:text-primary group-hover:opacity-100" />
@@ -481,7 +498,7 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
   return (
     <div
       className={cn(
-        'col-span-full items-center justify-center gap-4 pb-10 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
+        'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
       )}
     >
       {/* <div
@@ -494,7 +511,7 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
         <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
         Question {currentQuestionNumber} / {currentQuestionsTotal}
       </div> */}
-      <div className="flex w-full items-center justify-center gap-4">
+      <div className="flex w-full items-center justify-center gap-2">
         {isSubmitting ? (
           <SpinnerIcon className="mr-4 text-primary" />
         ) : (
