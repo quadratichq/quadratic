@@ -181,7 +181,7 @@ model Connection {
     // Type-specific details
     type             ConnectionType
     typeDetails      Bytes // InitializationVector:Cyphertext(JSON)
-    SyncedConnection SyncedConnection[]
+    SyncedConnection SyncedConnection?
 }
 
 enum SyncedConnectionStatus {
@@ -206,7 +206,6 @@ model SyncedConnection {
     updatedDate         DateTime               @default(now()) @map("updated_date")
     SyncedConnectionLog SyncedConnectionLog[]
 
-    @@index([connectionId])
     @@index([status])
 }
 

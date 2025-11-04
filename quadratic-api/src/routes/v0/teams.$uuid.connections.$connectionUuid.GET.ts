@@ -22,14 +22,17 @@ async function handler(
   const {
     user: { id: userId },
   } = req;
+
   const {
     params: { uuid: teamUuid, connectionUuid },
   } = parseRequest(req, schema);
+
   const {
     connection,
     team: {
       userMakingRequest: { permissions: teamPermissions },
     },
+    syncedConnection,
   } = await getTeamConnection({ connectionUuid, userId, teamUuid });
 
   // Do you have permission?
@@ -47,5 +50,6 @@ async function handler(
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
     typeDetails,
+    percentCompleted: syncedConnection?.[0]?.percentCompleted ?? undefined,
   });
 }

@@ -69,6 +69,7 @@ const ConnectionSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
+  percentCompleted: z.number().optional(),
 });
 const ConnectionSshSchema = z.object({
   useSsh: z.boolean(),
