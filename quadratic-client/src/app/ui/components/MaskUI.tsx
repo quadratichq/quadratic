@@ -1,5 +1,6 @@
 import { tutorialAtom } from '@/app/atoms/tutorialAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { events } from '@/app/events/events';
 import { rectangleSubtraction } from '@/app/gridGL/helpers/rectangleSubtraction';
 import { useAtomValue } from 'jotai';
 import { Rectangle } from 'pixi.js';
@@ -22,6 +23,9 @@ export const MaskUI = () => {
         if (e.code === 'KeyR' && (e.metaKey || e.ctrlKey)) {
           return;
         }
+      }
+      if (e.code === 'Escape') {
+        events.emit('tutorialTrigger', 'cancel');
       }
       e.preventDefault();
       e.stopPropagation();

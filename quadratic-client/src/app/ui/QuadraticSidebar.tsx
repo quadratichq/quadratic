@@ -114,6 +114,7 @@ export const QuadraticSidebar = () => {
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
         <SidebarTooltip label="Onboarding checklist">
           <SidebarToggle
+            id="onboarding-checklist-trigger"
             pressed={showOnboardingChecklist}
             onPressedChange={(pressed) => setShowOnboardingChecklist(pressed ? 'open' : 'dismiss')}
           >
