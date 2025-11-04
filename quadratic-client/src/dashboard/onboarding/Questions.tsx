@@ -420,7 +420,7 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
   return (
     <div
       className={cn(
-        'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
+        'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity duration-300 ease-in-out'
       )}
     >
       {/* <div
@@ -439,19 +439,19 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
         ) : (
           <Button
             type="reset"
-            disabled={currentIndex === 0}
+            disabled={isSubmitting || currentIndex === 0}
             onClick={(e) => {
               navigate(-1);
             }}
             size="lg"
             variant="secondary"
-            className={cn(btnClassName, currentIndex === 0 && 'hidden')}
+            className={cn(btnClassName, currentIndex === 110 && 'hidden')}
           >
             Back
           </Button>
         )}
         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
-          {currentIndex === 0 ? 'Get started' : currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
+          {currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
         </Button>
       </div>
     </div>
