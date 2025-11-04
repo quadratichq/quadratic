@@ -48,7 +48,7 @@ export const OnboardingChecklist = () => {
   const totalCount = bonusPrompts.length;
 
   return (
-    <div className="absolute bottom-0 right-0 rounded-lg border bg-background p-6 shadow-sm">
+    <div id="onboarding-checklist" className="absolute bottom-0 right-0 rounded-lg border bg-background p-6 shadow-sm">
       {/* Header */}
       <div className="mb-2 flex items-start justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold">

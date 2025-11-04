@@ -70,7 +70,11 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle
+              id="show-ai-analyst"
+              pressed={showAIAnalyst}
+              onPressedChange={() => setShowAIAnalyst((prev) => !prev)}
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
