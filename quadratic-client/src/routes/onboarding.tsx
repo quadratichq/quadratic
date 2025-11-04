@@ -108,8 +108,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 
   console.log('result', result);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  let doThing = false;
+  let doThing = true;
   if (doThing) return;
 
   // TODO: pick out name and other things

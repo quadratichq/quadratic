@@ -15,7 +15,6 @@ import {
   PersonalIcon,
   RadioButtonCheckedIcon,
   RadioButtonUncheckedIcon,
-  SpinnerIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -255,14 +254,19 @@ export const questionsById: Record<
       'team-name': 'Team name',
     },
     Form: (props) => {
+      const { currentId } = useOnboardingLoaderData();
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       const inputRef = useRef<HTMLInputElement>(null);
 
+      // TODO: Hacky
       useEffect(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
+        if (inputRef.current && currentId === props.id) {
+          setTimeout(() => {
+            inputRef.current?.focus();
+            console.log('focused', currentId, props.id, inputRef, inputRef.current);
+          }, 0);
         }
-      }, []);
+      }, [currentId, props.id]);
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="">
@@ -321,8 +325,10 @@ export const questionsById: Record<
       const [selectedPlan, setSelectedPlan] = useState<keyof typeof props.optionsByValue>(
         Object.keys(props.optionsByValue)[0]
       );
+      const fetcher = useFetcher({ key: FETCHER_KEY });
+      const isSubmitting = fetcher.state !== 'idle';
       const className = cn(
-        'h-full w-full group relative rounded shadow-sm border border-border p-4 hover:border-primary hover:shadow-md'
+        'h-full w-full group relative rounded shadow-sm border border-border p-4 enabled:hover:border-primary enabled:hover:shadow-md'
       );
 
       return (
@@ -336,6 +342,7 @@ export const questionsById: Record<
                   type="button"
                   className={cn(className, selectedPlan === key && 'border-primary bg-accent shadow-md')}
                   onClick={() => setSelectedPlan(key)}
+                  disabled={isSubmitting}
                 >
                   {key === 'free' ? <FreePlan className="h-full" /> : <ProPlan />}
                   {selectedPlan === key ? (
@@ -434,23 +441,20 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
         Question {currentQuestionNumber} / {currentQuestionsTotal}
       </div> */}
       <div className="flex w-full items-center justify-center gap-2">
-        {isSubmitting ? (
-          <SpinnerIcon className="mr-4 text-primary" />
-        ) : (
-          <Button
-            type="reset"
-            disabled={isSubmitting || currentIndex === 0}
-            onClick={(e) => {
-              navigate(-1);
-            }}
-            size="lg"
-            variant="secondary"
-            className={cn(btnClassName, currentIndex === 110 && 'hidden')}
-          >
-            Back
-          </Button>
-        )}
-        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
+        <Button
+          type="reset"
+          disabled={isSubmitting || currentIndex === 0}
+          onClick={(e) => {
+            navigate(-1);
+          }}
+          size="lg"
+          variant="secondary"
+          className={cn(btnClassName, currentIndex === 110 && 'hidden')}
+        >
+          Back
+        </Button>
+
+        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled} loading={isSubmitting}>
           {currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
         </Button>
       </div>

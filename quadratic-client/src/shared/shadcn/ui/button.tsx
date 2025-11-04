@@ -1,3 +1,4 @@
+import { SpinnerIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot as SlotPrimitive } from 'radix-ui';
@@ -38,13 +39,31 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, children, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, children, asChild = false, loading = false, disabled, ...props }, ref) => {
     const Comp = asChild ? SlotPrimitive.Slot : 'button';
+    const content = (
+      <>
+        <span className={loading ? 'invisible' : ''}>{children}</span>
+        {loading && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <SpinnerIcon />
+          </span>
+        )}
+      </>
+    );
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} children={children} />
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }), loading && 'relative')}
+        ref={ref}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {asChild ? children : content}
+      </Comp>
     );
   }
 );
