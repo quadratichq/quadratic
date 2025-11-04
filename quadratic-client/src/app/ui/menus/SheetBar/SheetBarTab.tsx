@@ -17,7 +17,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
-const SHEET_NAME_MAX_LENGTH = 50;
+const SHEET_NAME_MAX_LENGTH = 31;
 
 // This is a hack to prevent the tab from blurring immediately when entering
 // renaming from right click or menu. This is a hack probably because of too
@@ -256,7 +256,7 @@ const TabName = memo(
             window.getSelection()?.toString()
           ) {
             // Allow these, otherwise we cap the length of the value
-          } else if (value.length > SHEET_NAME_MAX_LENGTH) {
+          } else if (value.length >= SHEET_NAME_MAX_LENGTH) {
             event.preventDefault();
           }
         }}

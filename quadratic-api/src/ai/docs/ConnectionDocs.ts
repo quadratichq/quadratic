@@ -18,6 +18,7 @@ There are some slight differences between SQL syntax across databases to keep in
 * BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
 * COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES
 * MARIADB has the same syntax as MySQL
+* SYNCED and MIXPANEL use readonly ANSI SQL syntax. It does not support CREATE, ALTER, DROP, or INSERT statements.
 
 In PostgreSQL, identifiers like table names and column names that contain spaces or are reserved keywords need to be enclosed in double quotes.
 

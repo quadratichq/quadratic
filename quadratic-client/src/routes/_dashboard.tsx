@@ -5,6 +5,7 @@ import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
+import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
@@ -151,7 +152,14 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-
+  const {
+    activeTeam: {
+      userMakingRequest: { teamRole: userMakingRequestTeamRole },
+      clientDataKv: { lastSolicitationForProUpgrade },
+      billing: { status: billingStatus },
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
   // When the location changes, close the menu (if it's already open) and reset scroll
@@ -214,6 +222,12 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <ImportProgressList />
+        <UpgradeDialogWithPeriodicReminder
+          teamUuid={activeTeamUuid}
+          userMakingRequestTeamRole={userMakingRequestTeamRole}
+          lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
+          billingStatus={billingStatus}
+        />
       </TooltipProvider>
     </RecoilRoot>
   );
