@@ -16,6 +16,7 @@ export const MaskUI = () => {
   // Block all keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!show) return;
       // If debug, allow through Cmd+R or Ctrl+R, otherwise block
       if (debug) {
         if (e.code === 'KeyR' && (e.metaKey || e.ctrlKey)) {
@@ -27,11 +28,13 @@ export const MaskUI = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (!show) return;
       e.preventDefault();
       e.stopPropagation();
     };
 
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (!show) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -45,7 +48,7 @@ export const MaskUI = () => {
       document.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('keypress', handleKeyPress, true);
     };
-  }, [debug]);
+  }, [debug, show]);
 
   // Calculate blocking rectangles based on unmasked elements
   useEffect(() => {
@@ -130,7 +133,6 @@ export const MaskUI = () => {
   }, [unmaskedElements]);
 
   if (!show) return null;
-
   return (
     <>
       {blockingRects.map((rect, index) => (
