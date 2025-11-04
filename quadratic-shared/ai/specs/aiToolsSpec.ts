@@ -2771,7 +2771,7 @@ The tool displays a contact form with options to reach out to the team or start 
           description: 'Optional acknowledgment flag',
         },
       },
-      required: [],
+      required: ['acknowledged'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.ContactUs],
