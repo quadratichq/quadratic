@@ -18,7 +18,7 @@ import {
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -368,7 +368,7 @@ export const AIUserMessageForm = memo(
         value={prompt}
         className={cn(
           'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
-          editingOrDebugEditing ? 'min-h-14' : '!max-h-none overflow-hidden',
+          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
           (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
         )}
         onChange={handlePromptChange}
@@ -378,7 +378,6 @@ export const AIUserMessageForm = memo(
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
-        readOnly={!editingOrDebugEditing}
         onDragEnter={handleDrag}
       />
     );
@@ -488,21 +487,18 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
   }
 
   return (
-    <TooltipPopover label="Edit">
-      <Button
-        variant="ghost"
-        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-        size="icon-sm"
-        onClick={(e) => {
-          if (loading) return;
-          e.stopPropagation();
-          setEditing(true);
-          textareaRef.current?.focus();
-        }}
-      >
-        <EditIcon />
-      </Button>
-    </TooltipPopover>
+    <button
+      className="absolute bottom-0 left-0 right-0 top-0 z-10 bg-transparent indent-[-9999px]"
+      onClick={(e) => {
+        if (loading) return;
+        e.stopPropagation();
+        setEditing(true);
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
+      }}
+    >
+      Edit
+    </button>
   );
 });
 
