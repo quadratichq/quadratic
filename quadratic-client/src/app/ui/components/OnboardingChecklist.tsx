@@ -1,11 +1,12 @@
 import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { events } from '@/app/events/events';
 import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const OnboardingChecklist = () => {
   const bonusPrompts = useAtomValue(bonusPromptsAtom);
@@ -16,6 +17,8 @@ export const OnboardingChecklist = () => {
   const watchTutorial = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
 
+  const [demoRunning, setDemoRunning] = useState(false);
+
   // Fetch bonus prompts on mount
   useEffect(() => {
     fetchBonusPrompts({ type: 'fetch' });
@@ -25,12 +28,15 @@ export const OnboardingChecklist = () => {
     (category: string, repeat: boolean) => {
       switch (category) {
         case 'prompt-ai':
+          setDemoRunning(true);
           promptAITutorial(repeat);
           break;
         case 'demo-connection':
+          setDemoRunning(true);
           console.log('TODO');
           break;
         case 'watch-tutorial':
+          setDemoRunning(true);
           watchTutorial(repeat);
           break;
         default:
@@ -48,7 +54,7 @@ export const OnboardingChecklist = () => {
   const totalCount = bonusPrompts.length;
 
   return (
-    <div id="onboarding-checklist" className="absolute bottom-0 right-0 rounded-lg border bg-background p-6 shadow-sm">
+    <div className="absolute bottom-0 right-0 rounded-lg border bg-background p-6 shadow-sm">
       {/* Header */}
       <div className="mb-2 flex items-start justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -58,9 +64,16 @@ export const OnboardingChecklist = () => {
           </div>
         </h2>
         <Button
+          id="onboarding-checklist-close"
           variant="ghost"
           size="icon-sm"
-          onClick={() => hideChecklist('dismiss')}
+          onClick={() => {
+            if (!demoRunning) {
+              hideChecklist('dismiss');
+            } else {
+              events.emit('tutorialTrigger', 'cancel');
+            }
+          }}
           className="text-muted-foreground hover:text-foreground"
         >
           <Cross2Icon className="h-4 w-4" />

@@ -1,28 +1,27 @@
 import { tutorialAtom } from '@/app/atoms/tutorialAtom';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { rectangleSubtraction } from '@/app/gridGL/helpers/rectangleSubtraction';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
 
 const Z_INDEX = 100;
-const BACKGROUND_COLOR = 'rgba(0,0,0,0.15)';
+const BACKGROUND_COLOR = 'rgba(0,0,0,0.2)';
 
 export const MaskUI = () => {
   const { show, unmaskedElements } = useAtomValue(tutorialAtom);
   const [blockingRects, setBlockingRects] = useState<Rectangle[]>([]);
+  const { debug } = useDebugFlags();
 
-  // Debug only - remove after testing
-  const setUnmaskedElements = useSetAtom(tutorialAtom);
+  // Block all keyboard events
   useEffect(() => {
-    setTimeout(
-      () => setUnmaskedElements({ show: true, unmaskedElements: ['onboarding-checklist', 'show-ai-analyst'] }),
-      2000
-    );
-  }, [setUnmaskedElements]);
-
-  useEffect(() => {
-    // Block all keyboard events
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If debug, allow through Cmd+R or Ctrl+R, otherwise block
+      if (debug) {
+        if (e.code === 'KeyR' && (e.metaKey || e.ctrlKey)) {
+          return;
+        }
+      }
       e.preventDefault();
       e.stopPropagation();
     };
@@ -46,23 +45,35 @@ export const MaskUI = () => {
       document.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('keypress', handleKeyPress, true);
     };
-  }, []);
+  }, [debug]);
 
   // Calculate blocking rectangles based on unmasked elements
   useEffect(() => {
+    let retryTimeout: number | undefined;
+
     const calculateBlockingRects = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
       // Get all unmasked element rectangles
-      const unmaskedRects = unmaskedElements
-        .map((id) => {
-          const element = document.getElementById(id);
-          if (!element) return null;
+      const unmaskedRects: DOMRect[] = [];
+      const missingElements: string[] = [];
+
+      for (const id of unmaskedElements) {
+        const element = document.getElementById(id);
+        if (!element) {
+          missingElements.push(id);
+        } else {
           const rect = element.getBoundingClientRect();
-          return rect;
-        })
-        .filter((rect): rect is DOMRect => rect !== null);
+          unmaskedRects.push(rect);
+        }
+      }
+
+      // If we're expecting elements but some are missing, retry in 500ms
+      if (unmaskedElements.length > 0 && missingElements.length > 0) {
+        retryTimeout = window.setTimeout(calculateBlockingRects, 500);
+        return;
+      }
 
       if (unmaskedRects.length === 0) {
         // No unmasked elements, block entire viewport
@@ -110,6 +121,9 @@ export const MaskUI = () => {
     });
 
     return () => {
+      if (retryTimeout !== undefined) {
+        clearTimeout(retryTimeout);
+      }
       window.removeEventListener('resize', calculateBlockingRects);
       window.removeEventListener('scroll', calculateBlockingRects, true);
       resizeObserver.disconnect();
@@ -137,11 +151,11 @@ export const MaskUI = () => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          onMouseDown={(e) => {
+          onPointerDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          onMouseUp={(e) => {
+          onPointerUp={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}

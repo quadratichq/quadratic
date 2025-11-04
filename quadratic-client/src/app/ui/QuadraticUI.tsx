@@ -11,6 +11,7 @@ import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { CalloutUI } from '@/app/ui/components/CalloutUI';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { MaskUI } from '@/app/ui/components/MaskUI';
@@ -157,6 +158,7 @@ export default function QuadraticUI() {
       <UpdateAlertVersion />
       <UserMessage />
       <MaskUI />
+      <CalloutUI />
     </div>
   );
 }

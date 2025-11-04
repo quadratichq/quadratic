@@ -176,6 +176,8 @@ interface EventTypes {
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
   aiAnalystMessagesLeftRefresh: () => void;
+
+  tutorialTrigger: (trigger: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
