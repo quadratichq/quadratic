@@ -11,13 +11,16 @@ const FULL_SYNC_INTERVAL_M: u64 = 1; // 1 minute
 
 /// Initialize the sync workers in separate threads.
 pub(crate) async fn init_sync_workers(state: Arc<State>) -> Result<()> {
-    // sync daily connections in a separate thread
-    let daily_sync_state = Arc::clone(&state);
-    tokio::spawn(async move { daily_sync_worker(daily_sync_state).await });
-
     // sync full connections in a separate thread
     let full_sync_state = Arc::clone(&state);
     tokio::spawn(async move { full_sync_worker(full_sync_state).await });
+
+    // wait 10 seconds before syncing daily connections
+    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    // sync daily connections in a separate thread
+    let daily_sync_state = Arc::clone(&state);
+    tokio::spawn(async move { daily_sync_worker(daily_sync_state).await });
 
     Ok(())
 }

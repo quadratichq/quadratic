@@ -18,13 +18,14 @@ const requestValidationMiddleware = validateRequestSchema(
       error: z.string().nullable().optional(),
     }),
     params: z.object({
-      syncedConnectionId: z.number(),
+      // coerce to a number
+      syncedConnectionId: z.coerce.number(),
     }),
   })
 );
 
 router.post(
-  '/synced-connections/:syncedConnectionId/log',
+  '/synced-connection/:syncedConnectionId/log',
   validateM2MAuth(),
   requestValidationMiddleware,
   async (req: Request, res: Response) => {

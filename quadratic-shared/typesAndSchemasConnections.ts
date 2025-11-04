@@ -25,6 +25,10 @@ export const ConnectionTypeSchema = z.enum([
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
+export function isSyncedConnectionType(type: ConnectionType): boolean {
+  return ['MIXPANEL'].includes(type);
+}
+
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
   host = host.trim();
@@ -55,7 +59,7 @@ const ConnectionPortSchema = z
     },
     { message: 'Port must be a valid number between 0 and 65535' }
   );
-const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
+export const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -213,11 +217,11 @@ export const ApiSchemasConnections = {
   '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
 
   // Get synced connection
-  '/v0/synced-connections/:syncedConnectionId.GET.response': SyncedConnectionSchema,
+  '/v0/synced-connection/:syncedConnectionId.GET.response': SyncedConnectionSchema,
 
   // Get all synced connections (internal)
-  '/v0/internal/synced-connections.GET.response': SyncedConnectionSchema,
+  '/v0/internal/synced-connection.GET.response': SyncedConnectionSchema,
 
   // Get synced connection log
-  '/v0/synced-connections/:syncedConnectionId/log.GET.response': SyncedConnectionLogSchema,
+  '/v0/synced-connection/:syncedConnectionId/log.GET.response': SyncedConnectionLogSchema,
 };

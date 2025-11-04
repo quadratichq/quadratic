@@ -177,6 +177,14 @@ pub async fn set_file_checkpoint(
  * Connections
  **************************************************/
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ConnectionStatus {
+    ACTIVE,
+    INACTIVE,
+    DELETED,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Connection<T> {
@@ -184,6 +192,19 @@ pub struct Connection<T> {
     pub name: String,
     pub r#type: String,
     pub type_details: T,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncedConnection<T> {
+    pub id: u64,
+    pub uuid: Uuid,
+    pub connection_id: u64,
+    pub percent_completed: u64,
+    pub status: ConnectionStatus,
+    pub updated_date: DateTime<Utc>,
+    pub type_details: T,
+    pub r#type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -255,11 +276,11 @@ pub async fn get_synced_connections_by_type<T: DeserializeOwned>(
     base_url: &str,
     jwt: &str,
     connection_type: &str,
-) -> Result<Vec<Connection<T>>> {
+) -> Result<Vec<SyncedConnection<T>>> {
     let url = format!("{base_url}/v0/internal/synced-connection?type={connection_type}");
     let error_message = format!("Synced connection {connection_type} not found");
 
-    get::<Vec<Connection<T>>>(&url, jwt, &error_message).await
+    get::<Vec<SyncedConnection<T>>>(&url, jwt, &error_message).await
 }
 
 /// Create a synced connection log for a synced connection.
@@ -267,16 +288,16 @@ pub async fn create_synced_connection_log(
     base_url: &str,
     jwt: &str,
     run_id: Uuid,
-    synced_connection_id: Uuid,
+    synced_connection_id: u64,
     synced_dates: Vec<NaiveDate>,
     status: SyncedConnectionLogStatus,
     error: Option<String>,
 ) -> Result<SyncedConnectionLogResponse> {
     tracing::info!(
-        "Creating scheduled task log, run_id: {run_id}, synced_connection_id: {synced_connection_id}, status: {status:?}"
+        "Creating synced connection log, run_id: {run_id}, synced_connection_id: {synced_connection_id}, status: {status:?}"
     );
 
-    let url = format!("{base_url}/v0/internal/scheduled-tasks/{synced_connection_id}/log");
+    let url = format!("{base_url}/v0/internal/synced-connection/{synced_connection_id}/log");
     let body = SyncedConnectionLogRequest {
         run_id,
         synced_dates,

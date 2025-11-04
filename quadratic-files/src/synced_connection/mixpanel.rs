@@ -54,6 +54,7 @@ pub(crate) async fn process_mixpanel_connections(
                 Arc::clone(&state),
                 connection.type_details,
                 connection.uuid,
+                connection.id,
                 sync_kind,
             )
             .await
@@ -77,6 +78,7 @@ pub(crate) async fn process_mixpanel_connection(
     state: Arc<State>,
     connection: MixpanelConnection,
     connection_id: Uuid,
+    synced_connection_id: u64,
     sync_kind: SyncKind,
 ) -> Result<()> {
     if !can_process_connection(state.clone(), connection_id).await? {
@@ -84,13 +86,21 @@ pub(crate) async fn process_mixpanel_connection(
         return Ok(());
     }
 
-    // add the connection to the cache
-    state.clone().stats.lock().await.num_connections_processing += 1;
-    start_connection_status(state.clone(), connection_id, SyncedConnectionKind::Mixpanel).await;
-
     let object_store = state.settings.object_store.clone();
     let prefix = object_store_path(connection_id, "events");
     let today = chrono::Utc::now().date_naive();
+    let run_id = Uuid::new_v4();
+
+    // add the connection to the cache
+    state.clone().stats.lock().await.num_connections_processing += 1;
+    start_connection_status(
+        state.clone(),
+        connection_id,
+        synced_connection_id,
+        run_id,
+        SyncedConnectionKind::Mixpanel,
+    )
+    .await?;
 
     let MixpanelConnection {
         ref api_secret,
@@ -151,7 +161,7 @@ pub(crate) async fn process_mixpanel_connection(
                 SyncedConnectionKind::Mixpanel,
                 SyncedConnectionStatus::ApiRequest,
             )
-            .await;
+            .await?;
 
             let params = ExportParams::new(chunk_start, chunk_end);
             let parquet_data = client.export_events_streaming(params).await.map_err(|e| {
@@ -168,7 +178,7 @@ pub(crate) async fn process_mixpanel_connection(
                 SyncedConnectionKind::Mixpanel,
                 SyncedConnectionStatus::Upload,
             )
-            .await;
+            .await?;
 
             let num_files = upload(&object_store, &prefix, parquet_data)
                 .await
@@ -203,7 +213,14 @@ pub(crate) async fn process_mixpanel_connection(
         }
     }
 
-    complete_connection_status(state.clone(), connection_id, dates_processed).await;
+    complete_connection_status(
+        state.clone(),
+        connection_id,
+        synced_connection_id,
+        run_id,
+        dates_processed,
+    )
+    .await?;
 
     tracing::info!(
         "Processed {} Mixpanel files in {:?} for connection {}",

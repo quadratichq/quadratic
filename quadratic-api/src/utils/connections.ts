@@ -73,7 +73,7 @@ export async function getConnectionBySyncedConnectionId(syncedConnectionId: numb
  ===============================
 */
 
-export type SyncedConnectionResponse = ApiTypes['/v0/synced-connections/:syncedConnectionId.GET.response'];
+export type SyncedConnectionResponse = ApiTypes['/v0/synced-connection/:syncedConnectionId.GET.response'];
 
 // Convert a database result to a response object
 export function resultToSyncedConnectionResponse(result: SyncedConnection): SyncedConnectionResponse {
@@ -139,7 +139,7 @@ export async function getSyncedConnection(syncedConnectionId: number): Promise<S
  ===============================
 */
 
-type SyncedConnectionLogResponse = ApiTypes['/v0/synced-connections/:syncedConnectionId/log.GET.response'];
+type SyncedConnectionLogResponse = ApiTypes['/v0/synced-connection/:syncedConnectionId/log.GET.response'];
 
 export function resultToSyncedConnectionLogResponse(result: SyncedConnectionLog): SyncedConnectionLogResponse {
   return {
@@ -182,27 +182,44 @@ export async function addPercentCompleted(
   if (bypassIfCompleted) {
     const syncedConnection = await getSyncedConnection(syncedConnectionId);
     if (syncedConnection.percentCompleted >= 100) {
+      await dbClient.syncedConnection.update({
+        where: { id: syncedConnectionId },
+        data: { updatedDate: new Date() },
+      });
       return;
     }
   }
 
   let connection = await getConnectionBySyncedConnectionId(syncedConnectionId);
-  const percentCompleted = await calculatePercentCompleted(syncedConnectionId, connection.typeDetails.startDate);
+  const percentCompleted = await calculatePercentCompleted(syncedConnectionId, connection.typeDetails.start_date);
+  console.log('percentCompleted', percentCompleted);
+  if (percentCompleted === undefined) {
+    return;
+  }
 
   await dbClient.syncedConnection.update({
     where: { id: syncedConnectionId },
-    data: { percentCompleted },
+    data: { percentCompleted, updatedDate: new Date() },
   });
 }
 
 // Calculate the percent completed for a synced connection
-export async function calculatePercentCompleted(syncedConnectionId: number, startDate: Date | string): Promise<number> {
+export async function calculatePercentCompleted(
+  syncedConnectionId: number,
+  startDate: Date | string
+): Promise<number | undefined> {
   const syncedDates = (await getUniqueSyncedDates(syncedConnectionId)).length;
   const endDate = new Date();
   const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
-  const totalDates = endDate.getDate() - start.getDate();
+  const totalDates = daysBetween(start, endDate) + 1; // range inclusive
 
-  return (syncedDates / totalDates) * 100;
+  if (totalDates === 0) {
+    return undefined;
+  }
+
+  const percentCompleted = (syncedDates / totalDates) * 100;
+
+  return Math.max(percentCompleted, 100);
 }
 
 // Get a unique array of synced dates
@@ -275,4 +292,15 @@ export function combineAdjacentDateRanges(dateRanges: string[]): string[] {
     combinedDateRanges.push(`${start}-${end}`);
   }
   return combinedDateRanges;
+}
+
+// Get the number of days between two dates
+export function daysBetween(startDate: Date, endDate: Date): number {
+  // Calculate the time difference in milliseconds
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+
+  // Convert milliseconds to days
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
 }
