@@ -1,4 +1,4 @@
-import { BillingPlans, FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
+import { FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
 import {
   ControlCheckboxInputOther,
   ControlCheckboxStacked,
@@ -9,12 +9,12 @@ import { useOnboardingLoaderData } from '@/routes/onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
   ArrowRightIcon,
-  CheckBoxEmptyIcon,
-  CheckBoxIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   EducationIcon,
   PersonalIcon,
+  RadioButtonCheckedIcon,
+  RadioButtonUncheckedIcon,
   SpinnerIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
@@ -24,7 +24,6 @@ import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
-import { z } from 'zod';
 
 const FETCHER_KEY = 'onboarding-form-submission';
 
@@ -36,42 +35,6 @@ const isValidFormAtom = atom<boolean>({
   key: 'onboardingIsValidFormAtom',
   default: false,
 });
-
-export const OnboardingResponseV1Schema = z.object({
-  __version: z.literal(1),
-  __createdAt: z.string().datetime(),
-  use: z.enum(['work', 'personal', 'education']),
-  'work-role': z.string().optional(),
-  'work-role-other': z.string().optional(),
-  'personal-uses[]': z.array(z.string()).optional(),
-  'personal-uses[]-other': z.string().optional(),
-  'education-identity': z.string().optional(),
-  'education-identity-other': z.string().optional(),
-  'education-subjects[]': z.array(z.string()).optional(),
-  'education-subjects[]-other': z.string().optional(),
-  'languages[]': z.array(z.string()).optional(),
-  'goals[]': z.array(z.string()),
-  'goals[]-other': z.string().optional(),
-});
-export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;
-
-export const OnboardingResponseV2Schema = z.object({
-  __version: z.literal(2),
-  __createdAt: z.string().datetime(),
-  use: z.enum(['work', 'personal', 'education']),
-
-  // Only for work/education
-  'team-size': z.string().optional(),
-  role: z.string().optional(),
-  'role-other': z.string().optional(),
-
-  'connections[]': z.array(z.string()).optional(),
-  'connections[]-other': z.string().optional(),
-  'team-name': z.string(),
-  'team-invites[]': z.array(z.string()).optional(),
-  'team-plan': z.literal('free').or(z.literal('pro')),
-});
-export type OnboardingResponseV2 = z.infer<typeof OnboardingResponseV1Schema>;
 
 type QuestionProps = {
   title: string;
@@ -87,7 +50,7 @@ export const questionsById: Record<
   instructions: {
     title: 'Welcome to Quadratic!',
     subtitle:
-      'Connect to your data, chat with AI, and share the results with your team — all in a familiar spreadsheet interface.',
+      'Connect to your data, chat with AI, and share the results with your team, all in a familiar spreadsheet interface.',
     optionsByValue: {
       foo: 'I want to use Quadratic to analyze data',
     },
@@ -251,8 +214,6 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
             {Object.entries(props.optionsByValue).map(([value, label]) => {
-              console.log(value);
-
               // TODO: fix types
               // @ts-expect-error
               const Icon = connectionsByType[value] ? (
@@ -334,28 +295,15 @@ export const questionsById: Record<
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="flex flex-col gap-2 md:grid md:grid-cols-2">
-            <Input
-              key={1}
-              className="h-12 w-full text-lg"
-              type="email"
-              name={props.id}
-              placeholder="john@example.com"
-            />
-            <Input
-              key={2}
-              className="h-12 w-full text-lg"
-              type="email"
-              name={props.id}
-              placeholder="alice@example.com"
-            />
-            <Input key={3} className="h-12 w-full text-lg" type="email" name={props.id} placeholder="bob@example.com" />
-            <Input
-              key={3}
-              className="h-12 w-full text-lg"
-              type="email"
-              name={props.id}
-              placeholder="susan@example.com"
-            />
+            {['john@example.com', 'alice@example.com', 'bob@example.com', 'susan@example.com'].map((placeholder) => (
+              <Input
+                key={placeholder}
+                className="h-12 w-full text-lg"
+                type="email"
+                name={props.id}
+                placeholder={placeholder}
+              />
+            ))}
             <QuestionFormFooter />
           </QuestionForm>
         </Question>
@@ -370,62 +318,37 @@ export const questionsById: Record<
       pro: 'Pro',
     },
     Form: (props) => {
-      const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
-      const [searchParams] = useSearchParams();
+      const [selectedPlan, setSelectedPlan] = useState<keyof typeof props.optionsByValue>(
+        Object.keys(props.optionsByValue)[0]
+      );
       const className = cn(
-        'h-full w-full group relative rounded shadow-sm border border-border p-4 hover:border-primary'
+        'h-full w-full group relative rounded shadow-sm border border-border p-4 hover:border-primary hover:shadow-md'
       );
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                className={cn(className, selectedPlan === 'free' && 'border-primary bg-accent')}
-                onClick={() => setSelectedPlan('free')}
-              >
-                <FreePlan className="h-full" />
-
-                {selectedPlan === 'free' ? (
-                  <CheckBoxIcon className="absolute right-4 top-5 text-primary" />
-                ) : (
-                  <CheckBoxEmptyIcon className="absolute right-4 top-5 text-border" />
-                )}
-              </button>
-
-              <button
-                type="button"
-                className={cn(className, selectedPlan === 'pro' && 'border-primary bg-accent')}
-                onClick={() => setSelectedPlan('pro')}
-              >
-                <ProPlan />
-                {selectedPlan === 'pro' ? (
-                  <CheckBoxIcon className="absolute right-4 top-5 text-primary" />
-                ) : (
-                  <CheckBoxEmptyIcon className="absolute right-4 top-5 text-border" />
-                )}
-              </button>
+              {/* TODO: handle button nature of this */}
+              {Object.keys(props.optionsByValue).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={cn(className, selectedPlan === key && 'border-primary bg-accent shadow-md')}
+                  onClick={() => setSelectedPlan(key)}
+                >
+                  {key === 'free' ? <FreePlan className="h-full" /> : <ProPlan />}
+                  {selectedPlan === key ? (
+                    <RadioButtonCheckedIcon className="absolute right-4 top-5 text-primary" />
+                  ) : (
+                    <RadioButtonUncheckedIcon className="absolute right-4 top-5 text-border" />
+                  )}
+                </button>
+              ))}
             </div>
             <input type="hidden" name={props.id} value={selectedPlan} />
             <QuestionFormFooter />
           </QuestionForm>
-          {/* TODO: Need the team UUID here */}
-          <div className="grid hidden grid-cols-2 gap-4">
-            <a href={`./?${searchParams.toString()}&${props.id}=free`} className={className}>
-              <FreePlan />
-              <ArrowRightIcon className="absolute right-4 top-5 opacity-20 group-hover:scale-125 group-hover:text-primary group-hover:opacity-100" />
-            </a>
-
-            <a href={`./?${searchParams.toString()}&${props.id}=pro`} className={className}>
-              <ProPlan />
-              <ArrowRightIcon className="absolute right-4 top-5 opacity-20 group-hover:scale-125 group-hover:text-primary group-hover:opacity-100" />
-            </a>
-          </div>
-          <div className="hidden">
-            <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid="123" eventSource="onboarding" />
-          </div>
-          {/* <QuestionFormFooter /> */}
         </Question>
       );
     },
@@ -522,13 +445,13 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
             }}
             size="lg"
             variant="secondary"
-            className={cn(btnClassName, 'text-muted-foregroundz', currentIndex === 0 && 'hidden')}
+            className={cn(btnClassName, currentIndex === 0 && 'hidden')}
           >
             Back
           </Button>
         )}
         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
-          {currentIndex === 0 ? 'Get Started' : currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
+          {currentIndex === 0 ? 'Get started' : currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
         </Button>
       </div>
     </div>
@@ -659,7 +582,7 @@ function ImageCarousel() {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {images.map((src, index) => (
-          <div key={index} className="max-w-full flex-shrink-0 overflow-hidden rounded-lg border border-border">
+          <div key={src} className="max-w-full flex-shrink-0 overflow-hidden rounded-lg border border-border">
             <img
               src={`/onboarding/${src}.png`}
               alt={`Quadratic ${index + 1}`}

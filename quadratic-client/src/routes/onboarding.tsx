@@ -1,4 +1,5 @@
-import { OnboardingResponseV2Schema, Questions, questionsById } from '@/dashboard/onboarding/Questions';
+import { OnboardingResponseV2Schema } from '@/dashboard/onboarding/onboardingSchema';
+import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -53,7 +54,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     currentQuestionsTotal,
     isLastQuestion: currentQuestionStackIds.indexOf(currentId) === currentQuestionStackIds.length - 1,
   };
-  console.log(out);
   return out;
 };
 
