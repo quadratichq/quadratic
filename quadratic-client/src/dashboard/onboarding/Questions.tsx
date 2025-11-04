@@ -16,7 +16,6 @@ import {
   SpinnerIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -211,7 +210,7 @@ export const questionsById: Record<
 
   // Shared
   'connections[]': {
-    title: 'Which data sources would you want to connect to?',
+    title: 'What data sources are you interested in connecting to?',
     subtitle: 'Select any option you’d be interested in.',
     optionsByValue: {
       // TODO: pull from our list
@@ -236,7 +235,6 @@ export const questionsById: Record<
       // other: 'Other…',
     },
     Form: (props) => {
-      const languageClassName = 'h-10 w-10';
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       // const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       // const languageIconByValue: Record<string, React.ReactNode> = {
@@ -250,20 +248,32 @@ export const questionsById: Record<
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
+            {Object.entries(props.optionsByValue).map(([value, label]) => {
+              console.log(value);
+
+              // TODO: fix types
+              // @ts-expect-error
+              const Icon = connectionsByType[value] ? (
+                // @ts-expect-error
+                connectionsByType[value].Logo
+              ) : // @ts-expect-error
+              potentialConnectionsByType[value] ? (
+                // @ts-expect-error
+                potentialConnectionsByType[value].Logo
+              ) : (
+                <div>?</div>
+              );
               /* we don't have a stacked 'other' right now... */
-              value === 'OTHER' ? (
+              return value === 'OTHER' ? (
                 <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  <LanguageIcon language={value} className={languageClassName} />
-                  {label}
+                  <Icon />
                 </ControlCheckboxInputOther>
               ) : (
                 <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                  <LanguageIcon language={value} className={languageClassName} />
-                  {label}
+                  <Icon />
                 </ControlCheckboxStacked>
-              )
-            )}
+              );
+            })}
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
@@ -399,6 +409,7 @@ export const questionsById: Record<
           <div className="hidden">
             <BillingPlans isOnPaidPlan={false} canManageBilling={true} teamUuid="123" eventSource="onboarding" />
           </div>
+          {/* <QuestionFormFooter /> */}
         </Question>
       );
     },
@@ -410,18 +421,20 @@ export function Questions() {
   const setOther = useSetRecoilState(otherCheckboxAtom);
   const setIsValid = useSetRecoilState(isValidFormAtom);
   const [searchParams] = useSearchParams();
-
+  const scrollRef = useRef<HTMLDivElement>(null);
   // Whenever the search params change, that means a new form is being rendered
   // so we want to reset any state used to represent the current active form
   useEffect(() => {
     setOther((prev) => (prev === true ? false : prev));
     setIsValid((prev) => (prev === true ? false : prev));
+
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchParams, setOther, setIsValid]);
 
   const questionIds = Object.keys(questionsById);
 
   return (
-    <div className="h-full overflow-auto">
+    <div ref={scrollRef} className="h-full overflow-auto">
       <div className="mx-auto flex max-w-xl flex-col gap-10 pt-10">
         <Logo />
 
@@ -493,13 +506,13 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
             }}
             size="lg"
             variant="secondary"
-            className={cn(btnClassName, 'text-muted-foregroundz')}
+            className={cn(btnClassName, 'text-muted-foregroundz', currentIndex === 0 && 'hidden')}
           >
             Back
           </Button>
         )}
         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
-          {currentQuestionNumber === currentQuestionsTotal ? 'Done' : 'Next'}
+          {currentIndex === 0 ? 'Get Started' : currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
         </Button>
       </div>
     </div>
@@ -608,7 +621,7 @@ function QuestionForm({
 }
 
 function ImageCarousel() {
-  const images = [1, 2, 3, 4];
+  const images = [1, 2, 3, 4, 5];
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const goToPrevious = () => {
@@ -630,13 +643,13 @@ function ImageCarousel() {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {images.map((src, index) => (
-          <div key={index} className="min-w-full flex-shrink-0">
+          <div key={index} className="max-w-full flex-shrink-0 overflow-hidden rounded-lg border border-border">
             <img
-              src={`/onboarding/${src}.jpg`}
+              src={`/onboarding/${src}.png`}
               alt={`Quadratic ${index + 1}`}
-              className="w-full object-cover"
-              width="512"
-              height="288"
+              className="max-w-full object-cover"
+              width="635"
+              height="380"
             />
           </div>
         ))}
@@ -661,13 +674,16 @@ function ImageCarousel() {
       </button>
 
       {/* Indicator dots */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+      <div className="absolute bottom-4 left-1/2 flex hidden -translate-x-1/2 items-center justify-center gap-4">
         {images.map((_, index) => (
           <button
             key={index}
             type="button"
             onClick={() => goToSlide(index)}
-            className={cn('h-2 w-2 rounded-full transition-all', currentIndex === index ? 'bg-white' : 'bg-white/50')}
+            className={cn(
+              'h-4 w-4 rounded-full transition-all',
+              currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
+            )}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
