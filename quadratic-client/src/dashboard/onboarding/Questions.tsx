@@ -310,7 +310,6 @@ export const questionsById: Record<
               className="h-12 w-full text-lg"
               type="text"
               name={props.id}
-              placeholder="Enter a name"
               autoFocus
               onChange={(e) => {
                 setIsValid(e.target.value.length > 0);
