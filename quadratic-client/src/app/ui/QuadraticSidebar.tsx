@@ -9,6 +9,7 @@ import {
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
@@ -71,9 +72,12 @@ export const QuadraticSidebar = () => {
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle
-              id="show-ai-analyst"
+              id="ai-analyst-trigger"
               pressed={showAIAnalyst}
-              onPressedChange={() => setShowAIAnalyst((prev) => !prev)}
+              onPressedChange={() => {
+                setShowAIAnalyst((prev) => !prev);
+                events.emit('tutorialTrigger', 'ai-analyst-trigger');
+              }}
             >
               <AIIcon />
             </SidebarToggle>

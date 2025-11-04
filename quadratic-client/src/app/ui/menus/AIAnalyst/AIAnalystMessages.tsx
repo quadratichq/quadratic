@@ -431,7 +431,6 @@ const PromptSuggestions = memo(() => {
   if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }
-
   return (
     <div className="flex flex-row flex-wrap gap-2 px-2">
       {promptSuggestions.suggestions.map((suggestion, index) => (

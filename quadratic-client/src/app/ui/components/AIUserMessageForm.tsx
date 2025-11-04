@@ -72,6 +72,7 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   maxHeight?: string;
   waitingOnMessageIndex?: number;
   filesSupportedText: string;
+  primary?: boolean;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -98,6 +99,7 @@ export const AIUserMessageForm = memo(
       waitingOnMessageIndex,
       filesSupportedText,
       uiContext,
+      primary = false,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -124,6 +126,19 @@ export const AIUserMessageForm = memo(
 
       setContext?.(initialContext ? { ...initialContext } : {});
     }, [initialContent, initialContext, setContext, setPrompt]);
+
+    useEffect(() => {
+      if (primary) {
+        const handlePopulateAIChatBox = (text: string) => {
+          setPrompt(text);
+          textareaRef.current?.focus();
+        };
+        events.on('populateAIChatBox', handlePopulateAIChatBox);
+        return () => {
+          events.off('populateAIChatBox', handlePopulateAIChatBox);
+        };
+      }
+    }, [primary]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -157,8 +172,12 @@ export const AIUserMessageForm = memo(
           setPrompt('');
           setContext?.({});
         }
+
+        if (primary) {
+          events.emit('tutorialTrigger', 'ai-analyst-submit-prompt');
+        }
       },
-      [context, files, importFiles, initialContent, setContext, submitPrompt]
+      [context, files, importFiles, initialContent, primary, setContext, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {

@@ -69,14 +69,13 @@ export const MaskUI = () => {
         }
       }
 
-      // If we're expecting elements but some are missing, retry in 500ms
-      if (unmaskedElements.length > 0 && missingElements.length > 0) {
+      // If some elements are missing, schedule a retry to find them
+      if (missingElements.length > 0) {
         retryTimeout = window.setTimeout(calculateBlockingRects, 500);
-        return;
       }
 
       if (unmaskedRects.length === 0) {
-        // No unmasked elements, block entire viewport
+        // No unmasked elements found yet, block entire viewport
         setBlockingRects([new Rectangle(0, 0, viewportWidth, viewportHeight)]);
         return;
       }

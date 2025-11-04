@@ -178,6 +178,7 @@ interface EventTypes {
   aiAnalystMessagesLeftRefresh: () => void;
 
   tutorialTrigger: (trigger: string) => void;
+  populateAIChatBox: (text: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

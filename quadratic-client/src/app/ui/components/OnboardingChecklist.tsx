@@ -54,7 +54,7 @@ export const OnboardingChecklist = () => {
   const totalCount = bonusPrompts.length;
 
   return (
-    <div className="absolute bottom-0 right-0 rounded-lg border bg-background p-6 shadow-sm">
+    <div className="absolute bottom-0 right-0 z-10 rounded-lg border bg-background p-6 shadow-sm">
       {/* Header */}
       <div className="mb-2 flex items-start justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -111,7 +111,7 @@ export const OnboardingChecklist = () => {
             <span
               className={cn(
                 'rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                prompt.received && prompt.prompts === 1
+                prompt.received
                   ? 'border-blue-600 bg-white text-blue-600 dark:bg-white dark:text-blue-600'
                   : 'border-blue-600 bg-blue-600 text-white'
               )}

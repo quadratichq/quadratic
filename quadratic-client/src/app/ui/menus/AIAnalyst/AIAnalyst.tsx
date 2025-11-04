@@ -100,7 +100,10 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className={cn('px-2 pb-2 pt-0.5', messagesCount === 0 && 'mt-auto')}>
+              <div
+                id="ai-analyst-user-message-form"
+                className={cn('px-2 pb-2 pt-0.5', messagesCount === 0 && 'mt-auto')}
+              >
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}
