@@ -13,8 +13,6 @@ import {
   ChevronRightIcon,
   EducationIcon,
   PersonalIcon,
-  RadioButtonCheckedIcon,
-  RadioButtonUncheckedIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -355,60 +353,48 @@ export const questionsById: Record<
   'team-plan': {
     title: 'Which plan would you like?',
     subtitle: 'Get started for free, or subscribe for full access.',
+    // TODO: optional
     optionsByValue: {
       free: 'Free',
       pro: 'Pro',
     },
     Form: (props) => {
-      const [selectedPlan, setSelectedPlan] = useState<keyof typeof props.optionsByValue>(
-        Object.keys(props.optionsByValue)[0]
-      );
       const fetcher = useFetcher({ key: FETCHER_KEY });
       const isSubmitting = fetcher.state !== 'idle';
       const className = cn(
-        'h-full w-full group relative rounded shadow-sm border border-border p-4 enabled:hover:border-primary enabled:hover:shadow-md'
+        'flex flex-col h-full w-full group relative rounded shadow-sm border border-border p-4 enabled:hover:border-primary enabled:hover:shadow-md'
       );
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-4">
-              {/* TODO: handle button nature of this */}
-              {Object.keys(props.optionsByValue).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={cn(className, selectedPlan === key && 'border-primary bg-accent shadow-md')}
-                  onClick={() => setSelectedPlan(key)}
-                  disabled={isSubmitting}
-                >
-                  {key === 'free' ? <FreePlan className="h-full" /> : <ProPlan />}
-                  {selectedPlan === key ? (
-                    <RadioButtonCheckedIcon className="absolute right-4 top-5 text-primary" />
-                  ) : (
-                    <RadioButtonUncheckedIcon className="absolute right-4 top-5 text-border" />
-                  )}
-                </button>
-              ))}
-            </div>
-            <input type="hidden" name={props.id} value={selectedPlan} />
-            <QuestionFormFooter>
-              {/* <Button
-                  type="reset"
-                  variant="secondary"
+              <FreePlan className={className}>
+                <Button
+                  type="submit"
+                  name={props.id}
+                  value="free"
                   size="lg"
+                  className="mt-auto w-full"
                   disabled={isSubmitting}
-                  // onClick={() => {
-                  //   navigate(-1);
-                  // }}
-                  asChild
                 >
-                  <Link to={backTo}>Back</Link>
-                </Button> */}
-              <Button type="submit" size="lg" disabled={isSubmitting} loading={isSubmitting}>
-                Done
-              </Button>
-            </QuestionFormFooter>
+                  Get started
+                </Button>
+              </FreePlan>
+              <ProPlan className={className}>
+                <Button
+                  type="submit"
+                  name={props.id}
+                  value="pro"
+                  size="lg"
+                  variant="secondary"
+                  className="mt-4 w-full"
+                  disabled={isSubmitting}
+                >
+                  Subscribe now
+                </Button>
+              </ProPlan>
+            </div>
           </QuestionForm>
         </Question>
       );
@@ -594,6 +580,12 @@ function QuestionForm({
         const formData = new FormData(form);
         const values = Array.from(formData.entries());
 
+        // If the button that was clicked was a submit button, append the name/value
+        const submitButton = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        if (submitButton && submitButton.name && submitButton.value) {
+          values.push([submitButton.name, submitButton.value]);
+        }
+
         // Create a new version of the search params appending the old to the new
         const newSearchParams = new URLSearchParams(searchParams.toString());
         values.forEach(([key, value]) => {
@@ -615,11 +607,7 @@ function QuestionForm({
 
         // Otherwise update the search params and reset the current form
         setSearchParams(newSearchParams);
-        // Give the animation time to complete first so we don't see the reset
-        // TODO: consider a better way to do this
-        setTimeout(() => {
-          form.reset();
-        }, 1000);
+        form.reset();
       }}
       className={className}
     >

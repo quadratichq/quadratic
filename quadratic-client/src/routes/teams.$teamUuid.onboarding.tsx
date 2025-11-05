@@ -105,30 +105,25 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     ...formJson,
   });
 
-  // TODO: pick out name and other things
-
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];
 
   if (result.success) {
     try {
-      // TODO: handle invites
+      // If there are invites, yeet them off to the server.
       const inviteEmails = result.data['team-invites[]'] ? result.data['team-invites[]'].map((email) => email) : [];
-      const invitePromises = inviteEmails.map((email) =>
+      const uploadInvitesPromise = inviteEmails.map((email) =>
         apiClient.teams.invites.create(teamUuid, { email, role: 'EDITOR' })
       );
-
-      // const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
-
-      const uploadToServerPromise = apiClient.teams.update(teamUuid, {
+      const uploadResponsesPromise = apiClient.teams.update(teamUuid, {
         onboardingResponses: result.data,
         name: result.data['team-name'],
       });
-      const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
+      const uploadResponsesToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
       const [serverResult, mixpanelResult] = await Promise.allSettled([
-        uploadToServerPromise,
-        uploadToMixpanelPromise,
-        invitePromises,
+        uploadResponsesPromise,
+        uploadResponsesToMixpanelPromise,
+        uploadInvitesPromise,
       ]);
 
       if (serverResult.status === 'rejected') {
