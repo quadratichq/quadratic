@@ -58,7 +58,6 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <ImageCarousel />
-            <FreePromptsMsg isLastQuestion={false} />
             <input type="hidden" name={props.id} value="" />
             <QuestionFormFooter>
               <Button type="submit" size="lg">
@@ -316,8 +315,6 @@ export const questionsById: Record<
               </Button>
             </QuestionFormFooter>
           </QuestionForm>
-
-          {isValid && false /* TODO: put on last step */ && <FreePromptsMsg isLastQuestion={true} />}
         </Question>
       );
     },
@@ -366,7 +363,6 @@ export const questionsById: Record<
       const [selectedPlan, setSelectedPlan] = useState<keyof typeof props.optionsByValue>(
         Object.keys(props.optionsByValue)[0]
       );
-      // const navigate = useNavigate();
       const fetcher = useFetcher({ key: FETCHER_KEY });
       const isSubmitting = fetcher.state !== 'idle';
       const className = cn(
@@ -542,18 +538,6 @@ function QuestionFormFooter({ children }: { children: React.ReactNode }) {
 //     </div>
 //   );
 // }
-
-function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
-  // TODO: probably just gonna remove this, because you don't get anything for doing it
-  // we make you.
-  return null;
-  // return (
-  //   <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
-  //     <StarShineIcon className="mr-2" />
-  //     {isLastQuestion ? <>You've unlocked free prompts!</> : <>You'll be rewarded free prompts on completion!</>}
-  //   </aside>
-  // );
-}
 
 function Logo() {
   const className = 'h-5 w-5 bg-border transition-colors';
