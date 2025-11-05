@@ -51,6 +51,7 @@ export const SheetRange = (props: Props) => {
   const [rangeError, setRangeError] = useState<string | undefined>();
   const [input, setInput] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusingRef = useRef(false);
 
   const a1SheetId = useMemo((): string => {
     if (onlyCurrentSheet) {
@@ -75,10 +76,14 @@ export const SheetRange = (props: Props) => {
         onChangeSelection(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+          isFocusingRef.current = true;
           sheets.changeSelection(selection);
 
           // need to call focus again since changeSelection will change focus
-          inputRef.current?.focus();
+          setTimeout(() => {
+            inputRef.current?.focus();
+            isFocusingRef.current = false;
+          }, 0);
         }
       } catch (e: any) {
         try {
@@ -91,9 +96,7 @@ export const SheetRange = (props: Props) => {
             setRangeError(error);
             props.onError?.(error);
           }
-        } catch (_) {
-          // ignore
-        }
+        } catch {}
       }
     },
     [a1SheetId, onChangeSelection, onlyCurrentSheetError, props]
@@ -120,13 +123,19 @@ export const SheetRange = (props: Props) => {
 
   const onFocus = useCallback(() => {
     if (!changeCursor) return;
+    if (isFocusingRef.current) return; // prevent infinite loop
+
     try {
       const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {
+        isFocusingRef.current = true;
         sheets.changeSelection(selection);
 
         // need to call focus again since changeSelection will change focus
-        inputRef.current?.focus();
+        setTimeout(() => {
+          inputRef.current?.focus();
+          isFocusingRef.current = false;
+        }, 0);
       }
     } catch (_) {
       // there was an error parsing the range, so nothing more to do
