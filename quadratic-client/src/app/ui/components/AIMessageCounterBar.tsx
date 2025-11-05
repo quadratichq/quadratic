@@ -1,9 +1,10 @@
 import { aiAnalystCurrentChatMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useAIMessagesLeft } from '@/app/ui/hooks/useAIMessagesLeft';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
-import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { useSetAtom } from 'jotai';
 import { memo } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export const AIMessageCounterBar = memo(() => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
@@ -16,7 +17,7 @@ export const AIMessageCounterBar = memo(() => {
 const Component = () => {
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const messagesRemaining = useAIMessagesLeft();
-  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
   // We conditionally render this component here because if we are going to show
   // show it, we want to fetch its data early so its accurate for new users

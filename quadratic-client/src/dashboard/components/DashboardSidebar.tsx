@@ -5,6 +5,8 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -25,7 +27,6 @@ import {
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
-import { showUpgradeDialogAtom } from '@/shared/components/UpgradeDialog';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -43,6 +44,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
+import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -56,7 +58,6 @@ import {
   useSearchParams,
   useSubmit,
 } from 'react-router';
-import { useSetRecoilState } from 'recoil';
 
 /**
  * Dashboard Navbar
@@ -74,7 +75,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       billing,
     },
   } = useDashboardRouteLoaderData();
-  const setShowUpgradeDialog = useSetRecoilState(showUpgradeDialogAtom);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
@@ -278,14 +279,20 @@ function SidebarNavLinkCreateButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          asChild
           variant="ghost"
           size="icon-sm"
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
+          onClick={async (e) => {
+            e.preventDefault();
+            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+            if (hasReachedLimit) {
+              showUpgradeDialog('fileLimitReached');
+              return;
+            }
+            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          }}
         >
-          <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
-            <AddIcon />
-          </Link>
+          <AddIcon />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>

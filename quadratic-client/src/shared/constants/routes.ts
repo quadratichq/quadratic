@@ -45,7 +45,7 @@ export const ROUTES = {
       url.searchParams.set('chat-id', searchParams.chatId);
     }
 
-    return url.toString();
+    return url.pathname + url.search;
   },
   CREATE_FILE_EXAMPLE: ({
     teamUuid,

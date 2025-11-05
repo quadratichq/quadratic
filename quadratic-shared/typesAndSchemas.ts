@@ -458,6 +458,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/retention-discount.POST.response': z.object({
     message: z.string(),
   }),
+  '/v0/teams/:uuid/file-limit.GET.response': z.object({ hasReachedLimit: z.boolean() }),
 
   /**
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)

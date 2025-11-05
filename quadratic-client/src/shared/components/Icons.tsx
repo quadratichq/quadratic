@@ -778,3 +778,7 @@ export const WebBrowserIcon: IconComponent = (props) => {
 export const ScheduledTasksIcon: IconComponent = (props) => {
   return <Icon {...props}>timer_play</Icon>;
 };
+
+export const WarningIcon: IconComponent = (props) => {
+  return <Icon {...props}>warning</Icon>;
+};
