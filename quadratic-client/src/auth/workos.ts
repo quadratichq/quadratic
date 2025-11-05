@@ -52,6 +52,13 @@ async function getClient() {
   return clientPromise;
 }
 
+// Get and clear redirect state
+export function getAndClearRedirectState(): { redirectTo?: string; closeOnComplete?: boolean } | null {
+  const state = redirectState;
+  redirectState = null; // Clear after reading
+  return state;
+}
+
 export const workosClient: AuthClient = {
   /**
    * Return whether the user is authenticated and the session is valid.
@@ -105,6 +112,7 @@ export const workosClient: AuthClient = {
   /**
    * Handle the redirect from Workos after the user has logged in.
    * AuthKit SDK automatically handles the code exchange during initialization.
+   * This function only validates the signin; the caller is responsible for redirecting.
    */
   async handleSigninRedirect(href: string): Promise<void> {
     try {
@@ -113,29 +121,12 @@ export const workosClient: AuthClient = {
         throw new Error('No user found after signin redirect');
       }
 
-      let redirectTo = window.location.origin;
-
-      if (redirectState) {
-        if ('closeOnComplete' in redirectState && redirectState.closeOnComplete) {
-          window.close();
-          return;
-        }
-        if (
-          'redirectTo' in redirectState &&
-          !!redirectState.redirectTo &&
-          typeof redirectState.redirectTo === 'string'
-        ) {
-          redirectTo = redirectState.redirectTo;
-        }
-        // Clear the state after using it
-        redirectState = null;
-      } else {
-        // Fallback: Check URL parameters
-        const url = new URL(href);
-        const stateParam = url.searchParams.get('state');
+      // Handle special case: if state includes closeOnComplete, close the window
+      const state = getAndClearRedirectState();
+      if (state && 'closeOnComplete' in state && state.closeOnComplete) {
+        window.close();
+        return;
       }
-
-      window.location.assign(redirectTo);
     } catch (error) {
       console.error('WorkOS signin redirect failed:', error);
       throw error;
