@@ -441,6 +441,13 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.DELETE.response']
       );
     },
+    getLogs({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections/${connectionUuid}/log`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']
+      );
+    },
   },
 
   ai: {

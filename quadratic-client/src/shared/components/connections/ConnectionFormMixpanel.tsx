@@ -1,8 +1,15 @@
+import { useSyncedConnection } from '@/app/atoms/useSyncedConnection';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
+import { dateToDateTimeString } from '@/shared/utils/dateTime';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionTypeSchema,
+  type SyncedConnectionLog,
+} from 'quadratic-shared/typesAndSchemasConnections';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -33,10 +40,24 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     defaultValues,
   });
 
-  return { form };
+  return { form, connection };
 };
 
-export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
+export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
+  form,
+  children,
+  handleSubmitForm,
+  connection,
+}) => {
+  const { getLogs } = useSyncedConnection(connection?.uuid ?? '');
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (connection?.uuid) {
+      getLogs().then((fetchedLogs) => setLogs(fetchedLogs));
+    }
+  }, [connection?.uuid, getLogs]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -53,14 +74,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             </FormItem>
           )}
         />
-
         <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="api_secret"
+            name="project_id"
             render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>API Secret</FormLabel>
+              <FormItem className="col-span-3">
+                <FormLabel>Project ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -70,10 +90,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           />
           <FormField
             control={form.control}
-            name="project_id"
+            name="api_secret"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Project ID</FormLabel>
+                <FormLabel>API Secret</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -94,6 +114,17 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               </FormItem>
             )}
           />
+          <div className="col-span-3">
+            <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
+              Data Sync Status
+            </label>
+            <p className="mb-2 mt-2 text-xs text-red-500">Syncing progress: {connection?.percentCompleted ?? 0}%</p>
+            {logs.map((log: SyncedConnectionLog) => (
+              <p key={log.id} className="mb-2 mt-2 text-xs">
+                {dateToDateTimeString(new Date(log.createdDate))} - {log.status} - {log.syncedDates.join(', ')}
+              </p>
+            ))}
+          </div>
         </div>
         {children}
       </form>

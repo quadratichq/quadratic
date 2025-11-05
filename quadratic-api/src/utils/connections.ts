@@ -139,14 +139,15 @@ export async function getSyncedConnection(syncedConnectionId: number): Promise<S
  ===============================
 */
 
-type SyncedConnectionLogResponse = ApiTypes['/v0/synced-connection/:syncedConnectionId/log.GET.response'];
+type SyncedConnectionLogResponse = ApiTypes['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response'][number];
 
 export function resultToSyncedConnectionLogResponse(result: SyncedConnectionLog): SyncedConnectionLogResponse {
   return {
     id: result.id,
     syncedConnectionId: result.syncedConnectionId,
     runId: result.runId,
-    syncedDates: result.syncedDates.map((date) => date.toISOString().split('T')[0]),
+    // coombin adjacent dates
+    syncedDates: combineAdjacentDateRanges(result.syncedDates.map((date) => date.toISOString().split('T')[0])),
     status: result.status,
     error: result.error || undefined,
     createdDate: result.createdDate.toISOString(),
@@ -179,6 +180,7 @@ export async function addPercentCompleted(
   bypassIfCompleted: boolean = false
 ): Promise<void> {
   // avoid the extra lookups if the synced connection is already completed
+  // and just update the updated date
   if (bypassIfCompleted) {
     const syncedConnection = await getSyncedConnection(syncedConnectionId);
     if (syncedConnection.percentCompleted >= 100) {
@@ -186,13 +188,14 @@ export async function addPercentCompleted(
         where: { id: syncedConnectionId },
         data: { updatedDate: new Date() },
       });
+
       return;
     }
   }
 
   let connection = await getConnectionBySyncedConnectionId(syncedConnectionId);
   const percentCompleted = await calculatePercentCompleted(syncedConnectionId, connection.typeDetails.start_date);
-  console.log('percentCompleted', percentCompleted);
+
   if (percentCompleted === undefined) {
     return;
   }
@@ -234,8 +237,8 @@ export async function getUniqueSyncedDates(syncedConnectionId: number): Promise<
 
 // Get scheduled task logs
 // Returns the most recent log entry for each distinct run_id, with pagination support
-export async function getScheduledTaskLogs(
-  syncedConnectionId: number,
+export async function getSyncedConnectionLogs(
+  connectionUuid: string,
   limit: number = 10,
   page: number = 1
 ): Promise<SyncedConnectionLogResponse[]> {
@@ -254,8 +257,9 @@ export async function getScheduledTaskLogs(
       FROM 
         "SyncedConnectionLog" stl
       INNER JOIN "SyncedConnection" sc ON stl.synced_connection_id = sc.id
+      INNER JOIN "Connection" c ON sc.connection_id = c.id
       WHERE
-        sc.id = ${syncedConnectionId}
+        c.uuid = ${connectionUuid}
       ORDER BY 
         stl.run_id, stl.created_date DESC
     ) subquery
@@ -283,15 +287,37 @@ export async function getSyncedConnectionLog(syncedConnectionLogId: number): Pro
   Utils
  ===============================
 */
-// Given a list of date ranges, combine adjacent ranges into a single range
-// date range examples: ['2025-01-01-2025-01-02', '2025-01-04-2025-01-05']
-export function combineAdjacentDateRanges(dateRanges: string[]): string[] {
-  const combinedDateRanges = [];
-  for (const dateRange of dateRanges) {
-    const [start, end] = dateRange.split('-');
-    combinedDateRanges.push(`${start}-${end}`);
+// Given a list of dates, combine adjacent dates into ranges
+// Input: ['2025-01-01', '2025-01-02', '2025-01-04']
+// Output: ['2025-01-01 to 2025-01-02', '2025-01-04']
+export function combineAdjacentDateRanges(dates: string[]): string[] {
+  if (dates.length === 0) return [];
+
+  const sortedDates = [...dates].sort();
+  const ranges: string[] = [];
+  let rangeStart = sortedDates[0];
+  let rangeEnd = sortedDates[0];
+
+  for (let i = 1; i < sortedDates.length; i++) {
+    const currentDate = new Date(sortedDates[i]);
+    const prevDate = new Date(sortedDates[i - 1]);
+    const diffDays = (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (diffDays === 1) {
+      // Adjacent date, extend the range
+      rangeEnd = sortedDates[i];
+    } else {
+      // Non-adjacent, save the current range and start a new one
+      ranges.push(rangeStart === rangeEnd ? rangeStart : `${rangeStart} to ${rangeEnd}`);
+      rangeStart = sortedDates[i];
+      rangeEnd = sortedDates[i];
+    }
   }
-  return combinedDateRanges;
+
+  // Add the final range
+  ranges.push(rangeStart === rangeEnd ? rangeStart : `${rangeStart} to ${rangeEnd}`);
+
+  return ranges;
 }
 
 // Get the number of days between two dates

@@ -43,12 +43,15 @@ export type ConnectionFormValues = {
 
 export type UseConnectionForm<T extends ConnectionFormValues> = (connection: Connection | undefined) => {
   form: UseFormReturn<T>;
+  percentCompleted?: number;
 };
 
 export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   form: UseFormReturn<T>;
   children: ReactNode;
   handleSubmitForm: SubmitHandler<ConnectionFormValues>;
+  percentCompleted?: number;
+  connection?: Connection;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {

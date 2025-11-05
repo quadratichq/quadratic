@@ -9,9 +9,9 @@ import {
   getConnection,
   getConnectionBySyncedConnectionId,
   getConnections,
-  getScheduledTaskLogs,
   getSyncedConnection,
   getSyncedConnectionLog,
+  getSyncedConnectionLogs,
   getUniqueSyncedDates,
   updateSyncedConnection,
   updateSyncedConnectionStatus,
@@ -223,7 +223,7 @@ describe('getScheduledTaskLogs', () => {
       status: 'COMPLETED',
     });
 
-    const result = await getScheduledTaskLogs(syncedConnection.id, 10, 1);
+    const result = await getSyncedConnectionLogs(connection.uuid, 10, 1);
     expect(result).toHaveLength(1);
     expect(result[0].runId).toBe('run-1');
   });

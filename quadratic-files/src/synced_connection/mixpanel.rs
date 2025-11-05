@@ -41,7 +41,7 @@ pub(crate) async fn process_mixpanel_connections(
     )
     .await?;
 
-    tracing::trace!("Found {} Mixpanel connections", connections.len());
+    tracing::info!("Found {} Mixpanel connections", connections.len());
 
     // process each connection in a separate thread
     for connection in connections {
@@ -60,6 +60,11 @@ pub(crate) async fn process_mixpanel_connections(
             .await
             {
                 state.clone().stats.lock().await.num_connections_processing -= 1;
+                state
+                    .clone()
+                    .synced_connection_cache
+                    .delete(connection.uuid)
+                    .await;
 
                 tracing::error!(
                     "Error processing Mixpanel connection {}: {}",
@@ -82,7 +87,11 @@ pub(crate) async fn process_mixpanel_connection(
     sync_kind: SyncKind,
 ) -> Result<()> {
     if !can_process_connection(state.clone(), connection_id).await? {
-        tracing::trace!("Skipping Mixpanel connection {}", connection_id);
+        tracing::info!(
+            "Skipping Mixpanel connection {}, kind: {:?}",
+            connection_id,
+            sync_kind
+        );
         return Ok(());
     }
 
@@ -90,17 +99,6 @@ pub(crate) async fn process_mixpanel_connection(
     let prefix = object_store_path(connection_id, "events");
     let today = chrono::Utc::now().date_naive();
     let run_id = Uuid::new_v4();
-
-    // add the connection to the cache
-    state.clone().stats.lock().await.num_connections_processing += 1;
-    start_connection_status(
-        state.clone(),
-        connection_id,
-        synced_connection_id,
-        run_id,
-        SyncedConnectionKind::Mixpanel,
-    )
-    .await?;
 
     let MixpanelConnection {
         ref api_secret,
@@ -120,7 +118,7 @@ pub(crate) async fn process_mixpanel_connection(
     )
     .await?;
 
-    if date_ranges.is_empty() {
+    if sync_kind == SyncKind::Full && date_ranges.is_empty() {
         return Ok(());
     }
 
@@ -128,16 +126,34 @@ pub(crate) async fn process_mixpanel_connection(
         date_ranges = vec![(today, today)];
     }
 
+    tracing::info!(
+        "Processing Mixpanel connection {}, kind: {:?}, dates: {:?}",
+        connection_id,
+        sync_kind,
+        date_ranges
+    );
+
     let start_time = std::time::Instant::now();
     let mut total_files_processed = 0;
     let mut dates_processed = Vec::new();
+
+    // add the connection to the cache
+    state.clone().stats.lock().await.num_connections_processing += 1;
+    start_connection_status(
+        state.clone(),
+        connection_id,
+        synced_connection_id,
+        run_id,
+        SyncedConnectionKind::Mixpanel,
+    )
+    .await?;
 
     for (start_date, end_date) in date_ranges {
         // split the date range into chunks
         let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
         let total_chunks = chunks.len();
 
-        tracing::trace!(
+        tracing::info!(
             "Exporting Mixpanel events from {} to {} in {} {}-day chunks...",
             start_date,
             end_date,
@@ -147,7 +163,7 @@ pub(crate) async fn process_mixpanel_connection(
 
         // Process each chunk in reverse order (most recent first)
         for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
-            tracing::trace!(
+            tracing::info!(
                 "Processing chunk {}/{}: {} to {}",
                 chunk_index + 1,
                 total_chunks,
@@ -192,7 +208,7 @@ pub(crate) async fn process_mixpanel_connection(
 
             total_files_processed += num_files;
 
-            tracing::trace!(
+            tracing::info!(
                 "Completed chunk {}/{}: processed {} files",
                 chunk_index + 1,
                 total_chunks,

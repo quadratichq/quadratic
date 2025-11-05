@@ -156,7 +156,7 @@ function ConnectionFormWrapper({
   };
 
   return (
-    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form}>
+    <ConnectionForm handleSubmitForm={handleSubmitMiddleware} form={form} connection={props.connection}>
       <ConnectionFormAICheckbox value={aiCheckboxChecked} setValue={setAiCheckboxChecked} showError={showError} />
 
       <ConnectionFormActions

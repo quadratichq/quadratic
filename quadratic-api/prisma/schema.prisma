@@ -199,7 +199,7 @@ enum SyncedConnectionLogStatus {
 
 model SyncedConnection {
     id                  Int                    @id @default(autoincrement())
-    connectionId        Int                    @map("connection_id")
+    connectionId        Int                    @unique @map("connection_id")
     connection          Connection             @relation(fields: [connectionId], references: [id])
     percentCompleted    Int                    @default(0) @map("percent_completed")
     status              SyncedConnectionStatus @default(ACTIVE) @map("status")

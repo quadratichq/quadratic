@@ -7,6 +7,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getSyncedConnectionLogs } from '../../utils/connections';
 import { decryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -17,7 +18,7 @@ const schema = z.object({
 
 async function handler(
   req: RequestWithUser,
-  res: Response<ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response']>
+  res: Response<ApiTypes['/v0/teams/:uuid/connections/:connectionUuid/log.GET.response']>
 ) {
   const {
     user: { id: userId },
@@ -32,8 +33,9 @@ async function handler(
     team: {
       userMakingRequest: { permissions: teamPermissions },
     },
-    syncedConnection,
   } = await getTeamConnection({ connectionUuid, userId, teamUuid });
+
+  const logs = await getSyncedConnectionLogs(connectionUuid, 10, 1);
 
   // Do you have permission?
   if (!teamPermissions.includes('TEAM_EDIT')) {
@@ -42,14 +44,5 @@ async function handler(
 
   const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
 
-  return res.status(200).json({
-    uuid: connection.uuid,
-    name: connection.name,
-    type: connection.type,
-    semanticDescription: connection.semanticDescription || undefined,
-    createdDate: connection.createdDate.toISOString(),
-    updatedDate: connection.updatedDate.toISOString(),
-    typeDetails,
-    percentCompleted: syncedConnection?.percentCompleted ?? undefined,
-  });
+  return res.status(200).json(logs);
 }

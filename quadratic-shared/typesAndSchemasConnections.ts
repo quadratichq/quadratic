@@ -223,6 +223,6 @@ export const ApiSchemasConnections = {
   // Get all synced connections (internal)
   '/v0/internal/synced-connection.GET.response': SyncedConnectionSchema,
 
-  // Get synced connection log
-  '/v0/synced-connection/:syncedConnectionId/log.GET.response': SyncedConnectionLogSchema,
+  // Get synced connection logs
+  '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
 };
