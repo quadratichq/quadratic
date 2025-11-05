@@ -8,11 +8,31 @@ import { useEffect, useState } from 'react';
 
 const Z_INDEX = 100;
 const BACKGROUND_COLOR = 'rgba(0,0,0,0.2)';
+const ANIMATION_DURATION = 150;
 
 export const MaskUI = () => {
   const { show, unmaskedElements } = useAtomValue(tutorialAtom);
   const [blockingRects, setBlockingRects] = useState<Rectangle[]>([]);
   const { debug } = useDebugFlags();
+  const [isVisible, setIsVisible] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+
+  // Handle fade in/out when show changes
+  useEffect(() => {
+    if (show) {
+      setIsVisible(true);
+      setIsFadingOut(false);
+    } else if (isVisible) {
+      // Start fade out
+      setIsFadingOut(true);
+      // Remove after animation completes
+      const timeout = setTimeout(() => {
+        setIsVisible(false);
+        setIsFadingOut(false);
+      }, ANIMATION_DURATION);
+      return () => clearTimeout(timeout);
+    }
+  }, [show, isVisible]);
 
   // Block all keyboard events
   useEffect(() => {
@@ -136,7 +156,7 @@ export const MaskUI = () => {
     };
   }, [unmaskedElements]);
 
-  if (!show) return null;
+  if (!isVisible) return null;
   return (
     <>
       {blockingRects.map((rect, index) => (
@@ -151,6 +171,7 @@ export const MaskUI = () => {
             backgroundColor: BACKGROUND_COLOR,
             zIndex: Z_INDEX,
             cursor: 'default',
+            animation: `${isFadingOut ? 'fadeOut' : 'fadeIn'} ${ANIMATION_DURATION}ms ease-out`,
           }}
           onClick={(e) => {
             e.preventDefault();
@@ -174,6 +195,26 @@ export const MaskUI = () => {
           }}
         />
       ))}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @keyframes fadeOut {
+            from {
+              opacity: 1;
+            }
+            to {
+              opacity: 0;
+            }
+          }
+        `}
+      </style>
     </>
   );
 };
