@@ -214,7 +214,6 @@ export const questionsById: Record<
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
               {options.map(({ name, value, Logo }) => {
-                /* TODO: we don't have a stacked 'other' right now... */
                 return value === 'OTHER' ? (
                   <ControlCheckboxInputOther
                     key={value}
