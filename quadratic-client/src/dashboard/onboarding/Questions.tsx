@@ -439,55 +439,6 @@ export function Questions() {
   );
 }
 
-function QuestionFormFooter({ children }: { children: React.ReactNode }) {
-  return <div className="flex w-full items-center justify-center gap-2 pb-10 pt-10">{children}</div>;
-}
-
-// function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
-//   const navigate = useNavigate();
-//   const fetcher = useFetcher({ key: FETCHER_KEY });
-//   const { currentIndex, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
-//   const btnClassName = 'select-none';
-//   const isSubmitting = fetcher.state !== 'idle';
-
-//   return (
-//     <div
-//       className={cn(
-//         'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity duration-300 ease-in-out'
-//       )}
-//     >
-//       {/* <div
-//         className={cn(
-//           'hidden',
-//           'flex select-none items-center gap-2 text-sm text-muted-foreground',
-//           currentIndex === 0 && 'invisible opacity-0'
-//         )}
-//       >
-//         <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
-//         Question {currentQuestionNumber} / {currentQuestionsTotal}
-//       </div> */}
-//       <div className="flex w-full items-center justify-center gap-2">
-//         <Button
-//           type="reset"
-//           disabled={isSubmitting || currentIndex === 0}
-//           onClick={(e) => {
-//             navigate(-1);
-//           }}
-//           size="lg"
-//           variant="secondary"
-//           className={cn(btnClassName, currentIndex === 110 && 'hidden')}
-//         >
-//           Back
-//         </Button>
-
-//         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled} loading={isSubmitting}>
-//           {currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
 function Logo() {
   const className = 'h-5 w-5 bg-border transition-colors';
   return (
@@ -579,6 +530,10 @@ function QuestionForm({
       {children}
     </fetcher.Form>
   );
+}
+
+function QuestionFormFooter({ children }: { children: React.ReactNode }) {
+  return <div className="flex w-full items-center justify-center gap-2 pb-10 pt-10">{children}</div>;
 }
 
 function ImageCarousel() {
