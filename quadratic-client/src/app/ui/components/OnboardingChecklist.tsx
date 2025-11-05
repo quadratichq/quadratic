@@ -93,8 +93,8 @@ export const OnboardingChecklist = () => {
       style={{
         transform: showTransform ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
         transformOrigin: 'center center',
-        width: isInitialized && width > 0 ? `${width}px` : 'auto',
-        height: isInitialized && height > 0 ? `${height}px` : 'auto',
+        width: showTransform && width > 0 ? `${width}px` : 'auto',
+        height: showTransform && height > 0 ? `${height}px` : 'auto',
         opacity: isInitialized ? 1 : 0,
         pointerEvents: isInitialized ? 'auto' : 'none',
       }}

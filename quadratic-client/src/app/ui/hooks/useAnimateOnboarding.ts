@@ -39,6 +39,7 @@ export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunni
   const animationStartTimeRef = useRef<number>(0);
   const fullSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const naturalPositionRef = useRef<{ centerX: number; centerY: number }>({ centerX: 0, centerY: 0 });
+  const isFirstMountRef = useRef<boolean>(true);
 
   // Calculate position and scale for animation
   const calculateTransform = useCallback((progress: number, isOpening: boolean) => {
@@ -215,6 +216,15 @@ export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunni
       const containerCenterY = rect.top + rect.height / 2;
       naturalPositionRef.current = { centerX: containerCenterX, centerY: containerCenterY };
 
+      // Check if this is the first mount - if so, skip animation and just appear
+      if (isFirstMountRef.current) {
+        isFirstMountRef.current = false;
+        setIsInitialized(true);
+        setAnimationState('open');
+        setShowIconOnly(false);
+        return;
+      }
+
       // Calculate initial position (at trigger button)
       const trigger = document.getElementById('onboarding-checklist-trigger');
       if (trigger) {
@@ -271,15 +281,14 @@ export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunni
 
   const isAnimating = animationState === 'opening' || animationState === 'closing';
 
-  // Show transform as soon as initialized (includes the initial position before animation starts)
-  const showTransform = isInitialized;
+  // Show transform only during animation, not when fully open
+  const showTransform = isInitialized && animationState !== 'open';
 
   return {
     containerRef,
     currentTransform,
     isInitialized,
     showIconOnly,
-    animationState,
     isAnimating,
     showTransform,
     handleClose,
