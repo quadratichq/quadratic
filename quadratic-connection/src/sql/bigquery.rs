@@ -24,7 +24,7 @@ use super::{Schema, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     Json(config): Json<BigqueryConfig>,
 ) -> Result<Json<TestResponse>> {
     let sql_query = SqlQuery {
@@ -55,17 +55,16 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<BigqueryConfig>> {
     let connection = if cfg!(not(test)) {
-        get_api_connection(state, "", &claims.email, connection_id, team_id).await?
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
     } else {
         let config = new_config().await;
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
-            created_date: "".into(),
-            updated_date: "".into(),
             type_details: config,
         }
     };
@@ -76,13 +75,19 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let config_connection =
-        get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let config_connection = get_connection(
+        &state,
+        &claims,
+        &sql_query.connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
     let connection = BigqueryConnection::new_from_config(config_connection.type_details).await?;
 
     query_generic::<BigqueryConnection>(connection, state, sql_query).await
@@ -92,26 +97,24 @@ pub(crate) async fn query(
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     claims: Claims,
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
 
     let api_connection = ApiConnection {
         uuid: connection.uuid,
         name: connection.name,
         r#type: connection.r#type,
-        created_date: connection.created_date,
-        updated_date: connection.updated_date,
         type_details: BigqueryConnection::new_from_config(connection.type_details).await?,
     };
 
     schema_generic(api_connection, state, params).await
 }
 
-use std::sync::{LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 pub static BIGQUERY_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
     dotenv::from_filename(".env").ok();
     let credentials = std::env::var("BIGQUERY_CREDENTIALS").unwrap();
@@ -150,7 +153,7 @@ mod tests {
     #[traced_test]
     async fn bigquery_test_connection() {
         let config = new_config().await;
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let response = test(state, axum::Json(config)).await.unwrap();
 
         assert!(response.0.connected);
@@ -161,7 +164,7 @@ mod tests {
     async fn bigquery_schema() {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let params = SchemaQuery::forced_cache_refresh();
         let response = schema(
             Path(connection_id),
@@ -188,7 +191,7 @@ mod tests {
                     .into(),
             connection_id,
         };
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let (_, headers) = new_team_id_with_header().await;
         let data = query(headers, state, get_claims(), Json(sql_query))
             .await
@@ -240,8 +243,9 @@ mod tests {
             query: "SELECT * FROM quadratic-development.all_native_data_types.all_data_types ORDER BY id".into(),
             connection_id,
         };
-        let mut state = Extension(new_state().await);
-        state.settings.max_response_bytes = 0;
+        let mut test_state = new_state().await;
+        test_state.settings.max_response_bytes = 0;
+        let state = Extension(Arc::new(test_state));
         let (_, headers) = new_team_id_with_header().await;
         let data = query(headers, state, get_claims(), Json(sql_query))
             .await

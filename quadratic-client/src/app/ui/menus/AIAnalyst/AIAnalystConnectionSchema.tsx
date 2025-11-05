@@ -4,7 +4,7 @@ import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useAIAnalystConnectionSchemaPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
-import { CloseIcon } from '@/shared/components/Icons';
+import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { memo, useCallback, useRef } from 'react';
@@ -59,6 +59,7 @@ export const AIAnalystConnectionSchema = memo(() => {
 
       <div className="h-full w-full pt-0.5">
         <ConnectionSchemaBrowser
+          hideRefreshButton={true}
           additionalActions={
             <Button
               onClick={() => setAIAnalystActiveSchemaConnectionUuid(undefined)}
@@ -66,7 +67,7 @@ export const AIAnalystConnectionSchema = memo(() => {
               variant="ghost"
               className="text-muted-foreground"
             >
-              <CloseIcon />
+              <ChevronLeftIcon />
             </Button>
           }
           teamUuid={teamUuid}

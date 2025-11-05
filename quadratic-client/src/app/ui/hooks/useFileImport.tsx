@@ -6,6 +6,7 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -19,7 +20,17 @@ const fileImportSendAnalyticsError = (from: string, error: Error | unknown) => {
   sendAnalyticsError('useFileImport', from, error);
 };
 
-export function useFileImport() {
+interface FileImportProps {
+  files?: File[];
+  sheetId?: string;
+  insertAt?: JsCoordinate;
+  cursor?: string;
+  isPrivate?: boolean;
+  teamUuid?: string;
+  isOverwrite?: boolean;
+}
+
+export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
 
@@ -29,21 +40,15 @@ export function useFileImport() {
   const navigate = useNavigate();
 
   const handleImport = useCallback(
-    async ({
-      files,
-      sheetId,
-      insertAt,
-      cursor,
-      isPrivate = true,
-      teamUuid,
-    }: {
-      files?: File[];
-      sheetId?: string;
-      insertAt?: JsCoordinate;
-      cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
-      isPrivate?: boolean;
-      teamUuid?: string;
-    }) => {
+    async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
+      // Only check file limit when creating new files (teamUuid must be defined)
+      if (teamUuid !== undefined) {
+        const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+        if (hasReachedLimit) {
+          showUpgradeDialog('fileLimitReached');
+          return;
+        }
+      }
       quadraticCore.initWorker();
 
       if (!files) files = await uploadFile(supportedFileTypes);
@@ -174,6 +179,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               isAi: false,
+              isOverwrite,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

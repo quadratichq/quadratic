@@ -8,15 +8,8 @@
 use crate::error::{FilesError, Result};
 use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
+use quadratic_rust_shared::storage::StorageType;
 use serde::Deserialize;
-use strum_macros::Display;
-
-#[derive(Deserialize, Debug, Display)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum StorageType {
-    S3,
-    FileSystem,
-}
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]

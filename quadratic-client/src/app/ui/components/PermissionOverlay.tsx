@@ -20,10 +20,11 @@ export function PermissionOverlay() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
+    team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const location = useLocation();
 
-  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid }), [fileUuid]);
+  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid, teamUuid }), [fileUuid, teamUuid]);
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.

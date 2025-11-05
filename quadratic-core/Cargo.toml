@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.21.0"
+version = "0.20.7"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -91,17 +91,17 @@ csv = "1.3.0"
 indexmap = { version = "2.8.0", features = ["serde"] }
 thiserror = "2.0.12"
 lazy_static = "1.4.0"
-parquet = { version = "=54.2.1", default-features = false, features = [
+parquet = { version = "54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
   "flate2",
   "snap",
 ] }
 bytes = "1.5.0"
-arrow-array = "=54.2.1"
-arrow-schema = "=54.2.1"
-arrow-buffer = "=54.2.1"
-arrow-data = "=54.2.1"
+arrow-array = "54.2.1"
+arrow-schema = "54.2.1"
+arrow-buffer = "54.2.1"
+arrow-data = "54.2.1"
 half = "2.4.0"
 # pull from git@github.com:ddimaria/calamine.git until the branch is accepted at calamine
 calamine = { git = "https://github.com/ddimaria/calamine.git", rev = "ac3c438", features = [

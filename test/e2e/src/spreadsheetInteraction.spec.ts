@@ -4247,7 +4247,7 @@ test('Theme Customization', async ({ page }) => {
   //--------------------------------
 
   // Homepage elements for accent color changes
-  const upgradeButtonEl = page.getByRole(`link`, { name: `Upgrade to Pro` });
+  const upgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
   const newFileButtonEl = page.getByRole(`button`, { name: `New file` });
   const upgradeTextSVG = page.getByRole(`navigation`).locator(`svg`);
 

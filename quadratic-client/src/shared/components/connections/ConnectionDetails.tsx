@@ -1,4 +1,7 @@
-import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
+import {
+  ConnectionSchemaBrowser,
+  type SchemaBrowserTableActionOnClick,
+} from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { FileIcon } from '@/shared/components/Icons';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -12,7 +15,7 @@ export const ConnectionDetails = ({
   connectionUuid: string;
   teamUuid: string;
 }) => {
-  const handleClick = ({ tableQuery }: { tableQuery: string; tableName: string }) => {
+  const handleClick = ({ tableQuery }: SchemaBrowserTableActionOnClick) => {
     const to = newNewFileFromStateConnection({
       isPrivate: true,
       teamUuid,
@@ -27,7 +30,7 @@ export const ConnectionDetails = ({
   return (
     <ConnectionSchemaBrowser
       teamUuid={teamUuid}
-      additionalDropdownItems={[
+      tableActions={[
         {
           label: 'Create file querying this table',
           Icon: FileIcon,

@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { hasReachedFileLimit } from '../../utils/billing';
 import { createFile } from '../../utils/createFile';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -32,9 +33,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
 
   // Check that the team exists and the user can create in it
   const {
-    team: { id: teamId },
+    team,
     userMakingRequest: { permissions: teamPermissions },
   } = await getTeam({ uuid: teamUuid, userId });
+
+  const teamId = team.id;
+
+  if (await hasReachedFileLimit(team, userId, isPrivate)) {
+    throw new ApiError(403, 'Team has reached the maximum number of files for the free plan. Upgrade to continue.');
+  }
+
   const canView = teamPermissions.includes('TEAM_VIEW');
   const canEdit = teamPermissions.includes('TEAM_EDIT');
 

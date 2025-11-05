@@ -325,7 +325,8 @@ function getInitialConnectionState(searchParams: URLSearchParams): ConnectionSta
     type === 'BIGQUERY' ||
     type === 'MARIADB' ||
     type === 'SUPABASE' ||
-    type === 'NEON'
+    type === 'NEON' ||
+    type === 'MIXPANEL'
   ) {
     if (uuid) {
       return { view: 'edit', uuid, type };

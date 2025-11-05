@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.21.0",
+  "version": "0.20.7",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -72,6 +72,7 @@
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^3.1.0",
     "hls.js": "^1.6.12",
+    "jotai": "^2.15.0",
     "localforage": "^1.10.0",
     "mixpanel-browser": "2.67.0",
     "monaco-editor": "^0.52.2",
