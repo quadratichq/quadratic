@@ -22,8 +22,6 @@ import { RecoilRoot } from 'recoil';
  * That is derived as a count of 2 questions: [use, role]
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // await requireAuth();
-
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
 
@@ -31,7 +29,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
   const currentQuestionStackIds = Object.entries(questionsById)
     .filter(([id, { excludeForUse }]) => {
-      // if (currentUse === null) return false;
       if (excludeForUse) {
         return !excludeForUse.includes(currentUse ?? '');
       }
@@ -79,7 +76,8 @@ export const Component = () => {
  * All question answers are stored in the URL search params.
  * When submitted, we parse them into JSON and save them to the server.
  */
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const { teamUuid } = params as { teamUuid: string };
   // Pull the form data from the URL
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
@@ -107,12 +105,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     ...formJson,
   });
 
-  console.log('result', result);
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  let doThing = true;
-  if (doThing) return;
-
   // TODO: pick out name and other things
 
   // Save the responses to the server and mixpanel and log any errors
@@ -120,9 +112,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (result.success) {
     try {
-      const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
+      // TODO: handle invites
+      const inviteEmails = result.data['team-invites[]'] ? result.data['team-invites[]'].map((email) => email) : [];
+      const invitePromises = inviteEmails.map((email) =>
+        apiClient.teams.invites.create(teamUuid, { email, role: 'EDITOR' })
+      );
+
+      // const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
+
+      const uploadToServerPromise = apiClient.teams.update(teamUuid, {
+        onboardingResponses: result.data,
+        name: result.data['team-name'],
+      });
       const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
-      const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
+      const [serverResult, mixpanelResult] = await Promise.allSettled([
+        uploadToServerPromise,
+        uploadToMixpanelPromise,
+        invitePromises,
+      ]);
 
       if (serverResult.status === 'rejected') {
         captureException({
@@ -171,6 +178,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
+  console.log(result.data);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  if (result.data && result.data['team-plan'] === 'pro') {
+    // TODO: 'back' doing (-1) messes up if we go stripe -> onboarding -> stripe
+    // If we want to have success/cancel callbacks, we'll have to build support
+    // Otherwise, we can just redirect to new file
+    const redirectUrlCancel = new URL(window.location.href);
+    redirectUrlCancel.searchParams.delete('team-plan');
+    const { url } = await apiClient.teams.billing.getCheckoutSessionUrl(
+      teamUuid,
+      window.location.origin + `/files/create?private=false`,
+      redirectUrlCancel.href
+    );
+    return redirectDocument(url);
+  }
+
+  // TODO: handle redirect to stripe if necessary
   // Hard-redirect user to a new file
   return redirectDocument(`/files/create?private=false`);
 };

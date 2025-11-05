@@ -47,9 +47,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? SlotPrimitive.Slot : 'button';
     const content = (
       <>
-        <span className={loading ? 'invisible' : ''}>{children}</span>
+        {children}
         {loading && (
-          <span className="absolute inset-0 flex items-center justify-center">
+          <span
+            className={cn('absolute inset-0 flex items-center justify-center', getLoadingBackgroundByVariant(variant))}
+          >
             <SpinnerIcon />
           </span>
         )}
@@ -57,7 +59,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }), loading && 'relative')}
+        className={cn(buttonVariants({ variant, size, className }), loading && 'relative overflow-hidden')}
         ref={ref}
         disabled={disabled || loading}
         {...props}
@@ -70,3 +72,25 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = 'Button';
 
 export { Button, buttonVariants };
+
+function getLoadingBackgroundByVariant(variant: VariantProps<typeof buttonVariants>['variant']) {
+  switch (variant) {
+    case 'destructive':
+      return 'bg-destructive';
+    case 'outline':
+      return 'bg-background';
+    case 'outline-destructive':
+      return 'bg-destructive/10';
+    case 'success':
+      return 'bg-success';
+    case 'secondary':
+      return 'bg-secondary';
+    case 'ghost':
+      return 'bg-background';
+    case 'link':
+      return 'bg-background';
+    case 'default':
+    default:
+      return 'bg-primary';
+  }
+}

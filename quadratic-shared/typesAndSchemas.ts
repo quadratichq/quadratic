@@ -365,7 +365,7 @@ export const ApiSchemas = {
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(
-      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string() })
+      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string(), onboardingComplete: z.boolean() })
     ),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
@@ -408,6 +408,13 @@ export const ApiSchemas = {
         showConnectionDemo: z.boolean().optional(),
       })
         .partial()
+        .optional(),
+      onboardingResponses: z
+        .object({
+          __version: z.number(),
+          __createdAt: z.string().datetime(),
+        })
+        .catchall(z.any())
         .optional(),
     })
     .refine(
@@ -470,6 +477,7 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  // TODO: remove this once we get team onboarding working
   '/v0/user.POST.request': z.object({
     onboardingResponses: z
       .object({

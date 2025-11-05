@@ -79,13 +79,7 @@ export const ProPlan = ({
           <div className="flex items-center gap-1">
             <span className="flex items-center gap-1 text-sm font-medium">
               <Dialog>
-                <DialogTrigger
-                  className="border-b border-dashed border-border hover:border-foreground"
-                  onClick={(e) => {
-                    // Stop propagation, in case this card is inside a button or link
-                    e.stopPropagation();
-                  }}
-                >
+                <DialogTrigger className="border-b border-dashed border-border hover:border-foreground">
                   * Unlimited
                 </DialogTrigger>
                 <DialogContent aria-describedby={undefined}>

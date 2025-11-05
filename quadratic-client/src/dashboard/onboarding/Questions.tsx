@@ -5,7 +5,7 @@ import {
   ControlLinkInline,
   ControlLinkStacked,
 } from '@/dashboard/onboarding/Controls';
-import { useOnboardingLoaderData } from '@/routes/onboarding';
+import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
   ArrowRightIcon,
@@ -56,11 +56,15 @@ export const questionsById: Record<
     Form: (props) => {
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="">
+          <QuestionForm>
             <ImageCarousel />
             <FreePromptsMsg isLastQuestion={false} />
             <input type="hidden" name={props.id} value="" />
-            <QuestionFormFooter />
+            <QuestionFormFooter>
+              <Button type="submit" size="lg">
+                Get started
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -84,19 +88,23 @@ export const questionsById: Record<
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <Link key={value} to={`./?${searchParams.toString()}&${props.id}=${value}`}>
-                <ControlLinkStacked>
-                  {iconsByValue[value]}
-                  <span className="relative flex items-center">
-                    {label}
-                    <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
-                  </span>
-                </ControlLinkStacked>
-              </Link>
-            ))}
-            <QuestionFormFooter disabled={true} />
+          <QuestionForm>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(props.optionsByValue).map(([value, label]) => (
+                <Link key={value} to={`./?${searchParams.toString()}&${props.id}=${value}`}>
+                  <ControlLinkStacked>
+                    {iconsByValue[value]}
+                    <span className="relative flex items-center">
+                      {label}
+                      <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
+                    </span>
+                  </ControlLinkStacked>
+                </Link>
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -126,19 +134,32 @@ export const questionsById: Record<
 
       return (
         <Question title={props.title}>
-          <QuestionForm className="grid grid-cols-2 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
-                  <ControlLinkInline>{label}</ControlLinkInline>
-                </Link>
-              )
-            )}
-            <QuestionFormFooter disabled={!other} />
+          <QuestionForm>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(props.optionsByValue).map(([value, label]) =>
+                value === 'other' ? (
+                  <ControlCheckboxInputOther
+                    key={value}
+                    id={props.id}
+                    value={value}
+                    checked={other}
+                    onChange={setOther}
+                  >
+                    {label}
+                  </ControlCheckboxInputOther>
+                ) : (
+                  <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                    <ControlLinkInline>{label}</ControlLinkInline>
+                  </Link>
+                )
+              )}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" disabled={!other}>
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -159,13 +180,17 @@ export const questionsById: Record<
       const [searchParams] = useSearchParams();
       return (
         <Question title={props.title}>
-          <QuestionForm className="grid grid-cols-2 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
-                <ControlLinkInline key={value}>{label}</ControlLinkInline>
-              </Link>
-            ))}
-            <QuestionFormFooter disabled={true} />
+          <QuestionForm>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(props.optionsByValue).map(([value, label]) => (
+                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                  <ControlLinkInline key={value}>{label}</ControlLinkInline>
+                </Link>
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -211,36 +236,49 @@ export const questionsById: Record<
       // };
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => {
-              // TODO: fix types
-              // @ts-expect-error
-              const Icon = connectionsByType[value] ? (
+          <QuestionForm>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(props.optionsByValue).map(([value, label]) => {
+                // TODO: fix types
                 // @ts-expect-error
-                connectionsByType[value].Logo
-              ) : // @ts-expect-error
-              potentialConnectionsByType[value] ? (
-                // @ts-expect-error
-                potentialConnectionsByType[value].Logo
-              ) : (
-                <div>?</div>
-              );
-              /* we don't have a stacked 'other' right now... */
-              return value === 'OTHER' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  <Icon />
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                  <Icon />
-                </ControlCheckboxStacked>
-              );
-            })}
+                const Icon = connectionsByType[value] ? (
+                  // @ts-expect-error
+                  connectionsByType[value].Logo
+                ) : // @ts-expect-error
+                potentialConnectionsByType[value] ? (
+                  // @ts-expect-error
+                  potentialConnectionsByType[value].Logo
+                ) : (
+                  <div>?</div>
+                );
+                /* we don't have a stacked 'other' right now... */
+                return value === 'OTHER' ? (
+                  <ControlCheckboxInputOther
+                    key={value}
+                    id={props.id}
+                    value={value}
+                    checked={other}
+                    onChange={setOther}
+                  >
+                    <Icon />
+                  </ControlCheckboxInputOther>
+                ) : (
+                  <ControlCheckboxStacked name={props.id} value={value} key={value}>
+                    <Icon />
+                  </ControlCheckboxStacked>
+                );
+              })}
+            </div>
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
 
-            <QuestionFormFooter />
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg">
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -254,33 +292,29 @@ export const questionsById: Record<
       'team-name': 'Team name',
     },
     Form: (props) => {
-      const { currentId } = useOnboardingLoaderData();
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       const inputRef = useRef<HTMLInputElement>(null);
 
-      // TODO: Hacky
-      useEffect(() => {
-        if (inputRef.current && currentId === props.id) {
-          setTimeout(() => {
-            inputRef.current?.focus();
-            console.log('focused', currentId, props.id, inputRef, inputRef.current);
-          }, 0);
-        }
-      }, [currentId, props.id]);
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="">
+          <QuestionForm>
             <Input
               ref={inputRef}
               className="h-12 w-full text-lg"
               type="text"
               name={props.id}
               autoFocus
+              placeholder="e.g. Acme Corp."
               onChange={(e) => {
                 setIsValid(e.target.value.length > 0);
               }}
             />
-            <QuestionFormFooter disabled={!isValid} />
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" disabled={!isValid}>
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
 
           {isValid && false /* TODO: put on last step */ && <FreePromptsMsg isLastQuestion={true} />}
@@ -298,17 +332,24 @@ export const questionsById: Record<
     Form: (props) => {
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="flex flex-col gap-2 md:grid md:grid-cols-2">
-            {['john@example.com', 'alice@example.com', 'bob@example.com', 'susan@example.com'].map((placeholder) => (
-              <Input
-                key={placeholder}
-                className="h-12 w-full text-lg"
-                type="email"
-                name={props.id}
-                placeholder={placeholder}
-              />
-            ))}
-            <QuestionFormFooter />
+          <QuestionForm>
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
+              {['john@example.com', 'alice@example.com', 'bob@example.com', 'susan@example.com'].map((placeholder) => (
+                <Input
+                  key={placeholder}
+                  className="h-12 w-full text-lg"
+                  type="email"
+                  name={props.id}
+                  placeholder={placeholder}
+                />
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg">
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -325,6 +366,7 @@ export const questionsById: Record<
       const [selectedPlan, setSelectedPlan] = useState<keyof typeof props.optionsByValue>(
         Object.keys(props.optionsByValue)[0]
       );
+      // const navigate = useNavigate();
       const fetcher = useFetcher({ key: FETCHER_KEY });
       const isSubmitting = fetcher.state !== 'idle';
       const className = cn(
@@ -354,13 +396,48 @@ export const questionsById: Record<
               ))}
             </div>
             <input type="hidden" name={props.id} value={selectedPlan} />
-            <QuestionFormFooter />
+            <QuestionFormFooter>
+              {/* <Button
+                  type="reset"
+                  variant="secondary"
+                  size="lg"
+                  disabled={isSubmitting}
+                  // onClick={() => {
+                  //   navigate(-1);
+                  // }}
+                  asChild
+                >
+                  <Link to={backTo}>Back</Link>
+                </Button> */}
+              <Button type="submit" size="lg" disabled={isSubmitting} loading={isSubmitting}>
+                Done
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
     },
   },
 };
+
+// function useBackUrl(targetQuestionId: string) {
+//   const [searchParams] = useSearchParams();
+//   const newSearchParams = new URLSearchParams(searchParams.toString());
+//   newSearchParams.delete(targetQuestionId);
+//   newSearchParams.delete(`${targetQuestionId}-other`);
+//   return `./?${newSearchParams.toString()}`;
+// }
+
+function BackButton() {
+  const navigate = useNavigate();
+  const fetcher = useFetcher({ key: FETCHER_KEY });
+  const isSubmitting = fetcher.state !== 'idle';
+  return (
+    <Button type="reset" variant="secondary" size="lg" onClick={() => navigate(-1)} disabled={isSubmitting}>
+      Back
+    </Button>
+  );
+}
 
 export function Questions() {
   const { currentId, currentIndex, currentQuestionStackIds } = useOnboardingLoaderData();
@@ -417,50 +494,54 @@ export function Questions() {
   );
 }
 
-function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
-  const navigate = useNavigate();
-  const fetcher = useFetcher({ key: FETCHER_KEY });
-  const { currentIndex, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
-  const btnClassName = 'select-none';
-  const isSubmitting = fetcher.state !== 'idle';
-
-  return (
-    <div
-      className={cn(
-        'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity duration-300 ease-in-out'
-      )}
-    >
-      {/* <div
-        className={cn(
-          'hidden',
-          'flex select-none items-center gap-2 text-sm text-muted-foreground',
-          currentIndex === 0 && 'invisible opacity-0'
-        )}
-      >
-        <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
-        Question {currentQuestionNumber} / {currentQuestionsTotal}
-      </div> */}
-      <div className="flex w-full items-center justify-center gap-2">
-        <Button
-          type="reset"
-          disabled={isSubmitting || currentIndex === 0}
-          onClick={(e) => {
-            navigate(-1);
-          }}
-          size="lg"
-          variant="secondary"
-          className={cn(btnClassName, currentIndex === 110 && 'hidden')}
-        >
-          Back
-        </Button>
-
-        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled} loading={isSubmitting}>
-          {currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
-        </Button>
-      </div>
-    </div>
-  );
+function QuestionFormFooter({ children }: { children: React.ReactNode }) {
+  return <div className="flex w-full items-center justify-center gap-2 pb-10 pt-10">{children}</div>;
 }
+
+// function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
+//   const navigate = useNavigate();
+//   const fetcher = useFetcher({ key: FETCHER_KEY });
+//   const { currentIndex, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
+//   const btnClassName = 'select-none';
+//   const isSubmitting = fetcher.state !== 'idle';
+
+//   return (
+//     <div
+//       className={cn(
+//         'col-span-full items-center justify-center gap-2 pb-10 pt-10 transition-opacity duration-300 ease-in-out'
+//       )}
+//     >
+//       {/* <div
+//         className={cn(
+//           'hidden',
+//           'flex select-none items-center gap-2 text-sm text-muted-foreground',
+//           currentIndex === 0 && 'invisible opacity-0'
+//         )}
+//       >
+//         <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
+//         Question {currentQuestionNumber} / {currentQuestionsTotal}
+//       </div> */}
+//       <div className="flex w-full items-center justify-center gap-2">
+//         <Button
+//           type="reset"
+//           disabled={isSubmitting || currentIndex === 0}
+//           onClick={(e) => {
+//             navigate(-1);
+//           }}
+//           size="lg"
+//           variant="secondary"
+//           className={cn(btnClassName, currentIndex === 110 && 'hidden')}
+//         >
+//           Back
+//         </Button>
+
+//         <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled} loading={isSubmitting}>
+//           {currentQuestionNumber !== currentQuestionsTotal ? 'Next' : 'Done'}
+//         </Button>
+//       </div>
+//     </div>
+//   );
+// }
 
 function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
   // TODO: probably just gonna remove this, because you don't get anything for doing it

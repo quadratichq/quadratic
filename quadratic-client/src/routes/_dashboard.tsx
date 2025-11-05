@@ -108,6 +108,11 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
 
+      // If the team hasn't completed onboarding, redirect them to do so
+      if (data.team.onboardingComplete === false) {
+        throw redirect(`/teams/${teamUuid}/onboarding`);
+      }
+
       return data;
     })
     .catch((error) => {

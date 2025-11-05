@@ -99,6 +99,7 @@ export const router = createBrowserRouter(
          */}
         <Route path="file/:uuid/history" lazy={() => import('./routes/file.$uuid.history')} />
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
+        <Route path="teams/:teamUuid/onboarding" lazy={() => import('./routes/teams.$teamUuid.onboarding')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
           <Route
             path={ROUTES.FILES_SHARED_WITH_ME}
@@ -114,7 +115,6 @@ export const router = createBrowserRouter(
 
           <Route path="teams">
             <Route index element={<Navigate to="/" replace />} />
-            <Route path="create" lazy={() => import('./routes/teams.create')} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
               <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
@@ -127,7 +127,6 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route path={ROUTES.ONBOARDING_QUESTIONNAIRE} lazy={() => import('./routes/onboarding')} />
         <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
 
         {/* For development purposes only */}

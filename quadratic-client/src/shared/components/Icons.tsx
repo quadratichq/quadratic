@@ -739,6 +739,10 @@ export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
 };
 
+export const TeamIcon: IconComponent = (props) => {
+  return <Icon {...props}>groups</Icon>;
+};
+
 export const GenericLanguageIcon: IconComponent = (props) => {
   return <Icon {...props}>subject</Icon>;
 };
