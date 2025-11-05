@@ -66,6 +66,18 @@ export const OnboardingChecklist = () => {
     handleAnimationClose();
   }, [demoRunning, handleAnimationClose]);
 
+  useEffect(() => {
+    const handleTutorialTrigger = (trigger: string) => {
+      if (trigger === 'cancel' || trigger === 'complete') {
+        setDemoRunning(false);
+      }
+    };
+    events.on('tutorialTrigger', handleTutorialTrigger);
+    return () => {
+      events.off('tutorialTrigger', handleTutorialTrigger);
+    };
+  }, []);
+
   // Listen for close event from trigger button
   useEffect(() => {
     const handler = () => {

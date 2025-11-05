@@ -2,11 +2,18 @@ import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
 import confetti from 'canvas-confetti';
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 type BonusPrompt = ApiTypes['/v0/user/tutorialBonusPrompt.GET.response']['bonusPrompts'][number];
 
 const bonusPromptsDataAtom = atom<BonusPrompt[] | null>(null);
+
+// Atom to track if bonus prompts have been loaded from the API
+export const bonusPromptsLoadedAtom = atom((get) => {
+  const data = get(bonusPromptsDataAtom);
+  return data !== null;
+});
 
 // Async atom that fetches bonus prompts from the API and updates the cache
 const fetchBonusPromptsAtom = atom(null, async (get, set) => {
@@ -78,14 +85,11 @@ export const claimBonusPromptAtom = atom(null, async (get, set, category: string
   }
 });
 
-// LocalStorage key for automatic checklist display on startup
-const CHECKLIST_SHOW_ON_STARTUP_KEY = 'checklistRefresh';
+// Atom with localStorage persistence for checklist to show automatically on startup
+const checklistShowOnStartupAtom = atomWithStorage('checklistShowOnStartup', true);
 
-// Helper to get localStorage value (defaults to true if not set)
-const getChecklistShowOnStartup = (): boolean => {
-  const value = localStorage.getItem(CHECKLIST_SHOW_ON_STARTUP_KEY);
-  return value === null ? true : value === 'true';
-};
+// Session atom to track if user manually opened the checklist (resets on page reload)
+const manuallyOpenedAtom = atom(false);
 
 // Helper to check if there are unchecked items
 const hasUncheckedItems = (bonusPrompts: BonusPrompt[] | null): boolean => {
@@ -95,25 +99,18 @@ const hasUncheckedItems = (bonusPrompts: BonusPrompt[] | null): boolean => {
   return bonusPrompts.some((prompt) => !prompt.received && prompt.active);
 };
 
-// Private atom to track visibility state
-// This combines manual open state and dismissed state
-const checklistStateAtom = atom<{ manuallyOpened: boolean; dismissed: boolean }>({
-  manuallyOpened: false,
-  dismissed: !getChecklistShowOnStartup(), // Start as dismissed if localStorage says so
-});
-
 // Atom to control onboarding checklist visibility
 export const onboardingChecklistAtom = atom(
   (get) => {
-    const state = get(checklistStateAtom);
-
     // If manually opened, always show
-    if (state.manuallyOpened) {
+    const manuallyOpened = get(manuallyOpenedAtom);
+    if (manuallyOpened) {
       return true;
     }
 
-    // If dismissed, don't show
-    if (state.dismissed) {
+    // Check localStorage value - if dismissed (false), don't show
+    const shouldShowOnStartup = get(checklistShowOnStartupAtom);
+    if (!shouldShowOnStartup) {
       return false;
     }
 
@@ -126,13 +123,13 @@ export const onboardingChecklistAtom = atom(
   (get, set, action: 'dismiss' | 'open') => {
     if (action === 'dismiss') {
       // Set localStorage to false to not show on startup
-      localStorage.setItem(CHECKLIST_SHOW_ON_STARTUP_KEY, 'false');
-      // Update state to mark as dismissed and not manually opened
-      set(checklistStateAtom, { manuallyOpened: false, dismissed: true });
+      set(checklistShowOnStartupAtom, false);
+      // Clear manually opened flag
+      set(manuallyOpenedAtom, false);
     } else if (action === 'open') {
       // Manually open and set localStorage to show on next startup
-      localStorage.setItem(CHECKLIST_SHOW_ON_STARTUP_KEY, 'true');
-      set(checklistStateAtom, { manuallyOpened: true, dismissed: false });
+      set(checklistShowOnStartupAtom, true);
+      set(manuallyOpenedAtom, true);
     }
   }
 );

@@ -1,5 +1,5 @@
-import { onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
-import { useSetAtom } from 'jotai';
+import { bonusPromptsLoadedAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Animation timing constants (in milliseconds)
@@ -22,6 +22,7 @@ interface TransformState {
 
 export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunning: boolean) => {
   const hideChecklist = useSetAtom(onboardingChecklistAtom);
+  const bonusPromptsLoaded = useAtomValue(bonusPromptsLoadedAtom);
 
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [showIconOnly, setShowIconOnly] = useState(false);
@@ -39,8 +40,17 @@ export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunni
   const animationStartTimeRef = useRef<number>(0);
   const fullSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const naturalPositionRef = useRef<{ centerX: number; centerY: number }>({ centerX: 0, centerY: 0 });
+
   // Track if checklist was open on initial page load (to skip animation)
-  const wasOpenOnMountRef = useRef<boolean>(showOnboardingChecklist);
+  // Use null to indicate we haven't captured the initial state yet
+  const wasOpenOnMountRef = useRef<boolean | null>(null);
+
+  // Capture the initial state only after bonus prompts data is loaded
+  useEffect(() => {
+    if (bonusPromptsLoaded && wasOpenOnMountRef.current === null) {
+      wasOpenOnMountRef.current = showOnboardingChecklist;
+    }
+  }, [bonusPromptsLoaded, showOnboardingChecklist]);
 
   // Calculate position and scale for animation
   const calculateTransform = useCallback((progress: number, isOpening: boolean) => {
@@ -218,7 +228,8 @@ export const useAnimateOnboarding = (showOnboardingChecklist: boolean, demoRunni
       naturalPositionRef.current = { centerX: containerCenterX, centerY: containerCenterY };
 
       // Check if checklist was open on initial page load - if so, skip animation and just appear
-      if (wasOpenOnMountRef.current) {
+      // Only skip if we've captured the initial state (not null) and it was true
+      if (wasOpenOnMountRef.current === true) {
         wasOpenOnMountRef.current = false;
         setIsInitialized(true);
         setAnimationState('open');

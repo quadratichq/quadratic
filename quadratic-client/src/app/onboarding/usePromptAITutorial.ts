@@ -50,6 +50,7 @@ export const usePromptAITutorial = () => {
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
         }
+        events.emit('tutorialTrigger', 'complete');
         break;
       case 'cancel':
         setTutorial({ show: false, unmaskedElements: [] });

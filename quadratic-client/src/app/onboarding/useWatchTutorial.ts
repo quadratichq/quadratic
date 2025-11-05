@@ -32,6 +32,7 @@ export const useWatchTutorial = () => {
       case 'complete':
         setTutorial({ show: false, unmaskedElements: [] });
         setCallout({ callouts: [] });
+        events.emit('tutorialTrigger', 'complete');
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
         }
