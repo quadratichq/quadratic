@@ -36,7 +36,6 @@ const isValidFormAtom = atom<boolean>({
 type QuestionProps = {
   title: string;
   subtitle?: string;
-  optionsByValue: Record<string, string>;
   excludeForUse?: string[];
 };
 
@@ -48,9 +47,6 @@ export const questionsById: Record<
     title: 'Welcome to Quadratic!',
     subtitle:
       'Connect to your data, chat with AI, and share the results with your team, all in a familiar spreadsheet interface.',
-    optionsByValue: {
-      foo: 'I want to use Quadratic to analyze data',
-    },
     Form: (props) => {
       return (
         <Question title={props.title} subtitle={props.subtitle}>
@@ -70,27 +66,22 @@ export const questionsById: Record<
   use: {
     title: 'How will you use Quadratic?',
     subtitle: 'Your answers help personalize your experience.',
-    optionsByValue: {
-      work: 'Work',
-      personal: 'Personal',
-      education: 'Education',
-    },
     Form: (props) => {
       const [searchParams] = useSearchParams();
-      const iconsByValue: Record<string, React.ReactNode> = {
-        work: <WorkIcon size="lg" className="text-primary" />,
-        personal: <PersonalIcon size="lg" className="text-primary" />,
-        education: <EducationIcon size="lg" className="text-primary" />,
-      };
+      const options = [
+        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
+        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
+        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
+      ];
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(props.optionsByValue).map(([value, label]) => (
+              {options.map(({ value, label, icon }) => (
                 <Link key={value} to={`./?${searchParams.toString()}&${props.id}=${value}`}>
                   <ControlLinkStacked>
-                    {iconsByValue[value]}
+                    {icon}
                     <span className="relative flex items-center">
                       {label}
                       <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
@@ -112,20 +103,19 @@ export const questionsById: Record<
   role: {
     title: 'What best describes your role?',
     excludeForUse: ['personal'],
-    optionsByValue: {
-      'data-analytics': 'Data / Analytics',
-      product: 'Product',
-      finance: 'Finance',
-      'c-suite-management': 'C-Suite / Management',
-      marketing: 'Marketing',
-      sales: 'Sales',
-      'software-development': 'Software Development',
-      engineering: 'Engineering',
-      'ml-ai': 'Machine Learning / AI',
-      other: 'Other',
-    },
-
     Form: (props) => {
+      const optionsByValue = {
+        'data-analytics': 'Data / Analytics',
+        product: 'Product',
+        finance: 'Finance',
+        'c-suite-management': 'C-Suite / Management',
+        marketing: 'Marketing',
+        sales: 'Sales',
+        'software-development': 'Software Development',
+        engineering: 'Engineering',
+        'ml-ai': 'Machine Learning / AI',
+        other: 'Other',
+      };
       const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
 
@@ -133,7 +123,7 @@ export const questionsById: Record<
         <Question title={props.title}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(props.optionsByValue).map(([value, label]) =>
+              {Object.entries(optionsByValue).map(([value, label]) =>
                 value === 'other' ? (
                   <ControlCheckboxInputOther
                     key={value}
@@ -165,21 +155,21 @@ export const questionsById: Record<
   'team-size': {
     title: 'How many people are on your team?',
     excludeForUse: ['personal'],
-    optionsByValue: {
-      '1': 'Just me',
-      '2-5': '2-5',
-      '5-20': '5-20',
-      '20-250': '20-250',
-      '250-10000': '250-10,000',
-      '10000+': '10,000+',
-    },
     Form: (props) => {
+      const optionsByValue = {
+        '1': 'Just me',
+        '2-5': '2-5',
+        '5-20': '5-20',
+        '20-250': '20-250',
+        '250-10000': '250-10,000',
+        '10000+': '10,000+',
+      };
       const [searchParams] = useSearchParams();
       return (
         <Question title={props.title}>
           <QuestionForm>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(props.optionsByValue).map(([value, label]) => (
+              {Object.entries(optionsByValue).map(([value, label]) => (
                 <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
                   <ControlLinkInline key={value}>{label}</ControlLinkInline>
                 </Link>
@@ -198,44 +188,35 @@ export const questionsById: Record<
   'connections[]': {
     title: 'What data sources are you interested in connecting to?',
     subtitle: 'Select any option you’d be interested in.',
-    optionsByValue: {
-      // TODO: pull from our list
-      ...Object.keys(connectionsByType).reduce(
-        (acc, key) => ({
-          ...acc,
-          // TODO: fix type
-          // @ts-expect-error - we know this is a valid key
-          [key]: connectionsByType[key].name,
-        }),
-        {}
-      ),
-      ...Object.keys(potentialConnectionsByType).reduce(
-        (acc, key) => ({
-          ...acc,
-          // TODO: fix type
-          // @ts-expect-error - we know this is a valid key
-          [key]: potentialConnectionsByType[key].name,
-        }),
-        {}
-      ),
-      // other: 'Other…',
-    },
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      // const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
-      // const languageIconByValue: Record<string, React.ReactNode> = {
-      //   formulas: <LanguageIcon language="formula" className={languageClassName} />,
-      //   python: <LanguageIcon language="python" className={languageClassName} />,
-      //   javascript: <LanguageIcon language="javascript" className={languageClassName} />,
-      //   sql: <DatabaseIcon size="lg" className={cn(languageClassName, 'text-orange-500')} />,
-      //   ai: <AIIcon size="lg" className={cn(languageClassName, 'text-green-500')} />,
-      //   none: <BlockIcon size="lg" className={cn(languageClassName, 'text-red-500')} />,
-      // };
+      const optionsByValue = {
+        // TODO: pull from our list
+        ...Object.keys(connectionsByType).reduce(
+          (acc, key) => ({
+            ...acc,
+            // TODO: fix type
+            // @ts-expect-error - we know this is a valid key
+            [key]: connectionsByType[key].name,
+          }),
+          {}
+        ),
+        ...Object.keys(potentialConnectionsByType).reduce(
+          (acc, key) => ({
+            ...acc,
+            // TODO: fix type
+            // @ts-expect-error - we know this is a valid key
+            [key]: potentialConnectionsByType[key].name,
+          }),
+          {}
+        ),
+        // other: 'Other…',
+      };
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(props.optionsByValue).map(([value, label]) => {
+              {Object.entries(optionsByValue).map(([value, label]) => {
                 // TODO: fix types
                 // @ts-expect-error
                 const Icon = connectionsByType[value] ? (
@@ -284,10 +265,6 @@ export const questionsById: Record<
   'team-name': {
     title: 'What would you like to name your team?',
     subtitle: 'This will appear as your workspace in the app.',
-    optionsByValue: {
-      // TODO: consider making this optional
-      'team-name': 'Team name',
-    },
     Form: (props) => {
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       const inputRef = useRef<HTMLInputElement>(null);
@@ -320,10 +297,6 @@ export const questionsById: Record<
   'team-invites[]': {
     title: 'Who would you like to invite to your team?',
     subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
-    // TODO: maybe don't need these?
-    optionsByValue: {
-      'team-invites[]': 'Team invites',
-    },
     Form: (props) => {
       return (
         <Question title={props.title} subtitle={props.subtitle}>
@@ -353,62 +326,52 @@ export const questionsById: Record<
   'team-plan': {
     title: 'Which plan would you like?',
     subtitle: 'Get started for free, or subscribe for full access.',
-    // TODO: optional
-    optionsByValue: {
-      free: 'Free',
-      pro: 'Pro',
-    },
     Form: (props) => {
       const fetcher = useFetcher({ key: FETCHER_KEY });
       const isSubmitting = fetcher.state !== 'idle';
+      const formActionUrl = fetcher.formAction || '';
+      const isSubmittingFree = formActionUrl.includes(`${props.id}=free`);
+      const isSubmittingPro = formActionUrl.includes(`${props.id}=pro`);
       const className = cn(
         'flex flex-col h-full w-full group relative rounded shadow-sm border border-border p-4 enabled:hover:border-primary enabled:hover:shadow-md'
       );
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm>
-            <div className="grid grid-cols-2 gap-4">
-              <FreePlan className={className}>
-                <Button
-                  type="submit"
-                  name={props.id}
-                  value="free"
-                  size="lg"
-                  className="mt-auto w-full"
-                  disabled={isSubmitting}
-                >
-                  Get started
-                </Button>
-              </FreePlan>
-              <ProPlan className={className}>
-                <Button
-                  type="submit"
-                  name={props.id}
-                  value="pro"
-                  size="lg"
-                  variant="secondary"
-                  className="mt-4 w-full"
-                  disabled={isSubmitting}
-                >
-                  Subscribe now
-                </Button>
-              </ProPlan>
-            </div>
+          <QuestionForm className="grid grid-cols-2 gap-4">
+            <FreePlan className={className}>
+              <Button
+                type="submit"
+                name={props.id}
+                value="free"
+                size="lg"
+                className="mt-auto w-full"
+                disabled={isSubmitting}
+                loading={isSubmittingFree}
+              >
+                Get started
+              </Button>
+            </FreePlan>
+            <ProPlan className={className}>
+              <Button
+                type="submit"
+                name={props.id}
+                value="pro"
+                size="lg"
+                variant="secondary"
+                className="mt-4 w-full"
+                disabled={isSubmitting}
+                loading={isSubmittingPro}
+              >
+                Subscribe now
+              </Button>
+            </ProPlan>
           </QuestionForm>
         </Question>
       );
     },
   },
 };
-
-// function useBackUrl(targetQuestionId: string) {
-//   const [searchParams] = useSearchParams();
-//   const newSearchParams = new URLSearchParams(searchParams.toString());
-//   newSearchParams.delete(targetQuestionId);
-//   newSearchParams.delete(`${targetQuestionId}-other`);
-//   return `./?${newSearchParams.toString()}`;
-// }
 
 function BackButton() {
   const navigate = useNavigate();
@@ -607,7 +570,9 @@ function QuestionForm({
 
         // Otherwise update the search params and reset the current form
         setSearchParams(newSearchParams);
-        form.reset();
+        setTimeout(() => {
+          form.reset();
+        }, 1000);
       }}
       className={className}
     >
