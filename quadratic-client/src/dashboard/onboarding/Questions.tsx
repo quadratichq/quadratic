@@ -190,59 +190,44 @@ export const questionsById: Record<
     subtitle: 'Select any option you’d be interested in.',
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const optionsByValue = {
-        // TODO: pull from our list
-        ...Object.keys(connectionsByType).reduce(
-          (acc, key) => ({
-            ...acc,
-            // TODO: fix type
-            // @ts-expect-error - we know this is a valid key
-            [key]: connectionsByType[key].name,
-          }),
-          {}
-        ),
-        ...Object.keys(potentialConnectionsByType).reduce(
-          (acc, key) => ({
-            ...acc,
-            // TODO: fix type
-            // @ts-expect-error - we know this is a valid key
-            [key]: potentialConnectionsByType[key].name,
-          }),
-          {}
-        ),
-        // other: 'Other…',
-      };
+
+      // Build options array with proper type inference
+      const options: Array<{
+        name: string;
+        value: string;
+        Logo: React.ComponentType;
+      }> = [
+        ...(Object.keys(connectionsByType) as Array<keyof typeof connectionsByType>).map((key) => ({
+          name: connectionsByType[key].name,
+          value: key,
+          Logo: connectionsByType[key].Logo,
+        })),
+        ...(Object.keys(potentialConnectionsByType) as Array<keyof typeof potentialConnectionsByType>).map((key) => ({
+          name: potentialConnectionsByType[key].name,
+          value: key,
+          Logo: potentialConnectionsByType[key].Logo,
+        })),
+      ];
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(optionsByValue).map(([value, label]) => {
-                // TODO: fix types
-                // @ts-expect-error
-                const Icon = connectionsByType[value] ? (
-                  // @ts-expect-error
-                  connectionsByType[value].Logo
-                ) : // @ts-expect-error
-                potentialConnectionsByType[value] ? (
-                  // @ts-expect-error
-                  potentialConnectionsByType[value].Logo
-                ) : (
-                  <div>?</div>
-                );
-                /* we don't have a stacked 'other' right now... */
+              {options.map(({ name, value, Logo }) => {
+                /* TODO: we don't have a stacked 'other' right now... */
                 return value === 'OTHER' ? (
                   <ControlCheckboxInputOther
                     key={value}
                     id={props.id}
-                    value={value}
+                    value={value.toLowerCase()}
                     checked={other}
                     onChange={setOther}
                   >
-                    <Icon />
+                    <Logo />
                   </ControlCheckboxInputOther>
                 ) : (
                   <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                    <Icon />
+                    <Logo />
                   </ControlCheckboxStacked>
                 );
               })}
