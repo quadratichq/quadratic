@@ -222,6 +222,7 @@ export const questionsById: Record<
                     value={value.toLowerCase()}
                     checked={other}
                     onChange={setOther}
+                    stacked
                   >
                     <Logo />
                   </ControlCheckboxInputOther>
