@@ -179,6 +179,7 @@ interface EventTypes {
 
   tutorialTrigger: (trigger: string) => void;
   populateAIChatBox: (text: string) => void;
+  onboardingChecklistClose: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

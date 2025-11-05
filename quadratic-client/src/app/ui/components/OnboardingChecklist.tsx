@@ -2,36 +2,33 @@ import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusProm
 import { events } from '@/app/events/events';
 import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
+import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
 import { EducationIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-// Animation timing constants (in milliseconds)
-const ANIMATION_DURATION = 450;
-const ICON_TRANSITION_TIME = ANIMATION_DURATION / 2;
+import { useCallback, useEffect, useState } from 'react';
 
 export const OnboardingChecklist = () => {
   const bonusPrompts = useAtomValue(bonusPromptsAtom);
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
-  const hideChecklist = useSetAtom(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
 
   const watchTutorial = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
 
   const [demoRunning, setDemoRunning] = useState(false);
-  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
-  const [showIconOnly, setShowIconOnly] = useState(false);
-  const [fixedSize, setFixedSize] = useState<{ width: number; height: number } | null>(null);
-  const [animationTransform, setAnimationTransform] = useState<{
-    translateX: number;
-    translateY: number;
-    scale: number;
-  } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use the animation hook to handle all animation logic
+  const {
+    containerRef,
+    currentTransform,
+    isInitialized,
+    showIconOnly,
+    showTransform,
+    handleClose: handleAnimationClose,
+  } = useAnimateOnboarding(showOnboardingChecklist, demoRunning);
 
   // Fetch bonus prompts on mount
   useEffect(() => {
@@ -66,79 +63,56 @@ export const OnboardingChecklist = () => {
       return;
     }
 
-    if (!containerRef.current) return;
+    handleAnimationClose();
+  }, [demoRunning, handleAnimationClose]);
 
-    // Capture the current size and calculate transform values before starting animation
-    const rect = containerRef.current.getBoundingClientRect();
-    setFixedSize({ width: rect.width, height: rect.height });
-
-    // Calculate transform values once
-    const trigger = document.getElementById('onboarding-checklist-trigger');
-    if (trigger) {
-      const triggerRect = trigger.getBoundingClientRect();
-
-      // Calculate the center of both elements
-      const containerCenterX = rect.left + rect.width / 2;
-      const containerCenterY = rect.top + rect.height / 2;
-      const triggerCenterX = triggerRect.left + triggerRect.width / 2;
-      const triggerCenterY = triggerRect.top + triggerRect.height / 2;
-
-      // Calculate translation needed to move container center to trigger center
-      const translateX = triggerCenterX - containerCenterX;
-      const translateY = triggerCenterY - containerCenterY;
-
-      // Scale down to button size (36px)
-      const currentSize = Math.max(rect.width, rect.height);
-      const targetSize = 36;
-      const scale = targetSize / currentSize;
-
-      setAnimationTransform({ translateX, translateY, scale });
-    }
-
-    // Start the animation
-    setIsAnimatingOut(true);
-
-    // After halfway point, switch to showing just the icon
-    setTimeout(() => {
-      setShowIconOnly(true);
-    }, ICON_TRANSITION_TIME);
-
-    // After animation completes, actually hide the checklist
-    setTimeout(() => {
-      hideChecklist('dismiss');
-      setIsAnimatingOut(false);
-      setShowIconOnly(false);
-      setFixedSize(null);
-      setAnimationTransform(null);
-    }, ANIMATION_DURATION);
-  }, [demoRunning, hideChecklist]);
+  // Listen for close event from trigger button
+  useEffect(() => {
+    const handler = () => {
+      handleClose();
+    };
+    events.on('onboardingChecklistClose', handler);
+    return () => {
+      events.off('onboardingChecklistClose', handler);
+    };
+  }, [handleClose]);
 
   if (!showOnboardingChecklist || !bonusPrompts) {
     return null;
   }
 
-  // Use stored animation transform values (calculated once at start of animation)
-  const { translateX = 0, translateY = 0, scale = 1 } = animationTransform || {};
-
   const completedCount = bonusPrompts.filter((prompt) => prompt.received).length;
   const totalCount = bonusPrompts.length;
+
+  const { translateX, translateY, scale, width, height } = currentTransform;
 
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-[65px] right-2 z-[9999] rounded-lg border bg-background shadow-sm"
+      className="fixed bottom-[65px] right-2 overflow-hidden rounded-lg border bg-background shadow-sm"
       style={{
-        transform: isAnimatingOut ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
-        transition: isAnimatingOut ? `transform ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)` : 'none',
-        overflow: 'hidden',
-        width: fixedSize ? `${fixedSize.width}px` : 'auto',
-        height: fixedSize ? `${fixedSize.height}px` : 'auto',
+        transform: showTransform ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
+        transformOrigin: 'center center',
+        width: isInitialized && width > 0 ? `${width}px` : 'auto',
+        height: isInitialized && height > 0 ? `${height}px` : 'auto',
+        opacity: isInitialized ? 1 : 0,
+        pointerEvents: isInitialized ? 'auto' : 'none',
       }}
     >
       {showIconOnly ? (
         // Show just the icon during the final stage of animation - fill entire container
         <div className="flex h-full w-full items-center justify-center rounded bg-border text-muted-foreground">
-          <EducationIcon />
+          <div
+            style={{
+              transform: scale < 1 ? `scale(${1 / scale})` : 'none',
+              transformOrigin: 'center center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <EducationIcon />
+          </div>
         </div>
       ) : (
         // Show full content

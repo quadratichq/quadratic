@@ -115,8 +115,14 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label="Onboarding checklist">
           <SidebarToggle
             id="onboarding-checklist-trigger"
-            pressed={showOnboardingChecklist}
-            onPressedChange={(pressed) => setShowOnboardingChecklist(pressed ? 'open' : 'dismiss')}
+            pressed={!!showOnboardingChecklist}
+            onPressedChange={(pressed) => {
+              if (pressed) {
+                setShowOnboardingChecklist('open');
+              } else {
+                events.emit('onboardingChecklistClose');
+              }
+            }}
           >
             <EducationIcon />
           </SidebarToggle>
