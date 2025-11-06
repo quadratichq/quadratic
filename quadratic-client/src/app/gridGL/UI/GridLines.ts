@@ -5,6 +5,7 @@
 
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
@@ -101,9 +102,10 @@ export class GridLines extends Graphics {
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
+    const headingSize = content.headings.headingSize.width;
     for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
       // don't draw grid lines when hidden
-      if (size !== 0 && x >= sheet.clamp.left) {
+      if (size !== 0 && x >= sheet.clamp.left - headingSize) {
         const lines = gridOverflowLines.getColumnVerticalRange(column, range);
         if (lines) {
           for (const [y0, y1] of lines) {
@@ -145,9 +147,10 @@ export class GridLines extends Graphics {
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
+    const headingSize = content.headings.headingSize.height;
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
-      if (size !== 0 && y >= sheet.clamp.top) {
+      if (size !== 0 && y >= sheet.clamp.top - headingSize) {
         const lines = gridOverflowLines.getRowHorizontalRange(row, [startX, endX]);
         if (lines) {
           for (const [x0, x1] of lines) {

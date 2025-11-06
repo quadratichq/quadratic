@@ -99,6 +99,10 @@ export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
 };
 
+export const AsteriskIcon: IconComponent = (props) => {
+  return <Icon {...props}>asterisk</Icon>;
+};
+
 export const AttachFileIcon: IconComponent = (props) => {
   return <Icon {...props}>attach_file</Icon>;
 };
@@ -757,4 +761,8 @@ export const RadioButtonCheckedIcon: IconComponent = (props) => {
 
 export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
+};
+
+export const WarningIcon: IconComponent = (props) => {
+  return <Icon {...props}>warning</Icon>;
 };

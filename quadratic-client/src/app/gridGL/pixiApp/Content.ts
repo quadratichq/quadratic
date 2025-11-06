@@ -51,7 +51,7 @@ export class Content extends Container {
   copy = new UICopy();
   private singleCellOutlines = new UISingleCellOutlines();
 
-  private debug = new Graphics();
+  debug = new Graphics();
 
   copying = false;
   accentColor = colors.cursorCell;

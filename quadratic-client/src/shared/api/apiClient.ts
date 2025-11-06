@@ -50,8 +50,9 @@ export const apiClient = {
         );
       },
       getCheckoutSessionUrl(uuid: string) {
+        const redirect = window.location.href;
         return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/session`,
+          `/v0/teams/${uuid}/billing/checkout/session?redirect=${redirect}`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
@@ -119,6 +120,13 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
         );
       },
+    },
+    fileLimit(uuid: string, isPrivate: boolean) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}/file-limit?private=${isPrivate}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
+      );
     },
   },
 

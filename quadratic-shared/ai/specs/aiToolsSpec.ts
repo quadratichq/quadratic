@@ -62,6 +62,7 @@ export enum AITool {
   RemoveValidations = 'remove_validation',
   Undo = 'undo',
   Redo = 'redo',
+  ContactUs = 'contact_us',
   OptimizePrompt = 'optimize_prompt',
 }
 
@@ -116,6 +117,7 @@ export const AIToolSchema = z.enum([
   AITool.RemoveValidations,
   AITool.Undo,
   AITool.Redo,
+  AITool.ContactUs,
   AITool.OptimizePrompt,
 ]);
 
@@ -530,6 +532,11 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.Redo]: z.object({
     count: numberSchema.nullable().optional(),
+  }),
+  [AITool.ContactUs]: z.object({
+    // No parameters needed, but we include a dummy property for schema compatibility.
+    // Should we fix this now? Not sure why param would be required.
+    acknowledged: booleanSchema.nullable().optional(),
   }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
@@ -1768,7 +1775,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1797,7 +1804,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    aiModelModes: [],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -2748,6 +2755,33 @@ If the user's redo request is multiple transactions, use the count parameter to 
 This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
 Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
 If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
+  },
+  [AITool.ContactUs]: {
+    sources: ['AIAnalyst', 'AIAssistant'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides a way for users to get help from the Quadratic team when experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+The tool displays a contact form with options to reach out to the team or start a new chat.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        acknowledged: {
+          type: ['boolean', 'null'],
+          description: 'Acknowledgment flag (can be null or boolean)',
+        },
+      },
+      required: ['acknowledged'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ContactUs],
+    prompt: `
+This tool provides a way for users to get help from the Quadratic team when they are experiencing frustration or issues.\n
+Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
+This should be used to help frustrated users get direct support from the Quadratic team.\n
+The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
+and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
+It provides both a "Contact us" button and a "New chat" button for the user.\n`,
   },
   [AITool.OptimizePrompt]: {
     sources: ['OptimizePrompt'],
