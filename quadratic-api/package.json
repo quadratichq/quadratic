@@ -1,6 +1,6 @@
 {
   "name": "quadratic-api",
-  "version": "0.20.6",
+  "version": "0.20.7",
   "description": "",
   "main": "index.js",
   "scripts": {
