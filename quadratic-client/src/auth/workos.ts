@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
@@ -27,29 +26,29 @@ function getBaseDomain(hostname: string): string {
 
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
-let clientPromise: Promise<Awaited<ReturnType<typeof createClient>>> | null = null;
+let client: Awaited<ReturnType<typeof createClient>> | null = null;
 
 // Store the state from the redirect callback
 let redirectState: Record<string, any> | null = null;
 
 async function getClient() {
-  if (!clientPromise) {
-    clientPromise = (async () => {
-      const hostname = window.location.hostname;
-      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-      const client = await createClient(VITE_WORKOS_CLIENT_ID, {
-        redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-        apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
-        https: isLocalhost ? undefined : true,
-        onRedirectCallback: (params) => {
-          redirectState = params.state;
-        },
-      });
-      await client.initialize();
-      return client;
-    })();
+  if (client) {
+    return client;
+  } else {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    client = await createClient(VITE_WORKOS_CLIENT_ID, {
+      redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
+      apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
+      https: true,
+      onRedirectCallback: (params) => {
+        redirectState = params.state;
+      },
+    });
+    if (!client) throw new Error('Failed to create WorkOS client');
+    await client.initialize();
+    return client;
   }
-  return clientPromise;
 }
 
 // Get and clear redirect state
