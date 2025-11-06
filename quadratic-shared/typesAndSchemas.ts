@@ -477,7 +477,8 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
-  // TODO: remove this once we get team onboarding working
+  // TODO: this is considered deprecated as we moved onboarding to be part of the team
+  // Once that ships, we can remove this from the schema and the API
   '/v0/user.POST.request': z.object({
     onboardingResponses: z
       .object({
