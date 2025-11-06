@@ -109,7 +109,7 @@ export const ConnectionSchemaBrowser = ({
         </div>
 
         {showSyncedConnection && uuid && (
-          <div className="text-xs text-muted-foreground">
+          <div className="mb-1 mt-1 text-xs text-muted-foreground">
             <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} />
           </div>
         )}

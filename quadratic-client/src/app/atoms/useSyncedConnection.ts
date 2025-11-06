@@ -7,6 +7,8 @@ import type { Connection, SyncedConnectionLog } from 'quadratic-shared/typesAndS
 import { useCallback, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
+const SYNCED_CONNECTION_UPDATE_INTERVAL_MS = 10000; // 10 seconds
+
 export interface SyncedConnection {
   percentCompleted: number;
   updatedDate: string | null;
@@ -49,21 +51,21 @@ export const useSyncedConnection = (connectionUuid: string, teamUuid: string): S
   );
 
   useEffect(() => {
-    const fetchConnection = () => {
-      getConnection().then((fetchedConnection) => {
-        setSyncedConnection((prev) => ({
-          ...prev,
-          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
-          updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
-        }));
-      });
+    const fetchConnection = async () => {
+      const fetchedConnection = await getConnection();
+
+      setSyncedConnection((prev) => ({
+        ...prev,
+        percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
+        updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
+      }));
     };
 
-    // Fire immediately
+    // fire immediately to get fresh data
     fetchConnection();
 
-    // Then every 10 seconds
-    const interval = setInterval(fetchConnection, 10000);
+    // then every SYNCED_CONNECTION_UPDATE_INTERVAL_MS
+    const interval = setInterval(fetchConnection, SYNCED_CONNECTION_UPDATE_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [connectionUuid, teamUuid, getConnection, setSyncedConnection]);

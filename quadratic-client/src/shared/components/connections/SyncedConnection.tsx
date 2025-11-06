@@ -37,18 +37,12 @@ export const SyncedConnection = ({
   createdDate?: string;
 }) => {
   const { syncedConnection } = useSyncedConnection(connectionUuid, teamUuid);
+  let isSynced = syncedConnection.percentCompleted && syncedConnection.percentCompleted >= 100;
 
   return (
     <>
-      {syncedConnection.percentCompleted &&
-        syncedConnection.percentCompleted < 100 &&
-        `${syncedConnection.percentCompleted}% Synced · `}
-
-      {syncedConnection.percentCompleted &&
-        syncedConnection.percentCompleted >= 100 &&
-        syncedConnection.updatedDate &&
-        `Last Synced  ${timeAgo(syncedConnection.updatedDate)} · `}
-
+      {!isSynced && `${syncedConnection.percentCompleted}% Synced · `}
+      {isSynced && syncedConnection.updatedDate && `Last Synced  ${timeAgo(syncedConnection.updatedDate)} · `}
       {createdDate && `Created ${timeAgo(createdDate)}`}
     </>
   );
