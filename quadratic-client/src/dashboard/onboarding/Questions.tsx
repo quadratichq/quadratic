@@ -45,11 +45,9 @@ export const questionsById: Record<
 > = {
   instructions: {
     title: 'Welcome to Quadratic!',
-    subtitle:
-      'Connect to your data, chat with AI, and share the results with your team, all in a familiar spreadsheet interface.',
     Form: (props) => {
       return (
-        <Question title={props.title} subtitle={props.subtitle}>
+        <Question title={props.title}>
           <QuestionForm>
             <ImageCarousel />
             <input type="hidden" name={props.id} value="" />
@@ -388,7 +386,7 @@ export function Questions() {
 
   return (
     <div ref={scrollRef} className="h-full overflow-auto">
-      <div className="mx-auto flex max-w-xl flex-col gap-10 pt-10">
+      <div className="mx-auto flex max-w-xl flex-col gap-8 pt-8">
         <Logo />
 
         <div className="relative w-full transition-all">
@@ -425,7 +423,7 @@ export function Questions() {
 }
 
 function Logo() {
-  const className = 'h-5 w-5 bg-border transition-colors';
+  const className = 'h-4 w-4 bg-border transition-colors';
   return (
     <div className="inline-grid grid-cols-2 justify-center gap-0.5">
       <div className={cn(className, 'justify-self-end', 'bg-[#CB8999]')} />
@@ -441,7 +439,7 @@ function Question({ children, title, subtitle }: { children: React.ReactNode; ti
   return (
     <div className="flex flex-col gap-10">
       {title && (
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-1">
           <h2 className="text-center text-4xl font-bold">{title}</h2>
           {subtitle && <p className="text-center text-lg text-muted-foreground">{subtitle}</p>}
         </header>
@@ -522,7 +520,7 @@ function QuestionFormFooter({ children }: { children: React.ReactNode }) {
 }
 
 function ImageCarousel() {
-  const images = [1, 2, 3, 4, 5];
+  const images = [1, 2, 3, 4];
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const goToPrevious = () => {
@@ -538,56 +536,61 @@ function ImageCarousel() {
   };
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg">
-      <div
-        className="flex transition-transform duration-500 ease-in-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {images.map((src, index) => (
-          <div key={src} className="max-w-full flex-shrink-0 overflow-hidden rounded-lg border border-border">
-            <img
-              src={`/onboarding/${src}.png`}
-              alt={`Quadratic ${index + 1}`}
-              className="max-w-full object-cover"
-              width="635"
-              height="380"
+    <div className="relative w-full" style={{ width: 'calc(100% + 8rem)', marginLeft: '-4rem' }}>
+      <div className="-mt-6 flex justify-center gap-4 pb-4">
+        {/* Go left */}
+        <button
+          type="button"
+          onClick={goToPrevious}
+          className="left-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-primary transition-opacity"
+          aria-label="Previous image"
+        >
+          <ChevronLeftIcon size="lg" />
+        </button>
+
+        {/* Indicators */}
+        <div className="flex items-center justify-center gap-4">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => goToSlide(index)}
+              className={cn(
+                'h-4 w-4 rounded-full transition-all',
+                currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
+              )}
+              aria-label={`Go to slide ${index + 1}`}
             />
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Go right */}
+        <button
+          type="button"
+          onClick={goToNext}
+          className="right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-primary transition-opacity"
+          aria-label="Next image"
+        >
+          <ChevronRightIcon size="lg" />
+        </button>
       </div>
-
-      {/* Navigation buttons */}
-      <button
-        type="button"
-        onClick={goToPrevious}
-        className="absolute left-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-opacity hover:bg-black/70"
-        aria-label="Previous image"
-      >
-        <ChevronLeftIcon size="lg" />
-      </button>
-      <button
-        type="button"
-        onClick={goToNext}
-        className="absolute right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-opacity hover:bg-black/70"
-        aria-label="Next image"
-      >
-        <ChevronRightIcon size="lg" />
-      </button>
-
-      {/* Indicator dots */}
-      <div className="absolute bottom-4 left-1/2 flex hidden -translate-x-1/2 items-center justify-center gap-4">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => goToSlide(index)}
-            className={cn(
-              'h-4 w-4 rounded-full transition-all',
-              currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
-            )}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+      <div className="overflow-hidden rounded-lg border border-border shadow-sm">
+        <div
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {images.map((src, index) => (
+            <div key={src} className="max-w-full flex-shrink-0">
+              <img
+                src={`/onboarding/${src}.png`}
+                alt={`Quadratic onboarding ${index + 1}`}
+                className="w-full max-w-full object-cover"
+                width="635"
+                height="380"
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
