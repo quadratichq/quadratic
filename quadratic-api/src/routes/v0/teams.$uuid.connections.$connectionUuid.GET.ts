@@ -50,6 +50,7 @@ async function handler(
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
     typeDetails,
-    percentCompleted: syncedConnection?.percentCompleted ?? undefined,
+    syncedConnectionPercentCompleted: syncedConnection?.percentCompleted ?? undefined,
+    syncedConnectionUpdatedDate: syncedConnection?.updatedDate?.toISOString() ?? undefined,
   });
 }

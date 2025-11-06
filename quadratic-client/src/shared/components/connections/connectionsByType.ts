@@ -52,6 +52,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   handleSubmitForm: SubmitHandler<ConnectionFormValues>;
   percentCompleted?: number;
   connection?: Connection;
+  teamUuid: string;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {

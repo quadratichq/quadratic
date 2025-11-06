@@ -7,7 +7,8 @@ use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::datafusion_connection::{
-        DatafusionConnection, tests::new_datafusion_connection as new_datafusion_test_connection,
+        DatafusionConnection, EmptyConnection,
+        tests::new_datafusion_connection as new_datafusion_test_connection,
     },
     synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
 };
@@ -16,6 +17,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::Claims,
+    connection::get_api_connection,
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse},
@@ -34,22 +36,25 @@ pub(crate) async fn test_mixpanel(
 /// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
     state: &State,
-    _claims: &Claims,
+    claims: &Claims,
     connection_id: &Uuid,
-    _team_id: &Uuid,
-    _headers: &HeaderMap,
+    team_id: &Uuid,
+    headers: &HeaderMap,
 ) -> Result<ApiConnection<DatafusionConnection>> {
     let mut datafusion_connection = match cfg!(not(test)) {
         true => state.settings.datafusion_connection.clone(),
         false => new_datafusion_test_connection(),
     };
 
+    let api_connection: ApiConnection<EmptyConnection> =
+        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?;
+
     datafusion_connection.connection_id = Some(*connection_id);
 
     let api_connection = ApiConnection {
         uuid: *connection_id,
-        name: "".into(),
-        r#type: "".into(),
+        name: api_connection.name,
+        r#type: api_connection.r#type,
         type_details: datafusion_connection,
     };
 

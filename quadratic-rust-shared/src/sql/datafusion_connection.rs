@@ -28,6 +28,10 @@ pub fn default_object_store() -> Arc<dyn ObjectStore> {
     Arc::new(InMemory::new())
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EmptyConnection {}
+
 /// Datafusion connection
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Debug, Clone)]

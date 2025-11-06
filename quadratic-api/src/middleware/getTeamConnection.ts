@@ -21,7 +21,7 @@ export async function getTeamConnection({
     },
     include: {
       team: { select: { uuid: true } },
-      SyncedConnection: { select: { percentCompleted: true } },
+      SyncedConnection: { select: { percentCompleted: true, updatedDate: true } },
     },
   });
   if (!connection || connection.archived !== null) {

@@ -1,10 +1,12 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
 import { newSingleSelection, validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
+import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -16,7 +18,10 @@ export function CodeEditorHeaderLabel() {
   const [cellRef, setCellRef] = useState<string | undefined>(undefined);
 
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const { connections } = useConnectionsFetcher();
+
+  console.log('connections', connections);
 
   useEffect(() => {
     const updateCellRef = () => {
@@ -58,15 +63,15 @@ export function CodeEditorHeaderLabel() {
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
   // the connection was deleted)
-  const currentConnectionName = useMemo(() => {
+  const currentConnection = useMemo(() => {
     if (connections.length) {
       const connectionUuid = getConnectionUuid(codeCellState.language);
       const foundConnection = connections.find(({ uuid }) => uuid === connectionUuid);
       if (foundConnection) {
-        return foundConnection.name;
+        return foundConnection;
       }
     }
-    return '';
+    return undefined;
   }, [codeCellState.language, connections]);
 
   const { renameTable } = useRenameTableName();
@@ -178,14 +183,21 @@ export function CodeEditorHeaderLabel() {
 
       {!isRenaming && (
         <div className="flex min-w-0 max-w-full flex-initial text-xs leading-4 text-muted-foreground">
-          {currentConnectionName && (
-            <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnectionName}</span>
+          {currentConnection && (
+            <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnection.name}</span>
           )}
           <button
             className="max-w-full rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
             onClick={focusCellRef}
           >
             {cellRef}
+
+            {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
+              <span className="ml-2">
+                {` · `}
+                <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
+              </span>
+            )}
           </button>
         </div>
       )}

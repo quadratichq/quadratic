@@ -1,77 +1,78 @@
-//! This is a Jotai atom that manages the state of the scheduled tasks menu.
+//! This is a Jotai atom that manages the state of synced connections.
 
-import {
-  editorInteractionStateShowValidationAtom,
-  editorInteractionStateTeamUuidAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowLogsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, useAtom } from 'jotai';
 import type { Connection, SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-
-export const CREATE_TASK_ID = 'CREATE';
+import { useCallback, useEffect } from 'react';
+import { useRecoilState } from 'recoil';
 
 export interface SyncedConnection {
-  show: boolean;
   percentCompleted: number;
+  updatedDate: string | null;
   logs: SyncedConnectionLog[];
 }
 
 const defaultSyncedConnection: SyncedConnection = {
-  show: false,
   percentCompleted: 0,
+  updatedDate: null,
   logs: [],
 };
 
 export const syncedConnectionAtom = atom<SyncedConnection>(defaultSyncedConnection);
 
 interface SyncedConnectionActions {
-  showSyncedConnection: () => void;
-  closeSyncedConnection: () => void;
   syncedConnection: SyncedConnection;
-  show: boolean;
   getConnection: () => Promise<Connection | null>;
-  getLogs: () => Promise<SyncedConnectionLog[]>;
+  getLogs: (pageNumber?: number, pageSize?: number) => Promise<SyncedConnectionLog[]>;
+  showLogs: boolean;
+  setShowLogs: (showLogs: boolean) => void;
 }
 
-export const useSyncedConnection = (connectionUuid: string): SyncedConnectionActions => {
+export const useSyncedConnection = (connectionUuid: string, teamUuid: string): SyncedConnectionActions => {
   const [syncedConnection, setSyncedConnection] = useAtom(syncedConnectionAtom);
-  const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
-
-  console.log('syncedConnection', syncedConnection);
-
-  const showSyncedConnection = useCallback(() => {
-    if (!!showValidation) {
-      setShowValidation(false);
-    }
-    setSyncedConnection((prev) => ({ ...prev, show: true }));
-  }, [showValidation, setShowValidation, setSyncedConnection]);
-
-  const closeSyncedConnection = useCallback(() => {
-    setSyncedConnection((prev) => ({ ...prev, show: false }));
-  }, [setSyncedConnection]);
+  const [showLogs, setShowLogs] = useRecoilState(editorInteractionStateShowLogsAtom);
 
   const getConnection = useCallback(async () => {
     if (!connectionUuid || !teamUuid) return null;
+
     return apiClient.connections.get({ connectionUuid, teamUuid });
   }, [connectionUuid, teamUuid]);
 
   const getLogs = useCallback(
     async (pageNumber = 1, pageSize = 10) => {
-      if (!connectionUuid || !teamUuid) return [];
-      return apiClient.connections.getLogs({ connectionUuid, teamUuid });
+      if (!connectionUuid || !teamUuid || !showLogs) return [];
+
+      return apiClient.connections.getLogs({ connectionUuid, teamUuid, pageNumber, pageSize });
     },
-    [connectionUuid, teamUuid]
+    [connectionUuid, teamUuid, showLogs]
   );
 
+  useEffect(() => {
+    const fetchConnection = () => {
+      getConnection().then((fetchedConnection) => {
+        setSyncedConnection((prev) => ({
+          ...prev,
+          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted ?? 0,
+          updatedDate: fetchedConnection?.syncedConnectionUpdatedDate ?? null,
+        }));
+      });
+    };
+
+    // Fire immediately
+    fetchConnection();
+
+    // Then every 10 seconds
+    const interval = setInterval(fetchConnection, 10000);
+
+    return () => clearInterval(interval);
+  }, [connectionUuid, teamUuid, getConnection, setSyncedConnection]);
+
   return {
-    show: syncedConnection.show,
-    showSyncedConnection,
-    closeSyncedConnection,
     syncedConnection,
     getConnection,
     getLogs,
+    showLogs,
+    setShowLogs,
   };
 };

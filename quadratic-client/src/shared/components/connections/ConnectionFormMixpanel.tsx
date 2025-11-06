@@ -1,15 +1,9 @@
-import { useSyncedConnection } from '@/app/atoms/useSyncedConnection';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
+import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { dateToDateTimeString } from '@/shared/utils/dateTime';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  ConnectionNameSchema,
-  ConnectionTypeSchema,
-  type SyncedConnectionLog,
-} from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
+import { ConnectionNameSchema, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -48,16 +42,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   children,
   handleSubmitForm,
   connection,
+  teamUuid,
 }) => {
-  const { getLogs } = useSyncedConnection(connection?.uuid ?? '');
-  const [logs, setLogs] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (connection?.uuid) {
-      getLogs().then((fetchedLogs) => setLogs(fetchedLogs));
-    }
-  }, [connection?.uuid, getLogs]);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -118,12 +104,30 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
               Data Sync Status
             </label>
-            <p className="mb-2 mt-2 text-xs text-red-500">Syncing progress: {connection?.percentCompleted ?? 0}%</p>
-            {logs.map((log: SyncedConnectionLog) => (
-              <p key={log.id} className="mb-2 mt-2 text-xs">
-                {dateToDateTimeString(new Date(log.createdDate))} - {log.status} - {log.syncedDates.join(', ')}
+            {connection && (
+              <p className="mb-4 mt-2 text-xs text-red-500">
+                <SyncedConnection
+                  connectionUuid={connection.uuid}
+                  teamUuid={teamUuid}
+                  createdDate={connection.createdDate}
+                />
               </p>
-            ))}
+            )}
+            {/* TODO(ddimaria): implement this once we get the green light */}
+            {/* <div className="mb-2 flex flex-row items-center text-xs">
+              <Checkbox
+                id="show-logs"
+                className="mr-2"
+                checked={showLogs}
+                onCheckedChange={(checked: boolean) => setShowLogs(!!checked)}
+              />{' '}
+              <label htmlFor="show-logs" className="text-xs">
+                Show Logs
+              </label>
+            </div>
+            {showLogs && (
+              <SyncedConnectionLogs connectionUuid={connection?.uuid ?? ''} />
+            )} */}
           </div>
         </div>
         {children}

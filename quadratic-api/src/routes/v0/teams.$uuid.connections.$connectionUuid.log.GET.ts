@@ -13,6 +13,10 @@ import { decryptFromEnv } from '../../utils/crypto';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
+  query: z.object({
+    page: z.coerce.number().optional(),
+    limit: z.coerce.number().optional(),
+  }),
   params: z.object({ uuid: z.string().uuid(), connectionUuid: z.string().uuid() }),
 });
 
@@ -26,6 +30,7 @@ async function handler(
 
   const {
     params: { uuid: teamUuid, connectionUuid },
+    query: { limit, page },
   } = parseRequest(req, schema);
 
   const {
@@ -35,7 +40,7 @@ async function handler(
     },
   } = await getTeamConnection({ connectionUuid, userId, teamUuid });
 
-  const logs = await getSyncedConnectionLogs(connectionUuid, 10, 1);
+  const logs = await getSyncedConnectionLogs(connectionUuid, limit, page);
 
   // Do you have permission?
   if (!teamPermissions.includes('TEAM_EDIT')) {

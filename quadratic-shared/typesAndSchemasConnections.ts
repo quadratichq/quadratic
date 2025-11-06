@@ -69,7 +69,8 @@ const ConnectionSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
-  percentCompleted: z.number().optional(),
+  syncedConnectionPercentCompleted: z.number().optional(),
+  syncedConnectionUpdatedDate: z.string().datetime().optional(),
 });
 const ConnectionSshSchema = z.object({
   useSsh: z.boolean(),
@@ -172,6 +173,8 @@ export const ConnectionListSchema = z.array(
     type: true,
     semanticDescription: true,
     isDemo: true,
+    syncedConnectionPercentCompleted: true,
+    syncedConnectionUpdatedDate: true,
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
