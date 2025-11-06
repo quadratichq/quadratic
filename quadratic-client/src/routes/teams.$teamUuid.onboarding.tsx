@@ -1,6 +1,7 @@
 import { OnboardingResponseV2Schema } from '@/dashboard/onboarding/onboardingSchema';
 import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException, flush } from '@sentry/react';
@@ -9,7 +10,6 @@ import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFu
 import { RecoilRoot } from 'recoil';
 
 /**
- * TODO: refactor this.
  * Each question is a form. We track progress in the URL search params.
  * Each key corresponds to a question (one question per form).
  * In cases where multiple answers are possible, that's because the
@@ -40,12 +40,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? currentQuestionStackIds[currentIndex]
     : Object.keys(questionsById)[0];
 
-  const currentQuestionNumber = currentIndex + 1; // currentQuestionStackIds.length > 0 ? currentQuestionStackIds.indexOf(currentId) + 1 : 1;
+  const currentQuestionNumber = currentIndex + 1;
   const currentQuestionsTotal = currentQuestionStackIds.length;
 
   const out = {
     currentId,
-    currentIndex: currentIndex,
+    currentIndex,
     currentQuestionStackIds,
     currentQuestionNumber,
     currentQuestionsTotal,
@@ -77,7 +77,8 @@ export const Component = () => {
  * When submitted, we parse them into JSON and save them to the server.
  */
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { teamUuid } = params as { teamUuid: string };
+  const teamUuid = params.teamUuid || '';
+
   // Pull the form data from the URL
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
@@ -115,10 +116,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       const uploadInvitesPromise = inviteEmails.map((email) =>
         apiClient.teams.invites.create(teamUuid, { email, role: 'EDITOR' })
       );
+      // Upload the responses and the team name
       const uploadResponsesPromise = apiClient.teams.update(teamUuid, {
         onboardingResponses: result.data,
         name: result.data['team-name'],
       });
+      // Also send everything to Mixpanel
       const uploadResponsesToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
       const [serverResult, mixpanelResult] = await Promise.allSettled([
         uploadResponsesPromise,
@@ -173,24 +176,22 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  console.log(result.data);
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  // When done, we'll send people to a new _team_ file
+  const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
 
+  // If the user wants to upgrade to Pro, we'll send them to Stripe first
   if (result.data && result.data['team-plan'] === 'pro') {
-    // TODO: 'back' doing (-1) messes up if we go stripe -> onboarding -> stripe
-    // If we want to have success/cancel callbacks, we'll have to build support
-    // Otherwise, we can just redirect to new file
+    // Send them back to the last step of onboarding if they cancel
     const redirectUrlCancel = new URL(window.location.href);
     redirectUrlCancel.searchParams.delete('team-plan');
     const { url } = await apiClient.teams.billing.getCheckoutSessionUrl(
       teamUuid,
-      window.location.origin + `/files/create?private=false`,
+      window.location.origin + newFilePath,
       redirectUrlCancel.href
     );
     return redirectDocument(url);
   }
 
-  // TODO: handle redirect to stripe if necessary
-  // Hard-redirect user to a new file
-  return redirectDocument(`/files/create?private=false`);
+  // Otherwise, hard-redirect user to a new file
+  return redirectDocument(newFilePath);
 };
