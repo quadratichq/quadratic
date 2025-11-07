@@ -1,5 +1,7 @@
 use sort::DataTableSort;
 
+use crate::a1::A1Selection;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -223,5 +225,54 @@ impl GridController {
         );
 
         Ok(())
+    }
+
+    /// Returns true if a cell position intersects with a data table
+    #[wasm_bindgen(js_name = "cellIntersectsDataTable")]
+    pub fn js_cell_intersects_data_table(
+        &self,
+        sheet_id: String,
+        pos: String,
+    ) -> Result<bool, JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        let sheet = self
+            .try_sheet(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+
+        Ok(sheet.data_table_pos_that_contains(pos).is_some())
+    }
+
+    /// Returns true if a selection intersects with any data table
+    #[wasm_bindgen(js_name = "selectionIntersectsDataTable")]
+    pub fn js_selection_intersects_data_table(
+        &self,
+        sheet_id: String,
+        selection: String,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
+
+            let sheet = self.try_sheet(sheet_id).ok_or_else(|| "Sheet not found")?;
+
+            // Check if any data table intersects with any of the selection rects
+            let rects = selection.rects(self.a1_context());
+            let has_intersection = rects.iter().any(|rect| {
+                sheet
+                    .data_tables_pos_intersect_rect(*rect, false)
+                    .next()
+                    .is_some()
+            });
+
+            Ok(Some(if has_intersection {
+                JsValue::TRUE
+            } else {
+                JsValue::FALSE
+            }))
+        })
     }
 }
