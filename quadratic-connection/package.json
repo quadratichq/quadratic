@@ -15,8 +15,8 @@
     "coverage:gen": "CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:view": "open coverage/html/index.html",
-    "docker:up": "docker compose -f ../docker-compose.yml --profile api --profile quadratic-connection-db --env-file ../.env.docker up -d --wait && sleep 10",
-    "docker:down": "docker compose -f ../docker-compose.yml --profile api --profile quadratic-connection-db --env-file ../.env.docker down",
+    "docker:up": "docker compose -f ../docker-compose.yml --profile base --profile api --profile quadratic-connection-db --env-file ../.env.docker up -d --wait && sleep 10",
+    "docker:down": "docker compose -f ../docker-compose.yml --profile base --profile api --profile quadratic-connection-db --env-file ../.env.docker down",
     "docker:test": "docker compose kill && npm run docker:up && npm run test && npm run docker:down",
     "clean": "cargo clean && npx rimraf node_modules dist build target"
   }
