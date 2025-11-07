@@ -90,8 +90,5 @@
   },
   "engines": {
     "node": "24.x"
-  },
-  "resolutions": {
-    "rollup": "4.52.0"
   }
 }
