@@ -263,15 +263,16 @@ mod tests {
         assert!(status.is_some(), "Connection should be in cache");
 
         let dates_processed = vec![NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()];
-        complete_connection_status(
+        let result = complete_connection_status(
             state.clone(),
             connection_id,
             synced_connection_id,
             run_id,
             dates_processed,
         )
-        .await
-        .unwrap();
+        .await;
+
+        handle_quadratic_api_response(result);
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_none());
