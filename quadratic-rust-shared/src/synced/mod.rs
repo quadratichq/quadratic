@@ -178,7 +178,7 @@ pub async fn dates_to_sync(
     let end_date = today;
 
     let missing_date_ranges = get_missing_date_ranges(
-        &object_store,
+        object_store,
         Some(&prefix),
         sync_start_date,
         end_date,

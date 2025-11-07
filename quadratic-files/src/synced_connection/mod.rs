@@ -49,7 +49,7 @@ async fn start_connection_status(
         .add(connection_id, kind, SyncedConnectionStatus::Setup)
         .await;
 
-    send_synced_connection_logs(
+    send_synced_connection_log(
         state.clone(),
         synced_connection_id,
         run_id,
@@ -61,7 +61,7 @@ async fn start_connection_status(
 
     // currently, we're sending a RUNNING log immediately after a PENDING log,
     // but this will change once this is handled by pubsub
-    send_synced_connection_logs(
+    send_synced_connection_log(
         state,
         synced_connection_id,
         run_id,
@@ -99,7 +99,7 @@ async fn complete_connection_status(
 ) -> Result<()> {
     state.synced_connection_cache.delete(connection_id).await;
 
-    send_synced_connection_logs(
+    send_synced_connection_log(
         state,
         synced_connection_id,
         run_id,
@@ -112,7 +112,7 @@ async fn complete_connection_status(
     Ok(())
 }
 
-pub async fn send_synced_connection_logs(
+pub async fn send_synced_connection_log(
     state: Arc<State>,
     synced_connection_id: u64,
     run_id: Uuid,
@@ -149,8 +149,6 @@ mod tests {
     async fn test_can_process_connection() {
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
-        let synced_connection_id = 1;
-        let run_id = Uuid::new_v4();
         let can_process = can_process_connection(state.clone(), connection_id)
             .await
             .unwrap();
