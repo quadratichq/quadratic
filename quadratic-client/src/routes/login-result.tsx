@@ -2,7 +2,6 @@ import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
-import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
 export const loader = async ({ request }: { request: Request }) => {
@@ -46,13 +45,6 @@ export const loader = async ({ request }: { request: Request }) => {
       }
 
       const redirectTo = getRedirectTo() || '/';
-      // For new users coming directly to `/` on desktop, handle them specially
-      // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
-      if (userCreated && !isMobile && redirectTo === '/') {
-        // Do nothing, new users will be sent to `/` which will create a team
-        // and redirect them to onboarding
-        // TODO: what about users who are joining a team? test that flow
-      }
       return redirect(redirectTo);
     }
   } catch (e) {
