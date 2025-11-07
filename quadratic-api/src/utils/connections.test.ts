@@ -25,7 +25,7 @@ let connection: Connection;
 beforeEach(async () => {
   user = await createUser({ auth0Id: 'test-user' });
   team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
-  const typeDetails = JSON.stringify({ host: 'localhost', port: 5432, startDate: new Date('2025-01-01') });
+  const typeDetails = JSON.stringify({ host: 'localhost', port: 5432, start_date: '2025-01-01' });
   connection = await createConnection({
     teamId: team.id,
     name: 'Test Connection',
@@ -52,7 +52,7 @@ describe('getConnections', () => {
 
   it('should decrypt typeDetails', async () => {
     const result = await getConnections(ConnectionType.POSTGRES);
-    expect(result[0].typeDetails).toEqual({ host: 'localhost', port: 5432, startDate: '2025-01-01T00:00:00.000Z' });
+    expect(result[0].typeDetails).toEqual({ host: 'localhost', port: 5432, start_date: '2025-01-01' });
   });
 });
 
@@ -160,7 +160,7 @@ describe('createSyncedConnectionLog', () => {
 
     expect(result.syncedConnectionId).toBe(syncedConnection.id);
     expect(result.runId).toBe('run-123');
-    expect(result.syncedDates).toEqual(['2025-01-01', '2025-01-02']);
+    expect(result.syncedDates).toEqual(['2025-01-01 to 2025-01-02']);
     expect(result.status).toBe('COMPLETED');
   });
 
