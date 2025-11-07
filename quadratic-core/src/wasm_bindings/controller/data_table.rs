@@ -227,7 +227,8 @@ impl GridController {
         Ok(())
     }
 
-    /// Returns true if a cell position intersects with a data table
+    /// Returns true if a cell position intersects with a data table, but allows
+    /// the anchor cell (top-left) of a code cell (not an import)
     #[wasm_bindgen(js_name = "cellIntersectsDataTable")]
     pub fn js_cell_intersects_data_table(
         &self,
@@ -241,10 +242,23 @@ impl GridController {
             .try_sheet(sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
 
-        Ok(sheet.data_table_pos_that_contains(pos).is_some())
+        // Check if the position is inside a data table
+        if let Some(data_table_pos) = sheet.data_table_pos_that_contains(pos) {
+            // If it's the anchor cell (top-left), check if it's a CodeRun (not an Import)
+            if pos == data_table_pos {
+                if let Some(data_table) = sheet.data_table_at(&data_table_pos) {
+                    // It's okay if it's the anchor of a CodeRun, not okay if it's an Import
+                    return Ok(matches!(data_table.kind, DataTableKind::Import(_)));
+                }
+            }
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
-    /// Returns true if a selection intersects with any data table
+    /// Returns true if a selection intersects with any data table, but allows
+    /// the anchor cell (top-left) of a code cell (not an import)
     #[wasm_bindgen(js_name = "selectionIntersectsDataTable")]
     pub fn js_selection_intersects_data_table(
         &self,
@@ -264,8 +278,27 @@ impl GridController {
             let has_intersection = rects.iter().any(|rect| {
                 sheet
                     .data_tables_pos_intersect_rect(*rect, false)
-                    .next()
-                    .is_some()
+                    .any(|data_table_pos| {
+                        if let Some(data_table) = sheet.data_table_at(&data_table_pos) {
+                            let output_rect = data_table.output_rect(data_table_pos, false);
+                            let intersection = rect.intersection(&output_rect);
+
+                            if let Some(intersection_rect) = intersection {
+                                // Check if the intersection is ONLY the anchor cell
+                                let only_anchor = intersection_rect.min == data_table_pos
+                                    && intersection_rect.max == data_table_pos;
+
+                                if only_anchor
+                                    && matches!(data_table.kind, DataTableKind::CodeRun(_))
+                                {
+                                    // Allow if it's only the anchor of a CodeRun
+                                    return false;
+                                }
+                            }
+                        }
+                        // Block in all other cases
+                        true
+                    })
             });
 
             Ok(Some(if has_intersection {
