@@ -127,8 +127,6 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
-
         {/* For development purposes only */}
         <Route path="__preview__/*" lazy={() => import('./routes/__preview__')} />
 
