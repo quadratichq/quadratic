@@ -526,8 +526,8 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
           <TeamIcon size="lg" />
           <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
           <AlertDialogDescription>
-            Teams are a collaborative space for working with other people. Create a new team and answer a few questions
-            to get started.
+            Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding
+            questions to get started.
           </AlertDialogDescription>
           {loadState === 'error' && (
             <AlertDialogDescription className="text-destructive">
