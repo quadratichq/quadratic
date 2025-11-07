@@ -52,7 +52,7 @@ export const questionsById: Record<
             <ImageCarousel />
             <input type="hidden" name={props.id} value="" />
             <QuestionFormFooter>
-              <Button type="submit" size="lg">
+              <Button type="submit" size="lg" data-testid="onboarding-btn-get-started">
                 Get started
               </Button>
             </QuestionFormFooter>
@@ -77,7 +77,12 @@ export const questionsById: Record<
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
               {options.map(({ value, label, icon }) => (
-                <Link key={value} to={`./?${searchParams.toString()}&${props.id}=${value}`}>
+                <Link
+                  key={value}
+                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                  // Hardcoding `onboarding-btn-use-personal` here for future ease of cmd+f
+                  data-testid={`onboarding-btn-use-${value}`}
+                >
                   <ControlLinkStacked>
                     {icon}
                     <span className="relative flex items-center">
@@ -236,7 +241,7 @@ export const questionsById: Record<
 
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg">
+              <Button type="submit" size="lg" data-testid="onboarding-btn-connections-next">
                 Next
               </Button>
             </QuestionFormFooter>
@@ -256,6 +261,7 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <Input
+              data-testid="onboarding-input-team-name"
               ref={inputRef}
               className="h-12 w-full text-lg"
               type="text"
@@ -268,7 +274,7 @@ export const questionsById: Record<
             />
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" disabled={!isValid}>
+              <Button type="submit" size="lg" disabled={!isValid} data-testid="onboarding-btn-team-name-next">
                 Next
               </Button>
             </QuestionFormFooter>
@@ -297,7 +303,7 @@ export const questionsById: Record<
             </div>
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg">
+              <Button type="submit" size="lg" data-testid="onboarding-btn-team-invites-next">
                 Next
               </Button>
             </QuestionFormFooter>
@@ -324,6 +330,7 @@ export const questionsById: Record<
           <QuestionForm className="grid grid-cols-2 gap-4">
             <FreePlan className={className}>
               <Button
+                data-testid="onboarding-btn-team-plan-free"
                 type="submit"
                 name={props.id}
                 value="free"
