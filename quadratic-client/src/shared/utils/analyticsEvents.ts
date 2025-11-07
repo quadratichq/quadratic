@@ -49,7 +49,14 @@ export async function trackEvent(event: string, properties?: Record<string, any>
 
   return new Promise((resolve, reject) => {
     if (isMixpanelEnabled) {
+      // Give mixpanel a couple seconds to send the event, otherwise just resolve
+      let done = false;
+      const timer = setTimeout(() => {
+        if (!done) resolve(false);
+      }, 3000);
       mixpanel.track(event, properties, () => {
+        done = true;
+        clearTimeout(timer);
         resolve(true);
       });
     } else {
