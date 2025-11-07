@@ -245,11 +245,11 @@ impl GridController {
         // Check if the position is inside a data table
         if let Some(data_table_pos) = sheet.data_table_pos_that_contains(pos) {
             // If it's the anchor cell (top-left), check if it's a CodeRun (not an Import)
-            if pos == data_table_pos {
-                if let Some(data_table) = sheet.data_table_at(&data_table_pos) {
-                    // It's okay if it's the anchor of a CodeRun, not okay if it's an Import
-                    return Ok(matches!(data_table.kind, DataTableKind::Import(_)));
-                }
+            if pos == data_table_pos
+                && let Some(data_table) = sheet.data_table_at(&data_table_pos)
+            {
+                // It's okay if it's the anchor of a CodeRun, not okay if it's an Import
+                return Ok(matches!(data_table.kind, DataTableKind::Import(_)));
             }
             Ok(true)
         } else {
