@@ -196,7 +196,7 @@ jobs:
       - name: Run npm test:ts in quadratic-client
         run: |
           npm install
-          npm run test:ts
+          npm run test:unit:ci --workspace=quadratic-client
 
   test_python:
     runs-on: blacksmith-2vcpu-ubuntu-2404
