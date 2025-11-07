@@ -23,7 +23,7 @@ import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import type { Graphics, Point, Renderer } from 'pixi.js';
+import type { Graphics, Point, Renderer, Sprite } from 'pixi.js';
 import { BitmapText, Container, Rectangle } from 'pixi.js';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
@@ -33,6 +33,9 @@ export class CellsTextHash extends Container {
 
   // draws the text
   private entries: Container<LabelMeshEntry>;
+
+  // holds emojis
+  private emojis: Container<Sprite>;
 
   // draws special text (ie, checkboxes and dropdown list indicator)
   special: CellsTextHashSpecial;
@@ -68,6 +71,7 @@ export class CellsTextHash extends Container {
     this.hashY = hashY;
 
     this.entries = this.addChild(new Container<LabelMeshEntry>());
+    this.emojis = this.addChild(new Container<Sprite>());
     this.special = this.addChild(new CellsTextHashSpecial());
     this.warnings = this.addChild(new CellsTextHashValidations(this, sheetId));
 
@@ -88,7 +92,10 @@ export class CellsTextHash extends Container {
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
-    this.newChildren.push(new LabelMeshEntry(message));
+    // we handle emojis separately (triggered by a 0 textureUid)
+    if (message.textureUid !== 0) {
+      this.newChildren.push(new LabelMeshEntry(message));
+    }
   }
 
   finalizeLabelMeshEntries(special?: RenderSpecial) {
