@@ -155,12 +155,12 @@ export const questionsById: Record<
     excludeForUse: ['personal'],
     Form: (props) => {
       const optionsByValue = {
-        '1': 'Just me',
-        '2-5': '2-5',
-        '5-20': '5-20',
-        '20-250': '20-250',
-        '250-10000': '250-10,000',
-        '10000+': '10,000+',
+        '1-5': '1-5',
+        '6-20': '6-20',
+        '21-100': '21-100',
+        '101-250': '101-250',
+        '251-1000': '251-1,000',
+        '1000+': '1,000+',
       };
       const [searchParams] = useSearchParams();
       return (
