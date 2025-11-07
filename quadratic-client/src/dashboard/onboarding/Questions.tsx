@@ -385,7 +385,7 @@ export function Questions() {
   const questionIds = Object.keys(questionsById);
 
   return (
-    <div ref={scrollRef} className="h-full overflow-auto">
+    <div ref={scrollRef} className="h-full overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex max-w-xl flex-col gap-8 pt-8">
         <Logo />
 
@@ -536,7 +536,7 @@ function ImageCarousel() {
   };
 
   return (
-    <div className="relative w-full" style={{ width: 'calc(100% + 8rem)', marginLeft: '-4rem' }}>
+    <div className="relative w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
       <div className="-mt-6 flex justify-center gap-4 pb-4">
         {/* Go left */}
         <button
@@ -574,23 +574,27 @@ function ImageCarousel() {
           <ChevronRightIcon size="lg" />
         </button>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border shadow-sm">
-        <div
-          className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        >
-          {images.map((src, index) => (
-            <div key={src} className="max-w-full flex-shrink-0">
-              <img
-                src={`/onboarding/${src}.png`}
-                alt={`Quadratic onboarding ${index + 1}`}
-                className="w-full max-w-full object-cover"
-                width="635"
-                height="380"
-              />
-            </div>
-          ))}
-        </div>
+
+      <div
+        className="flex transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((src, index) => (
+          <div key={src} className="max-w-full flex-shrink-0">
+            <img
+              src={`/onboarding/${src}.png`}
+              alt={`Quadratic onboarding ${index + 1}`}
+              className={cn(
+                'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
+                currentIndex === index
+                  ? 'scale-100 border-border shadow-sm'
+                  : 'scale-90 border-border opacity-20 grayscale'
+              )}
+              width="635"
+              height="380"
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
