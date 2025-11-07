@@ -170,8 +170,5 @@
         "skipAsyncImports": true
       }
     }
-  },
-  "resolutions": {
-    "rollup": "4.52.0"
   }
 }
