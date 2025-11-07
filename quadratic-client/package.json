@@ -26,7 +26,7 @@
     "build:wasm:javascript:dev": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --dev",
     "start:production": "serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
-    "test:unit": "vitest",
+    "test:unit": "which vitest",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
     "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:wasm": "cd .. && cd quadratic-core && cargo test --workspace",
@@ -170,5 +170,8 @@
         "skipAsyncImports": true
       }
     }
+  },
+  "resolutions": {
+    "rollup": "4.52.0"
   }
 }
