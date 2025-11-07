@@ -193,7 +193,7 @@ export async function addPercentCompleted(
     }
   }
 
-  let connection = await getConnectionBySyncedConnectionId(syncedConnectionId);
+  const connection = await getConnectionBySyncedConnectionId(syncedConnectionId);
   const percentCompleted = await calculatePercentCompleted(syncedConnectionId, connection.typeDetails.start_date);
 
   if (percentCompleted === undefined) {
