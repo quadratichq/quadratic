@@ -257,7 +257,7 @@ impl GridController {
             let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
-            let sheet = self.try_sheet(sheet_id).ok_or_else(|| "Sheet not found")?;
+            let sheet = self.try_sheet(sheet_id).ok_or("Sheet not found")?;
 
             // Check if any data table intersects with any of the selection rects
             let rects = selection.rects(self.a1_context());
