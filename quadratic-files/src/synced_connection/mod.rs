@@ -145,6 +145,18 @@ mod tests {
     use crate::test_util::new_arc_state;
     use uuid::Uuid;
 
+    fn handle_quadratic_api_response(result: Result<()>) {
+        match result {
+            // local tests have quadratic api running locally, so we expect a success
+            Ok(_) => {}
+            // CI tests don't have quadratic api running locally, so we expect a QuadraticApi error
+            Err(FilesError::QuadraticApi(e)) => {
+                assert!(e.contains("Error communicating with the Quadratic API"));
+            }
+            Err(e) => panic!("Expected QuadraticApi error, got {}", e),
+        }
+    }
+
     #[tokio::test]
     async fn test_can_process_connection() {
         let state = new_arc_state().await;
@@ -175,15 +187,16 @@ mod tests {
         let synced_connection_id = 1;
         let run_id = Uuid::new_v4();
 
-        start_connection_status(
+        let result = start_connection_status(
             state.clone(),
             connection_id,
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
         )
-        .await
-        .unwrap();
+        .await;
+
+        handle_quadratic_api_response(result);
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_some());
@@ -200,15 +213,17 @@ mod tests {
         let synced_connection_id = 1;
         let run_id = Uuid::new_v4();
 
-        start_connection_status(
+        let result = start_connection_status(
             state.clone(),
             connection_id,
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
         )
-        .await
-        .unwrap();
+        .await;
+
+        handle_quadratic_api_response(result);
+
         update_connection_status(
             state.clone(),
             connection_id,
@@ -233,15 +248,16 @@ mod tests {
         let synced_connection_id = 1;
         let run_id = Uuid::new_v4();
 
-        start_connection_status(
+        let result = start_connection_status(
             state.clone(),
             connection_id,
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
         )
-        .await
-        .unwrap();
+        .await;
+
+        handle_quadratic_api_response(result);
 
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_some(), "Connection should be in cache");
