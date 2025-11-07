@@ -423,7 +423,7 @@ export function Questions() {
 }
 
 function Logo() {
-  const className = 'h-4 w-4 bg-border transition-colors';
+  const className = 'h-5 w-5 bg-border transition-colors';
   return (
     <div className="inline-grid grid-cols-2 justify-center gap-0.5">
       <div className={cn(className, 'justify-self-end', 'bg-[#CB8999]')} />
@@ -537,26 +537,26 @@ function ImageCarousel() {
 
   return (
     <div className="relative w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
-      <div className="-mt-6 flex justify-center gap-4 pb-4">
+      <div className="-mt-6 flex justify-center gap-6 pb-4">
         {/* Go left */}
         <button
           type="button"
           onClick={goToPrevious}
-          className="left-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-primary transition-opacity"
+          className="left-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
           aria-label="Previous image"
         >
-          <ChevronLeftIcon size="lg" />
+          <ChevronLeftIcon className="relative left-[-1px] scale-150" />
         </button>
 
         {/* Indicators */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-3">
           {images.map((_, index) => (
             <button
               key={index}
               type="button"
               onClick={() => goToSlide(index)}
               className={cn(
-                'h-4 w-4 rounded-full transition-all',
+                'h-3 w-3 rounded-full transition-all',
                 currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
               )}
               aria-label={`Go to slide ${index + 1}`}
@@ -568,10 +568,10 @@ function ImageCarousel() {
         <button
           type="button"
           onClick={goToNext}
-          className="right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-primary transition-opacity"
+          className="right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
           aria-label="Next image"
         >
-          <ChevronRightIcon size="lg" />
+          <ChevronRightIcon className="relative right-[-1px] scale-150" />
         </button>
       </div>
 
