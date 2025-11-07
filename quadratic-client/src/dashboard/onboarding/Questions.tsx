@@ -246,8 +246,8 @@ export const questionsById: Record<
     },
   },
   'team-name': {
-    title: 'What would you like to name your team?',
-    subtitle: 'This will appear as your workspace in the app.',
+    title: 'What’s your team name?',
+    subtitle: 'This will appear as the name of your workspace in the app.',
     Form: (props) => {
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       const inputRef = useRef<HTMLInputElement>(null);
