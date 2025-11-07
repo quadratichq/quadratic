@@ -252,7 +252,7 @@ pub(crate) async fn execute(
 async fn wrap_module(code: &str, setup_code: Option<String>, expr_code: Option<String>) -> String {
     // prepare the module code with proper ES module syntax
 
-    let setup = setup_code.unwrap_or_else(|| code.to_string());
+    let setup = setup_code.unwrap_or_else(|| "".to_string());
     let expr = expr_code.unwrap_or_else(|| "undefined".to_string());
 
     // Extract imports from setup code
@@ -272,7 +272,7 @@ await (async () => {{
         __stdout__.push(args.map(String).join(' '));
         originalLog(...args);
     }};
-    
+
     try {{
         {}
         __result__ = {};

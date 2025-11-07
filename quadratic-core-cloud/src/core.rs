@@ -104,8 +104,6 @@ pub async fn process_transaction(
             .active_transactions()
             .get_async_transaction(transaction_uuid);
 
-        println!("async_transaction: {:?}", async_transaction);
-
         let code_run_clone = if let Ok(async_transaction) = async_transaction
             && let Some(sheet_pos) = async_transaction.current_sheet_pos
         {
@@ -119,7 +117,6 @@ pub async fn process_transaction(
         };
 
         if let Some(code_run) = code_run_clone {
-            println!("code_run: {:?}", code_run);
             // run code
             match &code_run.language {
                 CodeCellLanguage::Python => {
