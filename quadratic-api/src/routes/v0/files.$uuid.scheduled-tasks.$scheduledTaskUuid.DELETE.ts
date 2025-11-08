@@ -1,46 +1,48 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema, TeamPermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import { z } from 'zod';
+import z from 'zod';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getScheduledTasks } from '../../utils/scheduledTasks';
-const { FILE_VIEW } = FilePermissionSchema.enum;
-const { TEAM_VIEW } = TeamPermissionSchema.enum;
+import { deleteScheduledTask, getScheduledTask } from '../../utils/scheduledTasks';
+const { FILE_EDIT } = FilePermissionSchema.enum;
+const { TEAM_EDIT } = TeamPermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
+    scheduledTaskUuid: z.string().uuid(),
   }),
 });
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/scheduled_task.GET.response']>) {
-  const validatedData = parseRequest(req, schema);
-
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.DELETE.response']>
+) {
   const {
-    params: { uuid },
-  } = validatedData;
+    params: { uuid, scheduledTaskUuid },
+  } = parseRequest(req, schema);
 
   const {
     user: { id: userMakingRequestId },
   } = req;
 
   const {
-    file: { id: fileId },
     userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
-  if (!filePermissions.includes(FILE_VIEW) || !teamPermissions?.includes(TEAM_VIEW)) {
+  if (!filePermissions.includes(FILE_EDIT) || !teamPermissions?.includes(TEAM_EDIT)) {
     throw new ApiError(403, 'Permission denied');
   }
 
-  const result = await getScheduledTasks(fileId);
+  const task = await getScheduledTask(scheduledTaskUuid);
+  await deleteScheduledTask(task.id);
 
-  return res.status(200).json(result);
+  return res.status(200).json({ message: 'Scheduled task deleted' });
 }

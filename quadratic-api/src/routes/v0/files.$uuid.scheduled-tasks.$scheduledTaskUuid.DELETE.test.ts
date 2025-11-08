@@ -9,9 +9,9 @@ import dbClient from '../../dbClient';
 import { clearDb, createFile, createUser, createUserTeamAndFile, scheduledTask } from '../../tests/testDataGenerator';
 import { createScheduledTask } from '../../utils/scheduledTasks';
 
-type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response'];
 
-describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
+describe('DELETE /v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid', () => {
   let testUser: any;
   let testFile: any;
   let testTeam: any;
@@ -32,7 +32,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .delete(`/v0/files/invalid-uuid/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/invalid-uuid/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -40,7 +40,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for invalid scheduled task UUID parameter format', async () => {
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/invalid-uuid`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/invalid-uuid`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -48,7 +48,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for both invalid UUID parameters', async () => {
       const response = await request(app)
-        .delete('/v0/files/invalid-uuid/scheduled_task/invalid-task-uuid')
+        .delete('/v0/files/invalid-uuid/scheduled-tasks/invalid-task-uuid')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -57,14 +57,16 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 for unauthenticated requests', async () => {
-      const response = await request(app).delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`);
+      const response = await request(app).delete(
+        `/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`
+      );
 
       expect(response.status).toBe(401);
     });
 
     it('should return 403 when user lacks FILE_EDIT permission', async () => {
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -101,7 +103,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken editor-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -129,7 +131,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken viewer-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -138,7 +140,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should succeed when user has both FILE_EDIT and TEAM_EDIT permission', async () => {
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -149,7 +151,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Scheduled Task Deletion', () => {
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .delete(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(404);
@@ -157,7 +159,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 500 for non-existent scheduled task', async () => {
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/12345678-1234-1234-1234-123456789012`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/12345678-1234-1234-1234-123456789012`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(500);
@@ -166,7 +168,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     it('should successfully delete existing scheduled task', async () => {
       // Verify task exists before deletion
       const beforeResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(beforeResponse.status).toBe(200);
@@ -174,7 +176,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Delete the task
       const deleteResponse = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(deleteResponse.status).toBe(200);
@@ -182,7 +184,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Verify task is no longer returned in list (soft delete)
       const afterResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(afterResponse.status).toBe(200);
@@ -192,7 +194,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     it('should soft delete task (mark as DELETED, not physically remove)', async () => {
       // Delete the task
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -210,14 +212,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
     it('should not be able to delete already deleted task', async () => {
       // Delete the task first
       const firstDeleteResponse = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(firstDeleteResponse.status).toBe(200);
 
       // Try to delete again
       const secondDeleteResponse = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(secondDeleteResponse.status).toBe(500);
@@ -227,7 +229,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Response Format Validation', () => {
     it('should return correctly formatted success response', async () => {
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -255,7 +257,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Verify all tasks exist
       const beforeResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(beforeResponse.status).toBe(200);
@@ -263,14 +265,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Delete only the original task
       const deleteResponse = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(deleteResponse.status).toBe(200);
 
       // Verify only the specified task was deleted
       const afterResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(afterResponse.status).toBe(200);
@@ -300,21 +302,21 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Delete first task
       const delete1Response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(delete1Response.status).toBe(200);
 
       // Delete second task
       const delete2Response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${task1.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${task1.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(delete2Response.status).toBe(200);
 
       // Verify only one task remains
       const afterResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(afterResponse.status).toBe(200);
@@ -356,7 +358,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${complexTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${complexTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -378,7 +380,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${specialTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${specialTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -393,7 +395,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -428,14 +430,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Delete task from first file
       const response = await request(app)
-        .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
 
       // Verify task from other file still exists
       const otherFileResponse = await request(app)
-        .get(`/v0/files/${otherFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${otherFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(otherFileResponse.status).toBe(200);
@@ -449,14 +451,14 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Try to delete task from first file using second file's UUID
       const response = await request(app)
-        .delete(`/v0/files/${otherFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .delete(`/v0/files/${otherFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
 
       // Verify original task still exists
       const originalFileResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(originalFileResponse.status).toBe(200);
@@ -485,13 +487,13 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       // Perform concurrent operations
       const [deleteResponse, listResponse, getResponse] = await Promise.all([
         request(app)
-          .delete(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+          .delete(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`),
         request(app)
-          .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+          .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`),
         request(app)
-          .get(`/v0/files/${testFile.uuid}/scheduled_task/${task1.uuid}`)
+          .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${task1.uuid}`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`),
       ]);
 
@@ -501,7 +503,7 @@ describe('DELETE /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Verify final state
       const finalResponse = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(finalResponse.status).toBe(200);

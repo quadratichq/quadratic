@@ -13,9 +13,9 @@ import { createScheduledTask } from '../../utils/scheduledTasks';
 // Helper function to generate expected serialized Buffer format for HTTP responses
 const expectSerializedBuffer = (data: any) => Array.from(Buffer.from(JSON.stringify(data)));
 
-export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response'];
+export type ScheduledTaskResponse = ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response'];
 
-describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
+describe('GET /v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid', () => {
   let testUser: any;
   let testFile: any;
   let uniqueId: string;
@@ -35,7 +35,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Request Validation', () => {
     it('should return 400 for invalid file UUID parameter format', async () => {
       const response = await request(app)
-        .get(`/v0/files/invalid-uuid/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/invalid-uuid/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -43,7 +43,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for invalid scheduled task UUID parameter format', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/invalid-uuid`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/invalid-uuid`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -51,7 +51,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 400 for both invalid UUID parameters', async () => {
       const response = await request(app)
-        .get('/v0/files/invalid-uuid/scheduled_task/invalid-task-uuid')
+        .get('/v0/files/invalid-uuid/scheduled-tasks/invalid-task-uuid')
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(400);
@@ -60,14 +60,14 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 for unauthenticated requests', async () => {
-      const response = await request(app).get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`);
+      const response = await request(app).get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`);
 
       expect(response.status).toBe(401);
     });
 
     it('should return 403 when user lacks both FILE_VIEW and TEAM_VIEW permissions', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken other-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -78,7 +78,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('File Permission Checks', () => {
     it('should succeed when user has FILE_VIEW and TEAM_VIEW permissions (file owner)', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -110,7 +110,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken file-only-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -142,7 +142,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       });
 
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken other-team-user-${uniqueId}`);
 
       expect(response.status).toBe(403);
@@ -153,7 +153,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Scheduled Task Retrieval', () => {
     it('should return 404 for non-existent file', async () => {
       const response = await request(app)
-        .get(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/12345678-1234-1234-1234-123456789012/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(404);
@@ -161,7 +161,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return 500 for non-existent scheduled task', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/12345678-1234-1234-1234-123456789012`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/12345678-1234-1234-1234-123456789012`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(500);
@@ -170,7 +170,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should successfully retrieve existing scheduled task', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -189,7 +189,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Response Format Validation', () => {
     it('should return correctly formatted response with all required fields', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -233,7 +233,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
     it('should return valid date strings for date fields', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -253,7 +253,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
   describe('Edge Cases', () => {
     it('should handle scheduled task with null lastRunTime', async () => {
       const response = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response.status).toBe(200);
@@ -279,7 +279,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         });
 
         const response = await request(app)
-          .get(`/v0/files/${testFile.uuid}/scheduled_task/${cronTask.uuid}`)
+          .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${cronTask.uuid}`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
         expect(response.status).toBe(200);
@@ -312,7 +312,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
         }
 
         const response = await request(app)
-          .get(`/v0/files/${testFile.uuid}/scheduled_task/${statusTask.uuid}`)
+          .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${statusTask.uuid}`)
           .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
         expect(response.status).toBe(200);
@@ -340,7 +340,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Test retrieving each task individually
       const response1 = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${task1.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${task1.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response1.status).toBe(200);
@@ -348,7 +348,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
       expect(response1.body.operations).toEqual(expectSerializedBuffer({ action: 'task1' }));
 
       const response2 = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${task2.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${task2.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(response2.status).toBe(200);
@@ -357,7 +357,7 @@ describe('GET /v0/files/:uuid/scheduled_task/:scheduledTaskUuid', () => {
 
       // Test original task still works
       const responseOriginal = await request(app)
-        .get(`/v0/files/${testFile.uuid}/scheduled_task/${testScheduledTask.uuid}`)
+        .get(`/v0/files/${testFile.uuid}/scheduled-tasks/${testScheduledTask.uuid}`)
         .set('Authorization', `Bearer ValidToken test-user-${uniqueId}`);
 
       expect(responseOriginal.status).toBe(200);

@@ -8,13 +8,17 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getScheduledTask } from '../../utils/scheduledTasks';
+import { getScheduledTask, getScheduledTaskLogs } from '../../utils/scheduledTasks';
 const { FILE_VIEW } = FilePermissionSchema.enum;
 const { TEAM_VIEW } = TeamPermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
+  query: z.object({
+    page: z.coerce.number().optional(),
+    limit: z.coerce.number().optional(),
+  }),
   params: z.object({
     uuid: z.string().uuid(),
     scheduledTaskUuid: z.string().uuid(),
@@ -23,10 +27,11 @@ const schema = z.object({
 
 async function handler(
   req: RequestWithUser,
-  res: Response<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.GET.response']>
+  res: Response<ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid/log.GET.response']>
 ) {
   const {
     params: { uuid, scheduledTaskUuid },
+    query: { limit, page },
   } = parseRequest(req, schema);
 
   const {
@@ -41,7 +46,10 @@ async function handler(
     throw new ApiError(403, 'Permission denied');
   }
 
-  const result = await getScheduledTask(scheduledTaskUuid);
+  // Verify the scheduled task exists (this will throw 500 if not found)
+  await getScheduledTask(scheduledTaskUuid);
+
+  const result = await getScheduledTaskLogs(scheduledTaskUuid, limit, page);
 
   return res.status(200).json(result);
 }

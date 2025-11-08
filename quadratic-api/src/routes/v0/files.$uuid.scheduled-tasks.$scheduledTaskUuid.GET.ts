@@ -8,9 +8,9 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { deleteScheduledTask, getScheduledTask } from '../../utils/scheduledTasks';
-const { FILE_EDIT } = FilePermissionSchema.enum;
-const { TEAM_EDIT } = TeamPermissionSchema.enum;
+import { getScheduledTask } from '../../utils/scheduledTasks';
+const { FILE_VIEW } = FilePermissionSchema.enum;
+const { TEAM_VIEW } = TeamPermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -23,7 +23,7 @@ const schema = z.object({
 
 async function handler(
   req: RequestWithUser,
-  res: Response<ApiTypes['/v0/files/:uuid/scheduled_task/:scheduledTaskUuid.DELETE.response']>
+  res: Response<ApiTypes['/v0/files/:uuid/scheduled-tasks/:scheduledTaskUuid.GET.response']>
 ) {
   const {
     params: { uuid, scheduledTaskUuid },
@@ -37,12 +37,11 @@ async function handler(
     userMakingRequest: { filePermissions, teamPermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
-  if (!filePermissions.includes(FILE_EDIT) || !teamPermissions?.includes(TEAM_EDIT)) {
+  if (!filePermissions.includes(FILE_VIEW) || !teamPermissions?.includes(TEAM_VIEW)) {
     throw new ApiError(403, 'Permission denied');
   }
 
-  const task = await getScheduledTask(scheduledTaskUuid);
-  await deleteScheduledTask(task.id);
+  const result = await getScheduledTask(scheduledTaskUuid);
 
-  return res.status(200).json({ message: 'Scheduled task deleted' });
+  return res.status(200).json(result);
 }
