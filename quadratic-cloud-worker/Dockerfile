@@ -50,6 +50,7 @@ FROM ubuntu:24.04 AS runtime
 
 # Install runtime dependencies including Python and timezone data
 # tzdata provides IANA timezone database needed for Deno/V8 to recognize timezone identifiers
+# libicu74 provides ICU library used by V8 for internationalization including timezones
 # The actual timezone is set dynamically by the controller via TZ environment variable
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
@@ -58,6 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-venv \
   libpython3.12 \
   tzdata \
+  libicu74 \
   && rm -rf /var/lib/apt/lists/*
 
 # Install uv - a fast Python package installer
@@ -89,5 +91,8 @@ RUN uv pip install --system --break-system-packages \
   faker
 
 COPY --from=builder /quadratic/quadratic-cloud-worker/target/release/quadratic-cloud-worker .
+COPY quadratic-cloud-worker/entrypoint.sh .
 
-CMD ["./quadratic-cloud-worker"]
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]

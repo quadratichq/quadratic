@@ -8,9 +8,11 @@ use kube::{
     ResourceExt,
     api::{Api, DeleteParams, ListParams, PostParams},
 };
+use quadratic_rust_shared::quadratic_cloud::GetWorkerInitDataResponse;
 use tracing::{error, info};
 use uuid::Uuid;
 
+use crate::quadratic_api::file_init_data;
 use crate::state::State;
 
 pub(crate) struct Controller {
@@ -125,6 +127,25 @@ impl Controller {
         }
     }
 
+    async fn get_worker_init_data(&self, file_id: &Uuid) -> Result<GetWorkerInitDataResponse> {
+        let mut file_init_data = file_init_data(&self.state, *file_id).await?;
+
+        file_init_data.presigned_url = self
+            .state
+            .settings
+            .files_presigned_url(&file_init_data.presigned_url)?
+            .to_string();
+
+        let worker_init_data = GetWorkerInitDataResponse {
+            team_id: file_init_data.team_id,
+            sequence_number: file_init_data.sequence_number,
+            presigned_url: file_init_data.presigned_url,
+            timezone: file_init_data.timezone,
+        };
+
+        Ok(worker_init_data)
+    }
+
     async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
         info!("[create_worker] Creating worker for file {file_id}");
 
@@ -174,6 +195,8 @@ impl Controller {
     async fn build_worker_spec(&self, file_id: &Uuid) -> Result<Job> {
         let namespace = self.state.settings.namespace.as_str();
         let worker_ephemeral_token = self.state.generate_worker_ephemeral_token(file_id).await;
+        let worker_init_data = self.get_worker_init_data(file_id).await?;
+        let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let job_yaml = format!(
             r#"
 apiVersion: batch/v1
@@ -227,6 +250,8 @@ spec:
           value: "{worker_ephemeral_token}"
         - name: LOCALHOST_TUNNEL_PORTS
           value: "8000,3001,3002,3003"
+        - name: TZ
+          value: "{timezone}"
         resources:
           requests:
             cpu: 500m
@@ -242,7 +267,7 @@ spec:
         - -lc
         - |
           set -e
-          
+
           # Set up localhost tunnel ports
           PORTS=$(echo "$LOCALHOST_TUNNEL_PORTS" | tr ',' ' ')
           echo "Waiting for localhost-tunnel readiness..."
@@ -252,8 +277,8 @@ spec:
             until curl -sS --max-time 1 "http://localhost:$p/" -o /dev/null; do sleep 0.2; done
           done
 
-          echo "Starting quadratic-cloud-worker..."
-          exec ./quadratic-cloud-worker
+          echo "Starting quadratic-cloud-worker with entrypoint..."
+          exec ./entrypoint.sh
       - name: localhost-tunnel
         image: alpine:latest
         env:
