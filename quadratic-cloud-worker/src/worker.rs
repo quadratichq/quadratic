@@ -29,8 +29,6 @@ impl Worker {
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
 
-        info!("File worker starting for file: {}", file_id);
-
         let core = Core::new(
             file_id,
             worker_init_data.sequence_number.to_owned() as u64,
@@ -83,7 +81,6 @@ impl Worker {
         }
 
         // wait for all tasks to be complete
-        info!("Waiting for all tasks to be complete");
         while !self.core.status.lock().await.is_complete() {
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
@@ -102,8 +99,6 @@ impl Worker {
             Ok(_) => info!("Tasks acknowledged successfully"),
             Err(e) => error!("Error acknowledging tasks, error: {e}"),
         }
-
-        info!("Exiting run loop");
 
         Ok(())
     }

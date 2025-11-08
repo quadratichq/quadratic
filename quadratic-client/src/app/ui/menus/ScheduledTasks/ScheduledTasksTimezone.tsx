@@ -142,7 +142,7 @@ export const ScheduledTasksTimezone = () => {
   };
 
   return (
-    <div className="border-t border-border bg-muted/30 px-4 py-3">
+    <div className="flex-shrink-0 border-t border-border bg-muted/30 px-4 py-3">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium text-muted-foreground">Timezone for scheduled tasks</Label>

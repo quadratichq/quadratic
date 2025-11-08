@@ -1,12 +1,11 @@
-import re
-from datetime import datetime
-
 import pandas as pd
-from dateutil.relativedelta import relativedelta
 
 
 # Helper function to parse duration strings (e.g., "5d 3600s 0µs")
-def parse_duration(value: str) -> relativedelta:
+def parse_duration(value: str):
+    import re
+    from dateutil.relativedelta import relativedelta
+
     ret = relativedelta()
     for m in re.compile(r"([-\d\.]+)([a-zµ]+)").finditer(value.lower()):
         count = float(m.group(1))
@@ -60,10 +59,13 @@ def convert_cell_value(value, type_u8):
     elif type_u8 == 4:  # Duration
         return parse_duration(value)
     elif type_u8 == 9:  # Date
+        from datetime import datetime
         return datetime.fromisoformat(value).date()
     elif type_u8 == 10:  # Time
+        from datetime import datetime
         return datetime.fromisoformat(value).time()
     elif type_u8 == 11:  # DateTime
+        from datetime import datetime
         return datetime.fromisoformat(value)
     else:  # Default to text for Error, Html, Image, etc.
         return value
