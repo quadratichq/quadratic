@@ -24,7 +24,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
       // Special case for first-time users
       if (userCreated) {
-        trackEvent('[Auth].signup');
+        await trackEvent('[Auth].signup');
         try {
           // Read UTM cookie if it exists
           const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
