@@ -414,9 +414,9 @@ fn extract_async_result(
         }
     };
 
-    if let Some(result_value) = result_value {
+    if let Some(_result_value) = result_value {
         // process the output using our JavaScript processing function
-        let processed_result = process_javascript_output(runtime, &result_value)?;
+        let processed_result = process_javascript_output(runtime)?;
 
         Ok(JsCodeResult {
             transaction_id: transaction_id.to_string(),
@@ -457,15 +457,10 @@ struct ProcessedJsOutput {
 }
 
 /// Processes JavaScript output using the processOutput function
-fn process_javascript_output(
-    runtime: &mut JsRuntime,
-    result_value: &serde_json::Value,
-) -> Result<ProcessedJsOutput> {
-    // convert the result to a JavaScript-compatible string
-    let js_value_str = serde_json::to_string(result_value)?;
-
-    // call the processOutput function
-    let process_code = format!("processOutput({})", js_value_str);
+fn process_javascript_output(runtime: &mut JsRuntime) -> Result<ProcessedJsOutput> {
+    // Call processOutput with the actual result value from globalThis.__quadratic_result__.result
+    // This preserves JavaScript types like Date objects instead of serializing through JSON
+    let process_code = "processOutput(globalThis.__quadratic_result__.result)";
     let process_result = runtime
         .execute_script("process_result.js", process_code)
         .map_err(|e| CoreCloudError::Javascript(format!("Output processing error: {}", e)))?;
@@ -913,5 +908,262 @@ export default result;
 "#;
         let result = test_execute(code).await;
         assert!(result.success);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_execute_date_object() {
+        let code = r#"
+return new Date("2024-11-08T12:34:56Z");
+"#;
+        let result = test_execute(code).await;
+
+        assert!(result.success);
+        assert_eq!(
+            result.output_value,
+            Some(JsCellValueResult("2024-11-08T12:34:56.000Z".into(), 11)) // type 11 = DateTime
+        );
+        assert_eq!(result.output_display_type, Some("object".to_string()));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_execute_date_now() {
+        let code = r#"
+return new Date();
+"#;
+        let result = test_execute(code).await;
+
+        assert!(result.success);
+        // Should be type 11 (DateTime)
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.1, 11); // DateTime type
+        // Value should be an ISO string
+        assert!(output.0.contains("T"));
+        assert!(output.0.ends_with("Z"));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_q_cells_with_date() {
+        // Helper function that returns a date cell
+        fn test_get_cells_date(_a1: String) -> Result<JsCellsA1Response> {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: "2024-11-08T12:34:56".to_string(),
+                        t: 11, // DateTime type
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        }
+
+        let code = r#"
+const dateValue = q.cells("A1");
+// Should be a Date object
+return dateValue;
+"#;
+        let result = execute(code, "test", Box::new(test_get_cells_date))
+            .await
+            .unwrap();
+
+        assert!(result.success);
+        // q.cells should convert to Date object, then output should convert back to ISO string
+        assert_eq!(
+            result.output_value,
+            Some(JsCellValueResult("2024-11-08T12:34:56.000Z".into(), 11))
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_q_cells_with_date_math() {
+        // Helper function that returns a date cell
+        fn test_get_cells_date(_a1: String) -> Result<JsCellsA1Response> {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: "2024-11-08T00:00:00".to_string(),
+                        t: 11, // DateTime type
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        }
+
+        let code = r#"
+const dateValue = q.cells("A1");
+// Should be a Date object, so we can do date math
+const tomorrow = new Date(dateValue);
+tomorrow.setDate(tomorrow.getDate() + 1);
+return tomorrow;
+"#;
+        let result = execute(code, "test", Box::new(test_get_cells_date))
+            .await
+            .unwrap();
+
+        assert!(result.success);
+        // Should output tomorrow's date
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.1, 11); // DateTime type
+        assert!(output.0.contains("2024-11-09")); // Next day
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_q_cells_with_number() {
+        let code = r#"
+const numValue = q.cells("A1");
+// Should be a number (42)
+return numValue * 2;
+"#;
+        let result = test_execute(code).await;
+
+        assert!(result.success);
+        assert_eq!(
+            result.output_value,
+            Some(JsCellValueResult("84".into(), 2)) // 42 * 2 = 84
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_q_cells_with_blank() {
+        fn test_get_cells_blank(_a1: String) -> Result<JsCellsA1Response> {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: "".to_string(),
+                        t: 0, // Blank type
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        }
+
+        let code = r#"
+const blankValue = q.cells("A1");
+// Should be undefined
+return blankValue === undefined ? "was undefined" : "was not undefined";
+"#;
+        let result = execute(code, "test", Box::new(test_get_cells_blank))
+            .await
+            .unwrap();
+
+        assert!(result.success);
+        assert_eq!(
+            result.output_value,
+            Some(JsCellValueResult("was undefined".into(), 1))
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_date_in_array() {
+        let code = r#"
+return [
+    ["Date", "Value"],
+    [new Date("2024-11-08T12:00:00Z"), 42],
+    [new Date("2024-11-09T12:00:00Z"), 43]
+];
+"#;
+        let result = test_execute(code).await;
+
+        assert!(result.success);
+        assert!(result.has_headers);
+        assert_eq!(result.output_display_type, Some("Array".into()));
+
+        // Check that dates are properly converted
+        let array = result.output_array.unwrap();
+        assert_eq!(array.len(), 3);
+        // First row headers
+        assert_eq!(array[0][0], JsCellValueResult("Date".into(), 1));
+        // Second row - date should be type 11 (DateTime)
+        assert_eq!(array[1][0].1, 11);
+        assert!(array[1][0].0.contains("2024-11-08"));
+        // Third row - date should be type 11 (DateTime)
+        assert_eq!(array[2][0].1, 11);
+        assert!(array[2][0].0.contains("2024-11-09"));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_multiple_date_types() {
+        fn test_get_cells_multiple(_a1: String) -> Result<JsCellsA1Response> {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "2024-11-08".to_string(),
+                            t: 9, // Date type
+                        },
+                        JsCellsA1Value {
+                            x: 2,
+                            y: 1,
+                            v: "2024-11-08T12:34:56".to_string(),
+                            t: 11, // DateTime type
+                        },
+                        JsCellsA1Value {
+                            x: 3,
+                            y: 1,
+                            v: "12:34:56".to_string(),
+                            t: 10, // Time type
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 3,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: true,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        }
+
+        let code = r#"
+const values = q.cells("A1:C1");
+// Should return [Date object, Date object, string]
+return [
+    values[0] instanceof Date,
+    values[1] instanceof Date,
+    typeof values[2] === "string"
+];
+"#;
+        let result = execute(code, "test", Box::new(test_get_cells_multiple))
+            .await
+            .unwrap();
+
+        assert!(result.success);
+        // Should return [true, true, true]
+        let array = result.output_array.unwrap();
+        assert_eq!(array[0][0], JsCellValueResult("true".into(), 3)); // Date type converts to Date
+        assert_eq!(array[0][1], JsCellValueResult("true".into(), 3)); // DateTime type converts to Date
+        assert_eq!(array[0][2], JsCellValueResult("true".into(), 3)); // Time type stays as string
     }
 }

@@ -218,7 +218,7 @@ pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) ->
         first_name: "Quadratic".to_string(),
         last_name: "Cloud Worker".to_string(),
         email: "cloud-worker@quadratichq.com".to_string(),
-        image: "https://quadratichq.com//favicon.ico".to_string(),
+        image: "https://quadratichq.com/favicon.ico".to_string(),
         sheet_id: Uuid::new_v4(),
         selection: "".to_string(),
         cell_edit: CellEdit::default(),
@@ -283,19 +283,20 @@ mod tests {
                 if let axum::extract::ws::Message::Text(text) = msg {
                     // Parse the incoming message
                     if let Ok(request) = serde_json::from_str::<MessageRequest>(&text)
-                        && let MessageRequest::Ping { message } = request {
-                            // Respond with pong
-                            let response = MessageResponse::Pong { message };
-                            let response_text = serde_json::to_string(&response)
-                                .expect("Failed to serialize response");
-                            if socket
-                                .send(axum::extract::ws::Message::Text(response_text.into()))
-                                .await
-                                .is_err()
-                            {
-                                break;
-                            }
+                        && let MessageRequest::Ping { message } = request
+                    {
+                        // Respond with pong
+                        let response = MessageResponse::Pong { message };
+                        let response_text =
+                            serde_json::to_string(&response).expect("Failed to serialize response");
+                        if socket
+                            .send(axum::extract::ws::Message::Text(response_text.into()))
+                            .await
+                            .is_err()
+                        {
+                            break;
                         }
+                    }
                 }
             }
         }

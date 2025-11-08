@@ -49,6 +49,7 @@ quadratic-files/storage
 quadratic-multiplayer/target/
 quadratic-rust-shared/target/
 poc/**/target/
+quadratic-cloud-controller/target/
 
 quadratic-rust-shared/src/auto_gen_path.rs
 

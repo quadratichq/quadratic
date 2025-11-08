@@ -21,8 +21,14 @@ function processOutput(value) {
       outputValue: null,
       outputArray: value.map((row) =>
         Array.isArray(row)
-          ? row.map((cell) => [String(cell), getJsType(cell)])
-          : [[String(row), getJsType(row)]],
+          ? row.map((cell) => [
+              cell instanceof Date ? cell.toISOString() : String(cell),
+              getJsType(cell),
+            ])
+          : [[
+              row instanceof Date ? row.toISOString() : String(row),
+              getJsType(row),
+            ]],
       ),
     };
   }
@@ -31,16 +37,20 @@ function processOutput(value) {
   return {
     outputType: typeof value,
     hasHeaders: false,
-    outputValue: [String(value), getJsType(value)],
+    outputValue: [
+      value instanceof Date ? value.toISOString() : String(value),
+      getJsType(value),
+    ],
     outputArray: null,
   };
 }
 
 function getJsType(value) {
-  if (value === null) return 0; // empty
+  if (value === null) return 0; // blank
   if (typeof value === "string") return 1; // text
   if (typeof value === "number") return 2; // number
   if (typeof value === "boolean") return 3; // boolean
+  if (value instanceof Date) return 11; // datetime
   return 1; // Default to text
 }
 

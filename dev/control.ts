@@ -528,15 +528,25 @@ export class Control {
     await this.kill("cloudController");
 
     this.signals.cloudController = new AbortController();
-    this.cloudController = spawn(
-      "cargo",
-      this.cli.options.cloudController ? ["watch", "-x", "run"] : ["run"],
-      {
+    if (this.cli.options.noRust) {
+      this.cloudController = spawn("./quadratic-cloud-controller", [], {
         signal: this.signals.cloudController.signal,
-        cwd: "quadratic-cloud-controller",
+        cwd: "quadratic-cloud-controller/target/debug",
         env: { ...process.env, RUST_LOG: "info" },
-      },
-    );
+      });
+    } else {
+      this.cloudController = spawn(
+        "cargo",
+        this.cli.options.cloudController
+          ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+          : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"],
+        {
+          signal: this.signals.cloudController.signal,
+          cwd: "quadratic-cloud-controller",
+          env: { ...process.env, RUST_LOG: "info" },
+        },
+      );
+    }
     this.ui.printOutput("cloudController", (data) => {
       this.handleResponse("cloudController", data, {
         success: ["Finished ", "Running "],
