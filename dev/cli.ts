@@ -10,7 +10,7 @@ export class CLI {
     connection: boolean;
     python: boolean;
     shared: boolean;
-    cloudcontroller: boolean;
+    cloudController: boolean;
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
@@ -24,7 +24,7 @@ export class CLI {
     hideConnection: boolean;
     hidePython: boolean;
     hideShared: boolean;
-    hideCloudcontroller: boolean;
+    hideCloudController: boolean;
     servicesLocal: boolean;
     dark: boolean;
     noRust: boolean;
@@ -46,7 +46,7 @@ export class CLI {
       .option("-n, --connection", "Watch the quadratic-connection directory")
       .option("-s, --shared", "Watch the quadratic-shared directory")
       .option(
-        "-w, --cloudcontroller",
+        "-o, --cloudController",
         "Watch the quadratic-cloud-controller directory",
       )
       .option(
@@ -73,7 +73,7 @@ export class CLI {
       .option("-Y, --hidePython", "Hide Python output")
       .option("-E, --hideRustClient", "Hide RustClient")
       .option("-S, --hideShared", "Hide Shared output")
-      .option("-O, --hideCloudcontroller", "Hide CloudController output")
+      .option("-O, --hideCloudController", "Hide CloudController output")
       .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
       .option("-d, --dark", "Use dark theme")
       .showHelpAfterError();
@@ -89,7 +89,7 @@ export class CLI {
       this.options.connection = true;
       this.options.python = true;
       this.options.shared = true;
-      this.options.cloudcontroller = true;
+      this.options.cloudController = true;
     }
   }
 }

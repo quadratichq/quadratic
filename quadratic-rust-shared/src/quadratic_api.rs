@@ -295,6 +295,7 @@ pub struct GetFileInitDataResponse {
     pub team_id: Uuid,
     pub sequence_number: u32,
     pub presigned_url: String,
+    pub timezone: Option<String>,
 }
 pub async fn get_file_init_data(
     base_url: &str,

@@ -72,6 +72,7 @@ model File {
     ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission    @default(NOT_SHARED) @map("public_link_access")
+    timezone         String?           @map("timezone")
     times_updated    Int               @default(1) // unused to delete
     version          String? // unused to delete
     FileCheckpoint   FileCheckpoint[]

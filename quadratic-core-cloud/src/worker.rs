@@ -15,7 +15,7 @@ use quadratic_rust_shared::protobuf::quadratic::transaction::{
 use quadratic_rust_shared::protobuf::utils::type_name_from_peek;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinHandle;
 use tokio::time::Duration;
 use uuid::Uuid;
@@ -43,6 +43,7 @@ fn to_transaction_server(transaction: ReceiveTransaction) -> TransactionServer {
 pub struct WorkerStatus {
     received_catchup_transactions: bool,
     received_transaction_ack: bool,
+    catchup_notify: Arc<Notify>,
 }
 
 impl Default for WorkerStatus {
@@ -56,6 +57,7 @@ impl WorkerStatus {
         Self {
             received_catchup_transactions: false,
             received_transaction_ack: false,
+            catchup_notify: Arc::new(Notify::new()),
         }
     }
 
@@ -169,6 +171,11 @@ impl Worker {
             .get_transactions(file_id, worker.session_id, worker.sequence_num)
             .await?;
 
+        // Wait for catchup transactions to be received before proceeding
+        // This ensures we don't have a race condition on the first run
+        let notify = Arc::clone(&worker.status.lock().await.catchup_notify);
+        notify.notified().await;
+
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
             let sender = Arc::clone(sender);
@@ -259,7 +266,9 @@ impl Worker {
                                     // it likely means we're already at the latest sequence and there are no
                                     // catchup transactions to receive
                                     MessageResponse::Error { .. } => {
-                                        status.lock().await.received_catchup_transactions = true;
+                                        let mut status_lock = status.lock().await;
+                                        status_lock.received_catchup_transactions = true;
+                                        status_lock.catchup_notify.notify_one();
                                     }
                                     // we don't care about other messages
                                     _ => {}
@@ -286,8 +295,9 @@ impl Worker {
                                                     .received_transactions(transactions);
 
                                                 // update status
-                                                status.lock().await.received_catchup_transactions =
-                                                    true;
+                                                let mut status_lock = status.lock().await;
+                                                status_lock.received_catchup_transactions = true;
+                                                status_lock.catchup_notify.notify_one();
                                             }
                                             Err(e) => print_error(e.to_string()),
                                         };

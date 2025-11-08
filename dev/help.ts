@@ -11,7 +11,8 @@ export const helpCLI =
   "\n     -n, --connection      Watch the quadratic-connection directory" +
   "\n     -y, --python          Watch the quadratic-kernel/python-wasm directory" +
   "\n     -s, --shared          Watch the quadratic-shared directory" +
-  "\n     -s, --skipTypes       Skip WASM types compilation" +
+  "\n     -o, --cloudController Watch the quadratic-cloud-controller directory" +
+  "\n     -t, --skipTypes       Skip WASM types compilation" +
   "\n     -l, --all             Watch all directories" +
   "\n     -p, --perf            Run quadratic-core in perf mode (slower linking but faster runtime)" +
   "\n     -R, --hideReact       Hide React output" +
@@ -21,6 +22,8 @@ export const helpCLI =
   "\n     -F, --hideFiles       Hide Files output" +
   "\n     -N, --hideConnection  Hide Connection output" +
   "\n     -Y, --hidePython      Hide Python output" +
+  "\n     -S, --hideShared      Hide Shared output" +
+  "\n     -O, --hideCloudController Hide CloudController output" +
   "\n     -T, --hideTypes       Hide Types output" +
   "\n     -L, --servicesLocal   Set Redis & Postgres as running locally" +
   "\n     -d, --dark            Use dark theme" +

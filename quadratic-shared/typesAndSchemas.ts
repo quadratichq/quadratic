@@ -85,6 +85,7 @@ const FileSchema = z.object({
   lastCheckpointDataUrl: z.string().url(),
   publicLinkAccess: PublicLinkAccessSchema,
   thumbnail: z.string().url().nullable(),
+  timezone: z.string().nullable(),
 });
 
 const TeamPrivateFileSchema = FileSchema.pick({
@@ -153,6 +154,7 @@ export const ApiSchemas = {
       updatedDate: true,
       publicLinkAccess: true,
       thumbnail: true,
+      timezone: true,
     })
   ),
   '/v0/files.POST.request': z.object({
@@ -201,10 +203,12 @@ export const ApiSchemas = {
   '/v0/files/:uuid.PATCH.request': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
+    timezone: FileSchema.shape.timezone.optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),

@@ -74,7 +74,7 @@ const ScheduledTasksListBody = () => {
   const { scheduledTasks, showScheduledTasks } = useScheduledTasks();
 
   return (
-    <div className="flex flex-col overflow-y-auto px-4 pb-2">
+    <div className="flex flex-col px-4 pb-2">
       {scheduledTasks.tasks.map((task, i) => {
         return (
           <button

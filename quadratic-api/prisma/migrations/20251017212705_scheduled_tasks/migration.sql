@@ -65,3 +65,6 @@ ALTER TABLE "ScheduledTask" ADD CONSTRAINT "ScheduledTask_user_id_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "ScheduledTaskLog" ADD CONSTRAINT "ScheduledTaskLog_scheduled_task_id_fkey" FOREIGN KEY ("scheduled_task_id") REFERENCES "ScheduledTask"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AlterTable
+ALTER TABLE "File" ADD COLUMN "timezone" TEXT;

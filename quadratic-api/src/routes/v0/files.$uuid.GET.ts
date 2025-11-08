@@ -31,7 +31,7 @@ export default [
 async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0/files/:uuid.GET.response']>) {
   const userId = req.user?.id;
   const {
-    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
+    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam, timezone },
     userMakingRequest: { filePermissions, fileRole, teamRole, teamPermissions },
   } = await getFile({ uuid: req.params.uuid, userId });
 
@@ -93,6 +93,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
       ownerUserId: ownerUserId ? ownerUserId : undefined,
+      timezone: timezone ?? null,
     },
     team: {
       uuid: ownerTeam.uuid,

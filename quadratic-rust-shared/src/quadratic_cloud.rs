@@ -41,6 +41,7 @@ pub struct GetWorkerInitDataResponse {
     pub team_id: Uuid,
     pub sequence_number: u32,
     pub presigned_url: String,
+    pub timezone: Option<String>,
 }
 /// Get a worker init data
 pub async fn get_worker_init_data(

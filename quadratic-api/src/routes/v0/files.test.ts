@@ -111,6 +111,7 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
       .expect((res) => {
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
+        expect(res.body.file).toHaveProperty('timezone');
         expect(res.body.userMakingRequest.filePermissions).toEqual([
           'FILE_VIEW',
           'FILE_EDIT',

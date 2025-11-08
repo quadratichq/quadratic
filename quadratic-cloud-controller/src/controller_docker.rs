@@ -118,6 +118,7 @@ impl Controller {
             team_id: file_init_data.team_id,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
+            timezone: file_init_data.timezone,
         };
 
         Ok(worker_init_data)
@@ -181,6 +182,10 @@ impl Controller {
             format!("M2M_AUTH_TOKEN={m2m_auth_token}"),
             format!("TASKS={}", encoded_tasks),
             format!("WORKER_INIT_DATA={}", worker_init_data_json),
+            format!(
+                "TZ={}",
+                worker_init_data.timezone.unwrap_or("UTC".to_string())
+            ),
         ];
 
         // Mount volume to persist Python packages between container runs

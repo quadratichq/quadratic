@@ -175,7 +175,7 @@ export class UI {
         this.statusItem("types");
         this.statusItem("python");
         this.statusItem("shared");
-        this.statusItem("cloudcontroller");
+        this.statusItem("cloudController");
         if (this.help === "cli") {
             this.write(helpCLI);
         }

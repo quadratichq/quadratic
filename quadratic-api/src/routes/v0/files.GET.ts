@@ -32,6 +32,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
       createdDate: true,
       updatedDate: true,
       publicLinkAccess: true,
+      timezone: true,
     },
     orderBy: [
       {
@@ -53,6 +54,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
     ...file,
     createdDate: file.createdDate.toISOString(),
     updatedDate: file.updatedDate.toISOString(),
+    timezone: file.timezone ?? null,
   }));
   return res.status(200).json(data);
 }

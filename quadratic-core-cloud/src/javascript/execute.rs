@@ -246,10 +246,10 @@ pub(crate) async fn execute(
         }
     };
 
-    execute_module(&mut runtime, code, transaction_id, setup_code, expr_code).await
+    execute_module(&mut runtime, transaction_id, setup_code, expr_code).await
 }
 
-async fn wrap_module(code: &str, setup_code: Option<String>, expr_code: Option<String>) -> String {
+async fn wrap_module(setup_code: Option<String>, expr_code: Option<String>) -> String {
     // prepare the module code with proper ES module syntax
 
     let setup = setup_code.unwrap_or_else(|| "".to_string());
@@ -293,13 +293,12 @@ export default __result__;
 
 async fn execute_module(
     runtime: &mut JsRuntime,
-    code: &str,
     transaction_id: &str,
     setup_code: Option<String>,
     expr_code: Option<String>,
 ) -> Result<JsCodeResult> {
     // prepare the module code with proper ES module syntax
-    let module_code = wrap_module(code, setup_code, expr_code).await;
+    let module_code = wrap_module(setup_code, expr_code).await;
 
     // Create a data URL for in-memory module execution
     let encoded_code = urlencoding::encode(&module_code);
