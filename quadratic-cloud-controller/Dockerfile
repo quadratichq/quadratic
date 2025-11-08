@@ -43,7 +43,7 @@ FROM ubuntu:24.04 AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  curl \  
+  curl \
   ca-certificates \
   python3 \
   && rm -rf /var/lib/apt/lists/*

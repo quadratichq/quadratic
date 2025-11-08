@@ -142,7 +142,7 @@ pub async fn process_transaction(
                         Arc::clone(&grid),
                         &code_run.code,
                         *kind,
-                        &id,
+                        id,
                         &transaction_id,
                         &team_id,
                         &token,

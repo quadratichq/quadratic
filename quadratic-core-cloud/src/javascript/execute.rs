@@ -252,8 +252,8 @@ pub(crate) async fn execute(
 async fn wrap_module(setup_code: Option<String>, expr_code: Option<String>) -> String {
     // prepare the module code with proper ES module syntax
 
-    let setup = setup_code.unwrap_or_else(|| "".to_string());
-    let expr = expr_code.unwrap_or_else(|| "undefined".to_string());
+    let setup = setup_code.unwrap_or("".to_string());
+    let expr = expr_code.unwrap_or("undefined".to_string());
 
     // Extract imports from setup code
     let (imports, setup_without_imports) = extract_imports(&setup);
