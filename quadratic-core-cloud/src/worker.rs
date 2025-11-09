@@ -167,8 +167,10 @@ impl Worker {
         worker.enter_room(file_id).await?;
 
         // finally, get the catchup transactions
+        // Request transactions starting from sequence_num + 1 since the loaded file
+        // already contains all transactions up to and including sequence_num
         worker
-            .get_transactions(file_id, worker.session_id, worker.sequence_num)
+            .get_transactions(file_id, worker.session_id, worker.sequence_num + 1)
             .await?;
 
         // Wait for catchup transactions to be received before proceeding
