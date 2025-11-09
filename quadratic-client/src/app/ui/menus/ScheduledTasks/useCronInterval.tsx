@@ -155,7 +155,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
 
   const changeInterval = useCallback(
     (every: string) => {
-      if (import.meta.env.MODE === 'production' && every === 'minute') {
+      if (!isDebug && every === 'minute') {
         setCronError(CRON_ERROR_TOO_FREQUENT);
         return;
       }
