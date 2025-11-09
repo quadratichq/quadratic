@@ -56,14 +56,14 @@
 
 ## SSH into a Preview Branch
 1. Locate the PR number in Github
-1. Log into the `Quadratic Development` AWS account (`us-west-2`)
+1. Log into the `Quadratic Development` AWS account (`us-west-2`) - login is at https://d-9067937699.awsapps.com/start/#/?tab=accounts
 1. Navigate to the `EC2` service
 1. Click on the `Instances` link in the left-hand sidebar or in the middle `Resources` section
 1. Type in the PR number in the search interface
 1. Click on the `Instance ID` link for the matching instance
 1. Click on the `Connect` button in the upper right corner
 1. Make sure the `Connect using a Public IP` option is selected and hit the orange `Connect` button
-1. Wait a few momemnts for the SSH UI to load
+1. Wait a few moments for the SSH UI to load
 1. Enter `docker ps` to see the running docker containers
 1. There will be a container for every service, note the `CONTAINER ID` for each
 1. Commands:
