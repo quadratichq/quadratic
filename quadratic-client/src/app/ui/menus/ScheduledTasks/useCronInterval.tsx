@@ -110,7 +110,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
         const parsed = CronExpressionParser.parse(input);
 
         // In production, check if cron runs more frequently than once per hour
-        if (isDebug) {
+        if (!isDebug) {
           const interval1 = parsed.next();
           const interval2 = parsed.next();
           const diffMs = interval2.getTime() - interval1.getTime();
