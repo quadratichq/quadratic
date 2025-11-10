@@ -301,7 +301,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
 
   // Assert that the testUser has been invited with Owner permissions
-  await expect(manageUserPage.getByText(`${manageUserEmail} (You)${ownerPermission}`)).toBeVisible({
+  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${ownerPermission}$`))).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -320,7 +320,8 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await manageUserPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
   await adminPage
-    .getByText(`${manageUserEmail} ${ownerPermission}`)
+    .getByTestId('share-dialog-list-item')
+    .filter({ hasText: manageUserEmail })
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   // Wait for the dropdown to be visible
@@ -337,16 +338,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   // TestUser accepts the invitation and navigates to the team to check permission
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
-  await manageUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
-  // await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can edit"
-  await expect(manageUserPage.getByText(`${manageUserEmail} (You)${editPermission}`)).toBeVisible({
+  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${editPermission}$`))).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -365,7 +361,8 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await manageUserPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
   await adminPage
-    .getByText(`${manageUserEmail} ${editPermission}`)
+    .getByTestId('share-dialog-list-item')
+    .filter({ hasText: manageUserEmail })
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   // Wait for the dropdown to be visible
@@ -380,16 +377,11 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   // TestUser navigates to the team to check permission
   await manageUserPage.bringToFront();
   await manageUserPage.reload();
-  await manageUserPage
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
-  // await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
   // Assert that the testUser's permission is now "Can view"
-  await expect(manageUserPage.getByText(`${manageUserEmail} (You)${viewPermission}`)).toBeVisible({
+  await expect(manageUserPage.getByText(new RegExp(`\\(You\\)${manageUserEmail}${viewPermission}$`))).toBeVisible({
     timeout: 60 * 1000,
   });
 
@@ -408,7 +400,8 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await adminPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await adminPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
   await adminPage
-    .getByText(`${manageUserEmail} ${viewPermission}`)
+    .getByTestId('share-dialog-list-item')
+    .filter({ hasText: manageUserEmail })
     .locator('button[role="combobox"]')
     .click({ timeout: 60 * 1000 });
   // Wait for the dropdown to be visible
