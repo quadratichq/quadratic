@@ -29,12 +29,17 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
-# The core, corecloud, and rustCallbacks are needed for the controller to build; but they are not used in docker (only for local development)
-COPY --link ./quadratic-core/. ./quadratic-core/
-COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY --link ./quadratic-core-cloud/. ./quadratic-core-cloud/
 COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
+
+# These are necessary to complete the build, but are not used on a docker-based cloud-controller (only the ENVIRONMENT=local)
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-connection/. ./quadratic-connection/
+COPY --link ./quadratic-files/. ./quadratic-files/
+COPY --link ./quadratic-multiplayer/. ./quadratic-multiplayer/
+COPY --link ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
 
 WORKDIR /quadratic/quadratic-cloud-controller
 
