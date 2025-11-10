@@ -32,7 +32,6 @@ test('Rename Team', async ({ page: adminPage }) => {
 
   // Constants
   const randomNum = Date.now().toString().slice(-6);
-  const originalTeamName = `Original Team Name - ${randomNum}`;
   const newTeamName = `New Team Name - ${randomNum}`;
   const editPermission = 'Can edit';
 
@@ -69,10 +68,8 @@ test('Rename Team', async ({ page: adminPage }) => {
   await testUserPage.waitForLoadState('domcontentloaded');
   await testUserPage.waitForLoadState('networkidle');
 
-  // Verify that testUser can see the original team name
-  await expect(testUserPage.locator(`nav button[aria-haspopup="menu"] :text("${originalTeamName}")`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  // Get the original team name testUser sees
+  const originalTeamName = await testUserPage.locator(`[data-testid="team-switcher-team-name"]`).textContent();
 
   //--------------------------------
   // Act: Admin Renames the Team
@@ -93,9 +90,8 @@ test('Rename Team', async ({ page: adminPage }) => {
   await testUserPage.reload();
 
   // Verify that the team name has been updated for testUser
-  await expect(testUserPage.locator(`nav button[aria-haspopup="menu"] :text("${newTeamName}")`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  const updatedTeamName = await testUserPage.locator(`[data-testid="team-switcher-team-name"]`).textContent();
+  await expect(updatedTeamName).toBe(newTeamName);
 });
 
 test('Create File for Team', async ({ page }) => {

@@ -430,7 +430,9 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
         <div className="mx-0.5">
           <TeamAvatar name={optimisticActiveTeamName} />
         </div>
-        <div className="select-none truncate">{optimisticActiveTeamName}</div>
+        <div className="select-none truncate" data-testid="team-switcher-team-name">
+          {optimisticActiveTeamName}
+        </div>
         <div className="relative ml-auto mr-0.5 flex items-center">
           <ArrowDropDownIcon />
           <RefreshIcon
