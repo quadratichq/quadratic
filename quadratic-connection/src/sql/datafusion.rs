@@ -46,8 +46,17 @@ async fn get_connection(
         false => new_datafusion_test_connection(),
     };
 
-    let api_connection: ApiConnection<EmptyConnection> =
-        get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?;
+    let api_connection: ApiConnection<EmptyConnection> = match cfg!(not(test)) {
+        true => {
+            get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
+        }
+        false => ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            type_details: EmptyConnection {},
+        },
+    };
 
     datafusion_connection.connection_id = Some(*connection_id);
 
@@ -126,6 +135,7 @@ mod tests {
         let headers = HeaderMap::new();
 
         let result = get_connection(&state, &claims, &connection_id, &team_id, &headers).await;
+        println!("result: {:?}", result);
         assert!(result.is_ok());
 
         let api_connection = result.unwrap();
