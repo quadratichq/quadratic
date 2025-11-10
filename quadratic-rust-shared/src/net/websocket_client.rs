@@ -153,6 +153,21 @@ impl WebSocketSender {
             .map_err(WebsocketClient::error)?;
         Ok(())
     }
+
+    /// Close the WebSocket connection gracefully
+    pub async fn close(&mut self) -> Result<()> {
+        use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
+
+        self.sink
+            .send(Message::Close(Some(CloseFrame {
+                code: CloseCode::Normal,
+                reason: "".into(),
+            })))
+            .await
+            .map_err(WebsocketClient::error)?;
+        self.sink.close().await.map_err(WebsocketClient::error)?;
+        Ok(())
+    }
 }
 
 impl WebSocketReceiver {

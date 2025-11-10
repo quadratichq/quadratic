@@ -16,6 +16,7 @@ futures-util = "0.3.30"
 jsonwebtoken = "9.2.0"
 k8s-openapi = { version = "0.25.0", features = ["v1_31"], optional = true }
 kube = { version = "1.1.0", features = ["client", "derive"], optional = true }
+quadratic-core-cloud = { path = "../quadratic-core-cloud", optional = true }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "auth",
   "environment",
@@ -40,3 +41,4 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 default = ["docker"]
 docker = ["quadratic-rust-shared/docker"]
 kubernetes = ["k8s-openapi", "kube"]
+local = ["quadratic-core-cloud"]

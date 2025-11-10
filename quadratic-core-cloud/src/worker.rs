@@ -110,6 +110,7 @@ pub struct Worker {
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
     pub(crate) websocket_receiver_handle: Option<JoinHandle<()>>,
+    pub(crate) heartbeat_handle: Option<JoinHandle<()>>,
     pub status: Arc<Mutex<WorkerStatus>>,
 }
 
@@ -145,11 +146,15 @@ impl Worker {
         m2m_auth_token: String,
         multiplayer_url: String,
     ) -> Result<Self> {
+        tracing::debug!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
+        tracing::debug!("✅ [Worker] File loaded successfully");
+
+        let session_id = Uuid::new_v4();
         let mut worker = Worker {
             file_id,
             sequence_num,
-            session_id: Uuid::new_v4(),
+            session_id,
             file: Arc::new(Mutex::new(file)),
             m2m_auth_token,
             multiplayer_url,
@@ -157,26 +162,37 @@ impl Worker {
             websocket_sender: None,
             websocket_receiver: None,
             websocket_receiver_handle: None,
+            heartbeat_handle: None,
             status: Arc::new(Mutex::new(WorkerStatus::new())),
         };
 
         // first, connect to the multiplayer server
+        tracing::debug!("🔌 [Worker] Connecting to multiplayer server");
         worker.connect().await?;
+        tracing::debug!("✅ [Worker] Connected to multiplayer");
 
         // then, enter the room
+        tracing::debug!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
+        tracing::debug!("✅ [Worker] Entered room");
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
         // already contains all transactions up to and including sequence_num
+        tracing::debug!(
+            "📥 [Worker] Requesting catchup transactions from sequence {}",
+            sequence_num + 1
+        );
         worker
             .get_transactions(file_id, worker.session_id, worker.sequence_num + 1)
             .await?;
 
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
+        tracing::debug!("⏳ [Worker] Waiting for catchup transactions...");
         let notify = Arc::clone(&worker.status.lock().await.catchup_notify);
         notify.notified().await;
+        tracing::debug!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
@@ -184,16 +200,18 @@ impl Worker {
             let session_id = worker.session_id;
             let file_id = worker.file_id;
 
-            tokio::spawn(async move {
+            let heartbeat_handle = tokio::spawn(async move {
                 loop {
                     if let Err(e) =
                         send_heartbeat(&mut *sender.lock().await, session_id, file_id).await
                     {
                         tracing::error!("Error sending heartbeat: {e}");
+                        break; // Exit if we can't send heartbeat
                     }
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
             });
+            worker.heartbeat_handle = Some(heartbeat_handle);
         }
 
         Ok(worker)
@@ -323,10 +341,16 @@ impl Worker {
                                 }
                             }
                         }
-                        Ok(WebsocketMessage::Close(_)) => break,
+                        Ok(WebsocketMessage::Close(_)) => {
+                            tracing::debug!("WebSocket closed normally");
+                            break;
+                        }
                         Ok(_) => {}
                         Err(e) => {
-                            println!("WebSocket error: {:?}", e);
+                            // Only log non-shutdown errors
+                            if !e.to_string().contains("ResetWithoutClosingHandshake") {
+                                tracing::warn!("WebSocket error: {:?}", e);
+                            }
                             break;
                         }
                     }
@@ -387,8 +411,28 @@ impl Worker {
         team_id: String,
         token: String,
     ) -> Result<()> {
+        tracing::debug!("🔄 [Worker] Deserializing operations");
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
             .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
+
+        tracing::debug!("⚙️  [Worker] Processing {} operation(s)", operations.len());
+
+        // Log what operations we're executing
+        for op in &operations {
+            match op {
+                Operation::ComputeCode { sheet_pos } => {
+                    tracing::info!(
+                        "🔧 [Worker] Executing code at position {}:{}",
+                        sheet_pos.x,
+                        sheet_pos.y
+                    );
+                }
+                Operation::ComputeCodeSelection { selection } => {
+                    tracing::info!("🔧 [Worker] Executing code selection: {:?}", selection);
+                }
+                _ => {}
+            }
+        }
 
         let transaction_id = process_transaction(
             Arc::clone(&self.file),
@@ -402,27 +446,99 @@ impl Worker {
 
         *self.transaction_id.lock().await = Some(transaction_id);
 
-        let file_lock = self.file.lock().await;
-        let forward_transaction = file_lock.last_transaction().unwrap();
+        // Log any code execution output and get forward transaction
+        let (forward_ops, execution_logs) = {
+            let file_lock = self.file.lock().await;
+            let forward_transaction = file_lock.last_transaction().unwrap();
 
+            // Collect execution logs
+            let mut logs = Vec::new();
+            for op in &forward_transaction.operations {
+                if let Operation::SetDataTable {
+                    sheet_pos,
+                    data_table: Some(dt),
+                    ..
+                } = op
+                {
+                    if let quadratic_core::grid::DataTableKind::CodeRun(code_run) = &dt.kind {
+                        let pos_str = format!("{}:{}", sheet_pos.x, sheet_pos.y);
+
+                        if let Some(std_out) = &code_run.std_out {
+                            if !std_out.trim().is_empty() {
+                                logs.push(("output", pos_str.clone(), std_out.trim().to_string()));
+                            }
+                        }
+                        if let Some(std_err) = &code_run.std_err {
+                            if !std_err.trim().is_empty() {
+                                logs.push(("stderr", pos_str.clone(), std_err.trim().to_string()));
+                            }
+                        }
+                        if let Some(error) = &code_run.error {
+                            logs.push(("error", pos_str.clone(), error.to_string()));
+                        }
+                        if code_run.error.is_none() {
+                            if let Some(return_type) = &code_run.return_type {
+                                logs.push(("result", pos_str.clone(), return_type.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+
+            (forward_transaction.operations.to_owned(), logs)
+        };
+
+        // Log outside the lock
+        for (log_type, pos, message) in execution_logs {
+            match log_type {
+                "output" => tracing::info!("📤 [Worker Output {}] {}", pos, message),
+                "stderr" => tracing::warn!("⚠️  [Worker StdErr {}] {}", pos, message),
+                "error" => tracing::error!("❌ [Worker Error {}] {}", pos, message),
+                "result" => tracing::info!("✨ [Worker Result {}] {}", pos, message),
+                _ => {}
+            }
+        }
+
+        tracing::debug!(
+            "📡 [Worker] Sending transaction {} to multiplayer",
+            transaction_id
+        );
         if let Some(sender) = self.websocket_sender.as_mut() {
             send_transaction(
                 &mut *sender.lock().await,
                 transaction_id,
                 self.file_id,
                 self.session_id,
-                forward_transaction.operations.to_owned(),
+                forward_ops,
             )
             .await?;
         }
+        tracing::debug!("✅ [Worker] Transaction sent");
 
         Ok(())
     }
 
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
+        // First, abort the heartbeat task to prevent it from trying to send after closing
+        if let Some(handle) = &self.heartbeat_handle {
+            handle.abort();
+        }
+
+        // Then send the leave room message and close the connection
         if let Some(sender) = self.websocket_sender.as_mut() {
-            leave_room(&mut *sender.lock().await, self.session_id, self.file_id).await?;
+            let mut sender_lock = sender.lock().await;
+
+            // Send leave room message (ignore errors if room already gone)
+            let _ = leave_room(&mut *sender_lock, self.session_id, self.file_id).await;
+
+            // Close the WebSocket connection gracefully
+            let _ = sender_lock.close().await;
+        }
+
+        // Abort the receiver task if it's still running
+        if let Some(handle) = &self.websocket_receiver_handle {
+            handle.abort();
         }
 
         Ok(())

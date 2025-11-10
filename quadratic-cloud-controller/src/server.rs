@@ -144,8 +144,10 @@ pub(crate) async fn serve() -> Result<()> {
     };
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "quadratic_cloud_controller=debug,tower_http=debug".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "quadratic_cloud_controller=debug,quadratic_core_cloud=debug,tower_http=debug"
+                    .into()
+            }),
         )
         .with(tracing_layer)
         .init();

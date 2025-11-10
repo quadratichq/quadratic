@@ -27,18 +27,12 @@ pub(crate) async fn run_python(
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
 ) -> Result<()> {
-    println!("\nRunning Python code: {}", code);
     let js_code_result = execute(code, transaction_id, get_cells)?;
-    println!("\njs_code_result: {:?}", js_code_result);
 
-    let tmp = grid
-        .lock()
+    grid.lock()
         .await
         .calculation_complete(js_code_result)
-        .map_err(|e| CoreCloudError::Core(e.to_string()));
-
-    println!("\ncalculation_complete result: {:?}", tmp);
-    tmp
+        .map_err(|e| CoreCloudError::Core(e.to_string()))
 }
 
 pub(crate) fn execute(

@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
                                 tokio::time::sleep(Duration::from_millis(5000)).await;
                             }
 
-                            tracing::info!("received transactio ack, leaving room for file: {file_id}");
+                            tracing::info!("received transaction ack, leaving room for file: {file_id}");
 
                             worker.leave_room().await?;
 

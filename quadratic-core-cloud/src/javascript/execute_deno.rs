@@ -96,6 +96,23 @@ async fn execute(code: &str, transaction_id: &str, get_cells_port: u16) -> Resul
 }
 
 fn build_javascript_wrapper(user_code: &str, get_cells_port: u16) -> Result<String> {
+    // Transform q.cells() calls to await q.cells() if not already awaited
+    let transformed_code = add_await_to_qcells(user_code);
+
+    // Log transformation for debugging
+    if transformed_code != user_code {
+        let count = transformed_code.matches("await q.cells(").count()
+            - user_code.matches("await q.cells(").count();
+        tracing::info!(
+            "🔄 Transformed {} q.cells() calls - added await keywords",
+            count
+        );
+        tracing::debug!("Original code:\n{}", user_code);
+        tracing::debug!("Transformed code:\n{}", transformed_code);
+    } else {
+        tracing::debug!("No q.cells() transformation needed");
+    }
+
     // Create a wrapper that includes all necessary globals and the user code
     let wrapped_code = format!(
         r#"
@@ -133,48 +150,44 @@ globalThis.q = {{
                 return null;
             }}
 
-            // Convert the response similar to quadratic.js
+            // Convert the response
             const {{ cells, w, h, x, y, one_dimensional, two_dimensional }} = result.values;
 
-            // Single cell
-            if (!one_dimensional && !two_dimensional && cells.length > 0) {{
-                const cell = cells[0];
-                return convertCellValue(cell.v, cell.t);
+            const startY = y;
+            const startX = x;
+            const height = h;
+            const width = w;
+
+            // Initialize 2D array
+            const cellsArray = Array(height)
+                .fill(null)
+                .map(() => Array(width).fill(undefined));
+
+            // Populate cells from response
+            for (const cell of cells) {{
+                const typed = convertCellValue(cell.v, cell.t);
+                cellsArray[cell.y - startY][cell.x - startX] = typed === null ? undefined : typed;
             }}
 
-            // One-dimensional array
-            if (one_dimensional) {{
-                return cells.map(cell => convertCellValue(cell.v, cell.t));
+            // Always return a single cell as a single value
+            if (cellsArray.length === 1 && cellsArray[0].length === 1 && !one_dimensional) {{
+                return cellsArray[0][0];
             }}
 
-            // Two-dimensional array
-            if (two_dimensional) {{
-                const result = [];
-                for (let row = 0; row < h; row++) {{
-                    result[row] = new Array(w);
+            // Convert to one-dimensional if not explicitly two-dimensional
+            if (!two_dimensional) {{
+                // one column result
+                if (cellsArray.every((row) => row.length === 1)) {{
+                    return cellsArray.map((row) => row[0]);
                 }}
 
-                for (const cell of cells) {{
-                    const localX = cell.x - x;
-                    const localY = cell.y - y;
-                    if (localY >= 0 && localY < h && localX >= 0 && localX < w) {{
-                        result[localY][localX] = convertCellValue(cell.v, cell.t);
-                    }}
+                // one row result
+                else if (cellsArray.length === 1) {{
+                    return cellsArray[0];
                 }}
-
-                // Fill missing values with empty strings
-                for (let row = 0; row < h; row++) {{
-                    for (let col = 0; col < w; col++) {{
-                        if (result[row][col] === undefined) {{
-                            result[row][col] = "";
-                        }}
-                    }}
-                }}
-
-                return result;
             }}
 
-            return null;
+            return cellsArray;
         }} catch (e) {{
             console.error(`Error in q.cells(): ${{e.message}}`);
             throw e;
@@ -247,10 +260,37 @@ function convertCellValue(value, cellType) {{
     }}
 }})();
 "#,
-        GLOBALS_JS, PROCESS_OUTPUT_JS, QUADRATIC_JS, get_cells_port, user_code
+        GLOBALS_JS, PROCESS_OUTPUT_JS, QUADRATIC_JS, get_cells_port, transformed_code
     );
 
     Ok(wrapped_code)
+}
+
+/// Automatically adds await before q.cells() calls if not already present
+fn add_await_to_qcells(code: &str) -> String {
+    let pattern = "q.cells(";
+    let mut result = String::with_capacity(code.len() + 100);
+    let mut i = 0;
+
+    while i < code.len() {
+        // Check if we're at the start of "q.cells("
+        if i + pattern.len() <= code.len() && &code[i..i + pattern.len()] == pattern {
+            // Look backwards to see if "await" is already there
+            let before_start = result.trim_end();
+            let has_await = before_start.ends_with("await");
+
+            if !has_await {
+                result.push_str("await ");
+            }
+            result.push_str(pattern);
+            i += pattern.len();
+        } else {
+            result.push(code.chars().nth(i).unwrap());
+            i += code.chars().nth(i).unwrap().len_utf8();
+        }
+    }
+
+    result
 }
 
 fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Result<JsCodeResult> {
@@ -407,16 +447,29 @@ async fn handle_get_cells_server(
 ) -> Result<()> {
     loop {
         match listener.accept().await {
-            Ok((stream, _)) => {
+            Ok((stream, addr)) => {
+                tracing::debug!("Accepted q.cells connection from {}", addr);
                 let get_cells = Arc::clone(&get_cells);
                 tokio::spawn(async move {
-                    if let Err(e) = handle_connection(stream, get_cells).await {
-                        eprintln!("Error handling connection: {}", e);
+                    match handle_connection(stream, get_cells).await {
+                        Ok(_) => {
+                            tracing::debug!(
+                                "Successfully handled q.cells connection from {}",
+                                addr
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Error handling q.cells connection from {}: {}",
+                                addr,
+                                e
+                            );
+                        }
                     }
                 });
             }
             Err(e) => {
-                eprintln!("Error accepting connection: {}", e);
+                tracing::error!("Error accepting q.cells connection: {}", e);
                 break;
             }
         }
@@ -476,10 +529,12 @@ async fn handle_connection(
     let _first_row_header = request["firstRowHeader"].as_bool().unwrap_or(false);
 
     // Call get_cells
+    tracing::debug!("Handling q.cells request for: {}", a1);
     let result = {
         let mut get_cells_fn = get_cells.lock().await;
-        get_cells_fn(a1)
+        get_cells_fn(a1.clone())
     };
+    tracing::debug!("Completed q.cells request for: {}", a1);
 
     // Convert result to JSON
     let response_json = match result {
@@ -513,6 +568,12 @@ async fn handle_connection(
         .flush()
         .await
         .map_err(|e| CoreCloudError::Javascript(format!("Failed to flush stream: {}", e)))?;
+
+    // Properly shutdown the write side of the connection to signal completion
+    stream
+        .shutdown()
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to shutdown stream: {}", e)))?;
 
     Ok(())
 }
@@ -565,6 +626,40 @@ mod tests {
         })
     }
 
+    #[test]
+    fn test_add_await_to_qcells() {
+        // Test: adds await when missing
+        let code = "const x = q.cells('A1')";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = await q.cells('A1')");
+
+        // Test: doesn't duplicate await
+        let code = "const x = await q.cells('A1')";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "const x = await q.cells('A1')");
+
+        // Test: handles multiple calls
+        let code = "const x = q.cells('A1')\nconst y = q.cells('B1')";
+        let result = add_await_to_qcells(code);
+        assert_eq!(
+            result,
+            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+        );
+
+        // Test: handles mixed await and non-await
+        let code = "const x = await q.cells('A1')\nconst y = q.cells('B1')";
+        let result = add_await_to_qcells(code);
+        assert_eq!(
+            result,
+            "const x = await q.cells('A1')\nconst y = await q.cells('B1')"
+        );
+
+        // Test: start of line
+        let code = "q.cells('A1')";
+        let result = add_await_to_qcells(code);
+        assert_eq!(result, "await q.cells('A1')");
+    }
+
     #[tokio::test]
     async fn test_simple_expression() {
         let code = "42";
@@ -588,6 +683,54 @@ return data.title;
         let output = result.output_value.unwrap();
         assert_eq!(output.1, 1, "Should be string type");
         println!("Fetched title: {}", output.0);
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_multiple_calls_without_await() {
+        // Test the user's exact pattern - multiple q.cells() without await
+        let code = r#"
+const old = q.cells("A1")
+const rooms = q.cells("B1")
+const users = q.cells("C1")
+return [old, rooms, users]
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            // Return different values based on cell
+            let value = match a1.as_str() {
+                "A1" => "old_value",
+                "B1" => "42",
+                "C1" => "100",
+                _ => "unknown",
+            };
+
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: value.to_string(),
+                        t: if a1 == "A1" { 1 } else { 2 }, // text or number
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        println!("Result: {:?}", result);
+        assert!(
+            result.success,
+            "Should succeed with multiple q.cells() calls"
+        );
+        assert!(result.output_array.is_some());
     }
 
     #[tokio::test]
