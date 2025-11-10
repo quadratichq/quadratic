@@ -16,8 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /quadratic
 
-# Copy rust-toolchain file first so rustup can read it
+# Copy rust-toolchain and workspace files first
 COPY --link rust-toolchain.toml .
+COPY --link Cargo.toml .
 
 # Install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -28,7 +29,11 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
 
+# The core, corecloud, and rustCallbacks are needed for the controller to build; but they are not used in docker (only for local development)
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
+COPY --link ./quadratic-core-cloud/. ./quadratic-core-cloud/
 COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
 
 WORKDIR /quadratic/quadratic-cloud-controller
