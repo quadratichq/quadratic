@@ -37,12 +37,14 @@ fn to_transaction_server(transaction: ReceiveTransaction) -> TransactionServer {
 
 /// Status of the worker.
 ///
-/// It is used to track if the worker has received the catchup transactions
-/// and the transaction ack.
+/// It is used to track if the worker has received the catchup transactions,
+/// the transaction ack, and the room entry confirmation.
 #[derive(Debug)]
 pub struct WorkerStatus {
+    received_enter_room: bool,
     received_catchup_transactions: bool,
     received_transaction_ack: bool,
+    enter_room_notify: Arc<Notify>,
     catchup_notify: Arc<Notify>,
 }
 
@@ -55,8 +57,10 @@ impl Default for WorkerStatus {
 impl WorkerStatus {
     pub fn new() -> Self {
         Self {
+            received_enter_room: false,
             received_catchup_transactions: false,
             received_transaction_ack: false,
+            enter_room_notify: Arc::new(Notify::new()),
             catchup_notify: Arc::new(Notify::new()),
         }
     }
@@ -174,7 +178,13 @@ impl Worker {
         // then, enter the room
         tracing::debug!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
-        tracing::debug!("✅ [Worker] Entered room");
+
+        // Wait for EnterRoom response from server before proceeding
+        // This ensures the multiplayer server has registered our session
+        tracing::debug!("⏳ [Worker] Waiting for EnterRoom confirmation...");
+        let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
+        enter_room_notify.notified().await;
+        tracing::debug!("✅ [Worker] Entered room confirmed");
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
@@ -190,8 +200,8 @@ impl Worker {
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
         tracing::debug!("⏳ [Worker] Waiting for catchup transactions...");
-        let notify = Arc::clone(&worker.status.lock().await.catchup_notify);
-        notify.notified().await;
+        let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
+        catchup_notify.notified().await;
         tracing::debug!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
@@ -279,6 +289,19 @@ impl Worker {
                                         if Some(id) == *transaction_id.lock().await {
                                             status.lock().await.received_transaction_ack = true;
                                         }
+                                    }
+                                    MessageResponse::EnterRoom {
+                                        file_id: room_file_id,
+                                        sequence_num: room_seq,
+                                    } => {
+                                        tracing::debug!(
+                                            "📨 [Worker] Received EnterRoom confirmation for file {} at sequence {}",
+                                            room_file_id,
+                                            room_seq
+                                        );
+                                        let mut status_lock = status.lock().await;
+                                        status_lock.received_enter_room = true;
+                                        status_lock.enter_room_notify.notify_one();
                                     }
                                     // TODO(ddimaria): keep a count of users in the room
                                     MessageResponse::UsersInRoom { .. } => {}

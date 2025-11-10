@@ -154,6 +154,7 @@ async fn process_files_locally(
     }
 
     let multiplayer_url = state.settings.multiplayer_url();
+    let mut critical_error_occurred = false;
 
     // Process each file (sequentially for simplicity)
     for file_id in file_ids {
@@ -229,58 +230,86 @@ async fn process_files_locally(
                         "🔌 [Local Worker] Creating worker - connecting to multiplayer: {}",
                         task_multiplayer_url
                     );
-                    let mut worker = Worker::new(
+
+                    let mut worker = match Worker::new(
                         file_id,
                         sequence_number as u64,
                         &presigned_url,
                         task_m2m_token.clone(),
-                        task_multiplayer_url,
+                        task_multiplayer_url.clone(),
                     )
-                    .await?;
+                    .await
+                    {
+                        Ok(w) => {
+                            info!("✅ [Local Worker] Worker created successfully");
+                            w
+                        }
+                        Err(e) => {
+                            error!("❌ [Local Worker] Failed to create worker: {:#}", e);
+                            return Err(anyhow::anyhow!(
+                                "Failed to create worker. This may indicate:\n\
+                                 - Multiplayer service not running (expected at: {})\n\
+                                 - Missing dependencies (deno/python)\n\
+                                 - Network connectivity issues\n\
+                                 Original error: {:#}",
+                                task_multiplayer_url,
+                                e
+                            ));
+                        }
+                    };
 
                     info!(
                         "⚙️  [Local Worker] Worker created, processing {} operations",
                         operations.len()
                     );
 
-                    worker
-                        .process_operations(operations, team_id.to_string(), task_m2m_token)
-                        .await?;
+                    // Use a closure to ensure cleanup happens
+                    let result: anyhow::Result<()> = async {
+                        worker
+                            .process_operations(operations, team_id.to_string(), task_m2m_token)
+                            .await?;
 
-                    info!("⏳ [Local Worker] Operations sent, waiting for completion...");
+                        info!("⏳ [Local Worker] Operations sent, waiting for completion...");
 
-                    // Wait for completion with timeout
-                    let mut iterations = 0;
-                    let max_iterations = 60; // 2 minutes max
-                    while !worker.status.lock().await.is_complete() {
-                        iterations += 1;
-                        if iterations > max_iterations {
-                            return Err(anyhow::anyhow!(
-                                "Timeout waiting for completion after {} seconds",
-                                iterations * 2
-                            ));
+                        // Wait for completion with timeout
+                        let mut iterations = 0;
+                        let max_iterations = 60; // 2 minutes max
+                        while !worker.status.lock().await.is_complete() {
+                            iterations += 1;
+                            if iterations > max_iterations {
+                                return Err(anyhow::anyhow!(
+                                    "Timeout waiting for completion after {} seconds",
+                                    iterations * 2
+                                ));
+                            }
+
+                            trace!(
+                                "⏳ [Local Worker] Waiting for task completion (iteration {})",
+                                iterations
+                            );
+
+                            tokio::time::sleep(Duration::from_secs(2)).await;
                         }
 
-                        trace!(
-                            "⏳ [Local Worker] Waiting for task completion (iteration {})",
-                            iterations
+                        info!(
+                            "✅ [Local Worker] Task {}/{} completed for file {}",
+                            task_idx + 1,
+                            total_tasks,
+                            file_id
                         );
 
-                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        Ok(())
                     }
+                    .await;
 
-                    info!(
-                        "✅ [Local Worker] Task {}/{} completed for file {}",
-                        task_idx + 1,
-                        total_tasks,
-                        file_id
-                    );
-
+                    // Always try to leave room, even on error
                     info!("👋 [Local Worker] Leaving room for file {}", file_id);
-                    worker.leave_room().await?;
-
+                    if let Err(e) = worker.leave_room().await {
+                        warn!("⚠️  [Local Worker] Error leaving room (non-fatal): {}", e);
+                    }
                     info!("🏁 [Local Worker] Task cleanup complete");
-                    Ok(())
+
+                    result
                 }
                 .await;
 
@@ -346,12 +375,49 @@ async fn process_files_locally(
         }
         .await;
 
-        if let Err(e) = result {
-            error!(
-                "❌ [Local Worker] Error processing file {}: {:#}",
-                file_id, e
-            );
+        match result {
+            Ok(_) => {
+                info!("✅ [Local Worker] Successfully processed file {}", file_id);
+            }
+            Err(e) => {
+                // Check if this is a critical error that should stop the worker
+                let error_string = e.to_string().to_lowercase();
+                let is_critical = error_string.contains("failed to get file init data")
+                    || error_string.contains("failed to get tasks from redis")
+                    || error_string.contains("failed to create worker")
+                    || error_string.contains("deno")
+                    || error_string.contains("python")
+                    || error_string.contains("connection refused")
+                    || error_string.contains("failed to connect to multiplayer");
+
+                if is_critical {
+                    critical_error_occurred = true;
+                    error!(
+                        "❌ [Local Worker] CRITICAL ERROR processing file {}: {:#}\n\
+                         This may indicate missing dependencies (deno/python) or service unavailability.",
+                        file_id, e
+                    );
+                } else {
+                    error!(
+                        "❌ [Local Worker] Error processing file {}: {:#}",
+                        file_id, e
+                    );
+                }
+            }
         }
+    }
+
+    // If we encountered critical errors, return error to exit the loop
+    if critical_error_occurred {
+        return Err(ControllerError::ScheduledTaskWatcher(
+            "Critical errors occurred during local task execution. \
+             Check logs above for details. Common causes:\n\
+             - Missing deno (install: curl -fsSL https://deno.land/install.sh | sh)\n\
+             - Missing python3 (install: brew install python3 or apt-get install python3)\n\
+             - Multiplayer service not running (check docker-compose or multiplayer service)\n\
+             Exiting to prevent infinite error loop."
+                .to_string(),
+        ));
     }
 
     Ok(())

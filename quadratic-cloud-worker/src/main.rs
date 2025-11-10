@@ -20,8 +20,13 @@ async fn main() -> Result<()> {
         .await
         .map_err(|e| WorkerError::CreateWorker(e.to_string()))?;
 
-    worker.run().await?;
-    worker.shutdown().await?;
+    // Always shutdown, even if run() fails
+    let run_result = worker.run().await;
+    let shutdown_result = worker.shutdown().await;
+
+    // Return the first error if either failed
+    run_result?;
+    shutdown_result?;
 
     Ok(())
 }
