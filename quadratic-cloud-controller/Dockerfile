@@ -30,7 +30,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup show
 
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
-COPY --link ./quadratic-core-cloud/. ./quadratic-core-cloud/
 COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
 
 WORKDIR /quadratic/quadratic-cloud-controller
