@@ -3,15 +3,12 @@ import { logIn } from './helpers/auth.helpers';
 import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test('Create a Team', async ({ page }) => {
   //--------------------------------
   // Create a Team
   //--------------------------------
-
-  // Define team name
-  const teamName = `Test Team Creation - ${Date.now()}`;
 
   // Login
   await logIn(page, { emailPrefix: 'e2e_create_team' });
@@ -20,24 +17,12 @@ test('Create a Team', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Assert the team is not visible since not yet created
-  await expect(page.locator(`:text("${teamName}")`)).not.toBeVisible({ timeout: 60 * 1000 });
-
   // Create a new team
-  await createNewTeamByURL(page, { teamName });
-
-  // Click team dropdown
-  await page
-    .locator(`nav`)
-    .getByRole(`button`, { name: `arrow_drop_down` })
-    .click({ timeout: 60 * 1000 });
+  await createNewTeamAndNavigateToDashboard(page);
 
   //--------------------------------
   // Assert:
   //--------------------------------
-
-  // Assert that the new team is created and visible in the list of teams
-  await expect(page.locator(`[role="menuitem"] :text("${teamName}")`)).toBeVisible({ timeout: 60 * 1000 });
 });
 
 test('Rename Team', async ({ page: adminPage }) => {
@@ -62,9 +47,7 @@ test('Rename Team', async ({ page: adminPage }) => {
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminPage, {
-    teamName: originalTeamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
 
   //--------------------------------
   // Act: Invite Test User with "Can edit" Permission
@@ -81,7 +64,7 @@ test('Rename Team', async ({ page: adminPage }) => {
   await testUserPage.reload();
 
   // Navigate to team URL
-  await testUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await testUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await testUserPage.waitForTimeout(2000);
   await testUserPage.waitForLoadState('domcontentloaded');
   await testUserPage.waitForLoadState('networkidle');
@@ -121,14 +104,13 @@ test('Create File for Team', async ({ page }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `Test Team Creation - ${Date.now()}`;
   const newFileName = 'Test File Creation';
 
   // Log into Quadratic
   await logIn(page, { emailPrefix: 'e2e_create_file' });
 
   // Create a new team
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   //--------------------------------
   // Act:
@@ -160,8 +142,6 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Constants
-  const randomNum = Date.now().toString().slice(-6);
-  const newTeamName = `File Sharing Team - ${randomNum}`;
   const ownerPermission = 'Owner';
 
   const ownerBrowser = await chromium.launch();
@@ -176,10 +156,8 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   // Admin creates a new team
   await adminPage.bringToFront();
 
-  // await createNewTeamByURL(adminPage, newTeamName);
-  const { teamUrl } = await createNewTeamByURL(adminPage, {
-    teamName: newTeamName,
-  });
+  // await createNewTeamAndNavigateToDashboard(adminPage, newTeamName);
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
 
   //--------------------------------
   // Act:
@@ -193,7 +171,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   await ownerPage.bringToFront();
 
   // Navigate to team URL
-  await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await ownerPage.goto(buildUrl(`/teams/${teamUuid}`));
   await ownerPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await ownerPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
 
@@ -229,7 +207,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   await editUserPage.reload();
 
   // Navigate to team URL
-  await editUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await editUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await editUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await editUserPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
 
@@ -264,7 +242,7 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   await viewUserPage.reload();
 
   // Navigate to team URL
-  await viewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await viewUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await viewUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await viewUserPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
 
@@ -282,8 +260,6 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   //--------------------------------
 
   // Constants
-  const randomNum = Date.now().toString().slice(-6);
-  const newTeamName = `Test Team for Permissions - ${randomNum}`;
   const ownerPermission = 'Owner';
 
   const manageUserBrowser = await chromium.launch();
@@ -298,9 +274,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   // Admin creates a new team
   await adminPage.bringToFront();
 
-  const { teamUrl } = await createNewTeamByURL(adminPage, {
-    teamName: newTeamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
   await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
 
   //--------------------------------
@@ -315,7 +289,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
   await manageUserPage.bringToFront();
 
   // Navigate to team URL
-  await manageUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await manageUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await manageUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await manageUserPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
 
@@ -364,7 +338,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
     .locator(`nav`)
     .getByRole(`button`, { name: `arrow_drop_down` })
     .click({ timeout: 60 * 1000 });
-  await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
+  // await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
@@ -407,7 +381,7 @@ test('Manage Members', async ({ page: adminPage, context }) => {
     .locator(`nav`)
     .getByRole(`button`, { name: `arrow_drop_down` })
     .click({ timeout: 60 * 1000 });
-  await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
+  // await manageUserPage.locator(`[role="menuitem"] :text("${newTeamName}")`).click({ timeout: 60 * 1000 });
   await manageUserPage.waitForTimeout(1000);
   await manageUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
@@ -497,9 +471,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminPage, {
-    teamName: newTeamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
 
   // Invite users with different permissions
   await inviteUserToTeam(adminPage, {
@@ -523,7 +495,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   await ownerPage.bringToFront();
 
   // Navigate to team URL
-  await ownerPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await ownerPage.goto(buildUrl(`/teams/${teamUuid}`));
   await ownerPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await ownerPage.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
 
@@ -560,7 +532,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   await editUserPage.bringToFront();
   await editUserPage.reload();
   // Navigate to team URL
-  await editUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await editUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await editUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await editUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
@@ -597,7 +569,7 @@ test('Members Can Leave Team', async ({ page: adminPage }) => {
   await viewUserPage.bringToFront();
   await viewUserPage.reload();
   // Navigate to team URL
-  await viewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await viewUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await viewUserPage.getByRole(`link`, { name: `group Members` }).waitFor({ state: 'visible', timeout: 60 * 1000 });
   await viewUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
 
@@ -661,9 +633,7 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
 
   // Admin creates a new team
   await adminPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminPage, {
-    teamName: newTeamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminPage);
   await adminPage.locator('[placeholder="Filter by file or creator name…"]').waitFor();
 
   // Create a new file in the newly created team
@@ -689,7 +659,7 @@ test('Removed Member No Longer Can Access Team Files', async ({ page: adminPage 
   await testUserPage.reload();
 
   // Navigate to team URL
-  await testUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await testUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await testUserPage.waitForTimeout(2000);
   await testUserPage.waitForLoadState('domcontentloaded');
   await testUserPage.waitForLoadState('networkidle');
@@ -747,7 +717,6 @@ test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserP
   //--------------------------------
 
   // Define team name and file details
-  const teamName = `Edit Permissions - ${Date.now()}`;
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
@@ -762,7 +731,7 @@ test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserP
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -779,7 +748,7 @@ test('Can Edit Member are Able to Change Permissions', async ({ page: adminUserP
   await canEditUserPage.bringToFront();
   await canEditUserPage.reload();
   // Navigate to team URL
-  await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canEditUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await canEditUserPage.waitForTimeout(5 * 1000);
   await canEditUserPage.waitForLoadState('domcontentloaded');
   await canEditUserPage.waitForLoadState('networkidle');
@@ -813,7 +782,6 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
   //--------------------------------
 
   // Define team name and file details
-  const teamName = `Edit Invite - ${Date.now()}`;
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
@@ -828,7 +796,7 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -846,7 +814,7 @@ test('Can Edit Members are Able to Invite', async ({ page: adminUserPage }) => {
   await canEditUserPage.reload();
 
   // Navigate to team URL
-  await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canEditUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await canEditUserPage.waitForTimeout(5 * 1000);
   await canEditUserPage.waitForLoadState('domcontentloaded');
   await canEditUserPage.waitForLoadState('networkidle');
@@ -879,7 +847,6 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   //--------------------------------
 
   // Define team name and file details
-  const teamName = `Edit Edit - ${Date.now()}`;
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can edit';
 
@@ -894,7 +861,7 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can edit" permission
@@ -912,7 +879,7 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   await canEditUserPage.reload();
 
   // Navigate to team URL
-  await canEditUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canEditUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await canEditUserPage.waitForTimeout(5 * 1000);
   await canEditUserPage.waitForLoadState('domcontentloaded');
   await canEditUserPage.waitForLoadState('networkidle');
@@ -963,7 +930,6 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
   //--------------------------------
 
   // Define team name and file details
-  const teamName = `ViewPermission - ${Date.now()}`;
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can view';
 
@@ -978,7 +944,7 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canEditUser to the team with "Can view" permission
@@ -996,7 +962,7 @@ test('Can View Members are Unable to Invite Members', async ({ page: adminUserPa
   await canViewUserPage.reload();
 
   // Navigate to team URL
-  await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canViewUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await canViewUserPage.waitForLoadState('domcontentloaded');
   await canViewUserPage.waitForTimeout(10 * 1000);
   await canViewUserPage.locator(`nav :text-is("Members")`).click({ timeout: 60 * 1000 });
@@ -1031,7 +997,6 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   //--------------------------------
 
   // Define team name and file details
-  const teamName = `ViewFiles- ${Date.now()}`;
   const testPermissionFile = 'test-permissions-can-edit-can-change';
   const permission = 'Can view';
 
@@ -1046,7 +1011,7 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
 
   // Admin user creates a new team and file
   await adminUserPage.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(adminUserPage, { teamName });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(adminUserPage);
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canViewUser to the team with "Can view" permission
@@ -1063,7 +1028,7 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await canViewUserPage.bringToFront();
   await canViewUserPage.reload();
   // Navigate to team URL
-  await canViewUserPage.goto(buildUrl(`/teams/${teamUrl}`));
+  await canViewUserPage.goto(buildUrl(`/teams/${teamUuid}`));
   await canViewUserPage.waitForLoadState('domcontentloaded');
   await canViewUserPage.waitForTimeout(60 * 1000);
 

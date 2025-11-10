@@ -423,7 +423,10 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
+      <DropdownMenuTrigger
+        data-testid="team-switcher-button"
+        className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}
+      >
         <div className="mx-0.5">
           <TeamAvatar name={optimisticActiveTeamName} />
         </div>
@@ -482,6 +485,7 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
 
         <CreateTeamAlert>
           <DropdownMenuItem
+            data-testid="create-team-button"
             className="flex gap-3 text-muted-foreground"
             onSelect={(e) => {
               e.preventDefault();
@@ -539,6 +543,7 @@ function CreateTeamAlert({ children }: { children: ReactNode }) {
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction asChild>
             <Button
+              data-testid="create-team-button-submit"
               disabled={isLoading}
               loading={isLoading}
               onClick={(e) => {

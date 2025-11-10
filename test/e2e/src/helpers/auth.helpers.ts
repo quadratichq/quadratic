@@ -133,7 +133,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   return email;
 };
 
-const handleOnboarding = async (page: Page) => {
+export const handleOnboarding = async (page: Page) => {
   // First, check if we're on the onboarding page
   if (!page.url().includes('/onboarding')) {
     await handleQuadraticLoading(page);
@@ -180,6 +180,6 @@ const handleOnboarding = async (page: Page) => {
   await handleQuadraticLoading(page);
 };
 
-const handleQuadraticLoading = async (page: Page) => {
+export const handleQuadraticLoading = async (page: Page) => {
   await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 };
