@@ -176,7 +176,10 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the ownerUser has been invited with Owner permissions
-  await expect(ownerPage.getByText(`${ownerEmail} (You)${ownerPermission}`)).toBeVisible({ timeout: 60 * 1000 });
+  // Use a regex with endsWith assertion so it matches any string that ends with (You){ownerEmail}{ownerPermission}
+  await expect(ownerPage.getByText(new RegExp(`\\(You\\)${ownerEmail}${ownerPermission}$`))).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   //--------------------------------
   // Arrange:
@@ -212,7 +215,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the editUser has been invited with "Can edit" permissions
-  await expect(editUserPage.getByText(`${editUserEmail} (You)${editPermission}`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(editUserPage.getByText(new RegExp(`\\(You\\)${editUserEmail}${editPermission}$`))).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   //--------------------------------
   // Arrange:
@@ -247,7 +252,9 @@ test('Invite Member to Team', async ({ page: adminPage }) => {
   //--------------------------------
 
   // Assert that the viewUser has been invited with "Can view" permissions
-  await expect(viewUserPage.getByText(`${viewUserEmail} (You)${viewPermission}`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(viewUserPage.getByText(new RegExp(`\\(You\\)${viewUserEmail}${viewPermission}$`))).toBeVisible({
+    timeout: 60 * 1000,
+  });
 });
 
 test('Manage Members', async ({ page: adminPage, context }) => {

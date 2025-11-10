@@ -20,8 +20,8 @@ export const createNewTeamAndNavigateToDashboard = async (page: Page) => {
   // Wait to be redirected to the new team onboarding page
   await page.waitForURL(/onboarding/, { timeout: 60 * 1000 });
 
-  // Get the team's UUID: `/teams/:uuid/onboarding`
-  const teamUuid = page.url().match(/\/teams\/([^\/]+)\/onboarding/)?.[1];
+  // Get the team's UUID: `/teams/:uuid/*`
+  const teamUuid = page.url().match(/\/teams\/([^\/]+)\//)?.[1];
 
   // Walk through the onboarding process
   await handleOnboarding(page);
@@ -29,5 +29,6 @@ export const createNewTeamAndNavigateToDashboard = async (page: Page) => {
   // Navigate to the dashboard
   await page.goto(buildUrl(`/teams/${teamUuid}`));
 
-  return { teamUuid };
+  const teamUrl = page.url().split('/teams/')[1];
+  return { teamUuid: teamUrl };
 };
