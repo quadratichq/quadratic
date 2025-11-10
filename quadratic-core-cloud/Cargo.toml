@@ -6,10 +6,6 @@ authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
 bytes = "1.6.1"
-deno_core = "0.355.0"
-deno_error = "0.7.0"
-# deno_timers = "0.34.0"  # Version conflict with deno_core - using built-in timer ops instead
-# deno_runtime = "0.221.0"  # Using deno_core only to avoid SQLite conflicts
 futures-util = "0.3.30"
 http = "1.1.0"
 # openssl = { version = "0.10.72", features = ["vendored"] }

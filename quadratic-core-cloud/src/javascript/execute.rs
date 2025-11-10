@@ -62,7 +62,7 @@ pub(crate) async fn execute(
     let pos_store = CURRENT_POSITION.get_or_init(|| Arc::new(Mutex::new((0, 0))));
     *pos_store.lock()? = (0, 0);
 
-    // Create Deno runtime with module loader if ES imports are detected
+    // Create Deno runtime with module loader
     let mut runtime = JsRuntime::new(RuntimeOptions {
         module_loader: Some(Rc::new(QuadraticModuleLoader)),
         ..Default::default()
@@ -1107,6 +1107,28 @@ return [
         // Third row - date should be type 11 (DateTime)
         assert_eq!(array[2][0].1, 11);
         assert!(array[2][0].0.contains("2024-11-09"));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    #[ignore] // Ignored because fetch API is not available without web extensions
+    async fn test_fetch_not_available() {
+        let code = r#"
+const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+const data = await response.json();
+data.title
+"#;
+        let result = test_execute(code).await;
+
+        // This test documents that fetch is not currently available
+        // Expected behavior: ReferenceError or similar error
+        println!("Fetch test result: {:?}", result);
+        assert!(!result.success, "Fetch should fail without web extensions");
+        assert!(result.std_err.is_some(), "Should have an error message");
+
+        // The error should mention that fetch is not defined
+        let error = result.std_err.unwrap();
+        println!("Error message: {}", error);
+        // Could be "fetch is not defined" or other error depending on how code is parsed
     }
 
     #[tokio::test(flavor = "current_thread")]

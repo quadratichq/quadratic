@@ -48,19 +48,24 @@ RUN cargo build --release
 ###########################################################################################
 FROM ubuntu:24.04 AS runtime
 
-# Install runtime dependencies including Python and timezone data
+# Install runtime dependencies including Python, Deno, and timezone data
 # tzdata provides IANA timezone database needed for Deno/V8 to recognize timezone identifiers
 # libicu74 provides ICU library used by V8 for internationalization including timezones
 # The actual timezone is set dynamically by the controller via TZ environment variable
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
   ca-certificates \
+  unzip \
   python3 \
   python3-venv \
   libpython3.12 \
   tzdata \
   libicu74 \
   && rm -rf /var/lib/apt/lists/*
+
+# Install Deno for JavaScript execution with full web API support (fetch, WebSocket, etc.)
+RUN curl -fsSL https://deno.land/install.sh | sh && \
+    /root/.deno/bin/deno --version
 
 # Install uv - a fast Python package installer
 # Install to /usr/local/bin instead of /root/.local/bin to avoid conflict with volume mount
@@ -69,9 +74,10 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx && \
     uv --version
 
+# Set up paths for Deno and Python
 # Set PYTHONPATH to include /root/.local where user packages are installed
-# This ensures Python can find packages installed with uv pip install --prefix /root/.local
-ENV PYTHONPATH="/root/.local/lib/python3.12/site-packages:${PYTHONPATH}"
+ENV PATH="/root/.deno/bin:${PATH}" \
+    PYTHONPATH="/root/.local/lib/python3.12/site-packages"
 
 # Install common Python packages that are frequently used in Quadratic
 RUN uv pip install --system --break-system-packages \

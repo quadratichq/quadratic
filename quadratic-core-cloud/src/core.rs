@@ -17,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     connection::run_connection,
     error::{CoreCloudError, Result},
-    javascript::execute::run_javascript,
+    javascript::run_javascript,
     python::execute::run_python,
 };
 

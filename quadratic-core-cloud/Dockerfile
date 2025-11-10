@@ -25,20 +25,27 @@ RUN cargo build --release
 ###########################################################################################
 FROM debian:stable-slim AS runtime
 
-# Install runtime dependencies including Python
+# Install runtime dependencies including Python and Deno
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  curl \  
+  curl \
   ca-certificates \
+  unzip \
   python3 \
   python3-venv \
   libpython3.12 \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Deno for JavaScript execution with full web API support (fetch, WebSocket, etc.)
+RUN curl -fsSL https://deno.land/install.sh | sh && \
+    /root/.deno/bin/deno --version
+
 # Install uv - a fast Python package installer
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    /root/.local/bin/uv --version
+    mv /root/.local/bin/uv /usr/local/bin/uv && \
+    mv /root/.local/bin/uvx /usr/local/bin/uvx && \
+    uv --version
 
-ENV PATH="/root/.local/bin:${PATH}"
+ENV PATH="/root/.deno/bin:${PATH}"
 
 # Install common Python packages that are frequently used in Quadratic
 RUN uv pip install --system --break-system-packages \
