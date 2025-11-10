@@ -60,7 +60,6 @@ export const ROUTES = {
       additionalParams ? `&${additionalParams}` : ''
     }`,
   TEAMS: `/teams`,
-  TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
   TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
