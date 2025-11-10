@@ -2,7 +2,8 @@ use quadratic_core::controller::GridController;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeResult};
 use std::sync::Arc;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::process::Command;
 use tokio::sync::Mutex as TokioMutex;
 
@@ -21,13 +22,33 @@ pub fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
     }
 }
 
-pub async fn run_javascript(
+pub(crate) async fn run_javascript(
     grid: Arc<TokioMutex<GridController>>,
     code: &str,
     transaction_id: &str,
-    _get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
 ) -> Result<()> {
-    let js_code_result = execute(code, transaction_id).await?;
+    // Start a TCP server for get_cells communication
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to bind TCP listener: {}", e)))?;
+
+    let server_addr = listener
+        .local_addr()
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to get local address: {}", e)))?;
+
+    let get_cells = Arc::new(TokioMutex::new(get_cells));
+    let get_cells_clone = Arc::clone(&get_cells);
+
+    // Spawn server task
+    let server_handle =
+        tokio::spawn(async move { handle_get_cells_server(listener, get_cells_clone).await });
+
+    // Execute JavaScript with the server port
+    let js_code_result = execute(code, transaction_id, server_addr.port()).await?;
+
+    // Stop the server
+    server_handle.abort();
 
     grid.lock()
         .await
@@ -35,14 +56,14 @@ pub async fn run_javascript(
         .map_err(|e| CoreCloudError::Core(e.to_string()))
 }
 
-async fn execute(code: &str, transaction_id: &str) -> Result<JsCodeResult> {
+async fn execute(code: &str, transaction_id: &str, get_cells_port: u16) -> Result<JsCodeResult> {
     // Check if code is empty
     if code.trim().is_empty() {
         return Ok(empty_js_code_result(transaction_id));
     }
 
     // Build the complete JavaScript code with all dependencies
-    let full_code = build_javascript_wrapper(code)?;
+    let full_code = build_javascript_wrapper(code, get_cells_port)?;
 
     // Spawn Deno process
     let mut child = Command::new("deno")
@@ -74,7 +95,7 @@ async fn execute(code: &str, transaction_id: &str) -> Result<JsCodeResult> {
     parse_deno_output(transaction_id, output)
 }
 
-fn build_javascript_wrapper(user_code: &str) -> Result<String> {
+fn build_javascript_wrapper(user_code: &str, get_cells_port: u16) -> Result<String> {
     // Create a wrapper that includes all necessary globals and the user code
     let wrapped_code = format!(
         r#"
@@ -87,14 +108,92 @@ fn build_javascript_wrapper(user_code: &str) -> Result<String> {
 // Inject Quadratic API
 {}
 
-// Placeholder for q.cells() - not yet supported in scheduled tasks
+// Implement q.cells() with HTTP communication to Rust server
+const GET_CELLS_PORT = {};
 globalThis.q = {{
-    cells: (a1) => {{
-        console.warn("q.cells() is not yet supported in scheduled tasks");
-        return null;
+    cells: async (a1, firstRowHeader = false) => {{
+        try {{
+            const response = await fetch(`http://127.0.0.1:${{GET_CELLS_PORT}}/get_cells`, {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                body: JSON.stringify({{ a1, firstRowHeader }})
+            }});
+
+            if (!response.ok) {{
+                throw new Error(`HTTP error! status: ${{response.status}}`);
+            }}
+
+            const result = await response.json();
+
+            if (result.error) {{
+                throw new Error(result.error.core_error || result.error);
+            }}
+
+            if (!result.values) {{
+                return null;
+            }}
+
+            // Convert the response similar to quadratic.js
+            const {{ cells, w, h, x, y, one_dimensional, two_dimensional }} = result.values;
+
+            // Single cell
+            if (!one_dimensional && !two_dimensional && cells.length > 0) {{
+                const cell = cells[0];
+                return convertCellValue(cell.v, cell.t);
+            }}
+
+            // One-dimensional array
+            if (one_dimensional) {{
+                return cells.map(cell => convertCellValue(cell.v, cell.t));
+            }}
+
+            // Two-dimensional array
+            if (two_dimensional) {{
+                const result = [];
+                for (let row = 0; row < h; row++) {{
+                    result[row] = new Array(w);
+                }}
+
+                for (const cell of cells) {{
+                    const localX = cell.x - x;
+                    const localY = cell.y - y;
+                    if (localY >= 0 && localY < h && localX >= 0 && localX < w) {{
+                        result[localY][localX] = convertCellValue(cell.v, cell.t);
+                    }}
+                }}
+
+                // Fill missing values with empty strings
+                for (let row = 0; row < h; row++) {{
+                    for (let col = 0; col < w; col++) {{
+                        if (result[row][col] === undefined) {{
+                            result[row][col] = "";
+                        }}
+                    }}
+                }}
+
+                return result;
+            }}
+
+            return null;
+        }} catch (e) {{
+            console.error(`Error in q.cells(): ${{e.message}}`);
+            throw e;
+        }}
     }},
     pos: () => [0, 0]
 }};
+
+function convertCellValue(value, cellType) {{
+    switch (cellType) {{
+        case 0: return undefined; // blank
+        case 2: return parseFloat(value); // number
+        case 9: // date
+        case 11: // datetime
+            return new Date(value);
+        default:
+            return value;
+    }}
+}}
 
 // User code wrapped in async context
 (async () => {{
@@ -148,7 +247,7 @@ globalThis.q = {{
     }}
 }})();
 "#,
-        GLOBALS_JS, PROCESS_OUTPUT_JS, QUADRATIC_JS, user_code
+        GLOBALS_JS, PROCESS_OUTPUT_JS, QUADRATIC_JS, get_cells_port, user_code
     );
 
     Ok(wrapped_code)
@@ -299,12 +398,134 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
     })
 }
 
+// TCP server to handle get_cells requests from Deno
+async fn handle_get_cells_server(
+    listener: TcpListener,
+    get_cells: Arc<
+        TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>,
+    >,
+) -> Result<()> {
+    loop {
+        match listener.accept().await {
+            Ok((stream, _)) => {
+                let get_cells = Arc::clone(&get_cells);
+                tokio::spawn(async move {
+                    if let Err(e) = handle_connection(stream, get_cells).await {
+                        eprintln!("Error handling connection: {}", e);
+                    }
+                });
+            }
+            Err(e) => {
+                eprintln!("Error accepting connection: {}", e);
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn handle_connection(
+    mut stream: TcpStream,
+    get_cells: Arc<
+        TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>,
+    >,
+) -> Result<()> {
+    let mut reader = BufReader::new(&mut stream);
+    let mut request_line = String::new();
+
+    // Read request line
+    reader
+        .read_line(&mut request_line)
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to read request: {}", e)))?;
+
+    // Read headers until empty line
+    let mut content_length = 0;
+    loop {
+        let mut header = String::new();
+        reader
+            .read_line(&mut header)
+            .await
+            .map_err(|e| CoreCloudError::Javascript(format!("Failed to read header: {}", e)))?;
+
+        if header.trim().is_empty() || header == "\r\n" {
+            break;
+        }
+
+        if header.to_lowercase().starts_with("content-length:") {
+            if let Some(len_str) = header.split(':').nth(1) {
+                content_length = len_str.trim().parse().unwrap_or(0);
+            }
+        }
+    }
+
+    // Read body
+    let mut body = vec![0u8; content_length];
+    reader
+        .read_exact(&mut body)
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to read body: {}", e)))?;
+
+    let body_str = String::from_utf8_lossy(&body);
+
+    // Parse request body
+    let request: serde_json::Value = serde_json::from_str(&body_str)
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to parse request: {}", e)))?;
+
+    let a1 = request["a1"].as_str().unwrap_or("").to_string();
+    let _first_row_header = request["firstRowHeader"].as_bool().unwrap_or(false);
+
+    // Call get_cells
+    let result = {
+        let mut get_cells_fn = get_cells.lock().await;
+        get_cells_fn(a1)
+    };
+
+    // Convert result to JSON
+    let response_json = match result {
+        Ok(response) => serde_json::to_string(&response).unwrap_or_else(|_| {
+            r#"{"error":{"core_error":"Failed to serialize response"}}"#.to_string()
+        }),
+        Err(e) => serde_json::to_string(&JsCellsA1Response {
+            values: None,
+            error: Some(
+                quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error {
+                    core_error: e.to_string(),
+                },
+            ),
+        })
+        .unwrap_or_else(|_| r#"{"error":{"core_error":"Failed to serialize error"}}"#.to_string()),
+    };
+
+    // Send HTTP response
+    let response = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n{}",
+        response_json.len(),
+        response_json
+    );
+
+    stream
+        .write_all(response.as_bytes())
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to write response: {}", e)))?;
+
+    stream
+        .flush()
+        .await
+        .map_err(|e| CoreCloudError::Javascript(format!("Failed to flush stream: {}", e)))?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use quadratic_core::controller::execution::run_code::get_cells::{
+        JsCellsA1Error, JsCellsA1Response, JsCellsA1Value, JsCellsA1Values,
+    };
 
     async fn test_execute(code: &str) -> JsCodeResult {
-        execute(code, "test")
+        execute(code, "test", 0)
             .await
             .unwrap_or_else(|e| JsCodeResult {
                 transaction_id: "test".to_string(),
@@ -312,6 +533,36 @@ mod tests {
                 std_err: Some(format!("Execution error: {}", e)),
                 ..Default::default()
             })
+    }
+
+    async fn test_execute_with_get_cells<F>(code: &str, get_cells: F) -> JsCodeResult
+    where
+        F: FnMut(String) -> Result<JsCellsA1Response> + Send + 'static,
+    {
+        // Start TCP server
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let server_addr = listener.local_addr().unwrap();
+
+        let get_cells = Arc::new(TokioMutex::new(Box::new(get_cells)
+            as Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>));
+        let get_cells_clone = Arc::clone(&get_cells);
+
+        // Spawn server task
+        let server_handle =
+            tokio::spawn(async move { handle_get_cells_server(listener, get_cells_clone).await });
+
+        // Execute JavaScript
+        let result = execute(code, "test", server_addr.port()).await;
+
+        // Stop server
+        server_handle.abort();
+
+        result.unwrap_or_else(|e| JsCodeResult {
+            transaction_id: "test".to_string(),
+            success: false,
+            std_err: Some(format!("Execution error: {}", e)),
+            ..Default::default()
+        })
     }
 
     #[tokio::test]
@@ -337,5 +588,476 @@ return data.title;
         let output = result.output_value.unwrap();
         assert_eq!(output.1, 1, "Should be string type");
         println!("Fetched title: {}", output.0);
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_single_cell() {
+        let code = r#"
+const value = await q.cells("A1");
+return value;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "A1");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: "42".to_string(),
+                        t: 2, // number type
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success, "q.cells should work for single cell");
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "42");
+        assert_eq!(output.1, 2); // number type
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_text_value() {
+        let code = r#"
+const value = await q.cells("B2");
+return value;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "B2");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 2,
+                        y: 2,
+                        v: "Hello World".to_string(),
+                        t: 1, // text type
+                    }],
+                    x: 2,
+                    y: 2,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "Hello World");
+        assert_eq!(output.1, 1); // text type
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_one_dimensional_column() {
+        let code = r#"
+const values = await q.cells("A1:A3");
+return values;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "A1:A3");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "1".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 2,
+                            v: "2".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 3,
+                            v: "3".to_string(),
+                            t: 2,
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 3,
+                    one_dimensional: true,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_array.is_some());
+        let output_array = result.output_array.unwrap();
+        // One-dimensional arrays are returned as a single row in output_array
+        // The conversion happens in processOutput
+        assert_eq!(output_array.len(), 3); // three rows (since it's returned as column)
+        assert_eq!(output_array[0].len(), 1); // one column per row
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_one_dimensional_row() {
+        let code = r#"
+const values = await q.cells("A1:C1");
+return values;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "A1:C1");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "A".to_string(),
+                            t: 1,
+                        },
+                        JsCellsA1Value {
+                            x: 2,
+                            y: 1,
+                            v: "B".to_string(),
+                            t: 1,
+                        },
+                        JsCellsA1Value {
+                            x: 3,
+                            y: 1,
+                            v: "C".to_string(),
+                            t: 1,
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 3,
+                    h: 1,
+                    one_dimensional: true,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_array.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_two_dimensional() {
+        let code = r#"
+const values = await q.cells("A1:B2");
+return values;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "A1:B2");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "1".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 2,
+                            y: 1,
+                            v: "2".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 2,
+                            v: "3".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 2,
+                            y: 2,
+                            v: "4".to_string(),
+                            t: 2,
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 2,
+                    h: 2,
+                    one_dimensional: false,
+                    two_dimensional: true,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_array.is_some());
+        let output_array = result.output_array.unwrap();
+        assert_eq!(output_array.len(), 2); // two rows
+        assert_eq!(output_array[0].len(), 2); // two columns
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_with_empty_cells() {
+        let code = r#"
+const values = await q.cells("A1:B2");
+return values;
+"#;
+
+        let result = test_execute_with_get_cells(code, |a1| {
+            assert_eq!(a1, "A1:B2");
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "1".to_string(),
+                            t: 2,
+                        },
+                        // B1 is empty
+                        // A2 is empty
+                        JsCellsA1Value {
+                            x: 2,
+                            y: 2,
+                            v: "4".to_string(),
+                            t: 2,
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 2,
+                    h: 2,
+                    one_dimensional: false,
+                    two_dimensional: true,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_array.is_some());
+        let output_array = result.output_array.unwrap();
+        assert_eq!(output_array.len(), 2); // two rows
+        assert_eq!(output_array[0].len(), 2); // two columns
+        // Empty cells should be filled with empty strings
+        assert_eq!(output_array[0][1].0, ""); // B1
+        assert_eq!(output_array[1][0].0, ""); // A2
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_date_conversion() {
+        let code = r#"
+const value = await q.cells("A1");
+// Check if it's a Date object
+return value instanceof Date ? "DATE" : "NOT_DATE";
+"#;
+
+        let result = test_execute_with_get_cells(code, |_a1| {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        v: "2024-01-15T10:30:00Z".to_string(),
+                        t: 11, // datetime type
+                    }],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "DATE");
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_error_handling() {
+        let code = r#"
+try {
+    const value = await q.cells("INVALID");
+    return "SHOULD_NOT_REACH";
+} catch (error) {
+    return "ERROR_CAUGHT";
+}
+"#;
+
+        let result = test_execute_with_get_cells(code, |_a1| {
+            Ok(JsCellsA1Response {
+                values: None,
+                error: Some(JsCellsA1Error {
+                    core_error: "Invalid cell reference".to_string(),
+                }),
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "ERROR_CAUGHT");
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_used_in_calculation() {
+        let code = r#"
+const values = await q.cells("A1:A3");
+const sum = values.reduce((acc, val) => acc + val, 0);
+return sum;
+"#;
+
+        let result = test_execute_with_get_cells(code, |_a1| {
+            Ok(JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "10".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 2,
+                            v: "20".to_string(),
+                            t: 2,
+                        },
+                        JsCellsA1Value {
+                            x: 1,
+                            y: 3,
+                            v: "30".to_string(),
+                            t: 2,
+                        },
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 3,
+                    one_dimensional: true,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            })
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "60");
+        assert_eq!(output.1, 2); // number type
+    }
+
+    #[tokio::test]
+    async fn test_q_cells_multiple_calls() {
+        let code = r#"
+const a = await q.cells("A1");
+const b = await q.cells("B1");
+return a + b;
+"#;
+
+        let call_count = Arc::new(std::sync::Mutex::new(0));
+        let call_count_clone = Arc::clone(&call_count);
+
+        let result = test_execute_with_get_cells(code, move |a1| {
+            let mut count = call_count_clone.lock().unwrap();
+            *count += 1;
+            drop(count); // Release lock before returning
+
+            if a1 == "A1" {
+                Ok(JsCellsA1Response {
+                    values: Some(JsCellsA1Values {
+                        cells: vec![JsCellsA1Value {
+                            x: 1,
+                            y: 1,
+                            v: "5".to_string(),
+                            t: 2,
+                        }],
+                        x: 1,
+                        y: 1,
+                        w: 1,
+                        h: 1,
+                        one_dimensional: false,
+                        two_dimensional: false,
+                        has_headers: false,
+                    }),
+                    error: None,
+                })
+            } else if a1 == "B1" {
+                Ok(JsCellsA1Response {
+                    values: Some(JsCellsA1Values {
+                        cells: vec![JsCellsA1Value {
+                            x: 2,
+                            y: 1,
+                            v: "7".to_string(),
+                            t: 2,
+                        }],
+                        x: 2,
+                        y: 1,
+                        w: 1,
+                        h: 1,
+                        one_dimensional: false,
+                        two_dimensional: false,
+                        has_headers: false,
+                    }),
+                    error: None,
+                })
+            } else {
+                Ok(JsCellsA1Response {
+                    values: None,
+                    error: Some(JsCellsA1Error {
+                        core_error: "Unexpected cell reference".to_string(),
+                    }),
+                })
+            }
+        })
+        .await;
+
+        assert!(result.success);
+        assert!(result.output_value.is_some());
+        let output = result.output_value.unwrap();
+        assert_eq!(output.0, "12");
+
+        // Verify both calls were made
+        let final_count = call_count.lock().unwrap();
+        assert_eq!(*final_count, 2);
     }
 }
