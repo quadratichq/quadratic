@@ -358,48 +358,8 @@ jobs:
 
       - name: Wait for instance to be ready
         run: |
-          INSTANCE_ID="${{ steps.get-instance.outputs.instance_id }}"
-          MAX_ATTEMPTS=${{ env.MAX_ATTEMPTS }}
-          ATTEMPTS=0
-
-          echo "Waiting for instance $INSTANCE_ID to be ready (up to $MAX_ATTEMPTS attempts = 20 minutes)..."
-
-          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-            # Check if status is available (may return empty array initially)
-            STATUS_COUNT=$(aws ec2 describe-instance-status \
-              --instance-ids "$INSTANCE_ID" \
-              --query 'length(InstanceStatuses)' \
-              --output text 2>/dev/null || echo "0")
-
-            if [ "$STATUS_COUNT" = "0" ]; then
-              ATTEMPTS=$((ATTEMPTS + 1))
-              echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS - Status checks not yet available, waiting..."
-              sleep 15
-              continue
-            fi
-
-            INSTANCE_STATUS=$(aws ec2 describe-instance-status \
-              --instance-ids "$INSTANCE_ID" \
-              --query 'InstanceStatuses[0].InstanceStatus.Status' \
-              --output text 2>/dev/null || echo "initializing")
-
-            SYSTEM_STATUS=$(aws ec2 describe-instance-status \
-              --instance-ids "$INSTANCE_ID" \
-              --query 'InstanceStatuses[0].SystemStatus.Status' \
-              --output text 2>/dev/null || echo "initializing")
-
-            if [ "$INSTANCE_STATUS" = "ok" ] && [ "$SYSTEM_STATUS" = "ok" ]; then
-              echo "Instance is ready!"
-              exit 0
-            fi
-
-            ATTEMPTS=$((ATTEMPTS + 1))
-            echo "Attempt $ATTEMPTS/$MAX_ATTEMPTS - Instance status: $INSTANCE_STATUS, System status: $SYSTEM_STATUS"
-            sleep 15
-          done
-
-          echo "::error::Instance did not become ready after $MAX_ATTEMPTS attempts"
-          exit 1
+          aws ec2 wait instance-status-ok \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }}
 
       - name: Run deployment script on EC2
         id: deploy
