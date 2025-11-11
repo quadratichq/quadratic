@@ -4,6 +4,7 @@ import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
+  aiAnalystCurrentChatNameAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
@@ -42,6 +43,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const currentChatName = useRecoilValue(aiAnalystCurrentChatNameAtom);
 
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
@@ -51,6 +53,15 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
     [currentUserMessagesCount, showChatHistory, loading, chatsCount]
   );
+
+  const defaultLabel = useMemo(() => viewActionsSpec[Action.ToggleAIAnalyst].label(), []);
+
+  const headerTitle = useMemo(() => {
+    if (showChatHistory) {
+      return `${defaultLabel} history`;
+    }
+    return currentChatName.trim() || defaultLabel;
+  }, [showChatHistory, currentChatName, defaultLabel]);
 
   const handleExecuteAllToolCalls = useRecoilCallback(
     ({ snapshot }) =>
@@ -81,10 +92,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between px-4 py-2">
-        <span className="flex items-center text-sm font-bold">
-          {viewActionsSpec[Action.ToggleAIAnalyst].label()}
-          {showChatHistory && ' history'}
-        </span>
+        <span className="flex items-center text-sm font-bold">{headerTitle}</span>
 
         <div className="flex items-center gap-2">
           {debugAIAnalystChatEditing && (
