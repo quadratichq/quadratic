@@ -12,10 +12,4 @@ pub(crate) enum WorkerError {
 
     #[error("Create worker error: {0}")]
     CreateWorker(String),
-
-    #[error("Leave room error: {0}")]
-    LeaveRoom(String),
-
-    #[error("Shutdown error: {0}")]
-    Shutdown(String),
 }
