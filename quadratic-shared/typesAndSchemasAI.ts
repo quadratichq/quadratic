@@ -41,6 +41,7 @@ const BasetenModelSchema = z.enum([
   'Qwen/Qwen3-Coder-480B-A35B-Instruct',
   'deepseek-ai/DeepSeek-V3.1',
   'moonshotai/Kimi-K2-Instruct-0905',
+  'moonshotai/Kimi-K2-Thinking',
 ]);
 const FireworksModelSchema = z.enum([
   'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
@@ -136,6 +137,7 @@ const BasetenModelKeySchema = z.enum([
   'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
   'baseten:deepseek-ai/DeepSeek-V3.1',
   'baseten:moonshotai/Kimi-K2-Instruct-0905',
+  'baseten:moonshotai/Kimi-K2-Thinking',
 ]);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
