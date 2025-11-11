@@ -28,6 +28,7 @@ interface FileImportProps {
   isPrivate?: boolean;
   teamUuid?: string;
   isOverwrite?: boolean;
+  prompt?: string;
 }
 
 export function useFileImport(): (props: FileImportProps) => Promise<void> {
@@ -40,7 +41,7 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const navigate = useNavigate();
 
   const handleImport = useCallback(
-    async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
+    async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite, prompt }: FileImportProps) => {
       // Only check file limit when creating new files (teamUuid must be defined)
       if (teamUuid !== undefined) {
         const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
@@ -217,7 +218,14 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
                 if (openImportedFile) {
                   setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
                   setFilesImportProgressListState({ show: false });
-                  const searchParams = quadraticCore.receivedClientMessage ? 'negative_offsets' : '';
+                  const searchParamsArray: string[] = [];
+                  if (quadraticCore.receivedClientMessage) {
+                    searchParamsArray.push('negative_offsets');
+                  }
+                  if (prompt) {
+                    searchParamsArray.push(`prompt=${encodeURIComponent(prompt)}`);
+                  }
+                  const searchParams = searchParamsArray.join('&');
                   window.location.href = `${ROUTES.FILE({ uuid, searchParams })}`;
                 }
               })

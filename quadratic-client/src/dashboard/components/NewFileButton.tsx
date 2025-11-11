@@ -2,13 +2,27 @@ import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { AIChatDialog } from '@/dashboard/components/AIChatDialog';
+import { ConnectionSelectorDialog } from '@/dashboard/components/ConnectionSelectorDialog';
+import { FileUploadDialog } from '@/dashboard/components/FileUploadDialog';
+import { StartWithAIDialog } from '@/dashboard/components/StartWithAIDialog';
+import { TemplateSelectorDialog } from '@/dashboard/components/TemplateSelectorDialog';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog } from '@/shared/shadcn/ui/dialog';
 import {
@@ -19,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
@@ -36,6 +50,93 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
+  const [isStartWithAIOpen, setIsStartWithAIOpen] = useState(false);
+  const [isConnectionSelectorOpen, setIsConnectionSelectorOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+  const [aiChatType, setAIChatType] = useState<'web' | 'ai-message' | null>(null);
+
+  const handleStartWithAISelect = (option: string) => {
+    setIsStartWithAIOpen(false);
+    if (option === 'file') {
+      setIsFileUploadOpen(true);
+    } else if (option === 'database') {
+      setIsConnectionSelectorOpen(true);
+    } else if (option === 'template') {
+      setIsTemplateSelectorOpen(true);
+    } else if (option === 'web' || option === 'other') {
+      setAIChatType(option === 'web' ? 'web' : 'ai-message');
+      setIsAIChatOpen(true);
+    } else {
+      // TODO: Handle other options
+      console.log('Selected option:', option);
+    }
+  };
+
+  const handleSelectTemplate = async (publicFileUrlInProduction: string) => {
+    // Check file limit
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
+
+    // Create file from template with prompt
+    const to = ROUTES.CREATE_FILE_EXAMPLE({
+      teamUuid,
+      publicFileUrlInProduction,
+      additionalParams: `prompt=${encodeURIComponent("I've added my data to the sheet. Help me understand it.")}`,
+    });
+    window.location.href = to;
+  };
+
+  const handleFileSelect = (files: File[]) => {
+    handleFileImport({
+      files,
+      isPrivate,
+      teamUuid,
+      prompt: "I've added my data to the sheet. Help me understand it.",
+    });
+  };
+
+  const handleAIChatSubmit = async (message: string) => {
+    // Check file limit
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
+
+    // Create a new file with the prompt
+    const to = ROUTES.CREATE_FILE(teamUuid, {
+      private: isPrivate,
+      prompt: message,
+    });
+    window.location.href = to;
+  };
+
+  const handleSelectConnection = (connectionUuid: string, connectionType: ConnectionType) => {
+    // Find the connection to get its name
+    const connection = connections.find((c) => c.uuid === connectionUuid);
+    const connectionName = connection?.name || 'this connection';
+
+    // Create a blank file (not with code cell state)
+    const to = ROUTES.CREATE_FILE(teamUuid, {
+      private: isPrivate,
+    });
+
+    // Add URL params to open AI analyst with connection context and prompt
+    const url = new URL(to, window.location.origin);
+    url.searchParams.set('open-ai-analyst', 'true');
+    url.searchParams.set('connection-uuid', connectionUuid);
+    url.searchParams.set('prompt', `I'm looking at ${connectionName}, can you tell me a quick blurb about each table?`);
+    window.location.href = url.pathname + url.search;
+  };
+
+  const handleCreateNewConnection = () => {
+    navigate(ROUTES.TEAM_CONNECTIONS(teamUuid));
+  };
 
   return (
     <div className="flex flex-row-reverse gap-2">
@@ -53,6 +154,66 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
       >
         New file
       </Button>
+      <Button variant="outline" onClick={() => setIsStartWithAIOpen(true)}>
+        <AIIcon className="mr-2" />
+        Start with AI
+      </Button>
+      <StartWithAIDialog
+        open={isStartWithAIOpen}
+        onOpenChange={setIsStartWithAIOpen}
+        onSelect={handleStartWithAISelect}
+      />
+      <ConnectionSelectorDialog
+        open={isConnectionSelectorOpen}
+        onOpenChange={setIsConnectionSelectorOpen}
+        connections={connections}
+        teamUuid={teamUuid}
+        isPrivate={isPrivate}
+        onSelectConnection={handleSelectConnection}
+        onCreateNew={handleCreateNewConnection}
+        onBack={() => {
+          setIsConnectionSelectorOpen(false);
+          setIsStartWithAIOpen(true);
+        }}
+      />
+      <AIChatDialog
+        open={isAIChatOpen}
+        onOpenChange={setIsAIChatOpen}
+        onSubmit={handleAIChatSubmit}
+        onBack={() => {
+          setIsAIChatOpen(false);
+          setIsStartWithAIOpen(true);
+        }}
+        title={aiChatType === 'web' ? 'Start with web data' : 'Start with AI message'}
+        description={
+          aiChatType === 'web'
+            ? 'Describe the web data you want to analyze'
+            : 'Describe what you want to analyze or ask a question'
+        }
+        placeholder={aiChatType === 'web' ? 'e.g., Analyze sales data from our website API...' : 'Ask a question…'}
+        showAsChatBox={aiChatType === 'ai-message'}
+      />
+      <FileUploadDialog
+        open={isFileUploadOpen}
+        onOpenChange={setIsFileUploadOpen}
+        onFileSelect={handleFileSelect}
+        onBack={() => {
+          setIsFileUploadOpen(false);
+          setIsStartWithAIOpen(true);
+        }}
+        accept={supportedFileTypes.join(',')}
+      />
+      <TemplateSelectorDialog
+        open={isTemplateSelectorOpen}
+        onOpenChange={setIsTemplateSelectorOpen}
+        teamUuid={teamUuid}
+        isPrivate={isPrivate}
+        onSelectTemplate={handleSelectTemplate}
+        onBack={() => {
+          setIsTemplateSelectorOpen(false);
+          setIsStartWithAIOpen(true);
+        }}
+      />
       <input
         ref={fileInputRef}
         type="file"
