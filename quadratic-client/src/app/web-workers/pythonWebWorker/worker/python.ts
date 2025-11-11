@@ -80,18 +80,21 @@ class Python {
         const originalSend = xhr.send.bind(xhr);
         xhr.send = function (...sendArgs: any[]) {
           // Fetch fresh JWT before each request to handle 5-minute expiration
-          pythonClient.getJwt().then((jwt) => {
-            // Set auth headers with fresh JWT
-            xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
-            xhr.setRequestHeader('Url', (xhr as any).__url);
-            
-            // Now actually send the request
-            originalSend(...sendArgs);
-          }).catch((error) => {
-            console.error('Failed to get JWT for proxy request:', error);
-            // Send anyway to let the request fail properly
-            originalSend(...sendArgs);
-          });
+          pythonClient
+            .getJwt()
+            .then((jwt) => {
+              // Set auth headers with fresh JWT
+              xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
+              xhr.setRequestHeader('Url', (xhr as any).__url);
+
+              // Now actually send the request
+              originalSend(...sendArgs);
+            })
+            .catch((error) => {
+              console.error('Failed to get JWT for proxy request:', error);
+              // Send anyway to let the request fail properly
+              originalSend(...sendArgs);
+            });
         } as typeof xhr.send;
 
         xhr.onreadystatechange = function () {
