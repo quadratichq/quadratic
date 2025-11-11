@@ -150,9 +150,9 @@ impl Worker {
         m2m_auth_token: String,
         multiplayer_url: String,
     ) -> Result<Self> {
-        tracing::debug!("📂 [Worker] Loading file {} from presigned URL", file_id);
+        tracing::info!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
-        tracing::debug!("✅ [Worker] File loaded successfully");
+        tracing::info!("✅ [Worker] File loaded successfully");
 
         let session_id = Uuid::new_v4();
         let mut worker = Worker {
@@ -171,25 +171,30 @@ impl Worker {
         };
 
         // first, connect to the multiplayer server
-        tracing::debug!("🔌 [Worker] Connecting to multiplayer server");
+        tracing::info!("🔌 [Worker] Connecting to multiplayer server");
         worker.connect().await?;
-        tracing::debug!("✅ [Worker] Connected to multiplayer");
+        tracing::info!("✅ [Worker] Connected to multiplayer");
+
+        let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
+        let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
+
+        let enter_room_notified = enter_room_notify.notified();
+        let catchup_notified = catchup_notify.notified();
 
         // then, enter the room
-        tracing::debug!("🚪 [Worker] Entering room for file {}", file_id);
+        tracing::info!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
 
         // Wait for EnterRoom response from server before proceeding
         // This ensures the multiplayer server has registered our session
-        tracing::debug!("⏳ [Worker] Waiting for EnterRoom confirmation...");
-        let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
-        enter_room_notify.notified().await;
-        tracing::debug!("✅ [Worker] Entered room confirmed");
+        tracing::info!("⏳ [Worker] Waiting for EnterRoom confirmation...");
+        enter_room_notified.await;
+        tracing::info!("✅ [Worker] Entered room confirmed");
 
         // finally, get the catchup transactions
         // Request transactions starting from sequence_num + 1 since the loaded file
         // already contains all transactions up to and including sequence_num
-        tracing::debug!(
+        tracing::info!(
             "📥 [Worker] Requesting catchup transactions from sequence {}",
             sequence_num + 1
         );
@@ -199,10 +204,9 @@ impl Worker {
 
         // Wait for catchup transactions to be received before proceeding
         // This ensures we don't have a race condition on the first run
-        tracing::debug!("⏳ [Worker] Waiting for catchup transactions...");
-        let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
-        catchup_notify.notified().await;
-        tracing::debug!("✅ [Worker] Catchup transactions received");
+        tracing::info!("⏳ [Worker] Waiting for catchup transactions...");
+        catchup_notified.await;
+        tracing::info!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
@@ -294,7 +298,7 @@ impl Worker {
                                         file_id: room_file_id,
                                         sequence_num: room_seq,
                                     } => {
-                                        tracing::debug!(
+                                        tracing::info!(
                                             "📨 [Worker] Received EnterRoom confirmation for file {} at sequence {}",
                                             room_file_id,
                                             room_seq
@@ -365,7 +369,7 @@ impl Worker {
                             }
                         }
                         Ok(WebsocketMessage::Close(_)) => {
-                            tracing::debug!("WebSocket closed normally");
+                            tracing::info!("WebSocket closed normally");
                             break;
                         }
                         Ok(_) => {}
@@ -434,11 +438,11 @@ impl Worker {
         team_id: String,
         token: String,
     ) -> Result<()> {
-        tracing::debug!("🔄 [Worker] Deserializing operations");
+        tracing::info!("🔄 [Worker] Deserializing operations");
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
             .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
 
-        tracing::debug!("⚙️  [Worker] Processing {} operation(s)", operations.len());
+        tracing::info!("⚙️  [Worker] Processing {} operation(s)", operations.len());
 
         // Log what operations we're executing
         for op in &operations {
@@ -522,7 +526,7 @@ impl Worker {
             }
         }
 
-        tracing::debug!(
+        tracing::info!(
             "📡 [Worker] Sending transaction {} to multiplayer",
             transaction_id
         );
@@ -536,7 +540,7 @@ impl Worker {
             )
             .await?;
         }
-        tracing::debug!("✅ [Worker] Transaction sent");
+        tracing::info!("✅ [Worker] Transaction sent");
 
         Ok(())
     }
