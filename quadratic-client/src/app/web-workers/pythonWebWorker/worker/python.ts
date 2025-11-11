@@ -39,8 +39,6 @@ class Python {
   };
 
   private init = async (): Promise<void> => {
-    const jwt = await pythonClient.getJwt();
-
     // patch XMLHttpRequest to send requests to the proxy
     SELF['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
       construct: function (target, args) {
@@ -78,19 +76,29 @@ class Python {
           },
         });
 
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState === XMLHttpRequest.OPENED) {
-            // this applies the quadratic-authorization header as the only authorization header
-            // this is required for authentication with the proxy server
+        // Intercept send() to fetch JWT and set headers before actually sending
+        const originalSend = xhr.send.bind(xhr);
+        xhr.send = function (...sendArgs: any[]) {
+          // Fetch fresh JWT before each request to handle 5-minute expiration
+          pythonClient.getJwt().then((jwt) => {
+            // Set auth headers with fresh JWT
             xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
-
-            // this applies the original request URL as the x-proxy-url header
-            // this will get prefixed with X-Proxy due to above setRequestHeader override
             xhr.setRequestHeader('Url', (xhr as any).__url);
-          }
+            
+            // Now actually send the request
+            originalSend(...sendArgs);
+          }).catch((error) => {
+            console.error('Failed to get JWT for proxy request:', error);
+            // Send anyway to let the request fail properly
+            originalSend(...sendArgs);
+          });
+        } as typeof xhr.send;
+
+        xhr.onreadystatechange = function () {
           // After completion of XHR request
           if (xhr.readyState === 4) {
             if (xhr.status === 401) {
+              // Handle unauthorized - JWT may have expired
             }
           }
         };
