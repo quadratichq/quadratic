@@ -55,6 +55,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx && \
     uv --version
 
-COPY --from=builder /quadratic/target/release/quadratic-cloud-controller .
+COPY --from=builder /quadratic/quadratic-cloud-controller/target/release/quadratic-cloud-controller .
 
 CMD ["./quadratic-cloud-controller"]

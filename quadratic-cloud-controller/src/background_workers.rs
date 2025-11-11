@@ -2,7 +2,7 @@ use chrono::Timelike;
 use futures::StreamExt;
 use std::{sync::Arc, time::Duration};
 use tokio::time::{MissedTickBehavior, interval, sleep};
-use tracing::{error, info, trace, warn};
+use tracing::{error, info, trace};
 use uuid::Uuid;
 
 use crate::{
