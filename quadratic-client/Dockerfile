@@ -141,7 +141,7 @@ COPY --link ./quadratic-shared/package.json ./quadratic-shared/
 COPY --link ./quadratic-client/package.json ./quadratic-client/
 
 # Install npm dependencies
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund --ignore-scripts
 
 # Copy remaining files
 COPY --link ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/

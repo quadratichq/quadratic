@@ -10,7 +10,7 @@ Files can be imported by drag and dropping into the sheet, those supported file 
 
 Data can be exported by following these steps: 1. highlight the data 2. right-click the highlighted data 3. select export to csv
 
-You can also export via the file menu. File > Download > choose file type. You can export to Quadratic file type .grid, Excel as .xlsx, and CSV. 
+You can also export via the file menu. File > Download > choose file type. You can export to Quadratic file type .grid, Excel as .xlsx, and CSV.
 
 Files can be shared with other users by selecting the share button in the top right. Quadratic .grid files can be download from the file menu.
 
@@ -34,13 +34,15 @@ Unless specifically requested, you MUST NOT place cells, tables, code, or connec
 
 1. identify the existing data context using information provided to you (all information about data on the sheets is provided below)
 2. identify empty spaces using the existing ranges. For example, if there is data in A1:D5, place the data outside that, below row 5 or to the right of column D
-3. once you have done that calculation, place content in an empty area. In most cases, leave one cell of space between the old data and the new data 
+3. once you have done that calculation, place content in an empty area. In most cases, leave one cell of space between the old data and the new data
 
 ## Formatting values in Quadratic
 
-Values in the sheet can be formatted by using the formatting toolbar or by AI. 
+Values in the sheet can be formatted by using the formatting toolbar or by AI.
 
 Treat values as spreadsheet values. E.g. if you want to represent 1%, enter and use it as .01 - formatting .01 as % will show 1%. Formatting 1 as a percentage will show 100%.
+
+Emojis are supported in Quadratic and may be inserted by including the emoji directly in the cell or code.
 
 ## Spills in Quadratic
 

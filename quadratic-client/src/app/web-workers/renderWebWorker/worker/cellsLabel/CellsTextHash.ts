@@ -307,6 +307,7 @@ export class CellsTextHash {
         this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
+      this.special.addEmojis(cellLabel.emojis);
     });
     if (minX !== Infinity && minY !== Infinity) {
       this.viewRectangle.x = minX;

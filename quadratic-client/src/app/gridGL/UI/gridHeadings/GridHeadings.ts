@@ -169,15 +169,17 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
-          1,
-          colors.gridLines,
-          colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          0.5,
-          true
-        );
-        this.headingsGraphics.moveTo(x, bounds.top);
-        this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        if (column > 0) {
+          this.headingsGraphics.lineStyle(
+            1,
+            colors.gridLines,
+            colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+            0.5,
+            true
+          );
+          this.headingsGraphics.moveTo(x, bounds.top);
+          this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        }
         this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
       }
 
@@ -339,15 +341,17 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle({
-          width: 1,
-          color: colors.gridLines,
-          alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          alignment: 0.5,
-          native: true,
-        });
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        if (row > 0) {
+          this.headingsGraphics.lineStyle({
+            width: 1,
+            color: colors.gridLines,
+            alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+            alignment: 0.5,
+            native: true,
+          });
+          this.headingsGraphics.moveTo(bounds.left, y);
+          this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        }
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 

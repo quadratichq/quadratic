@@ -1,8 +1,8 @@
-const path = require('path');
-const generateBMFont = require('msdf-bmfont-xml');
-const { exit } = require('process');
-const fse = require('fs-extra');
-const fontKit = require('fontkit');
+import * as fontKit from 'fontkit';
+import fse from 'fs-extra';
+import generateBMFont from 'msdf-bmfont-xml';
+import path from 'path';
+import { exit } from 'process';
 
 const fontDirectory = path.join('public', 'fonts');
 const fontFamilies = ['opensans'];

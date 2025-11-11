@@ -468,6 +468,7 @@ export interface CoreClientSetCodeCellValue {
   type: 'coreClientSetCodeCellValue';
   id: number;
   transactionId: string | undefined;
+  error?: string;
 }
 
 export interface CoreClientSheetFills {
@@ -1496,6 +1497,7 @@ export interface CoreClientSetFormula {
   type: 'coreClientSetFormula';
   id: number;
   transactionId: string | undefined;
+  error?: string;
 }
 
 export type ClientCoreMessage =
