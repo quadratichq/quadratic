@@ -6,6 +6,7 @@ import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
+import { ScheduledTasksIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -69,6 +70,7 @@ export const TopBarUsers = () => {
     const isFollowingYou = followers.includes(user.session_id); // follower
     const sessionId = user.session_id;
     const viewport = user.viewport;
+    const isScheduledRun = user.first_name === 'Quadratic' && user.last_name === 'Cloud Worker';
 
     return {
       email: user.email,
@@ -80,6 +82,7 @@ export const TopBarUsers = () => {
       viewport,
       isBeingFollowedByYou,
       isFollowingYou,
+      isScheduledRun,
       handleFollow: () => handleFollow({ isFollowingYou, isBeingFollowedByYou, sessionId, viewport }),
     };
   });
@@ -133,6 +136,7 @@ export const TopBarUsers = () => {
             viewport,
             isBeingFollowedByYou,
             isFollowingYou,
+            isScheduledRun,
             handleFollow,
           }) => (
             <div className={cn('hidden lg:relative lg:flex lg:items-center')} key={sessionId}>
@@ -147,6 +151,7 @@ export const TopBarUsers = () => {
                       highlightColor={highlightColor}
                       isBeingFollowedByYou={isBeingFollowedByYou}
                       isFollowingYou={isFollowingYou}
+                      isScheduledRun={isScheduledRun}
                     />
                   </button>
                 </TooltipTrigger>
@@ -192,6 +197,7 @@ export const TopBarUsers = () => {
                   viewport,
                   isBeingFollowedByYou,
                   isFollowingYou,
+                  isScheduledRun,
                   handleFollow,
                 }) => {
                   return (
@@ -211,6 +217,7 @@ export const TopBarUsers = () => {
                         highlightColor={highlightColor}
                         isBeingFollowedByYou={isBeingFollowedByYou}
                         isFollowingYou={isFollowingYou}
+                        isScheduledRun={isScheduledRun}
                       />
                       <span className="truncate">{name}</span>
                       {isFollowingYou && (
@@ -236,6 +243,7 @@ function UserAvatar({
   highlightColor,
   isBeingFollowedByYou,
   isFollowingYou,
+  isScheduledRun,
 }: {
   email: string;
   name: string;
@@ -244,6 +252,7 @@ function UserAvatar({
   highlightColor: string;
   isBeingFollowedByYou: boolean;
   isFollowingYou: boolean;
+  isScheduledRun: boolean;
 }) {
   return (
     <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
@@ -257,6 +266,15 @@ function UserAvatar({
       >
         {initials}
       </Avatar>
+
+      {isScheduledRun && (
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-full"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+        >
+          <ScheduledTasksIcon className="text-white" />
+        </div>
+      )}
 
       {isFollowingYou || isBeingFollowedByYou ? (
         <svg
