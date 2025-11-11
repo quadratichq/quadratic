@@ -86,6 +86,7 @@ const FileSchema = z.object({
   publicLinkAccess: PublicLinkAccessSchema,
   thumbnail: z.string().url().nullable(),
   timezone: z.string().nullable(),
+  hasScheduledTasks: z.boolean(),
 });
 
 const TeamPrivateFileSchema = FileSchema.pick({
@@ -95,6 +96,7 @@ const TeamPrivateFileSchema = FileSchema.pick({
   updatedDate: true,
   publicLinkAccess: true,
   thumbnail: true,
+  hasScheduledTasks: true,
 });
 const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
   creatorId: z.number(),
@@ -155,6 +157,7 @@ export const ApiSchemas = {
       publicLinkAccess: true,
       thumbnail: true,
       timezone: true,
+      hasScheduledTasks: true,
     })
   ),
   '/v0/files.POST.request': z.object({

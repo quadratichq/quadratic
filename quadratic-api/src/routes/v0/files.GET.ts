@@ -33,6 +33,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
       updatedDate: true,
       publicLinkAccess: true,
       timezone: true,
+      ScheduledTask: {
+        where: {
+          status: { not: 'DELETED' },
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
     },
     orderBy: [
       {
@@ -55,6 +64,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
     createdDate: file.createdDate.toISOString(),
     updatedDate: file.updatedDate.toISOString(),
     timezone: file.timezone ?? null,
+    hasScheduledTasks: file.ScheduledTask.length > 0,
   }));
   return res.status(200).json(data);
 }

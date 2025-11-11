@@ -83,7 +83,7 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
   const confirmFn = useConfirmDialog('deleteFile', { name });
 
@@ -217,6 +217,7 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            hasScheduledTasks={hasScheduledTasks}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
