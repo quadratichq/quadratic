@@ -538,8 +538,8 @@ export class Control {
       this.cloudController = spawn(
         "cargo",
         this.cli.options.cloudController
-          ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target --features local"]
-          : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target", "--features", "local"],
+          ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+          : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"],
         {
           signal: this.signals.cloudController.signal,
           cwd: "quadratic-cloud-controller",

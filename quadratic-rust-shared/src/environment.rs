@@ -6,6 +6,7 @@ use strum_macros::Display;
 #[derive(Display, Deserialize, Debug, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
+    Local,
     Docker,
     Test,
     Development,
@@ -29,8 +30,12 @@ impl Environment {
         self == &Environment::Test
     }
 
+    pub fn is_local(&self) -> bool {
+        self == &Environment::Local
+    }
+
     pub fn is_local_or_docker(&self) -> bool {
-        self == &Environment::Docker
+        self == &Environment::Local || self == &Environment::Docker
     }
 }
 
@@ -44,5 +49,6 @@ mod tests {
         assert!(Environment::Development.is_development());
         assert!(Environment::Docker.is_docker());
         assert!(Environment::Test.is_test());
+        assert!(Environment::Local.is_local());
     }
 }
