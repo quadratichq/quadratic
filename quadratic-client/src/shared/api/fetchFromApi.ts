@@ -28,8 +28,7 @@ export async function fetchFromApi<T>(
 
   // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
-  const skipRedirect = window.location.pathname.includes('/login-result');
-  const token = isAuthenticated ? await authClient.getTokenOrRedirect(skipRedirect) : '';
+  const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
   const headers = new Headers(init.headers);
   if (isAuthenticated) {
     headers.set('Authorization', `Bearer ${token}`);

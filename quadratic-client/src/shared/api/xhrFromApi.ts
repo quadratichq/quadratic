@@ -27,8 +27,7 @@ export async function xhrFromApi<T>(
 
     // Set up headers
     const isAuthenticated = await authClient.isAuthenticated();
-    const skipRedirect = window.location.pathname.includes('/login-result');
-    const token = isAuthenticated ? await authClient.getTokenOrRedirect(skipRedirect) : '';
+    const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
     const headers: Record<string, string> = { ...config.headers };
     if (isAuthenticated) {
       headers['Authorization'] = `Bearer ${token}`;
