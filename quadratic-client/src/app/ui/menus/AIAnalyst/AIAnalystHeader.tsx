@@ -4,6 +4,7 @@ import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
+  aiAnalystCurrentChatNameAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
@@ -42,6 +43,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const currentChatName = useRecoilValue(aiAnalystCurrentChatNameAtom);
 
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
@@ -82,8 +84,9 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     <div className="flex flex-col">
       <div className="flex items-center justify-between px-4 py-2">
         <span className="flex items-center text-sm font-bold">
-          {viewActionsSpec[Action.ToggleAIAnalyst].label()}
-          {showChatHistory && ' history'}
+          {showChatHistory
+            ? `${viewActionsSpec[Action.ToggleAIAnalyst].label()} history`
+            : currentChatName || viewActionsSpec[Action.ToggleAIAnalyst].label()}
         </span>
 
         <div className="flex items-center gap-2">
