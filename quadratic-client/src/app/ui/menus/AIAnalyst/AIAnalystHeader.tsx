@@ -54,6 +54,15 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     [currentUserMessagesCount, showChatHistory, loading, chatsCount]
   );
 
+  const defaultLabel = useMemo(() => viewActionsSpec[Action.ToggleAIAnalyst].label(), []);
+
+  const headerTitle = useMemo(() => {
+    if (showChatHistory) {
+      return `${defaultLabel} history`;
+    }
+    return currentChatName.trim() || defaultLabel;
+  }, [showChatHistory, currentChatName, defaultLabel]);
+
   const handleExecuteAllToolCalls = useRecoilCallback(
     ({ snapshot }) =>
       async () => {
@@ -83,11 +92,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between px-4 py-2">
-        <span className="flex items-center text-sm font-bold">
-          {showChatHistory
-            ? `${viewActionsSpec[Action.ToggleAIAnalyst].label()} history`
-            : currentChatName || viewActionsSpec[Action.ToggleAIAnalyst].label()}
-        </span>
+        <span className="flex items-center text-sm font-bold">{headerTitle}</span>
 
         <div className="flex items-center gap-2">
           {debugAIAnalystChatEditing && (
