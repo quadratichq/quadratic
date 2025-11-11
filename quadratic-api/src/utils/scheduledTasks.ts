@@ -166,12 +166,12 @@ export async function getScheduledTaskLogs(
         stl.status,
         stl.error,
         stl.created_date as "createdDate"
-      FROM 
+      FROM
         "ScheduledTaskLog" stl
       INNER JOIN "ScheduledTask" st ON stl.scheduled_task_id = st.id
       WHERE
         st.uuid = ${scheduledTaskUuid}
-      ORDER BY 
+      ORDER BY
         stl.run_id, stl.created_date DESC
     ) subquery
     ORDER BY "createdDate" DESC

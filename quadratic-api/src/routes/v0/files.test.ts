@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { clearDb, createFile, createUsers } from '../../tests/testDataGenerator';
+import { createScheduledTask } from '../../utils/scheduledTasks';
 
 beforeAll(async () => {
   // Create a test user
@@ -260,5 +261,59 @@ describe('DELETE - DELETE /v0/files/:uuid with auth and another users file', () 
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
+  });
+});
+
+describe('DELETE - DELETE /v0/files/:uuid with scheduled tasks', () => {
+  it('deletes all associated scheduled tasks when file is deleted', async () => {
+    // Create a new file with a scheduled task
+    const user = await dbClient.user.findFirst({ where: { auth0Id: 'test_user_1' } });
+    const team = await dbClient.team.findFirst();
+
+    if (!user || !team) {
+      throw new Error('Test setup failed: user or team not found');
+    }
+
+    const testFile = await createFile({
+      data: {
+        creatorUserId: user.id,
+        ownerTeamId: team.id,
+        ownerUserId: user.id,
+        name: 'file_with_scheduled_task',
+        contents: Buffer.from('test_contents'),
+        uuid: '00000000-0000-4000-8000-000000000099',
+        publicLinkAccess: 'NOT_SHARED',
+      },
+    });
+
+    // Create a scheduled task for the file
+    const scheduledTask = await createScheduledTask({
+      userId: user.id,
+      fileId: testFile.id,
+      cronExpression: '0 0 * * *',
+      operations: [1, 2, 3],
+    });
+
+    // Verify scheduled task exists and is active
+    const taskBefore = await dbClient.scheduledTask.findUnique({
+      where: { uuid: scheduledTask.uuid },
+    });
+    expect(taskBefore).toBeTruthy();
+    expect(taskBefore?.status).toBe('ACTIVE');
+
+    // Delete the file
+    await request(app)
+      .delete('/v0/files/00000000-0000-4000-8000-000000000099')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Verify scheduled task is marked as DELETED
+    const taskAfter = await dbClient.scheduledTask.findUnique({
+      where: { uuid: scheduledTask.uuid },
+    });
+    expect(taskAfter).toBeTruthy();
+    expect(taskAfter?.status).toBe('DELETED');
   });
 });

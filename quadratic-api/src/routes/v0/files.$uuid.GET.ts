@@ -61,6 +61,16 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
   }
   const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
 
+  // Check if the file has any active scheduled tasks
+  const scheduledTask = await dbClient.scheduledTask.findFirst({
+    where: {
+      fileId: id,
+      status: { not: 'DELETED' },
+    },
+    select: { id: true },
+  });
+  const hasScheduledTasks = scheduledTask !== null;
+
   // Privacy of the file as it relates to the user making the request.
   // `undefined` means it was shared _somehow_, e.g. direct invite or public link,
   // but the user doesn't have access to the file's team
@@ -94,6 +104,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       thumbnail: thumbnailSignedUrl,
       ownerUserId: ownerUserId ? ownerUserId : undefined,
       timezone: timezone ?? null,
+      hasScheduledTasks,
     },
     team: {
       uuid: ownerTeam.uuid,
