@@ -233,7 +233,7 @@ pub fn get_enter_room_message(user_id: Uuid, file_id: Uuid, session_id: Uuid) ->
         first_name: "Quadratic".to_string(),
         last_name: "Cloud Worker".to_string(),
         email: "cloud-worker@quadratichq.com".to_string(),
-        image: "https://quadratichq.com/favicon.ico".to_string(),
+        image: "".to_string(),
         sheet_id: Uuid::new_v4(),
         selection: "".to_string(),
         cell_edit: CellEdit::default(),
