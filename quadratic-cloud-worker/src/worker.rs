@@ -104,19 +104,27 @@ impl Worker {
     }
 
     pub(crate) async fn shutdown(&mut self) -> Result<()> {
-        info!("Worker shutting down");
+        info!("🔄 Worker shutting down");
 
         // leave the multiplayer room
-        self.core
-            .leave_room()
-            .await
-            .map_err(|e| WorkerError::LeaveRoom(e.to_string()))?;
+        match self.core.leave_room().await {
+            Ok(_) => info!("✅ Successfully left multiplayer room"),
+            Err(e) => {
+                error!("⚠️  Error leaving multiplayer room: {}", e);
+                // Continue with shutdown even if leaving room fails
+            }
+        }
 
         // send worker shutdown request to the controller
-        worker_shutdown(&self.controller_url, self.container_id, self.file_id)
-            .await
-            .map_err(|e| WorkerError::Shutdown(e.to_string()))?;
+        match worker_shutdown(&self.controller_url, self.container_id, self.file_id).await {
+            Ok(_) => info!("✅ Successfully notified controller of shutdown"),
+            Err(e) => {
+                error!("⚠️  Error notifying controller of shutdown: {}", e);
+                // Don't fail shutdown if controller notification fails
+            }
+        }
 
+        info!("✅ Worker shutdown complete");
         Ok(())
     }
 }

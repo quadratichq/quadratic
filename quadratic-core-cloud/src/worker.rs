@@ -547,8 +547,11 @@ impl Worker {
 
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
+        tracing::info!("🚪 [Worker] Leaving room for file {}", self.file_id);
+
         // First, abort the heartbeat task to prevent it from trying to send after closing
         if let Some(handle) = &self.heartbeat_handle {
+            tracing::debug!("[Worker] Aborting heartbeat task");
             handle.abort();
         }
 
@@ -556,19 +559,62 @@ impl Worker {
         if let Some(sender) = self.websocket_sender.as_mut() {
             let mut sender_lock = sender.lock().await;
 
-            // Send leave room message (ignore errors if room already gone)
-            let _ = leave_room(&mut *sender_lock, self.session_id, self.file_id).await;
+            // Send leave room message - log errors but don't fail
+            match leave_room(&mut *sender_lock, self.session_id, self.file_id).await {
+                Ok(_) => {
+                    tracing::info!("✅ [Worker] Leave room message sent successfully");
+                    // Give the server a moment to process the leave room message
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️  [Worker] Error sending leave room message: {}", e);
+                }
+            }
 
             // Close the WebSocket connection gracefully
-            let _ = sender_lock.close().await;
+            match sender_lock.close().await {
+                Ok(_) => tracing::info!("✅ [Worker] WebSocket connection closed gracefully"),
+                Err(e) => tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e),
+            }
         }
 
-        // Abort the receiver task if it's still running
+        // Give the receiver task a moment to finish processing any pending messages
+        // before aborting it
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // Now abort the receiver task if it's still running
         if let Some(handle) = &self.websocket_receiver_handle {
-            handle.abort();
+            if !handle.is_finished() {
+                tracing::debug!("[Worker] Aborting receiver task");
+                handle.abort();
+            } else {
+                tracing::debug!("[Worker] Receiver task already finished");
+            }
         }
 
+        tracing::info!(
+            "✅ [Worker] Successfully left room for file {}",
+            self.file_id
+        );
         Ok(())
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        // Clean up any running tasks when the worker is dropped
+        if let Some(handle) = &self.heartbeat_handle {
+            if !handle.is_finished() {
+                tracing::debug!("[Worker Drop] Aborting heartbeat task");
+                handle.abort();
+            }
+        }
+        if let Some(handle) = &self.websocket_receiver_handle {
+            if !handle.is_finished() {
+                tracing::debug!("[Worker Drop] Aborting receiver task");
+                handle.abort();
+            }
+        }
     }
 }
 
