@@ -16,9 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /quadratic
 
-# Copy rust-toolchain and workspace files first
+# Copy rust-toolchain first
 COPY --link rust-toolchain.toml .
-COPY --link Cargo.toml .
 
 # Install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -28,6 +27,25 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
 RUN rustup show
+
+# Create a minimal workspace Cargo.toml with only needed members
+RUN echo '[workspace]\n\
+resolver = "2"\n\
+members = [\n\
+  "quadratic-rust-shared",\n\
+  "quadratic-cloud-controller",\n\
+]\n\
+\n\
+[workspace.package]\n\
+authors = ["Quadratic"]\n\
+edition = "2024"\n\
+description = "Infinite data grid with Python, JavaScript, and SQL built-in"\n\
+repository = "https://github.com/quadratichq/quadratic"\n\
+license-file = "LICENSE"\n\
+version = "0.20.8"\n\
+\n\
+[profile.release]\n\
+opt-level = "s"' > Cargo.toml
 
 COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
