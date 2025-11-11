@@ -17,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     connection::run_connection,
     error::{CoreCloudError, Result},
-    javascript::run_javascript,
+    javascript::{JavaScriptTcpServer, run_javascript},
     python::execute::run_python,
 };
 
@@ -95,6 +95,11 @@ pub async fn process_transaction(
         }
     };
 
+    // Start a persistent JavaScript TCP server for this transaction
+    // This server will be reused across all JavaScript code executions
+    let js_tcp_server = JavaScriptTcpServer::start(Box::new(create_get_cells())).await?;
+    let js_port = js_tcp_server.port();
+
     // loop until error
     loop {
         // get the async transaction
@@ -129,13 +134,8 @@ pub async fn process_transaction(
                     .await?
                 }
                 CodeCellLanguage::Javascript => {
-                    run_javascript(
-                        Arc::clone(&grid),
-                        &code_run.code,
-                        &transaction_id,
-                        Box::new(create_get_cells()),
-                    )
-                    .await?
+                    run_javascript(Arc::clone(&grid), &code_run.code, &transaction_id, js_port)
+                        .await?
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     run_connection(
@@ -160,6 +160,9 @@ pub async fn process_transaction(
             break;
         }
     }
+
+    // Shutdown the JavaScript TCP server gracefully
+    js_tcp_server.shutdown().await;
 
     // Abort the task
     task_handle.abort();

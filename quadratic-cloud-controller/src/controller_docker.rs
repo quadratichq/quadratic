@@ -138,8 +138,11 @@ impl Controller {
             .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
 
         info!(
-            "Got tasks for worker for file {file_id} for binary tasks: {:?}",
+            "Got tasks for worker for file {file_id} for binary tasks ({} bytes)",
             tasks
+                .iter()
+                .map(|(_, task)| task.operations.len())
+                .sum::<usize>()
         );
 
         let ids = tasks

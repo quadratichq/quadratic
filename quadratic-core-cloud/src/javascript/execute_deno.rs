@@ -6,6 +6,7 @@ use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::process::Command;
 use tokio::sync::Mutex as TokioMutex;
+use tokio::task::JoinHandle;
 
 use crate::error::{CoreCloudError, Result};
 
@@ -22,33 +23,66 @@ pub fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
     }
 }
 
+/// A persistent JavaScript TCP server that stays alive across multiple executions
+pub struct JavaScriptTcpServer {
+    port: u16,
+    server_handle: JoinHandle<Result<()>>,
+}
+
+impl JavaScriptTcpServer {
+    /// Create and start a new TCP server for JavaScript get_cells communication
+    pub async fn start(
+        get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    ) -> Result<Self> {
+        let listener = TcpListener::bind("127.0.0.1:0").await.map_err(|e| {
+            CoreCloudError::Javascript(format!("Failed to bind TCP listener: {}", e))
+        })?;
+
+        let port = listener
+            .local_addr()
+            .map_err(|e| CoreCloudError::Javascript(format!("Failed to get local address: {}", e)))?
+            .port();
+
+        let get_cells = Arc::new(TokioMutex::new(get_cells));
+
+        let server_handle =
+            tokio::spawn(async move { handle_get_cells_server(listener, get_cells).await });
+
+        tracing::info!("🌐 [JavaScript TCP Server] Started on port {}", port);
+
+        Ok(Self {
+            port,
+            server_handle,
+        })
+    }
+
+    /// Get the port number of the running server
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    /// Shutdown the server gracefully
+    pub async fn shutdown(self) {
+        tracing::info!(
+            "🛑 [JavaScript TCP Server] Shutting down on port {}",
+            self.port
+        );
+
+        // Give any in-flight connections time to complete
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        self.server_handle.abort();
+    }
+}
+
 pub(crate) async fn run_javascript(
     grid: Arc<TokioMutex<GridController>>,
     code: &str,
     transaction_id: &str,
-    get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
+    get_cells_port: u16,
 ) -> Result<()> {
-    // Start a TCP server for get_cells communication
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .await
-        .map_err(|e| CoreCloudError::Javascript(format!("Failed to bind TCP listener: {}", e)))?;
-
-    let server_addr = listener
-        .local_addr()
-        .map_err(|e| CoreCloudError::Javascript(format!("Failed to get local address: {}", e)))?;
-
-    let get_cells = Arc::new(TokioMutex::new(get_cells));
-    let get_cells_clone = Arc::clone(&get_cells);
-
-    // Spawn server task
-    let server_handle =
-        tokio::spawn(async move { handle_get_cells_server(listener, get_cells_clone).await });
-
-    // Execute JavaScript with the server port
-    let js_code_result = execute(code, transaction_id, server_addr.port()).await?;
-
-    // Stop the server
-    server_handle.abort();
+    // Execute JavaScript with the provided server port
+    let js_code_result = execute(code, transaction_id, get_cells_port).await?;
 
     grid.lock()
         .await
@@ -483,6 +517,9 @@ async fn handle_connection(
         TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>,
     >,
 ) -> Result<()> {
+    // Set TCP_NODELAY to disable Nagle's algorithm for more predictable latency
+    stream.set_nodelay(true).ok();
+
     let mut reader = BufReader::new(&mut stream);
     let mut request_line = String::new();
 
@@ -552,9 +589,9 @@ async fn handle_connection(
         .unwrap_or_else(|_| r#"{"error":{"core_error":"Failed to serialize error"}}"#.to_string()),
     };
 
-    // Send HTTP response
+    // Send HTTP response with Connection: close to signal no keep-alive
     let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n{}",
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n{}",
         response_json.len(),
         response_json
     );
@@ -568,12 +605,6 @@ async fn handle_connection(
         .flush()
         .await
         .map_err(|e| CoreCloudError::Javascript(format!("Failed to flush stream: {}", e)))?;
-
-    // Properly shutdown the write side of the connection to signal completion
-    stream
-        .shutdown()
-        .await
-        .map_err(|e| CoreCloudError::Javascript(format!("Failed to shutdown stream: {}", e)))?;
 
     Ok(())
 }
