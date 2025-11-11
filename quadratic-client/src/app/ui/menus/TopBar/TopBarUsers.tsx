@@ -268,42 +268,40 @@ function UserAvatar({
       </Avatar>
 
       {isScheduledRun && (
-        <div
-          className="absolute inset-0 flex items-center justify-center rounded-full"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-        >
-          <ScheduledTasksIcon className="text-white" />
+        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-border">
+          <ScheduledTasksIcon className="text-foreground" />
         </div>
       )}
 
-      {isFollowingYou || isBeingFollowedByYou ? (
-        <svg
-          width="13"
-          height="19"
-          viewBox="0 0 13 19"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{
-            position: 'absolute',
-            stroke: 'hsl(var(--background))',
-            strokeWidth: '2px',
-            right: '-6px',
-            bottom: '-6px',
-            width: '12px',
-            transform: 'rotate(-14deg)',
-          }}
-        >
-          <path
-            d="M5.65376 12.3674H5.46026L5.31717 12.4977L0.5 16.883V1.19849L11.7841 12.3674H5.65376Z"
-            fill={highlightColor}
+      {!isScheduledRun &&
+        (isFollowingYou || isBeingFollowedByYou ? (
+          <svg
+            width="13"
+            height="19"
+            viewBox="0 0 13 19"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              position: 'absolute',
+              stroke: 'hsl(var(--background))',
+              strokeWidth: '2px',
+              right: '-6px',
+              bottom: '-6px',
+              width: '12px',
+              transform: 'rotate(-14deg)',
+            }}
+          >
+            <path
+              d="M5.65376 12.3674H5.46026L5.31717 12.4977L0.5 16.883V1.19849L11.7841 12.3674H5.65376Z"
+              fill={highlightColor}
+            />
+          </svg>
+        ) : (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background"
+            style={{ backgroundColor: highlightColor }}
           />
-        </svg>
-      ) : (
-        <span
-          className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background"
-          style={{ backgroundColor: highlightColor }}
-        />
-      )}
+        ))}
     </div>
   );
 }

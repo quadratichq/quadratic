@@ -375,7 +375,9 @@ impl Worker {
                         Ok(_) => {}
                         Err(e) => {
                             // Only log non-shutdown errors
-                            if !e.to_string().contains("ResetWithoutClosingHandshake") {
+                            // ResetWithoutClosingHandshake is expected during graceful shutdown
+                            let error_str = format!("{:?}", e);
+                            if !error_str.contains("ResetWithoutClosingHandshake") {
                                 tracing::warn!("WebSocket error: {:?}", e);
                             }
                             break;
@@ -574,21 +576,40 @@ impl Worker {
             // Close the WebSocket connection gracefully
             match sender_lock.close().await {
                 Ok(_) => tracing::info!("✅ [Worker] WebSocket connection closed gracefully"),
-                Err(e) => tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e),
+                Err(e) => {
+                    // Suppress benign shutdown errors
+                    let error_str = format!("{:?}", e);
+                    if !error_str.contains("AlreadyClosed")
+                        && !error_str.contains("ResetWithoutClosingHandshake")
+                    {
+                        tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e);
+                    }
+                }
             }
         }
 
-        // Give the receiver task a moment to finish processing any pending messages
-        // before aborting it
-        tokio::time::sleep(Duration::from_millis(50)).await;
-
-        // Now abort the receiver task if it's still running
+        // Wait for the receiver task to finish naturally after receiving the close frame
+        // Use a timeout as a safety measure to prevent hanging
         if let Some(handle) = &self.websocket_receiver_handle {
-            if !handle.is_finished() {
-                tracing::debug!("[Worker] Aborting receiver task");
-                handle.abort();
-            } else {
-                tracing::debug!("[Worker] Receiver task already finished");
+            // Wait up to 500ms for the receiver to finish gracefully
+            let timeout = Duration::from_millis(500);
+            match tokio::time::timeout(timeout, async {
+                // Check periodically if the task has finished
+                while !handle.is_finished() {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+            })
+            .await
+            {
+                Ok(_) => {
+                    tracing::debug!("[Worker] Receiver task finished gracefully");
+                }
+                Err(_) => {
+                    tracing::debug!(
+                        "[Worker] Receiver task did not finish within timeout, aborting"
+                    );
+                    handle.abort();
+                }
             }
         }
 
