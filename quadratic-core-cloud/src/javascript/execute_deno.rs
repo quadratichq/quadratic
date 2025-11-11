@@ -81,8 +81,45 @@ pub(crate) async fn run_javascript(
     transaction_id: &str,
     get_cells_port: u16,
 ) -> Result<()> {
+    let start_time = std::time::Instant::now();
+    tracing::info!(
+        "🟨 [JavaScript] Starting execution for transaction: {}",
+        transaction_id
+    );
+
     // Execute JavaScript with the provided server port
     let js_code_result = execute(code, transaction_id, get_cells_port).await?;
+
+    let elapsed = start_time.elapsed();
+
+    if js_code_result.success {
+        tracing::info!(
+            "✅ [JavaScript] Execution completed successfully for transaction: {} (duration: {:.2}ms, output_type: {:?})",
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            js_code_result.output_display_type
+        );
+
+        if js_code_result.std_out.is_some() {
+            tracing::debug!(
+                "📝 [JavaScript] stdout captured for transaction: {}",
+                transaction_id
+            );
+        }
+        if js_code_result.std_err.is_some() {
+            tracing::debug!(
+                "⚠️  [JavaScript] stderr captured for transaction: {}",
+                transaction_id
+            );
+        }
+    } else {
+        tracing::error!(
+            "❌ [JavaScript] Execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            js_code_result.std_err
+        );
+    }
 
     grid.lock()
         .await

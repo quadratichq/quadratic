@@ -27,7 +27,44 @@ pub(crate) async fn run_python(
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
 ) -> Result<()> {
+    let start_time = std::time::Instant::now();
+    tracing::info!(
+        "🐍 [Python] Starting execution for transaction: {}",
+        transaction_id
+    );
+
     let js_code_result = execute(code, transaction_id, get_cells)?;
+
+    let elapsed = start_time.elapsed();
+
+    if js_code_result.success {
+        tracing::info!(
+            "✅ [Python] Execution completed successfully for transaction: {} (duration: {:.2}ms, output_type: {:?})",
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            js_code_result.output_display_type
+        );
+
+        if js_code_result.std_out.is_some() {
+            tracing::debug!(
+                "📝 [Python] stdout captured for transaction: {}",
+                transaction_id
+            );
+        }
+        if js_code_result.std_err.is_some() {
+            tracing::debug!(
+                "⚠️  [Python] stderr captured for transaction: {}",
+                transaction_id
+            );
+        }
+    } else {
+        tracing::error!(
+            "❌ [Python] Execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            js_code_result.std_err
+        );
+    }
 
     grid.lock()
         .await
@@ -205,6 +242,8 @@ with redirect_stdout(__quadratic_std_out__):
         Ok(result) => Ok(result),
         Err(error) => Python::with_gil(|py| {
             let error_value = error.value(py);
+
+            // Handle syntax errors with line number extraction
             if error_value.is_instance_of::<pyo3::exceptions::PySyntaxError>() {
                 let subtract_lines = 8;
                 let subtract = |ln: Option<Bound<PyAny>>| {
@@ -250,7 +289,30 @@ with redirect_stdout(__quadratic_std_out__):
                 });
             }
 
-            Err(CoreCloudError::from(error))
+            // Handle all other Python runtime errors (NameError, TypeError, ValueError, etc.)
+            // The error.to_string() includes the traceback and error message
+            let error_string = error.to_string();
+
+            // Try to extract line number from traceback if available
+            let line_number = error_value.getattr("__traceback__").ok().and_then(|tb| {
+                tb.getattr("tb_lineno")
+                    .ok()
+                    .and_then(|ln| ln.extract::<u32>().ok())
+                    .map(|ln| if ln > 8 { ln - 8 } else { ln })
+            });
+
+            Ok(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: false,
+                std_out: None,
+                std_err: Some(error_string),
+                line_number,
+                output_value: None,
+                output_array: None,
+                output_display_type: None,
+                chart_pixel_output: None,
+                has_headers: false,
+            })
         }),
     }
 }

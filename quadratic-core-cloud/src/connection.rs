@@ -19,6 +19,13 @@ pub(crate) async fn run_connection(
     team_id: &str,
     token: &str,
 ) -> Result<()> {
+    let start_time = std::time::Instant::now();
+    tracing::info!(
+        "🔌 [Connection] Starting {} execution for transaction: {}",
+        connection_kind,
+        transaction_id
+    );
+
     let (result, std_error) = execute(
         query,
         connection_kind,
@@ -28,6 +35,27 @@ pub(crate) async fn run_connection(
         token,
     )
     .await?;
+
+    let elapsed = start_time.elapsed();
+    let data_size = result.data.len();
+
+    if std_error.is_none() {
+        tracing::info!(
+            "✅ [Connection] {} execution completed successfully for transaction: {} (duration: {:.2}ms, data size: {} bytes)",
+            connection_kind,
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            data_size
+        );
+    } else {
+        tracing::error!(
+            "❌ [Connection] {} execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
+            connection_kind,
+            transaction_id,
+            elapsed.as_secs_f64() * 1000.0,
+            std_error
+        );
+    }
 
     grid.lock()
         .await

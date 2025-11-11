@@ -62,7 +62,19 @@ impl Worker {
         let mut successful_tasks = Vec::new();
         let mut failed_tasks = Vec::new();
 
+        info!(
+            "📋 Processing {} task(s) for file: {}",
+            tasks.len(),
+            file_id
+        );
+
         for (key, task) in tasks {
+            let task_start = std::time::Instant::now();
+            info!(
+                "⚙️  [Worker] Starting task {} (run_id: {}, task_id: {})",
+                key, task.run_id, task.task_id
+            );
+
             match self
                 .core
                 .process_operations(
@@ -72,18 +84,45 @@ impl Worker {
                 )
                 .await
             {
-                Ok(_) => successful_tasks.push((key, task.run_id, task.task_id)),
+                Ok(_) => {
+                    let elapsed = task_start.elapsed();
+                    info!(
+                        "✅ [Worker] Task {} completed successfully (duration: {:.2}ms)",
+                        key,
+                        elapsed.as_secs_f64() * 1000.0
+                    );
+                    successful_tasks.push((key, task.run_id, task.task_id));
+                }
                 Err(e) => {
-                    error!("Error processing tasks, error: {e}");
+                    let elapsed = task_start.elapsed();
+                    error!(
+                        "❌ [Worker] Task {} failed after {:.2}ms, error: {e}",
+                        key,
+                        elapsed.as_secs_f64() * 1000.0
+                    );
                     failed_tasks.push((key, task.run_id, task.task_id, e.to_string()));
                 }
             };
         }
 
         // wait for all tasks to be complete
+        info!("⏳ [Worker] Waiting for all code executions to complete...");
+        let mut wait_count = 0;
         while !self.core.status.lock().await.is_complete() {
+            wait_count += 1;
+            if wait_count % 5 == 0 {
+                info!(
+                    "⏳ [Worker] Still waiting for code executions... ({}s elapsed)",
+                    wait_count
+                );
+            }
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
+        info!("✅ [Worker] All code executions completed");
+
+        // Store counts before moving the vectors
+        let successful_count = successful_tasks.len();
+        let failed_count = failed_tasks.len();
 
         let acked_tasks = ack_tasks(
             &controller_url,
@@ -96,8 +135,13 @@ impl Worker {
         .map_err(|e| WorkerError::AckTasks(e.to_string()));
 
         match acked_tasks {
-            Ok(_) => info!("Tasks acknowledged successfully"),
-            Err(e) => error!("Error acknowledging tasks, error: {e}"),
+            Ok(_) => {
+                info!(
+                    "✅ [Worker] Tasks acknowledged successfully (successful: {}, failed: {})",
+                    successful_count, failed_count
+                );
+            }
+            Err(e) => error!("❌ [Worker] Error acknowledging tasks, error: {e}"),
         }
 
         Ok(())

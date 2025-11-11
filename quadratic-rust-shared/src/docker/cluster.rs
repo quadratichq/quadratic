@@ -197,7 +197,7 @@ impl Cluster {
             .ok_or(Self::error("Container not found"))?;
         let mut docker = self.docker.clone();
 
-        // remove in a separate thread
+        // Stop in a separate thread (async cleanup)
         tokio::spawn(async move {
             if let Err(e) = container.lock().await.stop(&mut docker).await {
                 tracing::error!("Error stopping container: {:?}", e);
@@ -223,7 +223,7 @@ impl Cluster {
         let mut docker = self.docker.clone();
         let total_runtime = container.lock().await.total_runtime();
 
-        // remove in a separate thread
+        // Remove in a separate thread (async cleanup, as container should auto-remove itself)
         let id = id.to_owned();
         tokio::spawn(async move {
             let resource_usage = container

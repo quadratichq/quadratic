@@ -50,11 +50,13 @@ pub async fn process_transaction(
     let rx_get_cells_response = Arc::new(Mutex::new(rx_get_cells_response));
 
     // kick off the transaction
+    tracing::debug!("🚀 [Core] Starting transaction processing");
     let transaction_id =
         grid.lock()
             .await
             .start_user_ai_transaction(operations, cursor, transaction_name, false);
     let transaction_uuid = Uuid::parse_str(&transaction_id)?;
+    tracing::debug!("📋 [Core] Transaction started with ID: {}", transaction_id);
 
     // in a separate thread, listen for get_cells calls
     let transaction_id_clone = transaction_id.clone();
@@ -125,19 +127,33 @@ pub async fn process_transaction(
             // run code
             match &code_run.language {
                 CodeCellLanguage::Python => {
+                    tracing::info!(
+                        "🐍 [Core] Dispatching Python execution for transaction: {}",
+                        transaction_id
+                    );
                     run_python(
                         Arc::clone(&grid),
                         &code_run.code,
                         &transaction_id,
                         Box::new(create_get_cells()),
                     )
-                    .await?
+                    .await?;
+                    tracing::info!("🐍 [Core] Python execution dispatched to grid controller");
                 }
                 CodeCellLanguage::Javascript => {
+                    tracing::info!(
+                        "🟨 [Core] Dispatching JavaScript execution for transaction: {}",
+                        transaction_id
+                    );
                     run_javascript(Arc::clone(&grid), &code_run.code, &transaction_id, js_port)
-                        .await?
+                        .await?;
+                    tracing::info!("🟨 [Core] JavaScript execution dispatched to grid controller");
                 }
                 CodeCellLanguage::Connection { kind, id } => {
+                    tracing::info!(
+                        "🔌 [Core] Dispatching Connection execution for transaction: {}",
+                        transaction_id
+                    );
                     run_connection(
                         Arc::clone(&grid),
                         &code_run.code,
@@ -147,7 +163,8 @@ pub async fn process_transaction(
                         &team_id,
                         &token,
                     )
-                    .await?
+                    .await?;
+                    tracing::info!("🔌 [Core] Connection execution dispatched to grid controller");
                 }
                 // maybe skip these below?
                 CodeCellLanguage::Formula => todo!(),
@@ -157,6 +174,10 @@ pub async fn process_transaction(
             // Continue looping - don't abort task yet
         } else {
             // No more code_run, break out of loop
+            tracing::info!(
+                "✅ [Core] No more code to execute for transaction: {}",
+                transaction_id
+            );
             break;
         }
     }

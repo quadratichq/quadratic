@@ -90,6 +90,7 @@ impl Container {
         let host_config = HostConfig {
             extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
             binds,
+            auto_remove: Some(true), // Automatically remove container when it exits
             ..Default::default()
         };
 
