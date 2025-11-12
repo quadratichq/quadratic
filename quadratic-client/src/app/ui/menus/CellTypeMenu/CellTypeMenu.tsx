@@ -136,12 +136,13 @@ export const CellTypeMenu = memo(() => {
 
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {connections.map(({ name, type, uuid }, i) => (
+            {connections.map(({ name, type, uuid, syncedConnectionPercentCompleted }, i) => (
               <CommandItemWrapper
                 key={uuid}
                 name={name}
                 value={`${name}__${i}`}
                 icon={<LanguageIcon language={type} />}
+                syncedConnectionPercentCompleted={syncedConnectionPercentCompleted}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
@@ -166,6 +167,7 @@ const CommandItemWrapper = memo(
     badge,
     value,
     onSelect,
+    syncedConnectionPercentCompleted,
   }: {
     disabled?: boolean;
     icon: React.ReactNode;
@@ -173,10 +175,15 @@ const CommandItemWrapper = memo(
     badge?: React.ReactNode;
     value?: string;
     onSelect: () => void;
+    syncedConnectionPercentCompleted?: number;
   }) => {
+    const isCompleted = useMemo(
+      () => !syncedConnectionPercentCompleted || syncedConnectionPercentCompleted === 100,
+      [syncedConnectionPercentCompleted]
+    );
     return (
       <CommandItem
-        disabled={disabled}
+        disabled={disabled || !isCompleted}
         onSelect={onSelect}
         value={value ? value : name}
         onPointerDown={(e) => {
@@ -193,6 +200,7 @@ const CommandItemWrapper = memo(
                 {badge}
               </Badge>
             )}
+            {!isCompleted && <time className="ml-2 text-xs text-muted-foreground">(syncing)</time>}
           </span>
         </div>
       </CommandItem>

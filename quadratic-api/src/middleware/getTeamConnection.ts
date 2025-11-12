@@ -21,6 +21,7 @@ export async function getTeamConnection({
     },
     include: {
       team: { select: { uuid: true } },
+      SyncedConnection: { select: { percentCompleted: true, updatedDate: true } },
     },
   });
   if (!connection || connection.archived !== null) {
@@ -50,5 +51,5 @@ export async function getTeamConnection({
     throw new ApiError(403, 'You don’t have access to this connection');
   }
 
-  return { connection, team };
+  return { connection, team, syncedConnection: connection.SyncedConnection };
 }

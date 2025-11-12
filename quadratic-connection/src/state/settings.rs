@@ -29,7 +29,10 @@ impl Settings {
         let storage = match config.storage_type {
             StorageType::S3 => StorageContainer::S3(S3::new(
                 S3Config::new(
-                    expected(&config.aws_s3_bucket_name, "AWS_S3_BUCKET_NAME"),
+                    expected(
+                        &config.aws_s3_synced_data_bucket_name,
+                        "AWS_S3_SYNCED_DATA_BUCKET_NAME",
+                    ),
                     expected(&config.aws_s3_region, "AWS_S3_REGION"),
                     expected(&config.aws_s3_access_key_id, "AWS_S3_ACCESS_KEY_ID"),
                     expected(&config.aws_s3_secret_access_key, "AWS_S3_SECRET_ACCESS_KEY"),
@@ -74,7 +77,8 @@ pub fn new_datafusion_connection(
         StorageType::S3 => ObjectStoreKind::S3,
         StorageType::FileSystem => ObjectStoreKind::FileSystem,
     };
-    let object_store_url = object_store_url(kind, config.aws_s3_bucket_name.as_deref())?;
+    let object_store_url =
+        object_store_url(kind, config.aws_s3_synced_data_bucket_name.as_deref())?;
 
     Ok(DatafusionConnection::new(object_store, object_store_url))
 }

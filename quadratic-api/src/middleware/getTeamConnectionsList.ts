@@ -1,4 +1,4 @@
-import type { Connection } from '@prisma/client';
+import type { Connection, SyncedConnection } from '@prisma/client';
 import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { connectionDemo } from '../data/connections';
 
@@ -6,7 +6,9 @@ export function getTeamConnectionsList({
   dbConnections,
   settingShowConnectionDemo,
 }: {
-  dbConnections: Connection[];
+  dbConnections: (Connection & {
+    SyncedConnection: Pick<SyncedConnection, 'percentCompleted' | 'updatedDate'> | null;
+  })[];
   settingShowConnectionDemo: boolean;
 }): ConnectionList {
   const connections = dbConnections.map((connection) => ({
@@ -16,6 +18,9 @@ export function getTeamConnectionsList({
     type: connection.type,
     semanticDescription: connection.semanticDescription || undefined,
     isDemo: false,
+    syncedConnectionPercentCompleted: connection.SyncedConnection?.percentCompleted ?? 0,
+    syncedConnectionUpdatedDate:
+      connection.SyncedConnection?.updatedDate?.toISOString() ?? connection.createdDate.toISOString(),
   }));
 
   if (connectionDemo && settingShowConnectionDemo) {
@@ -26,6 +31,8 @@ export function getTeamConnectionsList({
       type: connectionDemo.type,
       semanticDescription: connectionDemo.semanticDescription || undefined,
       isDemo: true,
+      syncedConnectionPercentCompleted: 0,
+      syncedConnectionUpdatedDate: connectionDemo.createdDate,
     });
   }
 

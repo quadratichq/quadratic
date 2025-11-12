@@ -1,4 +1,5 @@
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
+import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,10 +34,16 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     defaultValues,
   });
 
-  return { form };
+  return { form, connection };
 };
 
-export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
+export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
+  form,
+  children,
+  handleSubmitForm,
+  connection,
+  teamUuid,
+}) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -53,14 +60,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             </FormItem>
           )}
         />
-
         <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="api_secret"
+            name="project_id"
             render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>API Secret</FormLabel>
+              <FormItem className="col-span-3">
+                <FormLabel>Project ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -70,10 +76,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           />
           <FormField
             control={form.control}
-            name="project_id"
+            name="api_secret"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Project ID</FormLabel>
+                <FormLabel>API Secret</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -94,6 +100,35 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               </FormItem>
             )}
           />
+          <div className="col-span-3">
+            <label htmlFor="syncing-progress" className="mb-0 text-sm font-medium">
+              Data Sync Status
+            </label>
+            {connection && (
+              <p className="mb-4 mt-2 text-xs text-red-500">
+                <SyncedConnection
+                  connectionUuid={connection.uuid}
+                  teamUuid={teamUuid}
+                  createdDate={connection.createdDate}
+                />
+              </p>
+            )}
+            {/* TODO(ddimaria): implement this once we get the green light */}
+            {/* <div className="mb-2 flex flex-row items-center text-xs">
+              <Checkbox
+                id="show-logs"
+                className="mr-2"
+                checked={showLogs}
+                onCheckedChange={(checked: boolean) => setShowLogs(!!checked)}
+              />{' '}
+              <label htmlFor="show-logs" className="text-xs">
+                Show Logs
+              </label>
+            </div>
+            {showLogs && (
+              <SyncedConnectionLogs connectionUuid={connection?.uuid ?? ''} />
+            )} */}
+          </div>
         </div>
         {children}
       </form>

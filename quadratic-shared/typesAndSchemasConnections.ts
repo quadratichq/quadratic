@@ -25,6 +25,10 @@ export const ConnectionTypeSchema = z.enum([
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
+export function isSyncedConnectionType(type: ConnectionType): boolean {
+  return ['MIXPANEL'].includes(type);
+}
+
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
   host = host.trim();
@@ -55,7 +59,7 @@ const ConnectionPortSchema = z
     },
     { message: 'Port must be a valid number between 0 and 65535' }
   );
-const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
+export const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -65,6 +69,8 @@ const ConnectionSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: ConnectionTypeSchema,
   typeDetails: ConnectionTypeDetailsSchema,
+  syncedConnectionPercentCompleted: z.number().optional(),
+  syncedConnectionUpdatedDate: z.string().datetime().optional(),
 });
 const ConnectionSshSchema = z.object({
   useSsh: z.boolean(),
@@ -130,6 +136,31 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
 
 /**
  * =============================================================================
+ * Schemas for synced connections
+ * =============================================================================
+ */
+export const SyncedConnectionSchema = z.object({
+  id: z.number(),
+  connectionId: z.number(),
+  percentCompleted: z.number(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'DELETED']),
+  updatedDate: z.string().datetime(),
+});
+export type SyncedConnection = z.infer<typeof SyncedConnectionSchema>;
+
+export const SyncedConnectionLogSchema = z.object({
+  id: z.number(),
+  syncedConnectionId: z.number(),
+  runId: z.string(),
+  syncedDates: z.array(z.string()),
+  status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']),
+  error: z.string().optional(),
+  createdDate: z.string().datetime(),
+});
+export type SyncedConnectionLog = z.infer<typeof SyncedConnectionLogSchema>;
+
+/**
+ * =============================================================================
  * Export
  * =============================================================================
  */
@@ -142,6 +173,8 @@ export const ConnectionListSchema = z.array(
     type: true,
     semanticDescription: true,
     isDemo: true,
+    syncedConnectionPercentCompleted: true,
+    syncedConnectionUpdatedDate: true,
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
@@ -186,4 +219,13 @@ export const ApiSchemasConnections = {
 
   // Get all connections (internal)
   '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
+
+  // Get synced connection
+  '/v0/synced-connection/:syncedConnectionId.GET.response': SyncedConnectionSchema,
+
+  // Get all synced connections (internal)
+  '/v0/internal/synced-connection.GET.response': SyncedConnectionSchema,
+
+  // Get synced connection logs
+  '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
 };

@@ -133,7 +133,15 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
       connections = [
         ...connections,
         // We don't know the name of the demo connection, so we just use the [Demo] prefix as a placeholder
-        { name: '[Demo]', type: 'POSTGRES', uuid: 'xxx', createdDate: new Date().toISOString(), isDemo: true },
+        {
+          name: '[Demo]',
+          type: 'POSTGRES',
+          uuid: 'xxx',
+          createdDate: new Date().toISOString(),
+          isDemo: true,
+          syncedConnectionPercentCompleted: 0,
+          syncedConnectionUpdatedDate: new Date().toISOString(),
+        },
       ];
     }
   }
@@ -263,6 +271,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
         ) : (
           <ConnectionsList
             connections={connections}
+            teamUuid={teamUuid}
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToNewView={handleNavigateToNewView}
             handleNavigateToCreateView={handleNavigateToCreateView}

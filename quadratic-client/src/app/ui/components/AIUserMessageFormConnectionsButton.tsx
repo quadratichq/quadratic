@@ -115,6 +115,10 @@ export const AIUserMessageFormConnectionsButton = memo(
                     key={connection.uuid}
                     onClick={() => handleClickConnection(connection.uuid)}
                     className={`gap-4`}
+                    disabled={
+                      connection.syncedConnectionPercentCompleted !== undefined &&
+                      connection.syncedConnectionPercentCompleted < 100
+                    }
                   >
                     <LanguageIcon language={connection.type} className="flex-shrink-0" />
                     <span className="truncate">{connection.name}</span>

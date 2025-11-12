@@ -1,15 +1,11 @@
 import { ConnectionType } from '@prisma/client';
 import type { Response } from 'express';
 import express from 'express';
-import { query, validationResult } from 'express-validator';
+import { validationResult } from 'express-validator';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import type { Request } from '../../types/Request';
-import { decryptFromEnv } from '../../utils/crypto';
-
-// validate the type is a valid connection type
-export const validateType = () => query('type').isString().isIn(Object.values(ConnectionType));
+import { getConnections, validateType } from '../../utils/connections';
 
 const router = express.Router();
 
@@ -29,25 +25,9 @@ router.get(
     }
 
     // Get the connections
-    const connections = await dbClient.connection.findMany({
-      where: {
-        type: type as ConnectionType,
-        archived: null,
-      },
-      include: {
-        team: { select: { uuid: true } },
-      },
-    });
+    const connections = await getConnections(type as ConnectionType);
 
-    const data: ApiTypes['/v0/internal/connection.GET.response'] = connections.map((connection) => ({
-      uuid: connection.uuid,
-      name: connection.name,
-      type: connection.type,
-      teamId: connection.team.uuid,
-      typeDetails: JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8'))),
-    }));
-
-    return res.status(200).json(data);
+    return res.status(200).json(connections);
   }
 );
 
