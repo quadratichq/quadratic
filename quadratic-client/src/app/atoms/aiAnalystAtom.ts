@@ -3,7 +3,7 @@ import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import {
@@ -85,7 +85,11 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   effects: [
     ({ setSelf, trigger, getLoadable }) => {
       if (trigger === 'get') {
-        const showAIAnalyst = getLoadable(showAIAnalystOnStartupAtom).getValue();
+        // Ensure gridSettingsAtom is initialized from localStorage before reading the value
+        // This prevents the race condition where we read the default value (true) instead of
+        // the saved localStorage value
+        const gridSettings = getLoadable(gridSettingsAtom).getValue();
+        const showAIAnalyst = gridSettings.showAIAnalystOnStartup;
         setSelf({
           ...defaultAIAnalystState,
           showAIAnalyst,

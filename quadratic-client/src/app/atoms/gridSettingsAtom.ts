@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { AtomEffect } from 'recoil';
 import { DefaultValue, atom, selector } from 'recoil';
+import { showAIAnalystAtom } from './aiAnalystAtom';
 
 const SETTINGS_KEY = 'viewSettings';
 
@@ -82,5 +83,24 @@ export const showCellTypeOutlinesAtom = createSelector('showCellTypeOutlines');
 export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
-export const showAIAnalystOnStartupAtom = createSelector('showAIAnalystOnStartup');
 export const showScrollbarsAtom = createSelector('showScrollbars');
+
+// Custom selector for showAIAnalystOnStartup that also controls the AI panel visibility
+export const showAIAnalystOnStartupAtom = selector<boolean>({
+  key: 'codeEditorShowAIAnalystOnStartupAtom',
+  get: ({ get }) => get(gridSettingsAtom).showAIAnalystOnStartup,
+  set: ({ set }, newValue) => {
+    // Update the grid settings
+    set(gridSettingsAtom, (prev) => ({
+      ...prev,
+      showAIAnalystOnStartup: newValue instanceof DefaultValue ? prev.showAIAnalystOnStartup : newValue,
+    }));
+
+    // Also update the AI panel visibility to match the setting when user toggles it
+    if (!(newValue instanceof DefaultValue)) {
+      set(showAIAnalystAtom, newValue);
+    }
+
+    focusGrid();
+  },
+});
