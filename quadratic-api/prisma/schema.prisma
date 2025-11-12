@@ -163,6 +163,7 @@ enum ConnectionType {
     NEON
     SUPABASE
     MIXPANEL
+    GOOGLE_ANALYTICS
 }
 
 model Connection {

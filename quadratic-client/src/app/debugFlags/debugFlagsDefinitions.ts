@@ -134,9 +134,9 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
 
   // Misc. group
   debugEnableSyncedConnections: {
-    initial: false,
+    initial: true,
     title: 'Enable Synced Connections',
-    description: 'Enable synced connections (e.g. Mixpanel)',
+    description: 'Enable synced connections (e.g. Mixpanel, Google Analytics)',
     group: 'Misc.',
   },
   debugShowFileIO: {

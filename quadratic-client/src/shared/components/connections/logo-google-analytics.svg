@@ -1,0 +1,11 @@
+<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Google Analytics Icon -->
+  <g transform="translate(10, 8)">
+    <path d="M22.84 2.998v17.999a3.002 3.002 0 11-6.003 0V2.998a3.002 3.002 0 116.003 0zm-9.456 9.455v8.544a3.002 3.002 0 11-6.003 0v-8.544a3.002 3.002 0 116.003 0zM3.93 17.72a3.002 3.002 0 100 6.003 3.002 3.002 0 000-6.003z" fill="#F9AB00"/>
+    <path d="M22.84 2.998v17.999a3.002 3.002 0 11-6.003 0V2.998a3.002 3.002 0 116.003 0z" fill="#E37400"/>
+  </g>
+  
+  <!-- Google Analytics Text -->
+  <text x="45" y="17" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#5F6368">Google</text>
+  <text x="45" y="30" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#5F6368">Analytics</text>
+</svg>

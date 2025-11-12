@@ -68,6 +68,7 @@ ${
     : ''
 }
 ${language === 'MIXPANEL' ? 'When generating Mixpanel queries, do not include the schema name in the query.' : ''}
+${language === 'GOOGLE_ANALYTICS' ? 'When generating Google Analytics queries, do not include the schema name in the query.' : ''}
 \n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
 Use any functions that are part of the ${language} library.\n

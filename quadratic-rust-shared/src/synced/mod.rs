@@ -11,6 +11,7 @@ use crate::{
     error::Result,
 };
 
+pub mod google_analytics;
 pub mod mixpanel;
 
 const DATE_FORMAT: &str = "%Y-%m-%d";
@@ -20,11 +21,17 @@ fn synced_error(e: impl ToString) -> SharedError {
     SharedError::Synced(e.to_string())
 }
 
+/// Convert a string to a date.
+fn string_to_date(string_date: &str) -> Result<NaiveDate> {
+    NaiveDate::parse_from_str(string_date, DATE_FORMAT).map_err(synced_error)
+}
+
 /// Parse a date from a string.
 fn parse_file_date(string_date: &str) -> Result<NaiveDate> {
     // remove .parquet from the end of the string
     let string_date = string_date.to_ascii_lowercase().replace(".parquet", "");
-    let date = NaiveDate::parse_from_str(&string_date, DATE_FORMAT).map_err(synced_error)?;
+    let date = string_to_date(&string_date)?;
+
     Ok(date)
 }
 
@@ -254,7 +261,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::arrow::object_store::new_filesystem_object_store;
     use bytes::Bytes;
@@ -262,14 +269,14 @@ mod tests {
     use std::{collections::HashMap, fs};
     use tempfile::TempDir;
 
-    fn create_temp_object_store() -> (TempDir, Arc<dyn ObjectStore>) {
+    pub fn create_temp_object_store() -> (TempDir, Arc<dyn ObjectStore>) {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let path = temp_dir.path().to_str().expect("Invalid temp path");
         let (store, _) = new_filesystem_object_store(path).expect("Failed to create object store");
         (temp_dir, store)
     }
 
-    fn create_test_parquet_files(temp_dir: &TempDir, dates: &[&str]) {
+    pub fn create_test_parquet_files(temp_dir: &TempDir, dates: &[&str]) {
         for date in dates {
             let file_path = temp_dir.path().join(format!("{}.parquet", date));
             fs::write(&file_path, b"fake parquet data").expect("Failed to write test file");

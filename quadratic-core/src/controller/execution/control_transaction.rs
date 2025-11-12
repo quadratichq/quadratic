@@ -206,6 +206,7 @@ impl GridController {
                             ConnectionKind::Supabase => "Supabase1",
                             ConnectionKind::Neon => "Neon1",
                             ConnectionKind::Mixpanel => "Mixpanel1",
+                            ConnectionKind::GoogleAnalytics => "GoogleAnalytics1",
                         },
                         // this should not happen
                         _ => "Connection 1",

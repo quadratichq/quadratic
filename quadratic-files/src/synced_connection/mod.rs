@@ -15,6 +15,7 @@ pub(crate) mod mixpanel;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub(crate) enum SyncedConnectionKind {
     Mixpanel,
+    GoogleAnalytics,
 }
 
 #[derive(Debug, Clone, PartialEq)]
