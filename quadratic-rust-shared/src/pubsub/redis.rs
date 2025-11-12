@@ -101,6 +101,17 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
+    /// Subscribe to a channel.
+    async fn subscribe_with_first_message(
+        &mut self,
+        channel: &str,
+        _group: &str,
+        _id: Option<&str>,
+    ) -> Result<()> {
+        self.pubsub.subscribe(channel).await?;
+        Ok(())
+    }
+
     /// Publish a message to a channel.
     async fn publish(
         &mut self,
