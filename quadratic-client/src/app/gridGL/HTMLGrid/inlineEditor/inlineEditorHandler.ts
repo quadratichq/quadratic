@@ -285,6 +285,18 @@ class InlineEditorHandler {
 
       inlineEditorEvents.emit('status', true, value);
 
+      // Manually trigger valueChanged if the initial value ends with : to show emoji dropdown
+      // Only trigger if : is at the start or after whitespace (not after text like "test:")
+      if (value.endsWith(':') && !this.formula) {
+        const beforeColon = value.slice(0, -1);
+        if (beforeColon === '' || beforeColon.match(/\s$/)) {
+          // Small delay to ensure the editor is fully initialized
+          setTimeout(() => {
+            inlineEditorEvents.emit('valueChanged', value);
+          }, 10);
+        }
+      }
+
       // this needs to be at the end to avoid a race condition where the cursor
       // draws at 0,0 when editing in a data table
       this.open = true;

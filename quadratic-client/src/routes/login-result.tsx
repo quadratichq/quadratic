@@ -1,4 +1,5 @@
 import { authClient } from '@/auth/auth';
+import { getAndClearRedirectState } from '@/auth/workos';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -6,6 +7,7 @@ import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
+const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
 const SHOW_ONBOARDING_QUESTIONNAIRE = Math.random() < 0.5;
 const SHOW_ONBOARDING_VIDEO = Math.random() < 0.5;
 
@@ -22,7 +24,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
       // Special case for first-time users
       if (userCreated) {
-        trackEvent('[Auth].signup');
+        await trackEvent('[Auth].signup');
         try {
           // Read UTM cookie if it exists
           const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
@@ -49,7 +51,17 @@ export const loader = async ({ request }: { request: Request }) => {
         }
       }
 
-      const redirectTo = getRedirectTo() || '/';
+      // Get redirect destination from WorkOS state (if available) or URL params
+      let redirectTo = getRedirectTo() || '/';
+
+      // For WorkOS, check if there's a redirect state from the OAuth callback
+      if (AUTH_TYPE === 'workos') {
+        const workosState = getAndClearRedirectState();
+        if (workosState?.redirectTo) {
+          redirectTo = workosState.redirectTo;
+        }
+      }
+
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {

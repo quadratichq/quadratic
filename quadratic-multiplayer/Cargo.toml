@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-multiplayer"
-version = "0.20.5"
+version = "0.21.0"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -27,7 +27,7 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
     "console_error_panic_hook",
     "js",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "auth",
     "aws",
     "environment",

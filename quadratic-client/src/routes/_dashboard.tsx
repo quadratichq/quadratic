@@ -5,6 +5,7 @@ import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
+import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDialog';
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
@@ -60,12 +61,8 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response | null> => {
-  const { activeTeamUuid } = await requireAuth();
-
-  if (!activeTeamUuid) {
-    return null;
-  }
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
 
   const { params, request } = loaderArgs;
 
@@ -150,14 +147,20 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
-  const loaderData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData | null;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-
+  const {
+    activeTeam: {
+      userMakingRequest: { teamRole: userMakingRequestTeamRole },
+      clientDataKv: { lastSolicitationForProUpgrade },
+      billing: { status: billingStatus },
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
   // When the location changes, close the menu (if it's already open) and reset scroll
@@ -180,9 +183,7 @@ export const Component = () => {
     };
   }, [revalidator]);
 
-  // we keep the loading UI if the auth failed (loader will return null)
-  useRemoveInitialLoadingUI(!loaderData);
-  if (!loaderData) return null;
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>
@@ -222,6 +223,12 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <ImportProgressList />
+        <UpgradeDialogWithPeriodicReminder
+          teamUuid={activeTeamUuid}
+          userMakingRequestTeamRole={userMakingRequestTeamRole}
+          lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
+          billingStatus={billingStatus}
+        />
       </TooltipProvider>
     </RecoilRoot>
   );

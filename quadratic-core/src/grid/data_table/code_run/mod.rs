@@ -157,6 +157,7 @@ pub enum ConnectionKind {
     Mariadb,
     Supabase,
     Neon,
+    Mixpanel,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
