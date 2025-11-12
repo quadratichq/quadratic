@@ -1500,6 +1500,12 @@ export interface CoreClientSetFormula {
   error?: string;
 }
 
+export interface CoreClientMergeCells {
+  type: 'coreClientMergeCells';
+  sheetId: string;
+  mergeCells: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1701,4 +1707,5 @@ export type CoreClientMessage =
   | CoreClientUndoResponse
   | CoreClientRedoResponse
   | CoreClientStartupTimer
-  | CoreClientSetFormula;
+  | CoreClientSetFormula
+  | CoreClientMergeCells;

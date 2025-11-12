@@ -47,7 +47,7 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreGetCellFormatSummary,
@@ -256,6 +256,10 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientStartupTimer') {
       events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
+      return;
+    } else if (e.data.type === 'coreClientMergeCells') {
+      const mergeCells = JsMergeCells.createFromBytes(e.data.mergeCells);
+      events.emit('mergeCells', e.data.sheetId, mergeCells);
       return;
     }
 

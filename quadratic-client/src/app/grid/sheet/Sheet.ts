@@ -13,6 +13,7 @@ import type {
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import {
+  JsMergeCells,
   SheetContentCache,
   SheetDataTablesCache,
   type SheetOffsets,
@@ -40,6 +41,8 @@ export class Sheet {
   private _contentCache: SheetContentCache;
   private _dataTablesCache: SheetDataTablesCache;
 
+  private mergeCells: JsMergeCells;
+
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this._info = info;
     this.sheets = sheets;
@@ -52,12 +55,30 @@ export class Sheet {
 
     this._contentCache = SheetContentCache.new_empty();
     this._dataTablesCache = SheetDataTablesCache.new_empty();
+    this.mergeCells = new JsMergeCells();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
     events.on('contentCache', this.updateContentCache);
     events.on('dataTablesCache', this.updateTablesCache);
+    events.on('mergeCells', this.updateMergeCells);
   }
+
+  destroy() {
+    this.contentCache.free();
+    events.off('sheetBounds', this.updateBounds);
+    events.off('sheetValidations', this.sheetValidations);
+    events.off('contentCache', this.updateContentCache);
+    events.off('dataTablesCache', this.updateTablesCache);
+    this.mergeCells.free();
+    events.off('mergeCells', this.updateMergeCells);
+  }
+
+  private updateMergeCells = (sheetId: string, mergeCells: JsMergeCells) => {
+    if (sheetId === this.id) {
+      this.mergeCells = mergeCells;
+    }
+  };
 
   get id(): string {
     return this._info.sheet_id;
@@ -85,14 +106,6 @@ export class Sheet {
 
   get formatBounds(): GridBounds {
     return this._info.format_bounds;
-  }
-
-  destroy() {
-    this.contentCache.free();
-    events.off('sheetBounds', this.updateBounds);
-    events.off('sheetValidations', this.sheetValidations);
-    events.off('contentCache', this.updateContentCache);
-    events.off('dataTablesCache', this.updateTablesCache);
   }
 
   get contentCache(): SheetContentCache {
