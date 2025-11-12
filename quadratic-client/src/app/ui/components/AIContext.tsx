@@ -1,5 +1,6 @@
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
-import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getFileTypeFromName } from '@/app/helpers/files';
@@ -33,13 +34,13 @@ export const AIContext = memo(
   ({ context, setContext, files, setFiles, importFiles, setImportFiles, disabled, textareaRef }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const { connections } = useConnectionsFetcher();
-    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+    const setConnectionsPanel = useSetRecoilState(connectionsPanelAtom);
 
     const handleOnClickConnection = useCallback(() => {
-      setAIAnalystActiveSchemaConnectionUuid(undefined);
+      setConnectionsPanel((prev) => ({ ...prev, showConnectionsPanel: false, activeConnectionUuid: null }));
       setContext?.((prev) => ({ ...prev, connection: undefined }));
       textareaRef.current?.focus();
-    }, [setContext, textareaRef, setAIAnalystActiveSchemaConnectionUuid]);
+    }, [setContext, textareaRef, setConnectionsPanel]);
 
     const handleOnClickFileContext = useCallback(
       (index: number) => {
@@ -75,8 +76,12 @@ export const AIContext = memo(
               secondary={''}
               onRemove={handleOnClickConnection}
               onClick={() => {
-                setAIAnalystActiveSchemaConnectionUuid((prevUuid) => {
-                  return prevUuid && prevUuid === connection.uuid ? undefined : connection.uuid;
+                setConnectionsPanel((prev) => {
+                  return {
+                    ...prev,
+                    showConnectionsPanel: true,
+                    activeConnectionUuid: connection.uuid,
+                  };
                 });
                 textareaRef.current?.focus();
               }}

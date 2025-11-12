@@ -1,12 +1,15 @@
 import {
+  aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
@@ -14,7 +17,7 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = memo(() => {
@@ -24,6 +27,9 @@ export const AIAnalyst = memo(() => {
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const connectionsPanel = useRecoilValue(connectionsPanelAtom);
+  const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
+  const { connections } = useConnectionsFetcher();
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
 
   const initialLoadRef = useRef(true);
@@ -65,6 +71,28 @@ export const AIAnalyst = memo(() => {
       events.emit('aiAnalystDroppedFiles', files);
     }
   }, []);
+
+  // TODO: consider fixing this hook (if necessary)
+  // What about case where there's no active connection currently? Handle this
+  const initialContext = useMemo(() => {
+    if (showAIAnalyst && currentChat.id === '' && connectionsPanel.showConnectionsPanel) {
+      const activeConnection = connections.find(
+        (connection) => connection.uuid === connectionsPanel.activeConnectionUuid
+      );
+      if (activeConnection) {
+        const out = {
+          connection: {
+            type: activeConnection.type,
+            id: activeConnection.uuid,
+            name: activeConnection.name,
+          },
+        };
+        console.log('set initialContext', out);
+        return out;
+      }
+    }
+    return undefined;
+  }, [currentChat, showAIAnalyst, connectionsPanel, connections]);
 
   if (!showAIAnalyst || presentationMode) {
     return null;
@@ -112,6 +140,7 @@ export const AIAnalyst = memo(() => {
                   textareaRef={textareaRef}
                   messageIndex={messagesCount}
                   showEmptyChatPromptSuggestions={true}
+                  initialContext={initialContext}
                   uiContext="analyst-new-chat"
                 />
                 <AIMessageCounterBar />

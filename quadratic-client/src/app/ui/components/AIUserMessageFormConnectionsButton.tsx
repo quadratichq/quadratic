@@ -1,4 +1,4 @@
-import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
@@ -29,7 +29,7 @@ interface AIUserMessageFormConnectionsButtonProps {
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
-    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+    const setConnectionsPanel = useSetRecoilState(connectionsPanelAtom);
 
     const handleOnClickButton = useCallback(() => {
       trackEvent('[AIConnectionsPicker].show');
@@ -61,7 +61,7 @@ export const AIUserMessageFormConnectionsButton = memo(
             ...prev,
             connection: undefined,
           }));
-          setAIAnalystActiveSchemaConnectionUuid(undefined);
+          setConnectionsPanel((prev) => ({ ...prev, showConnectionsPanel: false, activeConnectionUuid: null }));
           return;
         }
 
@@ -76,9 +76,9 @@ export const AIUserMessageFormConnectionsButton = memo(
           ...prev,
           connection: { type: connection.type, id: connection.uuid, name: connection.name },
         }));
-        setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+        setConnectionsPanel((prev) => ({ ...prev, showConnectionsPanel: true, activeConnectionUuid: connectionUuid }));
       },
-      [connections, context.connection, setContext, setAIAnalystActiveSchemaConnectionUuid]
+      [connections, context.connection, setContext, setConnectionsPanel]
     );
 
     return (

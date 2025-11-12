@@ -1,26 +1,32 @@
-import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
-import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { connectionsPanelAtom } from '@/app/atoms/connectionsPanelAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useAIAnalystConnectionSchemaPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
-import { ChevronLeftIcon } from '@/shared/components/Icons';
+import { AIIcon, CloseIcon, SettingsIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { memo, useCallback, useRef } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export const AIAnalystConnectionSchema = memo(() => {
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const presentationMode = useRecoilValue(presentationModeAtom);
   const panelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystConnectionSchemaPanelWidth();
-  const [aiAnalystActiveSchemaConnectionUuid, setAIAnalystActiveSchemaConnectionUuid] = useRecoilState(
-    aiAnalystActiveSchemaConnectionUuidAtom
-  );
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  // TODO: maybe different selectors?
+  const [{ activeConnectionUuid }, setConnectionsPanel] = useRecoilState(connectionsPanelAtom);
+  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const { connections } = useConnectionsFetcher();
+
+  // TOOD: better UI for when you have 0 connections
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -36,18 +42,11 @@ export const AIAnalystConnectionSchema = memo(() => {
     [setPanelWidth]
   );
 
-  if (presentationMode || !aiAnalystActiveSchemaConnectionUuid) {
-    return null;
-  }
-
-  const connectionType =
-    connections && aiAnalystActiveSchemaConnectionUuid
-      ? connections.find((connection) => connection.uuid === aiAnalystActiveSchemaConnectionUuid)?.type
+  const hasConnections = connections.length > 0;
+  const activeConnection =
+    connections && activeConnectionUuid
+      ? connections.find((connection) => connection.uuid === activeConnectionUuid)
       : undefined;
-  // This should never happen, but just in case
-  if (!connectionType) {
-    throw new Error('A connection with a known UUID could not find its corresponding type');
-  }
 
   return (
     <div
@@ -58,23 +57,85 @@ export const AIAnalystConnectionSchema = memo(() => {
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
       <div className="h-full w-full pt-0.5">
-        <ConnectionSchemaBrowser
-          hideRefreshButton={true}
-          additionalActions={
+        <div className="flex h-10 items-center justify-between px-4">
+          <h3 className="text-sm font-bold">Connections</h3>
+          <div className="flex items-center gap-2">
+            {!showAIAnalyst && activeConnectionUuid && hasConnections && (
+              <TooltipPopover label="Chat with this connection">
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={() => {
+                    // TODO: put it in context
+                    // open a new chat with this connection in context
+                    setShowAIAnalyst(true);
+                  }}
+                >
+                  <AIIcon />
+                </Button>
+              </TooltipPopover>
+            )}
             <Button
-              onClick={() => setAIAnalystActiveSchemaConnectionUuid(undefined)}
+              size="icon-sm"
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={() => setShowConnectionsMenu(true)}
+            >
+              <SettingsIcon />
+            </Button>
+            <Button
+              onClick={() => setConnectionsPanel((prev) => ({ ...prev, showConnectionsPanel: false }))}
               size="icon-sm"
               variant="ghost"
               className="text-muted-foreground"
             >
-              <ChevronLeftIcon />
+              <CloseIcon />
             </Button>
-          }
-          teamUuid={teamUuid}
-          type={connectionType}
-          uuid={aiAnalystActiveSchemaConnectionUuid}
-          eventSource="app-left-side"
-        />
+          </div>
+        </div>
+        <div className="px-2 py-1">
+          {hasConnections ? (
+            <Select
+              value={activeConnectionUuid ?? ''}
+              onValueChange={(value) => setConnectionsPanel((prev) => ({ ...prev, activeConnectionUuid: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue asChild placeholder="Choose a connection…">
+                  <div className="flex items-center gap-2">
+                    <LanguageIcon language={activeConnection?.type} />{' '}
+                    {activeConnection ? activeConnection.name : 'Choose a connection…'}
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {connections.map((connection) => (
+                  <SelectItem key={connection.uuid} value={connection.uuid}>
+                    <div className="flex items-center gap-2 truncate">
+                      <LanguageIcon language={connection.type} /> {connection.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="text-center text-sm text-muted-foreground">
+              No available connections.{' '}
+              <button onClick={() => setShowConnectionsMenu(true)} className="text-primary hover:underline">
+                Manage them.
+              </button>
+            </div>
+          )}
+        </div>
+        {activeConnectionUuid && activeConnection && hasConnections && (
+          <ConnectionSchemaBrowser
+            showHeader={false}
+            teamUuid={teamUuid}
+            type={activeConnection.type}
+            uuid={activeConnectionUuid}
+            eventSource="app-left-side"
+          />
+        )}
       </div>
     </div>
   );
