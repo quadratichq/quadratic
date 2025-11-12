@@ -101,7 +101,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 <ExamplesIcon className="mr-3 text-primary" />
 
                 <span className="flex flex-col">
-                  Examples
+                  Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>
                 </span>
               </Link>

@@ -98,7 +98,7 @@ export function OnboardingBanner() {
                   trackEvent('[OnboardingBanner].newFileFromExample');
                 }}
               >
-                <MixIcon className="mr-1" /> Explore example files
+                <MixIcon className="mr-1" /> Explore templates
               </Link>
             </Button>
           </div>

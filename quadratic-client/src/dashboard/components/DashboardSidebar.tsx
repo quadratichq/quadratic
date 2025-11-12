@@ -161,7 +161,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.EXAMPLES}>
               <ExamplesIcon className={classNameIcons} />
-              Examples
+              Templates
             </SidebarNavLink>
           )}
           <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
