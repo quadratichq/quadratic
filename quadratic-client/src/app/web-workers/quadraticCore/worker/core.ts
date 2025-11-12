@@ -342,6 +342,15 @@ class Core {
     }
   }
 
+  setFontSize(selection: string, fontSize: number, cursor: string, isAi: boolean) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.setFontSize(selection, fontSize, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('setFontSize', e);
+    }
+  }
+
   setTextColor(selection: string, color: string | undefined, cursor: string, isAi: boolean) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

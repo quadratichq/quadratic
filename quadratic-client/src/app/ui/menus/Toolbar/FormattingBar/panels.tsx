@@ -5,6 +5,7 @@
 //! measuring the widths.
 
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import {
@@ -29,6 +30,7 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
+import { DropdownMenuItem } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
 import { forwardRef, memo } from 'react';
@@ -112,6 +114,51 @@ export const TextFormatting = memo(
       <FormatSeparator />
     </div>
   ))
+);
+
+export const FontSizeFormatting = memo(
+  forwardRef<
+    HTMLDivElement | null,
+    { className?: string; formatSummary?: CellFormatSummary | undefined; hideLabel?: boolean }
+  >((props, ref) => {
+    const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72, 96];
+    const currentFontSize = props.formatSummary?.fontSize ?? 14;
+
+    return (
+      <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
+        <div className="flex items-center -space-x-px">
+          <FormatButton action={Action.FormatFontSizeDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
+          <FormatButtonDropdown
+            action="font-size"
+            tooltipLabel="Font size"
+            Icon={null}
+            IconNode={<span className="text-xs">{currentFontSize}</span>}
+            hideLabel={props.hideLabel}
+          >
+            <div className="max-h-full overflow-y-auto">
+              {fontSizes.map((size) => {
+                const actionSpec = defaultActionSpec[Action.FormatFontSize];
+                return (
+                  <DropdownMenuItem
+                    key={size}
+                    onClick={() => {
+                      actionSpec.run(size);
+                    }}
+                    aria-label={props.hideLabel ? '' : `${size}px`}
+                    className="justify-center py-1.5"
+                  >
+                    {size}
+                  </DropdownMenuItem>
+                );
+              })}
+            </div>
+          </FormatButtonDropdown>
+          <FormatButton action={Action.FormatFontSizeIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
+        </div>
+        <FormatSeparator />
+      </div>
+    );
+  })
 );
 
 export const FillAndBorderFormatting = memo(

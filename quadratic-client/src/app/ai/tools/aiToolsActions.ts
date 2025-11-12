@@ -588,6 +588,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         numeric_commas: args.numeric_commas ?? null,
         numeric_format: numericFormat,
         date_time: args.date_time ?? null,
+        font_size: args.font_size ?? null,
       };
 
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;

@@ -2,13 +2,13 @@
 // Do not modify it manually.
 
 export type A1Error = { "type": "InvalidCellReference", "error": string } | { "type": "InvalidSheetId", "error": string } | { "type": "InvalidSheetMap", "error": string } | { "type": "InvalidColumn", "error": string } | { "type": "InvalidSheetName", "error": string } | { "type": "InvalidSheetNameMissingQuotes", "error": string } | { "type": "InvalidRange", "error": string } | { "type": "InvalidRow", "error": string } | { "type": "SpuriousDollarSign", "error": string } | { "type": "TooManySheets", "error": string } | { "type": "MismatchedQuotes", "error": string } | { "type": "WrongCellCount", "error": string } | { "type": "InvalidExclusion", "error": string } | { "type": "TranslateInvalid", "error": string } | { "type": "SheetNotFound" } | { "type": "InvalidTableRef", "error": string } | { "type": "TableNotFound", "error": string } | { "type": "MultipleColumnDefinitions" } | { "type": "MultipleRowDefinitions" } | { "type": "UnexpectedRowNumber" } | { "type": "InvalidRowRange", "error": string } | { "type": "OutOfBounds", "error": RefError };
-export type A1Selection = {
+export type A1Selection = { 
 /**
  * Current sheet.
  *
  * Selections can only span a single sheet.
  */
-sheet_id: SheetId,
+sheet_id: SheetId, 
 /**
  * Cursor position, which is moved using the arrow keys (while not holding
  * shift).
@@ -17,7 +17,7 @@ sheet_id: SheetId,
  * in the case of an infinite selection it contains information that cannot
  * be inferred from `ranges`.
  */
-cursor: Pos,
+cursor: Pos, 
 /**
  * Selected ranges (union).
  *
@@ -31,11 +31,11 @@ cursor: Pos,
  * holding the shift key.
  */
 ranges: Array<CellRefRange>, };
-export type ArraySize = {
+export type ArraySize = { 
 /**
  * Width (number of columns)
  */
-w: number,
+w: number, 
 /**
  * Height (number of rows)
  */
@@ -48,7 +48,7 @@ export type BorderStyleCell = { top: BorderStyleTimestamp | null, bottom: Border
 export type BorderStyleTimestamp = { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, };
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
-export type CellFormatSummary = { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, numericFormat: NumericFormat | null, };
+export type CellFormatSummary = { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, numericFormat: NumericFormat | null, fontSize: number | null, };
 export type CellRefCoord = { coord: bigint, is_absolute: boolean, };
 export type CellRefRange = { range: RefRangeBounds, } | { range: TableRef, };
 export type CellRefRangeEnd = { col: CellRefCoord, row: CellRefCoord, };
@@ -96,7 +96,7 @@ export type JsHashValidationWarnings = { sheet_id: SheetId, hash: Pos | null, wa
 export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, };
 export type JsNumber = { decimals: number | null, commas: boolean | null, format: NumericFormat | null, };
 export type JsOffset = { column: number | null, row: number | null, size: number, };
-export type JsRenderCell = { x: bigint, y: bigint, value: string,
+export type JsRenderCell = { x: bigint, y: bigint, value: string, 
 /**
  * Code language, set only for the top left cell of a code output.
  */
@@ -121,31 +121,31 @@ export type NumberRange = { "Range": [number | null, number | null] } | { "Equal
 export type NumericFormat = { type: NumericFormatKind, symbol: string | null, };
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
 export type PasteSpecial = "None" | "Values" | "Formats";
-export type Pos = {
+export type Pos = { 
 /**
  * Column
  */
-x: bigint,
+x: bigint, 
 /**
  * Row
  */
 y: bigint, };
-export type Rect = {
+export type Rect = { 
 /**
  * Upper-left corner.
  */
-min: Pos,
+min: Pos, 
 /**
  * Lower-right corner.
  */
 max: Pos, };
 export type RefRangeBounds = { start: CellRefRangeEnd, end: CellRefRangeEnd, };
 export type Rgba = { red: number, green: number, blue: number, alpha: number, };
-export type RunError = {
+export type RunError = { 
 /**
  * Location of the source code where the error occurred (if any).
  */
-span: Span | null,
+span: Span | null, 
 /**
  * Type of error.
  */
@@ -156,26 +156,26 @@ export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without
 export type SheetId = { id: string, };
 export type SheetInfo = { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetPos = { x: bigint, y: bigint, sheet_id: SheetId, };
-export type SheetRect = {
+export type SheetRect = { 
 /**
  * Upper-left corner.
  */
-min: Pos,
+min: Pos, 
 /**
  * Lower-right corner.
  */
-max: Pos,
+max: Pos, 
 /**
  * The sheet that this region is on.
  */
 sheet_id: SheetId, };
 export type SmallTimestamp = number;
 export type SortDirection = "Ascending" | "Descending" | "None";
-export type Span = {
+export type Span = { 
 /**
  * The byte index of the first character.
  */
-start: number,
+start: number, 
 /**
  * The byte index after the last character.
  */

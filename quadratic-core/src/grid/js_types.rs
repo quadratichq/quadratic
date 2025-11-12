@@ -303,6 +303,7 @@ pub struct CellFormatSummary {
     pub strike_through: Option<bool>,
 
     pub numeric_format: Option<NumericFormat>,
+    pub font_size: Option<i16>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

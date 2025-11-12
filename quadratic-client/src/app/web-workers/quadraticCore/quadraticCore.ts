@@ -658,6 +658,16 @@ class QuadraticCore {
     });
   }
 
+  setFontSize(selection: string, fontSize: number, isAi: boolean) {
+    this.send({
+      type: 'clientCoreSetCellFontSize',
+      selection,
+      fontSize,
+      cursor: sheets.getCursorPosition(),
+      isAi,
+    });
+  }
+
   setTextColor(selection: string, color: string | undefined, isAi: boolean) {
     this.send({
       type: 'clientCoreSetCellTextColor',

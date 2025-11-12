@@ -290,6 +290,14 @@ export interface ClientCoreSetCellItalic {
   isAi: boolean;
 }
 
+export interface ClientCoreSetCellFontSize {
+  type: 'clientCoreSetCellFontSize';
+  selection: string;
+  fontSize: number;
+  cursor: string;
+  isAi: boolean;
+}
+
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
   selection: string;
@@ -1511,6 +1519,7 @@ export type ClientCoreMessage =
   | ClientCoreSummarizeSelection
   | ClientCoreSetCellBold
   | ClientCoreSetCellItalic
+  | ClientCoreSetCellFontSize
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellUnderline

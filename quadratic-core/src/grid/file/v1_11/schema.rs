@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code)] // necessary because old schema may not be used anymore
 
 use crate::grid::file::v1_10;
 

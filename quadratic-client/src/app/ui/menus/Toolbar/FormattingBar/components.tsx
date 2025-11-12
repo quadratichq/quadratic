@@ -64,7 +64,7 @@ export const FormatButtonDropdown = memo(
           </TooltipContent>
         </Tooltip>
         <DropdownMenuContent
-          className={cn('hover:bg-background', className)}
+          className={cn('w-fit min-w-fit px-4 hover:bg-background', className)}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             focusGrid();
