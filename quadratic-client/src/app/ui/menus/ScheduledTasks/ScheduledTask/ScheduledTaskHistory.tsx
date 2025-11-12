@@ -177,9 +177,7 @@ export const ScheduledTaskHistory = ({ getHistory, currentTaskUuid }: ScheduledT
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <h3 className="text-sm font-medium">Run history</h3>
       <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto rounded border px-2 py-1 shadow-sm">
-        {loading ? (
-          [1, 2, 3].map((i) => <RowItemLoader key={i} />)
-        ) : history.length === 0 ? (
+        {loading ? null : history.length === 0 ? (
           <p className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No runs yet</p>
         ) : (
           <>
