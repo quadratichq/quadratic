@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { scheduledTaskDecode } from '@/app/quadratic-core/quadratic_core';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { getCronToListEntry } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ArrowRightIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
@@ -72,6 +73,7 @@ const getScheduledTaskName = (operations: number[]) => {
 
 const ScheduledTasksListBody = () => {
   const { scheduledTasks, showScheduledTasks } = useScheduledTasks();
+  const { timezone } = useFileContext();
 
   return (
     <div className="flex flex-col px-4 py-2">
@@ -85,7 +87,7 @@ const ScheduledTasksListBody = () => {
           >
             <span className="font-medium">{getScheduledTaskName(task.operations)}</span>
             <span className="w-10/12 truncate text-left text-xs text-muted-foreground">
-              {getCronToListEntry(task.cronExpression)}
+              {getCronToListEntry(task.cronExpression, timezone ?? undefined)}
             </span>
 
             <ArrowRightIcon className="absolute right-3 top-2 mt-2 text-muted-foreground opacity-50" />

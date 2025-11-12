@@ -1,9 +1,10 @@
 //! This is the interval component for the scheduled task.
 
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ScheduledTaskInputGroup } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInputGroup';
 import {
-  getLocalTimeZoneAbbreviation,
+  getTimeZoneAbbreviation,
   type CronInterval,
   type ScheduledTaskIntervalType,
 } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
@@ -38,6 +39,12 @@ interface Props {
 }
 
 export const ScheduledTaskInterval = (props: Props) => {
+  const { timezone: fileTimezone } = useFileContext();
+
+  // Use file timezone or fallback to browser timezone
+  const timezone = fileTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezoneAbbr = getTimeZoneAbbreviation(timezone);
+
   const {
     cronType,
     days,
@@ -131,7 +138,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                   onChange={(e) => changeDaysTime(e.target.value)}
                   className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                 />
-                <div className="text-sm">{getLocalTimeZoneAbbreviation()}</div>
+                <div className="text-sm">{timezoneAbbr}</div>
               </div>
             </>
           )}
@@ -159,7 +166,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 }}
               />
               minutes
-              <div className="text-sm">{getLocalTimeZoneAbbreviation()}</div>
+              <div className="text-sm">{timezoneAbbr}</div>
             </div>
           )}
           {cronType === 'custom' && (

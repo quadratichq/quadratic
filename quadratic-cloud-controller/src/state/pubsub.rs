@@ -101,7 +101,7 @@ impl State {
             .lock()
             .await
             .connection
-            .subscribe(&channel, GROUP, None)
+            .subscribe_with_first_message(&channel, GROUP, None)
             .await
             .map_err(|e| ControllerError::PubSub(e.to_string()))?;
 

@@ -244,6 +244,34 @@ impl super::PubSub for RedisConnection {
         }
     }
 
+    /// Create a group and a key (if it doesn't already exist), start from the beginning
+    /// This is different from subscribe() in that if the id doesn't exist, then the first message on the stream is used
+    async fn subscribe_with_first_message(
+        &mut self,
+        channel: &str,
+        group: &str,
+        id: Option<&str>,
+    ) -> Result<()> {
+        let result = self
+            .multiplex
+            .xgroup_create_mkstream::<&str, &str, &str, String>(channel, group, id.unwrap_or("0"))
+            .await;
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                // ignore BUSYGROUP errors, which indicate the group already exists
+                if e.to_string().contains("BUSYGROUP") {
+                    Ok(())
+                } else {
+                    Err(SharedError::PubSub(format!(
+                        "Error creating group {group} for channel {channel}: {e}"
+                    )))
+                }
+            }
+        }
+    }
+
     /// Publish a message to a channel.
     async fn publish(
         &mut self,

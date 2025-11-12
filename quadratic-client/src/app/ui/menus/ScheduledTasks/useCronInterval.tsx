@@ -5,18 +5,14 @@ import { joinListWith } from '@/shared/components/JointListWith';
 import CronExpressionParser, { CronFieldCollection, type DayOfWeekRange } from 'cron-parser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-// local time constants
-export const MIDNIGHT_LOCAL_HOUR = new Date(0, 0, 0, 0, 0, 0).getUTCHours();
-export const MIDNIGHT_LOCAL_MINUTE = new Date(0, 0, 0, 0, 0, 0).getUTCMinutes();
-
 export type ScheduledTaskIntervalType = 'days' | 'hour' | 'minute' | 'custom';
 
 const CRON_ERROR_TOO_FREQUENT = 'cannot run more frequently than once per hour';
 const CRON_MIN_INTERVAL_MS = 1000 * 60 * 60;
 
-export const getLocalTimeZoneAbbreviation = (): string => {
+export const getTimeZoneAbbreviation = (timezone: string): string => {
   return (
-    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' })
       .formatToParts(new Date())
       .find((part) => part.type === 'timeZoneName')?.value ?? ''
   );
@@ -44,18 +40,43 @@ export interface CronInterval {
   cronError: string | undefined;
 }
 
-const hourMinuteUTCToLocal = (hour: number, minute: number): { hour: number; minute: number } => {
-  const date = new Date(Date.UTC(0, 0, 0, hour, minute, 0));
-  const hourLocal = date.getHours();
-  const minuteLocal = date.getMinutes();
-  return { hour: hourLocal, minute: minuteLocal };
+const hourMinuteUTCToTimezone = (hour: number, minute: number, timezone: string): { hour: number; minute: number } => {
+  // Create a UTC date
+  const utcDate = new Date(Date.UTC(2000, 0, 1, hour, minute, 0));
+
+  // Format in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(utcDate);
+  const hourInTz = parseInt(parts.find((p) => p.type === 'hour')?.value || '0');
+  const minuteInTz = parseInt(parts.find((p) => p.type === 'minute')?.value || '0');
+
+  return { hour: hourInTz, minute: minuteInTz };
 };
 
-const hourMinuteLocalToUTC = (hour: number, minute: number): { hour: number; minute: number } => {
-  const date = new Date(0, 0, 0, hour, minute, 0);
-  const hourUTC = date.getUTCHours();
-  const minuteUTC = date.getUTCMinutes();
-  return { hour: hourUTC, minute: minuteUTC };
+const hourMinuteTimezoneToUTC = (hour: number, minute: number, timezone: string): { hour: number; minute: number } => {
+  // Create a date representing midnight on Jan 1, 2000 in UTC
+  // We'll use this as a reference point to calculate the offset
+  const utcDate = new Date(Date.UTC(2000, 0, 1, hour, minute, 0));
+
+  // Convert this UTC date to the target timezone and back to get the offset
+  const tzDate = new Date(utcDate.toLocaleString('en-US', { timeZone: timezone }));
+  const offset = utcDate.getTime() - tzDate.getTime();
+
+  // Apply the offset to convert from target timezone to UTC
+  const correctedDate = new Date(utcDate.getTime() + offset);
+
+  return { hour: correctedDate.getUTCHours(), minute: correctedDate.getUTCMinutes() };
+};
+
+// Helper to get midnight in a timezone converted to UTC
+const getMidnightInTimezoneAsUTC = (timezone: string): { hour: number; minute: number } => {
+  return hourMinuteTimezoneToUTC(0, 0, timezone);
 };
 
 const isCustomCron = (fields: CronFieldCollection): boolean => {
@@ -70,8 +91,21 @@ const isCustomCron = (fields: CronFieldCollection): boolean => {
 };
 
 // Provides setting and displaying cron expressions for ScheduledTask
-export const UseCronInterval = (initialCron?: string): CronInterval => {
-  const [cron, setCron] = useState(initialCron ?? `${MIDNIGHT_LOCAL_MINUTE} ${MIDNIGHT_LOCAL_HOUR} * * 1-7`);
+export const UseCronInterval = (initialCron?: string, timezone?: string): CronInterval => {
+  // Use provided timezone or fallback to browser timezone (memoized to react to changes)
+  const tz = useMemo(() => timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, [timezone]);
+
+  const { hour: midnightHour, minute: midnightMinute } = useMemo(() => getMidnightInTimezoneAsUTC(tz), [tz]);
+
+  // Calculate initial cron value - only runs once on mount
+  const initialCronValue = useMemo(() => {
+    if (initialCron) return initialCron;
+    const { hour, minute } = getMidnightInTimezoneAsUTC(tz);
+    return `${minute} ${hour} * * 1-7`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  const [cron, setCron] = useState(initialCronValue);
   const [custom, setCustom] = useState(false);
 
   const [cronError, setCronError] = useState<string | undefined>();
@@ -140,18 +174,18 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
   const localTimeString = useMemo((): string => {
     if (!fields) return '';
     if (fields.hour.isWildcard || fields.minute.isWildcard) {
-      return `${MIDNIGHT_LOCAL_HOUR < 10 ? `0${MIDNIGHT_LOCAL_HOUR}` : MIDNIGHT_LOCAL_HOUR}:${MIDNIGHT_LOCAL_MINUTE < 10 ? `0${MIDNIGHT_LOCAL_MINUTE}` : MIDNIGHT_LOCAL_MINUTE}`;
+      return `${midnightHour < 10 ? `0${midnightHour}` : midnightHour}:${midnightMinute < 10 ? `0${midnightMinute}` : midnightMinute}`;
     }
-    const { hour, minute } = hourMinuteUTCToLocal(fields.hour.values[0], fields.minute.values[0]);
+    const { hour, minute } = hourMinuteUTCToTimezone(fields.hour.values[0], fields.minute.values[0], tz);
     return `${hour < 10 ? `0${hour}` : hour}:${minute < 10 ? `0${minute}` : minute}`;
-  }, [fields]);
+  }, [fields, tz, midnightHour, midnightMinute]);
 
   const localMinute = useMemo((): number => {
-    if (!fields) return MIDNIGHT_LOCAL_MINUTE;
-    if (fields.minute.isWildcard) return MIDNIGHT_LOCAL_MINUTE;
-    const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
+    if (!fields) return midnightMinute;
+    if (fields.minute.isWildcard) return midnightMinute;
+    const { minute } = hourMinuteUTCToTimezone(0, fields.minute.values[0], tz);
     return minute;
-  }, [fields]);
+  }, [fields, tz, midnightMinute]);
 
   const changeInterval = useCallback(
     (every: string) => {
@@ -161,10 +195,10 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
       }
 
       if (every === 'days') {
-        const { hour: convertedHour, minute: convertedMinute } = hourMinuteLocalToUTC(0, 0);
+        const { hour: convertedHour, minute: convertedMinute } = hourMinuteTimezoneToUTC(0, 0, tz);
         setCron(`${convertedMinute} ${convertedHour} * * 1-7`);
       } else if (every === 'hour') {
-        const { minute: convertedMinute } = hourMinuteLocalToUTC(0, 0);
+        const { minute: convertedMinute } = hourMinuteTimezoneToUTC(0, 0, tz);
         setCron(`${convertedMinute} * * * *`);
       } else if (every === 'minute') {
         setCron('* * * * *');
@@ -176,7 +210,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
         setCustom(false);
       }
     },
-    [setCron, setCustom]
+    [setCron, setCustom, tz]
   );
 
   const changeDaysTime = useCallback(
@@ -189,7 +223,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
       if (isNaN(hour) || isNaN(minute)) return;
       if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return;
 
-      const { hour: convertedHour, minute: convertedMinute } = hourMinuteLocalToUTC(hour, minute);
+      const { hour: convertedHour, minute: convertedMinute } = hourMinuteTimezoneToUTC(hour, minute, tz);
 
       // we use any b/c we're checking the range and type above. otherwise it would be an annoying type to define
       const newCronFields = CronFieldCollection.from(CronExpressionParser.parse(cron).fields, {
@@ -198,7 +232,7 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
       });
       setCron(newCronFields.stringify());
     },
-    [cron, fields]
+    [cron, fields, tz]
   );
 
   const changeDaysDay = useCallback(
@@ -243,11 +277,11 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
     (minute: string) => {
       if (!fields) return;
       if (!minute || isNaN(Number(minute))) return;
-      const { minute: convertedMinute } = hourMinuteLocalToUTC(0, Number(minute));
+      const { minute: convertedMinute } = hourMinuteTimezoneToUTC(0, Number(minute), tz);
       const newCronFields = CronExpressionParser.parse(`${convertedMinute} * * * *`).fields;
       setCron(newCronFields.stringify());
     },
-    [setCron, fields]
+    [setCron, fields, tz]
   );
 
   return {
@@ -274,7 +308,8 @@ export const UseCronInterval = (initialCron?: string): CronInterval => {
 const DAYS_STRING = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'];
 
 // Displays a cron expression in a list entry format in ScheduledTasksList
-export const getCronToListEntry = (cron: string): string => {
+export const getCronToListEntry = (cron: string, timezone?: string): string => {
+  const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const fields = CronExpressionParser.parse(cron).fields;
 
   // custom
@@ -300,15 +335,18 @@ export const getCronToListEntry = (cron: string): string => {
         conjunction: 'and',
       });
     }
-    const localTime = new Date(Date.UTC(0, 0, 0, fields.hour.values[0], fields.minute.values[0], 0));
-    const localTimeString = localTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    return `${days} at ${localTimeString} ${getLocalTimeZoneAbbreviation()}`;
+    const { hour, minute } = hourMinuteUTCToTimezone(fields.hour.values[0], fields.minute.values[0], tz);
+    // Format time in the specified timezone
+    const hourFormatted = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const localTimeString = `${hourFormatted}:${minute < 10 ? `0${minute}` : minute} ${ampm}`;
+    return `${days} at ${localTimeString} ${getTimeZoneAbbreviation(tz)}`;
   }
 
   // hourly
   if (!fields.minute.isWildcard && fields.hour.isWildcard) {
-    const { minute } = hourMinuteUTCToLocal(0, fields.minute.values[0]);
-    return `Every hour at :${minute < 10 ? `0${minute}` : minute} ${getLocalTimeZoneAbbreviation()}`;
+    const { minute } = hourMinuteUTCToTimezone(0, fields.minute.values[0], tz);
+    return `Every hour at :${minute < 10 ? `0${minute}` : minute} ${getTimeZoneAbbreviation(tz)}`;
   }
 
   // minute

@@ -1,6 +1,7 @@
 //! This component creates and edits a scheduled task.
 
 import { scheduledTaskEncode } from '@/app/quadratic-core/quadratic_core';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ScheduledTaskHistory } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHistory';
 import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { ScheduledTaskType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskType';
@@ -18,10 +19,11 @@ export const ScheduledTask = () => {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
+  const { timezone } = useFileContext();
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, getHistory } = useScheduledTasks();
 
   // holds all data/fns for the cron expression
-  const cronInterval = UseCronInterval(currentTask?.cronExpression);
+  const cronInterval = UseCronInterval(currentTask?.cronExpression, timezone ?? undefined);
   const cronRange = useCronRange(currentTask?.operations);
 
   const onSave = useCallback(async () => {

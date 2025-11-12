@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api/apiClient';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -16,7 +16,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { cn } from '@/shared/shadcn/utils';
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { useMemo, useState } from 'react';
-import { useRevalidator } from 'react-router';
 
 interface TimezoneGroup {
   label: string;
@@ -86,12 +85,10 @@ function getTimezoneGroups(): TimezoneGroup[] {
 
 export const ScheduledTasksTimezone = () => {
   const {
-    file: { uuid: fileUuid, timezone: fileTimezone },
     userMakingRequest: { filePermissions },
   } = useFileRouteLoaderData();
-  const revalidator = useRevalidator();
+  const { timezone, updateTimezone } = useFileContext();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const [isUpdating, setIsUpdating] = useState(false);
   const [open, setOpen] = useState(false);
 
   // Get timezone groups (memoized to avoid recalculation)
@@ -99,32 +96,20 @@ export const ScheduledTasksTimezone = () => {
 
   // Get user's browser timezone as fallback
   const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  // Track the selected timezone locally for immediate UI update
-  const [selectedTimezone, setSelectedTimezone] = useState<string | null>(fileTimezone);
-  const currentTimezone = selectedTimezone ?? fileTimezone ?? browserTimezone;
+  const currentTimezone = timezone ?? browserTimezone;
 
   // Check if user can edit
   const canEdit = filePermissions.includes('FILE_EDIT');
 
-  const handleTimezoneChange = async (newTimezone: string) => {
-    if (!canEdit || isUpdating) return;
+  const handleTimezoneChange = (newTimezone: string) => {
+    if (!canEdit) return;
 
     setOpen(false);
-    // Update local state immediately for instant UI feedback
-    setSelectedTimezone(newTimezone);
-    setIsUpdating(true);
     try {
-      await apiClient.files.update(fileUuid, { timezone: newTimezone });
-      // Revalidate to update the UI with the new timezone
-      revalidator.revalidate();
+      updateTimezone(newTimezone);
     } catch (error) {
       console.error('Failed to update timezone:', error);
       addGlobalSnackbar('Failed to update timezone. Try again.', { severity: 'error' });
-      // Revert to previous value on error
-      setSelectedTimezone(fileTimezone);
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -153,10 +138,10 @@ export const ScheduledTasksTimezone = () => {
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              disabled={!canEdit || isUpdating}
+              disabled={!canEdit}
               className="w-full justify-between text-xs font-normal"
             >
-              <span className="truncate">{isUpdating ? 'Updating...' : getCurrentTimezoneLabel()}</span>
+              <span className="truncate">{getCurrentTimezoneLabel()}</span>
               <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
