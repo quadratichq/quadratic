@@ -144,6 +144,12 @@ impl Sheet {
             &mut dirty_hashes,
             &mut rows_to_resize,
         );
+        self.format_transaction_changes(
+            formats.font_size.to_owned(),
+            true,
+            &mut dirty_hashes,
+            &mut rows_to_resize,
+        );
 
         // for wrap, we need to check if the new formats is wrap or old is wrap
         // no need to resize rows if wrap is not present in both new and old formats

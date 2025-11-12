@@ -88,6 +88,9 @@ export class CellLabel {
   private fontName!: string;
 
   private fontSize: number;
+  private lineHeight: number;
+  private underlineOffset: number;
+  private strikeThroughOffset: number;
   tint: number;
   private maxWidth?: number;
   private roundPixels?: boolean;
@@ -187,7 +190,10 @@ export class CellLabel {
     this.originalText = cell.value;
     this.text = this.getText(cell);
     this.link = this.isLink(cell);
-    this.fontSize = FONT_SIZE;
+    this.fontSize = cell.fontSize ?? FONT_SIZE;
+    this.lineHeight = (this.fontSize / FONT_SIZE) * LINE_HEIGHT;
+    this.underlineOffset = (this.fontSize / FONT_SIZE) * UNDERLINE_OFFSET;
+    this.strikeThroughOffset = (this.fontSize / FONT_SIZE) * STRIKE_THROUGH_OFFSET;
     this.roundPixels = true;
     this.letterSpacing = 0;
     const isDropdown = cell.special === 'List';
@@ -451,7 +457,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += LINE_HEIGHT / scale; // data.lineHeight;
+        pos.y += this.lineHeight / scale; // data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
         continue;
@@ -542,7 +548,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += LINE_HEIGHT / scale; //data.lineHeight;
+        pos.y += this.lineHeight / scale; //data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
       } else {
@@ -714,8 +720,8 @@ export class CellLabel {
           x: charLeft + (charRight - charLeft) / 2,
           y: charTop + (charBottom - charTop) / 2,
           emoji: char.charData.specialEmoji,
-          width: char.charData.frame.width,
-          height: char.charData.frame.height,
+          width: char.charData.frame.width * scale,
+          height: char.charData.frame.height * scale,
         });
       } else {
         textLeft = Math.min(textLeft, charLeft);
@@ -734,11 +740,11 @@ export class CellLabel {
     this.horizontalLines = [];
 
     if (this.underline) {
-      this.addLine(UNDERLINE_OFFSET, clipLeft, clipRight, clipTop, clipBottom, scale);
+      this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
     }
 
     if (this.strikeThrough) {
-      this.addLine(STRIKE_THROUGH_OFFSET, clipLeft, clipRight, clipTop, clipBottom, scale);
+      this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
     }
 
     return bounds;
@@ -820,7 +826,7 @@ export class CellLabel {
   ) => {
     let maxHeight = 0;
     this.lineWidths.forEach((lineWidth, line) => {
-      const height = LINE_HEIGHT * line + yOffset * scale;
+      const height = this.lineHeight * line + yOffset * scale;
       const yPos = this.position.y + height + OPEN_SANS_FIX.y;
       if (yPos < clipTop || yPos + HORIZONTAL_LINE_THICKNESS > clipBottom) return;
 
