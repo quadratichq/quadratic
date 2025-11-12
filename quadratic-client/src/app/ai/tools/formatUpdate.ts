@@ -16,6 +16,7 @@ export const defaultFormatUpdate = (): FormatUpdate => {
     fill_color: null,
     render_size: null,
     date_time: null,
+    font_size: null,
   };
 };
 

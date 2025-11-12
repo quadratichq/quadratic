@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::grid::file::v1_10;
 
 pub type A1SelectionSchema = v1_10::A1SelectionSchema;
