@@ -68,6 +68,10 @@ impl WorkerStatus {
     pub fn is_complete(&self) -> bool {
         self.received_catchup_transactions && self.received_transaction_ack
     }
+
+    pub fn mark_transaction_ack_received(&mut self) {
+        self.received_transaction_ack = true;
+    }
 }
 
 /// Cloud Worker
@@ -111,6 +115,7 @@ pub struct Worker {
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
     pub(crate) m2m_auth_token: String,
     pub(crate) multiplayer_url: String,
+    pub(crate) connection_url: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
     pub(crate) websocket_receiver_handle: Option<JoinHandle<()>>,
@@ -141,6 +146,7 @@ impl Worker {
     /// * `presigned_url` - The presigned URL of the file to process.
     /// * `m2m_auth_token` - The M2M auth token to use for the worker.
     /// * `multiplayer_url` - The URL of the multiplayer websocket server.
+    /// * `connection_url` - The URL of the connection service.
     ///
     /// Returns a new worker.
     pub async fn new(
@@ -149,6 +155,7 @@ impl Worker {
         presigned_url: &str,
         m2m_auth_token: String,
         multiplayer_url: String,
+        connection_url: String,
     ) -> Result<Self> {
         tracing::info!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
@@ -162,6 +169,7 @@ impl Worker {
             file: Arc::new(Mutex::new(file)),
             m2m_auth_token,
             multiplayer_url,
+            connection_url,
             transaction_id: Arc::new(Mutex::new(None)),
             websocket_sender: None,
             websocket_receiver: None,
@@ -463,15 +471,25 @@ impl Worker {
             }
         }
 
-        let transaction_id = process_transaction(
+        let transaction_id = match process_transaction(
             Arc::clone(&self.file),
             operations,
             None,
             TransactionName::Unknown,
             team_id,
             token,
+            self.connection_url.clone(),
         )
-        .await?;
+        .await
+        {
+            Ok(id) => id,
+            Err(e) => {
+                // If transaction processing fails, we won't send to multiplayer, so mark ack as received
+                tracing::error!("❌ [Worker] Transaction processing failed: {}", e);
+                self.status.lock().await.mark_transaction_ack_received();
+                return Err(e);
+            }
+        };
 
         *self.transaction_id.lock().await = Some(transaction_id);
 
@@ -619,6 +637,11 @@ impl Worker {
         );
         Ok(())
     }
+
+    /// Check if a transaction has been sent (transaction_id is set)
+    pub async fn has_transaction(&self) -> bool {
+        self.transaction_id.lock().await.is_some()
+    }
 }
 
 impl Drop for Worker {
@@ -671,6 +694,7 @@ mod tests {
             &presigned_url,
             m2m_auth_token.clone(),
             "ws://localhost:3001/ws".to_string(),
+            "http://localhost:3003".to_string(),
         )
         .await
         .unwrap();
@@ -691,6 +715,7 @@ mod tests {
             &presigned_url,
             m2m_auth_token.clone(),
             "ws://localhost:3001/ws".to_string(),
+            "http://localhost:3003".to_string(),
         )
         .await
         .unwrap();

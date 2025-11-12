@@ -42,6 +42,7 @@ pub(crate) struct Config {
     pub(crate) container_id: Uuid,
     pub(crate) controller_url: String,
     pub(crate) multiplayer_url: String,
+    pub(crate) connection_url: String,
     pub(crate) file_id: Uuid,
     pub(crate) m2m_auth_token: String,
 
@@ -60,6 +61,7 @@ impl Config {
             std::env::remove_var("CONTAINER_ID");
             std::env::remove_var("CONTROLLER_URL");
             std::env::remove_var("MULTIPLAYER_URL");
+            std::env::remove_var("CONNECTION_URL");
             std::env::remove_var("FILE_ID");
             std::env::remove_var("M2M_AUTH_TOKEN");
             std::env::remove_var("TASKS");

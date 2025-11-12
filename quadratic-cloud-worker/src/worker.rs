@@ -35,6 +35,7 @@ impl Worker {
             &worker_init_data.presigned_url.to_owned(),
             config.m2m_auth_token.to_owned(),
             config.multiplayer_url.to_owned(),
+            config.connection_url.to_owned(),
         )
         .await
         .map_err(|e| WorkerError::CreateWorker(e.to_string()))?;
@@ -103,6 +104,13 @@ impl Worker {
                     failed_tasks.push((key, task.run_id, task.task_id, e.to_string()));
                 }
             };
+        }
+
+        // If we never sent any transactions (no tasks or all failed), mark ack as received
+        // Note: received_catchup_transactions should already be true from initialization
+        if !self.core.has_transaction().await {
+            info!("ℹ️  [Worker] No transactions were sent, marking transaction ack as received");
+            self.core.status.lock().await.mark_transaction_ack_received();
         }
 
         // wait for all tasks to be complete

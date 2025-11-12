@@ -137,13 +137,19 @@ impl Controller {
             .await
             .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
 
+        let total_bytes: usize = tasks.iter().map(|(_, task)| task.operations.len()).sum();
+
         info!(
-            "Got tasks for worker for file {file_id} for binary tasks ({} bytes)",
-            tasks
-                .iter()
-                .map(|(_, task)| task.operations.len())
-                .sum::<usize>()
+            "Got {} task(s) for worker for file {file_id} for binary tasks ({} bytes total)",
+            tasks.len(),
+            total_bytes
         );
+
+        if tasks.is_empty() {
+            info!(
+                "No tasks found in PubSub for file {file_id} - tasks may have already been consumed or never published"
+            );
+        }
 
         let ids = tasks
             .iter()
@@ -170,6 +176,7 @@ impl Controller {
         let container_name = format!("quadratic-cron-{file_id}-{container_id}");
         let controller_url = self.state.settings.controller_url();
         let multiplayer_url = self.state.settings.multiplayer_url();
+        let connection_url = self.state.settings.connection_url();
         let m2m_auth_token = self.state.settings.m2m_auth_token.to_owned();
         let worker_init_data = self.get_worker_init_data(&file_id).await?;
         let worker_init_data_json = serde_json::to_string(&worker_init_data)?;
@@ -181,6 +188,7 @@ impl Controller {
             format!("CONTAINER_ID={container_id}"),
             format!("CONTROLLER_URL={controller_url}"),
             format!("MULTIPLAYER_URL={multiplayer_url}"),
+            format!("CONNECTION_URL={connection_url}"),
             format!("FILE_ID={file_id}"),
             format!("M2M_AUTH_TOKEN={m2m_auth_token}"),
             format!("TASKS={}", encoded_tasks),

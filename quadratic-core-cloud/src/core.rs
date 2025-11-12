@@ -40,6 +40,7 @@ pub async fn process_transaction(
     transaction_name: TransactionName,
     team_id: String,
     token: String,
+    connection_url: String,
 ) -> Result<Uuid> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
@@ -111,16 +112,18 @@ pub async fn process_transaction(
             .active_transactions()
             .get_async_transaction(transaction_uuid);
 
-        let code_run_clone = if let Ok(async_transaction) = async_transaction
+        let (code_run_clone, current_sheet_pos) = if let Ok(async_transaction) = async_transaction
             && let Some(sheet_pos) = async_transaction.current_sheet_pos
         {
-            grid.lock()
+            let code_run = grid
+                .lock()
                 .await
                 .try_sheet(sheet_pos.sheet_id)
                 .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
-                .cloned()
+                .cloned();
+            (code_run, Some(sheet_pos))
         } else {
-            None
+            (None, None)
         };
 
         if let Some(code_run) = code_run_clone {
@@ -154,6 +157,16 @@ pub async fn process_transaction(
                         "🔌 [Core] Dispatching Connection execution for transaction: {}",
                         transaction_id
                     );
+
+                    // Get the sheet_id from the current sheet_pos for handlebars replacement
+                    let sheet_id = if let Some(sp) = current_sheet_pos {
+                        sp.sheet_id
+                    } else {
+                        return Err(CoreCloudError::Connection(
+                            "No sheet_id available for connection execution".to_string(),
+                        ));
+                    };
+
                     run_connection(
                         Arc::clone(&grid),
                         &code_run.code,
@@ -162,6 +175,8 @@ pub async fn process_transaction(
                         &transaction_id,
                         &team_id,
                         &token,
+                        &connection_url,
+                        sheet_id,
                     )
                     .await?;
                     tracing::info!("🔌 [Core] Connection execution dispatched to grid controller");
@@ -266,6 +281,7 @@ mod tests {
         drop(grid_lock);
 
         // process the transaction
+        let connection_url = "http://localhost:3003".to_string();
         process_transaction(
             Arc::clone(&grid),
             vec![operation],
@@ -273,6 +289,7 @@ mod tests {
             TransactionName::Unknown,
             team_id,
             token,
+            connection_url,
         )
         .await
         .unwrap();

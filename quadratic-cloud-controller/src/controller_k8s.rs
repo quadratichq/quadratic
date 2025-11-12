@@ -244,6 +244,8 @@ spec:
           value: "info,worker=debug"
         - name: CONTROLLER_URL
           value: "http://quadratic-cloud-controller-worker:3005"
+        - name: CONNECTION_URL
+          value: "http://localhost:3003"
         - name: FILE_ID
           value: "{file_id}"
         - name: WORKER_EPHEMERAL_TOKEN
