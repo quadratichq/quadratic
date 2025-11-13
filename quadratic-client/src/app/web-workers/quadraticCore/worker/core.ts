@@ -1407,14 +1407,26 @@ class Core {
     }
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string, isAi: boolean): JsResponse | undefined {
+  resizeRows(
+    sheetId: string,
+    rows: ColumnRowResize[],
+    cursor: string,
+    isAi: boolean,
+    clientResized: boolean
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       const sizes: JsRowHeight[] = rows.map((row) => ({
         row: BigInt(row.index),
         height: row.size,
       }));
-      return this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor, isAi);
+      return this.gridController.resizeRows(
+        sheetId,
+        JSON.stringify(sizes, bigIntReplacer),
+        cursor,
+        isAi,
+        clientResized
+      );
     } catch (e) {
       this.handleCoreError('resizeRows', e);
     }

@@ -1398,6 +1398,7 @@ export interface ClientCoreResizeRows {
   rows: ColumnRowResize[];
   cursor: string;
   isAi: boolean;
+  clientResized: boolean;
 }
 
 export interface CoreClientResizeRows {

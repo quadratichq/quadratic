@@ -781,7 +781,7 @@ class CoreClient {
         this.send({
           type: 'coreClientResizeRows',
           id: e.data.id,
-          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi),
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi, e.data.clientResized),
         });
         return;
 

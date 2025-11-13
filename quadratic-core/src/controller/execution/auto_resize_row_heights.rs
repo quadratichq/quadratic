@@ -67,6 +67,7 @@ impl GridController {
             transaction.operations.push_back(Operation::ResizeRows {
                 sheet_id,
                 row_heights,
+                client_resized: false, // Auto-resize mode
             });
         }
         self.start_transaction(&mut transaction);
