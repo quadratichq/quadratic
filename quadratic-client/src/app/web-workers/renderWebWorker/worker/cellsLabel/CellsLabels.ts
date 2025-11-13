@@ -530,7 +530,7 @@ export class CellsLabels {
       }
     });
     await Promise.all(promises);
-    return max;
+    return Math.max(max, CELL_HEIGHT);
   }
 
   async rowMaxHeightsInHash(hashY: number): Promise<Map<number, number>> {
@@ -570,7 +570,8 @@ export class CellsLabels {
     });
     await Promise.all(promises);
     const jsRowHeights: JsRowHeight[] = rows.map((row) => {
-      const height = rowHeights.get(Number(row)) ?? CELL_HEIGHT;
+      const contentHeight = rowHeights.get(Number(row)) ?? 0;
+      const height = Math.max(contentHeight, CELL_HEIGHT);
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(
