@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { memo, type JSX, type ReactNode } from 'react';
+import { memo, useCallback, useRef, type JSX, type ReactNode } from 'react';
 
 export const FormatSeparator = memo(() => {
   return <hr className="relative mx-1.5 h-6 w-[1px] bg-border" />;
@@ -163,17 +163,75 @@ export const FormatButton = memo(
     actionArgs,
     checked,
     hideLabel,
+    enableHoldToRepeat = false,
   }: {
     action: T;
     actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
     checked?: boolean | null;
     hideLabel?: boolean;
+    enableHoldToRepeat?: boolean;
   }) => {
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-    if (!Icon) return null;
     const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
+    const intervalRef = useRef<number | null>(null);
+    const timeoutRef = useRef<number | null>(null);
+
+    const executeAction = useCallback(() => {
+      trackEvent('[FormattingBar].button', { label });
+      actionSpec.run(actionArgs);
+    }, [actionSpec, actionArgs, label]);
+
+    const clearTimers = useCallback(() => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }, []);
+
+    const handleMouseDown = useCallback(
+      (e: React.MouseEvent) => {
+        if (!enableHoldToRepeat) return;
+
+        e.preventDefault();
+        // Execute once immediately
+        executeAction();
+
+        // Start repeating after a delay
+        timeoutRef.current = window.setTimeout(() => {
+          intervalRef.current = window.setInterval(() => {
+            executeAction();
+          }, 100); // Repeat every 100ms
+        }, 300); // Initial delay of 300ms
+      },
+      [enableHoldToRepeat, executeAction]
+    );
+
+    const handleMouseUp = useCallback(() => {
+      if (!enableHoldToRepeat) return;
+      clearTimers();
+      focusGrid();
+    }, [enableHoldToRepeat, clearTimers]);
+
+    const handleMouseLeave = useCallback(() => {
+      if (!enableHoldToRepeat) return;
+      clearTimers();
+    }, [enableHoldToRepeat, clearTimers]);
+
+    const handleClick = useCallback(() => {
+      if (!enableHoldToRepeat) {
+        executeAction();
+        focusGrid();
+      }
+    }, [enableHoldToRepeat, executeAction]);
+
+    if (!Icon) return null;
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -185,11 +243,10 @@ export const FormatButton = memo(
               'flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
               checked ? 'bg-accent' : ''
             )}
-            onClick={() => {
-              trackEvent('[FormattingBar].button', { label });
-              actionSpec.run(actionArgs);
-              focusGrid();
-            }}
+            onClick={handleClick}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
             data-testid={hideLabel ? '' : action}
           >
             <Icon />

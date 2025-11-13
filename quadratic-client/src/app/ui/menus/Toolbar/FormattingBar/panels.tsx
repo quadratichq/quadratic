@@ -127,7 +127,12 @@ export const FontSizeFormatting = memo(
     return (
       <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
         <div className="flex items-center -space-x-px">
-          <FormatButton action={Action.FormatFontSizeDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
+          <FormatButton
+            action={Action.FormatFontSizeDecrease}
+            actionArgs={undefined}
+            hideLabel={props.hideLabel}
+            enableHoldToRepeat={true}
+          />
           <FormatButtonDropdown
             action="font-size"
             tooltipLabel="Font size"
@@ -153,7 +158,12 @@ export const FontSizeFormatting = memo(
               })}
             </div>
           </FormatButtonDropdown>
-          <FormatButton action={Action.FormatFontSizeIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
+          <FormatButton
+            action={Action.FormatFontSizeIncrease}
+            actionArgs={undefined}
+            hideLabel={props.hideLabel}
+            enableHoldToRepeat={true}
+          />
         </div>
         <FormatSeparator />
       </div>

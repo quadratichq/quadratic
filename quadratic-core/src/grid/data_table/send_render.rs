@@ -212,7 +212,7 @@ impl DataTable {
         self.format_transaction_changes(
             data_table_pos,
             &formats.underline,
-            false,
+            true,
             &mut dirty_hashes,
             &mut rows_to_resize,
         );

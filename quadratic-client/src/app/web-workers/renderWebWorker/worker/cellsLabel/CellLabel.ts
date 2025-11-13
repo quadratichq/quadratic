@@ -192,8 +192,8 @@ export class CellLabel {
     this.link = this.isLink(cell);
     this.fontSize = cell.fontSize ?? FONT_SIZE;
     this.lineHeight = (this.fontSize / FONT_SIZE) * LINE_HEIGHT;
-    this.underlineOffset = (this.fontSize / FONT_SIZE) * UNDERLINE_OFFSET;
-    this.strikeThroughOffset = (this.fontSize / FONT_SIZE) * STRIKE_THROUGH_OFFSET;
+    this.underlineOffset = UNDERLINE_OFFSET;
+    this.strikeThroughOffset = STRIKE_THROUGH_OFFSET;
     this.roundPixels = true;
     this.letterSpacing = 0;
     const isDropdown = cell.special === 'List';
@@ -413,6 +413,26 @@ export class CellLabel {
 
       this.calculatePosition();
     }
+
+    // Pre-add dot mesh buffers if the dot is on a different texture than existing chars
+    // This ensures buffers are allocated during prepare()
+    if (this.text.trim() !== '' && this.chars.length > 0) {
+      const data = this.cellsLabels.bitmapFonts[this.fontName];
+      if (data) {
+        const dotCharCode = extractCharCode('·');
+        const dotCharData = data.chars[dotCharCode];
+        if (dotCharData) {
+          // Check if dot is on a different texture than the first character
+          const needsSeparateMesh = this.chars[0].charData.textureUid !== dotCharData.textureUid;
+          if (needsSeparateMesh) {
+            // Add one dot mesh entry per character so we have enough buffers
+            for (let i = 0; i < this.chars.length; i++) {
+              labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+            }
+          }
+        }
+      }
+    }
   };
 
   /** Calculates the text glyphs and positions */
@@ -580,10 +600,23 @@ export class CellLabel {
       horizontalAlignOffsets.push(alignOffset);
     }
 
+    // Calculate text height with proper spacing for descenders
+    // Use the bitmap font's lineHeight (which includes proper descender space) for each line
+    // The 'line' variable is 0-indexed, so (line + 1) gives us the total number of lines
+    const lineBasedHeight = data.lineHeight * scale * (line + 1);
+    let calculatedTextHeight = Math.max(textHeight * scale, lineBasedHeight, CELL_HEIGHT);
+
+    // Add space for underlines if present (underlines extend below the text baseline)
+    // Note: underlineOffset is in bitmap font coordinates and needs to be scaled
+    if (this.underline) {
+      const underlineHeight = this.lineHeight * line + this.underlineOffset * scale + HORIZONTAL_LINE_THICKNESS;
+      calculatedTextHeight = Math.max(calculatedTextHeight, underlineHeight);
+    }
+
     return {
       chars,
       textWidth: maxLineWidth * scale + OPEN_SANS_FIX.x * 2,
-      textHeight: Math.max(textHeight * scale, CELL_HEIGHT),
+      textHeight: calculatedTextHeight,
       displayText,
       horizontalAlignOffsets,
       lineWidths,
@@ -689,46 +722,160 @@ export class CellLabel {
     let textTop = Infinity;
     let textBottom = -Infinity;
 
+    // Check if text is being vertically clipped
+    let hasVerticalClipping = false;
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
-      let horizontalOffset =
-        char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
-      if (this.roundPixels) {
-        horizontalOffset = Math.round(horizontalOffset);
-      }
-      const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
       const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
-      const labelMesh = labelMeshes.get(char.labelMeshId);
-      const textureFrame = char.charData.frame;
-      const textureUvs = char.charData.uvs;
-      const buffer = labelMesh.getBuffer();
-
-      const charLeft = xPos;
-      const charRight = xPos + textureFrame.width * scale;
       const charTop = yPos;
-      const charBottom = yPos + textureFrame.height * scale;
+      const charBottom = yPos + char.charData.frame.height * scale;
 
-      // remove letters that are outside the clipping bounds
-      if (charLeft <= clipLeft || charRight >= clipRight || charTop <= clipTop || charBottom >= clipBottom) {
-        // this removes extra characters from the mesh after a clip
-        buffer.reduceSize(6);
+      if (charTop < clipTop || charBottom > clipBottom) {
+        hasVerticalClipping = true;
+        break;
+      }
+    }
 
-        // update line width to the actual width of the text rendered after the clip
-        this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
-      } else if (char.charData.specialEmoji !== undefined) {
-        this.emojis.push({
-          x: charLeft + (charRight - charLeft) / 2,
-          y: charTop + (charBottom - charTop) / 2,
-          emoji: char.charData.specialEmoji,
-          width: char.charData.frame.width * scale,
-          height: char.charData.frame.height * scale,
-        });
-      } else {
-        textLeft = Math.min(textLeft, charLeft);
-        textRight = Math.max(textRight, charRight);
-        textTop = Math.min(textTop, charTop);
-        textBottom = Math.max(textBottom, charBottom);
-        this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
+    // If text is vertically clipped, replace each character with a middle dot
+    if (hasVerticalClipping && this.text.trim() !== '') {
+      const dotCharCode = extractCharCode('·');
+      const dotCharData = data.chars[dotCharCode];
+
+      if (dotCharData) {
+        // Calculate vertical center based on cell bounds
+        const cellCenterY = this.AABB.top + this.AABB.height / 2;
+
+        // Calculate the first and last character positions for even spacing
+        const firstChar = this.chars[0];
+        const lastChar = this.chars[this.chars.length - 1];
+
+        let firstHorizontalOffset =
+          firstChar.position.x +
+          this.horizontalAlignOffsets[firstChar.line] * (this.align === 'justify' ? firstChar.prevSpaces : 1);
+        let lastHorizontalOffset =
+          lastChar.position.x +
+          this.horizontalAlignOffsets[lastChar.line] * (this.align === 'justify' ? lastChar.prevSpaces : 1);
+
+        const firstXPos = this.position.x + firstHorizontalOffset * scale;
+        const lastXPos = this.position.x + lastHorizontalOffset * scale;
+        const totalWidth = lastXPos - firstXPos;
+
+        // Calculate spacing between dots
+        const spacing = this.chars.length > 1 ? totalWidth / (this.chars.length - 1) : 0;
+
+        // Replace each character with a middle dot, evenly spaced
+        for (let i = 0; i < this.chars.length; i++) {
+          const char = this.chars[i];
+
+          // Evenly space dots between first and last character position
+          const xPos = firstXPos + i * spacing + OPEN_SANS_FIX.x;
+
+          // Position the dot vertically centered in the cell
+          const dotHeight = dotCharData.frame.height * scale;
+          const yPos = cellCenterY - dotHeight / 2 + OPEN_SANS_FIX.y;
+
+          // Check if dot needs a separate mesh (different texture page)
+          const needsSeparateMesh = char.charData.textureUid !== dotCharData.textureUid;
+
+          let labelMesh, buffer;
+          if (needsSeparateMesh) {
+            // First, remove the original character from its buffer
+            const originalLabelMesh = labelMeshes.get(char.labelMeshId);
+            const originalBuffer = originalLabelMesh.getBuffer();
+            originalBuffer.reduceSize(6);
+
+            // Use the separate dot mesh
+            const dotLabelMeshId = labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+            labelMesh = labelMeshes.get(dotLabelMeshId);
+            buffer = labelMesh.getBuffer();
+          } else {
+            // Reuse the original character's buffer, just change texture/UVs
+            labelMesh = labelMeshes.get(char.labelMeshId);
+            buffer = labelMesh.getBuffer();
+          }
+
+          const textureFrame = dotCharData.frame;
+          const textureUvs = dotCharData.uvs;
+
+          const charLeft = xPos;
+          const charRight = xPos + textureFrame.width * scale;
+          const charTop = yPos;
+          const charBottom = yPos + textureFrame.height * scale;
+
+          // Only apply horizontal clipping, NOT vertical (we want to show the dots)
+          if (charLeft <= clipLeft || charRight >= clipRight) {
+            buffer.reduceSize(6);
+          } else {
+            textLeft = Math.min(textLeft, charLeft);
+            textRight = Math.max(textRight, charRight);
+            textTop = Math.min(textTop, charTop);
+            textBottom = Math.max(textBottom, charBottom);
+            this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
+          }
+        }
+      }
+    } else {
+      // Normal rendering - also clean up any pre-allocated dot buffers if not needed
+      const dotCharCode = extractCharCode('·');
+      const dotCharData = data.chars[dotCharCode];
+      if (dotCharData && this.chars.length > 0) {
+        const needsSeparateMesh = this.chars[0].charData.textureUid !== dotCharData.textureUid;
+        if (needsSeparateMesh) {
+          // Reduce the pre-allocated dot buffers since we're not using them
+          const dotLabelMeshId = labelMeshes.add(this.fontName, this.fontSize, dotCharData.textureUid, !!this.tint);
+          const dotLabelMesh = labelMeshes.get(dotLabelMeshId);
+          try {
+            for (let i = 0; i < this.chars.length; i++) {
+              const buffer = dotLabelMesh.getBuffer();
+              buffer.reduceSize(6);
+            }
+          } catch (e) {
+            // Buffer might not exist, that's fine
+          }
+        }
+      }
+
+      for (let i = 0; i < this.chars.length; i++) {
+        const char = this.chars[i];
+        let horizontalOffset =
+          char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
+        if (this.roundPixels) {
+          horizontalOffset = Math.round(horizontalOffset);
+        }
+        const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
+        const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+        const labelMesh = labelMeshes.get(char.labelMeshId);
+        const textureFrame = char.charData.frame;
+        const textureUvs = char.charData.uvs;
+        const buffer = labelMesh.getBuffer();
+
+        const charLeft = xPos;
+        const charRight = xPos + textureFrame.width * scale;
+        const charTop = yPos;
+        const charBottom = yPos + textureFrame.height * scale;
+
+        // remove letters that are outside the clipping bounds
+        if (charLeft <= clipLeft || charRight >= clipRight || charTop <= clipTop || charBottom >= clipBottom) {
+          // this removes extra characters from the mesh after a clip
+          buffer.reduceSize(6);
+
+          // update line width to the actual width of the text rendered after the clip
+          this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
+        } else if (char.charData.specialEmoji !== undefined) {
+          this.emojis.push({
+            x: charLeft + (charRight - charLeft) / 2,
+            y: charTop + (charBottom - charTop) / 2,
+            emoji: char.charData.specialEmoji,
+            width: char.charData.frame.width * scale,
+            height: char.charData.frame.height * scale,
+          });
+        } else {
+          textLeft = Math.min(textLeft, charLeft);
+          textRight = Math.max(textRight, charRight);
+          textTop = Math.min(textTop, charTop);
+          textBottom = Math.max(textBottom, charBottom);
+          this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
+        }
       }
     }
 
@@ -739,11 +886,11 @@ export class CellLabel {
 
     this.horizontalLines = [];
 
-    if (this.underline) {
+    if (this.underline && !hasVerticalClipping) {
       this.addLine(this.underlineOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
     }
 
-    if (this.strikeThrough) {
+    if (this.strikeThrough && !hasVerticalClipping) {
       this.addLine(this.strikeThroughOffset, clipLeft, clipRight, clipTop, clipBottom, scale);
     }
 
