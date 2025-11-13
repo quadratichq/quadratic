@@ -34,9 +34,9 @@ window.MonacoEnvironment = {
   },
 };
 
-// Pixels needed when growing width to avoid monaco from scrolling the text
-// (determined by experimentation).
-const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+// Base padding for the inline editor width calculation at 14px font size.
+// This scales linearly with font size to ensure adequate space.
+const BASE_PADDING_FOR_WIDTH = 15;
 
 // Padding for the inline editor when calling keepCursorVisible, to keep the editor/cursor in view.
 export const PADDING_FOR_INLINE_EDITOR = 5;
@@ -180,8 +180,32 @@ class InlineEditorMonaco {
       padding: { top: paddingTop, bottom: 0 },
     });
 
-    const scrollWidth = textarea.scrollWidth;
-    width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
+    // Calculate padding that scales with font size
+    // Get the actual font size being used
+    const fontSize = this.editor.getOption(monaco.editor.EditorOption.fontSize);
+    const fontFamily = this.editor.getOption(monaco.editor.EditorOption.fontFamily);
+
+    // Measure the actual text width using canvas for accuracy
+    const text = this.editor.getValue();
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.font = `${fontSize}px ${fontFamily}`;
+      const metrics = context.measureText(text);
+      const measuredWidth = metrics.width;
+
+      // Add padding that scales linearly with font size
+      const fontScale = fontSize / 14;
+      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+
+      width = textWrap === 'wrap' ? width : Math.max(width, measuredWidth + scaledPadding);
+    } else {
+      // Fallback to scrollWidth if canvas is not available
+      const scrollWidth = textarea.scrollWidth;
+      const fontScale = fontSize / 14;
+      const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
+      width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + scaledPadding);
+    }
     height = Math.max(contentHeight, height);
 
     const viewportRectangle = pixiApp.getViewportRectangle();
@@ -253,6 +277,14 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in setFontFamily');
     }
     this.editor.updateOptions({ fontFamily });
+  }
+
+  setFontSize(fontSize: number) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setFontSize');
+    }
+    const lineHeight = (fontSize / FONT_SIZE) * LINE_HEIGHT;
+    this.editor.updateOptions({ fontSize, lineHeight });
   }
 
   setUnderline(underline: boolean) {

@@ -373,6 +373,10 @@ class InlineEditorHandler {
       }
     }
     inlineEditorMonaco.setFontFamily(fontFamily);
+
+    // Set font size from format summary
+    const fontSize = this.formatSummary?.fontSize ?? 14;
+    inlineEditorMonaco.setFontSize(fontSize);
   };
 
   // Handles updates to the Monaco editor cursor position
