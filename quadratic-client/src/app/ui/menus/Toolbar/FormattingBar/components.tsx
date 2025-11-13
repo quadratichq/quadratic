@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { DateFormat } from '@/app/ui/components/DateFormat';
@@ -16,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { memo, useCallback, useRef, type JSX, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type JSX, type ReactNode } from 'react';
 
 export const FormatSeparator = memo(() => {
   return <hr className="relative mx-1.5 h-6 w-[1px] bg-border" />;
@@ -177,6 +178,22 @@ export const FormatButton = memo(
     const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
     const intervalRef = useRef<number | null>(null);
     const timeoutRef = useRef<number | null>(null);
+    const [keyboardPressed, setKeyboardPressed] = useState(false);
+
+    // Listen for keyboard shortcut events to show visual feedback
+    useEffect(() => {
+      const handleKeyboardPress = (triggeredAction: string) => {
+        if (triggeredAction === action) {
+          setKeyboardPressed(true);
+          setTimeout(() => setKeyboardPressed(false), 150);
+        }
+      };
+
+      events.on('formatButtonKeyboard', handleKeyboardPress);
+      return () => {
+        events.off('formatButtonKeyboard', handleKeyboardPress);
+      };
+    }, [action]);
 
     const executeAction = useCallback(() => {
       trackEvent('[FormattingBar].button', { label });
@@ -241,7 +258,7 @@ export const FormatButton = memo(
             size="icon-sm"
             className={cn(
               'flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
-              checked ? 'bg-accent' : ''
+              checked || keyboardPressed ? 'bg-accent' : ''
             )}
             onClick={handleClick}
             onMouseDown={handleMouseDown}

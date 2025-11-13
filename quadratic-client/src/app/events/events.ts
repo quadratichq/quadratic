@@ -176,6 +176,9 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+
+  // Formatting button keyboard triggers (for visual feedback)
+  formatButtonKeyboard: (action: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
