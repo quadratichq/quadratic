@@ -1,5 +1,7 @@
+use async_trait::async_trait;
 use bytes::Bytes;
 use chrono::NaiveDate;
+use futures_util::stream::{FuturesUnordered, TryStreamExt};
 use object_store::ObjectStore;
 use serde::Deserialize;
 use std::{collections::HashMap, sync::Arc};
@@ -16,9 +18,57 @@ pub mod mixpanel;
 
 const DATE_FORMAT: &str = "%Y-%m-%d";
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum SyncedConnectionKind {
+    Mixpanel,
+    GoogleAnalytics,
+}
+
+#[async_trait]
+pub trait SyncedConnection: Send + Sync {
+    fn name(&self) -> &str;
+    fn kind(&self) -> SyncedConnectionKind;
+    fn start_date(&self) -> NaiveDate;
+    async fn to_client(&self) -> Result<Box<dyn SyncedClient>>;
+}
+
+#[async_trait]
+pub trait SyncedClient: Send + Sync {
+    fn streams(&self) -> Vec<&str>;
+
+    async fn process(
+        &self,
+        stream: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, Bytes>>;
+
+    async fn process_all(
+        &self,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, HashMap<String, Bytes>>> {
+        // process all streams in parallel and collect results in one pass
+        self.streams()
+            .into_iter()
+            .map(|stream| async move {
+                let result = self.process(stream, start_date, end_date).await?;
+                Ok::<(String, HashMap<String, Bytes>), SharedError>((stream.to_string(), result))
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect()
+            .await
+    }
+}
+
 /// Convert an error to a SharedError.
 fn synced_error(e: impl ToString) -> SharedError {
     SharedError::Synced(e.to_string())
+}
+
+/// Get the current date.
+fn today() -> NaiveDate {
+    chrono::Utc::now().date_naive()
 }
 
 /// Convert a string to a date.
@@ -180,9 +230,8 @@ pub async fn dates_to_sync(
     sync_start_date: NaiveDate,
     dates_to_exclude: Vec<NaiveDate>,
 ) -> Result<Vec<(NaiveDate, NaiveDate)>> {
-    let today = chrono::Utc::now().date_naive();
     let prefix = object_store_path(connection_id, table_name);
-    let end_date = today;
+    let end_date = today();
 
     let missing_date_ranges = get_missing_date_ranges(
         object_store,

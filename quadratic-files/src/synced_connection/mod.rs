@@ -2,6 +2,8 @@ use chrono::NaiveDate;
 use quadratic_rust_shared::quadratic_api::{
     SyncedConnectionLogStatus, create_synced_connection_log,
 };
+use quadratic_rust_shared::synced::SyncedConnectionKind;
+use serde::Serialize;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -10,13 +12,7 @@ use crate::state::State;
 
 pub(crate) mod background_workers;
 pub(crate) mod cache;
-pub(crate) mod mixpanel;
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum SyncedConnectionKind {
-    Mixpanel,
-    GoogleAnalytics,
-}
+pub(crate) mod process;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum SyncedConnectionStatus {
@@ -25,7 +21,7 @@ pub(crate) enum SyncedConnectionStatus {
     Upload,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub(crate) enum SyncKind {
     Daily,
     Full,

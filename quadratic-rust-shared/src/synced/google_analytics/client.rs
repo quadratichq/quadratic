@@ -5,7 +5,9 @@
 
 use arrow::datatypes::{DataType, Date32Type, Field, Schema};
 use arrow_array::{Date32Array, Float64Array, RecordBatch, StringArray};
+use async_trait::async_trait;
 use bytes::Bytes;
+use chrono::NaiveDate;
 use google_analyticsdata1_beta::{
     AnalyticsData,
     api::{DateRange, Dimension, Metric, RunReportRequest, RunReportResponse},
@@ -19,10 +21,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey};
 
-use crate::error::Result;
-use crate::parquet::utils::record_batch_to_parquet_bytes;
-use crate::synced::DATE_FORMAT;
+use crate::synced::{DATE_FORMAT, SyncedConnectionKind, google_analytics::reports::REPORTS, today};
 use crate::{SharedError, synced::string_to_date};
+use crate::{error::Result, synced::SyncedConnection};
+use crate::{parquet::utils::record_batch_to_parquet_bytes, synced::SyncedClient};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GoogleAnalyticsConfig {
@@ -31,12 +33,70 @@ pub struct GoogleAnalyticsConfig {
     pub service_account_configuration: String,
 }
 
-pub struct GoogleAnalyticsConnection<C> {
+#[derive(Serialize, Deserialize)]
+pub struct GoogleAnalyticsConnection {
     pub property_id: String,
-    pub analytics: AnalyticsData<C>,
+    pub service_account_configuration: String,
+    pub start_date: String,
 }
 
-impl GoogleAnalyticsConnection<HttpsConnector<HttpConnector>> {
+#[async_trait]
+impl SyncedConnection for GoogleAnalyticsConnection {
+    fn name(&self) -> &str {
+        "GOOGLE_ANALYTICS"
+    }
+
+    fn kind(&self) -> SyncedConnectionKind {
+        SyncedConnectionKind::GoogleAnalytics
+    }
+
+    fn start_date(&self) -> NaiveDate {
+        NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap()
+    }
+
+    async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
+        let client = GoogleAnalyticsClient::new(
+            self.service_account_configuration.clone(),
+            self.property_id.clone(),
+            self.start_date.clone(),
+        )
+        .await?;
+
+        Ok(Box::new(client))
+    }
+}
+
+// #[derive(Serialize)]
+pub struct GoogleAnalyticsClient {
+    pub property_id: String,
+    pub analytics: AnalyticsData<HttpsConnector<HttpConnector>>,
+    pub start_date: String,
+}
+
+#[async_trait]
+impl SyncedClient for GoogleAnalyticsClient {
+    fn streams(&self) -> Vec<&str> {
+        REPORTS.keys().cloned().collect()
+    }
+
+    async fn process(
+        &self,
+        stream: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<HashMap<String, Bytes>> {
+        self.run_report(
+            &start_date.format(DATE_FORMAT).to_string(),
+            &end_date.format(DATE_FORMAT).to_string(),
+            vec![stream],
+            None,
+            None,
+        )
+        .await
+    }
+}
+
+impl GoogleAnalyticsClient {
     /// Check if a dimension name represents a date field
     /// GA4 date dimensions: date, dateHour, dateHourMinute, firstSessionDate, etc.
     fn is_date_dimension(name: &str) -> bool {
@@ -61,7 +121,7 @@ impl GoogleAnalyticsConnection<HttpsConnector<HttpConnector>> {
         }
     }
 
-    pub async fn new(credentials: String, property_id: String) -> Result<Self> {
+    pub async fn new(credentials: String, property_id: String, start_date: String) -> Result<Self> {
         // Install default crypto provider for rustls if not already installed
         // Ignore error if already installed (happens in tests when multiple connections are created)
         let _ = default_provider().install_default();
@@ -100,6 +160,7 @@ impl GoogleAnalyticsConnection<HttpsConnector<HttpConnector>> {
         Ok(Self {
             property_id,
             analytics,
+            start_date,
         })
     }
 
@@ -438,12 +499,12 @@ pub struct GoogleAnalyticsConfigFromEnv {
     pub property_id: String,
 }
 
-pub async fn new_google_analytics_connection()
--> GoogleAnalyticsConnection<HttpsConnector<HttpConnector>> {
+pub async fn new_google_analytics_connection() -> GoogleAnalyticsClient {
     let credentials = GOOGLE_ANALYTICS_CREDENTIALS.lock().unwrap().to_string();
     let config = serde_json::from_str::<GoogleAnalyticsConfigFromEnv>(&credentials).unwrap();
+    let start_date = today().format(DATE_FORMAT).to_string();
 
-    GoogleAnalyticsConnection::new(credentials, config.property_id)
+    GoogleAnalyticsClient::new(credentials, config.property_id, start_date)
         .await
         .unwrap()
 }

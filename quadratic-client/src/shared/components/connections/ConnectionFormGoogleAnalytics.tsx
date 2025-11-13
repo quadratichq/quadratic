@@ -66,23 +66,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             control={form.control}
             name="property_id"
             render={({ field }) => (
-              <FormItem className="col-span-3">
-                <FormLabel>Property ID</FormLabel>
+              <FormItem className="col-span-2">
+                <FormLabel>Measurement ID</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="service_account_configuration"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Service Account Configuration (JSON)</FormLabel>
-                <FormControl>
-                  <Textarea autoComplete="off" {...field} rows={6} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -96,6 +83,19 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
                 <FormLabel>Sync Start Date</FormLabel>
                 <FormControl>
                   <Input type="date" autoComplete="off" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="service_account_configuration"
+            render={({ field }) => (
+              <FormItem className="col-span-3">
+                <FormLabel>Service Account Configuration (JSON)</FormLabel>
+                <FormControl>
+                  <Textarea autoComplete="off" {...field} className="h-48" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
