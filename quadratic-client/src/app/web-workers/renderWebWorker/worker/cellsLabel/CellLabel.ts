@@ -509,17 +509,21 @@ export class CellLabel {
         }
 
         if (isEmoji) {
+          const emojiSize = this.lineHeight / scale;
+          // Approximate baseline offset: for most fonts, baseline is ~80% down from top
+          // This aligns emoji bottom roughly with text baseline
+          const baselineOffset = data.lineHeight * 0.2;
           charData = {
             specialEmoji: emojiToRender,
             textureUid: 0,
-            textureHeight: data.size,
-            xAdvance: data.size,
+            textureHeight: emojiSize,
+            xAdvance: emojiSize,
             xOffset: 0,
-            yOffset: data.size / 2,
-            origWidth: data.size,
+            yOffset: baselineOffset,
+            origWidth: emojiSize,
             kerning: {},
             uvs: new Float32Array([]), // just placeholder
-            frame: { x: 0, y: 0, width: data.size, height: data.size },
+            frame: { x: 0, y: 0, width: emojiSize, height: emojiSize },
           };
 
           // Skip the next character if we consumed it as part of this emoji
@@ -722,7 +726,8 @@ export class CellLabel {
     let textTop = Infinity;
     let textBottom = -Infinity;
 
-    // Check if text is being vertically clipped
+    // Check if text is being vertically clipped beyond the cell bounds
+    // We need to check against the actual cell (AABB) to know when to replace with dots
     let hasVerticalClipping = false;
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
@@ -730,7 +735,8 @@ export class CellLabel {
       const charTop = yPos;
       const charBottom = yPos + char.charData.frame.height * scale;
 
-      if (charTop < clipTop || charBottom > clipBottom) {
+      // Check if character extends beyond the cell bounds
+      if (charTop < this.AABB.top || charBottom > this.AABB.bottom) {
         hasVerticalClipping = true;
         break;
       }
@@ -862,12 +868,13 @@ export class CellLabel {
           // update line width to the actual width of the text rendered after the clip
           this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
         } else if (char.charData.specialEmoji !== undefined) {
+          // Store the actual desired render size (lineHeight) directly
           this.emojis.push({
             x: charLeft + (charRight - charLeft) / 2,
             y: charTop + (charBottom - charTop) / 2,
             emoji: char.charData.specialEmoji,
-            width: char.charData.frame.width * scale,
-            height: char.charData.frame.height * scale,
+            width: this.lineHeight,
+            height: this.lineHeight,
           });
         } else {
           textLeft = Math.min(textLeft, charLeft);
