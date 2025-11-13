@@ -593,7 +593,11 @@ class InlineEditorMonaco {
     });
     this.editor.onDidChangeModelContent(() => {
       this.convertEmojis();
-      inlineEditorEvents.emit('valueChanged', this.get());
+      // Don't emit valueChanged if we're in the middle of emoji conversion
+      // as the conversion will trigger another model change that will emit
+      if (!this.processingEmojiConversion) {
+        inlineEditorEvents.emit('valueChanged', this.get());
+      }
     });
   }
 
@@ -666,8 +670,8 @@ class InlineEditorMonaco {
 
   // Converts emoji shortcodes like :smile: to actual emojis when not in formula mode
   private convertEmojis() {
-    // Skip if we're in formula mode, already processing, or emoji dropdown is showing
-    if (inlineEditorHandler.formula || this.processingEmojiConversion || this.emojiShowingList) {
+    // Skip if we're in formula mode or already processing
+    if (inlineEditorHandler.formula || this.processingEmojiConversion) {
       return;
     }
 
@@ -712,6 +716,12 @@ class InlineEditorMonaco {
         // Move cursor to after the emoji
         const newCursorPosition = model.getPositionAt(startOffset + emoji.length);
         this.editor.setPosition(newCursorPosition);
+
+        // Hide the emoji dropdown since we've completed the conversion
+        this.setShowingEmojiList(false);
+
+        // Emit valueChanged with the new value (with emoji)
+        inlineEditorEvents.emit('valueChanged', this.get());
 
         // Reset the flag after a short delay
         setTimeout(() => {
