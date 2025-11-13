@@ -4,11 +4,12 @@
 
 use chrono::NaiveDate;
 use quadratic_rust_shared::cache::{Cache as CacheTrait, memory::MemoryCache};
+use quadratic_rust_shared::synced::SyncedConnectionKind;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::synced_connection::{SyncedConnectionKind, SyncedConnectionStatus};
+use crate::synced_connection::SyncedConnectionStatus;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SyncedConnectionCache {

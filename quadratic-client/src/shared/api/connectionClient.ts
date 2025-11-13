@@ -61,7 +61,9 @@ export const connectionClient = {
         | 'neon'
         | 'NEON'
         | 'mixpanel'
-        | 'MIXPANEL',
+        | 'MIXPANEL'
+        | 'google_analytics'
+        | 'GOOGLE_ANALYTICS',
       connectionId: string,
       teamUuid: string,
       forceCacheRefresh: boolean = false,

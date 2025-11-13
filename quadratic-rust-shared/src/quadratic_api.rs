@@ -272,7 +272,7 @@ pub async fn get_connections_by_type<T: DeserializeOwned>(
 }
 
 /// Retrieve all synced connections for a given type from the quadratic API server.
-pub async fn get_synced_connections_by_type<T: DeserializeOwned>(
+pub async fn get_synced_connections_by_type<T: DeserializeOwned + Serialize>(
     base_url: &str,
     jwt: &str,
     connection_type: &str,

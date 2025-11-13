@@ -1,5 +1,6 @@
 import * as Bigquery from '@/shared/components/connections/ConnectionFormBigquery';
 import * as Cockroachdb from '@/shared/components/connections/ConnectionFormCockroachdb';
+import * as GoogleAnalytics from '@/shared/components/connections/ConnectionFormGoogleAnalytics';
 import * as Mariadb from '@/shared/components/connections/ConnectionFormMariadb';
 import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpanel';
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
@@ -18,6 +19,7 @@ import ClickhouseLogo from './logo-clickhouse.svg?react';
 import CockroachdbLogo from './logo-cockroachdb.svg?react';
 import DatabricksLogo from './logo-databricks.svg?react';
 import DynamoDBLogo from './logo-dynamodb.svg?react';
+import GoogleAnalyticsLogo from './logo-google-analytics.svg?react';
 import MariadbLogo from './logo-mariadb.svg?react';
 import MixpanelLogo from './logo-mixpanel.svg?react';
 import MongoLogo from './logo-mongodb.svg?react';
@@ -127,6 +129,12 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: MixpanelLogo,
     ConnectionForm: Mixpanel.ConnectionForm,
     useConnectionForm: Mixpanel.useConnectionForm,
+  },
+  GOOGLE_ANALYTICS: {
+    name: 'Google Analytics',
+    Logo: GoogleAnalyticsLogo,
+    ConnectionForm: GoogleAnalytics.ConnectionForm,
+    useConnectionForm: GoogleAnalytics.useConnectionForm,
   },
 };
 

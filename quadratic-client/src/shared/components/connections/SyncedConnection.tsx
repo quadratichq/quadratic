@@ -37,7 +37,7 @@ export const SyncedConnection = ({
   createdDate?: string;
 }) => {
   const { syncedConnection } = useSyncedConnection(connectionUuid, teamUuid);
-  let isSynced = syncedConnection.percentCompleted && syncedConnection.percentCompleted >= 100;
+  let isSynced: boolean = syncedConnection.percentCompleted ? syncedConnection.percentCompleted >= 100 : false;
 
   return (
     <>

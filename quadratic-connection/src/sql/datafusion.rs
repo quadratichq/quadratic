@@ -10,6 +10,7 @@ use quadratic_rust_shared::{
         DatafusionConnection, EmptyConnection,
         tests::new_datafusion_connection as new_datafusion_test_connection,
     },
+    synced::google_analytics::{GoogleAnalyticsConnection, client::GoogleAnalyticsClient},
     synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
 };
 use std::sync::Arc;
@@ -30,6 +31,13 @@ pub(crate) async fn test_mixpanel(
     Json(connection): Json<MixpanelConnection>,
 ) -> Json<TestResponse> {
     let client = MixpanelClient::new(&connection.api_secret, &connection.project_id);
+    TestResponse::new(client.test_connection().await, None).into()
+}
+
+pub(crate) async fn test_google_analytics(
+    Json(connection): Json<GoogleAnalyticsConnection>,
+) -> Json<TestResponse> {
+    let client = GoogleAnalyticsClient::new(&connection.api_secret, &connection.project_id);
     TestResponse::new(client.test_connection().await, None).into()
 }
 

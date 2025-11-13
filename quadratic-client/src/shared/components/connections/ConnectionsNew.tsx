@@ -18,9 +18,10 @@ export const ConnectionsNew = ({
 }) => {
   const ignore: ConnectionType[] = [];
 
-  // TODO(ddimaria): remove once we want to show Mixpanel connections to the public
+  // TODO(ddimaria): remove once we want to show synced connections to the public
   if (!debugFlag('debugEnableSyncedConnections')) {
     ignore.push('MIXPANEL');
+    ignore.push('GOOGLE_ANALYTICS');
   }
 
   return (

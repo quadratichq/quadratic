@@ -22,11 +22,12 @@ export const ConnectionTypeSchema = z.enum([
   'SUPABASE',
   'NEON',
   'MIXPANEL',
+  'GOOGLE_ANALYTICS',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
 export function isSyncedConnectionType(type: ConnectionType): boolean {
-  return ['MIXPANEL'].includes(type);
+  return ['MIXPANEL', 'GOOGLE_ANALYTICS'].includes(type);
 }
 
 // Helper function to check if a host address is a localhost variant
@@ -131,6 +132,12 @@ export const ConnectionTypeDetailsBigquerySchema = z.object({
 export const ConnectionTypeDetailsMixpanelSchema = z.object({
   api_secret: z.string().min(1, { message: 'Required' }),
   project_id: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
+});
+
+export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
+  property_id: z.string().min(1, { message: 'Required' }),
+  service_account_configuration: z.string().min(1, { message: 'Required' }),
   start_date: z.string().date(),
 });
 
