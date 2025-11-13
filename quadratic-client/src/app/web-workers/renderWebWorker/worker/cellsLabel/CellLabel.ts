@@ -604,7 +604,7 @@ export class CellLabel {
     // Use the bitmap font's lineHeight (which includes proper descender space) for each line
     // The 'line' variable is 0-indexed, so (line + 1) gives us the total number of lines
     const lineBasedHeight = data.lineHeight * scale * (line + 1);
-    let calculatedTextHeight = Math.max(textHeight * scale, lineBasedHeight, CELL_HEIGHT);
+    let calculatedTextHeight = Math.max(textHeight * scale, lineBasedHeight);
 
     // Add space for underlines if present (underlines extend below the text baseline)
     // Note: underlineOffset is in bitmap font coordinates and needs to be scaled

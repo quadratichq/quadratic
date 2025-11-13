@@ -379,6 +379,20 @@ class InlineEditorHandler {
     inlineEditorMonaco.setFontSize(fontSize);
   };
 
+  // Refreshes the format summary and updates the font display in the inline editor
+  refreshFontSize = async () => {
+    if (!this.location) return;
+
+    this.formatSummary = await quadraticCore.getCellFormatSummary(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y
+    );
+
+    this.updateFont();
+    this.updateMonacoCellLayout();
+  };
+
   // Handles updates to the Monaco editor cursor position
   updateMonacoCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
