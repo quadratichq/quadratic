@@ -1,4 +1,5 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { OAuthProvider } from '@/auth/auth';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -59,7 +60,6 @@ export const ROUTES = {
       additionalParams ? `&${additionalParams}` : ''
     }`,
   TEAMS: `/teams`,
-  TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
   TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
@@ -70,14 +70,13 @@ export const ROUTES = {
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
+  TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
-  ONBOARDING_QUESTIONNAIRE: '/onboarding',
-  ONBOARDING_VIDEO: '/onboarding-video',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
@@ -88,6 +87,15 @@ export const ROUTES = {
       GET: ({ teamUuid, connectionUuid }: { teamUuid: string; connectionUuid: string }) =>
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
+  },
+
+  WORKOS_OAUTH: ({ provider, redirectTo }: { provider: OAuthProvider; redirectTo: string }) => {
+    const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
+    return getWorkosOauthUrl({ provider, state });
+  },
+  WORKOS_IFRAME_OAUTH: ({ provider }: { provider: OAuthProvider }) => {
+    const state = encodeURIComponent(JSON.stringify({ closeOnComplete: true }));
+    return getWorkosOauthUrl({ provider, state });
   },
 
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
@@ -109,3 +117,10 @@ export const SEARCH_PARAMS = {
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;
+
+function getWorkosOauthUrl(args: { provider: OAuthProvider; state: string }) {
+  const { provider, state } = args;
+  const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
+  const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
+  return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+}

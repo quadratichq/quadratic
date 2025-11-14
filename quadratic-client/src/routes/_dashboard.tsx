@@ -62,8 +62,7 @@ type LoaderData = {
 };
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
-
+  const { activeTeamUuid } = await requireAuth();
   const { params, request } = loaderArgs;
 
   // Check the URL for a team UUID. If there's one, use that as it’s what the
@@ -108,6 +107,11 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       // and remove the redirecting flag
       window.localStorage.removeItem(REDIRECTING_FLAG_KEY);
       setActiveTeam(teamUuid);
+
+      // If the team hasn't completed onboarding, redirect them to do so
+      if (data.team.onboardingComplete === false) {
+        throw redirect(`/teams/${teamUuid}/onboarding`);
+      }
 
       return data;
     })

@@ -16,7 +16,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   try {
     // Could throw because user doesn't have permission (unlikely but if the user knows the URL)
-    const url = await apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => data.url);
+    const url = await apiClient.teams.billing
+      .getCheckoutSessionUrl(teamUuid, window.location.href, window.location.href)
+      .then((data) => data.url);
     return new Response(null, {
       status: 302,
       headers: {

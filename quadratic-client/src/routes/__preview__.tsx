@@ -40,5 +40,5 @@ export function Component() {
 }
 
 export function ErrorBoundary() {
-  return <div>Something went wrong with the preview component.</div>;
+  return <div>Something went wrong with the preview component. Make sure you’re doing `__preview__/:path`</div>;
 }

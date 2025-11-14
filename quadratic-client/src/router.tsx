@@ -32,9 +32,13 @@ export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
+        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
+        <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
+        <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
-        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} Component={EmptyComponent} />
+        <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
+        <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
       </Route>
 
       <Route id={ROUTE_LOADER_IDS.ROOT} lazy={() => import('./routes/_root')} HydrateFallback={EmptyComponent}>
@@ -95,6 +99,7 @@ export const router = createBrowserRouter(
          */}
         <Route path="file/:uuid/history" lazy={() => import('./routes/file.$uuid.history')} />
         <Route path="file/:uuid/duplicate" lazy={() => import('./routes/file.$uuid.duplicate')} />
+        <Route path="teams/:teamUuid/onboarding" lazy={() => import('./routes/teams.$teamUuid.onboarding')} />
         <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
           <Route
             path={ROUTES.FILES_SHARED_WITH_ME}
@@ -110,7 +115,6 @@ export const router = createBrowserRouter(
 
           <Route path="teams">
             <Route index element={<Navigate to="/" replace />} />
-            <Route path="create" lazy={() => import('./routes/teams.create')} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
               <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
               <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
@@ -122,9 +126,6 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
         </Route>
-
-        <Route path={ROUTES.ONBOARDING_QUESTIONNAIRE} lazy={() => import('./routes/onboarding')} />
-        <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
 
         {/* For development purposes only */}
         <Route path="__preview__/*" lazy={() => import('./routes/__preview__')} />

@@ -142,6 +142,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       id: team.id,
       uuid,
       name: team.name,
+      // Onboarding is considered complete if: 1) the value is true, or 2) the value is null (legacy)
+      onboardingComplete: dbTeam.onboardingComplete !== false,
       settings: {
         analyticsAi: dbTeam.settingAnalyticsAi,
       },
