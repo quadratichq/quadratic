@@ -54,7 +54,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
           publicFileUrlInProduction: exampleUrl,
         },
       });
-      return replace(getFailUrl(ROUTES.EXAMPLES));
+      return replace(getFailUrl(ROUTES.TEMPLATES));
     }
   }
 

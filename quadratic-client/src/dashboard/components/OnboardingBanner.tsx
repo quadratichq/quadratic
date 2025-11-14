@@ -93,12 +93,12 @@ export function OnboardingBanner() {
 
             <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
-                to={ROUTES.EXAMPLES}
+                to={ROUTES.TEMPLATES}
                 onClick={() => {
                   trackEvent('[OnboardingBanner].newFileFromExample');
                 }}
               >
-                <MixIcon className="mr-1" /> Explore example files
+                <MixIcon className="mr-1" /> Explore templates
               </Link>
             </Button>
           </div>

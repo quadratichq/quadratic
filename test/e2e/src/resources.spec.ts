@@ -24,8 +24,8 @@ test('Create Example', async ({ page }) => {
   //--------------------------------
   // Act:
   //--------------------------------
-  // navigate to Examples tab
-  await page.locator(`a:text("Examples")`).click({ timeout: 60 * 1000 });
+  // navigate to Templates tab
+  await page.locator(`a:text("Templates")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // click on the "Python intro" example

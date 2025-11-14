@@ -33,8 +33,8 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader
-        title="Examples"
-        titleNode={<DashboardHeaderTitle>Example files by the Quadratic team</DashboardHeaderTitle>}
+        title="Templates"
+        titleNode={<DashboardHeaderTitle>Templates by the Quadratic team</DashboardHeaderTitle>}
       />
 
       <ExampleFilesList files={files} />

@@ -74,7 +74,7 @@ export const ROUTES = {
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
-  EXAMPLES: '/examples',
+  TEMPLATES: '/templates',
   LABS: '/labs',
   ONBOARDING_QUESTIONNAIRE: '/onboarding',
   ONBOARDING_VIDEO: '/onboarding-video',

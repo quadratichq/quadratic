@@ -1394,11 +1394,11 @@ test('File - Clear Recent History', async ({ page }) => {
   // Create new file
   await createFile(page, { fileName });
 
-  // Go to the examples
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
+  // Go to the templates
+  await page.getByRole(`link`, { name: `view_carousel Templates` }).click({ timeout: 60 * 1000 });
 
   // Wait for the page to appear
-  await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
+  await page.getByRole(`heading`, { name: `Templates by the Quadratic team` }).waitFor();
 
   // Scrape all h2 elements on the page and trim their text content
   const h2Texts = await page.$$eval('ul.grid li h2.truncate', (elements) =>
