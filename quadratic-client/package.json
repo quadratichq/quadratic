@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -60,7 +60,7 @@
     "@radix-ui/react-icons": "^1.3.2",
     "@sentry/react": "^10.10.0",
     "@szhsin/react-menu": "^4.0.2",
-    "@workos-inc/authkit-js": "^0.14.0",
+    "@workos-inc/authkit-js": "0.14.0",
     "bignumber.js": "^9.2.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

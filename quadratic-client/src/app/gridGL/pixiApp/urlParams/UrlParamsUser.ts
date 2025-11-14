@@ -107,50 +107,74 @@ export class UrlParamsUser {
     this.aiAnalystPromptLoaded = true;
 
     const prompt = params.get('prompt');
-    if (!prompt) return;
+    const connectionUuid = params.get('connection-uuid');
+    const openAIAnalyst = params.get('open-ai-analyst') === 'true';
 
-    // Remove the `prompt` param when we're done
+    // Remove params when we're done
     const url = new URL(window.location.href);
-    params.delete('prompt');
+    if (prompt) params.delete('prompt');
+    if (connectionUuid) params.delete('connection-uuid');
+    if (openAIAnalyst) params.delete('open-ai-analyst');
     url.search = params.toString();
     window.history.replaceState(null, '', url.toString());
 
     if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
-    const { submitAIAnalystPrompt } = pixiAppSettings;
+    const { submitAIAnalystPrompt, setAIAnalystState } = pixiAppSettings;
     if (!submitAIAnalystPrompt) {
       throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
     }
 
-    const chatId = this.chatId;
-    this.chatId = undefined;
-
-    const files: FileContent[] = [];
-    const importFiles: ImportFile[] = [];
-
-    // segregate files into aiFiles and importFiles
-    for (const file of filesFromIframe.dbFiles) {
-      if (isSupportedMimeType(file.mimeType)) {
-        files.push({
-          type: 'data',
-          data: arrayBufferToBase64(file.data),
-          mimeType: file.mimeType,
-          fileName: file.name,
-        });
-      } else if (IMPORT_FILE_EXTENSIONS.includes(getExtension(file.name))) {
-        importFiles.push(file);
-      }
+    // Open AI analyst and set connection context if specified
+    if (openAIAnalyst && setAIAnalystState) {
+      setAIAnalystState((prev) => ({
+        ...prev,
+        showAIAnalyst: true,
+        activeSchemaConnectionUuid: connectionUuid || prev.activeSchemaConnectionUuid,
+      }));
+    } else if (connectionUuid && setAIAnalystState) {
+      setAIAnalystState((prev) => ({
+        ...prev,
+        activeSchemaConnectionUuid: connectionUuid,
+      }));
     }
-    filesFromIframe.dbFiles = [];
 
-    // submit the prompt and files to the ai analyst
-    submitAIAnalystPrompt({
-      content: [...files, createTextContent(prompt)],
-      messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
-      context: { codeCell: undefined, connection: undefined },
-      messageIndex: 0,
-      importFiles,
-    });
+    // If there's a prompt, submit it
+    if (prompt) {
+      const chatId = this.chatId;
+      this.chatId = undefined;
+
+      const files: FileContent[] = [];
+      const importFiles: ImportFile[] = [];
+
+      // segregate files into aiFiles and importFiles
+      for (const file of filesFromIframe.dbFiles) {
+        if (isSupportedMimeType(file.mimeType)) {
+          files.push({
+            type: 'data',
+            data: arrayBufferToBase64(file.data),
+            mimeType: file.mimeType,
+            fileName: file.name,
+          });
+        } else if (IMPORT_FILE_EXTENSIONS.includes(getExtension(file.name))) {
+          importFiles.push(file);
+        }
+      }
+      filesFromIframe.dbFiles = [];
+
+      // Connection info will be resolved by submitAIAnalystPrompt from activeSchemaConnectionUuid
+      // which we set above, so we pass undefined here
+      const connectionContext = undefined;
+
+      // submit the prompt and files to the ai analyst
+      submitAIAnalystPrompt({
+        content: [...files, createTextContent(prompt)],
+        messageSource: chatId ? `MarketingSite:${chatId}` : 'UrlPrompt',
+        context: { codeCell: undefined, connection: connectionContext },
+        messageIndex: 0,
+        importFiles,
+      });
+    }
   };
 
   private setupListeners = (params: URLSearchParams) => {

@@ -26,19 +26,21 @@ export const newNewFileFromStateConnection = ({
   query,
   connectionType,
   connectionUuid,
+  prompt,
 }: {
   isPrivate: boolean;
   teamUuid: string;
   query: string;
   connectionType: ConnectionType;
   connectionUuid: string;
+  prompt?: string;
 }) => {
   const stateUrlParam = {
     codeString: query,
     language: { Connection: { kind: connectionType, id: connectionUuid } },
   };
 
-  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
+  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate, prompt });
 
   return to;
 };
