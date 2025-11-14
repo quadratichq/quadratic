@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -65,8 +65,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",
-    "color": "^5.0.0",
-    "cron-parser": "^5.3.0",
+    "color": "^4.2.3",
     "dexie": "^4.0.11",
     "esbuild-wasm": "0.25.3",
     "eventemitter3": "^5.0.1",
@@ -105,7 +104,7 @@
     "@sentry/vite-plugin": "^4.3.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
-    "@types/color": "^3.0.6",
+    "@types/color": "^4.2.0",
     "@types/fontfaceobserver": "^2.1.3",
     "@types/react": "^19.1.1",
     "@types/react-avatar-editor": "^13.0.2",
