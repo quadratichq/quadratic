@@ -27,7 +27,7 @@ export const useAIModel = (): UseAIModelReturn => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debug } = useDebugFlags();
 
-  const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'default');
+  const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'max');
   const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
 
   const othersModelKeys: AIModelKey[] = useMemo(() => {
