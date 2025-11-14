@@ -605,9 +605,9 @@ export class CellLabel {
     }
 
     // Calculate text height with proper spacing for descenders
-    // Use the bitmap font's lineHeight (which includes proper descender space) for each line
+    // Use this.lineHeight to match the spacing used when positioning lines
     // The 'line' variable is 0-indexed, so (line + 1) gives us the total number of lines
-    const lineBasedHeight = data.lineHeight * scale * (line + 1);
+    const lineBasedHeight = this.lineHeight * (line + 1);
     let calculatedTextHeight = Math.max(textHeight * scale, lineBasedHeight);
 
     // Add space for underlines if present (underlines extend below the text baseline)
@@ -714,6 +714,9 @@ export class CellLabel {
 
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
+
+    // Clear emojis array to prevent accumulation on re-renders
+    this.emojis = [];
 
     const bounds = new Bounds();
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));

@@ -64,7 +64,25 @@ export const FormattingBar = memo(() => {
       }
 
       const menuWidth = menuRef.current?.clientWidth;
-      let currentWidth = moreButtonRef.current?.clientWidth ?? 0;
+      const moreButtonWidth = moreButtonRef.current?.clientWidth ?? 0;
+
+      // First, calculate total width without more button
+      let totalWidth = 0;
+      Object.entries(refs).forEach(([key, ref]) => {
+        const itemWidth = ref.current?.clientWidth;
+        if (itemWidth) {
+          totalWidth += itemWidth;
+        }
+      });
+
+      // If everything fits without more button, show everything
+      if (totalWidth <= menuWidth) {
+        setHiddenItems([]);
+        return;
+      }
+
+      // Otherwise, find which items to hide accounting for more button width
+      let currentWidth = moreButtonWidth;
       const hiddenItems: FormattingTypes[] = [];
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;

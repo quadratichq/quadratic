@@ -281,6 +281,7 @@ export const FormatMoreButton = memo(
         className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
         onValueChange={() => props.setShowMore(!props.showMore)}
         ref={ref}
+        data-testid="more-formatting-icon"
       >
         <MoreVertIcon />
       </ToggleGroup.Root>
