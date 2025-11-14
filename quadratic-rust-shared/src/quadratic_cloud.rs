@@ -63,7 +63,7 @@ pub async fn get_worker_init_data(
     Ok(worker_init_data)
 }
 
-pub type GetTasksResponse = Vec<(String, Task)>;
+pub type GetTasksResponse = Vec<(String, TaskRun)>;
 /// Get the next scheduled tasks for a worker
 pub async fn get_tasks(base_url: &str, file_id: Uuid) -> Result<GetTasksResponse> {
     let url = format!("{base_url}{WORKER_GET_TASKS_ROUTE}");

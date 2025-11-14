@@ -360,13 +360,27 @@ impl Worker {
                                     "BinaryTransaction" => {
                                         match ReceiveTransaction::decode(binary) {
                                             Ok(transaction) => {
-                                                // convert ReceiveTransactions to TransactionServer
-                                                let transaction_server =
-                                                    to_transaction_server(transaction);
+                                                // Decompress and deserialize operations
+                                                let operations =
+                                                    Transaction::decompress_and_deserialize::<
+                                                        Vec<Operation>,
+                                                    >(
+                                                        &transaction.operations
+                                                    );
 
-                                                file.lock().await.received_transactions(vec![
-                                                    transaction_server,
-                                                ]);
+                                                if let Ok(operations) = operations {
+                                                    let transaction_id =
+                                                        Uuid::parse_str(&transaction.id).unwrap();
+
+                                                    // Apply individual transaction (not as batch)
+                                                    file.lock().await.received_transaction(
+                                                        transaction_id,
+                                                        transaction.sequence_num,
+                                                        operations,
+                                                    );
+                                                } else {
+                                                    print_error("Unable to decompress and deserialize operations in BinaryTransaction".to_string());
+                                                }
                                             }
                                             Err(e) => print_error(e.to_string()),
                                         };

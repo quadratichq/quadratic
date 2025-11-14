@@ -328,7 +328,7 @@ pub struct Task {
     pub operations: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskRun {
     #[bincode(with_serde)]

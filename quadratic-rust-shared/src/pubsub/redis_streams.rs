@@ -312,9 +312,12 @@ impl super::PubSub for RedisConnection {
             .xack::<&str, &str, String, u128>(channel, group, &ids)
             .await?;
 
-        // remove the channel from the active channels set
+        // remove the channel from the active channels set ONLY if the channel is empty
         if let Some(active_channel) = active_channel {
-            self.remove_active_channel(active_channel, channel).await?
+            let len: usize = self.multiplex.xlen(channel).await?;
+            if len == 0 {
+                self.remove_active_channel(active_channel, channel).await?
+            }
         }
 
         Ok(())
@@ -746,5 +749,202 @@ pub mod tests {
 
         let results = connection.active_channels(&active_channels).await.unwrap();
         assert_eq!(results, vec![channels[1].clone()]);
+    }
+
+    #[tokio::test]
+    async fn stream_ack_preserves_active_channel_when_messages_remain() {
+        let (config, channel) = setup();
+        let group = "group 1";
+        let consumer = "consumer 1";
+        let active_channels = Uuid::new_v4().to_string();
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+
+        // Publish 3 messages to the channel
+        for i in 1..=3 {
+            connection
+                .publish(
+                    &channel,
+                    &i.to_string(),
+                    format!("test {}", i).as_bytes(),
+                    Some(&active_channels),
+                )
+                .await
+                .unwrap();
+        }
+
+        // Verify channel is in active channels
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(results, vec![channel.clone()]);
+
+        // Get first 2 messages
+        let messages = connection
+            .messages(&channel, group, consumer, None, 2, false)
+            .await
+            .unwrap();
+        assert_eq!(messages.len(), 2);
+
+        // Ack only the first message (2 messages remain in channel)
+        let first_key = messages[0].0.as_str();
+        connection
+            .ack(
+                &channel,
+                group,
+                vec![first_key],
+                Some(&active_channels),
+                false,
+            )
+            .await
+            .unwrap();
+
+        // Channel should STILL be in active channels because 2 messages remain
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(
+            results,
+            vec![channel.clone()],
+            "Channel should remain in active channels when messages still exist"
+        );
+
+        // Ack the second message (1 message remains)
+        let second_key = messages[1].0.as_str();
+        connection
+            .ack(
+                &channel,
+                group,
+                vec![second_key],
+                Some(&active_channels),
+                false,
+            )
+            .await
+            .unwrap();
+
+        // Channel should STILL be in active channels because 1 message remains
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(
+            results,
+            vec![channel.clone()],
+            "Channel should remain in active channels when 1 message still exists"
+        );
+
+        // Get and ack the last message
+        let messages = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+        assert_eq!(messages.len(), 1);
+        let last_key = messages[0].0.as_str();
+        connection
+            .ack(
+                &channel,
+                group,
+                vec![last_key],
+                Some(&active_channels),
+                false,
+            )
+            .await
+            .unwrap();
+
+        // NOW the channel should be removed from active channels
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert!(
+            results.is_empty(),
+            "Channel should be removed from active channels when all messages are acked"
+        );
+    }
+
+    #[tokio::test]
+    async fn stream_worker_processes_multiple_batches_scenario() {
+        // Integration test simulating the complete worker loop scenario:
+        // 1. Controller publishes 150 tasks to Redis
+        // 2. Controller creates worker with first 100 tasks
+        // 3. Worker processes 100 tasks
+        // 4. Worker acks 100 tasks -> channel stays active (50 remain)
+        // 5. Worker checks for more tasks -> gets 50 more
+        // 6. Worker processes 50 tasks
+        // 7. Worker acks 50 tasks -> channel removed (0 remain)
+        // 8. Worker checks for more tasks -> gets empty
+        // 9. Worker shuts down
+
+        let (config, channel) = setup();
+        let group = "group 1";
+        let consumer = "consumer 1";
+        let active_channels = Uuid::new_v4().to_string();
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+
+        // Step 1: Publish 150 tasks
+        for i in 1..=150 {
+            connection
+                .publish(
+                    &channel,
+                    &i.to_string(),
+                    format!("task {}", i).as_bytes(),
+                    Some(&active_channels),
+                )
+                .await
+                .unwrap();
+        }
+
+        // Verify channel is in active channels
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(results, vec![channel.clone()]);
+
+        // Step 2 & 3: Worker fetches and processes first 100 tasks
+        let batch1 = connection
+            .messages(&channel, group, consumer, None, 100, false)
+            .await
+            .unwrap();
+        assert_eq!(batch1.len(), 100);
+
+        // Step 4: Worker acks first 100 tasks
+        let keys1: Vec<&str> = batch1.iter().map(|(k, _)| k.as_str()).collect();
+        connection
+            .ack(&channel, group, keys1, Some(&active_channels), false)
+            .await
+            .unwrap();
+
+        // Channel should STILL be active (50 tasks remain)
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(
+            results,
+            vec![channel.clone()],
+            "Channel should remain active with 50 tasks remaining"
+        );
+
+        // Step 5: Worker fetches next batch (50 tasks)
+        let batch2 = connection
+            .messages(&channel, group, consumer, None, 100, false)
+            .await
+            .unwrap();
+        assert_eq!(
+            batch2.len(),
+            50,
+            "Should get remaining 50 tasks in second batch"
+        );
+
+        // Step 6 & 7: Worker processes and acks second batch
+        let keys2: Vec<&str> = batch2.iter().map(|(k, _)| k.as_str()).collect();
+        connection
+            .ack(&channel, group, keys2, Some(&active_channels), false)
+            .await
+            .unwrap();
+
+        // NOW channel should be removed (0 tasks remain)
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert!(
+            results.is_empty(),
+            "Channel should be removed when all 150 tasks are acked"
+        );
+
+        // Step 8: Worker checks for more tasks
+        let batch3 = connection
+            .messages(&channel, group, consumer, None, 100, false)
+            .await
+            .unwrap();
+        assert!(batch3.is_empty(), "No more tasks should be available");
+
+        // Step 9: Worker shuts down (tested elsewhere)
     }
 }
