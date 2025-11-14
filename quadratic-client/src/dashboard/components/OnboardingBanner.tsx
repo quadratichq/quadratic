@@ -93,7 +93,7 @@ export function OnboardingBanner() {
 
             <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
-                to={ROUTES.EXAMPLES}
+                to={ROUTES.TEMPLATES}
                 onClick={() => {
                   trackEvent('[OnboardingBanner].newFileFromExample');
                 }}

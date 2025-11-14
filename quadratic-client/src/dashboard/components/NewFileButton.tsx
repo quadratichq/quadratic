@@ -97,7 +97,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
-              <Link to="/examples" className="flex items-center">
+              <Link to={ROUTES.TEMPLATES} className="flex items-center">
                 <ExamplesIcon className="mr-3 text-primary" />
 
                 <span className="flex flex-col">

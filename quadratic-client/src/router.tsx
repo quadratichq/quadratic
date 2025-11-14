@@ -12,7 +12,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
  *  - *.quadratichq.com/file/*
  *  - *.quadratichq.com/education/*
  *  - *.quadratichq.com/api/*
- *  - *.quadratichq.com/examples
+ *  - *.quadratichq.com/templates
  *  - *.quadratichq.com/account
  *  - *.quadratichq.com/login
  *  - *.quadratichq.com/login-result*
@@ -102,8 +102,8 @@ export const router = createBrowserRouter(
             shouldRevalidate={dontRevalidateDialogs}
           />
           <Route
-            path={ROUTES.EXAMPLES}
-            lazy={() => import('./routes/examples')}
+            path={ROUTES.TEMPLATES}
+            lazy={() => import('./routes/templates')}
             shouldRevalidate={dontRevalidateDialogs}
           />
           <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
