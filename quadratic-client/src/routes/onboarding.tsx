@@ -22,7 +22,7 @@ import { RecoilRoot } from 'recoil';
  * That is derived as a count of 2 questions: [use, role]
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireAuth(request);
+  await requireAuth();
 
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
