@@ -90,11 +90,13 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   );
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2">
-        <span className="flex items-center text-sm font-bold">{headerTitle}</span>
+    <div className="flex w-full flex-col">
+      <div className="flex w-full items-center justify-between overflow-hidden px-4 py-2">
+        <div className="w-0 min-w-0 flex-1 overflow-hidden pr-2">
+          <span className="block truncate text-sm font-bold">{headerTitle}</span>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {debugAIAnalystChatEditing && (
             <TooltipPopover label="Execute all tool calls">
               <Button
