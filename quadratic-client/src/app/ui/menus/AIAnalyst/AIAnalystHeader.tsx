@@ -4,6 +4,7 @@ import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
+  aiAnalystCurrentChatNameAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
@@ -14,11 +15,12 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
 import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
@@ -42,7 +44,6 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
     [currentUserMessagesCount, showChatHistory]
@@ -79,14 +80,11 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   );
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2">
-        <span className="flex items-center text-sm font-bold">
-          {viewActionsSpec[Action.ToggleAIAnalyst].label()}
-          {showChatHistory && ' history'}
-        </span>
+    <div className="flex w-full flex-col">
+      <div className="flex w-full items-center justify-between overflow-hidden px-4 py-2">
+        <RenamableHeaderTitle showChatHistory={showChatHistory} />
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {debugAIAnalystChatEditing && (
             <TooltipPopover label="Execute all tool calls">
               <Button
@@ -164,6 +162,89 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     </div>
   );
 });
+
+function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean }) {
+  const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
+  const currentChatName = useRecoilValue(aiAnalystCurrentChatNameAtom);
+  const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const escapePressedRef = useRef(false);
+
+  const defaultLabel = useMemo(() => viewActionsSpec[Action.ToggleAIAnalyst].label(), []);
+
+  const headerTitle = useMemo(() => {
+    if (showChatHistory) {
+      return `${defaultLabel} history`;
+    }
+    return currentChatName.trim() || defaultLabel;
+  }, [showChatHistory, currentChatName, defaultLabel]);
+
+  const canRename = useMemo(() => !showChatHistory && !!currentChat.id, [showChatHistory, currentChat.id]);
+
+  const handleStartRenaming = useCallback(() => {
+    if (!canRename) return;
+    setIsRenaming(true);
+    escapePressedRef.current = false;
+  }, [canRename]);
+
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsRenaming(false);
+
+      // Don't save if escape was pressed
+      if (escapePressedRef.current) {
+        escapePressedRef.current = false;
+        return;
+      }
+
+      const newName = e.target.value.trim();
+
+      // Don't do anything if the name didn't change
+      if (newName === currentChatName.trim()) {
+        return;
+      }
+
+      // Update the chat name
+      setCurrentChatName(newName);
+    },
+    [currentChatName, setCurrentChatName]
+  );
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    } else if (e.key === 'Escape') {
+      escapePressedRef.current = true;
+      e.currentTarget.blur();
+    }
+  }, []);
+
+  return (
+    <div className="w-0 min-w-0 flex-1 pr-2">
+      {isRenaming ? (
+        <Input
+          className="h-auto border-0 px-1 py-0 text-sm font-bold focus-visible:ring-1"
+          autoFocus
+          defaultValue={currentChatName.trim() || defaultLabel}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <button
+          onClick={handleStartRenaming}
+          disabled={!canRename}
+          className={cn(
+            '-mx-1 block max-w-full truncate text-left text-sm font-bold',
+            canRename && 'rounded px-1 hover:cursor-pointer hover:bg-accent'
+          )}
+        >
+          {headerTitle}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function SubheaderMessage({ children, caretPosFromRight }: { children: React.ReactNode; caretPosFromRight: number }) {
   return (
