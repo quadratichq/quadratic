@@ -101,6 +101,8 @@ export const router = createBrowserRouter(
             lazy={() => import('./routes/files.shared-with-me')}
             shouldRevalidate={dontRevalidateDialogs}
           />
+          {/* Redirect /examples to /templates - we add this because examples is linked in lots of places we're not aware about */}
+          <Route path="/examples" element={<Navigate to={ROUTES.TEMPLATES} replace />} />
           <Route
             path={ROUTES.TEMPLATES}
             lazy={() => import('./routes/templates')}
