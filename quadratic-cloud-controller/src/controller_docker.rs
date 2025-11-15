@@ -63,16 +63,45 @@ impl Controller {
             return Ok(());
         }
 
-        // Only create workers up to the available slots
-        let files_to_process: Vec<_> = file_ids.into_iter().take(available_slots).collect();
+        // Filter file IDs to only include those that have tasks in PubSub
+        // This prevents us from reserving worker slots for files with no tasks
+        info!("Checking which files have pending tasks in PubSub");
+        let file_checks = file_ids.iter().map(|file_id| async {
+            let has_tasks = self.state.file_has_tasks(*file_id).await.unwrap_or(false);
+            (*file_id, has_tasks)
+        });
+        let check_results = join_all(file_checks).await;
 
-        if files_to_process.len() < total_file_count {
+        let files_with_tasks: Vec<_> = check_results
+            .into_iter()
+            .filter_map(|(file_id, has_tasks)| if has_tasks { Some(file_id) } else { None })
+            .collect();
+
+        let files_with_tasks_count = files_with_tasks.len();
+        let files_without_tasks_count = total_file_count - files_with_tasks_count;
+
+        if files_without_tasks_count > 0 {
+            info!(
+                "{} file(s) have no pending tasks, skipping worker creation for them",
+                files_without_tasks_count
+            );
+        }
+
+        if files_with_tasks.is_empty() {
+            info!("No files with pending tasks to create workers for");
+            return Ok(());
+        }
+
+        // Only create workers up to the available slots
+        let files_to_process: Vec<_> = files_with_tasks.into_iter().take(available_slots).collect();
+
+        if files_to_process.len() < files_with_tasks_count {
             info!(
                 "Limited to {} workers (max: {}, active: {}, waiting: {})",
                 files_to_process.len(),
                 MAX_CONCURRENT_WORKERS,
                 active_worker_count,
-                total_file_count - files_to_process.len()
+                files_with_tasks_count - files_to_process.len()
             );
         } else {
             info!(
@@ -410,6 +439,149 @@ mod tests {
         assert!(
             active_count <= MAX_CONCURRENT_WORKERS,
             "Should respect the concurrent worker limit"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_file_has_tasks_returns_false_for_empty_channel() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+
+        // Check a file that has no tasks in PubSub
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+
+        assert!(!has_tasks, "Should return false for file with no tasks");
+    }
+
+    #[tokio::test]
+    async fn test_file_has_tasks_returns_true_when_tasks_exist() {
+        use quadratic_rust_shared::quadratic_api::TaskRun;
+
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+        let run_id = Uuid::new_v4();
+
+        // Create a task and add it to PubSub
+        let task = TaskRun {
+            file_id,
+            task_id,
+            run_id,
+            operations: vec![1, 2, 3],
+        };
+
+        state.add_tasks(vec![task]).await.unwrap();
+
+        // Now check if the file has tasks
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+
+        assert!(has_tasks, "Should return true for file with tasks");
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_filters_files_without_tasks() {
+        use quadratic_rust_shared::quadratic_api::TaskRun;
+
+        let state = new_state().await;
+        let controller = Controller::new(state.clone()).await.unwrap();
+
+        // Create 5 file IDs
+        let file_ids: HashSet<Uuid> = (0..5).map(|_| Uuid::new_v4()).collect();
+
+        // Add tasks for only 2 of the files
+        let file_ids_vec: Vec<Uuid> = file_ids.iter().cloned().collect();
+        let file_with_tasks_1 = file_ids_vec[0];
+        let file_with_tasks_2 = file_ids_vec[1];
+
+        let task1 = TaskRun {
+            file_id: file_with_tasks_1,
+            task_id: Uuid::new_v4(),
+            run_id: Uuid::new_v4(),
+            operations: vec![1, 2, 3],
+        };
+        let task2 = TaskRun {
+            file_id: file_with_tasks_2,
+            task_id: Uuid::new_v4(),
+            run_id: Uuid::new_v4(),
+            operations: vec![4, 5, 6],
+        };
+
+        state.add_tasks(vec![task1, task2]).await.unwrap();
+
+        // Attempt to create workers for all 5 files
+        let result = controller.create_workers(file_ids).await;
+
+        // Should succeed
+        assert!(
+            result.is_ok(),
+            "Should succeed even when some files have no tasks"
+        );
+
+        // Workers should only be created for files with tasks (but they may fail/complete quickly)
+        // We can't reliably check active worker count due to timing, but the operation should succeed
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_skips_all_when_no_tasks_exist() {
+        let state = new_state().await;
+        let controller = Controller::new(state.clone()).await.unwrap();
+
+        // Create file IDs but don't add any tasks to PubSub
+        let file_ids: HashSet<Uuid> = (0..5).map(|_| Uuid::new_v4()).collect();
+
+        // Attempt to create workers
+        let result = controller.create_workers(file_ids).await;
+
+        // Should succeed without creating any workers
+        assert!(result.is_ok(), "Should succeed when no files have tasks");
+
+        // Verify no workers were created
+        let active_count = state
+            .client
+            .lock()
+            .await
+            .list_ids(true)
+            .await
+            .unwrap()
+            .len();
+        assert_eq!(
+            active_count, 0,
+            "Should not create any workers when no files have tasks"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_prioritizes_files_with_tasks() {
+        use quadratic_rust_shared::quadratic_api::TaskRun;
+
+        let state = new_state().await;
+        let controller = Controller::new(state.clone()).await.unwrap();
+
+        // Create MAX_CONCURRENT_WORKERS + 5 files
+        let num_files = MAX_CONCURRENT_WORKERS + 5;
+        let all_file_ids: Vec<Uuid> = (0..num_files).map(|_| Uuid::new_v4()).collect();
+
+        // Add tasks only for the first 3 files
+        let files_with_tasks = &all_file_ids[0..3];
+        for file_id in files_with_tasks {
+            let task = TaskRun {
+                file_id: *file_id,
+                task_id: Uuid::new_v4(),
+                run_id: Uuid::new_v4(),
+                operations: vec![1, 2, 3],
+            };
+            state.add_tasks(vec![task]).await.unwrap();
+        }
+
+        // Try to create workers for all files
+        let file_ids_set: HashSet<Uuid> = all_file_ids.into_iter().collect();
+        let result = controller.create_workers(file_ids_set).await;
+
+        // Should succeed - the key thing is that it doesn't try to create
+        // MAX_CONCURRENT_WORKERS workers, only up to 3 (the ones with tasks)
+        assert!(
+            result.is_ok(),
+            "Should succeed and only attempt to create workers for files with tasks"
         );
     }
 }

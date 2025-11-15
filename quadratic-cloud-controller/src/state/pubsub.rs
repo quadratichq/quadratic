@@ -234,4 +234,20 @@ impl State {
 
         Ok(file_ids)
     }
+
+    /// Check if a file has pending tasks in PubSub
+    pub(crate) async fn file_has_tasks(&self, file_id: Uuid) -> Result<bool> {
+        self.reconnect_pubsub_if_unhealthy().await;
+
+        let channel = PubSub::file_id_to_channel(file_id);
+        let mut pubsub = self.pubsub.lock().await;
+
+        let length = pubsub
+            .connection
+            .length(&channel)
+            .await
+            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+
+        Ok(length > 0)
+    }
 }

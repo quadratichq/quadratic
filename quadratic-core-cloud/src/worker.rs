@@ -507,58 +507,12 @@ impl Worker {
 
         *self.transaction_id.lock().await = Some(transaction_id);
 
-        // Log any code execution output and get forward transaction
-        let (forward_ops, execution_logs) = {
+        // Get forward transaction
+        let forward_ops = {
             let file_lock = self.file.lock().await;
             let forward_transaction = file_lock.last_transaction().unwrap();
-
-            // Collect execution logs
-            let mut logs = Vec::new();
-            for op in &forward_transaction.operations {
-                if let Operation::SetDataTable {
-                    sheet_pos,
-                    data_table: Some(dt),
-                    ..
-                } = op
-                {
-                    if let quadratic_core::grid::DataTableKind::CodeRun(code_run) = &dt.kind {
-                        let pos_str = format!("{}:{}", sheet_pos.x, sheet_pos.y);
-
-                        if let Some(std_out) = &code_run.std_out {
-                            if !std_out.trim().is_empty() {
-                                logs.push(("output", pos_str.clone(), std_out.trim().to_string()));
-                            }
-                        }
-                        if let Some(std_err) = &code_run.std_err {
-                            if !std_err.trim().is_empty() {
-                                logs.push(("stderr", pos_str.clone(), std_err.trim().to_string()));
-                            }
-                        }
-                        if let Some(error) = &code_run.error {
-                            logs.push(("error", pos_str.clone(), error.to_string()));
-                        }
-                        if code_run.error.is_none() {
-                            if let Some(return_type) = &code_run.return_type {
-                                logs.push(("result", pos_str.clone(), return_type.clone()));
-                            }
-                        }
-                    }
-                }
-            }
-
-            (forward_transaction.operations.to_owned(), logs)
+            forward_transaction.operations.to_owned()
         };
-
-        // Log outside the lock
-        for (log_type, pos, message) in execution_logs {
-            match log_type {
-                "output" => tracing::info!("📤 [Worker Output {}] {}", pos, message),
-                "stderr" => tracing::warn!("⚠️  [Worker StdErr {}] {}", pos, message),
-                "error" => tracing::error!("❌ [Worker Error {}] {}", pos, message),
-                "result" => tracing::info!("✨ [Worker Result {}] {}", pos, message),
-                _ => {}
-            }
-        }
 
         tracing::info!(
             "📡 [Worker] Sending transaction {} to multiplayer",

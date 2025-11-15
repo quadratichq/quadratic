@@ -67,18 +67,46 @@ impl Controller {
             return Ok(());
         }
 
+        // Filter file IDs to only include those that have tasks in PubSub
+        // This prevents us from creating workers for files with no tasks
+        info!("[ensure_workers_exist] Checking which files have pending tasks in PubSub");
+        let file_checks = missing_workers.iter().map(|file_id| async {
+            let has_tasks = self.state.file_has_tasks(*file_id).await.unwrap_or(false);
+            (*file_id, has_tasks)
+        });
+        let check_results = join_all(file_checks).await;
+
+        let files_with_tasks: Vec<_> = check_results
+            .into_iter()
+            .filter_map(|(file_id, has_tasks)| if has_tasks { Some(file_id) } else { None })
+            .collect();
+
+        let files_without_tasks_count = missing_workers.len() - files_with_tasks.len();
+
+        if files_without_tasks_count > 0 {
+            info!(
+                "[ensure_workers_exist] {} file(s) have no pending tasks, skipping worker creation for them",
+                files_without_tasks_count
+            );
+        }
+
+        if files_with_tasks.is_empty() {
+            info!("[ensure_workers_exist] No files with pending tasks to create workers for");
+            return Ok(());
+        }
+
         info!(
             "[ensure_workers_exist] Found {} files that are missing file workers, creating them",
-            missing_workers.len()
+            files_with_tasks.len()
         );
 
-        let futures = missing_workers
+        let futures = files_with_tasks
             .iter()
             .map(|file_id| self.create_worker(file_id));
 
         let results = join_all(futures).await;
 
-        for (file_id, result) in missing_workers.into_iter().zip(results) {
+        for (file_id, result) in files_with_tasks.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("[ensure_workers_exist] Failed to create file worker for {file_id}: {e}");
             }
