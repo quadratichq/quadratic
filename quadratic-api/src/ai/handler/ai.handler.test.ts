@@ -74,9 +74,7 @@ describe('AI Handler Tests', () => {
       bindTools: mockBindTools.mockReturnThis(),
     });
 
-    (ChatAnthropic as jest.MockedClass<typeof ChatAnthropic>).mockImplementation(
-      () => createMockModel() as any
-    );
+    (ChatAnthropic as jest.MockedClass<typeof ChatAnthropic>).mockImplementation(() => createMockModel() as any);
     (ChatOpenAI as jest.MockedClass<typeof ChatOpenAI>).mockImplementation(() => createMockModel() as any);
     (ChatBedrockConverse as jest.MockedClass<typeof ChatBedrockConverse>).mockImplementation(
       () => createMockModel() as any
@@ -231,9 +229,7 @@ describe('AI Handler Tests', () => {
       expect(result?.responseMessage.toolCalls).toHaveLength(1);
       expect(result?.responseMessage.toolCalls?.[0].id).toBe('call_123');
       expect(result?.responseMessage.toolCalls?.[0].name).toBe('testTool');
-      expect(result?.responseMessage.toolCalls?.[0].arguments).toBe(
-        JSON.stringify({ param1: 'value1' })
-      );
+      expect(result?.responseMessage.toolCalls?.[0].arguments).toBe(JSON.stringify({ param1: 'value1' }));
     });
 
     it('should handle Google Gemini model', async () => {
@@ -409,7 +405,7 @@ describe('AI Handler Tests', () => {
 
     it('should handle aborted streaming request', async () => {
       const abortController = new AbortController();
-      
+
       const mockAsyncIterator = {
         [Symbol.asyncIterator]: async function* () {
           abortController.abort();
@@ -475,9 +471,9 @@ describe('AI Handler Tests', () => {
         source: 'AIAnalyst',
         messages: [
           {
-            role: 'internal',
+            role: 'user',
             content: [createTextContent('You are a helpful assistant')],
-            contextType: 'systemPrompt',
+            contextType: 'quadraticDocs',
           },
           {
             role: 'user',
@@ -499,7 +495,7 @@ describe('AI Handler Tests', () => {
             ],
           },
           {
-            role: 'internal',
+            role: 'user',
             content: [
               {
                 id: 'call_789',
@@ -530,7 +526,7 @@ describe('AI Handler Tests', () => {
 
       expect(result).toBeDefined();
       expect(mockInvoke).toHaveBeenCalledTimes(1);
-      
+
       // Verify the messages passed to the model include system, user, assistant, tool, and user
       const callArgs = mockInvoke.mock.calls[0][0];
       expect(Array.isArray(callArgs)).toBe(true);
@@ -557,10 +553,7 @@ describe('AI Handler Tests', () => {
         messages: [
           {
             role: 'user',
-            content: [
-              createTextContent('Analyze this data'),
-              createTextContent('Additional context here'),
-            ],
+            content: [createTextContent('Analyze this data'), createTextContent('Additional context here')],
             contextType: 'userPrompt',
           },
         ],
@@ -1026,4 +1019,3 @@ describe('AI Handler Tests', () => {
     });
   });
 });
-

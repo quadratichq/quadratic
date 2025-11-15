@@ -73,6 +73,7 @@
     "zod": "^3.25.3"
   },
   "devDependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.10.8",
     "@aws-sdk/types": "^3.449.0",
     "@faker-js/faker": "^8.2.0",
     "@smithy/protocol-http": "^3.0.8",
@@ -81,6 +82,7 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.14",
+    "@types/jest": "^29.5.14",
     "@types/mailchimp__mailchimp_marketing": "^3.0.21",
     "@types/multer": "^1.4.8",
     "@types/multer-s3": "^3.0.1",
@@ -90,7 +92,9 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "dotenv-cli": "^7.1.0",
+    "jest": "^29.7.0",
     "prisma": "^6.16.2",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
