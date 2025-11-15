@@ -11,7 +11,7 @@ import {
 } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test.skip('AI Message Counter', async ({ page }) => {
   //--------------------------------
@@ -37,8 +37,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_ai_message_count' });
 
   // Create new team
-  const teamName = `AI Counter - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -183,8 +182,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_add_payment' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -338,10 +336,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   ]);
 
   // Create new team
-  const teamName = `Add user to team - ${Date.now()}`;
-  const { teamUrl } = await createNewTeamByURL(page, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -411,7 +406,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -509,8 +504,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_cancel_subscription' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -595,8 +589,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_update_billing' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -718,8 +711,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_upgrade_pro' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });

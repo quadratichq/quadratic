@@ -4,7 +4,7 @@ import path from 'node:path';
 import { logIn } from './helpers/auth.helpers';
 import { upgradeToProPlan } from './helpers/billing.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', async ({ page }) => {
   // Constants
@@ -294,8 +294,7 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
   await logIn(page, { emailPrefix: `e2e_ai_chat` });
 
   // Create new team
-  const teamName = `AI Counter - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -409,8 +408,7 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
   await logIn(page, { emailPrefix: `e2e_ai_prompt_chart` });
 
   // Create new team
-  const teamName = `AI Prompt Chart - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -504,8 +502,7 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_insert_value` });
 
   // Create new team
-  const teamName = `AI Prompt Insert value - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -561,8 +558,7 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
   await logIn(page, { emailPrefix: `e2e_ai_python_code` });
 
   // Create new team
-  const teamName = `AI Prompt Python Code - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -624,11 +620,10 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
   const assertionPrompt = `Do the two sheets contain the same data? Respond only with Yes. or No.`;
 
   // Log in
-  const teamName = `AI Sheet Data analysis - ${Date.now()}`;
   await logIn(page, { emailPrefix: `e2e_ai_sheet_data` });
 
   // Create new team
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -715,8 +710,7 @@ test.skip('Think Enabled Response', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_think_enabled` });
 
   // Create new team
-  const teamName = `Think Enabled Response - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);

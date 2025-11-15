@@ -24,12 +24,24 @@ import {
   LogoutIcon,
   RefreshIcon,
   SettingsIcon,
+  TeamIcon,
 } from '@/shared/components/Icons';
 import { TeamAvatar } from '@/shared/components/TeamAvatar';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shared/shadcn/ui/alert-dialog';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -41,6 +53,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
@@ -399,7 +412,6 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
     },
   } = useDashboardRouteLoaderData();
   const fetcher = useFetcher({ key: 'update-team' });
-  const navigate = useNavigate();
 
   let optimisticActiveTeamName = activeTeamName;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -411,11 +423,16 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
+      <DropdownMenuTrigger
+        data-testid="team-switcher-button"
+        className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}
+      >
         <div className="mx-0.5">
           <TeamAvatar name={optimisticActiveTeamName} />
         </div>
-        <div className="select-none truncate">{optimisticActiveTeamName}</div>
+        <div className="select-none truncate" data-testid="team-switcher-team-name">
+          {optimisticActiveTeamName}
+        </div>
         <div className="relative ml-auto mr-0.5 flex items-center">
           <ArrowDropDownIcon />
           <RefreshIcon
@@ -468,17 +485,20 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          className="flex gap-3 text-muted-foreground"
-          onClick={() => {
-            navigate(ROUTES.TEAMS_CREATE);
-          }}
-        >
-          <IconWrapper>
-            <AddIcon />
-          </IconWrapper>
-          Create team
-        </DropdownMenuItem>
+        <CreateTeamAlert>
+          <DropdownMenuItem
+            data-testid="create-team-button"
+            className="flex gap-3 text-muted-foreground"
+            onSelect={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <IconWrapper>
+              <AddIcon />
+            </IconWrapper>
+            Create team
+          </DropdownMenuItem>
+        </CreateTeamAlert>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -486,4 +506,58 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
 
 function IconWrapper({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn('flex h-6 w-6 items-center justify-center', className)}>{children}</div>;
+}
+
+function CreateTeamAlert({ children }: { children: ReactNode }) {
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const navigate = useNavigate();
+  const isLoading = loadState === 'loading';
+
+  const handleCreateTeam = async () => {
+    setLoadState('loading');
+    try {
+      const newTeam = await apiClient.teams.create();
+      setActiveTeam(newTeam.uuid);
+      navigate(ROUTES.TEAM_ONBOARDING(newTeam.uuid));
+    } catch (error) {
+      setLoadState('error');
+      return;
+    }
+  };
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent className="max-w-sm">
+        <AlertDialogHeader>
+          <TeamIcon size="lg" />
+          <AlertDialogTitle>Teams in Quadratic</AlertDialogTitle>
+          <AlertDialogDescription>
+            Teams are a collaborative space for working with other people. Create a new team and answer a few onboarding
+            questions to get started.
+          </AlertDialogDescription>
+          {loadState === 'error' && (
+            <AlertDialogDescription className="text-destructive">
+              Failed to create team. Try again.
+            </AlertDialogDescription>
+          )}
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button
+              data-testid="create-team-button-submit"
+              disabled={isLoading}
+              loading={isLoading}
+              onClick={(e) => {
+                e.preventDefault();
+                handleCreateTeam();
+              }}
+            >
+              Create new team
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }

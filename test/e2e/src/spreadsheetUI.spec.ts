@@ -4,7 +4,7 @@ import { navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { upgradeToProPlan } from './helpers/billing.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test.skip('AI Assistant', async ({ page }) => {
   // Constants
@@ -17,8 +17,7 @@ test.skip('AI Assistant', async ({ page }) => {
   await logIn(page, { emailPrefix: `e2e_ai_assistant` });
 
   // Create a new team
-  const teamName = `AI Assistant - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   await upgradeToProPlan(page);
 

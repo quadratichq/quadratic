@@ -1,30 +1,26 @@
+import { FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
 import {
-  ControlCheckboxInline,
   ControlCheckboxInputOther,
   ControlCheckboxStacked,
   ControlLinkInline,
   ControlLinkStacked,
 } from '@/dashboard/onboarding/Controls';
-import { useOnboardingLoaderData } from '@/routes/onboarding';
+import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
+import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
 import {
-  AIIcon,
   ArrowRightIcon,
-  BlockIcon,
-  DatabaseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   EducationIcon,
   PersonalIcon,
-  SpinnerIcon,
-  StarShineIcon,
   WorkIcon,
 } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Progress } from '@/shared/shadcn/ui/progress';
+import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
-import { z } from 'zod';
 
 const FETCHER_KEY = 'onboarding-form-submission';
 
@@ -37,239 +33,154 @@ const isValidFormAtom = atom<boolean>({
   default: false,
 });
 
-export const OnboardingResponseV1Schema = z.object({
-  __version: z.literal(1),
-  __createdAt: z.string().datetime(),
-  use: z.enum(['work', 'personal', 'education']),
-  'work-role': z.string().optional(),
-  'work-role-other': z.string().optional(),
-  'personal-uses[]': z.array(z.string()).optional(),
-  'personal-uses[]-other': z.string().optional(),
-  'education-identity': z.string().optional(),
-  'education-identity-other': z.string().optional(),
-  'education-subjects[]': z.array(z.string()).optional(),
-  'education-subjects[]-other': z.string().optional(),
-  'languages[]': z.array(z.string()).optional(),
-  'goals[]': z.array(z.string()),
-  'goals[]-other': z.string().optional(),
-});
-
-export type OnboardingResponseV1 = z.infer<typeof OnboardingResponseV1Schema>;
 type QuestionProps = {
   title: string;
   subtitle?: string;
-  optionsByValue: Record<string, string>;
-};
-
-export const questionStackIdsByUse: Record<string, string[]> = {
-  work: ['use', 'work-role', 'languages[]', 'goals[]'],
-  personal: ['use', 'personal-uses[]', 'languages[]', 'goals[]'],
-  education: ['use', 'education-identity', 'education-subjects[]', 'languages[]', 'goals[]'],
+  excludeForUse?: string[];
 };
 
 export const questionsById: Record<
   string,
   QuestionProps & { Form: (props: QuestionProps & { id: string }) => React.ReactNode }
 > = {
+  instructions: {
+    title: 'Welcome to Quadratic!',
+    Form: (props) => {
+      return (
+        <Question title={props.title}>
+          <QuestionForm>
+            <ImageCarousel />
+            <input type="hidden" name={props.id} value="" />
+            <QuestionFormFooter>
+              <Button type="submit" size="lg" data-testid="onboarding-btn-get-started">
+                Get started
+              </Button>
+            </QuestionFormFooter>
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
   use: {
     title: 'How will you use Quadratic?',
     subtitle: 'Your answers help personalize your experience.',
-    optionsByValue: {
-      work: 'Work',
-      personal: 'Personal',
-      education: 'Education',
-    },
     Form: (props) => {
-      const iconsByValue: Record<string, React.ReactNode> = {
-        work: <WorkIcon size="lg" className="text-primary" />,
-        personal: <PersonalIcon size="lg" className="text-primary" />,
-        education: <EducationIcon size="lg" className="text-primary" />,
-      };
+      const [searchParams] = useSearchParams();
+      const options = [
+        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
+        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
+        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
+      ];
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <Link key={value} to={`./?${props.id}=${value}`}>
-                <ControlLinkStacked>
-                  {iconsByValue[value]}
-                  <span className="relative flex items-center">
-                    {label}
-                    <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
-                  </span>
-                </ControlLinkStacked>
-              </Link>
-            ))}
-          </QuestionForm>
-          <FreePromptsMsg isLastQuestion={false} />
-        </Question>
-      );
-    },
-  },
-
-  // Work
-  'work-role': {
-    title: 'What best describes your role?',
-    optionsByValue: {
-      'data-analytics': 'Data / Analytics',
-      product: 'Product',
-      finance: 'Finance',
-      'c-suite-management': 'C-Suite / Management',
-      marketing: 'Marketing',
-      sales: 'Sales',
-      'software-development': 'Software Development',
-      engineering: 'Engineering',
-      'ml-ai': 'Machine Learning / AI',
-      other: 'Other',
-    },
-    Form: (props) => {
-      const [searchParams] = useSearchParams();
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-
-      return (
-        <Question title={props.title}>
-          <QuestionForm className="grid grid-cols-2 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
-                  <ControlLinkInline>{label}</ControlLinkInline>
-                </Link>
-              )
-            )}
-            <QuestionFormFooter disabled={!other} />
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-
-  // Personal
-  'personal-uses[]': {
-    title: 'What are you planning to use Quadratic for?',
-    subtitle: 'Select all that apply',
-    optionsByValue: {
-      'personal-finance': 'Personal finance',
-      'trading-investing': 'Trading / Investing',
-      'side-projects-hobbies': 'Side projects / Hobbies',
-      'learn-code': 'Learning to code',
-      ai: 'Getting better at AI',
-      other: 'Other',
-    },
-    Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
-
-      return (
-        <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-2"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
-            <QuestionFormFooter disabled={!isValid} />
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-
-  // Education
-  'education-identity': {
-    title: 'What best describes you?',
-    optionsByValue: {
-      'university-student': 'University student',
-      'high-school-student': 'High school student',
-      'educator-professor': 'Educator / Professor',
-      researcher: 'Researcher',
-      'bootcamp-self-taught': 'Bootcamp / Self-taught',
-      other: 'Other',
-    },
-    Form: (props) => {
-      const [searchParams] = useSearchParams();
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
-
-      return (
-        <Question title={props.title}>
-          <QuestionForm className="grid grid-cols-2 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
+          <QuestionForm>
+            <div className="grid grid-cols-3 gap-2">
+              {options.map(({ value, label, icon }) => (
                 <Link
-                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
                   key={value}
-                  onClick={() => setOther(false)}
+                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                  // Hardcoding `onboarding-btn-use-personal` here for future ease of cmd+f
+                  data-testid={`onboarding-btn-use-${value}`}
                 >
-                  <ControlLinkInline>{label}</ControlLinkInline>
+                  <ControlLinkStacked>
+                    {icon}
+                    <span className="relative flex items-center">
+                      {label}
+                      <ArrowRightIcon className="absolute left-full top-1/2 -translate-y-1/2 opacity-20 group-hover:text-primary group-hover:opacity-100" />
+                    </span>
+                  </ControlLinkStacked>
                 </Link>
-              )
-            )}
-            <QuestionFormFooter disabled={!other} />
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
     },
   },
-  'education-subjects[]': {
-    title: 'What subject areas are you working in?',
-    subtitle: 'Select all that apply',
-    optionsByValue: {
-      math: 'Math',
-      'finance-economics': 'Finance / Economics',
-      'physics-engineering': 'Physics / Engineering',
-      'computer-science-ai': 'Computer Science / AI',
-      'business-marketing': 'Business / Marketing',
-      'social-sciences': 'Social Sciences',
-      other: 'Other',
-    },
+
+  // Work / Education
+  role: {
+    title: 'What best describes your role?',
+    excludeForUse: ['personal'],
     Form: (props) => {
+      const optionsByValue = {
+        'data-analytics': 'Data / Analytics',
+        product: 'Product',
+        finance: 'Finance',
+        'c-suite-management': 'C-Suite / Management',
+        marketing: 'Marketing',
+        sales: 'Sales',
+        'software-development': 'Software Development',
+        engineering: 'Engineering',
+        'ml-ai': 'Machine Learning / AI',
+        other: 'Other',
+      };
+      const [searchParams] = useSearchParams();
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
-      const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
 
       return (
-        <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-2"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
-            <QuestionFormFooter disabled={!isValid} />
+        <Question title={props.title}>
+          <QuestionForm>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(optionsByValue).map(([value, label]) =>
+                value === 'other' ? (
+                  <ControlCheckboxInputOther
+                    key={value}
+                    id={props.id}
+                    value={value}
+                    checked={other}
+                    onChange={setOther}
+                  >
+                    {label}
+                  </ControlCheckboxInputOther>
+                ) : (
+                  <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                    <ControlLinkInline>{label}</ControlLinkInline>
+                  </Link>
+                )
+              )}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" disabled={!other}>
+                Next
+              </Button>
+            </QuestionFormFooter>
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
+  'team-size': {
+    title: 'How many people are on your team?',
+    excludeForUse: ['personal'],
+    Form: (props) => {
+      const optionsByValue = {
+        '1-5': '1-5',
+        '6-20': '6-20',
+        '21-100': '21-100',
+        '101-250': '101-250',
+        '251-1000': '251-1,000',
+        '1000+': '1,000+',
+      };
+      const [searchParams] = useSearchParams();
+      return (
+        <Question title={props.title}>
+          <QuestionForm>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(optionsByValue).map(([value, label]) => (
+                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                  <ControlLinkInline key={value}>{label}</ControlLinkInline>
+                </Link>
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -277,118 +188,220 @@ export const questionsById: Record<
   },
 
   // Shared
-  'languages[]': {
-    title: 'Which languages are you proficient in?',
-    subtitle: 'Select all that apply',
-    optionsByValue: {
-      formulas: 'Formulas',
-      python: 'Python',
-      javascript: 'JavaScript',
-      sql: 'SQL',
-      ai: 'AI / Vibe coding',
-    },
+  'connections[]': {
+    title: 'What data sources are you interested in connecting to?',
+    subtitle: 'Select any option you’d be interested in.',
     Form: (props) => {
-      const languageClassName = 'h-10 w-10';
-      const languageIconByValue: Record<string, React.ReactNode> = {
-        formulas: <LanguageIcon language="formula" className={languageClassName} />,
-        python: <LanguageIcon language="python" className={languageClassName} />,
-        javascript: <LanguageIcon language="javascript" className={languageClassName} />,
-        sql: <DatabaseIcon size="lg" className={cn(languageClassName, 'text-orange-500')} />,
-        ai: <AIIcon size="lg" className={cn(languageClassName, 'text-green-500')} />,
-        none: <BlockIcon size="lg" className={cn(languageClassName, 'text-red-500')} />,
-      };
+      const [other, setOther] = useRecoilState(otherCheckboxAtom);
+
+      // Build options array with proper type inference
+      const options: Array<{
+        name: string;
+        value: string;
+        Logo: React.ComponentType;
+      }> = [
+        ...(Object.keys(connectionsByType) as Array<keyof typeof connectionsByType>).map((key) => ({
+          name: connectionsByType[key].name,
+          value: key,
+          Logo: connectionsByType[key].Logo,
+        })),
+        ...(Object.keys(potentialConnectionsByType) as Array<keyof typeof potentialConnectionsByType>).map((key) => ({
+          name: potentialConnectionsByType[key].name,
+          value: key,
+          Logo: potentialConnectionsByType[key].Logo,
+        })),
+      ];
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm className="grid grid-cols-3 gap-2">
-            {Object.entries(props.optionsByValue).map(([value, label]) => (
-              <ControlCheckboxStacked name={props.id} value={value} key={value}>
-                {languageIconByValue[value]}
-                {label}
-              </ControlCheckboxStacked>
-            ))}
+          <QuestionForm>
+            <div className="grid grid-cols-3 gap-2">
+              {options.map(({ name, value, Logo }) => {
+                return value === 'OTHER' ? (
+                  <ControlCheckboxInputOther
+                    key={value}
+                    id={props.id}
+                    value={value.toLowerCase()}
+                    checked={other}
+                    onChange={setOther}
+                    stacked
+                  >
+                    <Logo />
+                  </ControlCheckboxInputOther>
+                ) : (
+                  <ControlCheckboxStacked name={props.id} value={value} key={value}>
+                    <Logo />
+                  </ControlCheckboxStacked>
+                );
+              })}
+            </div>
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
 
-            <QuestionFormFooter />
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" data-testid="onboarding-btn-connections-next">
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
     },
   },
-  'goals[]': {
-    title: 'What are you looking to accomplish in Quadratic?',
-    subtitle: 'Select all that apply',
-    optionsByValue: {
-      'ai-analysis': 'AI analysis',
-      'db-connections': 'Database connections',
-      'api-integrations': 'API integrations',
-      'data-cleaning': 'Data cleaning',
-      'data-analysis': 'Data analysis',
-      'data-modeling': 'Data modeling',
-      'data-visualization': 'Data visualization',
-      other: 'Other',
-    },
+  'team-name': {
+    title: 'What’s your team name?',
+    subtitle: 'This will appear as the name of your workspace in the app.',
     Form: (props) => {
-      const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
+      const inputRef = useRef<HTMLInputElement>(null);
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
-          <QuestionForm
-            className="grid grid-cols-2 gap-1"
-            onChange={(e) => {
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const values = Array.from(formData.entries());
-              setIsValid(values.length > 0);
-            }}
-          >
-            {Object.entries(props.optionsByValue).map(([value, label]) =>
-              value === 'other' ? (
-                <ControlCheckboxInputOther key={value} id={props.id} value={value} checked={other} onChange={setOther}>
-                  {label}
-                </ControlCheckboxInputOther>
-              ) : (
-                <ControlCheckboxInline name={props.id} value={value} key={value}>
-                  {label}
-                </ControlCheckboxInline>
-              )
-            )}
-            <QuestionFormFooter disabled={!isValid} />
+          <QuestionForm>
+            <Input
+              data-testid="onboarding-input-team-name"
+              ref={inputRef}
+              className="h-12 w-full text-lg"
+              type="text"
+              name={props.id}
+              autoFocus
+              placeholder="e.g. Acme Corp."
+              onChange={(e) => {
+                setIsValid(e.target.value.length > 0);
+              }}
+            />
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" disabled={!isValid} data-testid="onboarding-btn-team-name-next">
+                Next
+              </Button>
+            </QuestionFormFooter>
           </QuestionForm>
-          {isValid && <FreePromptsMsg isLastQuestion={true} />}
+        </Question>
+      );
+    },
+  },
+  'team-invites[]': {
+    title: 'Who would you like to invite to your team?',
+    subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
+    Form: (props) => {
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          <QuestionForm>
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
+              {['john@example.com', 'alice@example.com', 'bob@example.com', 'susan@example.com'].map((placeholder) => (
+                <Input
+                  key={placeholder}
+                  className="h-12 w-full text-lg"
+                  type="email"
+                  name={props.id}
+                  placeholder={placeholder}
+                />
+              ))}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" data-testid="onboarding-btn-team-invites-next">
+                Next
+              </Button>
+            </QuestionFormFooter>
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
+  'team-plan': {
+    title: 'Which plan would you like?',
+    subtitle: 'Get started for free, or subscribe for full access.',
+    Form: (props) => {
+      const fetcher = useFetcher({ key: FETCHER_KEY });
+      const isSubmitting = fetcher.state !== 'idle';
+      const formActionUrl = fetcher.formAction || '';
+      const isSubmittingFree = formActionUrl.includes(`${props.id}=free`);
+      const isSubmittingPro = formActionUrl.includes(`${props.id}=pro`);
+      const className = cn(
+        'flex flex-col h-full w-full group relative rounded shadow-sm border border-border p-4 enabled:hover:border-primary enabled:hover:shadow-md'
+      );
+
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          <QuestionForm className="grid grid-cols-2 gap-4">
+            <FreePlan className={className}>
+              <Button
+                data-testid="onboarding-btn-team-plan-free"
+                type="submit"
+                name={props.id}
+                value="free"
+                size="lg"
+                className="mt-auto w-full"
+                disabled={isSubmitting}
+                loading={isSubmittingFree}
+              >
+                Get started
+              </Button>
+            </FreePlan>
+            <ProPlan className={className}>
+              <Button
+                type="submit"
+                name={props.id}
+                value="pro"
+                size="lg"
+                variant="secondary"
+                className="mt-4 w-full"
+                disabled={isSubmitting}
+                loading={isSubmittingPro}
+              >
+                Subscribe now
+              </Button>
+            </ProPlan>
+          </QuestionForm>
         </Question>
       );
     },
   },
 };
 
+function BackButton() {
+  const navigate = useNavigate();
+  const fetcher = useFetcher({ key: FETCHER_KEY });
+  const isSubmitting = fetcher.state !== 'idle';
+  return (
+    <Button type="reset" variant="secondary" size="lg" onClick={() => navigate(-1)} disabled={isSubmitting}>
+      Back
+    </Button>
+  );
+}
+
 export function Questions() {
   const { currentId, currentIndex, currentQuestionStackIds } = useOnboardingLoaderData();
   const setOther = useSetRecoilState(otherCheckboxAtom);
   const setIsValid = useSetRecoilState(isValidFormAtom);
   const [searchParams] = useSearchParams();
-
+  const scrollRef = useRef<HTMLDivElement>(null);
   // Whenever the search params change, that means a new form is being rendered
   // so we want to reset any state used to represent the current active form
   useEffect(() => {
     setOther((prev) => (prev === true ? false : prev));
     setIsValid((prev) => (prev === true ? false : prev));
+
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchParams, setOther, setIsValid]);
 
   const questionIds = Object.keys(questionsById);
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
+    <div ref={scrollRef} className="h-full overflow-y-auto overflow-x-hidden">
+      <div className="mx-auto flex max-w-xl flex-col gap-8 pt-8">
         <Logo />
 
-        <div className="relative w-full max-w-xl transition-all">
+        <div className="relative w-full transition-all">
           <div className="relative min-h-[4rem]">
             {questionIds.map((id) => {
               const { Form, ...props } = questionsById[id];
               const isASubsequentQuestion =
-                currentId === 'use' ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
+                currentIndex === 0 ? true : currentQuestionStackIds.indexOf(id) > currentIndex;
               return (
                 <div
                   key={id}
@@ -416,61 +429,6 @@ export function Questions() {
   );
 }
 
-function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
-  const navigate = useNavigate();
-  const fetcher = useFetcher({ key: FETCHER_KEY });
-  const { currentId, currentQuestionNumber, currentQuestionsTotal } = useOnboardingLoaderData();
-  const btnClassName = 'select-none';
-  const isSubmitting = fetcher.state !== 'idle';
-
-  return (
-    <div
-      className={cn(
-        'col-span-full grid grid-cols-2 items-center justify-between gap-4 pt-10 transition-opacity delay-300 duration-300 ease-in-out'
-      )}
-    >
-      <div
-        className={cn(
-          'flex select-none items-center gap-2 text-sm text-muted-foreground',
-          currentId === 'use' && 'invisible opacity-0'
-        )}
-      >
-        <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
-        Question {currentQuestionNumber} / {currentQuestionsTotal}
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        {isSubmitting ? (
-          <SpinnerIcon className="mr-4 text-primary" />
-        ) : (
-          <Button
-            type="reset"
-            onClick={(e) => {
-              navigate(-1);
-            }}
-            size="lg"
-            variant="ghost"
-            className={cn(btnClassName, 'text-muted-foreground')}
-          >
-            Back
-          </Button>
-        )}
-        <Button type="submit" className={cn(btnClassName)} size="lg" disabled={disabled || isSubmitting}>
-          {currentQuestionNumber === currentQuestionsTotal ? 'Done' : 'Next'}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
-  return (
-    <aside className="mx-auto flex items-center justify-center rounded-full bg-accent px-4 py-2 text-muted-foreground">
-      <StarShineIcon className="mr-2" />
-      {isLastQuestion ? <>You've unlocked free prompts!</> : <>You'll be rewarded free prompts on completion!</>}
-    </aside>
-  );
-}
-
 function Logo() {
   const className = 'h-5 w-5 bg-border transition-colors';
   return (
@@ -488,7 +446,7 @@ function Question({ children, title, subtitle }: { children: React.ReactNode; ti
   return (
     <div className="flex flex-col gap-10">
       {title && (
-        <header className="flex flex-col gap-2">
+        <header className="flex flex-col gap-1">
           <h2 className="text-center text-4xl font-bold">{title}</h2>
           {subtitle && <p className="text-center text-lg text-muted-foreground">{subtitle}</p>}
         </header>
@@ -526,6 +484,12 @@ function QuestionForm({
         const formData = new FormData(form);
         const values = Array.from(formData.entries());
 
+        // If the button that was clicked was a submit button, append the name/value
+        const submitButton = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        if (submitButton && submitButton.name && submitButton.value) {
+          values.push([submitButton.name, submitButton.value]);
+        }
+
         // Create a new version of the search params appending the old to the new
         const newSearchParams = new URLSearchParams(searchParams.toString());
         values.forEach(([key, value]) => {
@@ -547,11 +511,98 @@ function QuestionForm({
 
         // Otherwise update the search params and reset the current form
         setSearchParams(newSearchParams);
-        form.reset();
+        setTimeout(() => {
+          form.reset();
+        }, 1000);
       }}
       className={className}
     >
       {children}
     </fetcher.Form>
+  );
+}
+
+function QuestionFormFooter({ children }: { children: React.ReactNode }) {
+  return <div className="flex w-full items-center justify-center gap-2 pb-10 pt-10">{children}</div>;
+}
+
+function ImageCarousel() {
+  const images = [1, 2, 3, 4];
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index);
+  };
+
+  return (
+    <div className="relative w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
+      <div className="-mt-6 flex justify-center gap-6 pb-4">
+        {/* Go left */}
+        <button
+          type="button"
+          onClick={goToPrevious}
+          className="left-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
+          aria-label="Previous image"
+        >
+          <ChevronLeftIcon className="relative left-[-1px] scale-150" />
+        </button>
+
+        {/* Indicators */}
+        <div className="flex items-center justify-center gap-3">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => goToSlide(index)}
+              className={cn(
+                'h-3 w-3 rounded-full transition-all',
+                currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
+              )}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Go right */}
+        <button
+          type="button"
+          onClick={goToNext}
+          className="right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
+          aria-label="Next image"
+        >
+          <ChevronRightIcon className="relative right-[-1px] scale-150" />
+        </button>
+      </div>
+
+      <div
+        className="flex transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((src, index) => (
+          <div key={src} className="max-w-full flex-shrink-0">
+            <img
+              src={`/onboarding/${src}.png`}
+              alt={`Quadratic onboarding ${index + 1}`}
+              className={cn(
+                'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
+                currentIndex === index
+                  ? 'scale-100 border-border shadow-sm'
+                  : 'scale-90 border-border opacity-20 grayscale'
+              )}
+              width="635"
+              height="380"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
