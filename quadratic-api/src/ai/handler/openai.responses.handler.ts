@@ -47,7 +47,7 @@ export const handleOpenAIResponsesRequest = async ({
     ...(options.supportsReasoning
       ? {
           reasoning: {
-            effort: 'medium',
+            effort: options.reasoningEffort ?? 'medium',
             summary: 'auto',
           },
         }

@@ -90,6 +90,7 @@ export const getModelOptions = (
   imageSupport: boolean;
   aiModelMode: ModelMode;
   supportsReasoning?: boolean;
+  reasoningEffort?: 'low' | 'medium' | 'high';
   serviceTier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority';
   top_p?: number;
   top_k?: number;
@@ -118,6 +119,7 @@ export const getModelOptions = (
     imageSupport: config.imageSupport,
     aiModelMode: config.mode,
     supportsReasoning: config.supportsReasoning,
+    reasoningEffort: config.reasoningEffort,
     serviceTier: config.serviceTier,
     top_p: config.top_p,
     top_k: config.top_k,
