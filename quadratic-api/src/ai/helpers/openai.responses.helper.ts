@@ -5,7 +5,6 @@ import type {
   ResponseInput,
   ResponseInputContent,
   ResponseInputItem,
-  ResponseOutputItem,
   ResponseReasoningItem,
   Tool,
   ToolChoiceFunction,
@@ -92,7 +91,7 @@ export function getOpenAIResponsesApiArgs(
       return acc;
     } else if (isAIPromptMessage(message)) {
       const reasoningItems: ResponseReasoningItem[] = [];
-      const openaiMessages: ResponseOutputItem[] = [
+      const openaiMessages: ResponseInputItem[] = [
         {
           role: message.role,
           content: message.content
@@ -146,7 +145,7 @@ export function getOpenAIResponsesApiArgs(
           name: toolCall.name,
           arguments: toolCall.arguments,
         })),
-      ];
+      ] as ResponseInputItem[];
       return [...acc, ...openaiMessages];
     } else if (isToolResultMessage(message)) {
       const openaiMessages: ResponseInputItem[] = message.content.map((toolResult) => ({
