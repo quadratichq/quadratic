@@ -34,6 +34,9 @@ router.get('/scheduled-tasks', validateM2MAuth(), async (req: Request, res: Resp
       nextRunTime: true,
       operations: true,
     },
+    orderBy: {
+      nextRunTime: 'asc', // Process oldest tasks first
+    },
   });
 
   // Transform operations from Buffer to number array for consistency with other endpoints

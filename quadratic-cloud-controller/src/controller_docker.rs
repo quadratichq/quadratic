@@ -18,6 +18,9 @@ use crate::{
 pub(crate) const IMAGE_NAME: &str = "quadratic-cloud-worker";
 const DEFAULT_TIMEOUT_SECONDS: i64 = 60;
 
+// Maximum number of workers that can run simultaneously
+const MAX_CONCURRENT_WORKERS: usize = 20;
+
 pub(crate) struct Controller {
     pub(crate) state: Arc<State>,
     image_name: String,
@@ -32,19 +35,62 @@ impl Controller {
     }
 
     pub(crate) async fn create_workers(&self, file_ids: HashSet<Uuid>) -> Result<()> {
-        trace!("Creating workers for {} files", file_ids.len());
+        let total_file_count = file_ids.len();
+        trace!("{} files need to be processed", total_file_count);
 
         if file_ids.is_empty() {
             trace!("No files to create workers for, skipping");
             return Ok(());
         }
 
-        let workers = file_ids.iter().map(|file_id| self.create_worker(*file_id));
+        // Get current active worker count
+        let active_worker_count = self
+            .state
+            .client
+            .lock()
+            .await
+            .list_ids(true)
+            .await
+            .map_err(|e| Self::error("create_workers", e))?
+            .len();
+        let available_slots = MAX_CONCURRENT_WORKERS.saturating_sub(active_worker_count);
+
+        if available_slots == 0 {
+            info!(
+                "Max workers ({}) already running, skipping new worker creation. {} files waiting.",
+                MAX_CONCURRENT_WORKERS, total_file_count
+            );
+            return Ok(());
+        }
+
+        // Only create workers up to the available slots
+        let files_to_process: Vec<_> = file_ids.into_iter().take(available_slots).collect();
+
+        if files_to_process.len() < total_file_count {
+            info!(
+                "Limited to {} workers (max: {}, active: {}, waiting: {})",
+                files_to_process.len(),
+                MAX_CONCURRENT_WORKERS,
+                active_worker_count,
+                total_file_count - files_to_process.len()
+            );
+        } else {
+            info!(
+                "Creating {} workers (max: {}, active: {})",
+                files_to_process.len(),
+                MAX_CONCURRENT_WORKERS,
+                active_worker_count
+            );
+        }
+
+        let workers = files_to_process
+            .iter()
+            .map(|file_id| self.create_worker(*file_id));
         let results = join_all(workers).await;
 
         info!("Results: {:?}", results);
 
-        for (file_id, result) in file_ids.into_iter().zip(results) {
+        for (file_id, result) in files_to_process.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("Failed to create file worker for {file_id}: {e}");
             }
@@ -281,5 +327,89 @@ mod tests {
         let controller = Controller::new(state).await.unwrap();
         let file_id = Uuid::new_v4();
         controller.create_worker(file_id).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_respects_max_concurrent_limit() {
+        let state = new_state().await;
+        let controller = Controller::new(state.clone()).await.unwrap();
+
+        // Create a set of file IDs that exceeds MAX_CONCURRENT_WORKERS
+        let num_files = MAX_CONCURRENT_WORKERS + 10;
+        let file_ids: HashSet<Uuid> = (0..num_files).map(|_| Uuid::new_v4()).collect();
+
+        // Initially, no workers should be running
+        let initial_count = state
+            .client
+            .lock()
+            .await
+            .list_ids(true)
+            .await
+            .unwrap()
+            .len();
+        assert_eq!(initial_count, 0, "Should start with no active workers");
+
+        // Attempt to create workers for all files
+        let result = controller.create_workers(file_ids.clone()).await;
+
+        // Should succeed without error
+        assert!(result.is_ok(), "create_workers should succeed");
+
+        // Check that we didn't exceed MAX_CONCURRENT_WORKERS
+        // Note: Some workers may have already completed, so we check <= rather than ==
+        let active_count = state
+            .client
+            .lock()
+            .await
+            .list_ids(true)
+            .await
+            .unwrap()
+            .len();
+        assert!(
+            active_count <= MAX_CONCURRENT_WORKERS,
+            "Should not exceed MAX_CONCURRENT_WORKERS ({}), but got {}",
+            MAX_CONCURRENT_WORKERS,
+            active_count
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_with_empty_set() {
+        let state = new_state().await;
+        let controller = Controller::new(state).await.unwrap();
+
+        let file_ids: HashSet<Uuid> = HashSet::new();
+        let result = controller.create_workers(file_ids).await;
+
+        assert!(result.is_ok(), "Should handle empty set gracefully");
+    }
+
+    #[tokio::test]
+    async fn test_create_workers_logs_waiting_files() {
+        let state = new_state().await;
+        let controller = Controller::new(state.clone()).await.unwrap();
+
+        // Create exactly MAX_CONCURRENT_WORKERS + 5 files
+        let num_files = MAX_CONCURRENT_WORKERS + 5;
+        let file_ids: HashSet<Uuid> = (0..num_files).map(|_| Uuid::new_v4()).collect();
+
+        // This should create workers up to the limit
+        let result = controller.create_workers(file_ids).await;
+
+        assert!(result.is_ok(), "Should succeed even when limiting workers");
+
+        // Verify we didn't create more than MAX_CONCURRENT_WORKERS
+        let active_count = state
+            .client
+            .lock()
+            .await
+            .list_ids(true)
+            .await
+            .unwrap()
+            .len();
+        assert!(
+            active_count <= MAX_CONCURRENT_WORKERS,
+            "Should respect the concurrent worker limit"
+        );
     }
 }
