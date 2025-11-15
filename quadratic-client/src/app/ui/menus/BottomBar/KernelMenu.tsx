@@ -128,12 +128,12 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           <>
             <DropdownMenuLabel>Python {pythonState.version}</DropdownMenuLabel>
 
-            <DropdownMenuItem onClick={pythonWebWorker.cancelExecution}>
+            <DropdownMenuItem onClick={pythonWebWorker.cancelExecution} className="bg-blue-50 dark:bg-blue-950/20">
               <Tooltip>
                 <TooltipContent>Stop running cell</TooltipContent>
                 <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
+                  <div className="flex items-center gap-2 text-sm">
+                    <StopIcon className="-mt-1.5 !text-[26px]" style={{ color: colors.darkGray }} />
                     Cell {xyToA1(pythonCodeRunning.sheetPos.x, pythonCodeRunning.sheetPos.y)}
                     {pythonCodeRunning.sheetPos.sheetId !== sheets.current
                       ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
@@ -152,12 +152,12 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           <>
             <DropdownMenuLabel>Javascript</DropdownMenuLabel>
 
-            <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution}>
+            <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution} className="bg-blue-50 dark:bg-blue-950/20">
               <Tooltip>
                 <TooltipContent>Stop running cell</TooltipContent>
                 <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
+                  <div className="flex items-center gap-2 text-sm">
+                    <StopIcon className="-mt-1.5 !text-[26px]" style={{ color: colors.darkGray }} />
                     Cell {xyToA1(javascriptCodeRunning.sheetPos.x, javascriptCodeRunning.sheetPos.y)}
                     {javascriptCodeRunning.sheetPos.sheetId !== sheets.current
                       ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
@@ -176,12 +176,15 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           <>
             <DropdownMenuLabel>Connection</DropdownMenuLabel>
 
-            <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
+            <DropdownMenuItem
+              onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}
+              className="bg-blue-50 dark:bg-blue-950/20"
+            >
               <Tooltip>
                 <TooltipContent>Stop running cell</TooltipContent>
                 <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
+                  <div className="flex items-center gap-2 text-sm">
+                    <StopIcon className="-mt-1.5 !text-[26px]" style={{ color: colors.darkGray }} />
                     Cell {xyToA1(connectionCodeRunning.sheetPos.x, connectionCodeRunning.sheetPos.y)}
                     {connectionCodeRunning.sheetPos.sheetId !== sheets.current
                       ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
