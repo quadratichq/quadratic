@@ -68,7 +68,6 @@ export const usePromptAITutorial = () => {
         } else if (trigger === 'ai-analyst-trigger') {
           setState('add-prompt');
         } else if (trigger === 'ai-analyst-submit-prompt') {
-          debugger;
           setState('complete');
         }
       }
