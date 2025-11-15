@@ -6,14 +6,17 @@
   "main": "index.js",
   "scripts": {
     "lint:ts": "npm install --no-audit --no-fund && tsc --noemit",
+    "ensure-users": "tsx scripts/ensureUserExists.ts",
     "test": "npm run lint:ts && npx playwright test",
+    "test:bail": "npm run lint:ts && npx playwright test -x",
     "test:ui": "npm run lint:ts && npx playwright test --ui",
     "test:headed": "npm run lint:ts && npx playwright test --headed",
     "test:debug": "npm run lint:ts && npx playwright test --debug",
     "test:report": "npm run lint:ts && npx playwright show-report",
     "test:update": "npm run lint:ts && npx playwright test --update-snapshots",
     "docker:test": "docker compose run --rm playwright npm run test",
-    "docker:update": "docker compose run --rm playwright npm run test:update"
+    "docker:update": "docker compose run --rm playwright npm run test:update",
+    "docker:bail": "docker compose run --rm playwright npm run test:bail"
   },
   "keywords": [],
   "engines": {
@@ -23,6 +26,9 @@
   "devDependencies": {
     "@playwright/test": "1.55.0",
     "@types/node": "^24.3.1",
+    "@workos-inc/node": "^7.70.0",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }

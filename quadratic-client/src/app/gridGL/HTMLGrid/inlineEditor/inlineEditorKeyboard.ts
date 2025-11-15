@@ -147,6 +147,13 @@ class InlineEditorKeyboard {
       return;
     }
 
+    if (inlineEditorMonaco.emojiShowingList && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(e.key)) {
+      events.emit('emojiDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     const position = inlineEditorMonaco.getPosition();
     if (e.code === 'Equal' && position.lineNumber === 1 && position.column === 1) {
       pixiAppSettings.setInlineEditorState?.((prev) => ({

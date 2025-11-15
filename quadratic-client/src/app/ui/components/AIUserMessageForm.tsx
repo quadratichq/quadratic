@@ -17,7 +17,7 @@ import {
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -495,21 +495,18 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
   }
 
   return (
-    <TooltipPopover label="Edit">
-      <Button
-        variant="ghost"
-        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-        size="icon-sm"
-        onClick={(e) => {
-          if (loading) return;
-          e.stopPropagation();
-          setEditing(true);
-          textareaRef.current?.focus();
-        }}
-      >
-        <EditIcon />
-      </Button>
-    </TooltipPopover>
+    <button
+      className="absolute bottom-0 left-0 right-0 top-0 z-10 bg-transparent indent-[-9999px]"
+      onClick={(e) => {
+        if (loading) return;
+        e.stopPropagation();
+        setEditing(true);
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
+      }}
+    >
+      Edit
+    </button>
   );
 });
 

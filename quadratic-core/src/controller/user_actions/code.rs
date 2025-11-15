@@ -170,4 +170,19 @@ mod tests {
         gc.set_formula(A1Selection::test_a1("C1:C5"), "=A$1".to_owned(), None, None);
         assert_cell_value_col(&gc, sheet_id, 3, 1, 5, vec!["0", "0", "0", "0", "0"]);
     }
+
+    #[test]
+    fn test_set_formula_inside_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 5, 5);
+
+        let ops = gc.set_formula_operations(A1Selection::test_a1("B1:B5"), "=A1".to_owned(), None);
+        assert!(ops.is_empty());
+
+        let ops =
+            gc.set_formula_operations(A1Selection::test_a1("A10:A11"), "=A1".to_owned(), None);
+        assert_eq!(ops.len(), 4);
+    }
 }

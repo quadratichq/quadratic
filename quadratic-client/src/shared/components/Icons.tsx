@@ -32,7 +32,11 @@ const Icon = (props: BaseIconProps) => {
   const _size = size ? sizes[size] : sizes['sm'];
 
   return (
-    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
+    <span
+      className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`}
+      {...rest}
+      translate="no"
+    >
       {children}
     </span>
   );
