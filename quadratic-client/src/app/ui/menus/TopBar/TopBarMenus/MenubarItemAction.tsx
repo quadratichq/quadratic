@@ -7,13 +7,17 @@ import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 export const MenubarItemAction = <T extends Action>({
+  id,
   action,
   actionArgs,
   shortcutOverride,
+  onClick,
 }: {
+  id?: string;
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   shortcutOverride?: string;
+  onClick?: () => void;
 }) => {
   const isAvailableArgs = useIsAvailableArgs();
   const actionSpec = defaultActionSpec[action];
@@ -30,10 +34,12 @@ export const MenubarItemAction = <T extends Action>({
 
   return (
     <MenubarItem
+      id={id}
       disabled={isDisabled ? isDisabled() : false}
       onClick={() => {
         trackEvent('[FileMenu].selected', { label });
         actionSpec.run(actionArgs);
+        onClick?.();
       }}
     >
       {Icon && <Icon />} {label}

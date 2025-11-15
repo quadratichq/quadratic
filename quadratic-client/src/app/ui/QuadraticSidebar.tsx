@@ -2,25 +2,28 @@ import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessib
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { AIIcon, DatabaseIcon, EducationIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom } from 'jotai';
 import React from 'react';
 import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -35,6 +38,7 @@ export const QuadraticSidebar = () => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
+  const [showOnboardingChecklist, setShowOnboardingChecklist] = useAtom(onboardingChecklistAtom);
 
   const { isAuthenticated } = useRootRouteLoaderData();
 
@@ -67,7 +71,14 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle
+              id="ai-analyst-trigger"
+              pressed={showAIAnalyst}
+              onPressedChange={() => {
+                setShowAIAnalyst((prev) => !prev);
+                events.emit('tutorialTrigger', 'ai-analyst-trigger');
+              }}
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -101,6 +112,21 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
+        <SidebarTooltip label="Onboarding checklist">
+          <SidebarToggle
+            id="onboarding-checklist-trigger"
+            pressed={!!showOnboardingChecklist}
+            onPressedChange={(pressed) => {
+              if (pressed) {
+                setShowOnboardingChecklist('open');
+              } else {
+                events.emit('onboardingChecklistClose');
+              }
+            }}
+          >
+            <EducationIcon />
+          </SidebarToggle>
+        </SidebarTooltip>
         <ThemePickerMenu />
       </div>
     </nav>

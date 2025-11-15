@@ -11,8 +11,10 @@ import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { CalloutUI } from '@/app/ui/components/CalloutUI';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { MaskUI } from '@/app/ui/components/MaskUI';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
@@ -155,6 +157,8 @@ export default function QuadraticUI() {
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
+      <MaskUI />
+      <CalloutUI />
     </div>
   );
 }

@@ -44,6 +44,10 @@
     /* Sheet Table Colors */
     --table-column-header-foreground: 0 0% 0%;
     --table-alternating-background: 220 75% 98%;
+
+    /* Callout Colors */
+    --callout-background: 48 100% 70%;
+    --callout-foreground: 221 100% 54%;
   }
 
   .dark,

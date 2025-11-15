@@ -480,6 +480,25 @@ export const ApiSchemas = {
   '/v0/user.POST.response': z.object({ message: z.string() }),
   '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
   '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
+  '/v0/user/tutorialBonusPrompt.GET.response': z.object({
+    bonusPrompts: z.array(
+      z.object({
+        category: z.string(),
+        name: z.string(),
+        prompts: z.number(),
+        received: z.boolean(),
+        active: z.boolean(),
+      })
+    ),
+  }),
+  '/v0/user/tutorialBonusPrompt.POST.request': z.object({
+    category: z.string(),
+  }),
+  '/v0/user/tutorialBonusPrompt.POST.response': z.object({
+    category: z.string(),
+    promptsAwarded: z.number(),
+    received: z.boolean(),
+  }),
 
   /**
    *

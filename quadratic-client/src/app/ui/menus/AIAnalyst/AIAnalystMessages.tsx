@@ -166,7 +166,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-3 overflow-y-auto px-2 pb-8 outline-none"
+      className="flex select-text flex-col gap-3 overflow-y-auto px-2 pb-2 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -431,7 +431,6 @@ const PromptSuggestions = memo(() => {
   if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }
-
   return (
     <div className="flex flex-row flex-wrap gap-2 px-2">
       {promptSuggestions.suggestions.map((suggestion, index) => (
