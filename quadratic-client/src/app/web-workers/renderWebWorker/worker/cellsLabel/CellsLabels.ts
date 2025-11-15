@@ -19,7 +19,7 @@ import type {
   SheetInfo,
 } from '@/app/quadratic-core-types';
 import type { SheetOffsets } from '@/app/quadratic-core/quadratic_core';
-import { SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
+import { JsMergeCells, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
@@ -35,6 +35,7 @@ export class CellsLabels {
   sheetId: string;
   sheetOffsets: SheetOffsets;
   bitmapFonts: RenderBitmapFonts;
+  mergeCells: JsMergeCells;
 
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
@@ -63,6 +64,7 @@ export class CellsLabels {
     }
     this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
     this.bitmapFonts = bitmapFonts;
+    this.mergeCells = new JsMergeCells();
     this.cellsTextHash = new Map();
     this.dirtyColumnHeadings = new Map();
     this.columnTransient = false;
@@ -94,6 +96,11 @@ export class CellsLabels {
         this.bounds = new Rectangle(Number(min.x), Number(min.y), Number(max.x - min.x), Number(max.y - min.y));
       }
     }
+  }
+
+  updateMergeCells(mergeCells: JsMergeCells) {
+    this.mergeCells.free();
+    this.mergeCells = mergeCells;
   }
 
   getCellOffsets(x: number, y: number) {

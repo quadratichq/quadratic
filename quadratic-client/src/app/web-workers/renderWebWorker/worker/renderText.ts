@@ -16,6 +16,7 @@ import type {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import type { JsMergeCells } from '@/app/quadratic-core/quadratic_core';
 import initCoreRender from '@/app/quadratic-core/quadratic_core';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
@@ -230,6 +231,12 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetBoundsUpdate');
     cellsLabels.updateSheetBounds(sheetBounds);
     this.updateViewportBuffer();
+  }
+
+  updateMergeCells(sheetId: string, mergeCells: JsMergeCells) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.updateMergeCells');
+    cellsLabels.updateMergeCells(mergeCells);
   }
 
   showLabel(sheetId: string, x: number, y: number, show: boolean) {

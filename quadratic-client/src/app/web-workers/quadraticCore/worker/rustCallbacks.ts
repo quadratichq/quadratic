@@ -58,6 +58,7 @@ declare var self: WorkerGlobalScope &
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
     sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
+    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -239,5 +240,7 @@ export const jsTimestamp = (): bigint => {
 };
 
 export const jsMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
-  self.sendMergeCells(sheetId, mergeCells);
+  const clientCopy = new Uint8Array(mergeCells);
+  self.sendMergeCells(sheetId, clientCopy);
+  self.sendMergeCellsRender(sheetId, mergeCells);
 };
