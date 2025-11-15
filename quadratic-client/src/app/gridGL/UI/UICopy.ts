@@ -57,9 +57,10 @@ export class UICopy extends Graphics {
   };
 
   changeCopyRanges = () => {
-    const range = sheets.sheet.cursor.getFiniteRefRangeBounds();
+    const finiteRanges = sheets.sheet.cursor.getFiniteRefRangeBounds();
+    const infiniteRanges = sheets.sheet.cursor.getInfiniteRefRangeBounds();
     this.sheetId = sheets.current;
-    this.ranges = range;
+    this.ranges = [...finiteRanges, ...infiniteRanges];
     this.time = 0;
     this.march = 0;
     this.dirty = true;
