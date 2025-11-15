@@ -97,5 +97,8 @@
   },
   "engines": {
     "node": "24.x"
+  },
+  "overrides": {
+    "openai": "^6.2.0"
   }
 }
