@@ -12,10 +12,7 @@ use crate::{
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
-    wasm_bindings::{
-        controller::sheet_info::{SheetBounds, SheetInfo},
-        merge_cells::JsMergeCells,
-    },
+    wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
 };
 
 use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
@@ -288,6 +285,7 @@ impl GridController {
 
         sheet.send_content_cache();
         sheet.send_data_tables_cache();
+        sheet.send_merge_cells();
     }
 
     /// Sends delete sheet to the client
@@ -624,10 +622,18 @@ impl GridController {
         }
 
         for sheet_id in transaction.merge_cells_updates.iter() {
-            if let Some(sheet) = self.try_sheet(*sheet_id)
-                && let Ok(merge_cells) = serde_json::to_vec(&JsMergeCells::from(&sheet.merge_cells))
-            {
-                crate::wasm_bindings::js::jsMergeCells(sheet_id.to_string(), merge_cells);
+            if let Some(sheet) = self.try_sheet(*sheet_id) {
+                match serialize(&SerializationFormat::Bincode, &sheet.merge_cells) {
+                    Ok(merge_cells) => {
+                        crate::wasm_bindings::js::jsMergeCells(sheet_id.to_string(), merge_cells);
+                    }
+                    Err(e) => {
+                        dbgjs!(format!(
+                            "[send_merge_cells] Error serializing merge cells {:?}",
+                            e
+                        ));
+                    }
+                }
             }
         }
     }

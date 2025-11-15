@@ -742,6 +742,15 @@ class Core {
     }
   }
 
+  mergeCells(selection: string, cursor: string, isAi: boolean): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.mergeCells(selection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('mergeCells', e);
+    }
+  }
+
   setChartSize(
     sheetId: string,
     x: number,

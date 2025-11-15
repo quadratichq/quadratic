@@ -400,6 +400,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreMergeCells':
+        this.send({
+          type: 'coreClientMergeCellsResponse',
+          id: e.data.id,
+          response: core.mergeCells(e.data.selection, e.data.cursor, e.data.isAi),
+        });
+        return;
+
       case 'clientCoreSetCellRenderResize':
         const response = core.setChartSize(
           e.data.sheetId,

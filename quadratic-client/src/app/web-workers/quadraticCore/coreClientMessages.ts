@@ -514,6 +514,20 @@ export interface CoreClientSetBorders {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreMergeCells {
+  type: 'clientCoreMergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientMergeCellsResponse {
+  type: 'coreClientMergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetCellRenderResize {
   type: 'clientCoreSetCellRenderResize';
   id: number;
@@ -1552,6 +1566,7 @@ export type ClientCoreMessage =
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
   | ClientCoreSetBorders
+  | ClientCoreMergeCells
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1661,6 +1676,7 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
+  | CoreClientMergeCells
   | CoreClientGetCellValue
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
@@ -1694,6 +1710,7 @@ export type CoreClientMessage =
   | CoreClientResizeColumns
   | CoreClientResizeRows
   | CoreClientSetBorders
+  | CoreClientMergeCellsResponse
   | CoreClientDeleteColumns
   | CoreClientDeleteRows
   | CoreClientInsertColumns
@@ -1708,4 +1725,4 @@ export type CoreClientMessage =
   | CoreClientRedoResponse
   | CoreClientStartupTimer
   | CoreClientSetFormula
-  | CoreClientMergeCells;
+  | CoreClientMergeCellsResponse;

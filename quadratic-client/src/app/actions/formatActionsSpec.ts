@@ -1,9 +1,11 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import {
   clearFormattingAndBorders,
+  mergeCells,
   removeNumericFormat,
   setAlign,
   setBold,
@@ -104,6 +106,7 @@ type FormatActionSpec = Pick<
   | Action.FormatBorderDotted
   | Action.FormatBorderDouble
   | Action.FormatBorderColor
+  | Action.MergeCells
 >;
 
 export type FormatActionArgs = {
@@ -417,6 +420,15 @@ export const formatActionsSpec: FormatActionSpec = {
     Icon: BorderColorIcon,
     run: ({ borders, color }: FormatActionArgs[Action.FormatBorderColor]) => {
       borders.changeBorders({ color: convertReactColorToString(color) });
+    },
+  },
+  [Action.MergeCells]: {
+    label: () => 'Merge cells',
+    isDisabled: () => {
+      return sheets.sheet.cursor.isSingleSelection();
+    },
+    run: () => {
+      mergeCells();
     },
   },
 };

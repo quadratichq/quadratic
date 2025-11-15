@@ -1,7 +1,6 @@
 use crate::{
     ClearOption, Pos, Rect,
     grid::{Contiguous2D, Sheet},
-    wasm_bindings::merge_cells::JsMergeCells,
 };
 use serde::{Deserialize, Serialize};
 
@@ -82,13 +81,16 @@ impl MergeCells {
 }
 
 impl Sheet {
-    /// Sends merge cells to the client.
+    /// Sends merge cells to the client and render worker.
     pub fn send_merge_cells(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        match serde_json::to_vec(&JsMergeCells::from(&self.merge_cells)) {
+        match crate::compression::serialize(
+            &crate::compression::SerializationFormat::Bincode,
+            &self.merge_cells,
+        ) {
             Ok(merge_cells) => {
                 crate::wasm_bindings::js::jsMergeCells(self.id.to_string(), merge_cells);
             }

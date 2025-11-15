@@ -7,6 +7,7 @@ import type {
   GridBounds,
   JsCoordinate,
   JsResponse,
+  Rect,
   SheetBounds,
   SheetInfo,
   Validation,
@@ -318,5 +319,9 @@ export class Sheet {
 
   hasContentInRect = (rect: Rectangle): boolean => {
     return this.contentCache.hasContentInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+  };
+
+  getMergeCellsInRect = (rect: Rectangle): Rect[] => {
+    return this.mergeCells.getMergeCells(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
   };
 }

@@ -41,6 +41,7 @@ class RenderText {
     core: false,
   };
   private cellsLabels = new Map<string, CellsLabels>();
+  private pendingMergeCells = new Map<string, JsMergeCells>();
 
   private transactions: TransactionInfo[] = [];
   private abortController = new AbortController();
@@ -82,7 +83,15 @@ class RenderText {
     if (this.status.rust && this.status.core && this.bitmapFonts) {
       for (const sheetInfo of this.status.core) {
         const sheetId = sheetInfo.sheet_id;
-        this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));
+        const cellsLabels = new CellsLabels(sheetInfo, this.bitmapFonts);
+        this.cellsLabels.set(sheetId, cellsLabels);
+
+        // Apply any pending merge cells for this sheet
+        const pendingMergeCells = this.pendingMergeCells.get(sheetId);
+        if (pendingMergeCells) {
+          cellsLabels.updateMergeCells(pendingMergeCells);
+          this.pendingMergeCells.delete(sheetId);
+        }
       }
       this.sheetId = this.status.core[0].sheet_id;
 
@@ -201,11 +210,20 @@ class RenderText {
 
   addSheet(sheetInfo: SheetInfo) {
     if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.addSheet');
-    this.cellsLabels.set(sheetInfo.sheet_id, new CellsLabels(sheetInfo, this.bitmapFonts));
+    const cellsLabels = new CellsLabels(sheetInfo, this.bitmapFonts);
+    this.cellsLabels.set(sheetInfo.sheet_id, cellsLabels);
+
+    // Apply any pending merge cells for this sheet
+    const pendingMergeCells = this.pendingMergeCells.get(sheetInfo.sheet_id);
+    if (pendingMergeCells) {
+      cellsLabels.updateMergeCells(pendingMergeCells);
+      this.pendingMergeCells.delete(sheetInfo.sheet_id);
+    }
   }
 
   deleteSheet(sheetId: string) {
     this.cellsLabels.delete(sheetId);
+    this.pendingMergeCells.delete(sheetId);
   }
 
   sheetInfoUpdate(sheetInfo: SheetInfo) {
@@ -235,7 +253,11 @@ class RenderText {
 
   updateMergeCells(sheetId: string, mergeCells: JsMergeCells) {
     const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.updateMergeCells');
+    if (!cellsLabels) {
+      // Sheet may not be initialized yet - queue merge cells to apply when sheet is ready
+      this.pendingMergeCells.set(sheetId, mergeCells);
+      return;
+    }
     cellsLabels.updateMergeCells(mergeCells);
   }
 

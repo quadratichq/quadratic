@@ -69,6 +69,7 @@ export enum Action {
   FormatBorderDotted = 'format_border_dotted',
   FormatBorderDouble = 'format_border_double',
   FormatBorderColor = 'format_border_color',
+  MergeCells = 'merge_cells',
   GridPanMode = 'grid_pan_mode',
   ShowCommandPalette = 'show_command_palette',
   TogglePresentationMode = 'toggle_presentation_mode',

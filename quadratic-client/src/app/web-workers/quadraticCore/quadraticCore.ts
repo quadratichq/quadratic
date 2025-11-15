@@ -93,6 +93,8 @@ import type {
   CoreClientInsertColumns,
   CoreClientInsertRows,
   CoreClientLoad,
+  CoreClientMergeCells,
+  CoreClientMergeCellsResponse,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
@@ -258,8 +260,9 @@ class QuadraticCore {
       events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
       return;
     } else if (e.data.type === 'coreClientMergeCells') {
-      const mergeCells = JsMergeCells.createFromBytes(e.data.mergeCells);
-      events.emit('mergeCells', e.data.sheetId, mergeCells);
+      const data = e.data as CoreClientMergeCells;
+      const mergeCells = JsMergeCells.createFromBytes(data.mergeCells);
+      events.emit('mergeCells', data.sheetId, mergeCells);
       return;
     }
 
@@ -1097,6 +1100,22 @@ class QuadraticCore {
         selection,
         borderSelection,
         style,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  mergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreMergeCells',
+        id,
+        selection,
         cursor: sheets.getCursorPosition(),
         isAi,
       });

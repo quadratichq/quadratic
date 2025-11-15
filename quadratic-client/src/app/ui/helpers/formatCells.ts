@@ -79,3 +79,7 @@ export const clearFormatting = () => {
 export const clearFormattingAndBorders = () => {
   clearFormatting();
 };
+
+export const mergeCells = () => {
+  quadraticCore.mergeCells(sheets.getRustSelection(), false);
+};

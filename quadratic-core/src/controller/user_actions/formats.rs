@@ -64,12 +64,13 @@ impl GridController {
                             .set_format_rect(intersection_rect, FormatUpdate::cleared());
 
                         if let Some(table_format_updates) = table_format_updates
-                            && !table_format_updates.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    formats: table_format_updates,
-                                });
-                            }
+                            && !table_format_updates.is_default()
+                        {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                formats: table_format_updates,
+                            });
+                        }
                     }
                 }
                 CellRefRange::Table { range } => {
@@ -471,6 +472,18 @@ impl GridController {
     ) {
         let ops = self.format_ops(selection, format_update, false);
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
+    }
+
+    pub(crate) fn merge_cells(
+        &mut self,
+        selection: A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let ops = self.merge_cells_a1_selection_operations(selection);
+        if !ops.is_empty() {
+            self.start_user_ai_transaction(ops, cursor, TransactionName::SetMergeCells, is_ai);
+        }
     }
 }
 
