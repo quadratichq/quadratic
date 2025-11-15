@@ -38,7 +38,7 @@
     "@langchain/anthropic": "^1.0.1",
     "@langchain/aws": "^1.0.1",
     "@langchain/community": "^1.0.3",
-    "@langchain/core": "^1.0.5",
+    "@langchain/core": "^0.3.0",
     "@langchain/google-genai": "^1.0.1",
     "@langchain/openai": "^1.1.1",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
