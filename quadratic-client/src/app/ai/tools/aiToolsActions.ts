@@ -170,6 +170,22 @@ export const aiToolsActions: AIToolActionsRecord = {
     // no action as this tool is only meant to get structured data from AI
     return [createTextContent(`Executed set chat name tool successfully with name: ${args.chat_name}`)];
   },
+  [AITool.SetFileName]: async (args) => {
+    // Validate word count (1-3 words)
+    const wordCount = args.file_name
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+    if (wordCount < 1 || wordCount > 3) {
+      return [
+        createTextContent(
+          `Error: File name must be 1-3 words. Received "${args.file_name}" which has ${wordCount} word(s). Please provide a shorter name.`
+        ),
+      ];
+    }
+    // no action as this tool is only meant to get structured data from AI
+    return [createTextContent(`Executed set file name tool successfully with name: ${args.file_name}`)];
+  },
   [AITool.AddDataTable]: async (args) => {
     try {
       const { sheet_name, top_left_position, table_name, table_data } = args;
