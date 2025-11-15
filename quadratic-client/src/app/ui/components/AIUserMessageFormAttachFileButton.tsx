@@ -24,13 +24,14 @@ export const AIUserMessageFormAttachFileButton = memo(
     }
 
     return (
-      <div className="cursor-pointer" onClick={handleUploadFiles}>
-        <TooltipPopover label={`Attach ${filesSupportedText}`}>
+      <div className="-ml-1">
+        <TooltipPopover label={`Add ${filesSupportedText}`} fastMode={true}>
           <Button
             size="icon-sm"
-            className="-ml-1 h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+            className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
             variant="ghost"
             disabled={disabled}
+            onClick={handleUploadFiles}
           >
             <AttachFileIcon className="" />
           </Button>

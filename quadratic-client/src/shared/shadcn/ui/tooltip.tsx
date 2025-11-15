@@ -40,15 +40,18 @@ const TooltipPopover = ({
   shortcut,
   side,
   tooltipProps,
+  fastMode = false,
 }: {
   label: string;
   children: JSX.Element;
   shortcut?: string;
   side?: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>['side'];
   tooltipProps?: TooltipPrimitive.TooltipProps;
+  /** Fast mode reduces the hover delay before tooltip appears (200ms instead of default 700ms) */
+  fastMode?: boolean;
 }) => {
   return (
-    <Tooltip {...(tooltipProps ? tooltipProps : {})}>
+    <Tooltip delayDuration={fastMode ? 100 : undefined} disableHoverableContent {...(tooltipProps ? tooltipProps : {})}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPortal>
         <TooltipContent side={side}>
