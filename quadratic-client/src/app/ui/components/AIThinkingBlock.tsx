@@ -38,7 +38,15 @@ export const AIThinkingBlock = memo(
           className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           onClick={toggleExpanded}
         >
-          <span className="select-none">{isExpanded ? 'Hide thinking' : 'Thinking'}</span>
+          <span
+            className={`select-none ${
+              !isExpanded && isLoading
+                ? 'animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text text-transparent'
+                : ''
+            }`}
+          >
+            {isExpanded ? 'Hide thinking' : 'Thinking'}
+          </span>
           {isExpanded ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
         </div>
 
