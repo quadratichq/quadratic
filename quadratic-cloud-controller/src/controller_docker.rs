@@ -117,8 +117,6 @@ impl Controller {
             .map(|file_id| self.create_worker(*file_id));
         let results = join_all(workers).await;
 
-        info!("Results: {:?}", results);
-
         for (file_id, result) in files_to_process.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("Failed to create file worker for {file_id}: {e}");
