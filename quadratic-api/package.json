@@ -73,7 +73,7 @@
     "zod": "^3.25.3"
   },
   "devDependencies": {
-    "@anthropic-ai/bedrock-sdk": "^0.10.8",
+    "@anthropic-ai/bedrock-sdk": "^0.10.0",
     "@aws-sdk/types": "^3.449.0",
     "@faker-js/faker": "^8.2.0",
     "@smithy/protocol-http": "^3.0.8",
