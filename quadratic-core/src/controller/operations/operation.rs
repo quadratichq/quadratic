@@ -22,6 +22,7 @@ use crate::{
         },
     },
     selection::OldSelection,
+    util::is_false,
 };
 
 /// Description of changes to make to a file.
@@ -40,22 +41,17 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    /// Adds, deletes or replaces a data table at a specific SheetPos.
     SetDataTable {
         sheet_pos: SheetPos,
         data_table: Option<DataTable>,
         index: usize,
-    },
-    AddDataTableWithoutCellValue {
-        sheet_pos: SheetPos,
-        data_table: DataTable,
 
-        // Used to insert a data table at a specific index (usually after an
-        // undo action)
-        #[serde(default)]
-        index: Option<usize>,
+        // If true, the old data table properties will not be preserved
+        #[serde(skip_serializing_if = "is_false", default)]
+        ignore_old_data_table: bool,
     },
-    /// **Deprecated** (Sept 2025) and replaced with AddDataTableWithoutCellValue
-    /// Adds or replaces a data table at a specific SheetPos.
+    /// **Deprecated** (Sept 2025) and replaced with SetDataTable
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
@@ -91,14 +87,9 @@ pub enum Operation {
     FlattenDataTable {
         sheet_pos: SheetPos,
     },
-    SwitchDataTableKindWithoutCellValue {
-        sheet_pos: SheetPos,
-        kind: DataTableKind,
-    },
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,
-        value: CellValue,
     },
     GridToDataTable {
         sheet_rect: SheetRect,

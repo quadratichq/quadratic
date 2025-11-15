@@ -107,6 +107,7 @@ import type {
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetFormula,
   CoreClientSetSheetColorResponse,
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
@@ -495,9 +496,12 @@ class QuadraticCore {
     isAi: boolean;
   }): Promise<string | undefined> {
     const id = this.id++;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.waitingForResponse[id] = (message: CoreClientSetCodeCellValue) => {
         resolve(message.transactionId);
+        if (message.error) {
+          reject(new Error(message.error));
+        }
       };
       this.send({
         type: 'clientCoreSetCodeCellValue',
@@ -510,6 +514,32 @@ class QuadraticCore {
         cursor: sheets.getCursorPosition(),
         codeCellName: options.codeCellName,
         isAi: options.isAi,
+      });
+    });
+  }
+
+  setFormula(options: {
+    sheetId: string;
+    selection: string;
+    codeString: string;
+    codeCellName?: string;
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve, reject) => {
+      this.waitingForResponse[id] = (message: CoreClientSetFormula) => {
+        resolve(message.transactionId);
+        if (message.error) {
+          reject(new Error(message.error));
+        }
+      };
+      this.send({
+        type: 'clientCoreSetFormula',
+        id,
+        sheetId: options.sheetId,
+        selection: options.selection,
+        codeString: options.codeString,
+        codeCellName: options.codeCellName,
+        cursor: sheets.getCursorPosition(),
       });
     });
   }
@@ -556,15 +586,16 @@ class QuadraticCore {
 
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
-  ): Promise<{
-    contents?: ArrayBufferLike;
-    version?: string;
-    error?: string;
-  }> => {
+  ): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> => {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientImportFile) => {
-        resolve(message);
+        resolve({
+          contents: message.contents,
+          version: message.version,
+          error: message.error,
+          responsePrompt: message.responsePrompt,
+        });
       };
       this.send(
         {

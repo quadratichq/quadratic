@@ -418,12 +418,13 @@ export interface ClientCoreImportFile {
   id: number;
   file: ArrayBufferLike;
   fileName: string;
-  fileType: 'csv' | 'parquet' | 'excel';
+  fileType: 'CSV' | 'Parquet' | 'Excel';
   sheetId?: string;
   location?: JsCoordinate;
   cursor?: string;
   csvDelimiter?: number;
   hasHeading?: boolean;
+  isOverwrite?: boolean;
   isAi: boolean;
 }
 
@@ -433,6 +434,7 @@ export interface CoreClientImportFile {
   contents?: ArrayBufferLike;
   version?: string;
   error?: string;
+  responsePrompt?: string;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -466,6 +468,7 @@ export interface CoreClientSetCodeCellValue {
   type: 'coreClientSetCodeCellValue';
   id: number;
   transactionId: string | undefined;
+  error?: string;
 }
 
 export interface CoreClientSheetFills {
@@ -1480,6 +1483,23 @@ export interface CoreClientStartupTimer {
   end?: number;
 }
 
+export interface ClientCoreSetFormula {
+  type: 'clientCoreSetFormula';
+  id: number;
+  sheetId: string;
+  selection: string;
+  codeString: string;
+  codeCellName?: string;
+  cursor: string;
+}
+
+export interface CoreClientSetFormula {
+  type: 'coreClientSetFormula';
+  id: number;
+  transactionId: string | undefined;
+  error?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1581,7 +1601,8 @@ export type ClientCoreMessage =
   | ClientCoreGetAICodeErrors
   | ClientCoreGetAITransactions
   | ClientCoreUndo
-  | ClientCoreRedo;
+  | ClientCoreRedo
+  | ClientCoreSetFormula;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1679,4 +1700,5 @@ export type CoreClientMessage =
   | CoreClientGetAITransactions
   | CoreClientUndoResponse
   | CoreClientRedoResponse
-  | CoreClientStartupTimer;
+  | CoreClientStartupTimer
+  | CoreClientSetFormula;

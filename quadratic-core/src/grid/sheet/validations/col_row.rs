@@ -255,7 +255,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        CellValue, CopyFormats,
+        CopyFormats,
         controller::{GridController, active_transactions::transaction_name::TransactionName},
         grid::sheet::validations::{
             rules::{ValidationRule, validation_logical::ValidationLogical},
@@ -272,8 +272,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![C1], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!C1], "test".into(), None, false);
 
         // rect and columns to be updated
         let validation_rect_columns = Validation {
@@ -413,8 +412,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![C3], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!C3], "test".into(), None, false);
 
         // rect and rows to be updated
         let validation_rect_rows = Validation {
@@ -553,8 +551,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![C3], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!C3], "test".into(), None, false);
 
         // rect and rows to be updated
         let validation_rect_cols = Validation {
@@ -695,8 +692,7 @@ mod tests {
 
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(pos![C3], CellValue::Text("test".to_string()));
+        gc.set_cell_value(pos![sheet_id!C3], "test".into(), None, false);
 
         // rect and columns to be updated
         let validation_rect_rows = Validation {

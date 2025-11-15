@@ -1,5 +1,7 @@
 use sort::DataTableSort;
 
+use crate::a1::A1Selection;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -213,7 +215,7 @@ impl GridController {
         let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
             .map_err(|_| JsValue::from_str("Invalid values"))?;
 
-        self.add_data_table_from_values(
+        self.add_data_table(
             pos.to_sheet_pos(sheet_id),
             name,
             values,
@@ -223,5 +225,87 @@ impl GridController {
         );
 
         Ok(())
+    }
+
+    /// Returns true if a cell position intersects with a data table, but allows
+    /// the anchor cell (top-left) of a code cell (not an import)
+    #[wasm_bindgen(js_name = "cellIntersectsDataTable")]
+    pub fn js_cell_intersects_data_table(
+        &self,
+        sheet_id: String,
+        pos: String,
+    ) -> Result<bool, JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        let sheet = self
+            .try_sheet(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+
+        // Check if the position is inside a data table
+        if let Some(data_table_pos) = sheet.data_table_pos_that_contains(pos) {
+            // If it's the anchor cell (top-left), check if it's a CodeRun (not an Import)
+            if pos == data_table_pos
+                && let Some(data_table) = sheet.data_table_at(&data_table_pos)
+            {
+                // It's okay if it's the anchor of a CodeRun, not okay if it's an Import
+                return Ok(matches!(data_table.kind, DataTableKind::Import(_)));
+            }
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Returns true if a selection intersects with any data table, but allows
+    /// the anchor cell (top-left) of a code cell (not an import)
+    #[wasm_bindgen(js_name = "selectionIntersectsDataTable")]
+    pub fn js_selection_intersects_data_table(
+        &self,
+        sheet_id: String,
+        selection: String,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
+
+            let sheet = self.try_sheet(sheet_id).ok_or("Sheet not found")?;
+
+            // Check if any data table intersects with any of the selection rects
+            let rects = selection.rects(self.a1_context());
+            let has_intersection = rects.iter().any(|rect| {
+                sheet
+                    .data_tables_pos_intersect_rect(*rect, false)
+                    .any(|data_table_pos| {
+                        if let Some(data_table) = sheet.data_table_at(&data_table_pos) {
+                            let output_rect = data_table.output_rect(data_table_pos, false);
+                            let intersection = rect.intersection(&output_rect);
+
+                            if let Some(intersection_rect) = intersection {
+                                // Check if the intersection is ONLY the anchor cell
+                                let only_anchor = intersection_rect.min == data_table_pos
+                                    && intersection_rect.max == data_table_pos;
+
+                                if only_anchor
+                                    && matches!(data_table.kind, DataTableKind::CodeRun(_))
+                                {
+                                    // Allow if it's only the anchor of a CodeRun
+                                    return false;
+                                }
+                            }
+                        }
+                        // Block in all other cases
+                        true
+                    })
+            });
+
+            Ok(Some(if has_intersection {
+                JsValue::TRUE
+            } else {
+                JsValue::FALSE
+            }))
+        })
     }
 }

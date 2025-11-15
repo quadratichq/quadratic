@@ -20,13 +20,10 @@ impl Sheet {
         // mark hashes of old rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        if !ignore_tables {
-            self.check_insert_tables_rows(transaction, row, copy_formats);
-        }
-
         self.columns.insert_row(row);
 
         if !ignore_tables {
+            self.check_insert_tables_rows(transaction, row, copy_formats);
             self.adjust_insert_tables_rows(transaction, row);
         }
 

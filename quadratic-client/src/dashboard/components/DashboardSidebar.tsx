@@ -5,16 +5,18 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
-  DraftIcon,
   EducationIcon,
   ExamplesIcon,
   ExternalLinkIcon,
+  FileIcon,
   FilePrivateIcon,
   FileSharedWithMeIcon,
   GroupIcon,
@@ -42,6 +44,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
+import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -72,7 +75,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       billing,
     },
   } = useDashboardRouteLoaderData();
-
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
@@ -100,7 +103,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
-              <DraftIcon className={classNameIcons} />
+              <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
             {canEditTeam && (
@@ -186,17 +189,17 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               </div>
             </div>
 
-            <Button size="sm" className="w-full" asChild>
-              <Link
-                to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
-                onClick={() => {
-                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
-                    team_uuid: activeTeamUuid,
-                  });
-                }}
-              >
-                Upgrade to Pro
-              </Link>
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[DashboardSidebar].upgradeToProClicked', {
+                  team_uuid: activeTeamUuid,
+                });
+                setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
+              }}
+            >
+              Upgrade to Pro
             </Button>
           </div>
         )}
@@ -276,14 +279,20 @@ function SidebarNavLinkCreateButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          asChild
           variant="ghost"
           size="icon-sm"
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
+          onClick={async (e) => {
+            e.preventDefault();
+            const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+            if (hasReachedLimit) {
+              showUpgradeDialog('fileLimitReached');
+              return;
+            }
+            window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          }}
         >
-          <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
-            <AddIcon />
-          </Link>
+          <AddIcon />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>

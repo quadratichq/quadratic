@@ -72,7 +72,7 @@ mod test {
     #[test]
     fn test_export_sheet() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());
+        sheet.set_value(pos![A1], "Hello, world!".to_string());
         let schema = export_sheet(sheet.clone());
         let imported = schema.into_latest().unwrap();
         assert_eq!(sheet, imported);

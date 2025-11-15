@@ -1,9 +1,8 @@
-import { CancellationDialog } from '@/components/CancellationDialog';
+import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
-import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -16,7 +15,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
+import { PieChartIcon } from '@radix-ui/react-icons';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,7 +30,6 @@ export const Component = () => {
       users,
     },
   } = useDashboardRouteLoaderData();
-
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -85,12 +83,6 @@ export const Component = () => {
     [submit, team.uuid]
   );
 
-  const handleNavigateToStripePortal = useCallback(() => {
-    apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-      window.location.href = data.url;
-    });
-  }, [team.uuid]);
-
   // If for some reason it failed, display an error
   useEffect(() => {
     if (fetcher.data && fetcher.data.ok === false) {
@@ -131,119 +123,12 @@ export const Component = () => {
             <div>
               <div className="flex flex-col gap-4">
                 {/* Plan Comparison */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Free Plan */}
-                  <div className={cn('rounded-lg border p-4', !isOnPaidPlan ? 'border-foreground' : 'border-border')}>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Free plan</h3>
-                      {!isOnPaidPlan && <Badge>Current plan</Badge>}
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Team members</span>
-                        <span className="text-sm font-medium">Limited</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">AI messages</span>
-                        <span className="text-sm font-medium">Limited</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Connections</span>
-                        <span className="text-right text-sm font-medium">Limited</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Team AI Plan */}
-                  <div className={cn('rounded-lg border p-4', isOnPaidPlan ? 'border-foreground' : 'border-border')}>
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Pro plan</h3>
-                      {isOnPaidPlan && <Badge>Current plan</Badge>}
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Team members</span>
-                        <span className="text-right text-sm font-medium">
-                          $20 <span className="text-xs text-muted-foreground">/user/month</span>
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-sm">
-                          AI messages
-                          <Dialog>
-                            <DialogTrigger>
-                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </DialogTrigger>
-                            <DialogContent aria-describedby={undefined}>
-                              <DialogHeader>
-                                <DialogTitle>AI message limits</DialogTitle>
-                              </DialogHeader>
-                              <p className="text-sm text-muted-foreground">
-                                We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
-                                limit unreasonable use and abuse.
-                              </p>
-                            </DialogContent>
-                          </Dialog>
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-medium">Many</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Connections</span>
-                        <span className="text-right text-sm font-medium">Unlimited</span>
-                      </div>
-                    </div>
-                    {!isOnPaidPlan ? (
-                      <Button
-                        disabled={!canManageBilling}
-                        onClick={() => {
-                          trackEvent('[TeamSettings].upgradeToProClicked', {
-                            team_uuid: team.uuid,
-                          });
-                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                            window.location.href = data.url;
-                          });
-                        }}
-                        className="mt-4 w-full"
-                      >
-                        Upgrade to Pro
-                      </Button>
-                    ) : (
-                      <div className="mt-4 space-y-2">
-                        <Button
-                          disabled={!canManageBilling}
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => {
-                            trackEvent('[TeamSettings].manageBillingClicked', {
-                              team_uuid: team.uuid,
-                            });
-                            handleNavigateToStripePortal();
-                          }}
-                        >
-                          Manage subscription
-                        </Button>
-                        {canManageBilling && (
-                          <CancellationDialog
-                            teamUuid={team.uuid}
-                            handleNavigateToStripePortal={handleNavigateToStripePortal}
-                          />
-                        )}
-                      </div>
-                    )}
-                    {!canManageBilling && (
-                      <p className="mt-2 text-center text-xs text-muted-foreground">
-                        You cannot edit billing details. Contact{' '}
-                        <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
-                          your team owner
-                        </Link>
-                        .
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <BillingPlans
+                  isOnPaidPlan={isOnPaidPlan}
+                  canManageBilling={canManageBilling}
+                  teamUuid={team.uuid}
+                  eventSource="TeamSettings"
+                />
 
                 {/* Current Usage */}
                 <div>
@@ -321,10 +206,10 @@ export const Component = () => {
 
             <div>
               <SettingControl
-                label="Improve AI results"
+                label="Help improve Quadratic"
                 description={
                   <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    Enable the automated collection and analysis of some usage data.{' '}
                     <a
                       href={DOCUMENTATION_ANALYTICS_AI}
                       target="_blank"
@@ -341,8 +226,29 @@ export const Component = () => {
                 }}
                 checked={optimisticSettings.analyticsAi}
                 className="rounded-lg border border-border p-4 shadow-sm"
-                disabled={!teamPermissions.includes('TEAM_MANAGE')}
-              />
+                disabled={!teamPermissions.includes('TEAM_MANAGE') || !isOnPaidPlan}
+              >
+                {!isOnPaidPlan && (
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Button
+                      asChild
+                      variant="link"
+                      onClick={() => {
+                        trackEvent('[TeamSettings].upgradeToProClicked', {
+                          team_uuid: team.uuid,
+                          source: 'privacy_section',
+                        });
+                      }}
+                      size="sm"
+                      className="h-6"
+                      disabled={!canManageBilling}
+                    >
+                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
+                    </Button>
+                  </div>
+                )}
+              </SettingControl>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">
                   When using AI features your data is sent to our AI providers:

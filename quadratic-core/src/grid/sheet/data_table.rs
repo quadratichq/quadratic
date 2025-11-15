@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    Pos, Rect, SheetPos,
+    CellValue, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -21,29 +21,12 @@ impl Sheet {
         self.data_tables.get_at(pos)
     }
 
+    pub fn data_table_full_at(&self, pos: &Pos) -> Option<(usize, &DataTable)> {
+        self.data_tables.get_full_at(pos)
+    }
+
     pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
         self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
-    }
-
-    pub fn code_run_at_mut(&mut self, pos: &Pos) -> Option<&mut CodeRun> {
-        self.data_tables
-            .get_at_mut(pos)
-            .and_then(|dt| dt.code_run_mut())
-    }
-
-    /// Gets the index of the data table
-    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
-        self.data_tables.get_index_of(&pos)
-    }
-
-    /// Returns the index of the data table as a result.
-    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
-        self.data_table_index(pos).ok_or_else(|| {
-            anyhow!(
-                "Data table not found at {:?} in data_table_index_result()",
-                pos
-            )
-        })
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
@@ -103,8 +86,12 @@ impl Sheet {
     }
 
     /// Returns anchor positions of data tables that intersect a rect
-    pub fn data_table_anchors_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.data_tables.iter_anchor_pos_in_rect(rect)
+    pub fn data_tables_pos_intersect_rect(
+        &self,
+        rect: Rect,
+        ignore_spill_error: bool,
+    ) -> impl Iterator<Item = Pos> {
+        self.data_tables.iter_pos_in_rect(rect, ignore_spill_error)
     }
 
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
@@ -136,8 +123,7 @@ impl Sheet {
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
-        self.data_tables
-            .iter_pos_in_rect(rect, false)
+        self.data_tables_pos_intersect_rect(rect, false)
             .any(|pos| skip != Some(&pos))
     }
 
@@ -152,7 +138,7 @@ impl Sheet {
     /// spill due to other data tables is managed internally by SheetDataTables
     fn check_spills_due_to_column_values(&self, pos: Pos, data_table: &DataTable) -> bool {
         let output_rect = data_table.output_rect(pos, true);
-        self.columns.has_content(output_rect)
+        self.columns.has_content_in_rect(output_rect)
     }
 
     /// Returns a mutable DataTable at a Pos
@@ -168,9 +154,14 @@ impl Sheet {
         &mut self,
         pos: Pos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+    ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
+        let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
+            true => self.set_value(pos, CellValue::Blank),
+            false => None,
+        };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_full(pos, data_table)
+        let (index, old_data_table, dirty_rects) = self.data_tables.insert_full(pos, data_table);
+        (old_cell_value, index, old_data_table, dirty_rects)
     }
 
     pub fn data_table_insert_before(
@@ -178,9 +169,15 @@ impl Sheet {
         index: usize,
         pos: Pos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
+    ) -> (Option<CellValue>, usize, Option<DataTable>, HashSet<Rect>) {
+        let old_cell_value = match self.columns.has_content_in_rect(Rect::single_pos(pos)) {
+            true => self.set_value(pos, CellValue::Blank),
+            false => None,
+        };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_before(index, pos, data_table)
+        let (index, old_data_table, dirty_rects) =
+            self.data_tables.insert_before(index, pos, data_table);
+        (old_cell_value, index, old_data_table, dirty_rects)
     }
 
     pub fn data_table_shift_remove_full(
@@ -190,11 +187,14 @@ impl Sheet {
         self.data_tables.shift_remove_full(pos)
     }
 
-    pub fn data_table_shift_remove(&mut self, pos: Pos) -> Option<(DataTable, HashSet<Rect>)> {
+    pub fn data_table_shift_remove(
+        &mut self,
+        pos: Pos,
+    ) -> Option<(usize, DataTable, HashSet<Rect>)> {
         self.data_tables.shift_remove(&pos)
     }
 
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
+    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(usize, DataTable, HashSet<Rect>)> {
         self.data_table_shift_remove(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
@@ -278,111 +278,83 @@ impl Sheet {
             })
     }
 
-    /// Calls a function to mutate all code cells.
-    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeRun, SheetPos)) {
-        let positions = self
-            .data_tables
-            .expensive_iter()
-            .map(|(pos, _)| pos.to_owned())
-            .collect::<Vec<_>>();
-        let sheet_id = self.id;
-        for pos in positions.into_iter() {
-            if let Some(code_run) = self.code_run_at_mut(&pos) {
-                func(code_run, pos.to_sheet_pos(sheet_id));
-            }
-        }
-    }
-
-    /// Replaces the table name in all code cells that reference the old name.
-    pub fn replace_table_name_in_code_cells(
-        &mut self,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        self.update_code_cells(|code_cell_value, pos| {
-            code_cell_value
-                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
-        });
-    }
-
-    /// Replaces the column name in all code cells that reference the old name.
-    pub fn replace_table_column_name_in_code_cells(
-        &mut self,
-        table_name: &str,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        self.update_code_cells(|code_cell_value, pos| {
-            code_cell_value.replace_column_name_in_cell_references(
-                a1_context, pos, table_name, old_name, new_name,
-            );
-        });
-    }
-
     /// Returns data tables that intersect the selection and corresponding cells
     /// and values
     pub fn data_tables_and_cell_values_in_rect(
         &self,
         bounds: &Rect,
-        cells: &mut CellValues,
-        values: &mut Option<CellValues>,
+        include_code_table_values: bool,
         a1_context: &A1Context,
-        selection: &A1Selection,
-
-        // todo: remove this parameter if it's not useful elsewhere
-        _include_code_table_values: bool,
+        selection: Option<&A1Selection>,
+        cells: &mut Option<CellValues>,
+        values: &mut Option<CellValues>,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
-        self.iter_data_tables_in_rect(bounds.to_owned())
-            .for_each(|(output_rect, data_table)| {
-                // only change the cells if the CellValue::Code is not in the selection box
-                let data_table_pos = Pos {
-                    x: output_rect.min.x,
-                    y: output_rect.min.y,
-                };
+        for (output_rect, data_table) in self.iter_data_tables_in_rect(bounds.to_owned()) {
+            // only change the cells if the CellValue::Code is not in the selection box
+            let data_table_pos = Pos {
+                x: output_rect.min.x,
+                y: output_rect.min.y,
+            };
 
-                let rect_contains_anchor_pos = bounds.contains(data_table_pos);
+            let rect_contains_anchor_pos = bounds.contains(data_table_pos);
 
-                // if the source cell is included in the rect, add the data_table to data_tables
-                if rect_contains_anchor_pos {
+            // if the source cell is included in the rect, add the data_table to data_tables
+            if rect_contains_anchor_pos {
+                // add the data_table to data_tables
+                if include_code_table_values || matches!(data_table.kind, DataTableKind::Import(_))
+                {
+                    // include values for imports
                     data_tables.insert(data_table_pos, data_table.clone());
+                } else {
+                    // don't include values for code tables
+                    data_tables.insert(data_table_pos, data_table.clone_without_values());
                 }
+            }
 
-                let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
-                let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
-                let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
-                let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
+            let Some(selection) = selection else {
+                continue;
+            };
 
-                // add the code_run output to cells and values
-                for y in y_start..=y_end {
-                    for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_ref_at(
-                            (x - data_table_pos.x) as u32,
-                            (y - data_table_pos.y) as u32,
-                        ) {
-                            let pos = Pos {
-                                x: x - bounds.min.x,
-                                y: y - bounds.min.y,
-                            };
+            if (rect_contains_anchor_pos || cells.is_none()) && values.is_none() {
+                continue;
+            }
 
-                            if selection.might_contain_pos(Pos { x, y }, a1_context) {
-                                // add the CellValue to cells if the code is not included in the rect
-                                if !rect_contains_anchor_pos {
-                                    cells.set(pos.x as u32, pos.y as u32, value.clone());
-                                }
+            let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
+            let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
+            let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
+            let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
 
-                                // add the display value to values if values is Some
-                                if let Some(values) = values.as_mut() {
-                                    values.set(pos.x as u32, pos.y as u32, value.clone());
-                                }
+            // add the code_run output to cells and values
+            for y in y_start..=y_end {
+                for x in x_start..=x_end {
+                    if let Some(value) = data_table.cell_value_ref_at(
+                        (x - data_table_pos.x) as u32,
+                        (y - data_table_pos.y) as u32,
+                    ) {
+                        let (Ok(new_x), Ok(new_y)) = (
+                            u32::try_from(x - bounds.min.x),
+                            u32::try_from(y - bounds.min.y),
+                        ) else {
+                            continue;
+                        };
+
+                        if selection.might_contain_pos(Pos { x, y }, a1_context) {
+                            // add the CellValue to cells if the code is not included in the rect
+                            if !rect_contains_anchor_pos && let Some(cells) = cells {
+                                cells.set(new_x, new_y, value.clone());
+                            }
+
+                            // add the display value to values if values is Some
+                            if let Some(values) = values {
+                                values.set(new_x, new_y, value.clone());
                             }
                         }
                     }
                 }
-            });
+            }
+        }
 
         data_tables
     }
@@ -471,7 +443,7 @@ impl Sheet {
                         for y in 0..data_table_left.height() {
                             let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
 
-                            if self.has_content(pos) {
+                            if self.has_content_at_pos(pos) {
                                 return false;
                             }
                         }
@@ -521,7 +493,7 @@ impl Sheet {
                     let next_is_not_blank = || {
                         for x in 0..data_table_above.width() {
                             let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
-                            if self.has_content(pos) {
+                            if self.has_content_at_pos(pos) {
                                 return false;
                             }
                         }
@@ -589,10 +561,10 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_table_insert_full(pos, data_table).1
+            self.data_table_insert_full(pos, data_table).2
         } else {
             self.data_table_shift_remove(pos)
-                .map(|(data_table, _)| data_table)
+                .map(|(_, data_table, _)| data_table)
         }
     }
 }
@@ -758,26 +730,6 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         assert!(sheet.is_source_cell(pos![A1]));
-    }
-
-    #[test]
-    fn test_data_table_index() {
-        let mut gc = GridController::test();
-        let sheet_id = first_sheet_id(&gc);
-
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        test_create_code_table(&mut gc, sheet_id, pos![E2], 3, 3);
-
-        let sheet = gc.sheet(sheet_id);
-
-        // Test that the data table index is 0 for the first data table
-        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
-
-        // Test that a non-existent data table returns None
-        assert_eq!(sheet.data_table_index(pos![B2]), None);
-
-        // The second data table should have index 1
-        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
     }
 
     #[test]

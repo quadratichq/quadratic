@@ -32,15 +32,9 @@ export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
-        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
-        <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
-        <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
-        <Route path={ROUTES.SEND_MAGIC_AUTH_CODE} lazy={() => import('./routes/send-magic-auth-code')} />
-        <Route path={ROUTES.MAGIC_AUTH_CODE} lazy={() => import('./routes/magic-auth-code')} />
-        <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
-        <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
+        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} Component={EmptyComponent} />
       </Route>
 
       <Route id={ROUTE_LOADER_IDS.ROOT} lazy={() => import('./routes/_root')} HydrateFallback={EmptyComponent}>
@@ -91,7 +85,7 @@ export const router = createBrowserRouter(
          * without having to run the dashboard loader (which these don't need).
          */}
         <Route path="education/enroll" lazy={() => import('./routes/education.enroll')} />
-        <Route path="files/create" lazy={() => import('./routes/files.create')} />
+        <Route path={ROUTES.FILES_CREATE} lazy={() => import('./routes/files.create')} />
         <Route path="teams/:teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
         <Route path="team/*" lazy={() => import('./routes/team.$')} />
 
@@ -123,11 +117,18 @@ export const router = createBrowserRouter(
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              <Route path="billing/manage" lazy={() => import('./routes/teams.$teamUuid.billing.manage')} />
+              <Route path="billing/subscribe" lazy={() => import('./routes/teams.$teamUuid.billing.subscribe')} />
             </Route>
           </Route>
         </Route>
 
-        <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
+        <Route path={ROUTES.ONBOARDING_QUESTIONNAIRE} lazy={() => import('./routes/onboarding')} />
+        <Route path={ROUTES.ONBOARDING_VIDEO} lazy={() => import('./routes/onboarding-video')} />
+
+        {/* For development purposes only */}
+        <Route path="__preview__/*" lazy={() => import('./routes/__preview__')} />
+
         <Route path="*" lazy={() => import('./routes/404')} />
       </Route>
 

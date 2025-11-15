@@ -1,5 +1,4 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
-import type { OAuthProvider } from '@/auth/auth';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -13,8 +12,6 @@ export const ROUTES = {
   SIGNUP_WITH_REDIRECT: (href?: string) =>
     `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(href ?? window.location.pathname)}`,
   VERIFY_EMAIL: '/verify-email',
-  SEND_MAGIC_AUTH_CODE: '/send-magic-auth-code',
-  MAGIC_AUTH_CODE: '/magic-auth-code',
   SEND_RESET_PASSWORD: '/send-reset-password',
   RESET_PASSWORD: '/reset-password',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
@@ -22,6 +19,7 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
+  FILES_CREATE: '/files/create',
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {
@@ -46,7 +44,7 @@ export const ROUTES = {
       url.searchParams.set('chat-id', searchParams.chatId);
     }
 
-    return url.toString();
+    return url.pathname + url.search;
   },
   CREATE_FILE_EXAMPLE: ({
     teamUuid,
@@ -63,6 +61,8 @@ export const ROUTES = {
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
+  TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
+  TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
@@ -76,6 +76,8 @@ export const ROUTES = {
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
+  ONBOARDING_QUESTIONNAIRE: '/onboarding',
+  ONBOARDING_VIDEO: '/onboarding-video',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
@@ -86,15 +88,6 @@ export const ROUTES = {
       GET: ({ teamUuid, connectionUuid }: { teamUuid: string; connectionUuid: string }) =>
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
-  },
-
-  WORKOS_OAUTH: ({ provider, redirectTo }: { provider: OAuthProvider; redirectTo: string }) => {
-    const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
-    return getWorkosOauthUrl({ provider, state });
-  },
-  WORKOS_IFRAME_OAUTH: ({ provider }: { provider: OAuthProvider }) => {
-    const state = encodeURIComponent(JSON.stringify({ closeOnComplete: true }));
-    return getWorkosOauthUrl({ provider, state });
   },
 
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
@@ -116,10 +109,3 @@ export const SEARCH_PARAMS = {
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;
-
-function getWorkosOauthUrl(args: { provider: OAuthProvider; state: string }) {
-  const { provider, state } = args;
-  const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
-  const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
-  return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-}

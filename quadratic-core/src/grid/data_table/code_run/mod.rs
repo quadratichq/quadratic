@@ -114,6 +114,18 @@ pub enum CodeCellLanguage {
 }
 
 impl CodeCellLanguage {
+    pub fn as_string(&self) -> String {
+        match self {
+            CodeCellLanguage::Python => "Python".to_string(),
+            CodeCellLanguage::Formula => "Formula".to_string(),
+            CodeCellLanguage::Connection { kind, .. } => kind.to_string(),
+            CodeCellLanguage::Javascript => "JavaScript".to_string(),
+            CodeCellLanguage::Import => "Import".to_string(),
+        }
+    }
+}
+
+impl CodeCellLanguage {
     pub fn is_code_language(&self) -> bool {
         matches!(
             self,
@@ -145,6 +157,7 @@ pub enum ConnectionKind {
     Mariadb,
     Supabase,
     Neon,
+    Mixpanel,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

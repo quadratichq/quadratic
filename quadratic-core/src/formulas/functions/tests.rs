@@ -73,10 +73,10 @@ fn test_convert_to_array() {
     assert_eq!("{3}", eval_to_string(&g, "_TEST_ARRAY({3})"));
     assert_eq!("{}", eval_to_string(&g, "_TEST_ARRAY(A1:A1)"));
     let sheet_id = g.sheet_ids()[0];
-    g.sheet_mut(sheet_id).set_cell_value(pos![A2], 0);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A3], 1);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A4], -5);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A5], "hello");
+    g.set_cell_value(pos![sheet_id!A2], "0".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A3], "1".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A4], "-5".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A5], "hello".to_string(), None, false);
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!(
@@ -101,10 +101,10 @@ fn test_convert_to_tuple() {
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE({3})"));
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A1)"));
     let sheet_id = g.sheet_ids()[0];
-    g.sheet_mut(sheet_id).set_cell_value(pos![A2], 0);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A3], 1);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A4], -5);
-    g.sheet_mut(sheet_id).set_cell_value(pos![A5], "hello");
+    g.set_cell_value(pos![sheet_id!A2], "0".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A3], "1".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A4], "-5".to_string(), None, false);
+    g.set_cell_value(pos![sheet_id!A5], "hello".to_string(), None, false);
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A10)"));

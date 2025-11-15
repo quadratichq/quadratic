@@ -1,5 +1,5 @@
 use crate::{
-    Pos, SheetPos, SheetRect,
+    SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -119,7 +119,16 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-
+            self.thumbnail_dirty_sheet_rect(
+                transaction,
+                SheetRect::from_numbers(
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    w as i64,
+                    h as i64,
+                    sheet_pos.sheet_id,
+                ),
+            );
             if transaction.is_user_ai_undo_redo() {
                 transaction.forward_operations.push(op);
 
@@ -130,15 +139,6 @@ impl GridController {
                         w: original.map(|(w, _)| w).unwrap_or(w),
                         h: original.map(|(_, h)| h).unwrap_or(h),
                     });
-
-                let sheet_rect = SheetRect::from_numbers(
-                    sheet_pos.x,
-                    sheet_pos.y,
-                    w as i64,
-                    h as i64,
-                    sheet_pos.sheet_id,
-                );
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
             }
         }
 
@@ -155,23 +155,18 @@ impl GridController {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
-            let sheet_id = sheet_pos.sheet_id;
-            let Some(sheet) = self.try_sheet(sheet_id) else {
+
+            let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
                 // sheet may have been deleted in a multiplayer operation
                 return;
             };
-            let pos: Pos = sheet_pos.into();
 
-            let (language, code) = if let Some(dt) = sheet.data_table_at(&pos) {
-                if let Some(code) = dt.code_run().map(|cr| cr.code.clone()) {
-                    (dt.get_language(), code)
-                } else {
-                    // there is no code in the code run
+            let (language, code) = match sheet.code_run_at(&sheet_pos.into()) {
+                Some(code_run) => (code_run.language.to_owned(), code_run.code.to_owned()),
+                None => {
+                    dbgjs!(format!("No code run found at {sheet_pos:?}"));
                     return;
                 }
-            } else {
-                // code no longer exists at that position
-                return;
             };
 
             match language {
@@ -187,7 +182,10 @@ impl GridController {
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
-                CodeCellLanguage::Import => {} // no-op
+                CodeCellLanguage::Import => {
+                    dbgjs!(format!("Import code run found at {sheet_pos:?}"));
+                    // no-op
+                }
             }
         }
     }
@@ -261,13 +259,11 @@ mod tests {
             Some(CellValue::Text("cause spill".into()))
         );
 
-        dbg!(&sheet.data_tables);
-
         assert_display(&gc, pos![sheet_id!B1], "");
-        // assert_eq!(sheet.display_value(pos![B1]), None);
+        assert_eq!(sheet.display_value(pos![B1]), Some(CellValue::Blank));
 
-        // let code_cell = sheet.data_table_at(&pos![B1]);
-        // assert!(code_cell.unwrap().has_spill());
+        let code_cell = sheet.data_table_at(&pos![B1]);
+        assert!(code_cell.unwrap().has_spill());
     }
 
     #[test]

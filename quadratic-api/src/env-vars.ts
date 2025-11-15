@@ -18,8 +18,7 @@ export const PORT = process.env.PORT || 8000;
 export const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
 export const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 export const ORY_ADMIN_HOST = process.env.ORY_ADMIN_HOST as string;
-export const WORKOS_CLIENT_ID = process.env.WORKOS_CLIENT_ID as string;
-export const WORKOS_API_KEY = process.env.WORKOS_API_KEY as string;
+
 export const JWKS_URI = process.env.JWKS_URI as string;
 export const QUADRATIC_FILE_URI = process.env.QUADRATIC_FILE_URI as string;
 export const QUADRATIC_FILE_URI_PUBLIC = process.env.QUADRATIC_FILE_URI_PUBLIC as string;
@@ -43,6 +42,9 @@ export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
     ? undefined
     : Number(process.env.BILLING_AI_USAGE_LIMIT)
   : undefined;
+export const MAX_FILE_COUNT_FOR_PAID_PLAN = process.env.MAX_FILE_COUNT_FOR_PAID_PLAN
+  ? process.env.MAX_FILE_COUNT_FOR_PAID_PLAN.split(',').map(Number)
+  : undefined;
 
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
@@ -51,6 +53,13 @@ export const STORAGE_TYPE = process.env.STORAGE_TYPE as string;
 export const AUTH_TYPE = process.env.AUTH_TYPE as string;
 export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 ['STRIPE_SECRET_KEY', 'ENCRYPTION_KEY', 'STORAGE_TYPE', 'AUTH_TYPE', 'LICENSE_KEY'].forEach(ensureEnvVarExists);
+
+// WorkOS
+export const WORKOS_CLIENT_ID = process.env.WORKOS_CLIENT_ID as string;
+export const WORKOS_API_KEY = process.env.WORKOS_API_KEY as string;
+if (process.env.AUTH_TYPE === 'workos') {
+  ['WORKOS_CLIENT_ID', 'WORKOS_API_KEY'].forEach(ensureEnvVarExists);
+}
 
 // Required in prod, optional locally
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
@@ -66,6 +75,7 @@ export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
 export const FINE_TUNE = process.env.FINE_TUNE || 'false';
+export const RESTRICTED_MODEL_COUNTRIES = process.env.RESTRICTED_MODEL_COUNTRIES || '';
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);

@@ -9,6 +9,22 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  // Validate required environment variables at build time
+  const requiredEnvVars = [
+    'VITE_AUTH_TYPE',
+    'VITE_QUADRATIC_API_URL',
+    'VITE_QUADRATIC_MULTIPLAYER_URL',
+    'VITE_QUADRATIC_CONNECTION_URL',
+  ];
+  if (env.VITE_AUTH_TYPE === 'workos') {
+    requiredEnvVars.push('VITE_WORKOS_CLIENT_ID');
+  }
+
+  const missingEnvVars = requiredEnvVars.filter((varName) => !(varName in env));
+  if (missingEnvVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  }
+
   const plugins = [
     react(),
     tsconfigPaths(),
@@ -28,6 +44,7 @@ export default defineConfig(({ mode }) => {
           res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+          res.setHeader('Document-Policy', 'js-profiling');
           next();
         });
       },

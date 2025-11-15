@@ -325,7 +325,7 @@ mod tests {
         assert_eq!(gc1.transactions.unsaved_transactions.len(), 0);
 
         let mut gc2 = GridController::test();
-        gc2.grid_mut().set_first_sheet_id(sheet_id);
+        gc2.set_first_sheet_id(sheet_id);
         gc2.received_transaction(transaction_id, 1, operations);
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -442,7 +442,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -484,7 +484,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 1,
@@ -557,7 +557,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -635,7 +635,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -717,7 +717,7 @@ mod tests {
 
         // other is where the transaction are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             SheetPos {
                 x: 0,
@@ -809,7 +809,7 @@ mod tests {
 
         // other is where the transactions are created
         let mut other = GridController::test();
-        other.grid_mut().set_first_sheet_id(sheet_id);
+        other.set_first_sheet_id(sheet_id);
         other.set_cell_value(
             pos![A1].to_sheet_pos(sheet_id),
             "From other".to_string(),

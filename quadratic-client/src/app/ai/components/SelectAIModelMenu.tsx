@@ -1,9 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
-
+import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,44 +17,38 @@ import {
 import { Label } from '@/shared/shadcn/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
-import { Toggle } from '@/shared/shadcn/ui/toggle';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import { useSetAtom } from 'jotai';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useMemo } from 'react';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useMemo, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
-const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
-  Exclude<ModelMode, 'disabled'>,
-  { label: string; description: string }
-> = {
-  fast: { label: 'Default', description: 'Good for everyday tasks' },
-  max: { label: 'Max', description: 'Very slow, but most capable' },
+type UIModels = 'default' | 'max' | 'others';
+const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
+  default: { label: 'Fast', description: 'Good for everyday tasks' },
+  max: { label: 'Max', description: 'Smartest and most capable' },
+  others: { label: 'Others', description: 'Experimental models' },
 };
 
 interface SelectAIModelMenuProps {
   loading: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
-export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
+export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const {
+    userMakingRequest,
+    team: { uuid: teamUuid },
+  } = useFileRouteLoaderData();
+  const restrictedModel = userMakingRequest.restrictedModel;
+  const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
-
-  const {
-    modelKey: selectedModel,
-    setModelKey: setSelectedModel,
-    modelConfig: selectedModelConfig,
-    thinkingToggle,
-    setThinkingToggle,
-  } = useAIModel();
-
-  const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
-  const canToggleThinking = useMemo(
-    () => selectedModelConfig.thinkingToggle !== undefined,
-    [selectedModelConfig.thinkingToggle]
-  );
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const { modelType, othersModelKey, setModel, selectedModelConfig, defaultOthersModelKey } = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
@@ -58,178 +56,175 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   }, [debugShowAIModelMenu]);
 
   const dropdownModels = useMemo(
-    () =>
-      modelConfigs
-        .filter(
-          ([, modelConfig]) =>
-            modelConfig.thinkingToggle === undefined ||
-            (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
-            selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
-        )
-        .sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
-    [modelConfigs, selectedModelConfig.thinkingToggle, thinkingToggle]
+    () => modelConfigs.sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
+    [modelConfigs]
   );
 
-  const handleThinkingToggle = useCallback(
-    (nextThinkingToggle: boolean) => {
-      const nextModelKey = nextThinkingToggle
-        ? selectedModel.replace(':thinking-toggle-off', ':thinking-toggle-on')
-        : selectedModel.replace(':thinking-toggle-on', ':thinking-toggle-off');
+  const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
 
-      const nextModel = modelConfigs.find(
-        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === nextThinkingToggle
-      );
+  const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
+  const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
 
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-        setThinkingToggle(nextThinkingToggle);
-      }
-    },
-    [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
+  // If they've already seen the popover, don't show it.
+  // Otherwise, only show it to them when they've used the AI a bit.
+  const isOpenDidYouKnowDialog = useMemo(
+    () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
+    [knowsAboutModelPicker, userMessagesCount]
   );
 
-  const selectedModelMode = useMemo(
-    () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
-    [selectedModelConfig.mode]
-  );
-  const setModelMode = useCallback(
-    (mode: ModelMode) => {
-      const nextModel = modelConfigs.find(
-        ([_, modelConfig]) =>
-          modelConfig.mode === mode &&
-          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
-      );
-
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-      }
-    },
-    [modelConfigs, setSelectedModel, thinkingToggle]
-  );
-  const selectedModelLabel = useMemo(() => {
+  // Debug mode where any non-disabled model is shown
+  if (debugShowAIModelMenu) {
     return (
-      MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode as keyof typeof MODEL_MODES_LABELS_DESCRIPTIONS]?.label ||
-      'Default'
-    );
-  }, [selectedModelMode]);
-
-  const { setKnowsAboutModelPicker } = useUserDataKv();
-  // Disabled: AI tooltip after 5 prompts
-  const isOpenDidYouKnowDialog = useMemo(() => false, []);
-
-  return (
-    <>
-      {canToggleThinking ? (
-        <TooltipPopover label="Extended thinking for complex prompts">
-          <Toggle
-            aria-label="Extended thinking"
-            size="sm"
-            disabled={loading}
-            onClick={() => handleThinkingToggle(!thinking)}
-            className={cn(
-              thinking && '!bg-border !text-primary',
-              !thinking && 'w-7 hover:text-foreground',
-              'mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal'
-            )}
-          >
-            <LightbulbIcon />
-
-            {thinking && <span className="mr-1">Think</span>}
-          </Toggle>
-        </TooltipPopover>
-      ) : (
-        <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
-      )}
-
-      {debugShowAIModelMenu ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            disabled={loading}
-            className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
-          >
-            {selectedModelConfig.displayName}
-
-            <CaretDownIcon />
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            align="start"
-            alignOffset={-4}
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              textareaRef.current?.focus();
-            }}
-          >
-            {dropdownModels.map(([key, modelConfig]) => (
-              <DropdownMenuCheckboxItem
-                key={key}
-                checked={selectedModel === key}
-                onCheckedChange={() => {
-                  trackEvent('[AI].model.change', { model: modelConfig.model });
-                  setSelectedModel(key);
-                }}
-              >
-                <div className="flex w-full items-center justify-between text-xs">
-                  <span className="pr-4">
-                    {(debugShowAIModelMenu
-                      ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
-                      : '') + modelConfig.displayName}
-                  </span>
-                </div>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <DidYouKnowPopover
-          open={!loading && isOpenDidYouKnowDialog}
-          setOpen={() => setKnowsAboutModelPicker(true)}
-          title="AI model choices"
-          description="Default is our fastest model. Max is max intelligence but extremely slow."
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={loading}
+          className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
         >
-          <Popover>
-            {/* Needs a min-width or it shifts as the popover closes */}
-            <PopoverTrigger
-              className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
-              onClick={() => {
-                setKnowsAboutModelPicker(true);
+          {selectedModelConfig.displayName}
+
+          <CaretDownIcon />
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-80">
+          {dropdownModels.map(([key, modelConfig]) => (
+            <DropdownMenuCheckboxItem
+              key={key}
+              checked={othersModelKey === key}
+              onCheckedChange={() => {
+                setModel('others', key);
               }}
             >
-              Model: {selectedModelLabel}
-              <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
-            </PopoverTrigger>
+              <div className="flex w-full items-center justify-between text-xs">
+                <span className="pr-4">
+                  {(debugShowAIModelMenu
+                    ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
+                    : '') + modelConfig.displayName}
+                </span>
+              </div>
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
-            <PopoverContent className="flex w-80 flex-col gap-2">
-              <div className="mt-2 flex flex-col items-center">
-                <AIIcon className="mb-2 text-primary" size="lg" />
+  const isOthers = modelType !== 'default' && modelType !== 'max';
+  const radioGroupValue = isOthers ? othersModelKey : modelType;
 
-                <h4 className="text-lg font-semibold">AI models</h4>
+  if (restrictedModel) {
+    return null;
+  }
 
-                <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
+  return (
+    <DidYouKnowPopover
+      open={!loading && isOpenDidYouKnowDialog}
+      setOpen={() => setKnowsAboutModelPicker(true)}
+      title="AI model choices"
+      description="Fast is our fastest model. Max is the smartest and most capable."
+    >
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        {/* Needs a min-width or it shifts as the popover closes */}
+        <PopoverTrigger
+          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+          onClick={(e) => {
+            setKnowsAboutModelPicker(true);
+            e.stopPropagation();
+          }}
+        >
+          {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
+          <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+        </PopoverTrigger>
+
+        <PopoverContent className="flex w-80 flex-col gap-2 p-0" id="ai-model-popover-content">
+          <form>
+            <RadioGroup
+              value={radioGroupValue}
+              className="flex flex-col gap-0"
+              onValueChange={(value) => {
+                // Check if the value is a quadratic model type ('default', 'max')
+                if (value === 'default' || value === 'max') {
+                  setModel(value, defaultOthersModelKey);
+                } else {
+                  // Otherwise set as an 'others' with the specific key
+                  setModel('others', value as AIModelKey);
+                }
+
+                trackEvent('[AI].model.change', { model: value });
+                setIsPopoverOpen(false);
+              }}
+            >
+              <RadioGroupHeader>Quadratic AI models</RadioGroupHeader>
+              <div className="flex flex-col rounded text-sm">
+                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
+                  .filter(([mode]) => mode !== 'others')
+                  .map(([mode, { label, description }], i) => (
+                    <RadioGroupLineItem key={mode} value={mode} label={label} description={description} />
+                  ))}
               </div>
 
-              <form className="flex flex-col gap-1 rounded border border-border text-sm">
-                <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
-                  {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
-                    <Label
-                      className={cn(
-                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                        i !== 0 && 'border-t border-border'
-                      )}
-                      key={mode}
-                      onPointerDown={() => setModelMode(mode as ModelMode)}
+              <hr className="my-2 border-border" />
+
+              <RadioGroupHeader>
+                Other AI models{' '}
+                {!isOnPaidPlan && (
+                  <span className="font-normal">
+                    (exclusive to Pro,{' '}
+                    <button
+                      onClick={() => setShowUpgradeDialog({ open: true, eventSource: 'SelectAIModelMenu' })}
+                      className="text-primary hover:underline"
                     >
-                      <RadioGroupItem value={mode} className="mr-2" />
-                      <strong className="font-bold">{label}</strong>
-                      <span className="ml-auto font-normal">{description}</span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </form>
-            </PopoverContent>
-          </Popover>
-        </DidYouKnowPopover>
-      )}
-    </>
+                      upgrade now
+                    </button>
+                    )
+                  </span>
+                )}
+              </RadioGroupHeader>
+
+              <div className="flex flex-col rounded text-sm">
+                {othersModels.map(([modelKey, modelConfig], i) => (
+                  <RadioGroupLineItem
+                    key={modelKey}
+                    value={modelKey}
+                    label={modelConfig.displayName}
+                    description={modelConfig.displayProvider ?? 'C'}
+                    disabled={!isOnPaidPlan}
+                  />
+                ))}
+              </div>
+            </RadioGroup>
+          </form>
+        </PopoverContent>
+      </Popover>
+    </DidYouKnowPopover>
   );
 });
+
+function RadioGroupHeader({ children }: { children: React.ReactNode }) {
+  return <h5 className="mb-0 px-4 pb-2 pt-2 text-xs font-medium text-muted-foreground">{children}</h5>;
+}
+
+function RadioGroupLineItem({
+  value,
+  label,
+  description,
+  disabled,
+}: {
+  value: string;
+  label: string;
+  description: string;
+  disabled?: boolean;
+}) {
+  return (
+    <Label
+      className={
+        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground'
+      }
+      key={value}
+      htmlFor={`radio-${value}`}
+    >
+      <RadioGroupItem disabled={disabled} value={value} className="mr-2" id={`radio-${value}`} />
+      <strong className="font-medium">{label}</strong>
+      <span className="ml-auto font-normal text-muted-foreground">{description}</span>
+    </Label>
+  );
+}

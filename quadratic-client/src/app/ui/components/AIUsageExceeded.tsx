@@ -1,49 +1,31 @@
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useSetAtom } from 'jotai';
 import { memo } from 'react';
 
-type AIUsageExceededProps = {
-  show: boolean;
-};
-
-const divClassName =
-  'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
-
-export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
-  if (!show) {
-    return null;
-  }
+export const AIUsageExceeded = memo(() => {
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
   return (
-    <div className={divClassName}>
-      Monthly AI free tier exceeded. <br></br>Upgrade to Quadratic Pro to continue using Quadratic AI.
-      <div className="mt-4 flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            trackEvent('[AI].UsageExceeded.clickLearnMore', {
-              ab_test: 'variant',
-            });
-            // go to the team settings page in a new tab
-            window.open('/team/settings', '_blank');
-          }}
-          className="flex-1"
-        >
-          Learn more
-        </Button>
-        <Button
-          onClick={() => {
-            trackEvent('[AI].UsageExceeded.clickUpgrade', {
-              ab_test: 'variant',
-            });
-            // navigate to the team settings page
-            window.open('/team/settings', '_blank');
-          }}
-          className="flex-1"
-        >
-          Upgrade to Pro
-        </Button>
-      </div>
+    <div
+      className={
+        'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-center text-sm dark:border-yellow-800 dark:bg-yellow-950/50'
+      }
+    >
+      <h3 className="font-semibold">Monthly AI free tier exceeded</h3>
+      <p className="text-muted-foreground">Upgrade to a Pro plan to continue using Quadratic AI.</p>
+
+      <Button
+        onClick={() => {
+          setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded' });
+          trackEvent('[AI].UsageExceeded.clickUpgrade');
+        }}
+        className="mt-2 w-full"
+        size="sm"
+      >
+        Upgrade to Pro
+      </Button>
     </div>
   );
 });

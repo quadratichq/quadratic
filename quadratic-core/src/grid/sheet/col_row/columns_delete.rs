@@ -13,7 +13,7 @@ use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
     // create reverse operations for values in the column broken up by MAX_OPERATION_SIZE
-    pub(crate) fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
+    fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         if let Some((min, max)) = self.column_bounds(column, true) {
@@ -22,7 +22,7 @@ impl Sheet {
                 let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new(1, (current_max - current_min) as u32 + 1);
 
-                if let Some(col) = self.columns.get_column(column) {
+                if let Some(col) = self.get_column(column) {
                     for y in current_min..=current_max {
                         if let Some(cell_value) = col.values.get(&y) {
                             values.set(0, (y - current_min) as u32, cell_value.clone());
@@ -87,7 +87,7 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub(crate) fn delete_column(
+    fn delete_column(
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
@@ -156,7 +156,7 @@ impl Sheet {
 
     /// Deletes columns. Columns is a vec of all columns to be deleted. This fn
     /// will dedup and sort the columns.
-    pub fn delete_columns(
+    pub(crate) fn delete_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: Vec<i64>,
@@ -173,15 +173,15 @@ impl Sheet {
         columns.dedup();
         columns.reverse();
 
+        for column in &columns {
+            self.delete_column(transaction, *column, copy_formats, a1_context);
+        }
+
         if !ignore_tables {
             self.delete_tables_with_all_columns(transaction, &columns);
             self.delete_tables_columns(transaction, &columns);
             self.delete_chart_columns(transaction, &columns);
             self.move_tables_leftwards(transaction, &columns);
-        }
-
-        for column in &columns {
-            self.delete_column(transaction, *column, copy_formats, a1_context);
         }
     }
 }

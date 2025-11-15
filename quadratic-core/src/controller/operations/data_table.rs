@@ -9,7 +9,6 @@ use crate::{
         DataTable, DataTableKind, Sheet,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        unique_data_table_name,
     },
 };
 
@@ -27,10 +26,7 @@ impl GridController {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
 
-        Ok(vec![Operation::SwitchDataTableKindWithoutCellValue {
-            sheet_pos,
-            kind,
-        }])
+        Ok(vec![Operation::SwitchDataTableKind { sheet_pos, kind }])
     }
 
     /// Collects all operations that would be needed to convert a grid to a data table.
@@ -289,9 +285,8 @@ impl GridController {
         }
 
         let import = Import::new(name.to_owned());
-        let name = unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
         let mut data_table = DataTable::new(
-            DataTableKind::Import(import.to_owned()),
+            DataTableKind::Import(import),
             &name,
             cell_values.into(),
             first_row_is_header,
@@ -305,10 +300,11 @@ impl GridController {
             .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
-        ops.push(Operation::AddDataTableWithoutCellValue {
+        ops.push(Operation::SetDataTable {
             sheet_pos,
-            data_table,
-            index: None,
+            data_table: Some(data_table),
+            index: usize::MAX,
+            ignore_old_data_table: true,
         });
 
         ops
@@ -441,7 +437,12 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTableWithoutCellValue { data_table, .. } => {
+            Operation::SetDataTable {
+                data_table,
+                ignore_old_data_table,
+                ..
+            } => {
+                let data_table = data_table.as_ref().unwrap();
                 assert!(data_table.header_is_first_row);
                 assert_eq!(data_table.name, name.as_str().into());
                 assert_eq!(data_table.kind, DataTableKind::Import(Import::new(name)));
@@ -493,6 +494,7 @@ mod test {
                         .get((2, 2).into()),
                     Some(true)
                 );
+                assert!(ignore_old_data_table);
             }
             _ => panic!("Expected AddDataTable operation"),
         }

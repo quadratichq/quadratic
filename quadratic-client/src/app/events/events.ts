@@ -137,6 +137,7 @@ interface EventTypes {
   contextMenu: (options: ContextMenuState) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
+  emojiDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   // use this to set a drawing element to dirty
   viewportChanged: () => void;
@@ -171,6 +172,10 @@ interface EventTypes {
   startupTimer: (name: TimerNames, data: { start?: number; end?: number }) => void;
 
   setDirty: (dirty: DirtyObject) => void;
+
+  aiAnalystDroppedFiles: (files: FileList | File[]) => void;
+  aiAnalystAddReference: (reference: string) => void;
+  aiAnalystReady: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -50,8 +50,9 @@ export const apiClient = {
         );
       },
       getCheckoutSessionUrl(uuid: string) {
+        const redirect = window.location.href;
         return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/session`,
+          `/v0/teams/${uuid}/billing/checkout/session?redirect=${redirect}`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
@@ -119,6 +120,13 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
         );
       },
+    },
+    fileLimit(uuid: string, isPrivate: boolean) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}/file-limit?private=${isPrivate}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
+      );
     },
   },
 
@@ -473,77 +481,4 @@ export const apiClient = {
 
     return url;
   },
-
-  auth: {
-    getApiHostname() {
-      const quadraticApiUrl = import.meta.env.VITE_QUADRATIC_API_URL;
-      if (!quadraticApiUrl) {
-        const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
-        captureEvent({
-          message,
-          level: 'fatal',
-        });
-        throw new Error(message);
-      }
-      return quadraticApiUrl.replace('https://', '').replace('http://', '');
-    },
-    loginWithPassword(args: ApiTypes['/v0/auth/login-with-password.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/login-with-password`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/login-with-password.POST.response']
-      );
-    },
-    signupWithPassword(args: ApiTypes['/v0/auth/signup-with-password.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/signup-with-password`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/signup-with-password.POST.response']
-      );
-    },
-    authenticateWithCode(args: ApiTypes['/v0/auth/authenticate-with-code.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/authenticate-with-code`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/authenticate-with-code.POST.response']
-      );
-    },
-    verifyEmail(args: ApiTypes['/v0/auth/verify-email.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/verify-email`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/verify-email.POST.response']
-      );
-    },
-    sendResetPassword(args: ApiTypes['/v0/auth/send-reset-password.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/send-reset-password`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/send-reset-password.POST.response']
-      );
-    },
-    resetPassword(args: ApiTypes['/v0/auth/reset-password.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/reset-password`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/reset-password.POST.response']
-      );
-    },
-    sendMagicAuthCode(args: ApiTypes['/v0/auth/send-magic-auth-code.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/send-magic-auth-code`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/send-magic-auth-code.POST.response']
-      );
-    },
-    authenticateWithMagicCode(args: ApiTypes['/v0/auth/authenticate-with-magic-code.POST.request']) {
-      return fetchFromApi(
-        `/v0/auth/authenticate-with-magic-code`,
-        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/v0/auth/authenticate-with-magic-code.POST.response']
-      );
-    },
-  },
-
-  // Someday: figure out how to fit in the calls for the AI chat
 };

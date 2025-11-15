@@ -21,14 +21,16 @@ impl GridController {
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_csv_operations(
+        is_overwrite_table: bool,
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_csv_operations(
             sheet_id,
             file,
             file_name,
             insert_at,
             delimiter,
             header_is_first_row,
+            is_overwrite_table,
         )?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
@@ -36,7 +38,7 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports an Excel file into the grid.
@@ -49,15 +51,15 @@ impl GridController {
         file_name: &str,
         cursor: Option<String>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_excel_operations(file, file_name)?;
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_excel_operations(file, file_name)?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 
     /// Imports a Parquet file into the grid.
@@ -73,15 +75,23 @@ impl GridController {
         cursor: Option<String>,
         updater: Option<impl Fn(&str, u32, u32)>,
         is_ai: bool,
-    ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
+        is_overwrite_table: bool,
+    ) -> Result<String> {
+        let (ops, response_prompt) = self.import_parquet_operations(
+            sheet_id,
+            file,
+            file_name,
+            insert_at,
+            updater,
+            is_overwrite_table,
+        )?;
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        Ok(())
+        Ok(response_prompt)
     }
 }
 
@@ -133,6 +143,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             Some(true),
+            false,
             false,
         )
         .unwrap();
@@ -255,6 +266,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         );
         assert!(result.is_err());
     }
@@ -282,6 +294,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -292,7 +305,7 @@ pub(crate) mod tests {
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
-        let ops = gc
+        let (ops, _) = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
                 csv.as_bytes(),
@@ -300,6 +313,7 @@ pub(crate) mod tests {
                 Pos { x: 0, y: 0 },
                 Some(b','),
                 Some(false),
+                false,
             )
             .unwrap();
         let op = &ops[0];
@@ -451,6 +465,7 @@ pub(crate) mod tests {
             None,
             None::<fn(&str, u32, u32)>,
             false,
+            false,
         );
 
         assert_cell_value_row(
@@ -559,6 +574,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -588,6 +604,7 @@ pub(crate) mod tests {
             Some(b','),
             Some(false),
             false,
+            false,
         )
         .unwrap();
 
@@ -615,6 +632,7 @@ pub(crate) mod tests {
             None,
             Some(b','),
             None,
+            false,
             false,
         )
         .unwrap();
@@ -675,6 +693,7 @@ pub(crate) mod tests {
             None,
             None,
             false,
+            false,
         )
         .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
@@ -697,6 +716,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            false,
             false,
         )
         .unwrap();
@@ -727,6 +747,7 @@ pub(crate) mod tests {
             None,
             None::<fn(&str, u32, u32)>,
             false,
+            false,
         );
 
         print_table_from_grid(
@@ -753,6 +774,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            false,
             false,
         )
         .unwrap();

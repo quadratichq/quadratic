@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.20.0",
+  "version": "0.21.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -71,6 +71,7 @@
     "docker:down": "docker compose --profile all --env-file .env.docker down",
     "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af",
     "e2e:test": "cd test/e2e && npm run docker:test",
+    "e2e:test:bail": "cd test/e2e && npm run docker:bail",
     "e2e:update": "cd test/e2e && npm run docker:update",
     "e2e:ui": "cd test/e2e && npm run test:ui",
     "e2e:headed": "cd test/e2e && npm run test:headed",
@@ -83,11 +84,10 @@
     "concurrently": "^6.5.1",
     "eslint": "^8.57.0",
     "jest": "^29.6.1",
-    "kill-port": "^2.0.1",
     "prettier": "3.5.3",
     "tree-kill": "^1.2.2",
     "ts-jest": "^29.2.6",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": "24.x"

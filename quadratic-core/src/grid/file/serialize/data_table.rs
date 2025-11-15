@@ -10,7 +10,7 @@ use crate::{
     ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
-        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
+        CellsAccessed, CodeRun, DataTable, DataTableKind, SheetId,
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,
@@ -341,7 +341,7 @@ pub(crate) fn import_data_table_builder(
         };
 
         let output_rect = data_table.output_rect(pos, true);
-        data_table.spill_value = columns.has_content(output_rect);
+        data_table.spill_value = columns.has_content_in_rect(output_rect);
 
         sheet_data_tables.insert_full(pos, data_table);
     }
