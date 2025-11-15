@@ -1,4 +1,3 @@
-import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { Favicon } from '@/shared/components/Favicon';
 import { isContentGoogleSearchGroundingMetadata } from 'quadratic-shared/ai/helpers/message.helper';
 import type { GoogleSearchContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -42,22 +41,18 @@ export const GoogleSearchSources = memo(({ content }: { content: GoogleSearchCon
   );
 
   return (
-    <>
-      <ToolCardQuery className="px-2" label="Searching the web." />
-
-      <div className="flex flex-wrap gap-1 px-2">
-        {sources.map((source, index) => (
-          <Link
-            key={`${index}-${source.title}`}
-            className="flex w-fit cursor-pointer items-center rounded border border-border/50 px-1.5 py-1 text-xs text-muted-foreground hover:border-border hover:underline"
-            to={source.uri}
-            target="_blank"
-          >
-            <Favicon domain={source.title} size={12} alt={source.title} className="mr-1" />
-            {source.title}
-          </Link>
-        ))}
-      </div>
-    </>
+    <div className="flex flex-wrap gap-1 px-2">
+      {sources.map((source, index) => (
+        <Link
+          key={`${index}-${source.title}`}
+          className="flex w-fit cursor-pointer items-center rounded border border-border/50 px-1.5 py-1 text-xs text-muted-foreground hover:border-border hover:underline"
+          to={source.uri}
+          target="_blank"
+        >
+          <Favicon domain={source.title} size={12} alt={source.title} className="mr-1" />
+          {source.title}
+        </Link>
+      ))}
+    </div>
   );
 });
