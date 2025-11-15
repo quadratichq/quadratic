@@ -99,6 +99,9 @@
     "node": "24.x"
   },
   "overrides": {
-    "openai": "^6.2.0"
+    "openai": "^6.2.0",
+    "@browserbasehq/stagehand": {
+      "openai": "^6.2.0"
+    }
   }
 }
