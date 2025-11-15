@@ -1,3 +1,5 @@
+#![allow(dead_code)] // necessary because old schema may not be used anymore
+
 use crate::grid::file::v1_9;
 use crate::util::is_false;
 use chrono::{DateTime, Utc};

@@ -335,6 +335,7 @@ export const AIToolsArgsSchema = {
     number_type: stringNullableOptionalSchema,
     currency_symbol: stringNullableOptionalSchema,
     date_time: stringNullableOptionalSchema,
+    font_size: numberSchema.nullable().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -1287,6 +1288,7 @@ If too large, the results will include page information:\n
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 There must be at least one non-null format to set.\n
+You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 `,
     parameters: {
@@ -1359,6 +1361,10 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
           type: ['string', 'null'],
           description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
+        font_size: {
+          type: ['number', 'null'],
+          description: 'The font size in points. Default is 14.',
+        },
       },
       required: [
         'sheet_name',
@@ -1376,6 +1382,7 @@ When you are formatting multiple, non-contiguous cells, or cells not in a rectan
         'number_type',
         'currency_symbol',
         'date_time',
+        'font_size',
       ],
       additionalProperties: false,
     },
@@ -1391,6 +1398,7 @@ Here are the formats you can set:\n
 - number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
 - currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
 - date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+- font_size, the size of the font in points (default is 14)\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 There must be at least one format to set.\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,

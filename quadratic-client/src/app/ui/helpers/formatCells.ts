@@ -79,3 +79,29 @@ export const clearFormatting = () => {
 export const clearFormattingAndBorders = () => {
   clearFormatting();
 };
+
+export const setFontSize = (fontSize: number) => {
+  quadraticCore.setFontSize(sheets.getRustSelection(), fontSize, false);
+};
+
+export const increaseFontSize = async () => {
+  const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
+  if (formatSummary && 'fontSize' in formatSummary) {
+    const currentSize = (formatSummary as any).fontSize ?? 14;
+    const newSize = Math.min(currentSize + 2, 96);
+    setFontSize(newSize);
+  } else {
+    setFontSize(16);
+  }
+};
+
+export const decreaseFontSize = async () => {
+  const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
+  if (formatSummary && 'fontSize' in formatSummary) {
+    const currentSize = (formatSummary as any).fontSize ?? 14;
+    const newSize = Math.max(currentSize - 2, 8);
+    setFontSize(newSize);
+  } else {
+    setFontSize(12);
+  }
+};

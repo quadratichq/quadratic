@@ -135,6 +135,7 @@ impl GridController {
         if let Operation::ResizeRows {
             sheet_id,
             mut row_heights,
+            client_resized,
         } = op
         {
             if row_heights.is_empty() {
@@ -158,9 +159,14 @@ impl GridController {
                 })
                 .collect();
 
+            // Update the row resize mode (Auto or Manual) for all rows
+            let old_client_resized = row_heights
+                .iter()
+                .any(|JsRowHeight { row, .. }| sheet.update_row_resize(*row, client_resized));
+
             old_row_heights.sort_by_key(|JsRowHeight { row, .. }| *row);
 
-            if old_row_heights == row_heights {
+            if old_row_heights == row_heights && old_client_resized == client_resized {
                 return;
             }
 
@@ -183,11 +189,13 @@ impl GridController {
                 transaction.forward_operations.push(Operation::ResizeRows {
                     sheet_id,
                     row_heights: row_heights.clone(),
+                    client_resized,
                 });
 
                 transaction.reverse_operations.push(Operation::ResizeRows {
                     sheet_id,
                     row_heights: old_row_heights,
+                    client_resized: old_client_resized,
                 });
             }
         }
@@ -365,6 +373,7 @@ impl GridController {
                         height: size,
                     })
                     .collect(),
+                client_resized: true, // These were manually set heights
             });
 
             transaction

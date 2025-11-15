@@ -93,6 +93,7 @@ impl Sheet {
             number,
             underline: format.underline,
             strike_through: format.strike_through,
+            font_size: format.font_size,
             table_name: None,
             column_header: None,
         }
@@ -713,5 +714,61 @@ mod tests {
         let special = None;
         Sheet::ensure_lists_are_clipped(&mut format, &special);
         assert_eq!(format.wrap, None);
+    }
+
+    #[test]
+    fn test_render_cell_with_font_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos = pos![1, 2];
+        gc.set_cell_value(pos.to_sheet_pos(sheet_id), "test".into(), None, false);
+        gc.sheet_mut(sheet_id).formats.font_size.set(pos, Some(16));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 1, y: 2 },
+                max: Pos { x: 1, y: 2 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        assert_eq!(
+            render[0],
+            JsRenderCell {
+                x: 1,
+                y: 2,
+                value: "test".to_string(),
+                font_size: Some(16),
+                ..Default::default()
+            }
+        );
+
+        // Test that font_size is None when not set
+        let pos2 = pos![2, 3];
+        gc.set_cell_value(pos2.to_sheet_pos(sheet_id), "test2".into(), None, false);
+
+        let sheet = gc.sheet(sheet_id);
+        let render2 = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 2, y: 3 },
+                max: Pos { x: 2, y: 3 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render2.len(), 1);
+        assert_eq!(
+            render2[0],
+            JsRenderCell {
+                x: 2,
+                y: 3,
+                value: "test2".to_string(),
+                font_size: None,
+                ..Default::default()
+            }
+        );
     }
 }

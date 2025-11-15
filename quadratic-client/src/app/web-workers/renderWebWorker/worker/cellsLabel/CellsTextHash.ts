@@ -283,6 +283,7 @@ export class CellsTextHash {
 
     this.links = [];
     this.drawRects = [];
+    this.special.clear();
 
     this.labels.forEach((cellLabel) => this.checkClip(cellLabel));
 

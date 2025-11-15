@@ -64,12 +64,13 @@ impl GridController {
                             .set_format_rect(intersection_rect, FormatUpdate::cleared());
 
                         if let Some(table_format_updates) = table_format_updates
-                            && !table_format_updates.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    formats: table_format_updates,
-                                });
-                            }
+                            && !table_format_updates.is_default()
+                        {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                formats: table_format_updates,
+                            });
+                        }
                     }
                 }
                 CellRefRange::Table { range } => {
@@ -214,6 +215,22 @@ impl GridController {
 
         let format_update = FormatUpdate {
             italic: Some(Some(italic)),
+            ..Default::default()
+        };
+        let ops = self.format_ops(selection, format_update, false);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
+        Ok(())
+    }
+
+    pub(crate) fn set_font_size(
+        &mut self,
+        selection: &A1Selection,
+        font_size: i16,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let format_update = FormatUpdate {
+            font_size: Some(Some(font_size)),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);

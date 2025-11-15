@@ -99,13 +99,14 @@ impl GridController {
         rows: String,
         cursor: Option<String>,
         is_ai: bool,
+        client_resized: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
             let rows =
                 serde_json::from_str(&rows).map_err(|e| format!("Unable to parse rows: {e}"))?;
-            self.resize_rows(sheet_id, rows, cursor, is_ai);
+            self.resize_rows(sheet_id, rows, cursor, is_ai, client_resized);
             Ok(None)
         })
     }

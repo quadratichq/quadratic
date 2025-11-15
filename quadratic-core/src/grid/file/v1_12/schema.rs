@@ -30,7 +30,6 @@ pub type Contiguous2DSchema<T> = v1_11::Contiguous2DSchema<T>;
 pub type DataTableKindSchema = v1_11::DataTableKindSchema;
 pub type DataTableSortOrderSchema = v1_11::DataTableSortOrderSchema;
 pub type DateTimeRangeSchema = v1_11::DateTimeRangeSchema;
-pub type FormatSchema = v1_11::FormatSchema;
 pub type IdSchema = v1_11::IdSchema;
 pub type ImportSchema = v1_11::ImportSchema;
 pub type NumberRangeSchema = v1_11::NumberRangeSchema;
@@ -48,11 +47,9 @@ pub type RowsResizeSchema = v1_11::RowsResizeSchema;
 pub type RowsResizesSchema = v1_11::RowsResizesSchema;
 pub type RunErrorMsgSchema = v1_11::RunErrorMsgSchema;
 pub type RunErrorSchema = v1_11::RunErrorSchema;
-pub type SheetFormattingSchema = v1_11::SheetFormattingSchema;
 pub type SheetRectSchema = v1_11::SheetRectSchema;
 pub type SortDirectionSchema = v1_11::SortDirectionSchema;
 pub type SpanSchema = v1_11::SpanSchema;
-pub type TableFormatsSchema = v1_11::TableFormatsSchema;
 pub type TableRefSchema = v1_11::TableRefSchema;
 pub type TextCaseSchema = v1_11::TextCaseSchema;
 pub type TextMatchSchema = v1_11::TextMatchSchema;
@@ -68,6 +65,99 @@ pub type ValidationSchema = v1_11::ValidationSchema;
 pub type ValidationStyleSchema = v1_11::ValidationStyleSchema;
 pub type ValidationTextSchema = v1_11::ValidationTextSchema;
 pub type ValidationsSchema = v1_11::ValidationsSchema;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FormatSchema {
+    pub align: Option<CellAlignSchema>,
+    pub vertical_align: Option<CellVerticalAlignSchema>,
+    pub wrap: Option<CellWrapSchema>,
+    pub numeric_format: Option<NumericFormatSchema>,
+    pub numeric_decimals: Option<i16>,
+    pub numeric_commas: Option<bool>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
+    pub render_size: Option<RenderSizeSchema>,
+
+    #[serde(default)]
+    pub date_time: Option<String>,
+    #[serde(default)]
+    pub underline: Option<bool>,
+    #[serde(default)]
+    pub strike_through: Option<bool>,
+    #[serde(default)]
+    pub font_size: Option<i16>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TableFormatsSchema {
+    pub formats: FormatSchema,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
+pub struct SheetFormattingSchema {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub align: Contiguous2DSchema<Option<CellAlignSchema>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub vertical_align: Contiguous2DSchema<Option<CellVerticalAlignSchema>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub wrap: Contiguous2DSchema<Option<CellWrapSchema>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub numeric_format: Contiguous2DSchema<Option<NumericFormatSchema>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub numeric_decimals: Contiguous2DSchema<Option<i16>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub numeric_commas: Contiguous2DSchema<Option<bool>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub bold: Contiguous2DSchema<Option<bool>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub italic: Contiguous2DSchema<Option<bool>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub text_color: Contiguous2DSchema<Option<String>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub fill_color: Contiguous2DSchema<Option<String>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub date_time: Contiguous2DSchema<Option<String>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub underline: Contiguous2DSchema<Option<bool>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub strike_through: Contiguous2DSchema<Option<bool>>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub font_size: Contiguous2DSchema<Option<i16>>,
+}
+
+impl SheetFormattingSchema {
+    pub fn is_empty(&self) -> bool {
+        self.align.is_empty()
+            && self.vertical_align.is_empty()
+            && self.wrap.is_empty()
+            && self.numeric_format.is_empty()
+            && self.numeric_decimals.is_empty()
+            && self.numeric_commas.is_empty()
+            && self.bold.is_empty()
+            && self.italic.is_empty()
+            && self.text_color.is_empty()
+            && self.fill_color.is_empty()
+            && self.date_time.is_empty()
+            && self.underline.is_empty()
+            && self.strike_through.is_empty()
+            && self.font_size.is_empty()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValueSchema {

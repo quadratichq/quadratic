@@ -19,9 +19,9 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
     this.removeChildren();
   }
 
-  private async drawEmojis(emojis: RenderEmoji[]) {
+  private drawEmojis(emojis: RenderEmoji[]) {
     for (const emoji of emojis) {
-      const emojiSprite = await drawEmoji(emoji);
+      const emojiSprite = drawEmoji(emoji);
       if (emojiSprite) {
         this.addChild(emojiSprite);
       } else {

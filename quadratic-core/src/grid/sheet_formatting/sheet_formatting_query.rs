@@ -22,6 +22,7 @@ impl SheetFormatting {
             || self.date_time.col_max(column) > 0
             || self.underline.col_max(column) > 0
             || self.strike_through.col_max(column) > 0
+            || self.font_size.col_max(column) > 0
     }
 
     pub fn has_format_in_row(&self, row: i64) -> bool {
@@ -38,6 +39,7 @@ impl SheetFormatting {
             || self.date_time.row_max(row) > 0
             || self.underline.row_max(row) > 0
             || self.strike_through.row_max(row) > 0
+            || self.font_size.row_max(row) > 0
     }
 
     /// Returns format for a cell or None if default.
@@ -66,6 +68,7 @@ impl SheetFormatting {
             date_time: self.date_time.get(pos),
             underline: self.underline.get(pos),
             strike_through: self.strike_through.get(pos),
+            font_size: self.font_size.get(pos),
         }
     }
 
@@ -123,6 +126,9 @@ impl SheetFormatting {
         if let Some(rect) = self.strike_through.finite_bounds() {
             bounds.add_rect(rect);
         }
+        if let Some(rect) = self.font_size.finite_bounds() {
+            bounds.add_rect(rect);
+        }
         bounds.into()
     }
 
@@ -142,6 +148,7 @@ impl SheetFormatting {
             self.date_time.col_min(column),
             self.underline.col_min(column),
             self.strike_through.col_min(column),
+            self.font_size.col_min(column),
         ];
         let min = col_mins.iter().filter(|&&x| x != 0).min()?;
         if *min == 0 { None } else { Some(*min) }
@@ -163,6 +170,7 @@ impl SheetFormatting {
             self.date_time.col_max(column),
             self.underline.col_max(column),
             self.strike_through.col_max(column),
+            self.font_size.col_max(column),
         ];
         let max = col_maxes.iter().max()?;
         if *max == 0 { None } else { Some(*max) }
@@ -183,6 +191,7 @@ impl SheetFormatting {
             self.date_time.row_min(row),
             self.underline.row_min(row),
             self.strike_through.row_min(row),
+            self.font_size.row_min(row),
         ];
         let min = row_mins.iter().filter(|&&x| x != 0).min()?;
         if *min == 0 { None } else { Some(*min) }
@@ -204,6 +213,7 @@ impl SheetFormatting {
             self.date_time.row_max(row),
             self.underline.row_max(row),
             self.strike_through.row_max(row),
+            self.font_size.row_max(row),
         ];
         let max = row_maxes.iter().max()?;
         if *max == 0 { None } else { Some(*max) }

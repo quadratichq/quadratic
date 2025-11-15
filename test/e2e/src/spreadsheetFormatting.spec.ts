@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { clickMoreFormattingIcon } from './helpers/format.helper';
 
 test('Cell Formatting', async ({ page }) => {
   // Constants
@@ -794,7 +795,7 @@ test('Number Formatting', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 });
 
-test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
+test.only('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   // Constants
   const fileName = 'Text Wrap and Vertical Align';
 
@@ -820,6 +821,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
     "This is a very long text string that should wrap to the next line when it reaches the edge of the text area. We'll use this to test the text wrap functionality.";
   await typeInCell(page, { a1: 'A1', text: longText });
 
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click({ timeout: 60 * 1000 });
@@ -829,6 +831,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrapoverflow.png');
 
   // Test text wrap
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Wrap")`).click({ timeout: 60 * 1000 });
@@ -838,6 +841,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrap.png');
 
   // Test for text cut-off
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Clip")`).click({ timeout: 60 * 1000 });
@@ -862,6 +866,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Left alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
@@ -874,6 +879,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Center alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 60 * 1000 });
@@ -884,6 +890,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Right alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 60 * 1000 });
@@ -913,6 +920,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   //--------------------------------
 
   // Top alignment
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Top').click({ timeout: 60 * 1000 });
@@ -922,6 +930,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtopverticalalign.png');
 
   // Center alignment
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Middle').click({ timeout: 60 * 1000 });
@@ -931,6 +940,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterverticalalign.png');
 
   // Bottom alignment
+  await clickMoreFormattingIcon(page);
   await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2 * 1000);
   await page.locator('div[role="menuitem"] >> text=Bottom').click({ timeout: 60 * 1000 });

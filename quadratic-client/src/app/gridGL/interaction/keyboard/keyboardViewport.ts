@@ -2,6 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -10,6 +11,8 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import {
   clearFormattingAndBorders,
+  decreaseFontSize,
+  increaseFontSize,
   setBold,
   setItalic,
   setStrikeThrough,
@@ -193,6 +196,20 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   // Toggle strike-through
   if (matchShortcut(Action.ToggleStrikeThrough, event)) {
     setStrikeThrough();
+    return true;
+  }
+
+  // Increase font size
+  if (matchShortcut(Action.FormatFontSizeIncrease, event)) {
+    increaseFontSize();
+    events.emit('formatButtonKeyboard', Action.FormatFontSizeIncrease);
+    return true;
+  }
+
+  // Decrease font size
+  if (matchShortcut(Action.FormatFontSizeDecrease, event)) {
+    decreaseFontSize();
+    events.emit('formatButtonKeyboard', Action.FormatFontSizeDecrease);
     return true;
   }
 

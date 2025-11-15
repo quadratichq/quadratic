@@ -4,7 +4,7 @@ import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { useInlineEditorStatus } from '@/app/gridGL/HTMLGrid/inlineEditor/useInlineEditorStatus';
-import { emojiMap } from '@/app/gridGL/pixiApp/emojis/emojiMap';
+import { emojiMap, emojiStrings } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { cn } from '@/shared/shadcn/utils';
 import * as monaco from 'monaco-editor';
@@ -88,13 +88,28 @@ export const EmojiDropdown = () => {
           return;
         }
 
-        // Check if colon is at the start or preceded by whitespace
+        // Check if colon is at the start or preceded by whitespace or an emoji
         const textBeforeColon = textBeforeCursor.substring(0, lastColonIndex);
         if (textBeforeColon !== '' && !textBeforeColon.match(/\s$/)) {
-          // Colon is preceded by non-whitespace text (like "test:"), so don't show dropdown
-          setFilteredList(undefined);
-          inlineEditorMonaco.setShowingEmojiList(false);
-          return;
+          // Check if the character(s) before the colon is an emoji
+          // Emojis can be multi-character (e.g., flag emojis, ZWJ sequences, variation selectors)
+          // Max emoji length in our set is 8 characters
+          let isEmojiPreceding = false;
+          const chars = Array.from(textBeforeColon);
+          for (let len = 1; len <= Math.min(8, chars.length); len++) {
+            const potentialEmoji = chars.slice(-len).join('');
+            if (emojiStrings.has(potentialEmoji)) {
+              isEmojiPreceding = true;
+              break;
+            }
+          }
+
+          // If not preceded by emoji, don't show dropdown (like "test:")
+          if (!isEmojiPreceding) {
+            setFilteredList(undefined);
+            inlineEditorMonaco.setShowingEmojiList(false);
+            return;
+          }
         }
 
         // Only match lowercase letters, numbers, underscores, and hyphens after colon

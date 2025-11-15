@@ -189,6 +189,21 @@ impl GridController {
         Ok(())
     }
 
+    /// Sets cell font size given as an [`i16`].
+    #[wasm_bindgen(js_name = "setFontSize")]
+    pub fn js_set_font_size(
+        &mut self,
+        selection: String,
+        font_size: i16,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_font_size(&selection, font_size, cursor, is_ai)?;
+        Ok(())
+    }
+
     /// Sets cell text color given as an optional [`String`].
     #[wasm_bindgen(js_name = "setTextColor")]
     pub fn js_set_text_color(

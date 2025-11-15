@@ -23,6 +23,7 @@ pub struct Format {
     pub date_time: Option<String>,
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+    pub font_size: Option<i16>,
 }
 
 impl Format {
@@ -40,6 +41,7 @@ impl Format {
             && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
+            && self.font_size.is_none()
     }
 
     pub fn is_table_default(&self) -> bool {
@@ -56,6 +58,7 @@ impl Format {
             && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
+            && self.font_size.is_none()
     }
 
     /// Clears all formatting.
@@ -73,6 +76,7 @@ impl Format {
         self.date_time = None;
         self.underline = None;
         self.strike_through = None;
+        self.font_size = None;
     }
 
     /// Combines two formats. The first takes precedence over the second.
@@ -91,6 +95,7 @@ impl Format {
             date_time: self.date_time.clone().or(other.date_time.clone()),
             underline: self.underline.or(other.underline),
             strike_through: self.strike_through.or(other.strike_through),
+            font_size: self.font_size.or(other.font_size),
         }
     }
 
@@ -117,6 +122,7 @@ impl Format {
             date_time: replace_opt(&mut self.date_time, &update.date_time),
             underline: replace_opt(&mut self.underline, &update.underline),
             strike_through: replace_opt(&mut self.strike_through, &update.strike_through),
+            font_size: replace_opt(&mut self.font_size, &update.font_size),
             render_size: None,
         }
     }
@@ -190,6 +196,9 @@ impl Format {
         if self.strike_through.is_some() && update.strike_through.is_some() {
             old.strike_through = Some(None);
         }
+        if self.font_size.is_some() && update.font_size.is_some() {
+            old.font_size = Some(None);
+        }
         if old.is_default() { None } else { Some(old) }
     }
 
@@ -210,6 +219,7 @@ impl Format {
             date_time: Some(self.date_time.clone()),
             underline: Some(self.underline),
             strike_through: Some(self.strike_through),
+            font_size: Some(self.font_size),
             render_size: None,
         }
     }
@@ -254,6 +264,9 @@ impl Display for Format {
         if let Some(strike_through) = self.strike_through {
             s.push_str(&format!("strike_through: {strike_through:?}, "));
         }
+        if let Some(font_size) = self.font_size {
+            s.push_str(&format!("font_size: {font_size:?}, "));
+        }
         write!(f, "{s}")
     }
 }
@@ -276,6 +289,7 @@ impl From<&Format> for FormatUpdate {
             date_time: format.date_time.clone().map(Some),
             underline: format.underline.map(Some),
             strike_through: format.strike_through.map(Some),
+            font_size: format.font_size.map(Some),
         }
     }
 }
@@ -298,6 +312,7 @@ impl From<Format> for FormatUpdate {
             date_time: format.date_time.clone().map(Some),
             underline: format.underline.map(Some),
             strike_through: format.strike_through.map(Some),
+            font_size: format.font_size.map(Some),
         }
     }
 }
@@ -332,6 +347,7 @@ mod test {
             date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
+            font_size: Some(12),
         };
 
         format.clear();
@@ -349,6 +365,7 @@ mod test {
         assert_eq!(format.date_time, None);
         assert_eq!(format.underline, None);
         assert_eq!(format.strike_through, None);
+        assert_eq!(format.font_size, None);
     }
 
     #[test]
@@ -370,6 +387,7 @@ mod test {
             date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
+            font_size: Some(12),
         };
 
         let update = FormatUpdate {
@@ -390,6 +408,7 @@ mod test {
             date_time: Some(Some("%M".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
+            font_size: Some(Some(14)),
         };
 
         let clear_update = format
@@ -412,6 +431,7 @@ mod test {
                 date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
+                font_size: Some(None),
             }
         );
     }
@@ -437,6 +457,7 @@ mod test {
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
+            font_size: Some(Some(12)),
         };
 
         let old = format.apply_update(&update);
@@ -460,6 +481,7 @@ mod test {
         assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
+        assert_eq!(format.font_size, Some(12));
 
         let undo = format.apply_update(&old);
         assert!(format.is_default());
@@ -485,6 +507,7 @@ mod test {
             date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
+            font_size: Some(12),
         };
 
         let update: FormatUpdate = (&format).into();
@@ -508,6 +531,7 @@ mod test {
         assert_eq!(update.date_time, Some(Some("%H".to_string())));
         assert_eq!(update.underline, Some(Some(true)));
         assert_eq!(update.strike_through, Some(Some(true)));
+        assert_eq!(update.font_size, Some(Some(12)));
     }
 
     #[test]
@@ -529,6 +553,7 @@ mod test {
             date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
+            font_size: Some(12),
         };
 
         let update: FormatUpdate = format.into();
@@ -552,6 +577,7 @@ mod test {
         assert_eq!(update.date_time, Some(Some("%H".to_string())));
         assert_eq!(update.underline, Some(Some(true)));
         assert_eq!(update.strike_through, Some(Some(true)));
+        assert_eq!(update.font_size, Some(Some(12)));
     }
 
     #[test]
@@ -574,6 +600,7 @@ mod test {
                 date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
+                font_size: Some(None),
             }
         );
     }

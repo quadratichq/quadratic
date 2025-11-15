@@ -390,6 +390,9 @@ impl Sheet {
             if let Some(date_time) = format.date_time {
                 values.push(format!("date time is {}", date_time.clone()));
             }
+            if let Some(font_size) = format.font_size {
+                values.push(format!("font size is {font_size}"));
+            }
 
             Some(values.join(", "))
         }

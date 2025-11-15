@@ -14,6 +14,7 @@ import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosi
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
+import { decreaseFontSize, increaseFontSize } from '@/app/ui/helpers/formatCells';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export enum CursorMode {
@@ -349,6 +350,24 @@ class InlineEditorKeyboard {
         );
         quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough, false);
       }
+    }
+
+    // increase font size
+    else if (matchShortcut(Action.FormatFontSizeIncrease, e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      await increaseFontSize();
+      await inlineEditorHandler.refreshFontSize();
+      events.emit('formatButtonKeyboard', Action.FormatFontSizeIncrease);
+    }
+
+    // decrease font size
+    else if (matchShortcut(Action.FormatFontSizeDecrease, e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      await decreaseFontSize();
+      await inlineEditorHandler.refreshFontSize();
+      events.emit('formatButtonKeyboard', Action.FormatFontSizeDecrease);
     }
 
     // show go to menu

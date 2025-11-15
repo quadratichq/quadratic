@@ -10,6 +10,7 @@ import {
   Clear,
   DateFormatting,
   FillAndBorderFormatting,
+  FontSizeFormatting,
   FormatMoreButton,
   NumberFormatting,
   TextFormatting,
@@ -24,6 +25,7 @@ type FormattingTypes =
   | 'NumberFormatting'
   | 'DateFormatting'
   | 'TextFormatting'
+  | 'FontSizeFormatting'
   | 'FillAndBorderFormatting'
   | 'AlignmentFormatting'
   | 'Clear';
@@ -35,6 +37,7 @@ export const FormattingBar = memo(() => {
   const numberFormattingRef = useRef<HTMLDivElement>(null);
   const dateFormattingRef = useRef<HTMLDivElement>(null);
   const textFormattingRef = useRef<HTMLDivElement>(null);
+  const fontSizeFormattingRef = useRef<HTMLDivElement>(null);
   const fillAndBorderFormattingRef = useRef<HTMLDivElement>(null);
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
@@ -46,6 +49,7 @@ export const FormattingBar = memo(() => {
       NumberFormatting: numberFormattingRef,
       DateFormatting: dateFormattingRef,
       TextFormatting: textFormattingRef,
+      FontSizeFormatting: fontSizeFormattingRef,
       FillAndBorderFormatting: fillAndBorderFormattingRef,
       AlignmentFormatting: alignmentFormattingRef,
       Clear: clearRef,
@@ -60,7 +64,25 @@ export const FormattingBar = memo(() => {
       }
 
       const menuWidth = menuRef.current?.clientWidth;
-      let currentWidth = moreButtonRef.current?.clientWidth ?? 0;
+      const moreButtonWidth = moreButtonRef.current?.clientWidth ?? 0;
+
+      // First, calculate total width without more button
+      let totalWidth = 0;
+      Object.entries(refs).forEach(([key, ref]) => {
+        const itemWidth = ref.current?.clientWidth;
+        if (itemWidth) {
+          totalWidth += itemWidth;
+        }
+      });
+
+      // If everything fits without more button, show everything
+      if (totalWidth <= menuWidth) {
+        setHiddenItems([]);
+        return;
+      }
+
+      // Otherwise, find which items to hide accounting for more button width
+      let currentWidth = moreButtonWidth;
       const hiddenItems: FormattingTypes[] = [];
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
@@ -121,6 +143,7 @@ export const FormattingBar = memo(() => {
             <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
             <DateFormatting ref={dateFormattingRef} hideLabel={true} />
             <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+            <FontSizeFormatting ref={fontSizeFormattingRef} formatSummary={formatSummary} hideLabel={true} />
             <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
             <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
             <Clear ref={clearRef} hideLabel={true} />
@@ -139,6 +162,9 @@ export const FormattingBar = memo(() => {
             {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
             {!hiddenItems.includes('TextFormatting') && (
               <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
+            )}
+            {!hiddenItems.includes('FontSizeFormatting') && (
+              <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
@@ -164,6 +190,9 @@ export const FormattingBar = memo(() => {
                   {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
                   {hiddenItems.includes('TextFormatting') && (
                     <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
+                  )}
+                  {hiddenItems.includes('FontSizeFormatting') && (
+                    <FontSizeFormatting key="hidden-font-size-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('FillAndBorderFormatting') && (
                     <FillAndBorderFormatting key="hidden-fill-and-border-formatting" formatSummary={formatSummary} />

@@ -30,10 +30,12 @@ impl GridController {
         row_heights: Vec<JsRowHeight>,
         cursor: Option<String>,
         is_ai: bool,
+        client_resized: bool,
     ) {
         let ops = vec![Operation::ResizeRows {
             sheet_id,
             row_heights,
+            client_resized,
         }];
         self.start_user_ai_transaction(ops, cursor, TransactionName::ResizeRows, is_ai);
     }

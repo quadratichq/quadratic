@@ -55,6 +55,7 @@ impl SheetFormatting {
                 &updates.strike_through,
                 &mut self.strike_through,
             ),
+            font_size: Self::apply_updates_item(&updates.font_size, &mut self.font_size),
         }
     }
 
@@ -72,6 +73,7 @@ impl SheetFormatting {
         self.date_time.translate_in_place(x, y);
         self.underline.translate_in_place(x, y);
         self.strike_through.translate_in_place(x, y);
+        self.font_size.translate_in_place(x, y);
     }
 }
 

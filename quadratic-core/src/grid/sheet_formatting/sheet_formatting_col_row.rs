@@ -24,6 +24,7 @@ impl SheetFormatting {
         self.date_time.insert_column(column, copy_formats);
         self.underline.insert_column(column, copy_formats);
         self.strike_through.insert_column(column, copy_formats);
+        self.font_size.insert_column(column, copy_formats);
     }
 
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
@@ -40,6 +41,7 @@ impl SheetFormatting {
         self.date_time.insert_row(row, copy_formats);
         self.underline.insert_row(row, copy_formats);
         self.strike_through.insert_row(row, copy_formats);
+        self.font_size.insert_row(row, copy_formats);
     }
 
     fn remove_column_item<T>(
@@ -68,6 +70,7 @@ impl SheetFormatting {
             date_time: Self::remove_column_item(&mut self.date_time, column),
             underline: Self::remove_column_item(&mut self.underline, column),
             strike_through: Self::remove_column_item(&mut self.strike_through, column),
+            font_size: Self::remove_column_item(&mut self.font_size, column),
         }
     }
 
@@ -94,6 +97,7 @@ impl SheetFormatting {
             date_time: Self::copy_column_item(&self.date_time, column),
             underline: Self::copy_column_item(&self.underline, column),
             strike_through: Self::copy_column_item(&self.strike_through, column),
+            font_size: Self::copy_column_item(&self.font_size, column),
         };
 
         if updates.is_default() {
@@ -126,6 +130,7 @@ impl SheetFormatting {
             date_time: Self::remove_row_item(&mut self.date_time, row),
             underline: Self::remove_row_item(&mut self.underline, row),
             strike_through: Self::remove_row_item(&mut self.strike_through, row),
+            font_size: Self::remove_row_item(&mut self.font_size, row),
         }
     }
 
@@ -152,6 +157,7 @@ impl SheetFormatting {
             date_time: Self::copy_row_item(&self.date_time, row),
             underline: Self::copy_row_item(&self.underline, row),
             strike_through: Self::copy_row_item(&self.strike_through, row),
+            font_size: Self::copy_row_item(&self.font_size, row),
         };
 
         if updates.is_default() {

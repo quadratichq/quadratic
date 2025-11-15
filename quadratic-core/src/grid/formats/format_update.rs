@@ -107,6 +107,13 @@ pub struct FormatUpdate {
     )]
     #[ts(as = "Option<Option<bool>>")]
     pub strike_through: Option<Option<bool>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
+    #[ts(as = "Option<Option<i16>>")]
+    pub font_size: Option<Option<i16>>,
 }
 
 impl FormatUpdate {
@@ -128,6 +135,7 @@ impl FormatUpdate {
             date_time: Some(None),
             underline: Some(None),
             strike_through: Some(None),
+            font_size: Some(None),
         }
     }
 
@@ -149,6 +157,7 @@ impl FormatUpdate {
             date_time: self.date_time.clone().filter(|a| a.is_none()),
             underline: self.underline.filter(|a| a.is_none()),
             strike_through: self.strike_through.filter(|a| a.is_none()),
+            font_size: self.font_size.filter(|a| a.is_none()),
         };
         if update.is_default() {
             None
@@ -172,6 +181,7 @@ impl FormatUpdate {
             && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
+            && self.font_size.is_none()
     }
 
     /// Whether we need to send a client html update.
@@ -193,6 +203,7 @@ impl FormatUpdate {
             || self.date_time.is_some()
             || self.underline.is_some()
             || self.strike_through.is_some()
+            || self.font_size.is_some()
     }
 
     pub fn fill_changed(&self) -> bool {
@@ -206,6 +217,7 @@ impl FormatUpdate {
             || self.bold.is_some()
             || self.italic.is_some()
             || self.date_time.is_some()
+            || self.font_size.is_some()
     }
 
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
@@ -224,6 +236,7 @@ impl FormatUpdate {
             date_time: self.date_time.clone().or(other.date_time.clone()),
             underline: self.underline.or(other.underline),
             strike_through: self.strike_through.or(other.strike_through),
+            font_size: self.font_size.or(other.font_size),
         }
     }
 
@@ -272,6 +285,9 @@ impl FormatUpdate {
         if self.strike_through.is_some() {
             clear.strike_through = Some(None);
         }
+        if self.font_size.is_some() {
+            clear.font_size = Some(None);
+        }
         clear
     }
 }
@@ -293,6 +309,7 @@ impl From<&FormatUpdate> for Format {
             date_time: update.date_time.clone().unwrap_or(None),
             underline: update.underline.unwrap_or(None),
             strike_through: update.strike_through.unwrap_or(None),
+            font_size: update.font_size.unwrap_or(None),
         }
     }
 }
@@ -333,6 +350,7 @@ mod tests {
                 date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
+                font_size: Some(None),
             }
         );
     }
@@ -465,6 +483,7 @@ mod tests {
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
+            font_size: Some(Some(12)),
         };
 
         let format2 = FormatUpdate {
@@ -485,6 +504,7 @@ mod tests {
             date_time: Some(Some("%M".to_string())),
             underline: Some(Some(false)),
             strike_through: Some(Some(false)),
+            font_size: Some(Some(14)),
         };
 
         let combined = format1.combine(&format2);
@@ -512,6 +532,7 @@ mod tests {
         assert_eq!(combined.date_time, Some(Some("%H".to_string())));
         assert_eq!(combined.underline, Some(Some(true)));
         assert_eq!(combined.strike_through, Some(Some(true)));
+        assert_eq!(combined.font_size, Some(Some(12)));
     }
 
     #[test]
@@ -534,6 +555,7 @@ mod tests {
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
+            font_size: Some(Some(12)),
         };
 
         let cleared = format.clear_update();
@@ -552,6 +574,7 @@ mod tests {
         assert_eq!(cleared.date_time, Some(None));
         assert_eq!(cleared.underline, Some(None));
         assert_eq!(cleared.strike_through, Some(None));
+        assert_eq!(cleared.font_size, Some(None));
     }
 
     #[test]
@@ -574,6 +597,7 @@ mod tests {
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
+            font_size: Some(Some(12)),
         };
 
         let format: Format = (&update).into();
@@ -597,6 +621,7 @@ mod tests {
         assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
+        assert_eq!(format.font_size, Some(12));
     }
 
     #[test]

@@ -68,6 +68,7 @@ pub(crate) fn import_formats(formats: current::SheetFormattingSchema) -> SheetFo
         date_time: import_contiguous_2d(formats.date_time, |x| x),
         underline: import_contiguous_2d(formats.underline, |x| x),
         strike_through: import_contiguous_2d(formats.strike_through, |x| x),
+        font_size: import_contiguous_2d(formats.font_size, |x| x),
     }
 }
 
@@ -135,5 +136,6 @@ pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormatti
         date_time: export_contiguous_2d(formats.date_time, |x| x),
         underline: export_contiguous_2d(formats.underline, |x| x),
         strike_through: export_contiguous_2d(formats.strike_through, |x| x),
+        font_size: export_contiguous_2d(formats.font_size, |x| x),
     }
 }

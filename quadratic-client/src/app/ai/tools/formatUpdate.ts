@@ -16,6 +16,7 @@ export const defaultFormatUpdate = (): FormatUpdate => {
     fill_color: null,
     render_size: null,
     date_time: null,
+    font_size: null,
   };
 };
 
@@ -90,6 +91,7 @@ export const describeFormatUpdates = (formatUpdates: FormatUpdate, args: any): s
   if (formatUpdates.numeric_commas) updates.push(`commas: ${formatUpdates.numeric_commas}`);
   if (formatUpdates.numeric_format) updates.push(`numeric format: ${formatUpdates.numeric_format}`);
   if (formatUpdates.numeric_decimals) updates.push(`decimals: ${formatUpdates.numeric_decimals}`);
+  if (formatUpdates.font_size) updates.push(`font size: ${formatUpdates.font_size}`);
   if (updates.length === 0) {
     return `couldn't parse: ${JSON.stringify(args)}`;
   }

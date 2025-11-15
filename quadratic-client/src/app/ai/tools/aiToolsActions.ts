@@ -588,6 +588,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         numeric_commas: args.numeric_commas ?? null,
         numeric_format: numericFormat,
         date_time: args.date_time ?? null,
+        font_size: args.font_size ?? null,
       };
 
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
@@ -923,7 +924,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       if (resizing.length) {
-        const response = await quadraticCore.resizeRows(sheetId, resizing, true);
+        // When AI uses size 'auto', set clientResized to false so rows auto-recalculate on font changes
+        const clientResized = size !== 'auto';
+        const response = await quadraticCore.resizeRows(sheetId, resizing, true, clientResized);
         if (response?.result) {
           return [createTextContent('Resize rows tool executed successfully.')];
         } else {

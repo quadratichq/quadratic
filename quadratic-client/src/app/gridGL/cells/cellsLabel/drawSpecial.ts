@@ -1,6 +1,6 @@
 //! Handles drawing of checkbox and dropdown sprites.
 
-import { emojis, SCALE_EMOJI } from '@/app/gridGL/pixiApp/emojis/emojis';
+import { emojis } from '@/app/gridGL/pixiApp/emojis/emojis';
 import type {
   RenderCheckbox,
   RenderDropdown,
@@ -76,8 +76,8 @@ export const drawEmoji = (options: RenderEmoji): SpecialSprite => {
   sprite.column = -1;
   sprite.row = -1;
   sprite.type = 'emoji';
-  sprite.width = (options.width / 2) * SCALE_EMOJI;
-  sprite.height = (options.height / 2) * SCALE_EMOJI;
+  sprite.width = options.width;
+  sprite.height = options.height;
   sprite.rectangle = new Rectangle(-1, -1, 0, 0);
   sprite.position.set(options.x, options.y);
   sprite.anchor.set(0.5);

@@ -15,7 +15,7 @@ import { BitmapFont, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } fr
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;
-  private fontSize = 14;
+  private fontSize: number;
 
   constructor(message: RenderClientLabelMeshEntry) {
     const geometry = new MeshGeometry();
@@ -52,6 +52,7 @@ export class LabelMeshEntry extends Mesh {
     }
     super(geometry, material);
     this.fontName = message.fontName;
+    this.fontSize = message.fontSize;
     this.blendMode = BLEND_MODES.NORMAL_NPM;
   }
 

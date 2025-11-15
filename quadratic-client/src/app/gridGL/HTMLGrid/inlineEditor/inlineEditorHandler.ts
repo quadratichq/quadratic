@@ -373,6 +373,24 @@ class InlineEditorHandler {
       }
     }
     inlineEditorMonaco.setFontFamily(fontFamily);
+
+    // Set font size from format summary
+    const fontSize = this.formatSummary?.fontSize ?? 14;
+    inlineEditorMonaco.setFontSize(fontSize);
+  };
+
+  // Refreshes the format summary and updates the font display in the inline editor
+  refreshFontSize = async () => {
+    if (!this.location) return;
+
+    this.formatSummary = await quadraticCore.getCellFormatSummary(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y
+    );
+
+    this.updateFont();
+    this.updateMonacoCellLayout();
   };
 
   // Handles updates to the Monaco editor cursor position

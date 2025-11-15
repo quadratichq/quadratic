@@ -29,6 +29,7 @@ export const MultiplayerCellEdit = (props: Props) => {
   const displayUnderline = input.cellEdit.underline === undefined ? formatting?.underline : input.cellEdit.underline;
   const displayStrikeThrough =
     input.cellEdit.strikeThrough === undefined ? formatting?.strikeThrough : input.cellEdit.strikeThrough;
+  const fontSize = formatting?.fontSize ?? 14;
   let fontFamily: string = 'OpenSans';
   if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';
@@ -66,7 +67,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           transformOrigin: '0 0',
           transform: `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`,
           fontFamily,
-          fontSize: '14px',
+          fontSize: `${fontSize}px`,
           backgroundColor: formatting?.fillColor ?? 'white',
           whiteSpace: 'nowrap',
           textDecoration: `${displayUnderline ? 'underline' : ''} ${displayStrikeThrough ? 'line-through' : ''}`,
