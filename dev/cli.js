@@ -6,6 +6,7 @@ export class CLI {
         program
             .name("node dev")
             .description("Runs the Quadratic dev server. By default, only React runs in watch mode.")
+            .option("-u, --noRust", "Run without recompiling any Rust packages")
             .option("-a, --api", "Watch the quadratic-api directory")
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
@@ -13,7 +14,7 @@ export class CLI {
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-n, --connection", "Watch the quadratic-connection directory")
             .option("-s, --shared", "Watch the quadratic-shared directory")
-            .option("-w, --cloudcontroller", "Watch the quadratic-cloud-controller directory")
+            .option("-o, --cloudController", "Watch the quadratic-cloud-controller directory")
             .option("-y, --python", "Watch the quadratic-kernels/python-wasm directory")
             .option("-l, --all", "Watch all directories")
             .option("-t, --skipTypes", "Skip WASM types compilation")
@@ -29,7 +30,7 @@ export class CLI {
             .option("-Y, --hidePython", "Hide Python output")
             .option("-E, --hideRustClient", "Hide RustClient")
             .option("-S, --hideShared", "Hide Shared output")
-            .option("-O, --hideCloudcontroller", "Hide CloudController output")
+            .option("-O, --hideCloudController", "Hide CloudController output")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
             .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
@@ -44,7 +45,7 @@ export class CLI {
             this.options.connection = true;
             this.options.python = true;
             this.options.shared = true;
-            this.options.cloudcontroller = true;
+            this.options.cloudController = true;
         }
     }
 }

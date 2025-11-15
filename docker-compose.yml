@@ -277,9 +277,18 @@ services:
       CONNECTION__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       CONNECTION__MAX_RESPONSE_BYTES: ${QUADRATIC_CONNECTION_MAX_RESPONSE_BYTES}
       CONNECTION__STATIC_IPS: ${QUADRATIC_CONNECTION_STATIC_IPS}
+      CONNECTION__STORAGE_TYPE: ${STORAGE_TYPE}
+      CONNECTION__AWS_S3_REGION: ${AWS_S3_REGION}
+      CONNECTION__AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+      CONNECTION__AWS_S3_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY_ID}
+      CONNECTION__AWS_S3_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_ACCESS_KEY}
+      CONNECTION__STORAGE_DIR: ${STORAGE_DIR}
+      CONNECTION__STORAGE_ENCRYPTION_KEYS: ${ENCRYPTION_KEY}
     restart: "always"
     ports:
       - "3003:3003"
+    volumes:
+      - ./docker/file-storage-synced-data:/file-storage-synced-data:rw
     depends_on:
       quadratic-client:
         condition: service_healthy

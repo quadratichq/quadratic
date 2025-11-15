@@ -1,9 +1,10 @@
 //! This is the interval component for the scheduled task.
 
+import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ScheduledTaskInputGroup } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInputGroup';
 import {
-  CRON_LIMIT_INTERVAL_ENV_MODES,
-  getLocalTimeZoneAbbreviation,
+  getTimeZoneAbbreviation,
   type CronInterval,
   type ScheduledTaskIntervalType,
 } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
@@ -16,9 +17,7 @@ import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { cn } from '@/shared/shadcn/utils';
 
 const EVERY_ENTRY: [ScheduledTaskIntervalType, string][] = [
-  ...(!CRON_LIMIT_INTERVAL_ENV_MODES.includes(import.meta.env.MODE)
-    ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]]
-    : []),
+  ...(debugFlag('debug') ? [['minute', 'Every minute'] as [ScheduledTaskIntervalType, string]] : []),
   ['hour', 'Every hour'],
   ['days', 'Every day'],
   ['custom', 'Custom cron'],
@@ -40,6 +39,12 @@ interface Props {
 }
 
 export const ScheduledTaskInterval = (props: Props) => {
+  const { timezone: fileTimezone } = useFileContext();
+
+  // Use file timezone or fallback to browser timezone
+  const timezone = fileTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezoneAbbr = getTimeZoneAbbreviation(timezone);
+
   const {
     cronType,
     days,
@@ -133,7 +138,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                   onChange={(e) => changeDaysTime(e.target.value)}
                   className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                 />
-                <div className="text-sm">{getLocalTimeZoneAbbreviation()}</div>
+                <div className="text-sm">{timezoneAbbr}</div>
               </div>
             </>
           )}
@@ -146,6 +151,12 @@ export const ScheduledTaskInterval = (props: Props) => {
                 max={59}
                 id="minute-picker"
                 defaultValue={localMinute ?? ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (e.target.value !== '' && (isNaN(value) || value < 0 || value > 59)) {
+                    e.target.value = String(Math.max(0, Math.min(59, value || 0)));
+                  }
+                }}
                 onBlur={(e) => changeHoursMinute(e.target.value)}
                 className=""
                 onKeyDown={(e) => {
@@ -155,6 +166,7 @@ export const ScheduledTaskInterval = (props: Props) => {
                 }}
               />
               minutes
+              <div className="text-sm">{timezoneAbbr}</div>
             </div>
           )}
           {cronType === 'custom' && (
@@ -168,7 +180,7 @@ export const ScheduledTaskInterval = (props: Props) => {
               />
               {cronError && <p className="text-xs text-destructive">{cronError}</p>}
               <p className="mt-1 text-xs text-muted-foreground">
-                See the{' '}
+                All cron times in GMT. See the{' '}
                 <a href={DOCUMENTATION_CRON} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                   documentation
                 </a>{' '}

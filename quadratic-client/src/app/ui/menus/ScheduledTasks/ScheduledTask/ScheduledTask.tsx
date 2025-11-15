@@ -1,6 +1,7 @@
 //! This component creates and edits a scheduled task.
 
 import { scheduledTaskEncode } from '@/app/quadratic-core/quadratic_core';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ScheduledTaskHistory } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskHistory';
 import { ScheduledTaskInterval } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskInterval';
 import { ScheduledTaskType } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTaskType';
@@ -18,10 +19,11 @@ export const ScheduledTask = () => {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
+  const { timezone } = useFileContext();
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, getHistory } = useScheduledTasks();
 
   // holds all data/fns for the cron expression
-  const cronInterval = UseCronInterval(currentTask?.cronExpression);
+  const cronInterval = UseCronInterval(currentTask?.cronExpression, timezone ?? undefined);
   const cronRange = useCronRange(currentTask?.operations);
 
   const onSave = useCallback(async () => {
@@ -63,13 +65,17 @@ export const ScheduledTask = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-2">
-      <div className="flex-shrink-0">
+    <div className="flex min-h-0 flex-1 flex-col px-4 pb-2">
+      <div className="flex-shrink-0 space-y-4 pb-4">
         <ScheduledTaskType cronRange={cronRange} />
         <ScheduledTaskInterval cronInterval={cronInterval} />
       </div>
-      {currentTask && <ScheduledTaskHistory getHistory={getHistory} currentTaskUuid={currentTask.uuid} />}
-      <div className="flex flex-shrink-0 flex-row justify-end gap-2 pb-2">
+      {currentTask && (
+        <div className="flex min-h-0 flex-1 flex-col pb-4">
+          <ScheduledTaskHistory getHistory={getHistory} currentTaskUuid={currentTask.uuid} />
+        </div>
+      )}
+      <div className="flex flex-shrink-0 flex-row justify-end gap-2">
         {currentTask && (
           <Button onClick={onDelete} variant="outline-destructive" className="mr-auto">
             Delete

@@ -5,7 +5,7 @@ import {
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
-import { atom, useAtom } from 'jotai';
+import { atom, getDefaultStore, useAtom } from 'jotai';
 import type { ScheduledTask, ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -25,6 +25,17 @@ const defaultScheduledTasks: ScheduledTasks = {
 };
 
 export const scheduledTasksAtom = atom<ScheduledTasks>(defaultScheduledTasks);
+
+// Direct function to show scheduled tasks without React hooks
+export const showScheduledTasksDialog = (taskId?: string | typeof CREATE_TASK_ID) => {
+  const store = getDefaultStore();
+  const currentState = store.get(scheduledTasksAtom);
+  store.set(scheduledTasksAtom, {
+    ...currentState,
+    show: true,
+    currentTaskId: taskId ?? null,
+  });
+};
 
 export const useLoadScheduledTasks = () => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);

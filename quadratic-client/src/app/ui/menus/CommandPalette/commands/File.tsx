@@ -39,8 +39,9 @@ const commands: CommandGroup = {
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+        const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
         const action = () => {
-          duplicateFileAction.run({ fileUuid });
+          duplicateFileAction.run({ fileUuid, teamUuid });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },

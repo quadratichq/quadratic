@@ -113,6 +113,7 @@ async fn pubsub_watcher(state: Arc<State>) -> Result<()> {
 
         info!("Got {} file ids to process from pubsub", file_ids.len());
 
+        // Spawn Docker/K8s workers
         controller.create_workers(file_ids).await?;
 
         interval.tick().await;

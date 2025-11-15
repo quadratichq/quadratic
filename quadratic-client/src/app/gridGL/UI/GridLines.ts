@@ -101,6 +101,7 @@ export class GridLines extends Graphics {
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
+
     for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0 && x >= sheet.clamp.left) {
@@ -141,10 +142,10 @@ export class GridLines extends Graphics {
       this.moveTo(left, 0);
       this.lineTo(bounds.right, 0);
     }
-
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
+
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0 && y >= sheet.clamp.top) {

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{
@@ -77,7 +78,7 @@ pub(crate) fn reqwest_to_axum(reqwest_response: reqwest::Response) -> Result<Res
 }
 
 pub(crate) async fn proxy(
-    state: Extension<State>,
+    state: Extension<Arc<State>>,
     req: Request<Body>,
 ) -> Result<impl IntoResponse> {
     tracing::info!(?req);
@@ -109,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn proxy_request() {
-        let state = Extension(new_state().await);
+        let state = Extension(Arc::new(new_state().await));
         let mut request = Request::new(Body::empty());
         request
             .headers_mut()
@@ -123,7 +124,7 @@ mod tests {
 
     #[tokio::test]
     async fn proxy_axum_to_reqwest() {
-        let state = Extension(new_state().await);
+        let state = Arc::new(new_state().await);
         let accept = "application/json";
         let mut request = Request::new(Body::empty());
         *request.method_mut() = http::Method::POST;

@@ -14,6 +14,8 @@ pub(crate) struct Settings {
     pub(crate) worker_internal_host: String,
     pub(crate) multiplayer_host: String,
     pub(crate) multiplayer_port: String,
+    pub(crate) connection_host: String,
+    pub(crate) connection_port: String,
     pub(crate) files_host: String,
     pub(crate) files_port: String,
     pub(crate) quadratic_api_uri: String,
@@ -49,6 +51,8 @@ impl Settings {
             worker_only_port: config.worker_only_port.to_owned(),
             multiplayer_host: config.multiplayer_host.to_owned(),
             multiplayer_port: config.multiplayer_port.to_owned(),
+            connection_host: config.connection_host.to_owned(),
+            connection_port: config.connection_port.to_owned(),
             files_host: config.files_host.to_owned(),
             files_port: config.files_port.to_owned(),
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
@@ -114,6 +118,13 @@ impl Settings {
         let multiplayer_host = self.multiplayer_host.to_string();
 
         format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
+    }
+
+    pub(crate) fn connection_url(&self) -> String {
+        let connection_port = self.connection_port.to_string();
+        let connection_host = self.connection_host.to_string();
+
+        format!("http://{connection_host}:{connection_port}")
     }
 }
 

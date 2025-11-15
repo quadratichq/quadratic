@@ -4,7 +4,7 @@ use crate::error::{MpError, Result};
 use crate::state::State;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Connection {
+pub struct Connection {
     pub(crate) id: Uuid,
     pub(crate) session_id: Uuid,
     pub(crate) file_id: Uuid,

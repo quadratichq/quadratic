@@ -13,6 +13,7 @@ use axum_extra::{
 };
 use quadratic_rust_shared::auth::jwt::{authorize, authorize_m2m};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::{
     error::{ConnectionError, Result},
@@ -29,14 +30,16 @@ pub struct Claims {
 
 /// Instance of Axum's middleware that also contains a copy of state
 #[cfg(not(test))]
-pub fn get_middleware(state: State) -> axum::middleware::FromExtractorLayer<Claims, State> {
+pub fn get_middleware(
+    state: Arc<State>,
+) -> axum::middleware::FromExtractorLayer<Claims, Arc<State>> {
     axum::middleware::from_extractor_with_state::<Claims, _>(state)
 }
 
 // Middleware that accepts json for tests
 #[cfg(test)]
 pub fn get_middleware(
-    _state: State,
+    _state: Arc<State>,
 ) -> tower_http::validate_request::ValidateRequestHeaderLayer<
     tower_http::validate_request::AcceptHeader<axum::body::Body>,
 > {
@@ -49,13 +52,13 @@ pub fn get_middleware(
 #[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where
-    State: FromRef<S>,
+    Arc<State>: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ConnectionError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
-        let state = State::from_ref(state);
+        let state = Arc::<State>::from_ref(state);
         let jwks = state
             .settings
             .jwks

@@ -83,17 +83,18 @@ class Q {
 
   convertCellValue(value, cellType) {
     // cellValueType mapping from quadratic-core
-    // 0: blank, 1: text, 2: number, 3: logical, etc.
+    // 0: blank, 1: text, 2: number, 3: logical, 4: duration, 5: error, 6: html, 8: image, 9: date, 10: time, 11: datetime
+
     switch (cellType) {
       case 0: // blank
-        return "";
-      case 1: // text
-        return value;
+        return undefined;
       case 2: // number
         return parseFloat(value);
-      case 3: // logical
-        return value.toLowerCase() === "true";
+      case 9: // date
+      case 11: // datetime
+        return new Date(value);
       default:
+        // For all other types (text, logical, duration, error, html, image, time), return the raw string value
         return value;
     }
   }

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /quadratic
 
-# Copy rust-toolchain file first so rustup can read it
+# Copy rust-toolchain first
 COPY --link rust-toolchain.toml .
 
 # Install rustup
@@ -43,7 +43,7 @@ FROM ubuntu:24.04 AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  curl \  
+  curl \
   ca-certificates \
   python3 \
   && rm -rf /var/lib/apt/lists/*

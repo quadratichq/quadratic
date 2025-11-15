@@ -11,6 +11,7 @@ mod health;
 mod server;
 mod state;
 mod storage;
+mod synced_connection;
 #[cfg(test)]
 mod test_util;
 mod truncate;

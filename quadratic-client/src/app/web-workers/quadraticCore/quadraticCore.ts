@@ -496,9 +496,12 @@ class QuadraticCore {
     isAi: boolean;
   }): Promise<string | undefined> {
     const id = this.id++;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.waitingForResponse[id] = (message: CoreClientSetCodeCellValue) => {
         resolve(message.transactionId);
+        if (message.error) {
+          reject(new Error(message.error));
+        }
       };
       this.send({
         type: 'clientCoreSetCodeCellValue',
@@ -522,9 +525,12 @@ class QuadraticCore {
     codeCellName?: string;
   }): Promise<string | undefined> {
     const id = this.id++;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.waitingForResponse[id] = (message: CoreClientSetFormula) => {
         resolve(message.transactionId);
+        if (message.error) {
+          reject(new Error(message.error));
+        }
       };
       this.send({
         type: 'clientCoreSetFormula',

@@ -31,7 +31,7 @@ router.get(
       },
     });
 
-    const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));
+    const typeDetails = JSON.parse(decryptFromEnv(Buffer.from(connection.typeDetails).toString('utf-8')));
 
     return res.status(200).json({
       uuid: connection.uuid,

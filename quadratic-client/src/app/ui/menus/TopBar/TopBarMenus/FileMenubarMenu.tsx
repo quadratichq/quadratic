@@ -69,9 +69,9 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid, teamUuid })}>
             <FileCopyIcon />
-            Duplicate
+            Duplicate to personal files
             <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
           </MenubarItem>
         )}

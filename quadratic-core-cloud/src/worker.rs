@@ -15,7 +15,7 @@ use quadratic_rust_shared::protobuf::quadratic::transaction::{
 use quadratic_rust_shared::protobuf::utils::type_name_from_peek;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinHandle;
 use tokio::time::Duration;
 use uuid::Uuid;
@@ -37,12 +37,15 @@ fn to_transaction_server(transaction: ReceiveTransaction) -> TransactionServer {
 
 /// Status of the worker.
 ///
-/// It is used to track if the worker has received the catchup transactions
-/// and the transaction ack.
+/// It is used to track if the worker has received the catchup transactions,
+/// the transaction ack, and the room entry confirmation.
 #[derive(Debug)]
 pub struct WorkerStatus {
+    received_enter_room: bool,
     received_catchup_transactions: bool,
     received_transaction_ack: bool,
+    enter_room_notify: Arc<Notify>,
+    catchup_notify: Arc<Notify>,
 }
 
 impl Default for WorkerStatus {
@@ -54,13 +57,20 @@ impl Default for WorkerStatus {
 impl WorkerStatus {
     pub fn new() -> Self {
         Self {
+            received_enter_room: false,
             received_catchup_transactions: false,
             received_transaction_ack: false,
+            enter_room_notify: Arc::new(Notify::new()),
+            catchup_notify: Arc::new(Notify::new()),
         }
     }
 
     pub fn is_complete(&self) -> bool {
         self.received_catchup_transactions && self.received_transaction_ack
+    }
+
+    pub fn mark_transaction_ack_received(&mut self) {
+        self.received_transaction_ack = true;
     }
 }
 
@@ -105,9 +115,11 @@ pub struct Worker {
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
     pub(crate) m2m_auth_token: String,
     pub(crate) multiplayer_url: String,
+    pub(crate) connection_url: String,
     pub(crate) websocket_sender: Option<Arc<Mutex<WebSocketSender>>>,
     pub(crate) websocket_receiver: Option<Arc<Mutex<WebSocketReceiver>>>,
     pub(crate) websocket_receiver_handle: Option<JoinHandle<()>>,
+    pub(crate) heartbeat_handle: Option<JoinHandle<()>>,
     pub status: Arc<Mutex<WorkerStatus>>,
 }
 
@@ -134,6 +146,7 @@ impl Worker {
     /// * `presigned_url` - The presigned URL of the file to process.
     /// * `m2m_auth_token` - The M2M auth token to use for the worker.
     /// * `multiplayer_url` - The URL of the multiplayer websocket server.
+    /// * `connection_url` - The URL of the connection service.
     ///
     /// Returns a new worker.
     pub async fn new(
@@ -142,32 +155,66 @@ impl Worker {
         presigned_url: &str,
         m2m_auth_token: String,
         multiplayer_url: String,
+        connection_url: String,
     ) -> Result<Self> {
+        tracing::info!("📂 [Worker] Loading file {} from presigned URL", file_id);
         let file = Self::load_file(file_id, sequence_num, presigned_url).await?;
+        tracing::info!("✅ [Worker] File loaded successfully");
+
+        let session_id = Uuid::new_v4();
         let mut worker = Worker {
             file_id,
             sequence_num,
-            session_id: Uuid::new_v4(),
+            session_id,
             file: Arc::new(Mutex::new(file)),
             m2m_auth_token,
             multiplayer_url,
+            connection_url,
             transaction_id: Arc::new(Mutex::new(None)),
             websocket_sender: None,
             websocket_receiver: None,
             websocket_receiver_handle: None,
+            heartbeat_handle: None,
             status: Arc::new(Mutex::new(WorkerStatus::new())),
         };
 
         // first, connect to the multiplayer server
+        tracing::info!("🔌 [Worker] Connecting to multiplayer server");
         worker.connect().await?;
+        tracing::info!("✅ [Worker] Connected to multiplayer");
+
+        let enter_room_notify = Arc::clone(&worker.status.lock().await.enter_room_notify);
+        let catchup_notify = Arc::clone(&worker.status.lock().await.catchup_notify);
+
+        let enter_room_notified = enter_room_notify.notified();
+        let catchup_notified = catchup_notify.notified();
 
         // then, enter the room
+        tracing::info!("🚪 [Worker] Entering room for file {}", file_id);
         worker.enter_room(file_id).await?;
 
+        // Wait for EnterRoom response from server before proceeding
+        // This ensures the multiplayer server has registered our session
+        tracing::info!("⏳ [Worker] Waiting for EnterRoom confirmation...");
+        enter_room_notified.await;
+        tracing::info!("✅ [Worker] Entered room confirmed");
+
         // finally, get the catchup transactions
+        // Request transactions starting from sequence_num + 1 since the loaded file
+        // already contains all transactions up to and including sequence_num
+        tracing::info!(
+            "📥 [Worker] Requesting catchup transactions from sequence {}",
+            sequence_num + 1
+        );
         worker
-            .get_transactions(file_id, worker.session_id, worker.sequence_num)
+            .get_transactions(file_id, worker.session_id, worker.sequence_num + 1)
             .await?;
+
+        // Wait for catchup transactions to be received before proceeding
+        // This ensures we don't have a race condition on the first run
+        tracing::info!("⏳ [Worker] Waiting for catchup transactions...");
+        catchup_notified.await;
+        tracing::info!("✅ [Worker] Catchup transactions received");
 
         // in a separate thread, send heartbeat messages every 10 seconds
         if let Some(sender) = &worker.websocket_sender {
@@ -175,16 +222,18 @@ impl Worker {
             let session_id = worker.session_id;
             let file_id = worker.file_id;
 
-            tokio::spawn(async move {
+            let heartbeat_handle = tokio::spawn(async move {
                 loop {
                     if let Err(e) =
                         send_heartbeat(&mut *sender.lock().await, session_id, file_id).await
                     {
                         tracing::error!("Error sending heartbeat: {e}");
+                        break; // Exit if we can't send heartbeat
                     }
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
             });
+            worker.heartbeat_handle = Some(heartbeat_handle);
         }
 
         Ok(worker)
@@ -253,13 +302,28 @@ impl Worker {
                                             status.lock().await.received_transaction_ack = true;
                                         }
                                     }
+                                    MessageResponse::EnterRoom {
+                                        file_id: room_file_id,
+                                        sequence_num: room_seq,
+                                    } => {
+                                        tracing::info!(
+                                            "📨 [Worker] Received EnterRoom confirmation for file {} at sequence {}",
+                                            room_file_id,
+                                            room_seq
+                                        );
+                                        let mut status_lock = status.lock().await;
+                                        status_lock.received_enter_room = true;
+                                        status_lock.enter_room_notify.notify_one();
+                                    }
                                     // TODO(ddimaria): keep a count of users in the room
                                     MessageResponse::UsersInRoom { .. } => {}
                                     // Handle error responses - if we get an error about missing transactions,
                                     // it likely means we're already at the latest sequence and there are no
                                     // catchup transactions to receive
                                     MessageResponse::Error { .. } => {
-                                        status.lock().await.received_catchup_transactions = true;
+                                        let mut status_lock = status.lock().await;
+                                        status_lock.received_catchup_transactions = true;
+                                        status_lock.catchup_notify.notify_one();
                                     }
                                     // we don't care about other messages
                                     _ => {}
@@ -286,8 +350,9 @@ impl Worker {
                                                     .received_transactions(transactions);
 
                                                 // update status
-                                                status.lock().await.received_catchup_transactions =
-                                                    true;
+                                                let mut status_lock = status.lock().await;
+                                                status_lock.received_catchup_transactions = true;
+                                                status_lock.catchup_notify.notify_one();
                                             }
                                             Err(e) => print_error(e.to_string()),
                                         };
@@ -295,13 +360,27 @@ impl Worker {
                                     "BinaryTransaction" => {
                                         match ReceiveTransaction::decode(binary) {
                                             Ok(transaction) => {
-                                                // convert ReceiveTransactions to TransactionServer
-                                                let transaction_server =
-                                                    to_transaction_server(transaction);
+                                                // Decompress and deserialize operations
+                                                let operations =
+                                                    Transaction::decompress_and_deserialize::<
+                                                        Vec<Operation>,
+                                                    >(
+                                                        &transaction.operations
+                                                    );
 
-                                                file.lock().await.received_transactions(vec![
-                                                    transaction_server,
-                                                ]);
+                                                if let Ok(operations) = operations {
+                                                    let transaction_id =
+                                                        Uuid::parse_str(&transaction.id).unwrap();
+
+                                                    // Apply individual transaction (not as batch)
+                                                    file.lock().await.received_transaction(
+                                                        transaction_id,
+                                                        transaction.sequence_num,
+                                                        operations,
+                                                    );
+                                                } else {
+                                                    print_error("Unable to decompress and deserialize operations in BinaryTransaction".to_string());
+                                                }
                                             }
                                             Err(e) => print_error(e.to_string()),
                                         };
@@ -311,10 +390,18 @@ impl Worker {
                                 }
                             }
                         }
-                        Ok(WebsocketMessage::Close(_)) => break,
+                        Ok(WebsocketMessage::Close(_)) => {
+                            tracing::info!("WebSocket closed normally");
+                            break;
+                        }
                         Ok(_) => {}
                         Err(e) => {
-                            println!("WebSocket error: {:?}", e);
+                            // Only log non-shutdown errors
+                            // ResetWithoutClosingHandshake is expected during graceful shutdown
+                            let error_str = format!("{:?}", e);
+                            if !error_str.contains("ResetWithoutClosingHandshake") {
+                                tracing::warn!("WebSocket error: {:?}", e);
+                            }
                             break;
                         }
                     }
@@ -375,45 +462,171 @@ impl Worker {
         team_id: String,
         token: String,
     ) -> Result<()> {
+        tracing::info!("🔄 [Worker] Deserializing operations");
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(&binary_ops)
             .map_err(|e| CoreCloudError::Serialization(e.to_string()))?;
 
-        let transaction_id = process_transaction(
+        tracing::info!("⚙️  [Worker] Processing {} operation(s)", operations.len());
+
+        // Log what operations we're executing
+        for op in &operations {
+            match op {
+                Operation::ComputeCode { sheet_pos } => {
+                    tracing::info!(
+                        "🔧 [Worker] Executing code at position {}:{}",
+                        sheet_pos.x,
+                        sheet_pos.y
+                    );
+                }
+                Operation::ComputeCodeSelection { selection } => {
+                    tracing::info!("🔧 [Worker] Executing code selection: {:?}", selection);
+                }
+                _ => {}
+            }
+        }
+
+        let transaction_id = match process_transaction(
             Arc::clone(&self.file),
             operations,
             None,
             TransactionName::Unknown,
             team_id,
             token,
+            self.connection_url.clone(),
         )
-        .await?;
+        .await
+        {
+            Ok(id) => id,
+            Err(e) => {
+                // If transaction processing fails, we won't send to multiplayer, so mark ack as received
+                tracing::error!("❌ [Worker] Transaction processing failed: {}", e);
+                self.status.lock().await.mark_transaction_ack_received();
+                return Err(e);
+            }
+        };
 
         *self.transaction_id.lock().await = Some(transaction_id);
 
-        let file_lock = self.file.lock().await;
-        let forward_transaction = file_lock.last_transaction().unwrap();
+        // Get forward transaction
+        let forward_ops = {
+            let file_lock = self.file.lock().await;
+            let forward_transaction = file_lock.last_transaction().unwrap();
+            forward_transaction.operations.to_owned()
+        };
 
+        tracing::info!(
+            "📡 [Worker] Sending transaction {} to multiplayer",
+            transaction_id
+        );
         if let Some(sender) = self.websocket_sender.as_mut() {
             send_transaction(
                 &mut *sender.lock().await,
                 transaction_id,
                 self.file_id,
                 self.session_id,
-                forward_transaction.operations.to_owned(),
+                forward_ops,
             )
             .await?;
         }
+        tracing::info!("✅ [Worker] Transaction sent");
 
         Ok(())
     }
 
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
-        if let Some(sender) = self.websocket_sender.as_mut() {
-            leave_room(&mut *sender.lock().await, self.session_id, self.file_id).await?;
+        tracing::info!("🚪 [Worker] Leaving room for file {}", self.file_id);
+
+        // First, abort the heartbeat task to prevent it from trying to send after closing
+        if let Some(handle) = &self.heartbeat_handle {
+            tracing::debug!("[Worker] Aborting heartbeat task");
+            handle.abort();
         }
 
+        // Then send the leave room message and close the connection
+        if let Some(sender) = self.websocket_sender.as_mut() {
+            let mut sender_lock = sender.lock().await;
+
+            // Send leave room message - log errors but don't fail
+            match leave_room(&mut *sender_lock, self.session_id, self.file_id).await {
+                Ok(_) => {
+                    tracing::info!("✅ [Worker] Leave room message sent successfully");
+                    // Give the server a moment to process the leave room message
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️  [Worker] Error sending leave room message: {}", e);
+                }
+            }
+
+            // Close the WebSocket connection gracefully
+            match sender_lock.close().await {
+                Ok(_) => tracing::info!("✅ [Worker] WebSocket connection closed gracefully"),
+                Err(e) => {
+                    // Suppress benign shutdown errors
+                    let error_str = format!("{:?}", e);
+                    if !error_str.contains("AlreadyClosed")
+                        && !error_str.contains("ResetWithoutClosingHandshake")
+                    {
+                        tracing::warn!("⚠️  [Worker] Error closing WebSocket: {}", e);
+                    }
+                }
+            }
+        }
+
+        // Wait for the receiver task to finish naturally after receiving the close frame
+        // Use a timeout as a safety measure to prevent hanging
+        if let Some(handle) = &self.websocket_receiver_handle {
+            // Wait up to 500ms for the receiver to finish gracefully
+            let timeout = Duration::from_millis(500);
+            match tokio::time::timeout(timeout, async {
+                // Check periodically if the task has finished
+                while !handle.is_finished() {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+            })
+            .await
+            {
+                Ok(_) => {
+                    tracing::debug!("[Worker] Receiver task finished gracefully");
+                }
+                Err(_) => {
+                    tracing::debug!(
+                        "[Worker] Receiver task did not finish within timeout, aborting"
+                    );
+                    handle.abort();
+                }
+            }
+        }
+
+        tracing::info!(
+            "✅ [Worker] Successfully left room for file {}",
+            self.file_id
+        );
         Ok(())
+    }
+
+    /// Check if a transaction has been sent (transaction_id is set)
+    pub async fn has_transaction(&self) -> bool {
+        self.transaction_id.lock().await.is_some()
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        // Clean up any running tasks when the worker is dropped
+        if let Some(handle) = &self.heartbeat_handle {
+            if !handle.is_finished() {
+                tracing::debug!("[Worker Drop] Aborting heartbeat task");
+                handle.abort();
+            }
+        }
+        if let Some(handle) = &self.websocket_receiver_handle {
+            if !handle.is_finished() {
+                tracing::debug!("[Worker Drop] Aborting receiver task");
+                handle.abort();
+            }
+        }
     }
 }
 
@@ -449,6 +662,7 @@ mod tests {
             &presigned_url,
             m2m_auth_token.clone(),
             "ws://localhost:3001/ws".to_string(),
+            "http://localhost:3003".to_string(),
         )
         .await
         .unwrap();
@@ -469,6 +683,7 @@ mod tests {
             &presigned_url,
             m2m_auth_token.clone(),
             "ws://localhost:3001/ws".to_string(),
+            "http://localhost:3003".to_string(),
         )
         .await
         .unwrap();

@@ -205,6 +205,7 @@ impl GridController {
                             ConnectionKind::Mariadb => "Mariadb1",
                             ConnectionKind::Supabase => "Supabase1",
                             ConnectionKind::Neon => "Neon1",
+                            ConnectionKind::Mixpanel => "Mixpanel1",
                         },
                         // this should not happen
                         _ => "Connection 1",

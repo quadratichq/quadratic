@@ -5,7 +5,11 @@ import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEdit
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
+import {
+  ConnectionSchemaBrowser,
+  SCHEMA_BROWSER_TABLE_ACTIONS,
+  type SchemaBrowserTableActionOnClick,
+} from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { SaveAndRunIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -31,7 +35,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
 
   const handleOnClick = useMemo(
     () =>
-      ({ tableQuery, tableName }: { tableQuery: string; tableName: string }) => {
+      ({ tableQuery }: SchemaBrowserTableActionOnClick) => {
         trackEvent('[ConnectionSchemaBrowser].insertQuery');
 
         if (editorInst) {
@@ -59,8 +63,10 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
         teamUuid={teamUuid}
         type={connectionInfo.kind}
         uuid={connectionInfo.id}
-        additionalDropdownItems={[
-          { label: 'Insert query in code editor', onClick: handleOnClick, Icon: SaveAndRunIcon },
+        tableActions={[
+          { label: 'Insert & run query in code editor', onClick: handleOnClick, Icon: SaveAndRunIcon },
+          SCHEMA_BROWSER_TABLE_ACTIONS.COPY_QUERY,
+          SCHEMA_BROWSER_TABLE_ACTIONS.COPY_NAME,
         ]}
         eventSource="app-right-side"
       />

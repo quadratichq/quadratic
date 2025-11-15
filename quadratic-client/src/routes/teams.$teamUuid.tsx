@@ -113,29 +113,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  // const [searchParams, setSearchParams] = useSearchParams();
-  // When the user comes back successfully from stripe, fire off an event to Google
-  // useEffect(() => {
-  //   if (searchParams.get('subscription') === 'created') {
-  //     const transaction_id = searchParams.get('session_id');
-  //     // TODO: pull the session_id from our API and get the amount from the subscription to pass to the conversion
-
-  //     // Google Ads Conversion Tracking
-  //     if (googleAnalyticsAvailable()) {
-  //       // @ts-expect-error
-  //       gtag('event', 'conversion', {
-  //         send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
-  //         transaction_id,
-  //       });
-  //     }
-  //     setSearchParams((prev) => {
-  //       prev.delete('subscription');
-  //       prev.delete('session_id');
-  //       return prev;
-  //     });
-  //   }
-  // }, [searchParams, setSearchParams]);
-
   return <Outlet />;
 };
 

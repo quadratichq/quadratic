@@ -244,6 +244,7 @@ mod tests {
             None,
             None,
             false,
+            false,
         )
         .unwrap();
 

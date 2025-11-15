@@ -117,7 +117,7 @@ export default function SyncState() {
       </BottomBarItem>
       {showOfflineMsg && (
         <ShowAfter delay={5000}>
-          <div className="fixed bottom-16 right-2 z-10 w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
+          <div className="fixed bottom-16 right-2 z-[100] w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
             Connection lost. Your changes are only saved locally.{' '}
             <a className="underline" href={DOCUMENTATION_OFFLINE} target="_blank" rel="noopener noreferrer">
               Learn more

@@ -76,6 +76,7 @@ export function ConnectionFormEdit({
     trackEvent('[Connections].edit', { type });
     const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, {
       name,
+      type,
       semanticDescription,
       typeDetails,
     });

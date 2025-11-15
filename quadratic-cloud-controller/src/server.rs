@@ -2,7 +2,9 @@ use axum::{
     Extension, Router,
     routing::{get, post},
 };
-use quadratic_rust_shared::quadratic_cloud::{WORKER_ACK_TASKS_ROUTE, WORKER_SHUTDOWN_ROUTE};
+use quadratic_rust_shared::quadratic_cloud::{
+    WORKER_ACK_TASKS_ROUTE, WORKER_GET_TASKS_ROUTE, WORKER_SHUTDOWN_ROUTE,
+};
 use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
@@ -14,7 +16,7 @@ use crate::{
     config::Config,
     controller_docker::IMAGE_NAME,
     error::{ControllerError, Result},
-    handle::{ack_tasks_for_worker, shutdown_worker},
+    handle::{ack_tasks_for_worker, get_tasks_for_worker, shutdown_worker},
     health::{full_healthcheck, healthcheck},
     state::{State, jwt::handle_jwks},
 };
@@ -27,6 +29,9 @@ pub(crate) fn worker_only_app(state: Arc<State>) -> Router {
     Router::new()
         //
         // Worker API routes
+        //
+        // Get tasks for a worker
+        .route(WORKER_GET_TASKS_ROUTE, get(get_tasks_for_worker))
         //
         // Shutdown a worker
         .route(WORKER_SHUTDOWN_ROUTE, post(shutdown_worker))
@@ -144,8 +149,10 @@ pub(crate) async fn serve() -> Result<()> {
     };
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "quadratic_cloud_controller=debug,tower_http=debug".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "quadratic_cloud_controller=debug,quadratic_core_cloud=debug,tower_http=debug"
+                    .into()
+            }),
         )
         .with(tracing_layer)
         .init();

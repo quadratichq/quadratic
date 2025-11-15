@@ -17,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     connection::run_connection,
     error::{CoreCloudError, Result},
-    javascript::execute::run_javascript,
+    javascript::{JavaScriptTcpServer, run_javascript},
     python::execute::run_python,
 };
 
@@ -40,6 +40,7 @@ pub async fn process_transaction(
     transaction_name: TransactionName,
     team_id: String,
     token: String,
+    connection_url: String,
 ) -> Result<Uuid> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
@@ -50,11 +51,13 @@ pub async fn process_transaction(
     let rx_get_cells_response = Arc::new(Mutex::new(rx_get_cells_response));
 
     // kick off the transaction
+    tracing::debug!("🚀 [Core] Starting transaction processing");
     let transaction_id =
         grid.lock()
             .await
             .start_user_ai_transaction(operations, cursor, transaction_name, false);
     let transaction_uuid = Uuid::parse_str(&transaction_id)?;
+    tracing::debug!("📋 [Core] Transaction started with ID: {}", transaction_id);
 
     // in a separate thread, listen for get_cells calls
     let transaction_id_clone = transaction_id.clone();
@@ -74,90 +77,137 @@ pub async fn process_transaction(
         Ok(())
     });
 
-    // get_cells function, blocking is required here
-    let get_cells = move |a1: String| {
-        tokio::task::block_in_place(|| {
-            Handle::current().block_on(async {
-                // send the request
-                tx_get_cells_request.lock().await.send(a1).await?;
+    // closure factory to create get_cells for each iteration
+    let tx_req = Arc::clone(&tx_get_cells_request);
+    let rx_resp = Arc::clone(&rx_get_cells_response);
+    let create_get_cells = || {
+        let tx = Arc::clone(&tx_req);
+        let rx = Arc::clone(&rx_resp);
+        move |a1: String| {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(async {
+                    // send the request
+                    tx.lock().await.send(a1).await?;
 
-                // receive and return the response
-                rx_get_cells_response
-                    .lock()
-                    .await
-                    .recv()
-                    .await
-                    .ok_or_else(|| {
+                    // receive and return the response
+                    rx.lock().await.recv().await.ok_or_else(|| {
                         CoreCloudError::Python("Error receiving get_cells response".to_string())
                     })
+                })
             })
-        })
+        }
     };
 
-    // get the async transaction
-    let async_transaction = grid
-        .lock()
-        .await
-        .active_transactions()
-        .get_async_transaction(transaction_uuid);
+    // Start a persistent JavaScript TCP server for this transaction
+    // This server will be reused across all JavaScript code executions
+    let js_tcp_server = JavaScriptTcpServer::start(Box::new(create_get_cells())).await?;
+    let js_port = js_tcp_server.port();
 
-    println!("async_transaction: {:?}", async_transaction);
-
-    if let Ok(async_transaction) = async_transaction
-        && let Some(sheet_pos) = async_transaction.current_sheet_pos
-        && let Some(code_run) = grid
+    // loop until error
+    loop {
+        // get the async transaction
+        let async_transaction = grid
             .lock()
             .await
-            .try_sheet(sheet_pos.sheet_id)
-            .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
-    {
-        println!("code_run: {:?}", code_run);
-        // run code
-        match &code_run.language {
-            CodeCellLanguage::Python => {
-                run_python(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    &transaction_id,
-                    Box::new(get_cells),
-                )
-                .await
-            }
-            CodeCellLanguage::Javascript => {
-                run_javascript(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    &transaction_id,
-                    Box::new(get_cells),
-                )
-                .await
-            }
-            CodeCellLanguage::Connection { kind, id } => {
-                run_connection(
-                    Arc::clone(&grid),
-                    &code_run.code,
-                    *kind,
-                    &id,
-                    &transaction_id,
-                    &team_id,
-                    &token,
-                )
-                .await
-            }
-            // maybe skip these below?
-            CodeCellLanguage::Formula => todo!(),
-            CodeCellLanguage::Import => todo!(),
-        }?;
+            .active_transactions()
+            .get_async_transaction(transaction_uuid);
 
-        // Abort the task
-        task_handle.abort();
-
-        // wait for the task to finish
-        if let Err(e) = task_handle.await
-            && !e.is_cancelled()
+        let (code_run_clone, current_sheet_pos) = if let Ok(async_transaction) = async_transaction
+            && let Some(sheet_pos) = async_transaction.current_sheet_pos
         {
-            return Err(CoreCloudError::Core(e.to_string()));
+            let code_run = grid
+                .lock()
+                .await
+                .try_sheet(sheet_pos.sheet_id)
+                .and_then(|sheet| sheet.code_run_at(&sheet_pos.into()))
+                .cloned();
+            (code_run, Some(sheet_pos))
+        } else {
+            (None, None)
+        };
+
+        if let Some(code_run) = code_run_clone {
+            // run code
+            match &code_run.language {
+                CodeCellLanguage::Python => {
+                    tracing::info!(
+                        "🐍 [Core] Dispatching Python execution for transaction: {}",
+                        transaction_id
+                    );
+                    run_python(
+                        Arc::clone(&grid),
+                        &code_run.code,
+                        &transaction_id,
+                        Box::new(create_get_cells()),
+                    )
+                    .await?;
+                    tracing::info!("🐍 [Core] Python execution dispatched to grid controller");
+                }
+                CodeCellLanguage::Javascript => {
+                    tracing::info!(
+                        "🟨 [Core] Dispatching JavaScript execution for transaction: {}",
+                        transaction_id
+                    );
+                    run_javascript(Arc::clone(&grid), &code_run.code, &transaction_id, js_port)
+                        .await?;
+                    tracing::info!("🟨 [Core] JavaScript execution dispatched to grid controller");
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    tracing::info!(
+                        "🔌 [Core] Dispatching Connection execution for transaction: {}",
+                        transaction_id
+                    );
+
+                    // Get the sheet_id from the current sheet_pos for handlebars replacement
+                    let sheet_id = if let Some(sp) = current_sheet_pos {
+                        sp.sheet_id
+                    } else {
+                        return Err(CoreCloudError::Connection(
+                            "No sheet_id available for connection execution".to_string(),
+                        ));
+                    };
+
+                    run_connection(
+                        Arc::clone(&grid),
+                        &code_run.code,
+                        *kind,
+                        id,
+                        &transaction_id,
+                        &team_id,
+                        &token,
+                        &connection_url,
+                        sheet_id,
+                    )
+                    .await?;
+                    tracing::info!("🔌 [Core] Connection execution dispatched to grid controller");
+                }
+                // maybe skip these below?
+                CodeCellLanguage::Formula => todo!(),
+                CodeCellLanguage::Import => todo!(),
+            }
+
+            // Continue looping - don't abort task yet
+        } else {
+            // No more code_run, break out of loop
+            tracing::info!(
+                "✅ [Core] No more code to execute for transaction: {}",
+                transaction_id
+            );
+            break;
         }
+    }
+
+    // Shutdown the JavaScript TCP server gracefully
+    js_tcp_server.shutdown().await;
+
+    // Abort the task
+    task_handle.abort();
+
+    // wait for the task to finish
+    if let Err(e) = task_handle.await
+        && !e.is_cancelled()
+    {
+        return Err(CoreCloudError::Core(e.to_string()));
     }
 
     // // Return the grid
@@ -231,6 +281,7 @@ mod tests {
         drop(grid_lock);
 
         // process the transaction
+        let connection_url = "http://localhost:3003".to_string();
         process_transaction(
             Arc::clone(&grid),
             vec![operation],
@@ -238,6 +289,7 @@ mod tests {
             TransactionName::Unknown,
             team_id,
             token,
+            connection_url,
         )
         .await
         .unwrap();

@@ -29,6 +29,9 @@ pub enum FilesError {
     #[error("Connection error: {0}")]
     Connection(String),
 
+    #[error("Error creating object store: {0}")]
+    CreateObjectStore(String),
+
     #[error("Unable to export file {0}: {1}")]
     ExportFile(String, String),
 
@@ -61,6 +64,9 @@ pub enum FilesError {
 
     #[error("File storage error: {0}")]
     Storage(String),
+
+    #[error("Synced connection error: {0}")]
+    SyncedConnection(String),
 
     #[error("Transaction queue error: {0}")]
     TransactionQueue(String),

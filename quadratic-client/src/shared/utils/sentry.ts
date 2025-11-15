@@ -67,6 +67,7 @@ export const initSentry = () => {
             ? [
                 replayIntegration({
                   maskAllText: false,
+                  maskAllInputs: false,
                   blockAllMedia: false,
                   networkDetailDenyUrls: ['/iframe-indexeddb'],
                 }),

@@ -29,7 +29,7 @@ export const useCronRange = (operations?: number[]): CronRange => {
     if (operations) {
       const range = scheduledTaskDecode(new Uint8Array(operations));
       if (!range) {
-        setTask('run-sheet-cells');
+        setTask('run-all-code');
       } else if (range.isAllSelected()) {
         setTask('run-sheet-cells');
       } else {
@@ -67,7 +67,6 @@ export const useCronRange = (operations?: number[]): CronRange => {
   }, [range]);
 
   const changeSelection = useCallback((selection: JsSelection | undefined) => {
-    console.log('changing selection...');
     if (selection) {
       setRange(selection);
       setRangeError(undefined);

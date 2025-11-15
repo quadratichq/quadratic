@@ -15,6 +15,8 @@ pub(crate) struct Config {
     pub(crate) worker_internal_host: String,
     pub(crate) multiplayer_host: String,
     pub(crate) multiplayer_port: String,
+    pub(crate) connection_host: String,
+    pub(crate) connection_port: String,
     pub(crate) files_host: String,
     pub(crate) files_port: String,
     pub(crate) quadratic_api_uri: String,

@@ -81,6 +81,14 @@ pub trait PubSub {
         id: Option<&str>,
     ) -> impl Future<Output = Result<()>> + Send;
 
+    /// Subscribe to a channel with first message
+    fn subscribe_with_first_message(
+        &mut self,
+        channel: &str,
+        group: &str,
+        id: Option<&str>,
+    ) -> impl Future<Output = Result<()>> + Send;
+
     /// Publish a message to a channel
     fn publish(
         &mut self,

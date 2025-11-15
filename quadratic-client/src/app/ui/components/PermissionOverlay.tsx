@@ -10,7 +10,7 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useRecoilValue } from 'recoil';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
@@ -20,9 +20,11 @@ export function PermissionOverlay() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
+    team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
+  const location = useLocation();
 
-  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid }), [fileUuid]);
+  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid, teamUuid }), [fileUuid, teamUuid]);
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
@@ -37,13 +39,13 @@ export function PermissionOverlay() {
         </Type>
         <div className="flex flex-shrink-0 gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link to={ROUTES.LOGIN_WITH_REDIRECT()}>Log in</Link>
+            <Link to={ROUTES.LOGIN_WITH_REDIRECT(location.pathname)}>Log in</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
+            <Link to={ROUTES.SIGNUP_WITH_REDIRECT(location.pathname)}>Sign up</Link>
           </Button>
-          <Button size="sm" onClick={handleDuplicate}>
-            Duplicate file
+          <Button size="sm">
+            <Link to={ROUTES.FILE_DUPLICATE(fileUuid)}>Duplicate file</Link>
           </Button>
         </div>
       </FixedBottomAlert>

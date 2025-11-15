@@ -10,6 +10,8 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
+import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -81,7 +83,7 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions, hasScheduledTasks } = file;
   const actionUrl = ROUTES.API.FILE(uuid);
   const confirmFn = useConfirmDialog('deleteFile', { name });
 
@@ -143,7 +145,12 @@ export function FilesListItemUserFile({
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
-  const handleDuplicate = () => {
+  const handleDuplicate = async () => {
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isTeamPrivateFilesRoute);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
     trackEvent('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({
       redirect: false,
@@ -210,6 +217,7 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            hasScheduledTasks={hasScheduledTasks}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
@@ -361,7 +369,6 @@ function ListItemView({
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
             src={thumbnail}
-            crossOrigin="anonymous"
             alt="File thumbnail screenshot"
             className="dark-mode-hack object-cover"
             draggable="false"

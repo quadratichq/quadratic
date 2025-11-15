@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   clang \
   protobuf-compiler \
   libprotobuf-dev \
+  pkg-config \
+  libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -73,6 +75,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   clang \
   protobuf-compiler \
   libprotobuf-dev \
+  pkg-config \
+  libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
@@ -139,7 +143,7 @@ COPY --link ./quadratic-shared/package.json ./quadratic-shared/
 COPY --link ./quadratic-client/package.json ./quadratic-client/
 
 # Install npm dependencies
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund --ignore-scripts
 
 # Copy remaining files
 COPY --link ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/

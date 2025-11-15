@@ -72,6 +72,7 @@ model File {
     ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission    @default(NOT_SHARED) @map("public_link_access")
+    timezone         String?           @map("timezone")
     times_updated    Int               @default(1) // unused to delete
     version          String? // unused to delete
     FileCheckpoint   FileCheckpoint[]
@@ -164,6 +165,7 @@ enum ConnectionType {
     MARIADB
     NEON
     SUPABASE
+    MIXPANEL
 }
 
 model Connection {
@@ -292,6 +294,7 @@ enum AIChatSource {
     PDFImport                     @map("pdf_import")
     ModelRouter                   @map("model_router")
     WebSearch                     @map("web_search")
+    OptimizePrompt                @map("optimize_prompt")
 }
 
 enum AIChatMessageType {

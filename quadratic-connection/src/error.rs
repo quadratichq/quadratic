@@ -26,6 +26,9 @@ pub enum ConnectionError {
     #[error("Connection error: {0}")]
     Connection(String),
 
+    #[error("Error creating object store: {0}")]
+    CreateObjectStore(String),
+
     #[error("Header error: {0}")]
     Header(String),
 
@@ -34,6 +37,9 @@ pub enum ConnectionError {
 
     #[error("Invalid token: {0}")]
     InvalidToken(String),
+
+    #[error("Error parsing: {0}")]
+    Parse(String),
 
     #[error("Proxy error: {0}")]
     Proxy(String),
@@ -49,6 +55,9 @@ pub enum ConnectionError {
 
     #[error("SSH error: {0}")]
     Ssh(String),
+
+    #[error("Synced error: {0}")]
+    Synced(String),
 
     #[error("unknown error: {0}")]
     Unknown(String),

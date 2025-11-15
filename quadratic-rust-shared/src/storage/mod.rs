@@ -4,11 +4,14 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use file_system::FileSystemConfig;
 use s3::S3Config;
+use serde::Deserialize;
+use strum_macros::Display;
 
 use crate::{SharedError, error::Result, storage::error::Storage as StorageError};
 
 pub mod error;
 pub mod file_system;
+pub mod object_store;
 pub mod s3;
 
 #[derive(Debug)]
@@ -21,6 +24,22 @@ pub enum StorageConfig {
 pub enum StorageContainer {
     S3(s3::S3),
     FileSystem(file_system::FileSystem),
+}
+
+impl From<&StorageContainer> for StorageConfig {
+    fn from(container: &StorageContainer) -> Self {
+        match container {
+            StorageContainer::S3(s3) => StorageConfig::S3(s3.config()),
+            StorageContainer::FileSystem(fs) => StorageConfig::FileSystem(fs.config()),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Display)]
+#[serde(rename_all = "kebab-case")]
+pub enum StorageType {
+    S3,
+    FileSystem,
 }
 
 #[async_trait]

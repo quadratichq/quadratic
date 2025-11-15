@@ -5,7 +5,6 @@ import type {
   ResponseInput,
   ResponseInputContent,
   ResponseInputItem,
-  ResponseOutputItem,
   ResponseReasoningItem,
   Tool,
   ToolChoiceFunction,
@@ -92,7 +91,7 @@ export function getOpenAIResponsesApiArgs(
       return acc;
     } else if (isAIPromptMessage(message)) {
       const reasoningItems: ResponseReasoningItem[] = [];
-      const openaiMessages: ResponseOutputItem[] = [
+      const openaiMessages: ResponseInputItem[] = [
         {
           role: message.role,
           content: message.content
@@ -134,6 +133,7 @@ export function getOpenAIResponsesApiArgs(
               type: 'output_text' as const,
               text: content.text.trim(),
               annotations: [],
+              logprobs: [],
             })),
           id: message.id?.startsWith('msg_') ? message.id : `msg_${v4()}`,
           status: 'completed',
@@ -145,7 +145,7 @@ export function getOpenAIResponsesApiArgs(
           name: toolCall.name,
           arguments: toolCall.arguments,
         })),
-      ];
+      ] as ResponseInputItem[];
       return [...acc, ...openaiMessages];
     } else if (isToolResultMessage(message)) {
       const openaiMessages: ResponseInputItem[] = message.content.map((toolResult) => ({
@@ -167,6 +167,7 @@ export function getOpenAIResponsesApiArgs(
           type: 'output_text' as const,
           text: content.text,
           annotations: [],
+          logprobs: [],
         })),
         id: v4(),
         status: 'completed',

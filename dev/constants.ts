@@ -59,7 +59,7 @@ export const COMPONENTS = {
     shortcut: "s",
     name: "Shared",
   },
-  cloudcontroller: {
+  cloudController: {
     color: "magentaBright",
     dark: "magentaBright",
     name: "CloudController",

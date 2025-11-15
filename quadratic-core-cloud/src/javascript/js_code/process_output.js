@@ -1,3 +1,17 @@
+// Helper to format Date to ISO string in local timezone (not UTC)
+function dateToLocalISOString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const ms = String(date.getMilliseconds()).padStart(3, '0');
+
+  // Return ISO format but in local time (no Z suffix)
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}`;
+}
+
 function processOutput(value) {
   if (value === null || value === undefined) {
     return {
@@ -21,8 +35,14 @@ function processOutput(value) {
       outputValue: null,
       outputArray: value.map((row) =>
         Array.isArray(row)
-          ? row.map((cell) => [String(cell), getJsType(cell)])
-          : [[String(row), getJsType(row)]],
+          ? row.map((cell) => [
+              cell instanceof Date ? dateToLocalISOString(cell) : String(cell),
+              getJsType(cell),
+            ])
+          : [[
+              row instanceof Date ? dateToLocalISOString(row) : String(row),
+              getJsType(row),
+            ]],
       ),
     };
   }
@@ -31,16 +51,20 @@ function processOutput(value) {
   return {
     outputType: typeof value,
     hasHeaders: false,
-    outputValue: [String(value), getJsType(value)],
+    outputValue: [
+      value instanceof Date ? dateToLocalISOString(value) : String(value),
+      getJsType(value),
+    ],
     outputArray: null,
   };
 }
 
 function getJsType(value) {
-  if (value === null) return 0; // empty
+  if (value === null) return 0; // blank
   if (typeof value === "string") return 1; // text
   if (typeof value === "number") return 2; // number
   if (typeof value === "boolean") return 3; // boolean
+  if (value instanceof Date) return 11; // datetime
   return 1; // Default to text
 }
 

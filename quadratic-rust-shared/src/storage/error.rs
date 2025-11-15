@@ -8,6 +8,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Storage {
+    #[error("Error creating object store: {0}")]
+    CreateObjectStore(String),
+
     #[error("Error creating directory {0}: {1}")]
     CreateDirectory(String, String),
 

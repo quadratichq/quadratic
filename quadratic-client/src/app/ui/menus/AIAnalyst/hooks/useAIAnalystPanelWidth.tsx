@@ -1,10 +1,11 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useCallback } from 'react';
 
+const DEFAULT_PANEL_WIDTH_AI_ANALYST = 450;
 const MIN_PANEL_WIDTH_ANALYST = 350;
-const MAX_PANEL_WIDTH_ANALYST = 600;
+const MAX_PANEL_WIDTH_ANALYST = 700;
 export function useAIAnalystPanelWidth() {
-  const [panelWidth, setPanelWidth] = useLocalStorage<number>('aiAnalystPanelWidth', MIN_PANEL_WIDTH_ANALYST);
+  const [panelWidth, setPanelWidth] = useLocalStorage<number>('aiAnalystPanelWidth', DEFAULT_PANEL_WIDTH_AI_ANALYST);
   const setWidth = useCallback(
     (width: number) => {
       setPanelWidth(Math.min(Math.max(MIN_PANEL_WIDTH_ANALYST, width), MAX_PANEL_WIDTH_ANALYST));

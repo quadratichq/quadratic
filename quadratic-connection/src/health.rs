@@ -1,6 +1,7 @@
 use axum::{Extension, Json};
 use quadratic_rust_shared::quadratic_api::is_healthy;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::state::State;
 
@@ -23,7 +24,7 @@ pub struct FullHealthResponse {
 }
 
 pub(crate) async fn full_healthcheck(
-    Extension(state): Extension<State>,
+    Extension(state): Extension<Arc<State>>,
 ) -> Json<FullHealthResponse> {
     let version = env!("CARGO_PKG_VERSION").into();
     let api_is_healthy = is_healthy(&state.settings.quadratic_api_uri).await;

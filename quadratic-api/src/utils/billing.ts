@@ -1,7 +1,7 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 import dbClient from '../dbClient';
-import { isRunningInTest } from '../env-vars';
+import { isRunningInTest, MAX_FILE_COUNT_FOR_PAID_PLAN } from '../env-vars';
 import { updateBilling } from '../stripe/stripe';
 import type { DecryptedTeam } from '../utils/teams';
 
@@ -28,4 +28,51 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
   }
 
   return false; // not on a paid plan
+};
+
+export const fileCountForTeam = async (
+  team: Team | DecryptedTeam,
+  userId: number
+): Promise<{ totalTeamFiles: number; userPrivateFiles: number }> => {
+  const totalTeamFiles = await dbClient.file.count({
+    where: {
+      ownerTeamId: team.id,
+      deleted: false,
+      ownerUserId: null,
+    },
+  });
+
+  const userPrivateFiles = await dbClient.file.count({
+    where: {
+      ownerTeamId: team.id,
+      ownerUserId: userId,
+      deleted: false,
+    },
+  });
+
+  return { totalTeamFiles, userPrivateFiles };
+};
+
+/// Returns true if the user has reached its file limit and requires a paid plan
+/// to continue adding files
+/// If isPrivate is provided, only checks the relevant limit for that file type
+/// If isPrivate is not provided, checks against team file limit
+export const hasReachedFileLimit = async (
+  team: Team | DecryptedTeam,
+  userId: number,
+  isPrivate?: boolean
+): Promise<boolean> => {
+  const isPaidPlan = await getIsOnPaidPlan(team);
+  if (isPaidPlan || !MAX_FILE_COUNT_FOR_PAID_PLAN) {
+    return false;
+  }
+
+  const { totalTeamFiles, userPrivateFiles } = await fileCountForTeam(team, userId);
+  const [maxTotalFiles, maxUserPrivateFiles] = MAX_FILE_COUNT_FOR_PAID_PLAN;
+
+  if (!isPrivate) {
+    return totalTeamFiles >= maxTotalFiles;
+  }
+
+  return userPrivateFiles >= maxUserPrivateFiles;
 };

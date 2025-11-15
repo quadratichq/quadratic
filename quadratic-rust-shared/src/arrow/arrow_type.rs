@@ -183,7 +183,7 @@ impl ArrowType {
             // generic null for any arrow type
             DataType::Null => Arc::new(StringArray::new_null(values.len())),
             _ => {
-                tracing::trace!("Unsupported ArrowType: {:?}", values[0]);
+                // println!("Unsupported ArrowType: {:?}", values[0]);
                 // Arc::new(NullArray::new(0))
                 // Arc::new(StringArray::from_iter_values(["".to_string()])) as ArrayRef
                 Arc::new(StringArray::new_null(values.len()))

@@ -8,6 +8,7 @@ import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { AIUserMessageFormOptimizeButton } from '@/app/ui/components/AIUserMessageFormOptimizeButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import {
   detectMentionInText,
@@ -17,7 +18,7 @@ import {
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
 import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon, MentionIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -456,10 +457,7 @@ export const AIUserMessageForm = memo(
             textareaRef={textareaRef}
             prompt={prompt}
             setPrompt={setPrompt}
-            submitPrompt={() => {
-              handleSubmit(prompt);
-              setPrompt('');
-            }}
+            submitPrompt={handleSubmit}
             abortPrompt={abortPrompt}
             disabled={disabled}
             cancelDisabled={cancelDisabled}
@@ -489,21 +487,18 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
   }
 
   return (
-    <TooltipPopover label="Edit">
-      <Button
-        variant="ghost"
-        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-        size="icon-sm"
-        onClick={(e) => {
-          if (loading) return;
-          e.stopPropagation();
-          setEditing(true);
-          textareaRef.current?.focus();
-        }}
-      >
-        <EditIcon />
-      </Button>
-    </TooltipPopover>
+    <button
+      className="absolute bottom-0 left-0 right-0 top-0 z-10 bg-transparent indent-[-9999px]"
+      onClick={(e) => {
+        if (loading) return;
+        e.stopPropagation();
+        setEditing(true);
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
+      }}
+    >
+      Edit
+    </button>
   );
 });
 
@@ -625,6 +620,12 @@ const AIUserMessageFormFooter = memo(
                 </Button>
               </TooltipPopover>
             )}
+            <AIUserMessageFormOptimizeButton
+              disabled={disabled}
+              prompt={prompt}
+              setPrompt={setPrompt}
+              textareaRef={textareaRef}
+            />
           </div>
 
           <div className="flex">

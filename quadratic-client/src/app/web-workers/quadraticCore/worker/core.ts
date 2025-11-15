@@ -421,6 +421,7 @@ class Core {
     cursor,
     csvDelimiter,
     hasHeading,
+    isOverwrite,
     isAi,
   }: ClientCoreImportFile): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> {
     if (cursor === undefined) {
@@ -467,7 +468,8 @@ class Core {
               cursor,
               csvDelimiter,
               hasHeading,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
           case 'Parquet':
@@ -480,7 +482,8 @@ class Core {
               sheetId,
               posToPos(location.x, location.y),
               cursor,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
           default:
@@ -516,9 +519,12 @@ class Core {
     codeCellName: string | undefined,
     cursor: string,
     isAi: boolean
-  ): string | undefined {
+  ): string | { error: string } | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
+      if (this.gridController.cellIntersectsDataTable(sheetId, posToPos(x, y))) {
+        return { error: 'Error in set code cell: Cannot add code cell to a data table' };
+      }
       return this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, codeCellName, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setCodeCellValue', e);
@@ -1457,9 +1463,12 @@ class Core {
     codeString: string,
     codeCellName: string | undefined,
     cursor: string
-  ): string | undefined {
+  ): string | { error: string } | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
+      if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
+        return { error: 'Error in set formula: Cannot add formula to a data table' };
+      }
       return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
     } catch (e) {
       this.handleCoreError('setFormula', e);

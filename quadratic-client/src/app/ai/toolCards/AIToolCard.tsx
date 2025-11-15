@@ -6,6 +6,7 @@ import { AddMessage } from '@/app/ai/toolCards/AddMessage';
 import { AddNumberValidation } from '@/app/ai/toolCards/AddNumberValidation';
 import { AddTextValidation } from '@/app/ai/toolCards/AddTextValidation';
 import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
+import { ContactUs } from '@/app/ai/toolCards/ContactUs';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
@@ -149,6 +150,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <Undo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.Redo:
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.ContactUs:
+      return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

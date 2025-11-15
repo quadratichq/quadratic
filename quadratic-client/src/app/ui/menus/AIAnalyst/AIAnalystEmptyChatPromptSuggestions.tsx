@@ -92,7 +92,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
       <div className="absolute bottom-full left-0 mb-2 flex w-full flex-row flex-wrap gap-2">
         {showWaypoints && (
           <div className="absolute bottom-full left-6 mb-2 flex flex-col text-muted-foreground">
-            <h3 className="text-sm">Try a suggestion</h3>
+            <h3 className="text-sm">Prompt suggestions</h3>
             <p className="hidden text-xs">See what’s possible based on your sheet.</p>
             <svg
               width="16"

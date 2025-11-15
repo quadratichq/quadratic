@@ -15,6 +15,7 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -175,7 +176,7 @@ export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
-    file: { uuid: fileUuid },
+    file: { uuid: fileUuid, timezone: fileTimezone },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
@@ -198,6 +199,31 @@ export const Component = memo(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
 
+  // Set timezone if not already set and user has editor rights
+  useEffect(() => {
+    const setTimezoneIfNeeded = async () => {
+      // Check if timezone is not set
+      if (fileTimezone !== null) return;
+
+      // Check if user has editor rights
+      const hasEditorRights = filePermissions.includes('FILE_EDIT');
+      if (!hasEditorRights) return;
+
+      // Get user's current timezone
+      try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (userTimezone) {
+          await apiClient.files.update(fileUuid, { timezone: userTimezone });
+        }
+      } catch (error) {
+        // Silently fail if timezone detection or update fails
+        console.error('Failed to set timezone:', error);
+      }
+    };
+
+    setTimezoneIfNeeded();
+  }, [fileTimezone, filePermissions, fileUuid]);
+
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
   if (isEmbed) {
@@ -211,6 +237,7 @@ export const Component = memo(() => {
       <QuadraticApp />
       <Outlet />
       <QuadraticAppDebugSettings />
+      <UpgradeDialog teamUuid={teamUuid} />
     </RecoilRoot>
   );
 });

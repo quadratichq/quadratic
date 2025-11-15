@@ -2,6 +2,7 @@ import { uploadFile } from '@/app/helpers/files';
 import { AttachFileIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo, useCallback } from 'react';
 
 interface AIUserMessageFormAttachFileButtonProps {
@@ -13,6 +14,7 @@ interface AIUserMessageFormAttachFileButtonProps {
 export const AIUserMessageFormAttachFileButton = memo(
   ({ disabled, handleFiles, fileTypes, filesSupportedText }: AIUserMessageFormAttachFileButtonProps) => {
     const handleUploadFiles = useCallback(async () => {
+      trackEvent('[AIAttachFile].click');
       const files = await uploadFile(fileTypes);
       handleFiles(files);
     }, [handleFiles, fileTypes]);

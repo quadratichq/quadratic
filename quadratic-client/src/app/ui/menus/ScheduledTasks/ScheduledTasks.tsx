@@ -1,6 +1,7 @@
 import { ScheduledTask } from '@/app/ui/menus/ScheduledTasks/ScheduledTask/ScheduledTask';
 import { ScheduledTasksHeader } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksHeader';
 import { ScheduledTasksList } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksList/ScheduledTasksList';
+import { ScheduledTasksTimezone } from '@/app/ui/menus/ScheduledTasks/ScheduledTasksTimezone';
 import { useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 
 export const ScheduledTasks = () => {
@@ -24,7 +25,10 @@ export const ScheduledTasks = () => {
       className="relative flex h-full shrink-0 flex-col border-l border-border bg-background text-sm"
     >
       <ScheduledTasksHeader />
-      {currentTaskId ? <ScheduledTask /> : <ScheduledTasksList />}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {currentTaskId ? <ScheduledTask /> : <ScheduledTasksList />}
+      </div>
+      {!currentTaskId && <ScheduledTasksTimezone />}
     </div>
   );
 };

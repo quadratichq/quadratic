@@ -5,8 +5,10 @@
 
 use axum::Json;
 use axum::http::Method;
-use axum::response::IntoResponse;
+use axum::middleware::map_response;
+use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router, routing::get};
+use http::{HeaderValue, header::HeaderName};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
@@ -21,6 +23,7 @@ use crate::file::get_files_to_process;
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
+use crate::synced_connection::background_workers::init_sync_workers;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
     auth::get_middleware,
@@ -85,6 +88,16 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // state
         .layer(Extension(state))
+        //
+        // add Cross-Origin-Resource-Policy header for COEP compatibility
+        .layer(map_response(|mut response: Response| async move {
+            let headers = response.headers_mut();
+            headers.insert(
+                HeaderName::from_static("cross-origin-resource-policy"),
+                HeaderValue::from_static("cross-origin"),
+            );
+            response
+        }))
         //
         // cors
         .layer(cors)
@@ -203,6 +216,9 @@ pub(crate) async fn serve() -> Result<()> {
             }
         }
     });
+
+    // in a separate thread, sync connections
+    init_sync_workers(state.clone()).await?;
 
     axum::serve(
         listener,

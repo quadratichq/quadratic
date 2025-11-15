@@ -8,9 +8,11 @@ use kube::{
     ResourceExt,
     api::{Api, DeleteParams, ListParams, PostParams},
 };
+use quadratic_rust_shared::quadratic_cloud::GetWorkerInitDataResponse;
 use tracing::{error, info};
 use uuid::Uuid;
 
+use crate::quadratic_api::file_init_data;
 use crate::state::State;
 
 pub(crate) struct Controller {
@@ -65,18 +67,46 @@ impl Controller {
             return Ok(());
         }
 
+        // Filter file IDs to only include those that have tasks in PubSub
+        // This prevents us from creating workers for files with no tasks
+        info!("[ensure_workers_exist] Checking which files have pending tasks in PubSub");
+        let file_checks = missing_workers.iter().map(|file_id| async {
+            let has_tasks = self.state.file_has_tasks(*file_id).await.unwrap_or(false);
+            (*file_id, has_tasks)
+        });
+        let check_results = join_all(file_checks).await;
+
+        let files_with_tasks: Vec<_> = check_results
+            .into_iter()
+            .filter_map(|(file_id, has_tasks)| if has_tasks { Some(file_id) } else { None })
+            .collect();
+
+        let files_without_tasks_count = missing_workers.len() - files_with_tasks.len();
+
+        if files_without_tasks_count > 0 {
+            info!(
+                "[ensure_workers_exist] {} file(s) have no pending tasks, skipping worker creation for them",
+                files_without_tasks_count
+            );
+        }
+
+        if files_with_tasks.is_empty() {
+            info!("[ensure_workers_exist] No files with pending tasks to create workers for");
+            return Ok(());
+        }
+
         info!(
             "[ensure_workers_exist] Found {} files that are missing file workers, creating them",
-            missing_workers.len()
+            files_with_tasks.len()
         );
 
-        let futures = missing_workers
+        let futures = files_with_tasks
             .iter()
             .map(|file_id| self.create_worker(file_id));
 
         let results = join_all(futures).await;
 
-        for (file_id, result) in missing_workers.into_iter().zip(results) {
+        for (file_id, result) in files_with_tasks.into_iter().zip(results) {
             if let Err(e) = result {
                 error!("[ensure_workers_exist] Failed to create file worker for {file_id}: {e}");
             }
@@ -123,6 +153,25 @@ impl Controller {
                 Ok(false)
             }
         }
+    }
+
+    async fn get_worker_init_data(&self, file_id: &Uuid) -> Result<GetWorkerInitDataResponse> {
+        let mut file_init_data = file_init_data(&self.state, *file_id).await?;
+
+        file_init_data.presigned_url = self
+            .state
+            .settings
+            .files_presigned_url(&file_init_data.presigned_url)?
+            .to_string();
+
+        let worker_init_data = GetWorkerInitDataResponse {
+            team_id: file_init_data.team_id,
+            sequence_number: file_init_data.sequence_number,
+            presigned_url: file_init_data.presigned_url,
+            timezone: file_init_data.timezone,
+        };
+
+        Ok(worker_init_data)
     }
 
     async fn create_worker(&self, file_id: &Uuid) -> Result<()> {
@@ -174,6 +223,8 @@ impl Controller {
     async fn build_worker_spec(&self, file_id: &Uuid) -> Result<Job> {
         let namespace = self.state.settings.namespace.as_str();
         let worker_ephemeral_token = self.state.generate_worker_ephemeral_token(file_id).await;
+        let worker_init_data = self.get_worker_init_data(file_id).await?;
+        let timezone = worker_init_data.timezone.unwrap_or("UTC".to_string());
         let job_yaml = format!(
             r#"
 apiVersion: batch/v1
@@ -221,12 +272,16 @@ spec:
           value: "info,worker=debug"
         - name: CONTROLLER_URL
           value: "http://quadratic-cloud-controller-worker:3005"
+        - name: CONNECTION_URL
+          value: "http://localhost:3003"
         - name: FILE_ID
           value: "{file_id}"
         - name: WORKER_EPHEMERAL_TOKEN
           value: "{worker_ephemeral_token}"
         - name: LOCALHOST_TUNNEL_PORTS
           value: "8000,3001,3002,3003"
+        - name: TZ
+          value: "{timezone}"
         resources:
           requests:
             cpu: 500m
@@ -242,7 +297,7 @@ spec:
         - -lc
         - |
           set -e
-          
+
           # Set up localhost tunnel ports
           PORTS=$(echo "$LOCALHOST_TUNNEL_PORTS" | tr ',' ' ')
           echo "Waiting for localhost-tunnel readiness..."
@@ -252,8 +307,8 @@ spec:
             until curl -sS --max-time 1 "http://localhost:$p/" -o /dev/null; do sleep 0.2; done
           done
 
-          echo "Starting quadratic-cloud-worker..."
-          exec ./quadratic-cloud-worker
+          echo "Starting quadratic-cloud-worker with entrypoint..."
+          exec ./entrypoint.sh
       - name: localhost-tunnel
         image: alpine:latest
         env:

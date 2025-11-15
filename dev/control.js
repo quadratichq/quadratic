@@ -1,6 +1,6 @@
-import killPort from "kill-port";
 import { exec, spawn, } from "node:child_process";
 import treeKill from "tree-kill";
+import { killPort } from './utils.js';
 export class Control {
     cli;
     ui;
@@ -17,7 +17,7 @@ export class Control {
     npm;
     rust;
     shared;
-    cloudcontroller;
+    cloudController;
     signals = {};
     status = {
         client: false,
@@ -33,7 +33,7 @@ export class Control {
         postgres: false,
         redis: false,
         shared: false,
-        cloudcontroller: false,
+        cloudController: false,
     };
     constructor(cli) {
         this.cli = cli;
@@ -53,7 +53,7 @@ export class Control {
             this.kill("connection"),
             this.kill("python"),
             this.kill("shared"),
-            this.kill("cloudcontroller"),
+            this.kill("cloudController"),
         ]);
         process.exit(0);
     }
@@ -147,9 +147,9 @@ export class Control {
                 if (this.status.connection !== "killed" && !this.connection) {
                     this.runConnection();
                 }
-                if (this.status.cloudcontroller !== "killed" &&
-                    !this.cloudcontroller) {
-                    this.runCloudcontroller();
+                if (this.status.cloudController !== "killed" &&
+                    !this.cloudController) {
+                    this.runCloudController();
                 }
             }
         }));
@@ -224,14 +224,13 @@ export class Control {
         this.restartCore();
     }
     async runCore(restart) {
+        if (this.cli.options.noRust)
+            return;
         if (this.quitting)
             return;
         this.status.core = false;
         this.ui.print("core");
         await this.kill("core");
-        // this function is called more than once,
-        // so we need to check if it's the first run
-        let firstRun = true;
         this.signals.core = new AbortController();
         this.core = spawn("npm", [
             "run",
@@ -245,11 +244,6 @@ export class Control {
             success: ["[Finished running. Exit status: 0", "ready to publish"],
             error: "error[",
             start: ["> quadratic", "[Running "],
-        }, () => {
-            if (firstRun && !restart) {
-                this.runNpmInstall();
-                firstRun = false;
-            }
         }));
     }
     kill(name) {
@@ -303,13 +297,22 @@ export class Control {
         catch (e) { }
         this.signals.multiplayer = new AbortController();
         this.ui.print("multiplayer");
-        this.multiplayer = spawn("cargo", this.cli.options.multiplayer
-            ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
-            : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"], {
-            signal: this.signals.multiplayer.signal,
-            cwd: "quadratic-multiplayer",
-            env: { ...process.env, RUST_LOG: "info" },
-        });
+        if (this.cli.options.noRust) {
+            this.multiplayer = spawn("./quadratic-multiplayer", [], {
+                signal: this.signals.multiplayer.signal,
+                cwd: "quadratic-multiplayer/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.multiplayer = spawn("cargo", this.cli.options.multiplayer
+                ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
+                : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"], {
+                signal: this.signals.multiplayer.signal,
+                cwd: "quadratic-multiplayer",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
         this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
             success: "listening on",
             error: "error[",
@@ -337,13 +340,22 @@ export class Control {
         }
         catch (e) { }
         this.signals.files = new AbortController();
-        this.files = spawn("cargo", this.cli.options.files
-            ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
-            : ["run", "-p", "quadratic-files", "--target-dir=target"], {
-            signal: this.signals.files.signal,
-            cwd: "quadratic-files",
-            env: { ...process.env, RUST_LOG: "info" },
-        });
+        if (this.cli.options.noRust) {
+            this.files = spawn("./quadratic-files", [], {
+                signal: this.signals.files.signal,
+                cwd: "quadratic-files/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.files = spawn("cargo", this.cli.options.files
+                ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
+                : ["run", "-p", "quadratic-files", "--target-dir=target"], {
+                signal: this.signals.files.signal,
+                cwd: "quadratic-files",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
         this.ui.printOutput("files", (data) => {
             this.handleResponse("files", data, {
                 success: "listening on",
@@ -421,44 +433,55 @@ export class Control {
             this.status.shared = "killed";
         }
     }
-    async runCloudcontroller() {
+    async runCloudController() {
         if (this.quitting)
             return;
-        if (this.status.cloudcontroller === "killed")
+        if (this.status.cloudController === "killed")
             return;
-        this.status.cloudcontroller = false;
-        this.ui.print("cloudcontroller");
-        await this.kill("cloudcontroller");
-        this.signals.cloudcontroller = new AbortController();
-        this.cloudcontroller = spawn("cargo", this.cli.options.cloudcontroller ? ["watch", "-x", "run"] : ["run"], {
-            signal: this.signals.cloudcontroller.signal,
-            cwd: "quadratic-cloud-controller",
-            env: { ...process.env, RUST_LOG: "info" },
-        });
-        this.ui.printOutput("cloudcontroller", (data) => {
-            this.handleResponse("cloudcontroller", data, {
+        this.status.cloudController = false;
+        this.ui.print("cloudController");
+        await this.kill("cloudController");
+        this.signals.cloudController = new AbortController();
+        if (this.cli.options.noRust) {
+            this.cloudController = spawn("./quadratic-cloud-controller", [], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.cloudController = spawn("cargo", this.cli.options.cloudController
+                ? ["watch", "-x", "run -p quadratic-cloud-controller --target-dir=target"]
+                : ["run", "-p", "quadratic-cloud-controller", "--target-dir=target"], {
+                signal: this.signals.cloudController.signal,
+                cwd: "quadratic-cloud-controller",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        this.ui.printOutput("cloudController", (data) => {
+            this.handleResponse("cloudController", data, {
                 success: ["Finished ", "Running "],
                 error: ["error[", "npm ERR!"],
                 start: "    Compiling",
             });
         });
     }
-    async restartCloudcontroller() {
-        this.cli.options.cloudcontroller = !this.cli.options.cloudcontroller;
-        this.runCloudcontroller();
+    async restartCloudController() {
+        this.cli.options.cloudController = !this.cli.options.cloudController;
+        this.runCloudController();
     }
-    async killCloudcontroller() {
-        if (this.status.cloudcontroller === "killed") {
-            this.status.cloudcontroller = false;
-            this.ui.print("cloudcontroller", "restarting...");
-            this.runCloudcontroller();
+    async killCloudController() {
+        if (this.status.cloudController === "killed") {
+            this.status.cloudController = false;
+            this.ui.print("cloudController", "restarting...");
+            this.runCloudController();
         }
         else {
-            if (this.cloudcontroller) {
-                await this.kill("cloudcontroller");
-                this.ui.print("cloudcontroller", "killed", "red");
+            if (this.cloudController) {
+                await this.kill("cloudController");
+                this.ui.print("cloudController", "killed", "red");
             }
-            this.status.cloudcontroller = "killed";
+            this.status.cloudController = "killed";
         }
     }
     async runConnection() {
@@ -476,13 +499,22 @@ export class Control {
         }
         catch (e) { }
         this.signals.connection = new AbortController();
-        this.connection = spawn("cargo", this.cli.options.connection
-            ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
-            : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
-            signal: this.signals.connection.signal,
-            cwd: "quadratic-connection",
-            env: { ...process.env, RUST_LOG: "info" },
-        });
+        if (this.cli.options.noRust) {
+            this.connection = spawn("./quadratic-connection", [], {
+                signal: this.signals.connection.signal,
+                cwd: "quadratic-connection/target/debug",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
+        else {
+            this.connection = spawn("cargo", this.cli.options.connection
+                ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
+                : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
+                signal: this.signals.connection.signal,
+                cwd: "quadratic-connection",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
+        }
         this.ui.printOutput("connection", (data) => {
             this.handleResponse("connection", data, {
                 success: "listening on",
@@ -625,9 +657,9 @@ export class Control {
         });
     }
     async start(ui) {
-        exec("rm -rf quadratic-client/src/app/quadratic-core");
         this.ui = ui;
         this.checkServices();
+        this.runNpmInstall();
         this.runRust();
         this.runPython();
         this.runShared();

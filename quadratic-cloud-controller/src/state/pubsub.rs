@@ -101,7 +101,7 @@ impl State {
             .lock()
             .await
             .connection
-            .subscribe(&channel, GROUP, None)
+            .subscribe_with_first_message(&channel, GROUP, None)
             .await
             .map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
@@ -171,16 +171,30 @@ impl State {
         let channel = PubSub::file_id_to_channel(file_id);
         let mut pubsub = self.pubsub.lock().await;
 
+        trace!(
+            "Fetching messages from PubSub channel: {} for file {}",
+            channel, file_id
+        );
+
         let task_runs = pubsub
             .connection
             .messages(&channel, GROUP, CONSUMER, None, 100, true)
             .await
             .map_err(|e| ControllerError::PubSub(e.to_string()))?;
 
-        trace!(
-            "Got {} task runs for file {file_id} in pubsub",
-            task_runs.len()
-        );
+        if task_runs.is_empty() {
+            info!(
+                "No messages found in PubSub channel {} for file {} - channel is in active list but has no pending messages",
+                channel, file_id
+            );
+        } else {
+            info!(
+                "Got {} task run(s) from PubSub channel {} for file {}",
+                task_runs.len(),
+                channel,
+                file_id
+            );
+        }
 
         Ok(PubSub::messages_to_tasks(task_runs))
     }
@@ -219,5 +233,21 @@ impl State {
             .collect::<Result<HashSet<_>>>()?;
 
         Ok(file_ids)
+    }
+
+    /// Check if a file has pending tasks in PubSub
+    pub(crate) async fn file_has_tasks(&self, file_id: Uuid) -> Result<bool> {
+        self.reconnect_pubsub_if_unhealthy().await;
+
+        let channel = PubSub::file_id_to_channel(file_id);
+        let mut pubsub = self.pubsub.lock().await;
+
+        let length = pubsub
+            .connection
+            .length(&channel)
+            .await
+            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+
+        Ok(length > 0)
     }
 }

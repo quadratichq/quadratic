@@ -1,19 +1,19 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { DatabaseIcon } from '@/shared/components/Icons';
+import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -97,23 +97,31 @@ export const AIUserMessageFormConnectionsButton = memo(
           </DropdownMenuTrigger>
         </TooltipPopover>
 
-        <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="max-w-xs">
-          <DropdownMenuItem onClick={handleManageConnections} className="pl-8">
-            Manage…
+        <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
+            <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
+            <span className="truncate">Add or manage connections</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (
             <>
               <DropdownMenuSeparator />
 
-              <DropdownMenuRadioGroup value={context.connection?.id ?? ''} onValueChange={handleClickConnection}>
-                {connections.map((connection) => (
-                  <DropdownMenuRadioItem key={connection.uuid} value={connection.uuid} className="gap-4">
+              {connections.map((connection) => {
+                const isActive = context.connection?.id === connection.uuid;
+                return (
+                  <DropdownMenuItem
+                    key={connection.uuid}
+                    onClick={() => handleClickConnection(connection.uuid)}
+                    className={`gap-4`}
+                  >
+                    <LanguageIcon language={connection.type} className="flex-shrink-0" />
                     <span className="truncate">{connection.name}</span>
-                    <LanguageIcon language={connection.type} className="ml-auto flex-shrink-0" />
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
+                    <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
+                  </DropdownMenuItem>
+                );
+              })}
             </>
           )}
         </DropdownMenuContent>

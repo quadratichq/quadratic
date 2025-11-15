@@ -4,7 +4,7 @@ import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon } from '@radix-ui/react-icons';
+import { ClockIcon, GlobeIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
@@ -16,6 +16,7 @@ export function FilesListItemCore({
   creator,
   hasNetworkError,
   isShared,
+  hasScheduledTasks,
   viewPreferences,
   actions,
 }: {
@@ -28,6 +29,7 @@ export function FilesListItemCore({
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
   isShared?: boolean;
+  hasScheduledTasks?: boolean;
   actions?: ReactNode;
 }) {
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
@@ -49,6 +51,11 @@ export function FilesListItemCore({
               {isShared && (
                 <span className={`after:mr-1 after:pl-1 after:content-['·']`}>
                   <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
+                </span>
+              )}
+              {hasScheduledTasks && (
+                <span className="mr-1">
+                  <ClockIcon className="relative -top-[1px] inline h-3 w-3" />
                 </span>
               )}
               {description}

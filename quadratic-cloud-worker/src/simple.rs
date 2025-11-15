@@ -12,6 +12,7 @@ const INTERVAL_MS: u64 = 20000; // every 20 seconds
 const API_URL: &str = "http://localhost:8000";
 const M2M_AUTH_TOKEN: &str = "M2M_AUTH_TOKEN";
 const MULTIPLAYER_URL: &str = "ws://localhost:3001/ws";
+const CONNECTION_URL: &str = "http://localhost:3003";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,6 +45,7 @@ async fn main() -> Result<()> {
                                 &file_init_data.presigned_url,
                                 M2M_AUTH_TOKEN.to_string(),
                                 MULTIPLAYER_URL.to_string(),
+                                CONNECTION_URL.to_string(),
                             )
                             .await?;
 
@@ -60,9 +62,13 @@ async fn main() -> Result<()> {
                                 tokio::time::sleep(Duration::from_millis(5000)).await;
                             }
 
-                            tracing::info!("received transactio ack, leaving room for file: {file_id}");
+                            tracing::info!("received transaction ack, leaving room for file: {file_id}");
 
-                            worker.leave_room().await?;
+                            // Always attempt to leave the room, even if there were errors
+                            let leave_result = worker.leave_room().await;
+                            if let Err(e) = &leave_result {
+                                tracing::error!("Error leaving room for file {file_id}, error: {e}");
+                            }
 
                             Ok(())
                         }

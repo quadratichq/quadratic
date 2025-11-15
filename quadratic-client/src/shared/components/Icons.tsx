@@ -32,7 +32,11 @@ const Icon = (props: BaseIconProps) => {
   const _size = size ? sizes[size] : sizes['sm'];
 
   return (
-    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
+    <span
+      className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`}
+      {...rest}
+      translate="no"
+    >
       {children}
     </span>
   );
@@ -97,6 +101,10 @@ export const ArrowDropDownCircleIcon: IconComponent = (props) => {
 
 export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const AsteriskIcon: IconComponent = (props) => {
+  return <Icon {...props}>asterisk</Icon>;
 };
 
 export const AttachFileIcon: IconComponent = (props) => {
@@ -313,6 +321,10 @@ export const ExploreSchemaIcon: IconComponent = (props) => {
 
 export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
+};
+
+export const EnhancePromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>wand_stars</Icon>;
 };
 
 export const ErrorIcon: IconComponent = (props) => {
@@ -769,4 +781,8 @@ export const WebBrowserIcon: IconComponent = (props) => {
 
 export const ScheduledTasksIcon: IconComponent = (props) => {
   return <Icon {...props}>timer_play</Icon>;
+};
+
+export const WarningIcon: IconComponent = (props) => {
+  return <Icon {...props}>warning</Icon>;
 };

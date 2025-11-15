@@ -110,10 +110,32 @@ impl GridController {
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return ops;
+        };
+
         let rects = selection.rects(&self.a1_context);
         if rects.is_empty() {
             return ops;
         }
+
+        // Check if any rect in the selection overlaps with data tables
+        if rects
+            .iter()
+            .any(|rect| sheet.contains_data_table_within_rect(*rect, None))
+        {
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                crate::wasm_bindings::js::jsClientMessage(
+                    "Cannot add code cell to table".to_string(),
+                    crate::grid::js_types::JsSnackbarSeverity::Error.to_string(),
+                );
+            }
+            // cannot set a code cell where there is already a data table anchor
+            return ops;
+        }
+
         let first_pos = rects[0].min.to_sheet_pos(selection.sheet_id);
         rects.iter().for_each(|rect| {
             for x in rect.min.x..=rect.max.x {
