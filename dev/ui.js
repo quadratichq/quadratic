@@ -125,6 +125,21 @@ export class UI {
         process.stdout.write("\n");
         this.prompt();
     }
+    printBoxedError(component, text) {
+        if (this.getHideOption(component))
+            return;
+        this.clear();
+        const { name, color, dark } = COMPONENTS[component];
+        const displayColor = this.cli.options.dark ? dark : color;
+        const prefix = `[${chalk[displayColor](name)}] `;
+        const message = chalk.red(text);
+        const width = Math.max(80, text.length + 4);
+        const border = "-".repeat(width - 2);
+        process.stdout.write(`${prefix}+${border}+\n`);
+        process.stdout.write(`${prefix}| ${message}${" ".repeat(Math.max(0, width - text.length - 4))} |\n`);
+        process.stdout.write(`${prefix}+${border}+\n`);
+        this.prompt();
+    }
     promptExternal() {
         const postgres = this.control.status.postgres;
         const redis = this.control.status.redis;
