@@ -112,7 +112,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   });
 
   const source = args.source;
-  const restrictedCountry = isRestrictedModelCountry(req);
+  const restrictedCountry = isRestrictedModelCountry(req, isOnPaidPlan);
   let modelKey = await getModelKey(
     clientModelKey,
     args,

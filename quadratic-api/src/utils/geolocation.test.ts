@@ -407,4 +407,56 @@ describe('isRestrictedModelCountry', () => {
     const result = isRestrictedModelCountry(req);
     expect(result).toBe(false);
   });
+
+  it('should return false when user is on paid plan, even if country is restricted', () => {
+    mockRestrictedCountries = 'CN,RU,IR';
+
+    const req = {
+      headers: {
+        'x-forwarded-for': '202.12.27.33',
+      },
+      ip: '202.12.27.33',
+    } as unknown as Request;
+
+    mockGeoip.lookup.mockReturnValue({
+      range: [0, 0],
+      country: 'CN',
+      region: '',
+      eu: '0',
+      timezone: '',
+      city: '',
+      ll: [0, 0],
+      metro: 0,
+      area: 0,
+    });
+
+    const result = isRestrictedModelCountry(req, true);
+    expect(result).toBe(false);
+  });
+
+  it('should return false when user is on paid plan, even if country is not restricted', () => {
+    mockRestrictedCountries = 'CN,RU,IR';
+
+    const req = {
+      headers: {
+        'x-forwarded-for': '8.8.8.8',
+      },
+      ip: '8.8.8.8',
+    } as unknown as Request;
+
+    mockGeoip.lookup.mockReturnValue({
+      range: [0, 0],
+      country: 'US',
+      region: '',
+      eu: '0',
+      timezone: '',
+      city: '',
+      ll: [0, 0],
+      metro: 0,
+      area: 0,
+    });
+
+    const result = isRestrictedModelCountry(req, true);
+    expect(result).toBe(false);
+  });
 });
