@@ -22,10 +22,7 @@ export const useGetFileName = () => {
         ]);
 
         // Combine and filter messages to get only user prompts and assistant responses
-        const allMessages: ChatMessage[] = [
-          ...aiAssistantMessages,
-          ...aiAnalystMessages,
-        ];
+        const allMessages: ChatMessage[] = [...aiAssistantMessages, ...aiAnalystMessages];
 
         // Sort by timestamp if available, otherwise maintain order
         // For now, we'll use the order they appear in the arrays
@@ -84,4 +81,3 @@ ${toMarkdown(chatPromptMessages, 'chat_messages')}
 
   return { getFileName };
 };
-

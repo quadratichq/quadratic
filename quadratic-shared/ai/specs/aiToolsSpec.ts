@@ -653,13 +653,15 @@ You should use the set_file_name function to set the name of the file based on t
 This function requires the name of the file, this should be concise and descriptive of the file's content and purpose, and should be easily understandable by a non-technical user.\n
 The file name should be based on user's messages and should reflect the file's purpose and content.\n
 This name should be from user's perspective, not the assistant's.\n
+IMPORTANT: The file name must be 1-3 words only. Keep it short and concise.\n
+The file name should focus on the analysis or topic being explored (e.g., "GDP over time", "Sales trends", "Budget analysis"), not on implementation details like "chart", "table", "report", or "dashboard". Focus on what is being analyzed, not how it's presented.\n
 `,
     parameters: {
       type: 'object',
       properties: {
         file_name: {
           type: 'string',
-          description: 'The name of the file',
+          description: 'The name of the file. Must be 1-3 words only. Keep it short and concise.',
         },
       },
       required: ['file_name'],

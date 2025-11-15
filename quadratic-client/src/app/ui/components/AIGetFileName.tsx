@@ -50,23 +50,26 @@ export const AIGetFileName = memo(() => {
       getFileName()
         .then((fileName) => {
           if (fileName && fileName.trim() && fileName !== DEFAULT_FILE_NAME) {
-            renameFile(fileName);
-            // renameFile already sets fileManuallyRenamed to true
+            // Validate word count (1-3 words)
+            const wordCount = fileName
+              .trim()
+              .split(/\s+/)
+              .filter((word) => word.length > 0).length;
+            if (wordCount >= 1 && wordCount <= 3) {
+              renameFile(fileName);
+              // renameFile already sets fileManuallyRenamed to true
+            } else {
+              console.warn(
+                `[AIGetFileName] File name "${fileName}" has ${wordCount} words, but must be 1-3 words. Skipping rename.`
+              );
+            }
           }
         })
         .catch((error) => {
           console.error('[AIGetFileName] getFileName: ', error);
         });
     }
-  }, [
-    userPromptCount,
-    name,
-    fileManuallyRenamed,
-    loading,
-    getFileName,
-    renameFile,
-    setFileManuallyRenamed,
-  ]);
+  }, [userPromptCount, name, fileManuallyRenamed, loading, getFileName, renameFile, setFileManuallyRenamed]);
 
   // Reset trigger when message count decreases (new chat started)
   useEffect(() => {
@@ -77,4 +80,3 @@ export const AIGetFileName = memo(() => {
 
   return null;
 });
-
