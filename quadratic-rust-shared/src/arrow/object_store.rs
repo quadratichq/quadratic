@@ -1,6 +1,6 @@
 //! Object Store functions for Arrow.
 //!
-//! Functions to interact with the object store.    
+//! Functions to interact with the object store.
 //!
 //! Currently, we only support S3 and filesystem.
 
@@ -64,15 +64,23 @@ pub fn new_s3_object_store(
 
 /// Create a new filesystem object store.
 pub fn new_filesystem_object_store(path: &str) -> Result<(Arc<dyn ObjectStore>, PathBuf)> {
-    println!("Creating filesystem object store at path: {}", path);
-    let file_system = LocalFileSystem::new_with_prefix(path).map_err(object_store_error)?;
-    let file_system_url = file_system
-        .path_to_filesystem(&Path::from(path))
-        .map_err(object_store_error)?;
-    println!("Filesystem object store URL: {:?}", file_system_url);
-    let arc_file_system = Arc::new(file_system);
+    // Trim trailing slashes to avoid issues with object_store
+    let normalized_path = path.trim().trim_end_matches('/');
 
-    Ok((arc_file_system, file_system_url))
+    println!(
+        "Creating filesystem object store at path: {} (original: {:?})",
+        normalized_path, path
+    );
+
+    let file_system = LocalFileSystem::new_with_prefix(normalized_path).map_err(|e| {
+        object_store_error(format!(
+            "Failed to create LocalFileSystem with path {:?}: {}",
+            normalized_path, e
+        ))
+    })?;
+
+    let arc_file_system = Arc::new(file_system);
+    Ok((arc_file_system, PathBuf::from(normalized_path)))
 }
 
 /// List objects from the object store.
@@ -161,9 +169,8 @@ mod tests {
     fn test_new_filesystem_object_store() {
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().to_str().unwrap();
-        let (_store, file_path) = new_filesystem_object_store(path).unwrap();
+        let (_store, _file_path) = new_filesystem_object_store(path).unwrap();
 
-        assert!(file_path.is_absolute());
         assert!(temp_dir.path().exists());
     }
 

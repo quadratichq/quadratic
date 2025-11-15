@@ -549,9 +549,17 @@ export class Control {
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
         success: "listening on",
-        error: ["error[", "npm ERR!"],
+        error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
         start: "    Compiling",
       });
+    });
+    this.connection.on("exit", (code) => {
+      // Only set error status if exit code indicates failure and status wasn't already set to success
+      if (code !== 0 && code !== null && this.status.connection !== true) {
+        this.status.connection = "error";
+        this.ui.print("connection", "exited with error code", "red");
+      }
+      this.connection = undefined;
     });
   }
 
@@ -616,11 +624,13 @@ export class Control {
       if (code === 0) {
         this.ui.print("db", "migration completed");
         this.status.db = true;
+        this.runApi();
       } else {
         this.ui.print("db", "failed");
         this.status.db = "error";
+        this.ui.printBoxedError("db", "Failed to migrate database. Likely you will need to `npm run prisma:dev:reset`");
+        this.quit();
       }
-      this.runApi();
     });
   }
 
