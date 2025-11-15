@@ -11,7 +11,7 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 export const RESTRICTED_MODEL_ROUTER_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'vertexai-anthropic:claude-haiku-4-5@20251001:thinking-toggle-on';
+export const DEFAULT_MODEL: AIModelKey = 'azure-openai:gpt-5.1';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
@@ -143,7 +143,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'others',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -539,6 +539,26 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_write_tokens: 0,
   },
   'azure-openai:gpt-5.1': {
+    model: 'gpt-5.1',
+    backupModelKey: 'openai:gpt-5.1',
+    displayName: 'GPT-5.1',
+    displayProvider: 'OpenAI',
+    temperature: 1,
+    max_tokens: 128000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'fast',
+    provider: 'azure-openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    supportsReasoning: true,
+    rate_per_million_input_tokens: 2.5,
+    rate_per_million_output_tokens: 20,
+    rate_per_million_cache_read_tokens: 0.25,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-5.1-others': {
     model: 'gpt-5.1',
     backupModelKey: 'openai:gpt-5.1',
     displayName: 'GPT-5.1',
