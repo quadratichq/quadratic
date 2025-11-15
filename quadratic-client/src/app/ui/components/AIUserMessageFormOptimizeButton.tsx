@@ -39,15 +39,16 @@ export const AIUserMessageFormOptimizeButton = memo(
     }, [prompt, optimizePrompt, setPrompt, textareaRef, isOptimizing]);
 
     return (
-      <TooltipPopover label="Enhance prompt">
+      <TooltipPopover label="Enhance my prompt with better instructions" fastMode={true}>
         <Button
-          size="icon-sm"
-          className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+          size="sm"
+          className="h-7 w-7 gap-1.5 rounded-full px-0 shadow-none hover:bg-border @[450px]:w-auto @[450px]:px-2"
           variant="ghost"
           disabled={disabled || isOptimizing}
           onClick={handleOptimize}
         >
           {isOptimizing ? <SpinnerIcon /> : <EnhancePromptIcon />}
+          <span className="hidden text-xs @[450px]:inline">Enhance Prompt</span>
         </Button>
       </TooltipPopover>
     );
