@@ -52,6 +52,9 @@ impl GridController {
                 self.transactions.update_async_transaction(transaction);
                 break;
             } else if !transaction.operations.is_empty() {
+                // Notify about the next operation before executing it
+                // This ensures newly added operations (from previous operations) are included
+                self.notify_next_operation_if_code(transaction);
                 self.execute_operation(transaction);
             } else if !transaction.resize_rows.is_empty() {
                 if let Some((sheet_id, rows)) = transaction

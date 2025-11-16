@@ -229,6 +229,25 @@ impl GridController {
         print_first_sheet!(&self);
     }
 
+    /// Notifies about the next operation if it's a ComputeCode operation
+    /// This is called right before executing the next operation to ensure
+    /// newly added operations are included in the notification
+    pub(super) fn notify_next_operation_if_code(&self, transaction: &PendingTransaction) {
+        // Peek at the front of the queue without removing it
+        if let Some(Operation::ComputeCode { sheet_pos }) = transaction.operations.front() {
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                if let Some(code_run) = sheet.code_run_at(&(*sheet_pos).into()) {
+                    let language = code_run.language.clone();
+                    let code = code_run.code.clone();
+                    // Notify about this operation as current, with all remaining operations as pending
+                    // Call notify_code_running_state which is defined in execute_code module
+                    // Since both are impl GridController blocks, we can call it directly on self
+                    self.notify_code_running_state(transaction, *sheet_pos, language, code);
+                }
+            }
+        }
+    }
+
     /// Notifies the client about pending code operations (when no execution has started yet)
     pub(super) fn notify_pending_code_operations(&self, transaction: &PendingTransaction) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -256,7 +275,9 @@ impl GridController {
                                 // Serialize language as string for JSON
                                 let language_str = match &pending_code_run.language {
                                     crate::grid::CodeCellLanguage::Python => "Python".to_string(),
-                                    crate::grid::CodeCellLanguage::Javascript => "Javascript".to_string(),
+                                    crate::grid::CodeCellLanguage::Javascript => {
+                                        "Javascript".to_string()
+                                    }
                                     crate::grid::CodeCellLanguage::Connection { kind, id } => {
                                         format!("Connection:{}:{}", kind.to_string(), id)
                                     }

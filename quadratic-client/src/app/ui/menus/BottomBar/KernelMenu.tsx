@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
@@ -41,109 +42,37 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
     };
   }, []);
 
-  // Track state from all language sources
-  const [pythonCurrent, setPythonCurrent] = useState<CodeRun | undefined>();
-  const [pythonAwaiting, setPythonAwaiting] = useState<CodeRun[]>([]);
-  const [javascriptCurrent, setJavascriptCurrent] = useState<CodeRun | undefined>();
-  const [javascriptAwaiting, setJavascriptAwaiting] = useState<CodeRun[]>([]);
-  const [connectionCurrent, setConnectionCurrent] = useState<CodeRun | undefined>();
-  const [connectionAwaiting, setConnectionAwaiting] = useState<CodeRun[]>([]);
-
-  // Combine all language states
-  const currentCodeRun = pythonCurrent || javascriptCurrent || connectionCurrent;
-  const awaitingCodeRuns = [
-    ...(pythonAwaiting || []),
-    ...(javascriptAwaiting || []),
-    ...(connectionAwaiting || []),
-  ].filter((run, index, self) => {
-    // Remove duplicates based on sheet position
-    return (
-      index ===
-      self.findIndex(
-        (r) =>
-          r.sheetPos.x === run.sheetPos.x &&
-          r.sheetPos.y === run.sheetPos.y &&
-          r.sheetPos.sheetId === run.sheetPos.sheetId
-      )
-    );
-  });
+  // Store current and awaiting operations from Rust (preserves execution order)
+  // Rust sends a unified event with all operations, so we don't need language-specific state
+  const [currentCodeRun, setCurrentCodeRun] = useState<CodeRun | undefined>();
+  const [awaitingCodeRuns, setAwaitingCodeRuns] = useState<CodeRun[]>([]);
 
   useEffect(() => {
     // Listen only to unified event from Rust (which has all languages combined)
     // This is the authoritative source for all pending operations from Rust transactions
     // Rust sends the complete list whenever it updates, so we don't need language-specific handlers
     const unifiedStateHandler = (current?: CodeRun, awaitingExecution?: CodeRun[]) => {
-      // Clear current runs if not in unified event
-      if (!current) {
-        setPythonCurrent(undefined);
-        setJavascriptCurrent(undefined);
-        setConnectionCurrent(undefined);
-      } else {
-        // Distribute current cell to appropriate language bucket
-        const cellsSheet = content.cellsSheets.getById(current.sheetPos.sheetId);
-        const codeCell = cellsSheet?.tables.getCodeCellIntersects({
-          x: current.sheetPos.x,
-          y: current.sheetPos.y,
-        });
-        const lang = codeCell?.language
-          ? getConnectionKind(codeCell.language) || getLanguage(codeCell.language)
-          : pythonWebWorker.state === 'running'
-            ? 'Python'
-            : javascriptWebWorker.state === 'running'
-              ? 'Javascript'
-              : 'Connection';
+      // Rust sends the current operation directly - no need to distribute by language
+      setCurrentCodeRun(current);
 
-        // Set current for the appropriate language and clear others
-        if (lang === 'Python') {
-          setPythonCurrent(current);
-          setJavascriptCurrent(undefined);
-          setConnectionCurrent(undefined);
-        } else if (lang === 'Javascript') {
-          setPythonCurrent(undefined);
-          setJavascriptCurrent(current);
-          setConnectionCurrent(undefined);
-        } else {
-          setPythonCurrent(undefined);
-          setJavascriptCurrent(undefined);
-          setConnectionCurrent(current);
-        }
-      }
-
-      // Distribute awaiting cells - REPLACE (not merge) to ensure we show all cells from unified event
-      // IMPORTANT: Show ALL operations from Rust, even if language detection fails
-      const pythonAwaiting: CodeRun[] = [];
-      const javascriptAwaiting: CodeRun[] = [];
-      const connectionAwaiting: CodeRun[] = [];
-
+      // Store awaiting operations in the order Rust sends them
       if (awaitingExecution && awaitingExecution.length > 0) {
-        awaitingExecution.forEach((run) => {
-          const cellsSheet = content.cellsSheets.getById(run.sheetPos.sheetId);
-          const codeCell = cellsSheet?.tables.getCodeCellIntersects({
-            x: run.sheetPos.x,
-            y: run.sheetPos.y,
-          });
-          const lang = codeCell?.language
-            ? getConnectionKind(codeCell.language) || getLanguage(codeCell.language)
-            : undefined;
-
-          // Distribute to appropriate bucket - default to connection if language can't be determined
-          // This ensures ALL operations are shown, even if language detection fails
-          if (lang === 'Python') {
-            pythonAwaiting.push(run);
-          } else if (lang === 'Javascript') {
-            javascriptAwaiting.push(run);
-          } else {
-            // Connection or unknown language - show it anyway
-            connectionAwaiting.push(run);
-          }
+        // Remove duplicates based on sheet position while preserving order
+        const uniqueAwaiting = awaitingExecution.filter((run, index, self) => {
+          return (
+            index ===
+            self.findIndex(
+              (r) =>
+                r.sheetPos.x === run.sheetPos.x &&
+                r.sheetPos.y === run.sheetPos.y &&
+                r.sheetPos.sheetId === run.sheetPos.sheetId
+            )
+          );
         });
+        setAwaitingCodeRuns(uniqueAwaiting);
+      } else {
+        setAwaitingCodeRuns([]);
       }
-
-      // Replace awaiting arrays (don't merge - unified event is authoritative)
-      // This ensures we show the complete list from Rust
-      setPythonAwaiting(pythonAwaiting);
-      setJavascriptAwaiting(javascriptAwaiting);
-      setConnectionAwaiting(connectionAwaiting);
     };
 
     // Only listen to unified event from Rust - it has the complete picture
@@ -178,7 +107,10 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
   // Helper to get cancel handler for a code run
   const getCancelHandler = (codeRun: CodeRun) => {
     const { languageId } = getCodeCellInfo(codeRun);
-    if (
+    if (languageId === 'Formula') {
+      // Formulas execute synchronously and can't be cancelled
+      return () => {};
+    } else if (
       languageId === 'Connection' ||
       (languageId &&
         [
@@ -291,28 +223,42 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
               })()}
 
             {/* Awaiting execution cells */}
-            {awaitingCodeRuns.map((codeRun) => {
-              const { name, languageId } = getCodeCellInfo(codeRun);
-              const sheetName =
-                codeRun.sheetPos.sheetId !== sheets.current
-                  ? `, "${sheets.getById(codeRun.sheetPos.sheetId)?.name || ''}"`
-                  : '';
-              return (
-                <DropdownMenuItem
-                  key={`awaiting-${codeRun.sheetPos.x}-${codeRun.sheetPos.y}`}
-                  onClick={getCancelHandler(codeRun)}
-                  className="opacity-60"
-                >
-                  <div className="flex items-center gap-2 text-sm">
-                    {languageId && <LanguageIcon language={languageId} className="h-4 w-4 flex-shrink-0" />}
-                    <span>
-                      {name}
-                      {sheetName} is queued...
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              );
-            })}
+            {awaitingCodeRuns.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Pending</DropdownMenuLabel>
+                <div className="max-h-[220px] overflow-y-auto">
+                  {awaitingCodeRuns.map((codeRun) => {
+                    const { name, languageId } = getCodeCellInfo(codeRun);
+                    const sheetName =
+                      codeRun.sheetPos.sheetId !== sheets.current
+                        ? `, "${sheets.getById(codeRun.sheetPos.sheetId)?.name || ''}"`
+                        : '';
+                    return (
+                      <DropdownMenuItem
+                        key={`awaiting-${codeRun.sheetPos.x}-${codeRun.sheetPos.y}`}
+                        onClick={getCancelHandler(codeRun)}
+                        className="pl-6"
+                      >
+                        <div className="flex items-center gap-2 text-sm">
+                          {languageId && <LanguageIcon language={languageId} className="h-4 w-4 flex-shrink-0" />}
+                          <span>
+                            {name}
+                            {sheetName}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
+                {/* Dummy item to ensure separator CSS works (separator needs neighbors on both sides) */}
+                {awaitingCodeRuns.length > 0 && (
+                  <DropdownMenuItem className="pointer-events-none hidden h-0 p-0" onSelect={(e) => e.preventDefault()}>
+                    <span className="sr-only">Separator anchor</span>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
 
             {/* Stop actions when there are running cells */}
             {(currentCodeRun || awaitingCodeRuns.length > 0) && (

@@ -212,9 +212,25 @@ class QuadraticCore {
         // Rust always sends the currently executing cell as the first item when
         // execution has started (via notify_code_running_state), or all
         // operations as pending when execution hasn't started (via
-        // notify_pending_code_operations). Check if any worker is currently
-        // executing code to determine if first item is current
-        const hasCurrentExecution = pythonWebWorker.state === 'running' || javascriptWebWorker.state === 'running';
+        // notify_pending_code_operations).
+        //
+        // When Rust calls notify_code_running_state, it means execution has started,
+        // so the first item is always the current one. We need to check if any worker
+        // is currently executing OR if we can infer that execution has started.
+        //
+        // For connection operations: if notify_code_running_state was called, Rust sends
+        // the connection as the first item (current). If notify_pending_code_operations
+        // was called, all operations are pending. Since both call the same JS function,
+        // we infer execution has started if: (1) Python/JS workers are running, OR
+        // (2) the first operation is a connection (Rust sends connections as current
+        // when notify_code_running_state is called, even if it's the only operation).
+        const [firstOp] = codeOps;
+        const isFirstOpConnection = firstOp && firstOp[3]?.startsWith('Connection:');
+        const hasWorkerExecution = pythonWebWorker.state === 'running' || javascriptWebWorker.state === 'running';
+        // If first op is connection, Rust likely sent it as current via notify_code_running_state
+        // (we moved notify_code_running_state before run_connection, so UI updates before execution starts)
+        const hasConnectionExecution = isFirstOpConnection;
+        const hasCurrentExecution = hasWorkerExecution || hasConnectionExecution;
 
         let current: CodeRun | undefined;
         let awaitingExecution: CodeRun[];
