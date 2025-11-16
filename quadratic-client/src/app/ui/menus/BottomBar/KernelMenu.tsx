@@ -198,35 +198,39 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
             <DropdownMenuSeparator />
 
             {/* Currently running cell */}
-            {currentCodeRun &&
-              (() => {
-                const { name, languageId } = getCodeCellInfo(currentCodeRun);
-                const sheetName =
-                  currentCodeRun.sheetPos.sheetId !== sheets.current
-                    ? `, "${sheets.getById(currentCodeRun.sheetPos.sheetId)?.name || ''}"`
-                    : '';
-                return (
-                  <DropdownMenuItem
-                    key={`current-${currentCodeRun.sheetPos.x}-${currentCodeRun.sheetPos.y}`}
-                    className="opacity-100"
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <div className="flex items-center gap-2 text-sm">
-                      {languageId && <LanguageIcon language={languageId} className="h-4 w-4 flex-shrink-0" />}
-                      <span>
-                        {name}
-                        {sheetName} is running...
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })()}
+            {currentCodeRun && (
+              <>
+                <DropdownMenuLabel>Running</DropdownMenuLabel>
+                {(() => {
+                  const { name, languageId } = getCodeCellInfo(currentCodeRun);
+                  const sheetName =
+                    currentCodeRun.sheetPos.sheetId !== sheets.current
+                      ? `, "${sheets.getById(currentCodeRun.sheetPos.sheetId)?.name || ''}"`
+                      : '';
+                  return (
+                    <DropdownMenuItem
+                      key={`current-${currentCodeRun.sheetPos.x}-${currentCodeRun.sheetPos.y}`}
+                      className="pl-6 opacity-100"
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <div className="flex items-center gap-2 text-sm">
+                        {languageId && <LanguageIcon language={languageId} className="h-4 w-4 flex-shrink-0" />}
+                        <span>
+                          {name}
+                          {sheetName}
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })()}
+              </>
+            )}
 
             {/* Awaiting execution cells */}
             {awaitingCodeRuns.length > 0 && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Pending</DropdownMenuLabel>
+                <DropdownMenuLabel>Pending ({awaitingCodeRuns.length})</DropdownMenuLabel>
                 <div className="max-h-[220px] overflow-y-auto">
                   {awaitingCodeRuns.map((codeRun) => {
                     const { name, languageId } = getCodeCellInfo(codeRun);
