@@ -8,9 +8,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import {
   calculateAlphaForGridLines,
+  getColumnVerticalRangesToDraw,
   getMergedCellExcludedColumnsForRow,
   getMergedCellExcludedRowsForColumn,
-  subtractRanges,
+  getRowHorizontalRangesToDraw,
 } from '@/app/gridGL/UI/gridUtils';
 import type { Rect } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
@@ -132,50 +133,14 @@ export class GridLines extends Graphics {
         // Use the full visible row range, not just 'range' from horizontal lines
         const mergedExcludedRows = getMergedCellExcludedRowsForColumn(column, [startRow, endRow], mergedRects);
 
-        let linesToDraw: [number, number][] | undefined;
+        // Get the full row range for this column
+        const topRow = offsets.getRowFromScreen(top);
+        const bottomRow = offsets.getRowFromScreen(bounds.bottom);
+        const fullRowRange: [number, number] = [topRow, bottomRow];
 
-        if (overflowLines) {
-          // We have overflow lines, need to subtract merged cell exclusions from each segment
-          linesToDraw = [];
-          for (const [y0, y1] of overflowLines) {
-            // Subtract merged exclusions from this segment
-            const segmentExcluded = mergedExcludedRows.filter(([exclY0, exclY1]) => exclY0 <= y1 && y0 <= exclY1);
-            if (segmentExcluded.length > 0) {
-              // Adjust excluded ranges to be within the segment
-              const adjustedExcluded: [number, number][] = segmentExcluded.map(([exclY0, exclY1]) => [
-                Math.max(exclY0, y0),
-                Math.min(exclY1, y1),
-              ]);
-              const segmentRanges = subtractRanges([y0, y1], adjustedExcluded);
-              // segmentRanges can be undefined (no exclusions), empty array (fully excluded), or array of ranges
-              if (segmentRanges && segmentRanges.length > 0) {
-                linesToDraw.push(...segmentRanges);
-              }
-              // If segmentRanges is undefined or empty, don't draw this segment
-            } else {
-              // No exclusions in this segment, draw the whole thing
-              linesToDraw.push([y0, y1]);
-            }
-          }
-        } else {
-          // No overflow lines, check if entire line should be excluded due to merged cells
-          if (mergedExcludedRows.length > 0) {
-            // Check if the entire visible range is excluded
-            const topRow = offsets.getRowFromScreen(top);
-            const bottomRow = offsets.getRowFromScreen(bounds.bottom);
-            const fullRangeExcluded = mergedExcludedRows.some(
-              ([exclY0, exclY1]) => exclY0 <= topRow && bottomRow <= exclY1
-            );
-            if (!fullRangeExcluded) {
-              // Subtract excluded ranges from the full range
-              linesToDraw = subtractRanges([topRow, bottomRow], mergedExcludedRows);
-            }
-            // If fullRangeExcluded is true, linesToDraw stays undefined (don't draw)
-          } else {
-            // No exclusions, draw the full line
-            linesToDraw = undefined;
-          }
-        }
+        // Compute ranges to draw, combining overflow and merged cell exclusions
+        // Follows the same pattern as GridOverflowLines
+        const linesToDraw = getColumnVerticalRangesToDraw(column, fullRowRange, overflowLines, mergedExcludedRows);
 
         // Draw the calculated line segments
         if (linesToDraw && linesToDraw.length > 0) {
@@ -233,48 +198,9 @@ export class GridLines extends Graphics {
         // Precalculate excluded column ranges due to merged cells
         const mergedExcludedCols = getMergedCellExcludedColumnsForRow(row, [startCol, endCol], mergedRects);
 
-        let linesToDraw: [number, number][] | undefined;
-
-        if (overflowLines) {
-          // We have overflow lines, need to subtract merged cell exclusions from each segment
-          linesToDraw = [];
-          for (const [x0, x1] of overflowLines) {
-            // Subtract merged exclusions from this segment
-            const segmentExcluded = mergedExcludedCols.filter(([exclX0, exclX1]) => exclX0 <= x1 && x0 <= exclX1);
-            if (segmentExcluded.length > 0) {
-              // Adjust excluded ranges to be within the segment
-              const adjustedExcluded: [number, number][] = segmentExcluded.map(([exclX0, exclX1]) => [
-                Math.max(exclX0, x0),
-                Math.min(exclX1, x1),
-              ]);
-              const segmentRanges = subtractRanges([x0, x1], adjustedExcluded);
-              // segmentRanges can be undefined (no exclusions), empty array (fully excluded), or array of ranges
-              if (segmentRanges && segmentRanges.length > 0) {
-                linesToDraw.push(...segmentRanges);
-              }
-              // If segmentRanges is undefined or empty, don't draw this segment
-            } else {
-              // No exclusions in this segment, draw the whole thing
-              linesToDraw.push([x0, x1]);
-            }
-          }
-        } else {
-          // No overflow lines, check if entire line should be excluded due to merged cells
-          if (mergedExcludedCols.length > 0) {
-            // Check if the entire visible range is excluded
-            const fullRangeExcluded = mergedExcludedCols.some(
-              ([exclX0, exclX1]) => exclX0 <= startCol && endCol <= exclX1
-            );
-            if (!fullRangeExcluded) {
-              // Subtract excluded ranges from the full range
-              linesToDraw = subtractRanges([startCol, endCol], mergedExcludedCols);
-            }
-            // If fullRangeExcluded is true, linesToDraw stays undefined (don't draw)
-          } else {
-            // No exclusions, draw the full line
-            linesToDraw = undefined;
-          }
-        }
+        // Compute ranges to draw, combining overflow and merged cell exclusions
+        // Follows the same pattern as GridOverflowLines
+        const linesToDraw = getRowHorizontalRangesToDraw(row, [startCol, endCol], overflowLines, mergedExcludedCols);
 
         // Draw the calculated line segments
         if (linesToDraw && linesToDraw.length > 0) {
