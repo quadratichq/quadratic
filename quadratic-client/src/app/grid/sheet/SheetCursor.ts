@@ -252,8 +252,8 @@ export class SheetCursor {
     this.updatePosition(ensureVisible);
   };
 
-  selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
-    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells);
+  selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false) => {
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells, isDrag);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
@@ -283,7 +283,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells);
+    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells, false);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -292,7 +292,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells);
+    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells, false);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };

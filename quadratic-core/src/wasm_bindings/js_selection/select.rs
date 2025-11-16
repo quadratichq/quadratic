@@ -68,6 +68,7 @@ impl JsSelection {
         append: bool,
         context: &JsA1Context,
         merge_cells: &JsMergeCells,
+        is_drag: bool,
     ) {
         self.selection.select_to(
             x as i64,
@@ -75,6 +76,7 @@ impl JsSelection {
             append,
             context.get_context(),
             Some(merge_cells.get_merge_cells()),
+            is_drag,
         );
     }
 

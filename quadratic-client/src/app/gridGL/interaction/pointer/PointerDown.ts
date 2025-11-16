@@ -128,7 +128,7 @@ export class PointerDown {
 
     // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
     if (event.shiftKey) {
-      cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
+      cursor.selectTo(column, row, event.metaKey || event.ctrlKey, true, false);
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
@@ -189,7 +189,7 @@ export class PointerDown {
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
       pixiApp.viewport.enableMouseEdges(world);
 
-      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false);
+      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false, true);
       this.previousPosition = new Point(column, row);
 
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {

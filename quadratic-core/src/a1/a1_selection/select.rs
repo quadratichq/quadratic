@@ -369,10 +369,11 @@ impl A1Selection {
         append: bool,
         a1_context: &A1Context,
         merge_cells: Option<&MergeCells>,
+        is_drag: bool,
     ) {
         // Adjust column/row to align with merged cell boundaries if selection includes merged cells
-        let (adjusted_column, adjusted_row, adjusted_start) =
-            self.adjust_selection_end_for_merged_cells(column, row, a1_context, merge_cells);
+        let (adjusted_column, adjusted_row, adjusted_start) = self
+            .adjust_selection_end_for_merged_cells(column, row, a1_context, merge_cells, is_drag);
 
         // Store adjusted_start for use later
         let adjusted_start_opt = adjusted_start;
@@ -509,6 +510,7 @@ impl A1Selection {
         new_y: i64,
         a1_context: &A1Context,
         merge_cells: Option<&crate::grid::sheet::merge_cells::MergeCells>,
+        is_drag: bool,
     ) -> (i64, i64, Option<(i64, i64)>) {
         let Some(merge_cells) = merge_cells else {
             return (new_x, new_y, None);
@@ -537,9 +539,12 @@ impl A1Selection {
             &mut selection_rect,
             start_x,
             start_y,
+            new_x,
+            new_y,
             shrinking_x,
             shrinking_y,
             merge_cells,
+            is_drag,
         );
 
         self.calculate_adjusted_positions(selection_rect, start_x, start_y, new_x, new_y)
@@ -701,103 +706,220 @@ impl A1Selection {
     }
 
     /// Collects all cells that need to be checked for merged cell boundaries
-    fn collect_cells_to_check(&self, selection_rect: Rect, start_x: i64, start_y: i64) -> Vec<Pos> {
-        let mut cells_to_check = vec![
-            Pos {
-                x: start_x,
-                y: start_y,
-            },
-            Pos {
-                x: selection_rect.min.x,
-                y: selection_rect.min.y,
-            },
-            Pos {
-                x: selection_rect.max.x,
-                y: selection_rect.min.y,
-            },
-            Pos {
-                x: selection_rect.min.x,
-                y: selection_rect.max.y,
-            },
-            Pos {
-                x: selection_rect.max.x,
-                y: selection_rect.max.y,
-            },
-        ];
-
-        // Check cells along the edges
-        for x in selection_rect.min.x..=selection_rect.max.x {
-            cells_to_check.push(Pos {
-                x,
-                y: selection_rect.min.y,
-            });
-            cells_to_check.push(Pos {
-                x,
-                y: selection_rect.max.y,
-            });
-        }
-        for y in selection_rect.min.y..=selection_rect.max.y {
-            cells_to_check.push(Pos {
-                x: selection_rect.min.x,
-                y,
-            });
-            cells_to_check.push(Pos {
-                x: selection_rect.max.x,
-                y,
-            });
-        }
-
-        cells_to_check
-    }
-
     /// Adjusts the selection rectangle to properly handle merged cells
+    ///
+    /// 1. Build the "potential" selection rect from start to end (ignoring current bounds)
+    /// 2. Find all merged cells that overlap this potential selection OR contain the end position
+    /// 3. Expand selection to fully include all such merged cells (iterate until stable)
+    /// 4. When dragging: done - overlapping merged cells stay selected
+    /// 5. When shift-clicking: shrink if moving away, but ensure no partial selection remains
     fn adjust_rect_for_merged_cells(
         &self,
         selection_rect: &mut Rect,
         start_x: i64,
         start_y: i64,
+        new_x: i64,
+        new_y: i64,
         shrinking_x: bool,
         shrinking_y: bool,
         merge_cells: &MergeCells,
+        is_drag: bool,
     ) {
-        let max_iterations = 100;
-        let mut iteration = 0;
+        // Build the "potential" selection rect from start to end
+        // This represents what the selection WOULD be if we didn't have current bounds
+        // We need this to find merged cells that the selection overlaps, even if we're shrinking
+        let potential_selection = Rect::new(
+            start_x.min(new_x),
+            start_y.min(new_y),
+            start_x.max(new_x),
+            start_y.max(new_y),
+        );
 
+        // Build search rect that includes potential selection, current selection, start, and end positions
+        // We need to expand the search rect to catch merged cells that extend beyond the potential selection
+        // This is important because merged cells that overlap with the selection might extend beyond it
+        let search_rect = Rect::new(
+            potential_selection
+                .min
+                .x
+                .min(selection_rect.min.x)
+                .min(start_x)
+                .min(new_x)
+                - 100,
+            potential_selection
+                .min
+                .y
+                .min(selection_rect.min.y)
+                .min(start_y)
+                .min(new_y)
+                - 100,
+            potential_selection
+                .max
+                .x
+                .max(selection_rect.max.x)
+                .max(start_x)
+                .max(new_x)
+                + 100,
+            potential_selection
+                .max
+                .y
+                .max(selection_rect.max.y)
+                .max(start_y)
+                .max(new_y)
+                + 100,
+        );
+
+        // Find all merged cells that overlap with potential selection or contain the end position
+        // Use nondefault_rects_in_rect_combined to get complete merged cell rects
+        let mut merged_cells_to_include = HashSet::<Rect>::new();
+
+        // Get all merged cells in the search area
+        for merge_rect in merge_cells.get_merge_cells(search_rect) {
+            // Check if this merged cell overlaps with the potential selection
+            // We always check potential_selection because it represents the full selection
+            // from start to end, which is what we want to include merged cells for
+            let overlaps_potential = merge_rect.intersects(potential_selection);
+            let overlaps_current = merge_rect.intersects(*selection_rect);
+
+            // Include merged cells that overlap with potential selection (always)
+            // or current selection (when dragging)
+            let should_include = if is_drag {
+                overlaps_potential || overlaps_current
+            } else {
+                // When not dragging, include if it overlaps with potential selection
+                overlaps_potential
+            };
+
+            if should_include {
+                merged_cells_to_include.insert(merge_rect);
+            }
+        }
+
+        // Also check if end position is within a merged cell
+        if let Some(end_merge_rect) =
+            merge_cells.get_merge_cell_rect(crate::Pos { x: new_x, y: new_y })
+        {
+            merged_cells_to_include.insert(end_merge_rect);
+        }
+
+        // Expand selection to fully include all overlapping merged cells
+        // When dragging, check overlap with potential_selection to ensure we include merged cells
+        // even if current selection_rect has been shrunk
+        // Iterate until no more changes (in case expansion reveals new overlapping merged cells)
         loop {
-            iteration += 1;
-            if iteration > max_iterations {
-                break;
-            }
+            let mut changed = false;
 
-            let mut merged_cells_in_rect = HashSet::<Rect>::new();
+            for merge_rect in &merged_cells_to_include {
+                // Check overlap with current selection_rect and potential selection
+                // This ensures we include merged cells that overlap with the full selection
+                let overlaps_current = merge_rect.intersects(*selection_rect);
+                let overlaps_potential = merge_rect.intersects(potential_selection);
 
-            // Get merged cells in the selection rect
-            for merge_rect in merge_cells.get_merge_cells(*selection_rect) {
-                merged_cells_in_rect.insert(merge_rect);
-            }
-
-            // Check corner and edge cells for merged cells that extend outside
-            for cell in self.collect_cells_to_check(*selection_rect, start_x, start_y) {
-                if let Some(cell_rect) = merge_cells.get_merge_cell_rect(cell) {
-                    merged_cells_in_rect.insert(cell_rect);
+                // Expand to include merged cells that overlap with potential selection or current selection
+                if overlaps_current || overlaps_potential {
+                    // Expand to fully include this merged cell
+                    if selection_rect.min.x > merge_rect.min.x {
+                        selection_rect.min.x = merge_rect.min.x;
+                        changed = true;
+                    }
+                    if selection_rect.min.y > merge_rect.min.y {
+                        selection_rect.min.y = merge_rect.min.y;
+                        changed = true;
+                    }
+                    if selection_rect.max.x < merge_rect.max.x {
+                        selection_rect.max.x = merge_rect.max.x;
+                        changed = true;
+                    }
+                    if selection_rect.max.y < merge_rect.max.y {
+                        selection_rect.max.y = merge_rect.max.y;
+                        changed = true;
+                    }
                 }
             }
 
-            let changed = if shrinking_x || shrinking_y {
-                self.shrink_for_merged_cells(
-                    selection_rect,
-                    &merged_cells_in_rect,
-                    start_x,
-                    start_y,
-                    shrinking_x,
-                    shrinking_y,
-                )
-            } else {
-                self.expand_for_merged_cells(selection_rect, &merged_cells_in_rect)
-            };
+            // If we expanded, check for newly overlapping merged cells
+            // After expanding, we need to check ALL merged cells that overlap with the
+            // current expanded selection_rect, not just those in a search area.
+            // This ensures that when we expand to include a merged cell, we catch any
+            // other merged cells that now overlap with the expanded selection.
+            if changed {
+                // Check for merged cells that overlap with the current expanded selection_rect
+                // Expand the search area slightly to catch edge cases
+                let expanded_search = Rect::new(
+                    selection_rect.min.x.min(start_x).min(new_x) - 1,
+                    selection_rect.min.y.min(start_y).min(new_y) - 1,
+                    selection_rect.max.x.max(start_x).max(new_x) + 1,
+                    selection_rect.max.y.max(start_y).max(new_y) + 1,
+                );
 
-            if !changed {
+                // Get all merged cells in the expanded search area
+                let newly_found_merged_cells = merge_cells.get_merge_cells(expanded_search);
+
+                // Check each newly found merged cell to see if it overlaps
+                for merge_rect in newly_found_merged_cells {
+                    if merge_rect.intersects(*selection_rect)
+                        || merge_rect.intersects(potential_selection)
+                    {
+                        merged_cells_to_include.insert(merge_rect);
+                    }
+                }
+            } else {
                 break;
+            }
+        }
+
+        // When dragging: we're done - overlapping merged cells stay selected
+        // When shift-clicking: we may need to shrink if moving away, but ensure no partial selection
+        if !is_drag && (shrinking_x || shrinking_y) {
+            // Re-collect merged cells for shrinking logic
+            let final_search = Rect::new(
+                selection_rect.min.x.min(start_x).min(new_x),
+                selection_rect.min.y.min(start_y).min(new_y),
+                selection_rect.max.x.max(start_x).max(new_x),
+                selection_rect.max.y.max(start_y).max(new_y),
+            );
+            let mut merged_cells_for_shrink = HashSet::<Rect>::new();
+            for merge_rect in merge_cells.get_merge_cells(final_search) {
+                merged_cells_for_shrink.insert(merge_rect);
+            }
+
+            // Shrink to exclude partially overlapping merged cells (only when not dragging)
+            self.shrink_for_merged_cells(
+                selection_rect,
+                &merged_cells_for_shrink,
+                start_x,
+                start_y,
+                new_x,
+                new_y,
+                shrinking_x,
+                shrinking_y,
+                merge_cells,
+                is_drag,
+            );
+
+            // Final pass: ensure no partial selection remains (expand any remaining partial overlaps)
+            for merge_rect in &merged_cells_for_shrink {
+                let overlaps = merge_rect.intersects(*selection_rect);
+                let fully_included = selection_rect.min.x <= merge_rect.min.x
+                    && selection_rect.min.y <= merge_rect.min.y
+                    && selection_rect.max.x >= merge_rect.max.x
+                    && selection_rect.max.y >= merge_rect.max.y;
+
+                // If partially overlapping, expand to include fully (no partial selection allowed)
+                if overlaps && !fully_included {
+                    if selection_rect.min.x > merge_rect.min.x {
+                        selection_rect.min.x = merge_rect.min.x;
+                    }
+                    if selection_rect.min.y > merge_rect.min.y {
+                        selection_rect.min.y = merge_rect.min.y;
+                    }
+                    if selection_rect.max.x < merge_rect.max.x {
+                        selection_rect.max.x = merge_rect.max.x;
+                    }
+                    if selection_rect.max.y < merge_rect.max.y {
+                        selection_rect.max.y = merge_rect.max.y;
+                    }
+                }
             }
         }
     }
@@ -809,23 +931,56 @@ impl A1Selection {
         merged_cells: &HashSet<Rect>,
         start_x: i64,
         start_y: i64,
+        new_x: i64,
+        new_y: i64,
         shrinking_x: bool,
         shrinking_y: bool,
+        merge_cells_ref: &MergeCells,
+        is_drag: bool,
     ) -> bool {
         let mut changed = false;
 
-        for merge_rect in merged_cells {
-            let merge_overlaps = merge_rect.min.x <= selection_rect.max.x
-                && merge_rect.max.x >= selection_rect.min.x
-                && merge_rect.min.y <= selection_rect.max.y
-                && merge_rect.max.y >= selection_rect.min.y;
+        // When dragging, check if the mouse position is within any merged cell
+        // If so, don't shrink to exclude that merged cell
+        let mouse_in_merged_cell = if is_drag {
+            merge_cells_ref
+                .get_merge_cell_rect(crate::Pos { x: new_x, y: new_y })
+                .is_some()
+        } else {
+            false
+        };
 
+        for merge_rect in merged_cells {
+            let merge_overlaps = merge_rect.intersects(*selection_rect);
             let merge_fully_included = selection_rect.min.x <= merge_rect.min.x
                 && selection_rect.min.y <= merge_rect.min.y
                 && selection_rect.max.x >= merge_rect.max.x
                 && selection_rect.max.y >= merge_rect.max.y;
 
-            if !merge_fully_included && merge_overlaps {
+            // When dragging, if the mouse is within this merged cell, don't shrink to exclude it
+            let mouse_in_this_merged_cell = if is_drag && mouse_in_merged_cell {
+                let mouse_merge_rect =
+                    merge_cells_ref.get_merge_cell_rect(crate::Pos { x: new_x, y: new_y });
+                mouse_merge_rect.map_or(false, |rect| rect == *merge_rect)
+            } else {
+                false
+            };
+
+            // When dragging, if the selection still overlaps with the merged cell, keep it included
+            // Only shrink to exclude if we're moving away AND the selection no longer overlaps
+            // IMPORTANT: When dragging, we never shrink to exclude overlapping merged cells
+            // because the user is still selecting them (even if moving in a direction that would
+            // normally shrink the selection)
+            let keep_merged_cell = if is_drag {
+                // When dragging, always keep merged cells that overlap with the selection
+                // This prevents partially selected merged cells during drag operations
+                mouse_in_this_merged_cell || merge_overlaps
+            } else {
+                false
+            };
+
+            // Only shrink if the merged cell is not fully included, overlaps, and we're not keeping it
+            if !merge_fully_included && merge_overlaps && !keep_merged_cell {
                 if shrinking_x {
                     let max_safe_x = merge_rect.min.x - 1;
                     if max_safe_x >= start_x {
@@ -854,43 +1009,6 @@ impl A1Selection {
                         selection_rect.min.y = start_y;
                         changed = true;
                     }
-                }
-            }
-        }
-
-        changed
-    }
-
-    /// Expands the selection to fully include overlapping merged cells
-    fn expand_for_merged_cells(
-        &self,
-        selection_rect: &mut Rect,
-        merged_cells: &HashSet<Rect>,
-    ) -> bool {
-        let mut changed = false;
-
-        for merge_rect in merged_cells {
-            let overlaps = merge_rect.min.x <= selection_rect.max.x
-                && merge_rect.max.x >= selection_rect.min.x
-                && merge_rect.min.y <= selection_rect.max.y
-                && merge_rect.max.y >= selection_rect.min.y;
-
-            if overlaps {
-                if selection_rect.min.x > merge_rect.min.x {
-                    selection_rect.min.x = merge_rect.min.x;
-                    changed = true;
-                }
-                if selection_rect.min.y > merge_rect.min.y {
-                    selection_rect.min.y = merge_rect.min.y;
-                    changed = true;
-                }
-                if selection_rect.max.x < merge_rect.max.x {
-                    selection_rect.max.x = merge_rect.max.x;
-                    changed = true;
-                }
-                if selection_rect.max.y < merge_rect.max.y {
-                    selection_rect.max.y = merge_rect.max.y;
-                    changed = true;
                 }
             }
         }
@@ -1110,20 +1228,20 @@ mod tests {
     fn test_select_to() {
         let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, false, &context, None);
+        selection.select_to(2, 2, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         selection = A1Selection::test_a1("A:B");
-        selection.select_to(2, 2, false, &context, None);
+        selection.select_to(2, 2, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A:B2")]);
 
         selection = A1Selection::test_a1("A1");
-        selection.select_to(3, 3, false, &context, None);
-        selection.select_to(1, 1, false, &context, None);
+        selection.select_to(3, 3, false, &context, None, false);
+        selection.select_to(1, 1, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1")]);
 
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.select_to(2, 2, false, &context, None);
+        selection.select_to(2, 2, false, &context, None, false);
         // When selecting from C3 to B2 (right-to-left, bottom-to-top), the range is normalized to B2:C3
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:C3")]);
     }
@@ -1234,11 +1352,11 @@ mod tests {
     fn test_select_to_with_append() {
         let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, true, &context, None);
+        selection.select_to(2, 2, true, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         // Test appending to existing selection
-        selection.select_to(3, 3, true, &context, None);
+        selection.select_to(3, 3, true, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C3")]);
     }
 
@@ -1414,12 +1532,12 @@ mod tests {
         );
 
         let mut selection = A1Selection::test_a1_context("Table1", &context);
-        selection.select_to(5, 5, true, &context, None);
+        selection.select_to(5, 5, true, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:E5")]);
 
         // Test table column selection
         selection = A1Selection::test_a1_context("Table1[col2]", &context);
-        selection.select_to(4, 6, true, &context, None);
+        selection.select_to(4, 6, true, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:D6")]);
     }
 
@@ -1429,7 +1547,7 @@ mod tests {
 
         // Test multiple discontinuous ranges
         let mut selection = A1Selection::test_a1("A1:B2,D4:E5");
-        selection.select_to(6, 6, false, &context, None);
+        selection.select_to(6, 6, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("D4:F6")]);
     }
 
@@ -1439,17 +1557,17 @@ mod tests {
 
         // Test unbounded column selection
         let mut selection = A1Selection::test_a1("A:");
-        selection.select_to(3, 5, false, &context, None);
+        selection.select_to(3, 5, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C5")]);
 
         // Test unbounded row selection
         selection = A1Selection::test_a1("1:");
-        selection.select_to(4, 3, false, &context, None);
+        selection.select_to(4, 3, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:D3")]);
 
         // Test selection starting from unbounded
         selection = A1Selection::test_a1(":");
-        selection.select_to(2, 2, false, &context, None);
+        selection.select_to(2, 2, false, &context, None, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
     }
 
@@ -1486,5 +1604,211 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::test_a1("B2"), CellRefRange::test_a1("D")]
         );
+    }
+
+    #[test]
+    fn test_select_to_with_merged_cell_drag() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+
+        // Add merged cell from D5:G12
+        merge_cells.merge_cells(Rect::test_a1("D5:G12"));
+
+        // Start selection at B2
+        let mut selection = A1Selection::test_a1("B2");
+
+        // Select to E7 - merged cell should be included
+        // B2 to E7 overlaps with merged cell D5:G12, so selection should expand to include entire merged cell
+        selection.select_to(5, 7, false, &context, Some(&merge_cells), false);
+        let ranges = &selection.ranges;
+        assert_eq!(ranges.len(), 1);
+        if let CellRefRange::Sheet { range } = &ranges[0] {
+            // The selection B2:E7 overlaps with merged cell D5:G12 (columns 4-7, rows 5-12)
+            // So it should expand to include the entire merged cell
+            // Selection should be at least B2:G12 (columns 2-7, rows 2-12)
+            let end_col = range.end.col();
+            let end_row = range.end.row();
+            assert!(
+                end_col >= 7,
+                "Selection end column {} should be >= 7 (G) to include merged cell",
+                end_col
+            );
+            assert!(
+                end_row >= 12,
+                "Selection end row {} should be >= 12 to include merged cell",
+                end_row
+            );
+        }
+
+        // Drag to D14 - merged cell should still be selected (not partially selected)
+        // When dragging from E7 to D14, we're moving left and down, but the selection B2:D14
+        // still overlaps with merged cell D5:G12 (column 4 overlaps, rows 5-12 overlap),
+        // so the merged cell should remain fully included
+        selection.select_to(4, 14, false, &context, Some(&merge_cells), true);
+        let ranges_after_drag = &selection.ranges;
+        assert_eq!(ranges_after_drag.len(), 1);
+        if let CellRefRange::Sheet { range } = &ranges_after_drag[0] {
+            // The merged cell D5:G12 should still be fully included
+            // Selection from B2 to D14 overlaps with D5:G12, so it should expand to include entire merged cell
+            let end_col = range.end.col();
+            let end_row = range.end.row();
+            assert!(
+                end_col >= 7,
+                "Selection end column {} should be >= 7 (G) to include merged cell D5:G12",
+                end_col
+            );
+            assert!(
+                end_row >= 12,
+                "Selection end row {} should be >= 12 to include merged cell D5:G12",
+                end_row
+            );
+
+            // Verify the merged cell is fully included (not partially selected)
+            if let Some(selection_rect) = range.to_rect() {
+                // Check that D5:G12 is fully within the selection
+                // D5:G12 means columns 4-7, rows 5-12
+                assert!(
+                    selection_rect.min.x <= 4 && selection_rect.min.y <= 5,
+                    "Selection should start before or at merged cell start (D5 is col 4, row 5)"
+                );
+                assert!(
+                    selection_rect.max.x >= 7 && selection_rect.max.y >= 12,
+                    "Selection should end after or at merged cell end (G12 is col 7, row 12)"
+                );
+            } else {
+                panic!("Selection should be finite");
+            }
+        }
+    }
+
+    #[test]
+    fn test_select_to_with_multiple_merged_cells() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+
+        // Add three merged cells:
+        // Merged cell 1: B2:D4 (columns 2-4, rows 2-4)
+        // Merged cell 2: F5:H7 (columns 6-8, rows 5-7)
+        // Merged cell 3: I8:J10 (columns 9-10, rows 8-10)
+        // The selection from A1 to G6 should include merged cell 1 and 2
+        // When we expand to include merged cell 2, we should check if merged cell 3 now overlaps
+        merge_cells.merge_cells(Rect::test_a1("B2:D4"));
+        merge_cells.merge_cells(Rect::test_a1("F5:H7"));
+        merge_cells.merge_cells(Rect::test_a1("I8:J10"));
+
+        // Start selection at A1
+        let mut selection = A1Selection::test_a1("A1");
+
+        // Select to G6 - this should include merged cells B2:D4 and F5:H7
+        // A1 to G6 overlaps with B2:D4 (columns 2-4, rows 2-4) and F5:H7 (columns 6-8, rows 5-7)
+        // When we expand to include F5:H7, we need to check if I8:J10 now overlaps
+        // (It shouldn't in this case, but the logic should check)
+        selection.select_to(7, 6, false, &context, Some(&merge_cells), false);
+        let ranges = &selection.ranges;
+        assert_eq!(ranges.len(), 1);
+        if let CellRefRange::Sheet { range } = &ranges[0] {
+            // The selection should include both merged cells B2:D4 and F5:H7
+            // So it should be at least A1:H7 (columns 1-8, rows 1-7)
+            let end_col = range.end.col();
+            let end_row = range.end.row();
+            assert!(
+                end_col >= 8,
+                "Selection end column {} should be >= 8 (H) to include merged cell F5:H7",
+                end_col
+            );
+            assert!(
+                end_row >= 7,
+                "Selection end row {} should be >= 7 to include merged cell F5:H7",
+                end_row
+            );
+
+            // Verify merged cell B2:D4 is fully included
+            assert!(
+                range.start.col() <= 2 && range.start.row() <= 2,
+                "Selection should start before or at merged cell B2:D4"
+            );
+            assert!(
+                end_col >= 4 && end_row >= 4,
+                "Selection should include entire merged cell B2:D4"
+            );
+
+            // Verify merged cell F5:H7 is fully included
+            assert!(
+                range.start.col() <= 6 && range.start.row() <= 5,
+                "Selection should start before or at merged cell F5:H7"
+            );
+            assert!(
+                end_col >= 8 && end_row >= 7,
+                "Selection should include entire merged cell F5:H7"
+            );
+        }
+
+        // Now test a case where expanding to include one merged cell reveals another
+        // Add merged cell 4: E8:F9 (columns 5-6, rows 8-9) - this is adjacent to F5:H7
+        merge_cells.merge_cells(Rect::test_a1("E8:F9"));
+
+        // Select from A1 to G7 - this should include F5:H7, and when we expand to include it,
+        // we should check if E8:F9 now overlaps (it doesn't, but we should check)
+        let mut selection2 = A1Selection::test_a1("A1");
+        selection2.select_to(7, 7, false, &context, Some(&merge_cells), false);
+
+        // Now extend selection to H9 - this should include E8:F9
+        // When we expand to include F5:H7, we should check if E8:F9 overlaps
+        // E8:F9 (columns 5-6, rows 8-9) overlaps with the expanded selection that includes F5:H7
+        selection2.select_to(8, 9, false, &context, Some(&merge_cells), false);
+        let ranges2 = &selection2.ranges;
+        assert_eq!(ranges2.len(), 1);
+        if let CellRefRange::Sheet { range } = &ranges2[0] {
+            // The selection should include F5:H7 and E8:F9
+            // So it should be at least A1:H9 (columns 1-8, rows 1-9)
+            let end_col = range.end.col();
+            let end_row = range.end.row();
+            assert!(
+                end_col >= 8,
+                "Selection end column {} should be >= 8 (H) to include merged cells",
+                end_col
+            );
+            assert!(
+                end_row >= 9,
+                "Selection end row {} should be >= 9 to include merged cell E8:F9",
+                end_row
+            );
+        }
+    }
+
+    #[test]
+    fn test_select_to_with_merged_cells_no_drag() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+
+        // Test 1: Single merged cell that extends beyond selection bounds
+        // Merged cell D5:G12 extends beyond selection B2:E14, should still be included
+        merge_cells.merge_cells(Rect::test_a1("D5:G12"));
+        let mut selection = A1Selection::test_a1("B2");
+        selection.select_to(5, 14, false, &context, Some(&merge_cells), false);
+        if let CellRefRange::Sheet { range } = &selection.ranges[0] {
+            assert!(
+                range.end.col() >= 7,
+                "Should include merged cell extending beyond selection"
+            );
+            assert!(
+                range.end.row() >= 12,
+                "Should include merged cell extending beyond selection"
+            );
+        }
+
+        // Test 2: Multiple merged cells
+        merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C3:E5"));
+        merge_cells.merge_cells(Rect::test_a1("G7:I9"));
+        let mut selection2 = A1Selection::test_a1("A1");
+        selection2.select_to(8, 8, false, &context, Some(&merge_cells), false);
+        if let CellRefRange::Sheet { range } = &selection2.ranges[0] {
+            assert!(range.end.col() >= 9, "Should include both merged cells");
+            assert!(range.end.row() >= 9, "Should include both merged cells");
+        }
     }
 }

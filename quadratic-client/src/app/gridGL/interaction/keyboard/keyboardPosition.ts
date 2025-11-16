@@ -72,13 +72,13 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
     switch (direction) {
       case Direction.Up:
       case Direction.Down:
-        cursor.selectTo(selEnd.x, jumpRow, true);
+        cursor.selectTo(selEnd.x, jumpRow, true, true, false);
         ensureVisible({ x: selEnd.x, y: jumpRow });
         break;
 
       case Direction.Left:
       case Direction.Right:
-        cursor.selectTo(jumpCol, selEnd.y, true);
+        cursor.selectTo(jumpCol, selEnd.y, true, true, false);
         ensureVisible({ x: jumpCol, y: selEnd.y });
         break;
     }
@@ -127,9 +127,9 @@ function selectTo(deltaX: number, deltaY: number) {
 
     // Determine which coordinate to update based on direction
     if (direction === Direction.Up || direction === Direction.Down) {
-      cursor.selectTo(selectionEnd.x, newRow, true);
+      cursor.selectTo(selectionEnd.x, newRow, true, true, false);
     } else {
-      cursor.selectTo(newCol, selectionEnd.y, true);
+      cursor.selectTo(newCol, selectionEnd.y, true, true, false);
     }
   } catch (e) {
     console.error('Failed to select', e);
