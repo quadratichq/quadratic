@@ -193,6 +193,74 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         self.nondefault_rects_in_range(RefRangeBounds::new_relative_rect(rect))
     }
 
+    /// Returns a list of rectangles containing non-default values within a rect,
+    /// combining rects that have the same value into a single bounding rect.
+    ///
+    /// This is useful when the internal representation splits a contiguous region
+    /// into multiple rects (e.g., across column boundaries), and you want to
+    /// combine them back together.
+    pub fn nondefault_rects_in_rect_combined(&self, rect: Rect) -> Vec<(Rect, T)>
+    where
+        T: Eq + Hash,
+    {
+        self.nondefault_rects_in_range_combined(RefRangeBounds::new_relative_rect(rect))
+    }
+
+    /// Returns a list of rectangles containing non-default values within a range,
+    /// combining rects that have the same value into a single bounding rect.
+    ///
+    /// This is useful when the internal representation splits a contiguous region
+    /// into multiple rects (e.g., across column boundaries), and you want to
+    /// combine them back together.
+    pub fn nondefault_rects_in_range_combined(&self, range: RefRangeBounds) -> Vec<(Rect, T)>
+    where
+        T: Eq + Hash,
+    {
+        use std::collections::HashMap;
+        let mut value_to_rects: HashMap<T, Vec<Rect>> = HashMap::new();
+
+        // Collect all rects grouped by value
+        for (rect, value) in self.nondefault_rects_in_range(range) {
+            value_to_rects
+                .entry(value)
+                .or_insert_with(Vec::new)
+                .push(rect);
+        }
+
+        // Combine rects with the same value into bounding boxes
+        value_to_rects
+            .into_iter()
+            .map(|(value, rects)| {
+                if rects.is_empty() {
+                    return (Rect::new(0, 0, 0, 0), value);
+                }
+
+                let min_x = rects
+                    .iter()
+                    .map(|r| r.min.x)
+                    .min()
+                    .expect("min_x should exist since rects is not empty");
+                let min_y = rects
+                    .iter()
+                    .map(|r| r.min.y)
+                    .min()
+                    .expect("min_y should exist since rects is not empty");
+                let max_x = rects
+                    .iter()
+                    .map(|r| r.max.x)
+                    .max()
+                    .expect("max_x should exist since rects is not empty");
+                let max_y = rects
+                    .iter()
+                    .map(|r| r.max.y)
+                    .max()
+                    .expect("max_y should exist since rects is not empty");
+
+                (Rect::new(min_x, min_y, max_x, max_y), value)
+            })
+            .collect()
+    }
+
     /// Returns a list of rectangles containing non-default values.
     pub fn nondefault_rects_in_range(
         &self,
@@ -1295,6 +1363,84 @@ mod tests {
             ]),
             c.nondefault_rects_in_rect(r).collect()
         );
+    }
+
+    #[test]
+    fn test_nondefault_rects_in_rect_combined() {
+        use std::collections::HashSet;
+
+        // Test empty case
+        let c = Contiguous2D::<u8>::new();
+        let r = Rect::new(5, 5, 10, 10);
+        assert_eq!(
+            Vec::<(Rect, u8)>::new(),
+            c.nondefault_rects_in_rect_combined(r)
+        );
+
+        // Test single rect - should return as-is
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(5), Some(5), 42);
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test multiple separate rects with different values - should not combine
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(3), 42);
+        c.set_rect(5, 5, Some(6), Some(6), 99);
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(2, 2, 3, 3), 42)));
+        assert!(result.contains(&(Rect::new(5, 5, 6, 6), 99)));
+
+        // Test multiple rects with same value that should be combined
+        // This simulates a merged cell that spans multiple column blocks
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 2, Some(3), Some(5), 42); // Column 2-3, rows 2-5
+        c.set_rect(4, 2, Some(5), Some(5), 42); // Column 4-5, rows 2-5 (same value)
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should combine into bounding box: columns 2-5, rows 2-5
+        assert_eq!(result[0], (Rect::new(2, 2, 5, 5), 42));
+
+        // Test rects that are split across column boundaries with same value
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(3), 100);
+        c.set_rect(3, 1, Some(4), Some(3), 100);
+        c.set_rect(5, 1, Some(6), Some(3), 100);
+        let r = Rect::new(1, 1, 10, 10);
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should combine all three into one bounding box
+        assert_eq!(result[0], (Rect::new(1, 1, 6, 3), 100));
+
+        // Test mixed: some values combine, some don't
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(2), Some(2), 10);
+        c.set_rect(3, 1, Some(4), Some(2), 10); // Same value as above, should combine
+        c.set_rect(5, 1, Some(6), Some(2), 20); // Different value, separate
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&(Rect::new(1, 1, 4, 2), 10)));
+        assert!(result.contains(&(Rect::new(5, 1, 6, 2), 20)));
+
+        // Test with Option<Pos> (like merge cells)
+        let mut c = Contiguous2D::<Option<Pos>>::new();
+        let anchor1 = Pos { x: 1, y: 1 };
+        let anchor2 = Pos { x: 5, y: 5 };
+        c.set_rect(1, 1, Some(3), Some(3), Some(anchor1));
+        c.set_rect(4, 1, Some(5), Some(3), Some(anchor1)); // Same anchor, should combine
+        c.set_rect(6, 6, Some(8), Some(8), Some(anchor2)); // Different anchor, separate
+        let r = Rect::new(1, 1, 10, 10);
+        let result: HashSet<_> = c.nondefault_rects_in_rect_combined(r).into_iter().collect();
+        assert_eq!(result.len(), 2);
+        // First two should combine
+        assert!(result.contains(&(Rect::new(1, 1, 5, 3), Some(anchor1))));
+        assert!(result.contains(&(Rect::new(6, 6, 8, 8), Some(anchor2))));
     }
 
     #[test]

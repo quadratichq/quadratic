@@ -74,7 +74,8 @@ impl MergeCells {
     /// rect.min to find the anchor for the merged cell.
     pub fn get_merge_cells(&self, rect: Rect) -> Vec<Rect> {
         self.merge_cells
-            .nondefault_rects_in_rect(rect)
+            .nondefault_rects_in_rect_combined(rect)
+            .into_iter()
             .map(|(rect, _)| rect)
             .collect()
     }
@@ -87,8 +88,7 @@ impl MergeCells {
 
         // Find all merge cell rects that share this anchor
         // When there are overlapping axes, the contiguous 2D array may split a single
-        // merged cell into multiple rects, so we need to find all rects with the same anchor
-        // and compute their bounding box
+        // merged cell into multiple rects, so we use the combined function to merge them
         let search_rect = Rect::new(
             anchor.x,
             anchor.y,
@@ -96,30 +96,17 @@ impl MergeCells {
             anchor.y.saturating_add(1000),
         );
 
-        // Collect all rects that have the same anchor
-        let rects_with_anchor: Vec<Rect> = self
-            .merge_cells
-            .nondefault_rects_in_rect(search_rect)
-            .filter_map(|(rect, stored_anchor)| {
+        // Use the combined function to get rects with the same anchor merged together
+        self.merge_cells
+            .nondefault_rects_in_rect_combined(search_rect)
+            .into_iter()
+            .find_map(|(rect, stored_anchor)| {
                 if stored_anchor == Some(anchor) {
                     Some(rect)
                 } else {
                     None
                 }
             })
-            .collect();
-
-        if rects_with_anchor.is_empty() {
-            return None;
-        }
-
-        // Compute the bounding box of all these rects
-        let min_x = rects_with_anchor.iter().map(|r| r.min.x).min()?;
-        let min_y = rects_with_anchor.iter().map(|r| r.min.y).min()?;
-        let max_x = rects_with_anchor.iter().map(|r| r.max.x).max()?;
-        let max_y = rects_with_anchor.iter().map(|r| r.max.y).max()?;
-
-        Some(Rect::new(min_x, min_y, max_x, max_y))
     }
 }
 
