@@ -90,13 +90,21 @@ export class Javascript {
         return this.run(this.codeRunToCoreJavascript(run));
       }
     } else {
-      javascriptClient.sendState('ready');
+      javascriptClient.sendState('ready', {
+        current: undefined,
+        awaitingExecution: this.awaitingExecution,
+      });
     }
   };
 
   run = async (message: CoreJavascriptRun, withLineNumbers = true): Promise<void> => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
+      // Send state update immediately to show queued cells
+      // Note: current run is already tracked by UI from previous state updates
+      javascriptClient.sendState(this.state, {
+        awaitingExecution: this.awaitingExecution,
+      });
       return;
     }
 

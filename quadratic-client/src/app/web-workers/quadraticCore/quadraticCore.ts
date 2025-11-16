@@ -49,6 +49,9 @@ import type {
 } from '@/app/quadratic-core-types';
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -60,6 +63,7 @@ import type {
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
   CoreClientAddSheetResponse,
+  CoreClientCodeRunningState,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
   CoreClientDataTableFirstRowAsHeader,
@@ -194,8 +198,62 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
       return;
-    } else if (e.data.type === 'coreClientConnectionState') {
-      events.emit('connectionState', e.data.state, e.data.current, e.data.awaitingExecution);
+    } else if (e.data.type === 'coreClientCodeRunningState') {
+      try {
+        const data = e.data as CoreClientCodeRunningState;
+        const codeOps: [number, number, string, string, string][] = JSON.parse(data.codeOperations);
+
+        if (codeOps.length === 0) {
+          // No code running - emit empty state
+          events.emit('codeRunningState', undefined, []);
+          return;
+        }
+
+        // Rust always sends the currently executing cell as the first item when
+        // execution has started (via notify_code_running_state), or all
+        // operations as pending when execution hasn't started (via
+        // notify_pending_code_operations). Check if any worker is currently
+        // executing code to determine if first item is current
+        const hasCurrentExecution = pythonWebWorker.state === 'running' || javascriptWebWorker.state === 'running';
+
+        let current: CodeRun | undefined;
+        let awaitingExecution: CodeRun[];
+
+        if (hasCurrentExecution && codeOps.length > 0) {
+          // First item is currently executing (Rust sent it via notify_code_running_state)
+          // Rest are pending
+          const [currentOp, ...pendingOps] = codeOps;
+          const [x, y, sheetId, , code] = currentOp;
+
+          current = {
+            transactionId: data.transactionId,
+            sheetPos: { x, y, sheetId },
+            code,
+          };
+
+          // Include ALL pending operations - Rust sends the full list
+          awaitingExecution = pendingOps.map(([x, y, sheetId, , code]) => ({
+            transactionId: data.transactionId,
+            sheetPos: { x, y, sheetId },
+            code,
+          }));
+        } else {
+          // All operations are pending (Rust sent them via notify_pending_code_operations)
+          // This happens when Rust sends pending operations before execution starts
+          current = undefined;
+          // Include ALL operations - Rust sends the full list
+          awaitingExecution = codeOps.map(([x, y, sheetId, , code]) => ({
+            transactionId: data.transactionId,
+            sheetPos: { x, y, sheetId },
+            code,
+          }));
+        }
+
+        // Emit unified code running state with ALL operations from Rust
+        events.emit('codeRunningState', current, awaitingExecution);
+      } catch (error) {
+        console.error('Failed to parse code running state:', error);
+      }
       return;
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);

@@ -36,6 +36,15 @@ impl GridController {
             );
         }
 
+        // Notify client about pending code operations before execution starts
+        if transaction
+            .operations
+            .iter()
+            .any(|op| matches!(op, Operation::ComputeCode { .. }))
+        {
+            self.notify_pending_code_operations(transaction);
+        }
+
         loop {
             self.update_a1_context_table_map(transaction);
 
@@ -116,6 +125,12 @@ impl GridController {
         transaction.send_transaction();
 
         self.track_transactions(&transaction);
+
+        // Send empty code running state when transaction completes, but only if there are no async transactions pending
+        // Async transactions will send their own state updates, so we shouldn't clear if they're still running
+        if self.transactions.async_transactions.is_empty() {
+            self.notify_code_running_state_clear(&transaction);
+        }
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)

@@ -228,6 +228,63 @@ impl GridController {
         #[cfg(feature = "show-first-sheet-operations")]
         print_first_sheet!(&self);
     }
+
+    /// Notifies the client about pending code operations (when no execution has started yet)
+    pub(super) fn notify_pending_code_operations(&self, transaction: &PendingTransaction) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            let mut code_ops = Vec::new();
+
+            // Collect all pending ComputeCode operations
+            for pending_op in transaction.operations.iter() {
+                if let Operation::ComputeCode {
+                    sheet_pos: pending_sheet_pos,
+                } = pending_op
+                {
+                    if let Some(pending_sheet) = self.try_sheet(pending_sheet_pos.sheet_id) {
+                        let pos = crate::Pos {
+                            x: pending_sheet_pos.x,
+                            y: pending_sheet_pos.y,
+                        };
+                        if let Some(pending_code_run) = pending_sheet.code_run_at(&pos) {
+                            // Include Python, JavaScript, and Connection operations
+                            if matches!(
+                                pending_code_run.language,
+                                crate::grid::CodeCellLanguage::Python
+                                    | crate::grid::CodeCellLanguage::Javascript
+                                    | crate::grid::CodeCellLanguage::Connection { .. }
+                            ) {
+                                // Serialize language as string for JSON
+                                let language_str = match &pending_code_run.language {
+                                    crate::grid::CodeCellLanguage::Python => "Python".to_string(),
+                                    crate::grid::CodeCellLanguage::Javascript => "Javascript".to_string(),
+                                    crate::grid::CodeCellLanguage::Connection { kind, id } => {
+                                        format!("Connection:{}:{}", kind.to_string(), id)
+                                    }
+                                    _ => continue,
+                                };
+                                code_ops.push((
+                                    pending_sheet_pos.x as i32,
+                                    pending_sheet_pos.y as i32,
+                                    pending_sheet_pos.sheet_id.to_string(),
+                                    language_str,
+                                    pending_code_run.code.clone(),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Only send if there are pending operations
+            if !code_ops.is_empty() {
+                let code_ops_json = serde_json::to_string(&code_ops).unwrap_or_default();
+                crate::wasm_bindings::js::jsCodeRunningState(
+                    transaction.id.to_string(),
+                    code_ops_json,
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]

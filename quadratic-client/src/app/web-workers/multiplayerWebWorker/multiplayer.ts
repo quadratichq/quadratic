@@ -11,7 +11,6 @@ import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
 import { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
@@ -72,7 +71,7 @@ export class Multiplayer {
     window.addEventListener('online', () => this.sendOnline());
     window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
-    events.on('pythonState', this.pythonState);
+    events.on('codeRunningState', this.codeState);
     events.on('multiplayerState', (state: MultiplayerState) => {
       this.state = state;
     });
@@ -90,7 +89,7 @@ export class Multiplayer {
     };
   }
 
-  private pythonState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+  private codeState = (current?: CodeRun, awaitingExecution?: CodeRun[]) => {
     const codeRunning: SheetPosTS[] = [];
     if (current) {
       codeRunning.push(current.sheetPos);
@@ -98,7 +97,12 @@ export class Multiplayer {
     if (awaitingExecution?.length) {
       codeRunning.push(...awaitingExecution.map((cell) => cell.sheetPos));
     }
-    if (this.codeRunning) this.sendCodeRunning(codeRunning);
+    // Update local state and send to multiplayer
+    this.codeRunning = codeRunning;
+    if (this.fileId) {
+      // Only send if multiplayer is initialized
+      this.sendCodeRunning(codeRunning);
+    }
   };
 
   private handleMessage = async (e: MessageEvent<MultiplayerClientMessage>) => {

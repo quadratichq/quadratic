@@ -169,24 +169,134 @@ impl GridController {
                 }
             };
 
+            // Clone for notification
+            let language_for_notify = language.clone();
+            let code_for_notify = code.clone();
+
+            // Send the current operation
             match language {
                 CodeCellLanguage::Python => {
                     self.run_python(transaction, sheet_pos, code);
+                    // Notify client about all code operations (current + pending)
+                    self.notify_code_running_state(
+                        transaction,
+                        sheet_pos,
+                        language_for_notify,
+                        code_for_notify,
+                    );
                 }
                 CodeCellLanguage::Formula => {
                     self.run_formula(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     self.run_connection(transaction, sheet_pos, code, kind, id);
+                    // Notify client about all code operations (current + pending)
+                    self.notify_code_running_state(
+                        transaction,
+                        sheet_pos,
+                        language_for_notify,
+                        code_for_notify,
+                    );
                 }
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
+                    // Notify client about all code operations (current + pending)
+                    self.notify_code_running_state(
+                        transaction,
+                        sheet_pos,
+                        language_for_notify,
+                        code_for_notify,
+                    );
                 }
                 CodeCellLanguage::Import => {
                     dbgjs!(format!("Import code run found at {sheet_pos:?}"));
                     // no-op
                 }
             }
+        }
+    }
+
+    /// Notifies the client about all code operations (currently executing + pending)
+    fn notify_code_running_state(
+        &self,
+        transaction: &PendingTransaction,
+        current_sheet_pos: SheetPos,
+        current_language: CodeCellLanguage,
+        current_code: String,
+    ) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            let mut code_ops = Vec::new();
+
+            // Add currently executing cell as first item
+            let current_language_str = match &current_language {
+                CodeCellLanguage::Python => "Python".to_string(),
+                CodeCellLanguage::Javascript => "Javascript".to_string(),
+                CodeCellLanguage::Connection { kind, id } => {
+                    format!("Connection:{}:{}", kind.to_string(), id)
+                }
+                _ => return, // Only send for Python, JavaScript, and Connection
+            };
+            code_ops.push((
+                current_sheet_pos.x as i32,
+                current_sheet_pos.y as i32,
+                current_sheet_pos.sheet_id.to_string(),
+                current_language_str,
+                current_code,
+            ));
+
+            // Add all pending operations
+            for pending_op in transaction.operations.iter() {
+                if let Operation::ComputeCode {
+                    sheet_pos: pending_sheet_pos,
+                } = pending_op
+                {
+                    if let Some(pending_sheet) = self.try_sheet(pending_sheet_pos.sheet_id) {
+                        let pos = crate::Pos {
+                            x: pending_sheet_pos.x,
+                            y: pending_sheet_pos.y,
+                        };
+                        if let Some(pending_code_run) = pending_sheet.code_run_at(&pos) {
+                            // Include Python, JavaScript, and Connection operations
+                            if matches!(
+                                pending_code_run.language,
+                                CodeCellLanguage::Python
+                                    | CodeCellLanguage::Javascript
+                                    | CodeCellLanguage::Connection { .. }
+                            ) {
+                                // Serialize language as string for JSON
+                                let language_str = match &pending_code_run.language {
+                                    CodeCellLanguage::Python => "Python".to_string(),
+                                    CodeCellLanguage::Javascript => "Javascript".to_string(),
+                                    CodeCellLanguage::Connection { kind, id } => {
+                                        format!("Connection:{}:{}", kind.to_string(), id)
+                                    }
+                                    _ => continue,
+                                };
+                                code_ops.push((
+                                    pending_sheet_pos.x as i32,
+                                    pending_sheet_pos.y as i32,
+                                    pending_sheet_pos.sheet_id.to_string(),
+                                    language_str,
+                                    pending_code_run.code.clone(),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+
+            let code_ops_json = serde_json::to_string(&code_ops).unwrap_or_default();
+            crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
+        }
+    }
+
+    /// Notifies the client that all code operations are complete (sends empty state)
+    pub(crate) fn notify_code_running_state_clear(&self, transaction: &PendingTransaction) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            // Send empty array to clear code running state
+            let code_ops: Vec<(i32, i32, String, String, String)> = vec![];
+            let code_ops_json = serde_json::to_string(&code_ops).unwrap_or_default();
+            crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
         }
     }
 }

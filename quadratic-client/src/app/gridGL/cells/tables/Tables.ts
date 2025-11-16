@@ -16,7 +16,8 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, type Point, type Rectangle } from 'pixi.js';
 
@@ -58,6 +59,7 @@ export class Tables extends Container<Table> {
   tableCursor: string | undefined;
 
   private runningState: string[] = [];
+  private multiplayerRunningState: string[] = [];
   private runningCount = 0;
 
   constructor(cellsSheet: CellsSheet) {
@@ -80,9 +82,10 @@ export class Tables extends Container<Table> {
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('updateImage', this.updateImage);
 
-    events.on('pythonState', this.updateRunningState);
-    events.on('javascriptState', this.updateRunningState);
-    events.on('connectionState', this.updateRunningState);
+    events.on('codeRunningState', this.updateRunningState);
+
+    events.on('multiplayerUpdate', this.updateMultiplayerRunningState);
+    events.on('multiplayerCodeRunning', this.updateMultiplayerCodeRunning);
   }
 
   destroy() {
@@ -99,9 +102,10 @@ export class Tables extends Container<Table> {
     events.off('htmlUpdate', this.htmlUpdate);
     events.off('updateImage', this.updateImage);
 
-    events.off('pythonState', this.updateRunningState);
-    events.off('javascriptState', this.updateRunningState);
-    events.off('connectionState', this.updateRunningState);
+    events.off('codeRunningState', this.updateRunningState);
+
+    events.off('multiplayerUpdate', this.updateMultiplayerRunningState);
+    events.off('multiplayerCodeRunning', this.updateMultiplayerCodeRunning);
 
     super.destroy();
   }
@@ -299,12 +303,20 @@ export class Tables extends Container<Table> {
       const visibleTables = this.getVisibleTables();
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
-    if (this.runningState.length !== 0) {
+    const allRunningState = [...this.runningState, ...this.multiplayerRunningState];
+    if (allRunningState.length !== 0) {
       this.runningCount++;
-      for (const tablePos of this.runningState) {
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      for (const tablePos of allRunningState) {
         const [x, y] = tablePos.split(',');
         const table = this.getTable(Number(x), Number(y));
-        table?.outline.update(this.runningCount);
+        if (table) {
+          table.outline.update(this.runningCount);
+          // Update header to keep rotation animation running
+          if (table.codeCell.show_name && bounds.intersects(table.tableBounds)) {
+            table.header.update(false);
+          }
+        }
       }
     }
   };
@@ -667,17 +679,23 @@ export class Tables extends Container<Table> {
 
   //#endregion
 
-  private updateRunningState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
-    if (!current && !awaitingExecution) {
+  private updateRunningState = (current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    if (!current && (!awaitingExecution || awaitingExecution.length === 0)) {
+      // No code running - clear all running states
       for (const tablePos of this.runningState) {
         const [x, y] = tablePos.split(',');
         const table = this.getTable(Number(x), Number(y));
         if (table) {
           table.outline.running = false;
+          table.running = false;
           table.outline.update();
+          table.header.update(false);
         }
       }
+      this.runningState = [];
+      return;
     }
+
     const newTables: { table: Table; running: true | 'awaiting' }[] = [];
     if (current && current.sheetPos.sheetId === this.cellsSheet.sheetId) {
       const table = this.getTable(current.sheetPos.x, current.sheetPos.y);
@@ -696,22 +714,104 @@ export class Tables extends Container<Table> {
       }
     }
 
+    // Clear tables that are no longer running
     for (const tablePos of this.runningState) {
       const [x, y] = tablePos.split(',');
       const table = this.getTable(Number(x), Number(y));
       if (table && !newTables.find((t) => t.table === table)) {
         table.outline.running = false;
+        table.running = false;
         table.outline.update();
+        table.header.update(false);
       }
     }
+
+    // Update all running tables (animation will be handled by update() method)
     const newRunningState: string[] = [];
     for (const table of newTables) {
-      if (!this.runningState.includes(`${table.table.codeCell.x},${table.table.codeCell.y}`)) {
-        table.table.outline.running = table.running;
-        table.table.outline.update();
-        newRunningState.push(`${table.table.codeCell.x},${table.table.codeCell.y}`);
+      const tableKey = `${table.table.codeCell.x},${table.table.codeCell.y}`;
+      // Always update running state (may have changed from awaiting to running or vice versa)
+      table.table.outline.running = table.running;
+      table.table.running = table.running;
+      // Clear multiplayer color when player code is running (player code takes precedence)
+      table.table.outline.multiplayerUserColor = undefined;
+      // Update outline to apply dimming effect
+      table.table.outline.update();
+      // Trigger header update to start rotation animation if needed
+      if (table.table.codeCell.show_name) {
+        table.table.header.update(false);
       }
+      newRunningState.push(tableKey);
     }
     this.runningState = newRunningState;
+
+    // Mark viewport as dirty to ensure animation loop continues, but only if tables are on the current sheet
+    if (newRunningState.length > 0 && this.cellsSheet.sheetId === sheets.current) {
+      pixiApp.setViewportDirty();
+    }
+  };
+
+  private updateMultiplayerRunningState = (multiplayerUsers: MultiplayerUser[]) => {
+    const newTables: { table: Table; running: true | 'awaiting'; userColor: number }[] = [];
+
+    // Process all multiplayer users' code running
+    multiplayerUsers.forEach((user) => {
+      if (user.parsedCodeRunning && user.parsedCodeRunning.length > 0) {
+        user.parsedCodeRunning.forEach((cell, index) => {
+          if (cell.sheetId === this.cellsSheet.sheetId) {
+            const table = this.getTable(cell.x, cell.y);
+            if (table) {
+              // First cell (index 0) is currently running, rest are awaiting
+              // Use the first user's color if multiple users run code on the same table
+              const existingTable = newTables.find((t) => t.table === table);
+              if (!existingTable) {
+                newTables.push({
+                  table,
+                  running: index === 0 ? true : 'awaiting',
+                  userColor: user.color,
+                });
+              }
+            }
+          }
+        });
+      }
+    });
+
+    // Clear tables that are no longer running in multiplayer
+    for (const tablePos of this.multiplayerRunningState) {
+      const [x, y] = tablePos.split(',');
+      const table = this.getTable(Number(x), Number(y));
+      if (table && !newTables.find((t) => t.table === table)) {
+        // Only clear if it's not in player running state
+        if (!this.runningState.includes(`${table.codeCell.x},${table.codeCell.y}`)) {
+          table.outline.running = false;
+          table.outline.multiplayerUserColor = undefined;
+          table.running = false;
+          table.outline.update();
+          table.header.update(false);
+        }
+      }
+    }
+
+    // Update tables that are now running in multiplayer
+    const newMultiplayerRunningState: string[] = [];
+    for (const table of newTables) {
+      const tableKey = `${table.table.codeCell.x},${table.table.codeCell.y}`;
+      // Update running state (may have changed from awaiting to running or vice versa)
+      table.table.outline.running = table.running;
+      table.table.outline.multiplayerUserColor = table.userColor;
+      table.table.running = table.running;
+      table.table.outline.update();
+      table.table.header.update(false);
+      newMultiplayerRunningState.push(tableKey);
+    }
+    this.multiplayerRunningState = newMultiplayerRunningState;
+  };
+
+  private updateMultiplayerCodeRunning = (_multiplayerUser: MultiplayerUser) => {
+    // Rebuild multiplayer running state from all users
+    // This ensures we have the complete state after any user's code running changes
+    const allUsers = multiplayer.getUsers();
+    this.updateMultiplayerRunningState(allUsers);
   };
 }

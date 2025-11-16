@@ -59,5 +59,6 @@ export function javascriptResults(
   };
   const uint8Array = toUint8Array(codeResult);
   javascriptCore.sendJavascriptResults(transactionId, uint8Array.buffer as ArrayBuffer);
+  // Note: awaitingExecution will be sent by next() method after this function returns
   javascriptClient.sendState('ready', { current: undefined });
 }

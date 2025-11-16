@@ -32,7 +32,6 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
@@ -68,15 +67,11 @@ export interface CoreClientMultiplayerState {
   state: MultiplayerState;
 }
 
-export interface CoreClientConnectionState {
-  type: 'coreClientConnectionState';
-  state: 'loading' | 'ready' | 'error' | 'running';
-
-  // current cell being executed
-  current?: CodeRun;
-
-  // cells awaiting execution
-  awaitingExecution?: CodeRun[];
+export interface CoreClientCodeRunningState {
+  type: 'coreClientCodeRunningState';
+  transactionId: string;
+  codeOperations: string; // JSON array of [x, y, sheetId, language, code] tuples
+  // First item is the currently executing cell, rest are pending
 }
 
 export interface ClientCoreInitPython {
@@ -1636,7 +1631,7 @@ export type CoreClientMessage =
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
-  | CoreClientConnectionState
+  | CoreClientCodeRunningState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
   | CoreClientGetJwt

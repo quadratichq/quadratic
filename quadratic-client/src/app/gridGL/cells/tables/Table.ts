@@ -30,6 +30,9 @@ export class Table extends Container {
 
   imageHtmlGridBounds?: [number, number];
 
+  // whether the code cell is currently running
+  running: boolean | 'awaiting' = false;
+
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();
     this.codeCell = codeCell;
