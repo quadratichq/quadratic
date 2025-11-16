@@ -485,6 +485,18 @@ impl GridController {
             self.start_user_ai_transaction(ops, cursor, TransactionName::SetMergeCells, is_ai);
         }
     }
+
+    pub(crate) fn unmerge_cells(
+        &mut self,
+        selection: A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let ops = self.unmerge_cells_a1_selection_operations(selection);
+        if !ops.is_empty() {
+            self.start_user_ai_transaction(ops, cursor, TransactionName::SetMergeCells, is_ai);
+        }
+    }
 }
 
 #[cfg(test)]

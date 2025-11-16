@@ -751,6 +751,15 @@ class Core {
     }
   }
 
+  unmergeCells(selection: string, cursor: string, isAi: boolean): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.unmergeCells(selection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('unmergeCells', e);
+    }
+  }
+
   setChartSize(
     sheetId: string,
     x: number,

@@ -408,6 +408,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreUnmergeCells':
+        this.send({
+          type: 'coreClientUnmergeCellsResponse',
+          id: e.data.id,
+          response: core.unmergeCells(e.data.selection, e.data.cursor, e.data.isAi),
+        });
+        return;
+
       case 'clientCoreSetCellRenderResize':
         const response = core.setChartSize(
           e.data.sheetId,

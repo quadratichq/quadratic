@@ -487,6 +487,10 @@ export const MemoryIcon: IconComponent = (props) => {
   return <Icon {...props}>memory</Icon>;
 };
 
+export const MergeCellsIcon: IconComponent = (props) => {
+  return <Icon {...props}>merge_type</Icon>;
+};
+
 export const MoreVertIcon: IconComponent = (props) => {
   return <Icon {...props}>more_vert</Icon>;
 };
@@ -640,6 +644,10 @@ export const ViewGridIcon: IconComponent = (props) => {
 
 export const UndoIcon: IconComponent = (props) => {
   return <Icon {...props}>undo</Icon>;
+};
+
+export const UnmergeCellsIcon: IconComponent = (props) => {
+  return <Icon {...props}>call_split</Icon>;
 };
 
 export const ZoomInIcon: IconComponent = (props) => {

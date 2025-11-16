@@ -115,6 +115,7 @@ import type {
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
   CoreClientUndoResponse,
+  CoreClientUnmergeCellsResponse,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -1114,6 +1115,22 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreMergeCells',
+        id,
+        selection,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  unmergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUnmergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUnmergeCells',
         id,
         selection,
         cursor: sheets.getCursorPosition(),

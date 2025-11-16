@@ -528,6 +528,20 @@ export interface CoreClientMergeCellsResponse {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreUnmergeCells {
+  type: 'clientCoreUnmergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientUnmergeCellsResponse {
+  type: 'coreClientUnmergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetCellRenderResize {
   type: 'clientCoreSetCellRenderResize';
   id: number;
@@ -1567,6 +1581,7 @@ export type ClientCoreMessage =
   | ClientCorePasteFromClipboard
   | ClientCoreSetBorders
   | ClientCoreMergeCells
+  | ClientCoreUnmergeCells
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1711,6 +1726,7 @@ export type CoreClientMessage =
   | CoreClientResizeRows
   | CoreClientSetBorders
   | CoreClientMergeCellsResponse
+  | CoreClientUnmergeCellsResponse
   | CoreClientDeleteColumns
   | CoreClientDeleteRows
   | CoreClientInsertColumns

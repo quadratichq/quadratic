@@ -25,17 +25,14 @@ export function getMergedCellExcludedColumnsForRow(
   const rowBigInt = BigInt(row);
 
   for (const mergeRect of mergedRects) {
-    // Check if row is inside the merged cell or on edges
-    // A horizontal line at row N is between rows N-1 and N
-    // For single-row merged cells (min.y = max.y = R):
-    //   - Line at row R (top edge, between R-1 and R) should be excluded
-    //   - Line at row R+1 (bottom edge, between R and R+1) should be excluded
-    // For multi-row merged cells (min.y < max.y):
-    //   - Internal lines only (not on top or bottom edges)
-    const isSingleRow = mergeRect.min.y === mergeRect.max.y;
-    const isInside = isSingleRow
-      ? rowBigInt === mergeRect.min.y || rowBigInt === mergeRect.min.y + BigInt(1) // For single row, exclude both edges
-      : mergeRect.min.y < rowBigInt && rowBigInt <= mergeRect.max.y; // For multi-row, exclude internal lines
+    // Check if row is inside the merged cell
+    // The horizontal line is drawn when row = N, but at position of bottom edge of row N-1
+    // For merged cell from min.y to max.y (INCLUSIVE):
+    //   - When row=min.y: line between min.y-1 and min.y - KEEP (top edge)
+    //   - When row=min.y+1: line between min.y and min.y+1 - EXCLUDE
+    //   - When row=max.y: line between max.y-1 and max.y - EXCLUDE
+    //   - When row=max.y+1: line between max.y and max.y+1 - KEEP (bottom edge)
+    const isInside = mergeRect.min.y < rowBigInt && rowBigInt <= mergeRect.max.y;
     if (isInside) {
       // Add all columns in the merged cell that overlap with the visible range
       const startCol = Math.max(Number(mergeRect.min.x), columns[0]);
@@ -100,18 +97,14 @@ export function getMergedCellExcludedRowsForColumn(
   const colBigInt = BigInt(column);
 
   for (const mergeRect of mergedRects) {
-    // Check if column is inside the merged cell or on edges
-    // A vertical line at column N is between columns N-1 and N
-    // For single-column merged cells (min.x = max.x = C):
-    //   - Line at column C (left edge, between C-1 and C) should be excluded
-    //   - Line at column C+1 (right edge, between C and C+1) should be excluded
-    // For multi-column merged cells (min.x < max.x):
-    //   - Internal lines only (not on left or right edges)
-    const isSingleColumn = mergeRect.min.x === mergeRect.max.x;
-    const isInside = isSingleColumn
-      ? colBigInt === mergeRect.min.x || colBigInt === mergeRect.min.x + BigInt(1) // For single column, exclude both edges
-      : mergeRect.min.x < colBigInt && colBigInt <= mergeRect.max.x; // For multi-column, exclude internal lines
-    if (isInside) {
+    // Check if column is inside the merged cell
+    // The vertical line is drawn when column = N, but at position of right edge of column N-1
+    // For merged cell from min.x to max.x (INCLUSIVE, e.g., D=3 to G=6):
+    //   - When column=min.x (e.g., 3=D): line between min.x-1 and min.x (C|D) - KEEP (left edge)
+    //   - When column=min.x+1 (e.g., 4=E): line between min.x and min.x+1 (D|E) - EXCLUDE
+    //   - When column=max.x (e.g., 6=G): line between max.x-1 and max.x (F|G) - EXCLUDE
+    //   - When column=max.x+1 (e.g., 7=H): line between max.x and max.x+1 (G|H) - KEEP (right edge)
+    if (colBigInt > mergeRect.min.x && colBigInt < mergeRect.max.x) {
       // Add all rows in the merged cell that overlap with the visible range
       const startRow = Math.max(Number(mergeRect.min.y), rows[0]);
       const endRow = Math.min(Number(mergeRect.max.y), rows[1]);

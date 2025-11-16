@@ -83,3 +83,7 @@ export const clearFormattingAndBorders = () => {
 export const mergeCells = () => {
   quadraticCore.mergeCells(sheets.getRustSelection(), false);
 };
+
+export const unmergeCells = () => {
+  quadraticCore.unmergeCells(sheets.getRustSelection(), false);
+};

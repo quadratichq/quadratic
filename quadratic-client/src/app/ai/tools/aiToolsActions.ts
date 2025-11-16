@@ -964,6 +964,50 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing set borders tool: ${e}`)];
     }
   },
+  [AITool.MergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in MergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.mergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Merge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing merge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing merge cells tool: ${e}`)];
+    }
+  },
+  [AITool.UnmergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in UnmergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.unmergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Unmerge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing unmerge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing unmerge cells tool: ${e}`)];
+    }
+  },
   [AITool.InsertColumns]: async (args) => {
     try {
       const { sheet_name, column, right, count } = args;
