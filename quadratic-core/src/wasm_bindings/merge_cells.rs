@@ -54,4 +54,19 @@ impl JsMergeCells {
         self.merge_cells
             .get_merge_cells(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
     }
+
+    #[wasm_bindgen(js_name = "getMergeCellRect")]
+    pub fn js_get_merge_cell_rect(&self, x: i32, y: i32) -> Option<Rect> {
+        self.merge_cells.get_merge_cell_rect(Pos {
+            x: x as i64,
+            y: y as i64,
+        })
+    }
+}
+
+impl JsMergeCells {
+    /// Get a reference to the internal MergeCells
+    pub(crate) fn get_merge_cells(&self) -> &MergeCells {
+        &self.merge_cells
+    }
 }

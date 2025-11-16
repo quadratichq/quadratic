@@ -2,6 +2,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::wasm_bindings::merge_cells::JsMergeCells;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -59,9 +61,21 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
-    pub fn select_to(&mut self, x: u32, y: u32, append: bool, context: &JsA1Context) {
-        self.selection
-            .select_to(x as i64, y as i64, append, context.get_context());
+    pub fn select_to(
+        &mut self,
+        x: u32,
+        y: u32,
+        append: bool,
+        context: &JsA1Context,
+        merge_cells: &JsMergeCells,
+    ) {
+        self.selection.select_to(
+            x as i64,
+            y as i64,
+            append,
+            context.get_context(),
+            Some(merge_cells.get_merge_cells()),
+        );
     }
 
     #[wasm_bindgen(js_name = "moveTo")]

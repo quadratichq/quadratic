@@ -50,7 +50,15 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
         sheets.jsA1Context
       );
     } else {
-      newPos = moveCursor(sheetId, jumpStartX, jumpStartY, direction, dataTablesCache, sheets.jsA1Context);
+      newPos = moveCursor(
+        sheetId,
+        jumpStartX,
+        jumpStartY,
+        direction,
+        dataTablesCache,
+        sheets.jsA1Context,
+        sheets.sheet.mergeCells
+      );
     }
   } catch (e) {
     console.error('Failed to jump cursor', e);
@@ -82,7 +90,50 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const selectionEnd = cursor.selectionEnd;
-  cursor.selectTo(Math.max(1, selectionEnd.x + deltaX), Math.max(1, selectionEnd.y + deltaY), false);
+  const sheetId = sheets.current;
+
+  // Determine direction from delta
+  let direction: Direction;
+  if (deltaY < 0) {
+    direction = Direction.Up;
+  } else if (deltaY > 0) {
+    direction = Direction.Down;
+  } else if (deltaX < 0) {
+    direction = Direction.Left;
+  } else {
+    direction = Direction.Right;
+  }
+
+  // Use moveCursor to handle merged cells correctly
+  const dataTablesCache = sheets.sheet.dataTablesCache;
+  if (!dataTablesCache) {
+    console.error('Failed to select: dataTablesCache is undefined');
+    return;
+  }
+
+  try {
+    const newPos = moveCursor(
+      sheetId,
+      selectionEnd.x,
+      selectionEnd.y,
+      direction,
+      dataTablesCache,
+      sheets.jsA1Context,
+      sheets.sheet.mergeCells
+    );
+
+    const newCol = Math.max(1, Number(newPos.x));
+    const newRow = Math.max(1, Number(newPos.y));
+
+    // Determine which coordinate to update based on direction
+    if (direction === Direction.Up || direction === Direction.Down) {
+      cursor.selectTo(selectionEnd.x, newRow, true);
+    } else {
+      cursor.selectTo(newCol, selectionEnd.y, true);
+    }
+  } catch (e) {
+    console.error('Failed to select', e);
+  }
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {

@@ -42,7 +42,7 @@ export class Sheet {
   private _contentCache: SheetContentCache;
   private _dataTablesCache: SheetDataTablesCache;
 
-  private mergeCells: JsMergeCells;
+  private _mergeCells: JsMergeCells;
 
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this._info = info;
@@ -56,7 +56,7 @@ export class Sheet {
 
     this._contentCache = SheetContentCache.new_empty();
     this._dataTablesCache = SheetDataTablesCache.new_empty();
-    this.mergeCells = new JsMergeCells();
+    this._mergeCells = new JsMergeCells();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
@@ -71,13 +71,14 @@ export class Sheet {
     events.off('sheetValidations', this.sheetValidations);
     events.off('contentCache', this.updateContentCache);
     events.off('dataTablesCache', this.updateTablesCache);
-    this.mergeCells.free();
+    this._mergeCells.free();
     events.off('mergeCells', this.updateMergeCells);
   }
 
   private updateMergeCells = (sheetId: string, mergeCells: JsMergeCells) => {
     if (sheetId === this.id) {
-      this.mergeCells = mergeCells;
+      this._mergeCells.free();
+      this._mergeCells = mergeCells;
     }
   };
 
@@ -115,6 +116,10 @@ export class Sheet {
 
   get dataTablesCache(): SheetDataTablesCache {
     return this._dataTablesCache;
+  }
+
+  get mergeCells(): JsMergeCells {
+    return this._mergeCells;
   }
 
   private updateContentCache = (sheetId: string, contentCache: SheetContentCache) => {
@@ -323,5 +328,9 @@ export class Sheet {
 
   getMergeCellsInRect = (rect: Rectangle): Rect[] => {
     return this.mergeCells.getMergeCells(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+  };
+
+  getMergeCellRect = (x: number, y: number): Rect | undefined => {
+    return this.mergeCells.getMergeCellRect(x, y) ?? undefined;
   };
 }

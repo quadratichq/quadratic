@@ -1,5 +1,8 @@
-use crate::Pos;
+use std::collections::HashSet;
+
 use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
+use crate::grid::sheet::merge_cells::MergeCells;
+use crate::{Pos, Rect};
 
 use super::{A1Selection, CellRefRange};
 
@@ -13,6 +16,71 @@ impl A1Selection {
         } else {
             self.ranges.clear();
             self.ranges.push(CellRefRange::ALL);
+        }
+    }
+
+    /// Helper to reposition cursor after removing a range, ensuring it stays within valid selections
+    fn reposition_cursor_after_removal(
+        &mut self,
+        removed_pos: i64,
+        fallback_pos: i64,
+        a1_context: &A1Context,
+        is_column: bool,
+    ) {
+        if self.contains_pos(self.cursor, a1_context) {
+            return;
+        }
+
+        let try_positions = [
+            (removed_pos + 1, fallback_pos),
+            (removed_pos - 1, fallback_pos),
+            (removed_pos + 1, fallback_pos), // default fallback
+        ];
+
+        for (primary, secondary) in try_positions {
+            let test_pos = if is_column {
+                Pos {
+                    x: primary,
+                    y: secondary,
+                }
+            } else {
+                Pos {
+                    x: secondary,
+                    y: primary,
+                }
+            };
+
+            if self.contains_pos(test_pos, a1_context) {
+                self.cursor = test_pos;
+                return;
+            }
+        }
+
+        // Use the default fallback
+        self.cursor = if is_column {
+            Pos {
+                x: removed_pos + 1,
+                y: fallback_pos,
+            }
+        } else {
+            Pos {
+                x: fallback_pos,
+                y: removed_pos + 1,
+            }
+        };
+    }
+
+    /// Ensures that at least one range exists, using the current cursor position if necessary
+    fn ensure_non_empty_ranges(&mut self, removed_pos: i64, fallback_pos: i64, is_column: bool) {
+        if self.ranges.is_empty() {
+            let (x, y) = if is_column {
+                (removed_pos, fallback_pos)
+            } else {
+                (fallback_pos, removed_pos)
+            };
+            self.ranges.push(CellRefRange::new_relative_xy(x, y));
+            self.cursor.x = x;
+            self.cursor.y = y;
         }
     }
 
@@ -86,33 +154,15 @@ impl A1Selection {
             self.cursor.y = top;
         }
 
-        if !self.contains_pos(self.cursor, a1_context) {
-            if self.contains_pos(Pos { x: col + 1, y: top }, a1_context) {
-                self.cursor = Pos { x: col + 1, y: top };
-            } else if self.contains_pos(Pos { x: col - 1, y: top }, a1_context) {
-                self.cursor = Pos { x: col - 1, y: top };
-            } else {
-                // otherwise find a sensible default
-                self.cursor = Pos { x: col + 1, y: top };
-            }
-        }
-
-        // if we deleted the last range, then we use the cursor + top as the
-        // new range
-        if self.ranges.is_empty() {
-            self.ranges.push(CellRefRange::new_relative_xy(col, top));
-            self.cursor.x = col;
-            self.cursor.y = top;
-        }
+        self.reposition_cursor_after_removal(col, top, a1_context, true);
+        self.ensure_non_empty_ranges(col, top, true);
     }
 
     /// Extends the last column range or creates a new one.
     pub fn extend_column(&mut self, col: i64, top: i64) {
         if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
+            range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
             if range.is_col_range() {
-                range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
-            } else {
-                range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
                 self.cursor.y = range.start.row();
             }
         } else {
@@ -187,45 +237,24 @@ impl A1Selection {
             self.cursor.y = row;
         }
 
-        if !self.contains_pos(self.cursor, a1_context) {
-            if self.contains_pos(
-                Pos {
-                    x: left,
-                    y: row + 1,
-                },
-                a1_context,
-            ) {
-                self.cursor = Pos {
-                    x: left,
-                    y: row + 1,
-                };
-            } else if self.contains_pos(
-                Pos {
-                    x: left,
-                    y: row - 1,
-                },
-                a1_context,
-            ) {
-                self.cursor = Pos {
-                    x: left,
-                    y: row - 1,
-                };
-            } else {
-                // otherwise find a sensible default
-                self.cursor = Pos {
-                    x: left,
-                    y: row + 1,
-                };
-            }
-        }
+        self.reposition_cursor_after_removal(row, left, a1_context, false);
+        self.ensure_non_empty_ranges(row, left, false);
+    }
 
-        // if we deleted the last range, then we use the cursor + left as the
-        // new range
-        if self.ranges.is_empty() {
-            self.ranges.push(CellRefRange::new_relative_xy(left, row));
-            self.cursor.x = left;
-            self.cursor.y = row;
-        }
+    /// Helper to select only a column (clears existing ranges)
+    fn select_only_column(&mut self, col: i64, top: i64) {
+        self.ranges.clear();
+        self.ranges.push(CellRefRange::new_relative_column(col));
+        self.cursor.x = col;
+        self.cursor.y = top;
+    }
+
+    /// Helper to select only a row (clears existing ranges)
+    fn select_only_row(&mut self, row: i64, left: i64) {
+        self.ranges.clear();
+        self.ranges.push(CellRefRange::new_relative_row(row));
+        self.cursor.x = left;
+        self.cursor.y = row;
     }
 
     /// Selects a single column based on keyboard modifiers.
@@ -241,21 +270,12 @@ impl A1Selection {
 
         a1_context: &A1Context,
     ) {
-        let select_only_column = |selection: &mut A1Selection, col: i64, top: i64| {
-            selection.ranges.clear();
-            selection
-                .ranges
-                .push(CellRefRange::new_relative_column(col));
-            selection.cursor.x = col;
-            selection.cursor.y = top;
-        };
-
         if is_right_click {
             if !self.ranges.iter().any(|range| range.has_col_range(col)) {
-                select_only_column(self, col, top);
+                self.select_only_column(col, top);
             }
         } else if !ctrl_key && !shift_key {
-            select_only_column(self, col, top);
+            self.select_only_column(col, top);
         } else if ctrl_key && !shift_key {
             self.add_or_remove_column(col, top, a1_context);
         } else if shift_key {
@@ -295,19 +315,12 @@ impl A1Selection {
 
         a1_context: &A1Context,
     ) {
-        let select_only_row = |selection: &mut A1Selection, row: i64, left: i64| {
-            selection.ranges.clear();
-            selection.ranges.push(CellRefRange::new_relative_row(row));
-            selection.cursor.x = left;
-            selection.cursor.y = row;
-        };
-
         if is_right_click {
             if !self.ranges.iter().any(|range| range.has_row_range(row)) {
-                select_only_row(self, row, left);
+                self.select_only_row(row, left);
             }
         } else if !ctrl_key && !shift_key {
-            select_only_row(self, row, left);
+            self.select_only_row(row, left);
         } else if ctrl_key && !shift_key {
             self.add_or_remove_row(row, left, a1_context);
         } else if shift_key {
@@ -355,7 +368,23 @@ impl A1Selection {
         row: i64,
         append: bool,
         a1_context: &A1Context,
+        merge_cells: Option<&MergeCells>,
     ) {
+        // Adjust column/row to align with merged cell boundaries if selection includes merged cells
+        let (adjusted_column, adjusted_row, adjusted_start) =
+            self.adjust_selection_end_for_merged_cells(column, row, a1_context, merge_cells);
+
+        // Store adjusted_start for use later
+        let adjusted_start_opt = adjusted_start;
+
+        // If the start position was adjusted (to include merged cells), update the cursor
+        if let Some((start_x, start_y)) = adjusted_start_opt {
+            self.cursor.x = start_x;
+            self.cursor.y = start_y;
+        }
+
+        let column = adjusted_column;
+        let row = adjusted_row;
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
@@ -375,13 +404,13 @@ impl A1Selection {
                             }
                             ColRange::Col(col) => {
                                 if table.show_columns
-                                    && let Some(col_index) = table.try_col_index(col) {
-                                        start = Some((
-                                            table.bounds.min.x + col_index,
-                                            table.bounds.min.y
-                                                + if table.show_name { 1 } else { 0 },
-                                        ));
-                                    }
+                                    && let Some(col_index) = table.try_col_index(col)
+                                {
+                                    start = Some((
+                                        table.bounds.min.x + col_index,
+                                        table.bounds.min.y + if table.show_name { 1 } else { 0 },
+                                    ));
+                                }
                             }
                             ColRange::ColRange(start_col, _) => {
                                 if let Some(col_index) = table.try_col_index(start_col) {
@@ -438,7 +467,31 @@ impl A1Selection {
                     if range.start.col.is_unbounded() {
                         self.cursor.x = column;
                     }
-                    range.end = CellRefRangeEnd::new_relative_xy(column, row);
+                    // If start was adjusted, update the range start as well
+                    if let Some((start_x, start_y)) = adjusted_start_opt {
+                        // When both start and end are adjusted, create a normalized range
+                        // (where start is always top-left and end is always bottom-right)
+                        let min_x = start_x.min(column);
+                        let max_x = start_x.max(column);
+                        let min_y = start_y.min(row);
+                        let max_y = start_y.max(row);
+
+                        range.start = CellRefRangeEnd::new_relative_xy(min_x, min_y);
+                        range.end = CellRefRangeEnd::new_relative_xy(max_x, max_y);
+                    } else {
+                        // No start adjustment - just set the end coordinate
+                        // We still need to normalize the range to ensure start <= end
+                        let start_x = range.start.col();
+                        let start_y = range.start.row();
+
+                        let min_x = start_x.min(column);
+                        let max_x = start_x.max(column);
+                        let min_y = start_y.min(row);
+                        let max_y = start_y.max(row);
+
+                        range.start = CellRefRangeEnd::new_relative_xy(min_x, min_y);
+                        range.end = CellRefRangeEnd::new_relative_xy(max_x, max_y);
+                    }
                     *last = CellRefRange::Sheet { range: *range };
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
@@ -448,23 +501,464 @@ impl A1Selection {
         }
     }
 
+    /// Adjusts selection end position to align with merged cell boundaries when selection includes merged cells
+    /// Returns (adjusted_end_x, adjusted_end_y, optional_adjusted_start)
+    fn adjust_selection_end_for_merged_cells(
+        &self,
+        new_x: i64,
+        new_y: i64,
+        a1_context: &A1Context,
+        merge_cells: Option<&crate::grid::sheet::merge_cells::MergeCells>,
+    ) -> (i64, i64, Option<(i64, i64)>) {
+        let Some(merge_cells) = merge_cells else {
+            return (new_x, new_y, None);
+        };
+
+        let (start_x, start_y) = self.get_selection_start_position(a1_context);
+        let (current_selection_end, current_bounds) = self.get_current_selection_info(a1_context);
+
+        let delta_x = new_x - start_x;
+        let delta_y = new_y - start_y;
+
+        let mut selection_rect = self.create_initial_selection_rect(
+            start_x,
+            start_y,
+            new_x,
+            new_y,
+            delta_x,
+            delta_y,
+            current_bounds,
+        );
+
+        let (shrinking_x, shrinking_y) =
+            self.determine_shrink_behavior(start_x, start_y, new_x, new_y, current_selection_end);
+
+        self.adjust_rect_for_merged_cells(
+            &mut selection_rect,
+            start_x,
+            start_y,
+            shrinking_x,
+            shrinking_y,
+            merge_cells,
+        );
+
+        self.calculate_adjusted_positions(selection_rect, start_x, start_y, new_x, new_y)
+    }
+
+    /// Gets the starting position of the current selection
+    fn get_selection_start_position(&self, a1_context: &A1Context) -> (i64, i64) {
+        if let Some(last_range) = self.ranges.last() {
+            match last_range {
+                CellRefRange::Sheet { range } => {
+                    if range.is_finite() {
+                        (range.start.col(), range.start.row())
+                    } else {
+                        (self.cursor.x, self.cursor.y)
+                    }
+                }
+                CellRefRange::Table { range } => {
+                    if let Some(rect) = range.to_largest_rect(a1_context) {
+                        (rect.min.x, rect.min.y)
+                    } else {
+                        (self.cursor.x, self.cursor.y)
+                    }
+                }
+            }
+        } else {
+            (self.cursor.x, self.cursor.y)
+        }
+    }
+
+    /// Gets current selection end and bounds information
+    fn get_current_selection_info(
+        &self,
+        a1_context: &A1Context,
+    ) -> (Option<(i64, i64)>, Option<(i64, i64, i64, i64)>) {
+        if let Some(last_range) = self.ranges.last() {
+            match last_range {
+                CellRefRange::Sheet { range } => {
+                    if range.is_finite() {
+                        let end = Some((range.end.col(), range.end.row()));
+                        let bounds = Some((
+                            range.start.col(),
+                            range.start.row(),
+                            range.end.col(),
+                            range.end.row(),
+                        ));
+                        (end, bounds)
+                    } else {
+                        (None, None)
+                    }
+                }
+                CellRefRange::Table { range } => {
+                    if let Some(rect) = range.to_largest_rect(a1_context) {
+                        let end = Some((rect.max.x, rect.max.y));
+                        let bounds = Some((rect.min.x, rect.min.y, rect.max.x, rect.max.y));
+                        (end, bounds)
+                    } else {
+                        (None, None)
+                    }
+                }
+            }
+        } else {
+            (None, None)
+        }
+    }
+
+    /// Creates the initial selection rectangle based on movement and current bounds
+    fn create_initial_selection_rect(
+        &self,
+        start_x: i64,
+        start_y: i64,
+        new_x: i64,
+        new_y: i64,
+        delta_x: i64,
+        delta_y: i64,
+        current_bounds: Option<(i64, i64, i64, i64)>,
+    ) -> Rect {
+        if let Some((curr_min_x, curr_min_y, curr_max_x, curr_max_y)) = current_bounds {
+            // Determine if we're shrinking in each direction
+            let moving_left_from_right = delta_x < 0;
+            let moving_right_from_left = delta_x > 0;
+            let moving_up_from_bottom = delta_y < 0;
+            let moving_down_from_top = delta_y > 0;
+
+            // For X axis: preserve current bounds unless we're shrinking
+            let min_x = if moving_left_from_right {
+                new_x.min(start_x)
+            } else {
+                curr_min_x.min(new_x)
+            };
+
+            let max_x = if moving_right_from_left {
+                new_x.max(start_x)
+            } else if moving_left_from_right && new_x < start_x {
+                start_x
+            } else {
+                curr_max_x.max(new_x)
+            };
+
+            // For Y axis: preserve current bounds unless we're shrinking
+            let min_y = if moving_up_from_bottom {
+                new_y.min(start_y)
+            } else {
+                curr_min_y.min(new_y)
+            };
+
+            let max_y = if moving_down_from_top {
+                new_y.max(start_y)
+            } else if moving_up_from_bottom && new_y < start_y {
+                start_y
+            } else {
+                curr_max_y.max(new_y)
+            };
+
+            Rect::new(min_x, min_y, max_x, max_y)
+        } else {
+            // No current bounds, create from start to new position
+            Rect::new(
+                start_x.min(new_x),
+                start_y.min(new_y),
+                start_x.max(new_x),
+                start_y.max(new_y),
+            )
+        }
+    }
+
+    /// Determines if we're shrinking or expanding in each axis
+    fn determine_shrink_behavior(
+        &self,
+        start_x: i64,
+        start_y: i64,
+        new_x: i64,
+        new_y: i64,
+        current_selection_end: Option<(i64, i64)>,
+    ) -> (bool, bool) {
+        if let Some((current_end_x, current_end_y)) = current_selection_end {
+            let delta_x = new_x - start_x;
+            let delta_y = new_y - start_y;
+            let current_delta_x = current_end_x - start_x;
+            let current_delta_y = current_end_y - start_y;
+
+            // Check if we're shrinking in X direction
+            let shrinking_x = delta_x != 0
+                && ((delta_x > 0 && current_delta_x > 0 && new_x < current_end_x)
+                    || (delta_x < 0 && current_delta_x < 0 && new_x > current_end_x)
+                    || (delta_x > 0 && current_delta_x < 0)
+                    || (delta_x < 0 && current_delta_x > 0));
+
+            // Check if we're shrinking in Y direction
+            let shrinking_y = delta_y != 0
+                && ((delta_y > 0 && current_delta_y > 0 && new_y < current_end_y)
+                    || (delta_y < 0 && current_delta_y < 0 && new_y > current_end_y)
+                    || (delta_y > 0 && current_delta_y < 0)
+                    || (delta_y < 0 && current_delta_y > 0));
+
+            (shrinking_x, shrinking_y)
+        } else {
+            (false, false)
+        }
+    }
+
+    /// Collects all cells that need to be checked for merged cell boundaries
+    fn collect_cells_to_check(&self, selection_rect: Rect, start_x: i64, start_y: i64) -> Vec<Pos> {
+        let mut cells_to_check = vec![
+            Pos {
+                x: start_x,
+                y: start_y,
+            },
+            Pos {
+                x: selection_rect.min.x,
+                y: selection_rect.min.y,
+            },
+            Pos {
+                x: selection_rect.max.x,
+                y: selection_rect.min.y,
+            },
+            Pos {
+                x: selection_rect.min.x,
+                y: selection_rect.max.y,
+            },
+            Pos {
+                x: selection_rect.max.x,
+                y: selection_rect.max.y,
+            },
+        ];
+
+        // Check cells along the edges
+        for x in selection_rect.min.x..=selection_rect.max.x {
+            cells_to_check.push(Pos {
+                x,
+                y: selection_rect.min.y,
+            });
+            cells_to_check.push(Pos {
+                x,
+                y: selection_rect.max.y,
+            });
+        }
+        for y in selection_rect.min.y..=selection_rect.max.y {
+            cells_to_check.push(Pos {
+                x: selection_rect.min.x,
+                y,
+            });
+            cells_to_check.push(Pos {
+                x: selection_rect.max.x,
+                y,
+            });
+        }
+
+        cells_to_check
+    }
+
+    /// Adjusts the selection rectangle to properly handle merged cells
+    fn adjust_rect_for_merged_cells(
+        &self,
+        selection_rect: &mut Rect,
+        start_x: i64,
+        start_y: i64,
+        shrinking_x: bool,
+        shrinking_y: bool,
+        merge_cells: &MergeCells,
+    ) {
+        let max_iterations = 100;
+        let mut iteration = 0;
+
+        loop {
+            iteration += 1;
+            if iteration > max_iterations {
+                break;
+            }
+
+            let mut merged_cells_in_rect = HashSet::<Rect>::new();
+
+            // Get merged cells in the selection rect
+            for merge_rect in merge_cells.get_merge_cells(*selection_rect) {
+                merged_cells_in_rect.insert(merge_rect);
+            }
+
+            // Check corner and edge cells for merged cells that extend outside
+            for cell in self.collect_cells_to_check(*selection_rect, start_x, start_y) {
+                if let Some(cell_rect) = merge_cells.get_merge_cell_rect(cell) {
+                    merged_cells_in_rect.insert(cell_rect);
+                }
+            }
+
+            let changed = if shrinking_x || shrinking_y {
+                self.shrink_for_merged_cells(
+                    selection_rect,
+                    &merged_cells_in_rect,
+                    start_x,
+                    start_y,
+                    shrinking_x,
+                    shrinking_y,
+                )
+            } else {
+                self.expand_for_merged_cells(selection_rect, &merged_cells_in_rect)
+            };
+
+            if !changed {
+                break;
+            }
+        }
+    }
+
+    /// Shrinks the selection to exclude partially overlapping merged cells
+    fn shrink_for_merged_cells(
+        &self,
+        selection_rect: &mut Rect,
+        merged_cells: &HashSet<Rect>,
+        start_x: i64,
+        start_y: i64,
+        shrinking_x: bool,
+        shrinking_y: bool,
+    ) -> bool {
+        let mut changed = false;
+
+        for merge_rect in merged_cells {
+            let merge_overlaps = merge_rect.min.x <= selection_rect.max.x
+                && merge_rect.max.x >= selection_rect.min.x
+                && merge_rect.min.y <= selection_rect.max.y
+                && merge_rect.max.y >= selection_rect.min.y;
+
+            let merge_fully_included = selection_rect.min.x <= merge_rect.min.x
+                && selection_rect.min.y <= merge_rect.min.y
+                && selection_rect.max.x >= merge_rect.max.x
+                && selection_rect.max.y >= merge_rect.max.y;
+
+            if !merge_fully_included && merge_overlaps {
+                if shrinking_x {
+                    let max_safe_x = merge_rect.min.x - 1;
+                    if max_safe_x >= start_x {
+                        let new_max_x = selection_rect.max.x.min(max_safe_x);
+                        if new_max_x != selection_rect.max.x {
+                            selection_rect.max.x = new_max_x;
+                            changed = true;
+                        }
+                    } else if selection_rect.max.x != start_x {
+                        selection_rect.max.x = start_x;
+                        selection_rect.min.x = start_x;
+                        changed = true;
+                    }
+                }
+
+                if shrinking_y {
+                    let max_safe_y = merge_rect.min.y - 1;
+                    if max_safe_y >= start_y {
+                        let new_max_y = selection_rect.max.y.min(max_safe_y);
+                        if new_max_y != selection_rect.max.y {
+                            selection_rect.max.y = new_max_y;
+                            changed = true;
+                        }
+                    } else if selection_rect.max.y != start_y {
+                        selection_rect.max.y = start_y;
+                        selection_rect.min.y = start_y;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Expands the selection to fully include overlapping merged cells
+    fn expand_for_merged_cells(
+        &self,
+        selection_rect: &mut Rect,
+        merged_cells: &HashSet<Rect>,
+    ) -> bool {
+        let mut changed = false;
+
+        for merge_rect in merged_cells {
+            let overlaps = merge_rect.min.x <= selection_rect.max.x
+                && merge_rect.max.x >= selection_rect.min.x
+                && merge_rect.min.y <= selection_rect.max.y
+                && merge_rect.max.y >= selection_rect.min.y;
+
+            if overlaps {
+                if selection_rect.min.x > merge_rect.min.x {
+                    selection_rect.min.x = merge_rect.min.x;
+                    changed = true;
+                }
+                if selection_rect.min.y > merge_rect.min.y {
+                    selection_rect.min.y = merge_rect.min.y;
+                    changed = true;
+                }
+                if selection_rect.max.x < merge_rect.max.x {
+                    selection_rect.max.x = merge_rect.max.x;
+                    changed = true;
+                }
+                if selection_rect.max.y < merge_rect.max.y {
+                    selection_rect.max.y = merge_rect.max.y;
+                    changed = true;
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Calculates the final adjusted positions based on the selection rectangle
+    fn calculate_adjusted_positions(
+        &self,
+        selection_rect: Rect,
+        start_x: i64,
+        start_y: i64,
+        new_x: i64,
+        new_y: i64,
+    ) -> (i64, i64, Option<(i64, i64)>) {
+        let targets_right = new_x >= start_x;
+        let targets_down = new_y >= start_y;
+
+        let adjusted_end_x = if targets_right {
+            selection_rect.max.x
+        } else {
+            selection_rect.min.x
+        };
+
+        let adjusted_end_y = if targets_down {
+            selection_rect.max.y
+        } else {
+            selection_rect.min.y
+        };
+
+        let adjusted_start_x = if targets_right {
+            selection_rect.min.x
+        } else {
+            selection_rect.max.x
+        };
+
+        let adjusted_start_y = if targets_down {
+            selection_rect.min.y
+        } else {
+            selection_rect.max.y
+        };
+
+        let adjusted_start = if adjusted_start_x != start_x || adjusted_start_y != start_y {
+            Some((adjusted_start_x, adjusted_start_y))
+        } else {
+            None
+        };
+
+        (adjusted_end_x, adjusted_end_y, adjusted_start)
+    }
+
+    /// Helper to convert last range to RefRangeBounds (for set_columns_selected and set_rows_selected)
+    fn last_range_to_bounds(&self, a1_context: &A1Context) -> Option<RefRangeBounds> {
+        let last = self.ranges.last()?;
+        match last {
+            CellRefRange::Sheet { range } => Some(*range),
+            CellRefRange::Table { range } => {
+                range.convert_to_ref_range_bounds(false, a1_context, false, false)
+            }
+        }
+    }
+
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_columns_selected(&mut self, a1_context: &A1Context) {
-        let Some(last) = self.ranges.last() else {
+        let Some(last) = self.last_range_to_bounds(a1_context) else {
             return;
-        };
-        let last = match last {
-            CellRefRange::Sheet { range } => *range,
-            CellRefRange::Table { range } => {
-                if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
-                {
-                    range
-                } else {
-                    return;
-                }
-            }
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -478,20 +972,8 @@ impl A1Selection {
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_rows_selected(&mut self, a1_context: &A1Context) {
-        let Some(last) = self.ranges.last() else {
+        let Some(last) = self.last_range_to_bounds(a1_context) else {
             return;
-        };
-        let last = match last {
-            CellRefRange::Sheet { range } => *range,
-            CellRefRange::Table { range } => {
-                if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
-                {
-                    range
-                } else {
-                    return;
-                }
-            }
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -628,21 +1110,22 @@ mod tests {
     fn test_select_to() {
         let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, false, &context);
+        selection.select_to(2, 2, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         selection = A1Selection::test_a1("A:B");
-        selection.select_to(2, 2, false, &context);
+        selection.select_to(2, 2, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A:B2")]);
 
         selection = A1Selection::test_a1("A1");
-        selection.select_to(3, 3, false, &context);
-        selection.select_to(1, 1, false, &context);
+        selection.select_to(3, 3, false, &context, None);
+        selection.select_to(1, 1, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1")]);
 
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.select_to(2, 2, false, &context);
-        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C3:B2")]);
+        selection.select_to(2, 2, false, &context, None);
+        // When selecting from C3 to B2 (right-to-left, bottom-to-top), the range is normalized to B2:C3
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:C3")]);
     }
 
     #[test]
@@ -751,11 +1234,11 @@ mod tests {
     fn test_select_to_with_append() {
         let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, true, &context);
+        selection.select_to(2, 2, true, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         // Test appending to existing selection
-        selection.select_to(3, 3, true, &context);
+        selection.select_to(3, 3, true, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C3")]);
     }
 
@@ -931,12 +1414,12 @@ mod tests {
         );
 
         let mut selection = A1Selection::test_a1_context("Table1", &context);
-        selection.select_to(5, 5, true, &context);
+        selection.select_to(5, 5, true, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:E5")]);
 
         // Test table column selection
         selection = A1Selection::test_a1_context("Table1[col2]", &context);
-        selection.select_to(4, 6, true, &context);
+        selection.select_to(4, 6, true, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:D6")]);
     }
 
@@ -946,7 +1429,7 @@ mod tests {
 
         // Test multiple discontinuous ranges
         let mut selection = A1Selection::test_a1("A1:B2,D4:E5");
-        selection.select_to(6, 6, false, &context);
+        selection.select_to(6, 6, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("D4:F6")]);
     }
 
@@ -956,17 +1439,17 @@ mod tests {
 
         // Test unbounded column selection
         let mut selection = A1Selection::test_a1("A:");
-        selection.select_to(3, 5, false, &context);
+        selection.select_to(3, 5, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C5")]);
 
         // Test unbounded row selection
         selection = A1Selection::test_a1("1:");
-        selection.select_to(4, 3, false, &context);
+        selection.select_to(4, 3, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:D3")]);
 
         // Test selection starting from unbounded
         selection = A1Selection::test_a1(":");
-        selection.select_to(2, 2, false, &context);
+        selection.select_to(2, 2, false, &context, None);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
     }
 

@@ -253,7 +253,7 @@ export class SheetCursor {
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
-    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context);
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
@@ -283,7 +283,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context);
+    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -292,7 +292,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context);
+    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -342,11 +342,20 @@ export class SheetCursor {
   getFiniteRefRangeBounds = (): RefRangeBounds[] => {
     let ranges: RefRangeBounds[] = [];
     try {
-      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheets.jsA1Context);
+      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheets.jsA1Context, this.sheet.mergeCells);
     } catch (e) {
       console.warn('Error getting ref range bounds', e);
     }
     return ranges;
+  };
+
+  containsMergedCells = (): boolean => {
+    try {
+      return this.jsSelection.containsMergedCells(this.sheets.jsA1Context, this.sheet.mergeCells);
+    } catch (e) {
+      console.warn('Error checking merged cells', e);
+      return false;
+    }
   };
 
   getInfiniteRefRangeBounds = (): RefRangeBounds[] => {
