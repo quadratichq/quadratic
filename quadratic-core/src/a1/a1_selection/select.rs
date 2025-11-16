@@ -516,6 +516,17 @@ impl A1Selection {
             return (new_x, new_y, None);
         };
 
+        // Early return if current selection doesn't contain merged cells and new position isn't in a merged cell
+        if !self.contains_merged_cells(a1_context, Some(merge_cells)) {
+            // Check if the new position is in a merged cell - if so, we still need to adjust
+            if merge_cells
+                .get_merge_cell_rect(crate::Pos { x: new_x, y: new_y })
+                .is_none()
+            {
+                return (new_x, new_y, None);
+            }
+        }
+
         let (start_x, start_y) = self.get_selection_start_position(a1_context);
         let (current_selection_end, current_bounds) = self.get_current_selection_info(a1_context);
 
@@ -535,6 +546,14 @@ impl A1Selection {
         let (shrinking_x, shrinking_y) =
             self.determine_shrink_behavior(start_x, start_y, new_x, new_y, current_selection_end);
 
+        // Convert current_selection_end to Pos for use in adjust_rect_for_merged_cells
+        let current_selection_end_pos = current_selection_end
+            .map(|(x, y)| crate::Pos { x, y })
+            .unwrap_or(crate::Pos {
+                x: start_x,
+                y: start_y,
+            });
+
         self.adjust_rect_for_merged_cells(
             &mut selection_rect,
             start_x,
@@ -545,6 +564,7 @@ impl A1Selection {
             shrinking_y,
             merge_cells,
             is_drag,
+            current_selection_end_pos,
         );
 
         self.calculate_adjusted_positions(selection_rect, start_x, start_y, new_x, new_y)
@@ -724,6 +744,7 @@ impl A1Selection {
         shrinking_y: bool,
         merge_cells: &MergeCells,
         is_drag: bool,
+        current_selection_end: crate::Pos,
     ) {
         // Build the "potential" selection rect from start to end
         // This represents what the selection WOULD be if we didn't have current bounds
@@ -776,17 +797,34 @@ impl A1Selection {
         // Get all merged cells in the search area
         for merge_rect in merge_cells.get_merge_cells(search_rect) {
             // Check if this merged cell overlaps with the potential selection
-            // We always check potential_selection because it represents the full selection
-            // from start to end, which is what we want to include merged cells for
+            // When reducing, we only care about potential_selection (start to new position)
+            // When expanding/dragging, we also check current selection
             let overlaps_potential = merge_rect.intersects(potential_selection);
             let overlaps_current = merge_rect.intersects(*selection_rect);
 
+            // When reducing selection (not dragging), check if the new position is completely
+            // outside the merged cell. If so, we should allow shrinking past it.
+            let new_pos_outside_merge = if !is_drag && (shrinking_x || shrinking_y) {
+                // Check if new position is completely before/above/left/right of the merged cell
+                (shrinking_x && new_x < merge_rect.min.x)
+                    || (shrinking_x && new_x > merge_rect.max.x)
+                    || (shrinking_y && new_y < merge_rect.min.y)
+                    || (shrinking_y && new_y > merge_rect.max.y)
+            } else {
+                false
+            };
+
             // Include merged cells that overlap with potential selection (always)
             // or current selection (when dragging)
+            // But exclude merged cells when reducing and the new position is outside them
+            // When reducing, only check potential_selection, not current selection (which has old bounds)
             let should_include = if is_drag {
                 overlaps_potential || overlaps_current
+            } else if shrinking_x || shrinking_y {
+                // When reducing, only include if it overlaps with potential selection AND new position is not outside
+                overlaps_potential && !new_pos_outside_merge
             } else {
-                // When not dragging, include if it overlaps with potential selection
+                // When expanding (not dragging, not shrinking), include if it overlaps with potential selection
                 overlaps_potential
             };
 
@@ -796,9 +834,14 @@ impl A1Selection {
         }
 
         // Also check if end position is within a merged cell
+        // But only include it if we're not reducing past it
         if let Some(end_merge_rect) =
             merge_cells.get_merge_cell_rect(crate::Pos { x: new_x, y: new_y })
         {
+            // When reducing, if the new position is within a merged cell, include it
+            // (This is the normal case - selecting into a merged cell)
+            // But if we're reducing and the new position moved outside a previously selected merged cell,
+            // that's handled by the logic above
             merged_cells_to_include.insert(end_merge_rect);
         }
 
@@ -815,8 +858,35 @@ impl A1Selection {
                 let overlaps_current = merge_rect.intersects(*selection_rect);
                 let overlaps_potential = merge_rect.intersects(potential_selection);
 
+                // When reducing (not dragging), check if the new position is outside this merged cell
+                // If so, don't expand to include it (we're shrinking past it)
+                let new_pos_outside_this_merge = if !is_drag && (shrinking_x || shrinking_y) {
+                    (shrinking_x && new_x < merge_rect.min.x)
+                        || (shrinking_x && new_x > merge_rect.max.x)
+                        || (shrinking_y && new_y < merge_rect.min.y)
+                        || (shrinking_y && new_y > merge_rect.max.y)
+                } else {
+                    false
+                };
+
+                // Also check if current selection end is beyond this merged cell
+                // If so, we're shrinking past it even if new position is still within
+                let current_end_beyond_merge = if !is_drag && (shrinking_x || shrinking_y) {
+                    (shrinking_x && current_selection_end.x > merge_rect.max.x)
+                        || (shrinking_x && current_selection_end.x < merge_rect.min.x)
+                        || (shrinking_y && current_selection_end.y > merge_rect.max.y)
+                        || (shrinking_y && current_selection_end.y < merge_rect.min.y)
+                } else {
+                    false
+                };
+
                 // Expand to include merged cells that overlap with potential selection or current selection
-                if overlaps_current || overlaps_potential {
+                // But don't expand if we're reducing and the new position is outside this merged cell
+                // OR if the current selection end is beyond this merged cell (we're shrinking past it)
+                if (overlaps_current || overlaps_potential)
+                    && !new_pos_outside_this_merge
+                    && !current_end_beyond_merge
+                {
                     // Expand to fully include this merged cell
                     if selection_rect.min.x > merge_rect.min.x {
                         selection_rect.min.x = merge_rect.min.x;
@@ -856,10 +926,21 @@ impl A1Selection {
                 let newly_found_merged_cells = merge_cells.get_merge_cells(expanded_search);
 
                 // Check each newly found merged cell to see if it overlaps
+                // But don't include merged cells when reducing and new position is outside them
                 for merge_rect in newly_found_merged_cells {
-                    if merge_rect.intersects(*selection_rect)
-                        || merge_rect.intersects(potential_selection)
-                    {
+                    let overlaps = merge_rect.intersects(*selection_rect)
+                        || merge_rect.intersects(potential_selection);
+
+                    let new_pos_outside = if !is_drag && (shrinking_x || shrinking_y) {
+                        (shrinking_x && new_x < merge_rect.min.x)
+                            || (shrinking_x && new_x > merge_rect.max.x)
+                            || (shrinking_y && new_y < merge_rect.min.y)
+                            || (shrinking_y && new_y > merge_rect.max.y)
+                    } else {
+                        false
+                    };
+
+                    if overlaps && !new_pos_outside {
                         merged_cells_to_include.insert(merge_rect);
                     }
                 }
@@ -897,7 +978,9 @@ impl A1Selection {
                 is_drag,
             );
 
-            // Final pass: ensure no partial selection remains (expand any remaining partial overlaps)
+            // Final pass: ensure no partial selection remains
+            // When shrinking, we can either expand to include fully or shrink further to exclude completely
+            // Prefer shrinking further when the new position is outside the merged cell
             for merge_rect in &merged_cells_for_shrink {
                 let overlaps = merge_rect.intersects(*selection_rect);
                 let fully_included = selection_rect.min.x <= merge_rect.min.x
@@ -905,19 +988,85 @@ impl A1Selection {
                     && selection_rect.max.x >= merge_rect.max.x
                     && selection_rect.max.y >= merge_rect.max.y;
 
-                // If partially overlapping, expand to include fully (no partial selection allowed)
                 if overlaps && !fully_included {
-                    if selection_rect.min.x > merge_rect.min.x {
-                        selection_rect.min.x = merge_rect.min.x;
-                    }
-                    if selection_rect.min.y > merge_rect.min.y {
-                        selection_rect.min.y = merge_rect.min.y;
-                    }
-                    if selection_rect.max.x < merge_rect.max.x {
-                        selection_rect.max.x = merge_rect.max.x;
-                    }
-                    if selection_rect.max.y < merge_rect.max.y {
-                        selection_rect.max.y = merge_rect.max.y;
+                    // We have a partial overlap - need to resolve it
+                    if shrinking_x || shrinking_y {
+                        // When shrinking, always shrink further to exclude partially overlapping merged cells
+                        // This prevents partial selections and allows unselecting merged cells
+                        if shrinking_x {
+                            if merge_rect.min.x <= selection_rect.max.x
+                                && merge_rect.max.x >= selection_rect.min.x
+                            {
+                                // Merged cell overlaps with selection - shrink to exclude it completely
+                                if new_x < merge_rect.min.x {
+                                    // Shrinking left - shrink max_x to just before merged cell
+                                    let max_safe_x = merge_rect.min.x - 1;
+                                    if max_safe_x >= selection_rect.min.x {
+                                        selection_rect.max.x = selection_rect.max.x.min(max_safe_x);
+                                    }
+                                } else if new_x > merge_rect.max.x {
+                                    // Shrinking right - shrink min_x to just after merged cell
+                                    let min_safe_x = merge_rect.max.x + 1;
+                                    if min_safe_x <= selection_rect.max.x {
+                                        selection_rect.min.x = selection_rect.min.x.max(min_safe_x);
+                                    }
+                                } else {
+                                    // New position is within merged cell bounds - shrink to exclude based on direction
+                                    // If we're shrinking left, exclude everything from merged cell onwards
+                                    if shrinking_x && new_x <= merge_rect.max.x {
+                                        let max_safe_x = merge_rect.min.x - 1;
+                                        if max_safe_x >= selection_rect.min.x {
+                                            selection_rect.max.x =
+                                                selection_rect.max.x.min(max_safe_x);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if shrinking_y {
+                            if merge_rect.min.y <= selection_rect.max.y
+                                && merge_rect.max.y >= selection_rect.min.y
+                            {
+                                // Merged cell overlaps with selection - shrink to exclude it completely
+                                if new_y < merge_rect.min.y {
+                                    // Shrinking up - shrink max_y to just before merged cell
+                                    let max_safe_y = merge_rect.min.y - 1;
+                                    if max_safe_y >= selection_rect.min.y {
+                                        selection_rect.max.y = selection_rect.max.y.min(max_safe_y);
+                                    }
+                                } else if new_y > merge_rect.max.y {
+                                    // Shrinking down - shrink min_y to just after merged cell
+                                    let min_safe_y = merge_rect.max.y + 1;
+                                    if min_safe_y <= selection_rect.max.y {
+                                        selection_rect.min.y = selection_rect.min.y.max(min_safe_y);
+                                    }
+                                } else {
+                                    // New position is within merged cell bounds - shrink to exclude based on direction
+                                    // If we're shrinking up, exclude everything from merged cell onwards
+                                    if shrinking_y && new_y <= merge_rect.max.y {
+                                        let max_safe_y = merge_rect.min.y - 1;
+                                        if max_safe_y >= selection_rect.min.y {
+                                            selection_rect.max.y =
+                                                selection_rect.max.y.min(max_safe_y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // When expanding (not shrinking), expand to include fully (no partial selection)
+                        if selection_rect.min.x > merge_rect.min.x {
+                            selection_rect.min.x = merge_rect.min.x;
+                        }
+                        if selection_rect.min.y > merge_rect.min.y {
+                            selection_rect.min.y = merge_rect.min.y;
+                        }
+                        if selection_rect.max.x < merge_rect.max.x {
+                            selection_rect.max.x = merge_rect.max.x;
+                        }
+                        if selection_rect.max.y < merge_rect.max.y {
+                            selection_rect.max.y = merge_rect.max.y;
+                        }
                     }
                 }
             }
@@ -979,35 +1128,96 @@ impl A1Selection {
                 false
             };
 
-            // Only shrink if the merged cell is not fully included, overlaps, and we're not keeping it
-            if !merge_fully_included && merge_overlaps && !keep_merged_cell {
+            // Check if we're reducing past a fully included merged cell (keyboard navigation)
+            // Only shrink past the merged cell that's immediately adjacent to the new position.
+            // This ensures we don't jump past multiple merged cells when there are gaps between them.
+            // When the selection end is beyond the merged cell, we can still shrink if the new position
+            // is immediately adjacent (the normal case), but we won't shrink past non-adjacent merged cells.
+            let reducing_past_fully_included = if !is_drag && merge_fully_included {
+                if shrinking_y && new_y < merge_rect.min.y {
+                    // Moving up: only shrink past merged cells that start immediately below the new position
+                    // The merged cell should start at new_y + 1 (immediately below)
+                    merge_rect.min.y == new_y + 1
+                } else if shrinking_y && new_y > merge_rect.max.y {
+                    // Moving down: only shrink past merged cells that end immediately above the new position
+                    // The merged cell should end at new_y - 1 (immediately above)
+                    merge_rect.max.y == new_y - 1
+                } else if shrinking_x && new_x < merge_rect.min.x {
+                    // Moving left: only shrink past merged cells that start immediately right of the new position
+                    // The merged cell should start at new_x + 1 (immediately right)
+                    merge_rect.min.x == new_x + 1
+                } else if shrinking_x && new_x > merge_rect.max.x {
+                    // Moving right: only shrink past merged cells that end immediately left of the new position
+                    // The merged cell should end at new_x - 1 (immediately left)
+                    merge_rect.max.x == new_x - 1
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
+            // Shrink if:
+            // 1. Merged cell is not fully included, overlaps, and we're not keeping it (partial overlap case)
+            // 2. OR we're reducing past a fully included merged cell (keyboard navigation)
+            let should_shrink = (!merge_fully_included && merge_overlaps && !keep_merged_cell)
+                || reducing_past_fully_included;
+            if should_shrink {
                 if shrinking_x {
                     let max_safe_x = merge_rect.min.x - 1;
-                    if max_safe_x >= start_x {
-                        let new_max_x = selection_rect.max.x.min(max_safe_x);
-                        if new_max_x != selection_rect.max.x {
-                            selection_rect.max.x = new_max_x;
+                    // When reducing past a fully included merged cell, shrink to just before it
+                    // Maintain the selection width by keeping min_x the same
+                    if reducing_past_fully_included && merge_fully_included {
+                        // Shrink to just before the merged cell, preserving selection width
+                        if max_safe_x >= selection_rect.min.x {
+                            let new_max_x = selection_rect.max.x.min(max_safe_x);
+                            if new_max_x != selection_rect.max.x {
+                                selection_rect.max.x = new_max_x;
+                                changed = true;
+                            }
+                        }
+                    } else {
+                        // Partial overlap case - use existing logic
+                        if max_safe_x >= start_x {
+                            let new_max_x = selection_rect.max.x.min(max_safe_x);
+                            if new_max_x != selection_rect.max.x {
+                                selection_rect.max.x = new_max_x;
+                                changed = true;
+                            }
+                        } else if selection_rect.max.x != start_x {
+                            selection_rect.max.x = start_x;
+                            selection_rect.min.x = start_x;
                             changed = true;
                         }
-                    } else if selection_rect.max.x != start_x {
-                        selection_rect.max.x = start_x;
-                        selection_rect.min.x = start_x;
-                        changed = true;
                     }
                 }
 
                 if shrinking_y {
                     let max_safe_y = merge_rect.min.y - 1;
-                    if max_safe_y >= start_y {
-                        let new_max_y = selection_rect.max.y.min(max_safe_y);
-                        if new_max_y != selection_rect.max.y {
-                            selection_rect.max.y = new_max_y;
+                    // When reducing past a fully included merged cell, shrink to just before it
+                    // Maintain the selection height by keeping min_y the same
+                    if reducing_past_fully_included && merge_fully_included {
+                        // Shrink to just before the merged cell, preserving selection height
+                        if max_safe_y >= selection_rect.min.y {
+                            let new_max_y = selection_rect.max.y.min(max_safe_y);
+                            if new_max_y != selection_rect.max.y {
+                                selection_rect.max.y = new_max_y;
+                                changed = true;
+                            }
+                        }
+                    } else {
+                        // Partial overlap case - use existing logic
+                        if max_safe_y >= start_y {
+                            let new_max_y = selection_rect.max.y.min(max_safe_y);
+                            if new_max_y != selection_rect.max.y {
+                                selection_rect.max.y = new_max_y;
+                                changed = true;
+                            }
+                        } else if selection_rect.max.y != start_y {
+                            selection_rect.max.y = start_y;
+                            selection_rect.min.y = start_y;
                             changed = true;
                         }
-                    } else if selection_rect.max.y != start_y {
-                        selection_rect.max.y = start_y;
-                        selection_rect.min.y = start_y;
-                        changed = true;
                     }
                 }
             }

@@ -125,7 +125,7 @@ function selectTo(deltaX: number, deltaY: number) {
     const newCol = Math.max(1, Number(newPos.x));
     const newRow = Math.max(1, Number(newPos.y));
 
-    // Determine which coordinate to update based on direction
+    // Let Rust handle all selection logic including merged cells and normalization
     if (direction === Direction.Up || direction === Direction.Down) {
       cursor.selectTo(selectionEnd.x, newRow, true, true, false);
     } else {
