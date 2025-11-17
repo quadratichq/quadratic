@@ -112,14 +112,60 @@ export class CellsFills extends Container {
 
   private drawCells = () => {
     this.cellsContainer.removeChildren();
+    const renderedRects = new Set<string>();
+
     this.cells.forEach((fill) => {
-      const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      sprite.tint = this.getColor(fill.color);
-      const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
-      sprite.position.set(screen.x, screen.y);
-      sprite.width = screen.width;
-      sprite.height = screen.height;
-      sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+      // Collect all merged cells that intersect with this fill rectangle
+      const mergedCells = new Map<string, { x: number; y: number; w: number; h: number }>();
+      const fillRight = Number(fill.x) + fill.w - 1;
+      const fillBottom = Number(fill.y) + fill.h - 1;
+
+      // Check each cell in the fill rectangle for merged cells
+      for (let y = Number(fill.y); y <= fillBottom; y++) {
+        for (let x = Number(fill.x); x <= fillRight; x++) {
+          const mergeRect = this.sheet.getMergeCellRect(x, y);
+          if (mergeRect) {
+            const mergeKey = `${mergeRect.min.x},${mergeRect.min.y}`;
+            if (!mergedCells.has(mergeKey)) {
+              mergedCells.set(mergeKey, {
+                x: Number(mergeRect.min.x),
+                y: Number(mergeRect.min.y),
+                w: Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+                h: Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1,
+              });
+            }
+          }
+        }
+      }
+
+      // If this fill intersects with merged cells, render each merged cell
+      if (mergedCells.size > 0) {
+        mergedCells.forEach((mergedCell, mergeKey) => {
+          // Skip if we've already rendered this merged cell with this color
+          const rectKey = `${mergeKey},${fill.color}`;
+          if (renderedRects.has(rectKey)) {
+            return;
+          }
+          renderedRects.add(rectKey);
+
+          const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
+          sprite.tint = this.getColor(fill.color);
+          const screen = this.sheet.getScreenRectangle(mergedCell.x, mergedCell.y, mergedCell.w, mergedCell.h);
+          sprite.position.set(screen.x, screen.y);
+          sprite.width = screen.width;
+          sprite.height = screen.height;
+          sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+        });
+      } else {
+        // No merged cells, render the fill as-is
+        const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
+        sprite.tint = this.getColor(fill.color);
+        const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
+        sprite.position.set(screen.x, screen.y);
+        sprite.width = screen.width;
+        sprite.height = screen.height;
+        sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
+      }
     });
     pixiApp.setViewportDirty();
   };

@@ -80,10 +80,16 @@ export const clearFormattingAndBorders = () => {
   clearFormatting();
 };
 
-export const mergeCells = () => {
-  quadraticCore.mergeCells(sheets.getRustSelection(), false);
+export const mergeCells = async () => {
+  const response = await quadraticCore.mergeCells(sheets.getRustSelection(), false);
+  if (response?.result) {
+    sheets.sheet.cursor.updatePosition(true);
+  }
 };
 
-export const unmergeCells = () => {
-  quadraticCore.unmergeCells(sheets.getRustSelection(), false);
+export const unmergeCells = async () => {
+  const response = await quadraticCore.unmergeCells(sheets.getRustSelection(), false);
+  if (response?.result) {
+    sheets.sheet.cursor.updatePosition(true);
+  }
 };

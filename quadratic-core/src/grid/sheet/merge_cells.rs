@@ -69,6 +69,12 @@ impl MergeCells {
         self.merge_cells.get(pos).is_some()
     }
 
+    /// Returns the anchor position if this cell is part of a merged cell,
+    /// otherwise returns None
+    pub fn get_anchor(&self, pos: Pos) -> Option<Pos> {
+        self.merge_cells.get(pos)
+    }
+
     /// Returns the rects that are part of merged cells within a given rect.
     /// Note this may include rects that are outside the given rect. Use
     /// rect.min to find the anchor for the merged cell.

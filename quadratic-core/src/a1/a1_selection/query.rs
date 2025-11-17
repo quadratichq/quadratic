@@ -210,6 +210,8 @@ impl A1Selection {
     /// Returns the last selection's end. It defaults to the cursor if it's a
     /// non-finite range. Note, for tables, we need to use the end of the
     /// selection if the cursor is at the end of the table.
+    /// For reverse keyboard selection, returns the active end (range.start) when cursor is at range.end.
+    /// Uses SelectionState to determine the correct active end.
     pub fn last_selection_end(&self, a1_context: &A1Context) -> Pos {
         if let Some(range) = self.ranges.last() {
             match range {
@@ -217,10 +219,9 @@ impl A1Selection {
                     if range.end.is_unbounded() {
                         self.cursor
                     } else {
-                        Pos {
-                            x: range.end.col(),
-                            y: range.end.row(),
-                        }
+                        // Use SelectionState to get the active end
+                        let state = super::SelectionState::from_selection(self, a1_context);
+                        state.get_active_end(self, a1_context)
                     }
                 }
                 CellRefRange::Table { range } => {

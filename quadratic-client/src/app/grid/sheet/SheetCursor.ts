@@ -9,8 +9,9 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { JsSelection, JsSelectionState } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -49,6 +50,9 @@ export class SheetCursor {
 
   // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
+
+  // Track selection state for drag operations
+  private dragState: JsSelectionState | null = null;
 
   constructor(sheet: Sheet) {
     this.sheet = sheet;
@@ -247,13 +251,73 @@ export class SheetCursor {
     const checkForTableRef = options?.checkForTableRef ?? false;
     const append = options?.append ?? false;
     const ensureVisible = options?.ensureVisible ?? true;
+    // Clear drag state when starting a new selection
+    this.dragState = null;
     this.jsSelection.moveTo(x, y, append);
     if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
-  selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false) => {
-    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells, isDrag);
+  selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false, isShiftClick = false) => {
+    // Get current selection state or create new one based on action type
+    let state: JsSelectionState | null = null;
+    if (isDrag) {
+      // For drag operations, use tracked state if available, otherwise create new one
+      if (this.dragState) {
+        // Use state from previous drag move
+        state = this.dragState;
+      } else {
+        // First drag move - create state with cursor as anchor (cursor is at drag start from moveTo)
+        // Mode 1 = MouseDrag
+        const cursor = this.position;
+        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 1);
+      }
+    } else if (isShiftClick) {
+      // Mouse shift-click: extend selection from current cursor to clicked position
+      // If ctrl/cmd is also pressed, it's append mode (MouseCtrlClick), otherwise MouseShiftClick
+      const cursor = this.position;
+      if (append) {
+        // Shift+Ctrl/Cmd click - Mode 3 = MouseCtrlClick (append mode)
+        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(x), BigInt(y), 3);
+      } else {
+        // Shift-click - Mode 2 = MouseShiftClick
+        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(x), BigInt(y), 2);
+      }
+    } else if (append && !isDrag) {
+      // This shouldn't happen for mouse clicks (those use isShiftClick), but handle it anyway
+      // For keyboard+shift with append, we use KeyboardShift mode
+      const currentState = this.jsSelection.getSelectionState(this.sheets.jsA1Context);
+      if (currentState && currentState.mode === 0) {
+        state = currentState;
+      } else {
+        const cursor = this.position;
+        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 0);
+      }
+    } else {
+      // For keyboard+shift operations - Mode 0 = KeyboardShift
+      // Get current state to maintain anchor position, or create new one
+      const currentState = this.jsSelection.getSelectionState(this.sheets.jsA1Context);
+      if (currentState && currentState.mode === 0) {
+        // Continue existing keyboard shift selection - maintain anchor
+        state = currentState;
+      } else {
+        // Start new keyboard shift selection - anchor is current cursor when shift is first pressed
+        const cursor = this.position;
+        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 0);
+      }
+      // Clear drag state when starting keyboard selection
+      this.dragState = null;
+    }
+
+    const updatedState = this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+
+    // Track state for drag operations
+    if (isDrag) {
+      this.dragState = updatedState;
+    } else {
+      this.dragState = null;
+    }
+
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
@@ -283,7 +347,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells, false);
+    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells, null);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -292,7 +356,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells, false);
+    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells, null);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -310,6 +374,17 @@ export class SheetCursor {
   };
 
   toA1String = (sheetId = this.sheet.sheets.current): string => {
+    // If it's a single cell selection and that cell is part of a merged cell,
+    // show the anchor cell location instead
+    if (this.isSingleSelection()) {
+      const mergeRect = this.sheet.getMergeCellRect(this.position.x, this.position.y);
+      if (mergeRect) {
+        // Use the anchor position (top-left of merged cell)
+        const anchorX = Number(mergeRect.min.x);
+        const anchorY = Number(mergeRect.min.y);
+        return getA1Notation(anchorX, anchorY);
+      }
+    }
     return this.jsSelection.toA1String(sheetId, this.sheets.jsA1Context);
   };
 

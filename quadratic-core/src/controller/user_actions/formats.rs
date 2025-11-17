@@ -35,10 +35,14 @@ impl GridController {
             return ops;
         };
 
-        let mut sheet_format_update =
-            SheetFormatUpdates::from_selection(selection, format_update.clone());
+        // Expand selection to include anchor cells for any merged cells
+        // This ensures formatting is applied to anchors where data lives
+        let expanded_selection = selection.expand_to_include_merge_anchors(&sheet.merge_cells);
 
-        for range in selection.ranges.iter() {
+        let mut sheet_format_update =
+            SheetFormatUpdates::from_selection(&expanded_selection, format_update.clone());
+
+        for range in expanded_selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => {
                     let rect = range.to_rect_unbounded();
@@ -67,7 +71,7 @@ impl GridController {
                             && !table_format_updates.is_default()
                         {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.to_sheet_pos(expanded_selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -111,13 +115,15 @@ impl GridController {
                         }
 
                         let table_format_updates = SheetFormatUpdates::from_selection(
-                            &A1Selection::from_rect(format_rect.to_sheet_rect(selection.sheet_id)),
+                            &A1Selection::from_rect(
+                                format_rect.to_sheet_rect(expanded_selection.sheet_id),
+                            ),
                             format_update.clone(),
                         );
 
                         if !table_format_updates.is_default() {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.to_sheet_pos(expanded_selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -128,7 +134,7 @@ impl GridController {
 
         if !sheet_format_update.is_default() {
             ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: selection.sheet_id,
+                sheet_id: expanded_selection.sheet_id,
                 formats: sheet_format_update,
             });
         }

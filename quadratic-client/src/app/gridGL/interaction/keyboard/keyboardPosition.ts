@@ -69,19 +69,10 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   const jumpRow = Math.max(1, Number(newPos.y));
 
   if (select) {
-    switch (direction) {
-      case Direction.Up:
-      case Direction.Down:
-        cursor.selectTo(selEnd.x, jumpRow, true, true, false);
-        ensureVisible({ x: selEnd.x, y: jumpRow });
-        break;
-
-      case Direction.Left:
-      case Direction.Right:
-        cursor.selectTo(jumpCol, selEnd.y, true, true, false);
-        ensureVisible({ x: jumpCol, y: selEnd.y });
-        break;
-    }
+    // Let Rust handle all selection logic including axis handling
+    // Rust's select_to will determine the correct start position and extend appropriately
+    cursor.selectTo(jumpCol, jumpRow, false, true, false);
+    ensureVisible({ x: jumpCol, y: jumpRow });
   } else {
     cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });
   }
@@ -89,8 +80,6 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
 
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
-  const selectionEnd = cursor.selectionEnd;
-  const sheetId = sheets.current;
 
   // Determine direction from delta
   let direction: Direction;
@@ -104,36 +93,15 @@ function selectTo(deltaX: number, deltaY: number) {
     direction = Direction.Right;
   }
 
-  // Use moveCursor to handle merged cells correctly
   const dataTablesCache = sheets.sheet.dataTablesCache;
   if (!dataTablesCache) {
     console.error('Failed to select: dataTablesCache is undefined');
     return;
   }
 
-  try {
-    const newPos = moveCursor(
-      sheetId,
-      selectionEnd.x,
-      selectionEnd.y,
-      direction,
-      dataTablesCache,
-      sheets.jsA1Context,
-      sheets.sheet.mergeCells
-    );
-
-    const newCol = Math.max(1, Number(newPos.x));
-    const newRow = Math.max(1, Number(newPos.y));
-
-    // Let Rust handle all selection logic including merged cells and normalization
-    if (direction === Direction.Up || direction === Direction.Down) {
-      cursor.selectTo(selectionEnd.x, newRow, true, true, false);
-    } else {
-      cursor.selectTo(newCol, selectionEnd.y, true, true, false);
-    }
-  } catch (e) {
-    console.error('Failed to select', e);
-  }
+  // Use the Rust function which handles all the pivot logic
+  cursor.jsSelection.selectInDirection(direction, sheets.jsA1Context, sheets.sheet.mergeCells, dataTablesCache);
+  cursor.updatePosition(true);
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {

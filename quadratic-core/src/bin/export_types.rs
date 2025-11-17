@@ -7,6 +7,7 @@ use quadratic_core::a1::CellRefRange;
 use quadratic_core::a1::CellRefRangeEnd;
 use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
+use quadratic_core::a1::SelectionMode;
 use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
@@ -195,6 +196,7 @@ fn main() {
         RunError,
         RunErrorMsg,
         SearchOptions,
+        SelectionMode,
         SheetBounds,
         SheetId,
         SheetInfo,
