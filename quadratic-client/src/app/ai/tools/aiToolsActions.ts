@@ -12,6 +12,7 @@ import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
+import { countWords } from '@/app/ai/utils/wordCount';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -172,10 +173,8 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetFileName]: async (args) => {
     // Validate word count (1-3 words)
-    const wordCount = args.file_name
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0).length;
+    const wordCount = countWords(args.file_name);
+
     if (wordCount < 1 || wordCount > 3) {
       return [
         createTextContent(
@@ -183,6 +182,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         ),
       ];
     }
+
     // no action as this tool is only meant to get structured data from AI
     return [createTextContent(`Executed set file name tool successfully with name: ${args.file_name}`)];
   },

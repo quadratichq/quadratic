@@ -1,4 +1,5 @@
 import { useGetFileName } from '@/app/ai/hooks/useGetFileName';
+import { countWords } from '@/app/ai/utils/wordCount';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { aiAssistantLoadingAtom, aiAssistantMessagesAtom } from '@/app/atoms/codeEditorAtom';
 import { fileManuallyRenamedAtom } from '@/app/atoms/fileNamingAtom';
@@ -51,10 +52,8 @@ export const AIGetFileName = memo(() => {
         .then((fileName) => {
           if (fileName && fileName.trim() && fileName !== DEFAULT_FILE_NAME) {
             // Validate word count (1-3 words)
-            const wordCount = fileName
-              .trim()
-              .split(/\s+/)
-              .filter((word) => word.length > 0).length;
+            const wordCount = countWords(fileName);
+
             if (wordCount >= 1 && wordCount <= 3) {
               renameFile(fileName);
               // renameFile already sets fileManuallyRenamed to true

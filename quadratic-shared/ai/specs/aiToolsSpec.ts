@@ -648,7 +648,7 @@ This name should be from user's perspective, not the assistant's.\n
     sources: ['GetFileName'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Set the name of the file based on the AI chat conversation, this is the name of the file in the file system\n
+Set the name of the file based on the AI chat conversation, this is the name of the file in the file system.\n
 You should use the set_file_name function to set the name of the file based on the AI chat conversation between AI assistant and the user.\n
 This function requires the name of the file, this should be concise and descriptive of the file's content and purpose, and should be easily understandable by a non-technical user.\n
 The file name should be based on user's messages and should reflect the file's purpose and content.\n
