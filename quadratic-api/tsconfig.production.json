@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "module": "commonjs",
+    "module": "node16",
     "esModuleInterop": true,
     "target": "es6",
     "noImplicitAny": true,
