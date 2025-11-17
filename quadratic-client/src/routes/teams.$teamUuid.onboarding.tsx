@@ -90,8 +90,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   for (const [key, value] of searchParams.entries()) {
     const isArrayKey = key.endsWith('[]');
     if (isArrayKey) {
-      if (!formJson[key]) formJson[key] = [];
       if (value !== '') {
+        if (!formJson[key]) formJson[key] = [];
         (formJson[key] as string[]).push(value);
       }
     } else if (value !== '') {

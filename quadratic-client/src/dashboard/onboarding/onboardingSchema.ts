@@ -35,5 +35,7 @@ export const OnboardingResponseV2Schema = z.object({
   'team-name': z.string(),
   'team-invites[]': z.array(z.string()).optional(),
   'team-plan': z.literal('free').or(z.literal('pro')),
+  'referral-source': z.string(),
+  'referral-source-other': z.string().optional(),
 });
 export type OnboardingResponseV2 = z.infer<typeof OnboardingResponseV2Schema>;

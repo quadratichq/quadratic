@@ -165,7 +165,7 @@ export const questionsById: Record<
         '21-100': '21-100',
         '101-250': '101-250',
         '251-1000': '251-1,000',
-        '1000+': '1,000+',
+        '1000-or-more': '1,000+',
       };
       const [searchParams] = useSearchParams();
       return (
@@ -304,6 +304,60 @@ export const questionsById: Record<
             <QuestionFormFooter>
               <BackButton />
               <Button type="submit" size="lg" data-testid="onboarding-btn-team-invites-next">
+                Next
+              </Button>
+            </QuestionFormFooter>
+          </QuestionForm>
+        </Question>
+      );
+    },
+  },
+  'referral-source': {
+    title: 'How did you hear about Quadratic?',
+    Form: (props) => {
+      const optionsByValue = {
+        search: 'Search engine (e.g. Google)',
+        youtube: 'YouTube',
+        'twitter-x': 'Twitter (X)',
+        instagram: 'Instagram',
+        tiktok: 'TikTok',
+        linkedin: 'LinkedIn',
+        'word-of-mouth': 'Word of Mouth / Referral',
+        email: 'Email',
+        'paid-advertising': 'Paid advertising',
+        other: 'Other',
+      };
+      const [other, setOther] = useRecoilState(otherCheckboxAtom);
+      const [searchParams] = useSearchParams();
+      return (
+        <Question title={props.title} subtitle={props.subtitle}>
+          <QuestionForm>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(optionsByValue).map(([value, label]) =>
+                value === 'other' ? (
+                  <ControlCheckboxInputOther
+                    key={value}
+                    id={props.id}
+                    value={value}
+                    checked={other}
+                    onChange={setOther}
+                  >
+                    {label}
+                  </ControlCheckboxInputOther>
+                ) : (
+                  <Link
+                    to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                    key={value}
+                    data-testid={`onboarding-btn-source-other`}
+                  >
+                    <ControlLinkInline>{label}</ControlLinkInline>
+                  </Link>
+                )
+              )}
+            </div>
+            <QuestionFormFooter>
+              <BackButton />
+              <Button type="submit" size="lg" disabled={!other}>
                 Next
               </Button>
             </QuestionFormFooter>
