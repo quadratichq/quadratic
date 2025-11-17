@@ -256,6 +256,8 @@ export const questionsById: Record<
     Form: (props) => {
       const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
       const inputRef = useRef<HTMLInputElement>(null);
+      const { username } = useOnboardingLoaderData();
+      const defaultTeamName = getDefaultUsername(username);
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
@@ -266,6 +268,7 @@ export const questionsById: Record<
               className="h-12 w-full text-lg"
               type="text"
               name={props.id}
+              defaultValue={defaultTeamName}
               autoFocus
               placeholder="e.g. Acme Corp."
               onChange={(e) => {
@@ -659,4 +662,18 @@ function ImageCarousel() {
       </div>
     </div>
   );
+}
+
+function getDefaultUsername(username: string) {
+  let out = '';
+  let usernameParts = username.split(' ');
+  let firstName = usernameParts[0];
+  if (firstName) {
+    if (firstName.endsWith('s')) {
+      out = `${firstName}’ team`;
+    } else {
+      out = `${firstName}’s team`;
+    }
+  }
+  return out;
 }

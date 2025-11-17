@@ -1,3 +1,4 @@
+import { authClient } from '@/auth/auth';
 import { OnboardingResponseV2Schema } from '@/dashboard/onboarding/onboardingSchema';
 import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
@@ -43,6 +44,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const currentQuestionNumber = currentIndex + 1;
   const currentQuestionsTotal = currentQuestionStackIds.length;
 
+  const user = await authClient.user();
+
   const out = {
     currentId,
     currentIndex,
@@ -50,6 +53,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     currentQuestionNumber,
     currentQuestionsTotal,
     isLastQuestion: currentQuestionStackIds.indexOf(currentId) === currentQuestionStackIds.length - 1,
+    username: user?.name || '',
   };
   return out;
 };
