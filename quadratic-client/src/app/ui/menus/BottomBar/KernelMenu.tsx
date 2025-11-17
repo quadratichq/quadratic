@@ -167,7 +167,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <SidebarTooltip label="Run status">
+      <SidebarTooltip label="Spreadsheet status">
         <DropdownMenuTrigger asChild>
           <SidebarToggle pressed={isOpen}>
             {triggerIcon}
