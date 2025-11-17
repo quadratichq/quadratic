@@ -309,11 +309,23 @@ export class SheetCursor {
       this.dragState = null;
     }
 
-    const updatedState = this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+    const updatedState = this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, state);
+
+    // Adjust for merged cells if needed (for mouse drag operations)
+    let finalState = updatedState;
+    if (isDrag || isShiftClick) {
+      finalState = this.jsSelection.adjustSelectionForMergedCells(
+        x,
+        y,
+        this.sheets.jsA1Context,
+        this.sheet.mergeCells,
+        updatedState
+      );
+    }
 
     // Track state for drag operations
     if (isDrag) {
-      this.dragState = updatedState;
+      this.dragState = finalState;
     } else {
       this.dragState = null;
     }
@@ -347,7 +359,8 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells, null);
+    const state = this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, null);
+    this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -356,7 +369,8 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells, null);
+    const state = this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, null);
+    this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };

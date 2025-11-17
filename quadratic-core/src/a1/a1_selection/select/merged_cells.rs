@@ -8,7 +8,7 @@ use super::helpers::*;
 
 /// Adjusts selection end position to align with merged cell boundaries when selection includes merged cells
 /// Returns (adjusted_end_x, adjusted_end_y, optional_adjusted_start)
-pub(super) fn adjust_selection_end_for_merged_cells(
+pub(crate) fn adjust_selection_end_for_merged_cells(
     selection: &A1Selection,
     new_x: i64,
     new_y: i64,

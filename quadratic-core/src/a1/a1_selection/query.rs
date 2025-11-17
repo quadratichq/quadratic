@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::HashSet};
 
 use crate::{
     Pos, Rect, SheetPos,
-    a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
+    a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED, selection_state::SelectionState},
     grid::{Sheet, SheetId, sheet::data_tables::cache::SheetDataTablesCache},
 };
 
@@ -220,7 +220,7 @@ impl A1Selection {
                         self.cursor
                     } else {
                         // Use SelectionState to get the active end
-                        let state = super::SelectionState::from_selection(self, a1_context);
+                        let state = SelectionState::from_selection(self, a1_context);
                         state.get_active_end(self, a1_context)
                     }
                 }
