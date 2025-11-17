@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "node16",
+    "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "es2020",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node16",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "outDir": "dist",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolvePackageJsonExports": true,
+    "resolvePackageJsonImports": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
   "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]
