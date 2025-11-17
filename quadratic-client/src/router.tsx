@@ -32,13 +32,9 @@ export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
-        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
-        <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
-        <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
-        <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
-        <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
+        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} Component={EmptyComponent} />
       </Route>
 
       <Route id={ROUTE_LOADER_IDS.ROOT} lazy={() => import('./routes/_root')} HydrateFallback={EmptyComponent}>
