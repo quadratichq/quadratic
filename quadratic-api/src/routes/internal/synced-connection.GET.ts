@@ -11,7 +11,7 @@ import type { Request } from '../../types/Request';
 import { decryptFromEnv } from '../../utils/crypto';
 
 // validate the type is a valid connection type
-export const validateType = () => query('type').isString().isIn(Object.values(ConnectionType));
+export const validateType = () => query('type').optional().isString().isIn(Object.values(ConnectionType));
 
 export const SyncedConnectionSchema = z.object({
   id: z.number(),
@@ -42,10 +42,11 @@ router.get(
     }
 
     // Get the synced connections
+    // If no type is provided, get all synced connections
     const syncedConnections = await dbClient.syncedConnection.findMany({
       where: {
         connection: {
-          type: type as ConnectionType,
+          ...(type ? { type: type as ConnectionType } : {}),
         },
       },
       include: {

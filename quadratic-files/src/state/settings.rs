@@ -24,8 +24,8 @@ impl Settings {
     // Create a new Settings struct from the provided Config.
     // Panics are OK here since this is set at startup and we want to fail fast.
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
-        let storage = Self::new_storage(config, false).await?;
-        let synced_data_storage = Self::new_storage(config, true).await?;
+        let storage = Self::new_storage(config, true).await?;
+        let synced_data_storage = Self::new_storage(config, false).await?;
 
         let object_store = StorageConfig::from(&synced_data_storage)
             .try_into()

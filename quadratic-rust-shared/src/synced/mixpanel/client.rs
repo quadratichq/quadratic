@@ -34,12 +34,12 @@ impl SyncedClient for MixpanelClient {
     fn streams(&self) -> Vec<&str> {
         vec![
             "events",
-            "engage",
-            "funnels",
-            "revenue",
-            "annotations",
-            "cohorts",
-            "cohort_members",
+            // "engage",
+            // "funnels",
+            // "revenue",
+            // "annotations",
+            // "cohorts",
+            // "cohort_members",
         ]
     }
 

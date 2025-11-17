@@ -36,6 +36,7 @@ pub trait SyncedConnection: Send + Sync {
 pub trait SyncedClient: Send + Sync {
     fn streams(&self) -> Vec<&str>;
 
+    /// Process a single stream.
     async fn process(
         &self,
         stream: &str,
@@ -43,12 +44,12 @@ pub trait SyncedClient: Send + Sync {
         end_date: NaiveDate,
     ) -> Result<HashMap<String, Bytes>>;
 
+    /// Process all streams in parallel and collect results in one pass.
     async fn process_all(
         &self,
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<HashMap<String, HashMap<String, Bytes>>> {
-        // process all streams in parallel and collect results in one pass
         self.streams()
             .into_iter()
             .map(|stream| async move {

@@ -16,7 +16,6 @@ use quadratic_rust_shared::{
     },
 };
 use serde::{Serialize, de::DeserializeOwned};
-use serde_json::to_string;
 use uuid::Uuid;
 
 use crate::{
@@ -36,9 +35,14 @@ pub(crate) async fn process_all_synced_connections(
     state: Arc<State>,
     sync_kind: SyncKind,
 ) -> Result<()> {
-    process_synced_connections::<MixpanelConnection>(state.clone(), sync_kind.clone()).await?;
-    process_synced_connections::<GoogleAnalyticsConnection>(state.clone(), sync_kind.clone())
+    process_synced_connections::<MixpanelConnection>(state.clone(), sync_kind.clone(), "MIXPANEL")
         .await?;
+    process_synced_connections::<GoogleAnalyticsConnection>(
+        state.clone(),
+        sync_kind.clone(),
+        "GOOGLE_ANALYTICS",
+    )
+    .await?;
     Ok(())
 }
 
@@ -48,16 +52,16 @@ pub(crate) async fn process_synced_connections<
 >(
     state: Arc<State>,
     sync_kind: SyncKind,
+    connection_type: &str,
 ) -> Result<()> {
-    let connection_name = to_string(&sync_kind)?;
     let connections = get_synced_connections_by_type::<T>(
         &state.settings.quadratic_api_uri,
         &state.settings.m2m_auth_token,
-        &connection_name.to_uppercase(),
+        &connection_type.to_uppercase(),
     )
     .await?;
 
-    tracing::info!("Found {} {connection_name} connections", connections.len());
+    tracing::info!("Found {} {connection_type} connections", connections.len());
 
     // process each connection in a separate thread
     for connection in connections {
@@ -65,8 +69,9 @@ pub(crate) async fn process_synced_connections<
         let sync_kind = sync_kind.clone();
 
         // process the connection in a separate thread
-        let connection_name_clone = connection_name.clone();
         tokio::spawn(async move {
+            let connection_name = connection.type_details.name().to_owned();
+
             if let Err(e) = process_synced_connection(
                 Arc::clone(&state),
                 connection.type_details,
@@ -76,7 +81,12 @@ pub(crate) async fn process_synced_connections<
             )
             .await
             {
-                state.clone().stats.lock().await.num_connections_processing -= 1;
+                state
+                    .clone()
+                    .stats
+                    .lock()
+                    .await
+                    .decrement_num_connections_processing();
                 state
                     .clone()
                     .synced_connection_cache
@@ -84,7 +94,8 @@ pub(crate) async fn process_synced_connections<
                     .await;
 
                 tracing::error!(
-                    "Error processing {connection_name_clone} connection {}: {}",
+                    "Error processing {} connection {}: {}",
+                    connection_name,
                     connection.uuid,
                     e
                 );
@@ -105,7 +116,7 @@ pub(crate) async fn process_synced_connection<
     synced_connection_id: u64,
     sync_kind: SyncKind,
 ) -> Result<()> {
-    let connection_name = to_string(&sync_kind)?;
+    let connection_name = connection.name();
 
     if !can_process_connection(state.clone(), connection_id).await? {
         tracing::info!(
@@ -117,43 +128,30 @@ pub(crate) async fn process_synced_connection<
     }
 
     let object_store = state.settings.object_store.clone();
-    let prefix = object_store_path(connection_id, "events");
     let today = chrono::Utc::now().date_naive();
     let run_id = Uuid::new_v4();
 
     let client = connection.to_client().await?;
     let sync_start_date = connection.start_date();
-    let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
-    let mut date_ranges = dates_to_sync(
-        &object_store,
-        connection_id,
-        "events",
-        sync_start_date,
-        dates_to_exclude,
-    )
-    .await?;
-
-    if sync_kind == SyncKind::Full && date_ranges.is_empty() {
-        return Ok(());
-    }
-
-    if sync_kind == SyncKind::Daily {
-        date_ranges = vec![(today, today)];
-    }
+    let streams = client.streams();
 
     tracing::info!(
-        "Processing {connection_name} connection {}, kind: {:?}, dates: {:?}",
+        "Processing {connection_name} connection {} with {} stream(s): {:?}",
         connection_id,
-        sync_kind,
-        date_ranges
+        streams.len(),
+        streams
     );
 
     let start_time = std::time::Instant::now();
     let mut total_files_processed = 0;
-    let mut dates_processed = Vec::new();
 
     // add the connection to the cache
-    state.clone().stats.lock().await.num_connections_processing += 1;
+    state
+        .clone()
+        .stats
+        .lock()
+        .await
+        .increment_num_connections_processing();
     start_connection_status(
         state.clone(),
         connection_id,
@@ -163,91 +161,139 @@ pub(crate) async fn process_synced_connection<
     )
     .await?;
 
-    for (start_date, end_date) in date_ranges {
-        // split the date range into chunks
-        let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
-        let total_chunks = chunks.len();
-
+    // Process each stream/table
+    for stream in streams {
         tracing::info!(
-            "Exporting {connection_name} events from {} to {} in {} {}-day chunks...",
-            start_date,
-            end_date,
-            total_chunks,
-            CHUNK_SIZE
+            "Processing stream '{}' for {connection_name} connection {}",
+            stream,
+            connection_id
         );
 
-        // Process each chunk in reverse order (most recent first)
-        for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
+        let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
+        let mut date_ranges = dates_to_sync(
+            &object_store,
+            connection_id,
+            stream,
+            sync_start_date,
+            dates_to_exclude,
+        )
+        .await?;
+
+        if sync_kind == SyncKind::Full && date_ranges.is_empty() {
             tracing::info!(
-                "Processing chunk {}/{}: {} to {}",
-                chunk_index + 1,
+                "Skipping stream '{}' for {connection_name} connection {}, kind: {:?}, no dates to sync",
+                stream,
+                connection_id,
+                sync_kind
+            );
+            continue;
+        }
+
+        if sync_kind == SyncKind::Daily {
+            date_ranges = vec![(today, today)];
+        }
+
+        tracing::info!(
+            "Processing stream '{}' for {connection_name} connection {}, kind: {:?}, dates: {:?}",
+            stream,
+            connection_id,
+            sync_kind,
+            date_ranges
+        );
+
+        let mut dates_processed = Vec::new();
+        let prefix = object_store_path(connection_id, stream);
+
+        for (start_date, end_date) in date_ranges {
+            // split the date range into chunks
+            let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
+            let total_chunks = chunks.len();
+
+            tracing::info!(
+                "Exporting {connection_name} stream '{}' from {} to {} in {} {}-day chunks...",
+                stream,
+                start_date,
+                end_date,
                 total_chunks,
-                chunk_start,
-                chunk_end
+                CHUNK_SIZE
             );
 
-            update_connection_status(
-                state.clone(),
-                connection_id,
-                connection.kind(),
-                SyncedConnectionStatus::ApiRequest,
-            )
-            .await?;
-
-            let results = client.process_all(chunk_start, chunk_end).await?;
-
-            update_connection_status(
-                state.clone(),
-                connection_id,
-                connection.kind(),
-                SyncedConnectionStatus::Upload,
-            )
-            .await?;
-
-            for (stream, parquet_data) in results {
-                let stream_prefix = format!("{}/{}", prefix, stream);
-                let num_files = upload(&object_store, &stream_prefix, parquet_data)
-                    .await
-                    .map_err(|e| {
-                        FilesError::SyncedConnection(format!(
-                            "Failed to upload events for chunk {}: {}",
-                            chunk_index + 1,
-                            e
-                        ))
-                    })?;
-
-                total_files_processed += num_files;
-
+            // Process each chunk in reverse order (most recent first)
+            for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
                 tracing::info!(
-                    "Completed chunk {}/{}: processed {} files",
+                    "Processing stream '{}' chunk {}/{}: {} to {}",
+                    stream,
                     chunk_index + 1,
                     total_chunks,
-                    num_files
+                    chunk_start,
+                    chunk_end
                 );
-            }
 
-            // add the dates to the cache
-            let mut current_date = chunk_start;
+                update_connection_status(
+                    state.clone(),
+                    connection_id,
+                    connection.kind(),
+                    SyncedConnectionStatus::ApiRequest,
+                )
+                .await?;
 
-            while current_date <= chunk_end {
-                state
-                    .synced_connection_cache
-                    .add_date(connection_id, current_date)
-                    .await;
-                dates_processed.push(current_date);
-                current_date += chrono::Duration::days(1);
+                let results = client.process_all(chunk_start, chunk_end).await?;
+
+                update_connection_status(
+                    state.clone(),
+                    connection_id,
+                    connection.kind(),
+                    SyncedConnectionStatus::Upload,
+                )
+                .await?;
+
+                // Get the parquet data for this specific stream
+                if let Some(parquet_data) = results.get(stream) {
+                    let num_files = upload(&object_store, &prefix, parquet_data.clone())
+                        .await
+                        .map_err(|e| {
+                            FilesError::SyncedConnection(format!(
+                                "Failed to upload stream '{}' for chunk {}: {}",
+                                stream,
+                                chunk_index + 1,
+                                e
+                            ))
+                        })?;
+
+                    total_files_processed += num_files;
+
+                    tracing::info!(
+                        "Completed stream '{}' chunk {}/{}: processed {} files",
+                        stream,
+                        chunk_index + 1,
+                        total_chunks,
+                        num_files
+                    );
+                }
+
+                // add the dates to the cache
+                let mut current_date = chunk_start;
+
+                while current_date <= chunk_end {
+                    state
+                        .synced_connection_cache
+                        .add_date(connection_id, current_date)
+                        .await;
+                    dates_processed.push(current_date);
+                    current_date += chrono::Duration::days(1);
+                }
             }
         }
-    }
 
-    complete_connection_status(
-        state.clone(),
-        connection_id,
-        synced_connection_id,
-        run_id,
-        dates_processed,
-    )
-    .await?;
+        complete_connection_status(
+            state.clone(),
+            connection_id,
+            synced_connection_id,
+            run_id,
+            dates_processed,
+        )
+        .await?;
+    }
 
     tracing::info!(
         "Processed {} {connection_name} files in {:?} for connection {}",
@@ -256,7 +302,12 @@ pub(crate) async fn process_synced_connection<
         connection_id
     );
 
-    state.clone().stats.lock().await.num_connections_processing -= 1;
+    state
+        .clone()
+        .stats
+        .lock()
+        .await
+        .decrement_num_connections_processing();
 
     Ok(())
 }

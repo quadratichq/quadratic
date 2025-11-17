@@ -85,11 +85,16 @@ impl SyncedClient for GoogleAnalyticsClient {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<HashMap<String, Bytes>> {
+        // look up the report configuration
+        let report = REPORTS
+            .get(stream)
+            .ok_or_else(|| SharedError::Synced(format!("Unknown report stream: {}", stream)))?;
+
         self.run_report(
             &start_date.format(DATE_FORMAT).to_string(),
             &end_date.format(DATE_FORMAT).to_string(),
-            vec![stream],
-            None,
+            report.metrics.clone(),
+            Some(report.dimensions.clone()),
             None,
         )
         .await
@@ -121,18 +126,27 @@ impl GoogleAnalyticsClient {
         }
     }
 
-    pub async fn new(credentials: String, property_id: String, start_date: String) -> Result<Self> {
+    pub async fn new(
+        credentials: String,
+        mut property_id: String,
+        start_date: String,
+    ) -> Result<Self> {
         // Install default crypto provider for rustls if not already installed
         // Ignore error if already installed (happens in tests when multiple connections are created)
         let _ = default_provider().install_default();
 
         // Validate property_id format
         if !property_id.starts_with("properties/") {
-            return Err(SharedError::Synced(format!(
-                "Invalid property_id format: '{}'. GA4 property IDs must be in the format 'properties/123456789'. \
-                You can find your property ID in Google Analytics under Admin > Property > Property Settings.",
-                property_id
-            )));
+            // Check if it's a numeric property ID (all digits)
+            if property_id.chars().all(|c| c.is_ascii_digit()) {
+                property_id = format!("properties/{}", property_id);
+            } else {
+                return Err(SharedError::Synced(format!(
+                    "Invalid property_id format: '{}'. GA4 property IDs must be in the format 'properties/123456789'. \
+                    You can find your property ID in Google Analytics under Admin > Property > Property Settings.",
+                    property_id
+                )));
+            }
         }
 
         // Parse the service account key from the credentials JSON
