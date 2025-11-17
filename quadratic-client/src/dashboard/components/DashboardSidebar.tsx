@@ -442,7 +442,7 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
           />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-72" align="start" alignOffset={-4}>
+      <DropdownMenuContent className="max-h-96 min-w-72 overflow-y-auto" align="start" alignOffset={-4}>
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
           return (
