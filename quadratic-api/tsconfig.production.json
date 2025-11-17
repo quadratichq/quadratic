@@ -7,7 +7,7 @@
     "target": "es6",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "sourceMap": false,
     "outDir": "dist"
   },
