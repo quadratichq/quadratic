@@ -50,12 +50,17 @@ export function getCountryFromIp(ip: string): string {
 }
 
 /**
-/**
  * Checks if the request originates from a restricted country for model access.
  * @param req - The Express request object
+ * @param isOnPaidPlan - Optional flag indicating if the user is on a paid plan. If true, restrictions are ignored.
  * @returns True if the country is restricted, false otherwise
  */
-export function isRestrictedModelCountry(req: Request): boolean {
+export function isRestrictedModelCountry(req: Request, isOnPaidPlan?: boolean): boolean {
+  // If user is on a paid plan, ignore country restrictions
+  if (isOnPaidPlan) {
+    return false;
+  }
+
   const ip = getIpFromRequest(req);
   const countryCode = getCountryFromIp(ip);
   if (!RESTRICTED_MODEL_COUNTRIES) {
