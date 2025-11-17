@@ -58,17 +58,6 @@ export const loader = async ({ request }: { request: Request }) => {
         }
       }
 
-      // For new users coming directly to `/` on desktop, handle them specially
-      // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
-      // if (userCreated && !isMobile && redirectTo === '/') {
-      //   return redirect(
-      //     SHOW_ONBOARDING_QUESTIONNAIRE
-      //       ? ROUTES.ONBOARDING_QUESTIONNAIRE
-      //       : SHOW_ONBOARDING_VIDEO
-      //         ? ROUTES.ONBOARDING_VIDEO
-      //         : '/files/create'
-      //   );
-      // }
       return redirect(redirectTo);
     }
   } catch (e) {
