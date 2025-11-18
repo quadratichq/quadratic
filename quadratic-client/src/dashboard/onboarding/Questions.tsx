@@ -18,6 +18,7 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
@@ -52,7 +53,12 @@ export const questionsById: Record<
             <ImageCarousel />
             <input type="hidden" name={props.id} value="" />
             <QuestionFormFooter>
-              <Button type="submit" size="lg" data-testid="onboarding-btn-get-started">
+              <Button
+                type="submit"
+                size="lg"
+                data-testid="onboarding-btn-get-started"
+                onClick={() => trackNextQuestionClick(props.id)}
+              >
                 Get started
               </Button>
             </QuestionFormFooter>
@@ -80,6 +86,7 @@ export const questionsById: Record<
                 <Link
                   key={value}
                   to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                  onClick={() => trackNextQuestionClick(props.id)}
                   // Hardcoding `onboarding-btn-use-personal` here for future ease of cmd+f
                   data-testid={`onboarding-btn-use-${value}`}
                 >
@@ -138,7 +145,11 @@ export const questionsById: Record<
                     {label}
                   </ControlCheckboxInputOther>
                 ) : (
-                  <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                  <Link
+                    to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                    key={value}
+                    onClick={() => trackNextQuestionClick(props.id)}
+                  >
                     <ControlLinkInline>{label}</ControlLinkInline>
                   </Link>
                 )
@@ -146,7 +157,7 @@ export const questionsById: Record<
             </div>
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" disabled={!other}>
+              <Button type="submit" size="lg" disabled={!other} onClick={() => trackNextQuestionClick(props.id)}>
                 Next
               </Button>
             </QuestionFormFooter>
@@ -173,7 +184,11 @@ export const questionsById: Record<
           <QuestionForm>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(optionsByValue).map(([value, label]) => (
-                <Link to={`./?${searchParams.toString()}&${props.id}=${value}`} key={value}>
+                <Link
+                  to={`./?${searchParams.toString()}&${props.id}=${value}`}
+                  key={value}
+                  onClick={() => trackNextQuestionClick(props.id)}
+                >
                   <ControlLinkInline key={value}>{label}</ControlLinkInline>
                 </Link>
               ))}
@@ -241,7 +256,12 @@ export const questionsById: Record<
 
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" data-testid="onboarding-btn-connections-next">
+              <Button
+                type="submit"
+                size="lg"
+                data-testid="onboarding-btn-connections-next"
+                onClick={() => trackNextQuestionClick(props.id)}
+              >
                 Next
               </Button>
             </QuestionFormFooter>
@@ -277,7 +297,13 @@ export const questionsById: Record<
             />
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" disabled={!isValid} data-testid="onboarding-btn-team-name-next">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!isValid}
+                data-testid="onboarding-btn-team-name-next"
+                onClick={() => trackNextQuestionClick(props.id)}
+              >
                 Next
               </Button>
             </QuestionFormFooter>
@@ -306,7 +332,12 @@ export const questionsById: Record<
             </div>
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" data-testid="onboarding-btn-team-invites-next">
+              <Button
+                type="submit"
+                size="lg"
+                data-testid="onboarding-btn-team-invites-next"
+                onClick={() => trackNextQuestionClick(props.id)}
+              >
                 Next
               </Button>
             </QuestionFormFooter>
@@ -352,6 +383,7 @@ export const questionsById: Record<
                     to={`./?${searchParams.toString()}&${props.id}=${value}`}
                     key={value}
                     data-testid={`onboarding-btn-source-other`}
+                    onClick={() => trackNextQuestionClick(props.id)}
                   >
                     <ControlLinkInline>{label}</ControlLinkInline>
                   </Link>
@@ -360,7 +392,7 @@ export const questionsById: Record<
             </div>
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" disabled={!other}>
+              <Button type="submit" size="lg" disabled={!other} onClick={() => trackNextQuestionClick(props.id)}>
                 Next
               </Button>
             </QuestionFormFooter>
@@ -395,6 +427,7 @@ export const questionsById: Record<
                 className="mt-auto w-full"
                 disabled={isSubmitting}
                 loading={isSubmittingFree}
+                onClick={() => trackNextQuestionClick(props.id)}
               >
                 Get started
               </Button>
@@ -409,6 +442,7 @@ export const questionsById: Record<
                 className="mt-4 w-full"
                 disabled={isSubmitting}
                 loading={isSubmittingPro}
+                onClick={() => trackNextQuestionClick(props.id)}
               >
                 Subscribe now
               </Button>
@@ -662,6 +696,14 @@ function ImageCarousel() {
       </div>
     </div>
   );
+}
+
+/**
+ * We use this to track whenever the user clicks an action in the onboading flow
+ * that will advance them to the next question.
+ */
+function trackNextQuestionClick(questionId: string) {
+  trackEvent('[Onboarding].clickedToNextQuestion', { questionId });
 }
 
 function getDefaultUsername(username: string) {
