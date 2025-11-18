@@ -11,4 +11,3 @@ export const countWords = (text: string): number => {
     .split(/\s+/)
     .filter((word) => word.length > 0).length;
 };
-
