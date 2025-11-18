@@ -3,10 +3,12 @@ import { events } from '@/app/events/events';
 import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
-import { EducationIcon } from '@/shared/components/Icons';
+import { CheckBoxEmptyIcon, CheckBoxIcon, ChecklistIcon } from '@/shared/components/Icons';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
-import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -101,7 +103,7 @@ export const OnboardingChecklist = () => {
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-[65px] right-2 overflow-hidden rounded-lg border bg-background shadow-sm"
+      className="fixed bottom-[65px] right-2 overflow-hidden rounded-lg border bg-background shadow-md"
       style={{
         transform: showTransform ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
         transformOrigin: 'center center',
@@ -109,6 +111,7 @@ export const OnboardingChecklist = () => {
         height: showTransform && height > 0 ? `${height}px` : 'auto',
         opacity: isInitialized ? 1 : 0,
         pointerEvents: isInitialized ? 'auto' : 'none',
+        zIndex: 1,
       }}
     >
       {showIconOnly ? (
@@ -123,20 +126,15 @@ export const OnboardingChecklist = () => {
               justifyContent: 'center',
             }}
           >
-            <EducationIcon />
+            <ChecklistIcon />
           </div>
         </div>
       ) : (
         // Show full content
-        <div className="p-6">
+        <div className="flex flex-col gap-2 p-4">
           {/* Header */}
-          <div className="mb-2 flex items-start justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <div>Onboarding checklist</div>
-              <div className="text-sm text-muted-foreground">
-                {completedCount}/{totalCount}
-              </div>
-            </h2>
+          <div className="flex items-start justify-between">
+            <h2 className="text-lg font-semibold">Onboarding checklist</h2>
             <Button
               id="onboarding-checklist-close"
               variant="ghost"
@@ -144,31 +142,32 @@ export const OnboardingChecklist = () => {
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground"
             >
-              <Cross2Icon className="h-4 w-4" />
+              <Cross2Icon />
             </Button>
           </div>
 
           {/* Subtitle */}
-          <p className="mb-4 text-sm text-muted-foreground">Complete tasks to earn free prompts.</p>
+          <div className="flex flex-col gap-0">
+            <Progress value={(completedCount / totalCount) * 100} className="h-2" />
+            <p className="text-xs text-muted-foreground">{Math.round((completedCount / totalCount) * 100)}% complete</p>
+          </div>
 
           {/* Checklist items */}
-          <div className="space-y-1">
+          <div>
             {bonusPrompts.map((prompt) => (
               <div
                 id={`onboarding-checklist-item-${prompt.category}`}
                 key={prompt.category}
-                className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-muted/50"
+                className="flex cursor-pointer items-center rounded-sm py-2 transition-colors hover:bg-muted/50"
                 onClick={() => handleItemClick(prompt.category, prompt.received)}
               >
                 {/* Checkmark circle */}
-                <div
-                  className={cn(
-                    'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
-                    prompt.received ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-muted'
-                  )}
-                >
-                  {prompt.received && <CheckIcon className="h-4 w-4" />}
-                </div>
+
+                {prompt.received ? (
+                  <CheckBoxIcon className="mr-2 text-primary" />
+                ) : (
+                  <CheckBoxEmptyIcon className="mr-2 text-muted-foreground" />
+                )}
 
                 {/* Task name */}
                 <span className={cn('flex-1 text-sm', prompt.received && 'text-muted-foreground line-through')}>
@@ -176,16 +175,12 @@ export const OnboardingChecklist = () => {
                 </span>
 
                 {/* Badge */}
-                <span
-                  className={cn(
-                    'rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                    prompt.received
-                      ? 'border-blue-600 bg-white text-blue-600 dark:bg-white dark:text-blue-600'
-                      : 'border-blue-600 bg-blue-600 text-white'
-                  )}
+                <Badge
+                  variant={!prompt.received ? 'outline' : 'primary'}
+                  className={cn('ml-4', prompt.received && 'ztext-muted-foreground line-through')}
                 >
-                  Earn{prompt.received ? 'ed' : ''} {prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
-                </span>
+                  +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
+                </Badge>
               </div>
             ))}
           </div>

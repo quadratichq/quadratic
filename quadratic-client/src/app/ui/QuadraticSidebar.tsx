@@ -16,7 +16,7 @@ import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { AIIcon, DatabaseIcon, EducationIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { AIIcon, ChecklistIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
@@ -124,7 +124,7 @@ export const QuadraticSidebar = () => {
               }
             }}
           >
-            <EducationIcon />
+            <ChecklistIcon />
           </SidebarToggle>
         </SidebarTooltip>
         <ThemePickerMenu />
