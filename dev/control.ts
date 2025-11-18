@@ -47,10 +47,10 @@ export class Control {
     this.cli = cli;
   }
 
-  async quit() {
+  async quit(errorMessage?: string) {
     if (this.quitting) return;
     this.quitting = true;
-    this.ui.quit();
+    this.ui.quit(errorMessage);
     await Promise.all([
       this.kill("api"),
       this.kill("types"),
@@ -100,33 +100,63 @@ export class Control {
     }
   }
 
-  checkServices() {
-    this.isRedisRunning().then((running: boolean | "not found") => {
-      this.ui.print("redis", "checking whether redis is running...");
-      if (running === "not found") {
-        this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-        this.ui.print("redis", "redis-cli not found", "red");
-      } else if (running === true) {
-        this.status.redis = true;
-        this.ui.print("redis", "is running", "green");
-      } else {
-        this.status.redis = "error";
-        this.ui.print("redis", "is NOT running!", "red");
+  async checkServices(exitOnError: boolean = true): Promise<void> {
+    this.ui.print("redis", "checking whether redis is running...");
+    this.ui.print("postgres", "checking whether postgres is running...");
+
+    const [redisRunning, postgresRunning] = await Promise.all([
+      this.isRedisRunning(),
+      this.isPostgresRunning(),
+    ]);
+
+    const redisNotRunning = redisRunning !== true && redisRunning !== "not found";
+    const postgresNotRunning = postgresRunning !== true && postgresRunning !== "not found";
+    const redisNotFound = redisRunning === "not found";
+    const postgresNotFound = postgresRunning === "not found";
+    const errors: string[] = [];
+
+    // Check Redis
+    if (redisNotFound) {
+      this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
+      errors.push("redis-cli not found. Please install redis-cli or ensure it's in your PATH.");
+    } else if (redisRunning === true) {
+      this.status.redis = true;
+      this.ui.print("redis", "is running", "green");
+    } else {
+      this.status.redis = "error";
+    }
+
+    // Check PostgreSQL
+    if (postgresNotFound) {
+      this.status.postgres = "killed"; // use killed to indicate that pg_isready was not found
+      errors.push("pg_isready not found. Please install PostgreSQL client tools or ensure pg_isready is in your PATH.");
+    } else if (postgresRunning === true) {
+      this.status.postgres = true;
+      this.ui.print("postgres", "is running", "green");
+    } else {
+      this.status.postgres = "error";
+    }
+
+    // Combine "not running" errors if both are failing
+    if (redisNotRunning && postgresNotRunning) {
+      errors.push("Redis and PostgreSQL are NOT running! Please start redis and PostgreSQL before running node dev.");
+    } else {
+      if (redisNotRunning) {
+        errors.push("Redis is NOT running! Please start redis before running node dev.");
       }
-    });
-    this.isPostgresRunning().then((running: boolean | "not found") => {
-      this.ui.print("postgres", "checking whether postgres is running...");
-      if (running === "not found") {
-        this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
-        this.ui.print("postgres", "pg_isready not found", "red");
-      } else if (running === true) {
-        this.status.postgres = true;
-        this.ui.print("postgres", "is running", "green");
-      } else {
-        this.status.postgres = "error";
-        this.ui.print("postgres", "is NOT running!", "red");
+      if (postgresNotRunning) {
+        errors.push("PostgreSQL is NOT running! Please start PostgreSQL before running node dev.");
       }
-    });
+    }
+
+    // If there are any errors, quit with combined message (if exitOnError is true)
+    if (errors.length > 0) {
+      if (exitOnError) {
+        await this.quit(errors.join(" | "));
+        return; // quit() will exit, but TypeScript doesn't know that
+      }
+      // If exitOnError is false, status has already been updated and UI will show it
+    }
   }
 
   async runApi(restart?: boolean) {
@@ -549,9 +579,17 @@ export class Control {
     this.ui.printOutput("connection", (data) => {
       this.handleResponse("connection", data, {
         success: "listening on",
-        error: ["error[", "npm ERR!"],
+        error: ["error[", "error:", "failed to compile", "npm ERR!", "Compiling failed", "Exit status: 1"],
         start: "    Compiling",
       });
+    });
+    this.connection.on("exit", (code) => {
+      // Only set error status if exit code indicates failure and status wasn't already set to success
+      if (code !== 0 && code !== null && this.status.connection !== true) {
+        this.status.connection = "error";
+        this.ui.print("connection", "exited with error code", "red");
+      }
+      this.connection = undefined;
     });
   }
 
@@ -616,11 +654,12 @@ export class Control {
       if (code === 0) {
         this.ui.print("db", "migration completed");
         this.status.db = true;
+        this.runApi();
       } else {
         this.ui.print("db", "failed");
         this.status.db = "error";
+        this.quit("Failed to migrate database. Likely you will need to `npm run prisma:dev:reset`");
       }
-      this.runApi();
     });
   }
 
@@ -695,7 +734,9 @@ export class Control {
 
   async start(ui: UI) {
     this.ui = ui;
-    this.checkServices();
+
+    // if Redis and PostgreSQL are not running, we quit before continuing
+    await this.checkServices();
     this.runNpmInstall();
     this.runRust();
     this.runPython();
