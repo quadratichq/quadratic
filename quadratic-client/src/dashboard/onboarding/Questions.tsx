@@ -227,11 +227,22 @@ export const questionsById: Record<
         })),
       ];
 
+      // This is a bit messy, but we just want to move mixpanel to being down by
+      // the other SaaS options, so put it right before Salesforce.
+      const mixpanelIndex = options.findIndex((opt) => opt.value === 'MIXPANEL');
+      const salesforceIndex = options.findIndex((opt) => opt.value === 'SALESFORCE');
+      const optionsSorted = [...options];
+      if (mixpanelIndex !== -1 && salesforceIndex !== -1) {
+        const mixpanel = optionsSorted.splice(mixpanelIndex, 1)[0];
+        const newSalesforceIndex = optionsSorted.findIndex((opt) => opt.value === 'SALESFORCE');
+        optionsSorted.splice(newSalesforceIndex, 0, mixpanel);
+      }
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="grid grid-cols-3 gap-2">
-              {options.map(({ name, value, Logo }) => {
+              {optionsSorted.map(({ name, value, Logo }) => {
                 return value === 'OTHER' ? (
                   <ControlCheckboxInputOther
                     key={value}
