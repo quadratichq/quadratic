@@ -345,11 +345,11 @@ type CurrencyOption = {
 };
 
 const CURRENCY_OPTIONS: CurrencyOption[] = [
-  { symbol: '$', label: 'English', description: '(United States)' },
-  { symbol: '£', label: 'English', description: '(United Kingdom)' },
-  { symbol: '€', label: 'Euro', description: '(€ 123)' },
-  { symbol: '¥', label: 'Chinese', description: '(Simplified, Mainland China)' },
-  { symbol: 'CHF', label: 'French', description: '(Switzerland)' },
+  { symbol: '$', label: '$ (Dollars)', description: '' },
+  { symbol: '£', label: '£ (Pounds)', description: '' },
+  { symbol: '€', label: '€ (Euros)', description: '' },
+  { symbol: '¥', label: '¥ (Yuan)', description: '' },
+  { symbol: 'CHF', label: 'CHF (Swiss Francs)', description: '' },
 ];
 
 export const FormatCurrencyButton = memo(
@@ -420,13 +420,11 @@ export const FormatCurrencyButton = memo(
                   setDefaultCurrency(option.symbol);
                   focusGrid();
                 }}
-                aria-label={hideLabel ? '' : `${option.label} ${option.description}`}
+                aria-label={hideLabel ? '' : option.label}
                 data-testid={hideLabel ? '' : `currency_${option.symbol}`}
                 className={cn(isSelected && 'bg-accent')}
               >
-                <span className="mr-2 font-medium">{option.symbol}</span>
                 <span>{option.label}</span>
-                <span className="ml-2 text-muted-foreground">{option.description}</span>
               </DropdownMenuItem>
             );
           })}
