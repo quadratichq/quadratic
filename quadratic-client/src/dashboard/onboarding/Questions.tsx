@@ -670,9 +670,9 @@ function getDefaultUsername(username: string) {
   let firstName = usernameParts[0];
   if (firstName) {
     if (firstName.endsWith('s')) {
-      out = `${firstName}’ team`;
+      out = `${firstName}’ Team`;
     } else {
-      out = `${firstName}’s team`;
+      out = `${firstName}’s Team`;
     }
   }
   return out;
