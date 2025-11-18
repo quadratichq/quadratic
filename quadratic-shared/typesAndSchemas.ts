@@ -326,6 +326,9 @@ export const ApiSchemas = {
    * Examples
    * Given the publicly-accessible URL of a (example) file in production,
    * duplicate it to the user's account.
+   *
+   * TODO: rename to `templates` one day. Used to call these "examples" but now
+   * we call them "templates".
    * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({

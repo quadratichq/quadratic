@@ -123,7 +123,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       fileTeamPrivacy,
       teamRole,
       teamPermissions,
-      restrictedModel: isRestrictedModelCountry(req),
+      restrictedModel: isRestrictedModelCountry(req, isOnPaidPlan),
     },
     license,
   };

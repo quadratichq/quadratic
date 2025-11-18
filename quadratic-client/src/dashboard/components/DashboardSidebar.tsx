@@ -159,9 +159,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           {canEditTeam && (
-            <SidebarNavLink to={ROUTES.EXAMPLES}>
+            <SidebarNavLink to={ROUTES.TEMPLATES}>
               <ExamplesIcon className={classNameIcons} />
-              Examples
+              Templates
             </SidebarNavLink>
           )}
           <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
@@ -425,7 +425,7 @@ function TeamSwitcher({ appIsLoading }: TeamSwitcherProps) {
           />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-72" align="start" alignOffset={-4}>
+      <DropdownMenuContent className="max-h-96 min-w-72 overflow-y-auto" align="start" alignOffset={-4}>
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
           return (

@@ -1,4 +1,4 @@
-import type { FilesListExampleFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import type { FilesListTemplateFile, FilesListUserFile } from '@/dashboard/components/FilesList';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -323,7 +323,7 @@ export function FilesListItemExampleFile({
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesListExampleFile;
+  file: FilesListTemplateFile;
   filterValue: string;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;

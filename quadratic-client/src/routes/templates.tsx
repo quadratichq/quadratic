@@ -1,5 +1,5 @@
 import { DashboardHeader, DashboardHeaderTitle } from '@/dashboard/components/DashboardHeader';
-import type { FilesListExampleFile } from '@/dashboard/components/FilesList';
+import type { FilesListTemplateFile } from '@/dashboard/components/FilesList';
 import { ExampleFilesList } from '@/dashboard/components/FilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
@@ -19,9 +19,9 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
 
-  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+  const files: FilesListTemplateFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,
-    href: ROUTES.CREATE_FILE_EXAMPLE({
+    href: ROUTES.CREATE_FILE_FROM_TEMPLATE({
       teamUuid: activeTeamUuid,
       publicFileUrlInProduction: url,
       additionalParams: '',
@@ -33,8 +33,8 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader
-        title="Examples"
-        titleNode={<DashboardHeaderTitle>Example files by the Quadratic team</DashboardHeaderTitle>}
+        title="Templates"
+        titleNode={<DashboardHeaderTitle>Templates by the Quadratic team</DashboardHeaderTitle>}
       />
 
       <ExampleFilesList files={files} />

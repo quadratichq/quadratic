@@ -12,7 +12,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
  *  - *.quadratichq.com/file/*
  *  - *.quadratichq.com/education/*
  *  - *.quadratichq.com/api/*
- *  - *.quadratichq.com/examples
+ *  - *.quadratichq.com/templates
  *  - *.quadratichq.com/account
  *  - *.quadratichq.com/login
  *  - *.quadratichq.com/login-result*
@@ -101,9 +101,11 @@ export const router = createBrowserRouter(
             lazy={() => import('./routes/files.shared-with-me')}
             shouldRevalidate={dontRevalidateDialogs}
           />
+          {/* Redirect /examples to /templates - we add this because examples is linked in lots of places we're not aware about */}
+          <Route path="/examples" element={<Navigate to={ROUTES.TEMPLATES} replace />} />
           <Route
-            path={ROUTES.EXAMPLES}
-            lazy={() => import('./routes/examples')}
+            path={ROUTES.TEMPLATES}
+            lazy={() => import('./routes/templates')}
             shouldRevalidate={dontRevalidateDialogs}
           />
           <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
