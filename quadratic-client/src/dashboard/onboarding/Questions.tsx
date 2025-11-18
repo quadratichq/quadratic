@@ -254,10 +254,10 @@ export const questionsById: Record<
     title: 'What’s your team name?',
     subtitle: 'This will appear as the name of your workspace in the app.',
     Form: (props) => {
-      const [isValid, setIsValid] = useRecoilState(isValidFormAtom);
-      const inputRef = useRef<HTMLInputElement>(null);
       const { username } = useOnboardingLoaderData();
       const defaultTeamName = getDefaultUsername(username);
+      const [isValid, setIsValid] = useState(Boolean(defaultTeamName));
+      const inputRef = useRef<HTMLInputElement>(null);
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
