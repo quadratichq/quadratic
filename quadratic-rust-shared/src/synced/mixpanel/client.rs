@@ -31,7 +31,7 @@ pub struct MixpanelConfig {
 
 #[async_trait]
 impl SyncedClient for MixpanelClient {
-    fn streams(&self) -> Vec<&str> {
+    fn streams() -> Vec<&'static str> {
         vec![
             "events",
             // "engage",

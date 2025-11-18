@@ -10,8 +10,11 @@ use quadratic_rust_shared::{
         DatafusionConnection, EmptyConnection,
         tests::new_datafusion_connection as new_datafusion_test_connection,
     },
-    synced::google_analytics::{GoogleAnalyticsConnection, client::GoogleAnalyticsClient},
-    synced::mixpanel::{MixpanelConnection, client::MixpanelClient},
+    synced::{
+        SyncedClient,
+        google_analytics::client::{GoogleAnalyticsClient, GoogleAnalyticsConnection},
+        mixpanel::{MixpanelConnection, client::MixpanelClient},
+    },
 };
 use std::sync::Arc;
 use uuid::Uuid;
@@ -36,9 +39,15 @@ pub(crate) async fn test_mixpanel(
 
 pub(crate) async fn test_google_analytics(
     Json(connection): Json<GoogleAnalyticsConnection>,
-) -> Json<TestResponse> {
-    let client = GoogleAnalyticsClient::new(&connection.api_secret, &connection.project_id);
-    TestResponse::new(client.test_connection().await, None).into()
+) -> Result<Json<TestResponse>> {
+    let client = GoogleAnalyticsClient::new(
+        connection.service_account_configuration.clone(),
+        connection.property_id.clone(),
+        connection.start_date.clone(),
+    )
+    .await?;
+
+    Ok(TestResponse::new(client.test_connection().await, None).into())
 }
 
 /// Get the connection details from the API and create a MySqlConnection.
@@ -66,7 +75,17 @@ async fn get_connection(
         },
     };
 
+    let streams = match api_connection.r#type.as_str() {
+        "MIXPANEL" => MixpanelClient::streams(),
+        "GOOGLE_ANALYTICS" => GoogleAnalyticsClient::streams(),
+        _ => vec![],
+    };
+
     datafusion_connection.connection_id = Some(*connection_id);
+    datafusion_connection.streams = streams
+        .into_iter()
+        .map(|stream| stream.to_string())
+        .collect();
 
     let api_connection = ApiConnection {
         uuid: *connection_id,

@@ -75,8 +75,8 @@ pub struct GoogleAnalyticsClient {
 
 #[async_trait]
 impl SyncedClient for GoogleAnalyticsClient {
-    fn streams(&self) -> Vec<&str> {
-        REPORTS.keys().cloned().collect()
+    fn streams() -> Vec<&'static str> {
+        REPORTS.keys().copied().collect()
     }
 
     async fn process(

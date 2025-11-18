@@ -38,6 +38,7 @@ pub struct EmptyConnection {}
 pub struct DatafusionConnection {
     pub connection_id: Option<Uuid>,
     pub database: Option<String>,
+    pub streams: Vec<String>,
     #[serde(skip, default = "SessionContext::new")]
     #[derivative(Debug = "ignore")]
     pub session_context: SessionContext,
@@ -53,6 +54,7 @@ impl DatafusionConnection {
         DatafusionConnection {
             connection_id: None,
             database: None,
+            streams: vec![],
             session_context: SessionContext::new(),
             object_store,
             object_store_url,
@@ -122,16 +124,19 @@ impl<'a> Connection<'a> for DatafusionConnection {
         // register the object store in datafusion context
         ctx.register_object_store(&self.object_store_url, self.object_store.clone());
 
-        // hard-code for now
-        // TODO(ddimaria): remove this in favor of getting the tables elsewhere
-        let tables = vec!["events"];
-
         // register the parquet path for every table
-        for table in tables {
+        for table in &self.streams {
             let parquet_path = self.object_store_parquet_path(&self.object_store_url, table)?;
-            ctx.register_parquet(table, &parquet_path, ParquetReadOptions::default())
-                .await
-                .map_err(connect_error)?;
+
+            tracing::info!("parquet_path: {}", parquet_path);
+
+            ctx.register_parquet(
+                table.to_owned(),
+                &parquet_path,
+                ParquetReadOptions::default(),
+            )
+            .await
+            .map_err(connect_error)?;
         }
 
         Ok(ctx)

@@ -81,7 +81,7 @@ export const connectionClient = {
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);
 
-      const url = `${API_URL}/${connectionType.toLowerCase()}/schema/${connectionId}?force_cache_refresh=${forceCacheRefresh}`;
+      const url = `${API_URL}/${connectionType.toLowerCase().replace(/_/g, '-')}/schema/${connectionId}?force_cache_refresh=${forceCacheRefresh}`;
       const res = await fetch(url, {
         method: 'GET',
         headers,
@@ -105,7 +105,7 @@ export const connectionClient = {
       teamUuid: string;
     }) => {
       try {
-        const typeLower = type.toLowerCase();
+        const typeLower = type.toLowerCase().replace(/_/g, '-');
         const headers = new Headers(await jwtHeader());
         headers.set('X-Team-Id', teamUuid);
 

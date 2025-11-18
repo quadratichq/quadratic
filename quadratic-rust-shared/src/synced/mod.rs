@@ -34,7 +34,9 @@ pub trait SyncedConnection: Send + Sync {
 
 #[async_trait]
 pub trait SyncedClient: Send + Sync {
-    fn streams(&self) -> Vec<&str>;
+    fn streams() -> Vec<&'static str>
+    where
+        Self: Sized;
 
     /// Process a single stream.
     async fn process(
@@ -49,8 +51,11 @@ pub trait SyncedClient: Send + Sync {
         &self,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<HashMap<String, HashMap<String, Bytes>>> {
-        self.streams()
+    ) -> Result<HashMap<String, HashMap<String, Bytes>>>
+    where
+        Self: Sized,
+    {
+        Self::streams()
             .into_iter()
             .map(|stream| async move {
                 let result = self.process(stream, start_date, end_date).await?;

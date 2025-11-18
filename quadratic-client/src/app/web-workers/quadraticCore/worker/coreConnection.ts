@@ -57,7 +57,7 @@ class CoreConnection {
     this.lastTransactionId = transactionId;
 
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
-    const kind = connector_type.toLocaleLowerCase();
+    const kind = connector_type.toLocaleLowerCase().replace(/_/g, '-');
     const url = `${base}/${kind}/query`;
     const jwt = await coreClient.getJwt();
     const body = {
