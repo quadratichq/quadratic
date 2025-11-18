@@ -241,8 +241,8 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                     return (
                       <DropdownMenuItem
                         key={`awaiting-${codeRun.sheetPos.x}-${codeRun.sheetPos.y}`}
-                        onClick={getCancelHandler(codeRun)}
-                        className="pl-6"
+                        className="pl-6 opacity-100"
+                        onSelect={(e) => e.preventDefault()}
                       >
                         <div className="flex items-center gap-2 text-sm">
                           {languageId && <LanguageIcon language={languageId} className="h-4 w-4 flex-shrink-0" />}
