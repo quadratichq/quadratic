@@ -159,9 +159,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           {canEditTeam && (
-            <SidebarNavLink to={ROUTES.EXAMPLES}>
+            <SidebarNavLink to={ROUTES.TEMPLATES}>
               <ExamplesIcon className={classNameIcons} />
-              Examples
+              Templates
             </SidebarNavLink>
           )}
           <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
