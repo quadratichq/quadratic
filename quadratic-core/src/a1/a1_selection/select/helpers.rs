@@ -1,6 +1,5 @@
 use super::super::{A1Selection, CellRefRange};
 use crate::a1::A1Context;
-use crate::a1::selection_state::SelectionState;
 use crate::{Pos, Rect};
 
 impl A1Selection {
@@ -66,17 +65,6 @@ impl A1Selection {
     }
 }
 
-pub(super) fn get_selection_start_position(
-    _selection: &A1Selection,
-    _a1_context: &A1Context,
-    state: &SelectionState,
-) -> (i64, i64) {
-    // For both drag and keyboard selection, the anchor is the fixed start point
-    // - Drag: anchor is where the drag started (mouse down position)
-    // - Keyboard: anchor is where shift was first pressed (cursor position)
-    (state.anchor.x, state.anchor.y)
-}
-
 /// Gets current selection end and bounds information
 pub(super) fn get_current_selection_info(
     selection: &A1Selection,
@@ -111,27 +99,6 @@ pub(super) fn get_current_selection_info(
     } else {
         (None, None)
     }
-}
-
-/// Creates the initial selection rectangle based on movement and current bounds
-pub(super) fn create_initial_selection_rect(
-    _selection: &A1Selection,
-    start_x: i64,
-    start_y: i64,
-    new_x: i64,
-    new_y: i64,
-    _current_bounds: Option<(i64, i64, i64, i64)>,
-    _state: &SelectionState,
-) -> Rect {
-    // Always use the selection from anchor to current position
-    // This allows immediate shrinking/expanding in any direction
-    // No perpendicular axis preservation - anchor is fixed, selection extends to new position
-    Rect::new(
-        start_x.min(new_x),
-        start_y.min(new_y),
-        start_x.max(new_x),
-        start_y.max(new_y),
-    )
 }
 
 /// Determines if we're shrinking or expanding in each axis

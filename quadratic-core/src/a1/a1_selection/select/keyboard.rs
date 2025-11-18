@@ -1,60 +1,23 @@
-mod column_row;
-mod helpers;
-mod keyboard;
-pub(crate) mod merged_cells;
-mod normalize;
-
-#[cfg(test)]
-mod tests;
-
-use crate::a1::{A1Context, CellRefRangeEnd, ColRange, RefRangeBounds};
-use crate::grid::sheet::merge_cells::MergeCells;
-use crate::{Pos, Rect};
-
-use super::{A1Selection, CellRefRange};
+use crate::{
+    Pos,
+    a1::{A1Context, A1Selection, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds},
+    grid::sheet::merge_cells::MergeCells,
+};
 
 impl A1Selection {
-    pub fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
-        let range = RefRangeBounds::new_relative_rect(Rect::new(left, top, right, bottom));
-        if append {
-            self.ranges.push(CellRefRange::Sheet { range });
-        } else {
-            self.ranges.clear();
-            self.ranges.push(CellRefRange::Sheet { range });
-        }
-        self.cursor.x = left;
-        self.cursor.y = top;
-    }
-
-    pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
-        if append {
-            self.ranges
-                .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
-        } else {
-            self.ranges.clear();
-            self.ranges
-                .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
-        }
-        self.cursor.x = x;
-        self.cursor.y = y;
-    }
-
-    /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
-    pub(crate) fn select_to(
+    pub fn keyboard_select_to(
         &mut self,
         column: i64,
         row: i64,
-        append: bool,
-        isDrag: bool,
-        isShiftClick: bool,
         a1_context: &A1Context,
         merge_cells: &MergeCells,
-    ) {
+    ) -> Pos {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
                 .push(CellRefRange::new_relative_pos(self.cursor));
         };
+
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
@@ -98,9 +61,7 @@ impl A1Selection {
                             let range =
                                 RefRangeBounds::new_relative(start_col, start_row, column, row);
                             *last = CellRefRange::Sheet { range };
-                            // Update selection_end to track the target position
-                            state.selection_end = Pos::new(column, row);
-                            return state;
+                            return Pos::new(column, row);
                         }
                     }
                     if let Some(mut range_converted) = range
@@ -122,11 +83,7 @@ impl A1Selection {
                             "Could not convert table range to ref range bounds in A1Selection::select_to"
                         );
                         // Update selection_end to track the target position
-                        state.selection_end = Pos::new(column, row);
-                        return state;
-                    }
-                    if !append {
-                        self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
+                        return Pos::new(column, row);
                     }
                 }
                 CellRefRange::Sheet { range } => {
@@ -137,46 +94,21 @@ impl A1Selection {
                         self.cursor.x = column;
                     }
 
-                    // Normalize the selection using the new normalize module
-                    let new_cursor = normalize_selection(
-                        range,
-                        column,
-                        row,
-                        original_cursor,
-                        None, // Merged cell adjustments handled separately
-                        &mut state,
-                    );
-                    self.cursor = new_cursor;
-
-                    if !append {
-                        self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
-                    }
+                    // // Normalize the selection using the new normalize module
+                    // let new_cursor = normalize_selection(
+                    //     range,
+                    //     column,
+                    //     row,
+                    //     original_cursor,
+                    //     None, // Merged cell adjustments handled separately
+                    //     &mut state,
+                    // );
+                    // self.cursor = new_cursor;
                 }
             };
         }
-        state.selection_end = Pos::new(column, row);
 
-        state
-    }
-
-    /// Helper to convert last range to RefRangeBounds (for set_columns_selected and set_rows_selected)
-    fn last_range_to_bounds(&self, a1_context: &A1Context) -> Option<RefRangeBounds> {
-        let last = self.ranges.last()?;
-        match last {
-            CellRefRange::Sheet { range } => Some(*range),
-            CellRefRange::Table { range } => {
-                range.convert_to_ref_range_bounds(false, a1_context, false, false)
-            }
-        }
-    }
-
-    pub fn append_selection(&self, other: &Self) -> Self {
-        let mut ranges = self.ranges.clone();
-        ranges.extend(other.ranges.iter().cloned());
-        Self {
-            sheet_id: self.sheet_id,
-            cursor: self.cursor,
-            ranges,
-        }
+        // return end position
+        Pos::new(column, row)
     }
 }

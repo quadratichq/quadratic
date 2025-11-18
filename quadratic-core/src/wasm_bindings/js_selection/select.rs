@@ -63,44 +63,42 @@ impl JsSelection {
             .select_rect(left as i64, top as i64, right as i64, bottom as i64, append);
     }
 
+    #[wasm_bindgen(js_name = "keyboardSelectTo")]
+    pub fn keyboard_select_to(
+        &mut self,
+        x: u32,
+        y: u32,
+        context: &JsA1Context,
+        merge_cells: &JsMergeCells,
+    ) {
+        self.end_pos = self.selection.keyboard_select_to(
+            x as i64,
+            y as i64,
+            context.get_context(),
+            merge_cells.get_merge_cells(),
+        );
+    }
+
     #[wasm_bindgen(js_name = "selectTo")]
     pub fn select_to(
         &mut self,
         x: u32,
         y: u32,
         append: bool,
+        isDrag: bool,
+        isShiftClick: bool,
         context: &JsA1Context,
-        state: Option<JsSelectionState>,
-    ) -> JsSelectionState {
-        // Use provided state or create from current selection
-        let rust_state = if let Some(s) = state {
-            Some(s.get_state())
-        } else {
-            // Will be created in select_to from current selection
-            None
-        };
-        let updated_state = self.selection.select_to(
+        merge_cells: &JsMergeCells,
+    ) {
+        self.selection.select_to(
             x as i64,
             y as i64,
             append,
+            isDrag,
+            isShiftClick,
             context.get_context(),
-            rust_state,
+            merge_cells.get_merge_cells(),
         );
-        // Convert SelectionMode to u8 for WASM
-        let mode_u8 = match updated_state.mode {
-            crate::a1::SelectionMode::KeyboardShift => 0,
-            crate::a1::SelectionMode::MouseDrag => 1,
-            crate::a1::SelectionMode::MouseShiftClick => 2,
-            crate::a1::SelectionMode::MouseCtrlClick => 3,
-            crate::a1::SelectionMode::Single => 4,
-        };
-        JsSelectionState::new(
-            updated_state.anchor.x,
-            updated_state.anchor.y,
-            updated_state.selection_end.x,
-            updated_state.selection_end.y,
-            mode_u8,
-        )
     }
 
     /// Adjusts the selection for merged cells (for mouse drag operations).

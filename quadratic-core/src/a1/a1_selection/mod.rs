@@ -16,7 +16,6 @@ mod parse;
 mod query;
 pub(crate) mod select;
 mod select_table;
-pub mod selection_state;
 
 /// Maximum number of columns that can be parsed in a column name.
 pub const MAX_COLUMNS: i64 = 5000000;

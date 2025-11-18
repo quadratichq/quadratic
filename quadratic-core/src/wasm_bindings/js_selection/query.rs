@@ -165,11 +165,6 @@ impl JsSelection {
         }
     }
 
-    #[wasm_bindgen(js_name = "getSelectionState")]
-    pub fn get_selection_state(&self, context: &JsA1Context) -> crate::wasm_bindings::js_selection_state::JsSelectionState {
-        crate::wasm_bindings::js_selection_state::JsSelectionState::from_selection(self, context)
-    }
-
     #[wasm_bindgen(js_name = "isAllSelected")]
     pub fn is_all_selected(&self) -> bool {
         self.selection.is_all_selected()
