@@ -32,9 +32,7 @@ export const handleGenAIRequest = async ({
       toolConfig: tool_choice,
       ...(options.thinkingLevel !== undefined
         ? {
-            thinkingConfig: {
-              thinking_level: options.thinkingLevel,
-            },
+            thinking_level: options.thinkingLevel,
           }
         : options.thinking !== undefined && {
             thinkingConfig: {
