@@ -37,7 +37,7 @@ export const FreePlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>AI messages</span>
-          <span className="font-medium">10/month</span>
+          <span className="font-medium">5/month</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>

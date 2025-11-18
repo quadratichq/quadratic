@@ -212,6 +212,7 @@ export const questionsById: Record<
     subtitle: 'Select any option you’d be interested in.',
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
+      const [searchParams] = useSearchParams();
 
       // Build options array with proper type inference
       const options: Array<{
@@ -268,6 +269,12 @@ export const questionsById: Record<
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
+
+            <p className="flex items-center justify-center pt-10">
+              <Button variant="link" size="lg" asChild>
+                <Link to={`./?${searchParams.toString()}&${props.id}=`}>I don’t have any data to connect to</Link>
+              </Button>
+            </p>
 
             <QuestionFormFooter>
               <BackButton />
