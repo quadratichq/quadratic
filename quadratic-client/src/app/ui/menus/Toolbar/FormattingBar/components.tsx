@@ -346,10 +346,18 @@ type CurrencyOption = {
 
 const CURRENCY_OPTIONS: CurrencyOption[] = [
   { symbol: '$', label: '$ (Dollars)', description: '' },
-  { symbol: '£', label: '£ (Pounds)', description: '' },
   { symbol: '€', label: '€ (Euros)', description: '' },
+  { symbol: '£', label: '£ (Pounds)', description: '' },
   { symbol: '¥', label: '¥ (Yuan)', description: '' },
   { symbol: 'CHF', label: 'CHF (Swiss Francs)', description: '' },
+  { symbol: '₹', label: '₹ (Indian Rupees)', description: '' },
+  { symbol: 'R$', label: 'R$ (Brazilian Reais)', description: '' },
+  { symbol: '₩', label: '₩ (South Korean Won)', description: '' },
+  { symbol: 'zł', label: 'zł (Polish Zloty)', description: '' },
+  { symbol: '₺', label: '₺ (Turkish Lira)', description: '' },
+  { symbol: '₽', label: '₽ (Russian Rubles)', description: '' },
+  { symbol: 'R', label: 'R (South African Rand)', description: '' },
+  { symbol: 'kr', label: 'kr (Norwegian Kroner)', description: '' },
 ];
 
 export const FormatCurrencyButton = memo(
