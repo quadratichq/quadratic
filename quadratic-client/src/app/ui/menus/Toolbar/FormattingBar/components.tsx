@@ -367,14 +367,14 @@ export const FormatCurrencyButton = memo(
 
     return (
       <DropdownMenu>
-        <div className="flex items-center">
+        <div className="flex items-center gap-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 aria-label={hideLabel ? '' : 'Currency'}
                 variant="ghost"
                 className={cn(
-                  'flex h-7 min-w-[2rem] items-center justify-center rounded-l rounded-r-none px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+                  'flex h-7 min-w-[1.5rem] items-center justify-center rounded-l rounded-r-none px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
                   isCurrency ? 'bg-accent' : ''
                 )}
                 onClick={() => {
@@ -394,7 +394,7 @@ export const FormatCurrencyButton = memo(
           <DropdownMenuTrigger
             aria-label={hideLabel ? '' : 'Currency options'}
             className={cn(
-              'flex h-7 w-6 items-center justify-center rounded-l-none rounded-r text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              'flex h-7 w-4 items-center justify-center rounded-l-none rounded-r text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               isCurrency ? 'bg-accent' : ''
             )}
             data-testid={hideLabel ? '' : 'format_number_currency_dropdown'}
