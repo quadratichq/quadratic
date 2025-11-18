@@ -355,7 +355,7 @@ export const apiClient = {
     },
   },
 
-  examples: {
+  templates: {
     duplicate(body: ApiTypes['/v0/examples.POST.request']) {
       return fetchFromApi(
         `/v0/examples`,
