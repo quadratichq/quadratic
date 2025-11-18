@@ -7,10 +7,11 @@ use crate::{
 impl A1Selection {
     pub fn keyboard_select_to(
         &mut self,
-        column: i64,
-        row: i64,
+        delta_x: i64,
+        delta_y: i64,
+        end_pos: Pos,
         a1_context: &A1Context,
-        merge_cells: &MergeCells,
+        _merge_cells: &MergeCells,
     ) -> Pos {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
@@ -58,10 +59,11 @@ impl A1Selection {
                             }
                         }
                         if let Some((start_col, start_row)) = start {
-                            let range =
-                                RefRangeBounds::new_relative(start_col, start_row, column, row);
+                            let range = RefRangeBounds::new_relative(
+                                start_col, start_row, delta_x, delta_y,
+                            );
                             *last = CellRefRange::Sheet { range };
-                            return Pos::new(column, row);
+                            return Pos::new(delta_x, delta_y);
                         }
                     }
                     if let Some(mut range_converted) = range
@@ -74,7 +76,7 @@ impl A1Selection {
                         {
                             range_converted.start = range_converted.end;
                         }
-                        range_converted.end = CellRefRangeEnd::new_relative_xy(column, row);
+                        range_converted.end = CellRefRangeEnd::new_relative_xy(delta_x, delta_y);
                         *last = CellRefRange::Sheet {
                             range: range_converted,
                         };
@@ -83,16 +85,21 @@ impl A1Selection {
                             "Could not convert table range to ref range bounds in A1Selection::select_to"
                         );
                         // Update selection_end to track the target position
-                        return Pos::new(column, row);
+                        return Pos::new(delta_x, delta_y);
                     }
                 }
                 CellRefRange::Sheet { range } => {
                     if range.start.row.is_unbounded() {
-                        self.cursor.y = row;
+                        self.cursor.y = delta_y;
                     }
                     if range.start.col.is_unbounded() {
-                        self.cursor.x = column;
+                        self.cursor.x = delta_x;
                     }
+
+                    range.end =
+                        CellRefRangeEnd::new_relative_xy(end_pos.x + delta_x, end_pos.y + delta_y);
+
+                    return Pos::new(end_pos.x + delta_x, end_pos.y + delta_y);
 
                     // // Normalize the selection using the new normalize module
                     // let new_cursor = normalize_selection(
@@ -107,8 +114,6 @@ impl A1Selection {
                 }
             };
         }
-
-        // return end position
-        Pos::new(column, row)
+        end_pos
     }
 }

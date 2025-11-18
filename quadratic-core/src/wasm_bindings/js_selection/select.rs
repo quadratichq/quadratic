@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::grid::js_types::Direction;
 use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
-use crate::wasm_bindings::js_selection_state::JsSelectionState;
 use crate::wasm_bindings::merge_cells::JsMergeCells;
 
 use super::*;
@@ -74,6 +73,7 @@ impl JsSelection {
         self.end_pos = self.selection.keyboard_select_to(
             x as i64,
             y as i64,
+            self.end_pos,
             context.get_context(),
             merge_cells.get_merge_cells(),
         );
@@ -101,60 +101,60 @@ impl JsSelection {
         );
     }
 
-    /// Adjusts the selection for merged cells (for mouse drag operations).
-    /// This should be called after select_to to adjust the selection to include merged cells.
-    #[wasm_bindgen(js_name = "adjustSelectionForMergedCells")]
-    pub fn adjust_selection_for_merged_cells_drag(
-        &mut self,
-        x: u32,
-        y: u32,
-        context: &JsA1Context,
-        merge_cells: &JsMergeCells,
-        state: &JsSelectionState,
-    ) -> JsSelectionState {
-        let rust_state = state.get_state();
+    // /// Adjusts the selection for merged cells (for mouse drag operations).
+    // /// This should be called after select_to to adjust the selection to include merged cells.
+    // #[wasm_bindgen(js_name = "adjustSelectionForMergedCells")]
+    // pub fn adjust_selection_for_merged_cells_drag(
+    //     &mut self,
+    //     x: u32,
+    //     y: u32,
+    //     context: &JsA1Context,
+    //     merge_cells: &JsMergeCells,
+    //     state: &JsSelectionState,
+    // ) {
+    //     let rust_state = state.get_state();
 
-        // Adjust column/row to align with merged cell boundaries
-        let (adjusted_column, adjusted_row, _adjusted_start) =
-            crate::a1::adjust_selection_end_for_merged_cells(
-                &self.selection,
-                x as i64,
-                y as i64,
-                context.get_context(),
-                Some(merge_cells.get_merge_cells()),
-                &rust_state,
-            );
+    //     // Adjust column/row to align with merged cell boundaries
+    //     let (adjusted_column, adjusted_row, _adjusted_start) =
+    //         crate::a1::adjust_selection_end_for_merged_cells(
+    //             &self.selection,
+    //             x as i64,
+    //             y as i64,
+    //             context.get_context(),
+    //             Some(merge_cells.get_merge_cells()),
+    //             &rust_state,
+    //         );
 
-        // If adjustment was needed, re-select with adjusted positions
-        if adjusted_column != x as i64 || adjusted_row != y as i64 {
-            let updated_state = self.selection.select_to(
-                adjusted_column,
-                adjusted_row,
-                false,
-                context.get_context(),
-                Some(rust_state),
-            );
+    //     // If adjustment was needed, re-select with adjusted positions
+    //     if adjusted_column != x as i64 || adjusted_row != y as i64 {
+    //         let updated_state = self.selection.select_to(
+    //             adjusted_column,
+    //             adjusted_row,
+    //             false,
+    //             context.get_context(),
+    //             Some(rust_state),
+    //         );
 
-            // Convert SelectionMode to u8 for WASM
-            let mode_u8 = match updated_state.mode {
-                crate::a1::SelectionMode::KeyboardShift => 0,
-                crate::a1::SelectionMode::MouseDrag => 1,
-                crate::a1::SelectionMode::MouseShiftClick => 2,
-                crate::a1::SelectionMode::MouseCtrlClick => 3,
-                crate::a1::SelectionMode::Single => 4,
-            };
-            JsSelectionState::new(
-                updated_state.anchor.x,
-                updated_state.anchor.y,
-                updated_state.selection_end.x,
-                updated_state.selection_end.y,
-                mode_u8,
-            )
-        } else {
-            // No adjustment needed, return current state
-            *state
-        }
-    }
+    //         // Convert SelectionMode to u8 for WASM
+    //         let mode_u8 = match updated_state.mode {
+    //             crate::a1::SelectionMode::KeyboardShift => 0,
+    //             crate::a1::SelectionMode::MouseDrag => 1,
+    //             crate::a1::SelectionMode::MouseShiftClick => 2,
+    //             crate::a1::SelectionMode::MouseCtrlClick => 3,
+    //             crate::a1::SelectionMode::Single => 4,
+    //         };
+    //         JsSelectionState::new(
+    //             updated_state.anchor.x,
+    //             updated_state.anchor.y,
+    //             updated_state.selection_end.x,
+    //             updated_state.selection_end.y,
+    //             mode_u8,
+    //         )
+    //     } else {
+    //         // No adjustment needed, return current state
+    //         *state
+    //     }
+    // }
 
     #[wasm_bindgen(js_name = "selectInDirection")]
     pub fn select_in_direction(
@@ -284,19 +284,19 @@ impl JsSelection {
                         // Move cursor to new position
                         self.selection.move_to(new_pos.x, new_pos.y, false);
 
-                        // Select to opposite corner to maintain extent
-                        let state =
-                            Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-                                x: new_pos.x,
-                                y: new_pos.y,
-                            }));
-                        let _ = self.selection.select_to(
-                            opposite_x,
-                            opposite_y,
-                            false,
-                            context.get_context(),
-                            state,
-                        );
+                        // // Select to opposite corner to maintain extent
+                        // let state =
+                        //     Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+                        //         x: new_pos.x,
+                        //         y: new_pos.y,
+                        //     }));
+                        // let _ = self.selection.select_to(
+                        //     opposite_x,
+                        //     opposite_y,
+                        //     false,
+                        //     context.get_context(),
+                        //     state,
+                        // );
 
                         // Adjust selection for merged cells after update
                         // self.adjust_selection_for_merged_cells(
@@ -341,33 +341,33 @@ impl JsSelection {
                 self.selection.move_to(new_pos.x, new_pos.y, false);
 
                 // Select from new position to opposite corner to maintain extent
-                let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-                    x: new_pos.x,
-                    y: new_pos.y,
-                }));
-                let _ = self.selection.select_to(
-                    opposite_x,
-                    opposite_y,
-                    false,
-                    context.get_context(),
-                    state,
-                );
+                // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+                //     x: new_pos.x,
+                //     y: new_pos.y,
+                // }));
+                // let _ = self.selection.select_to(
+                //     opposite_x,
+                //     opposite_y,
+                //     false,
+                //     context.get_context(),
+                //     state,
+                // );
 
-                // Adjust selection for merged cells after update
-                self.adjust_selection_for_merged_cells(
-                    direction,
-                    old_selection,
-                    context,
-                    merge_cells,
-                );
+                // // Adjust selection for merged cells after update
+                // self.adjust_selection_for_merged_cells(
+                //     direction,
+                //     old_selection,
+                //     context,
+                //     merge_cells,
+                // );
                 return;
             }
         }
 
-        // Fallback for unbounded ranges or no range
-        let _ = self
-            .selection
-            .select_to(new_pos.x, new_pos.y, false, context.get_context(), None);
+        // // Fallback for unbounded ranges or no range
+        // let _ = self
+        //     .selection
+        //     .select_to(new_pos.x, new_pos.y, false, context.get_context(), None);
 
         // Adjust selection for merged cells after update
         self.adjust_selection_for_merged_cells(direction, old_selection, context, merge_cells);
@@ -536,14 +536,14 @@ impl JsSelection {
         // Move cursor to target position
         self.selection.move_to(target_x, target_y, false);
 
-        // Select from target position to opposite corner
-        let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-            x: target_x,
-            y: target_y,
-        }));
-        let _ =
-            self.selection
-                .select_to(opposite_x, opposite_y, false, context.get_context(), state);
+        // // Select from target position to opposite corner
+        // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+        //     x: target_x,
+        //     y: target_y,
+        // }));
+        // let _ =
+        //     self.selection
+        //         .select_to(opposite_x, opposite_y, false, context.get_context(), state);
 
         // If we jumped over, we might need to adjust again (recursively, but limit depth)
         // Actually, let's not recurse - the next arrow press will handle further adjustments
@@ -552,6 +552,7 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "moveTo")]
     pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
         self.selection.move_to(x as i64, y as i64, append);
+        self.end_pos = Pos::new(x as i64, y as i64);
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
@@ -615,19 +616,19 @@ mod tests {
 
         // Start at B2, then extend to E4 to create B2:E4 with cursor at B2
         let mut selection = crate::a1::A1Selection::test_a1("B2");
-        let state1 = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-            x: 2,
-            y: 2,
-        }));
-        // Adjust for merged cells first, then select
-        let (adjusted_x, adjusted_y, _) = selection.adjust_selection_end_for_merged_cells(
-            5,
-            4,
-            &context,
-            Some(&merge_cells),
-            state1.as_ref().unwrap(),
-        );
-        let _ = selection.select_to(adjusted_x, adjusted_y, false, &context, state1);
+        // let state1 = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+        //     x: 2,
+        //     y: 2,
+        // }));
+        // // Adjust for merged cells first, then select
+        // let (adjusted_x, adjusted_y, _) = selection.adjust_selection_end_for_merged_cells(
+        //     5,
+        //     4,
+        //     &context,
+        //     Some(&merge_cells),
+        //     state1.as_ref().unwrap(),
+        // );
+        // let _ = selection.select_to(adjusted_x, adjusted_y, false, &context, state1);
 
         // Verify initial selection is B2:E4
         let sel_string = selection.test_to_string();
@@ -704,20 +705,20 @@ mod tests {
         // Move cursor to new position
         selection.move_to(new_pos.x, new_pos.y, false);
 
-        // Select from new position to opposite corner
-        let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-            x: new_pos.x,
-            y: new_pos.y,
-        }));
-        // Adjust for merged cells first, then select
-        let (adjusted_x, adjusted_y, _) = selection.adjust_selection_end_for_merged_cells(
-            opposite_x,
-            opposite_y,
-            &context,
-            Some(&merge_cells),
-            state.as_ref().unwrap(),
-        );
-        let _ = selection.select_to(adjusted_x, adjusted_y, false, &context, state);
+        // // Select from new position to opposite corner
+        // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+        //     x: new_pos.x,
+        //     y: new_pos.y,
+        // }));
+        // // Adjust for merged cells first, then select
+        // let (adjusted_x, adjusted_y, _) = selection.adjust_selection_end_for_merged_cells(
+        //     opposite_x,
+        //     opposite_y,
+        //     &context,
+        //     Some(&merge_cells),
+        //     state.as_ref().unwrap(),
+        // );
+        // let _ = selection.select_to(adjusted_x, adjusted_y, false, &context, state);
 
         // Verify the selection expanded to A2:E4
         let sel_string = selection.test_to_string();

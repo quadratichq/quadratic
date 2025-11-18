@@ -95,12 +95,11 @@ impl A1Selection {
                             }
                         }
                         if let Some((start_col, start_row)) = start {
-                            let range =
-                                RefRangeBounds::new_relative(start_col, start_row, column, row);
-                            *last = CellRefRange::Sheet { range };
+                            // let range =
+                            //     RefRangeBounds::new_relative(start_col, start_row, column, row);
+                            // *last = CellRefRange::Sheet { range };
                             // Update selection_end to track the target position
-                            state.selection_end = Pos::new(column, row);
-                            return state;
+                            // return Pos::new(column, row);
                         }
                     }
                     if let Some(mut range_converted) = range
@@ -122,8 +121,7 @@ impl A1Selection {
                             "Could not convert table range to ref range bounds in A1Selection::select_to"
                         );
                         // Update selection_end to track the target position
-                        state.selection_end = Pos::new(column, row);
-                        return state;
+                        // return Pos::new(column, row);
                     }
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
@@ -137,16 +135,16 @@ impl A1Selection {
                         self.cursor.x = column;
                     }
 
-                    // Normalize the selection using the new normalize module
-                    let new_cursor = normalize_selection(
-                        range,
-                        column,
-                        row,
-                        original_cursor,
-                        None, // Merged cell adjustments handled separately
-                        &mut state,
-                    );
-                    self.cursor = new_cursor;
+                    // // Normalize the selection using the new normalize module
+                    // let new_cursor = normalize_selection(
+                    //     range,
+                    //     column,
+                    //     row,
+                    //     original_cursor,
+                    //     None, // Merged cell adjustments handled separately
+                    //     &mut state,
+                    // );
+                    // self.cursor = new_cursor;
 
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
@@ -154,9 +152,9 @@ impl A1Selection {
                 }
             };
         }
-        state.selection_end = Pos::new(column, row);
+        // state.selection_end = Pos::new(column, row);
 
-        state
+        // state
     }
 
     /// Helper to convert last range to RefRangeBounds (for set_columns_selected and set_rows_selected)

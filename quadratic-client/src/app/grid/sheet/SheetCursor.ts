@@ -6,12 +6,10 @@ import { events } from '@/app/events/events';
 import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import type { JsSelectionState } from '@/app/quadratic-core/quadratic_core';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -51,9 +49,6 @@ export class SheetCursor {
 
   // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
-
-  // Track selection state for drag operations
-  private dragState: JsSelectionState | null = null;
 
   constructor(sheet: Sheet) {
     this.sheet = sheet;
@@ -252,16 +247,14 @@ export class SheetCursor {
     const checkForTableRef = options?.checkForTableRef ?? false;
     const append = options?.append ?? false;
     const ensureVisible = options?.ensureVisible ?? true;
-    // Clear drag state when starting a new selection
-    this.dragState = null;
     this.jsSelection.moveTo(x, y, append);
     if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
-  /// Keyboard selection to the given position
-  keyboardSelectTo = (x: number, y: number) => {
-    this.jsSelection.keyboardSelectTo(x, y, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+  /// Keyboard selection by deltaX and deltaY
+  keyboardSelectTo = (deltaX: number, deltaY: number) => {
+    this.jsSelection.keyboardSelectTo(deltaX, deltaY, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false, isShiftClick = false) => {
@@ -300,23 +293,23 @@ export class SheetCursor {
   };
 
   selectPageDown = () => {
-    if (isAnimating()) return;
-    const { x, y, row } = calculatePageUpDown(false, true);
-    const column = this.selectionEnd.x;
-    const state = this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, null);
-    this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
-    this.updatePosition(false);
-    animateViewport({ x: -x, y: -y });
+    // if (isAnimating()) return;
+    // const { x, y, row } = calculatePageUpDown(false, true);
+    // const column = this.selectionEnd.x;
+    // const state = this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, null);
+    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+    // this.updatePosition(false);
+    // animateViewport({ x: -x, y: -y });
   };
 
   selectPageUp = () => {
-    if (isAnimating()) return;
-    const { x, y, row } = calculatePageUpDown(true, true);
-    const column = this.selectionEnd.x;
-    const state = this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, null);
-    this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
-    this.updatePosition(false);
-    animateViewport({ x: -x, y: -y });
+    // if (isAnimating()) return;
+    // const { x, y, row } = calculatePageUpDown(true, true);
+    // const column = this.selectionEnd.x;
+    // const state = this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, null);
+    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+    // this.updatePosition(false);
+    // animateViewport({ x: -x, y: -y });
   };
 
   isMultiCursor = (): boolean => {
