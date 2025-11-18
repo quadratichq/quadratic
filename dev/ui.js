@@ -56,7 +56,6 @@ export class UI {
             this.showing = false;
         }
     }
-<<<<<<< HEAD
     writeWarning(text, highlight) {
         // Handle undefined, null, or non-string values
         if (text == null) {
@@ -70,8 +69,6 @@ export class UI {
         }
         this.trackPromptTextSize(text);
     }
-=======
->>>>>>> origin/qa
     write(text, color, underline) {
         // Handle undefined, null, or non-string values
         if (text == null) {
