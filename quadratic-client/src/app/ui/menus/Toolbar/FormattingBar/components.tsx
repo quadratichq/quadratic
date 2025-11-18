@@ -345,11 +345,11 @@ type CurrencyOption = {
 };
 
 const CURRENCY_OPTIONS: CurrencyOption[] = [
-  { symbol: '$', label: '$ English', description: '(United States)' },
-  { symbol: '£', label: '£ English', description: '(United Kingdom)' },
-  { symbol: '€', label: '€ Euro', description: '(€ 123)' },
-  { symbol: '¥', label: '¥ Chinese', description: '(Simplified, Mainland China)' },
-  { symbol: 'CHF', label: 'CHF French', description: '(Switzerland)' },
+  { symbol: '$', label: 'English', description: '(United States)' },
+  { symbol: '£', label: 'English', description: '(United Kingdom)' },
+  { symbol: '€', label: 'Euro', description: '(€ 123)' },
+  { symbol: '¥', label: 'Chinese', description: '(Simplified, Mainland China)' },
+  { symbol: 'CHF', label: 'French', description: '(Switzerland)' },
 ];
 
 export const FormatCurrencyButton = memo(
@@ -394,7 +394,7 @@ export const FormatCurrencyButton = memo(
           <DropdownMenuTrigger
             aria-label={hideLabel ? '' : 'Currency options'}
             className={cn(
-              'flex h-7 w-6 items-center justify-center rounded-l-none rounded-r border-l border-border text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              'flex h-7 w-6 items-center justify-center rounded-l-none rounded-r text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               isCurrency ? 'bg-accent' : ''
             )}
             data-testid={hideLabel ? '' : 'format_number_currency_dropdown'}
