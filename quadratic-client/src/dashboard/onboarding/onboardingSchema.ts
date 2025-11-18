@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-/* This schema was used when we recorded the information on the User table.
+/*
+
+This schema was used when we recorded the information on the User table.
+Keeping this around for now, as the data remains in the database and we can
+continue to analyze it until its not useful anymore.
 
 const OnboardingResponseV1Schema = z.object({
   __version: z.literal(1),
@@ -35,7 +39,7 @@ export const OnboardingResponseV2Schema = z.object({
   'team-name': z.string(),
   'team-invites[]': z.array(z.string()).optional(),
   'team-plan': z.literal('free').or(z.literal('pro')),
-  'referral-source': z.string(),
+  'referral-source': z.string().optional(),
   'referral-source-other': z.string().optional(),
 });
 export type OnboardingResponseV2 = z.infer<typeof OnboardingResponseV2Schema>;

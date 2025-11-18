@@ -7,14 +7,7 @@ import {
 } from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
-import {
-  ArrowRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  EducationIcon,
-  PersonalIcon,
-  WorkIcon,
-} from '@/shared/components/Icons';
+import { ArrowRightIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -50,7 +43,18 @@ export const questionsById: Record<
       return (
         <Question title={props.title}>
           <QuestionForm>
-            <ImageCarousel />
+            <div className="relative -mt-4 w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
+              <img
+                src={`/onboarding/1.png`}
+                alt={`Quadratic onboarding screenshot`}
+                className={cn(
+                  'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
+                  'scale-100 border-border shadow-sm'
+                )}
+                width="635"
+                height="380"
+              />
+            </div>
             <input type="hidden" name={props.id} value="" />
             <QuestionFormFooter>
               <Button
@@ -59,7 +63,7 @@ export const questionsById: Record<
                 data-testid="onboarding-btn-get-started"
                 onClick={() => trackNextQuestionClick(props.id)}
               >
-                Get started
+                Next
               </Button>
             </QuestionFormFooter>
           </QuestionForm>
@@ -176,7 +180,7 @@ export const questionsById: Record<
         '21-100': '21-100',
         '101-250': '101-250',
         '251-1000': '251-1,000',
-        '1000-or-more': '1,000+',
+        '1000-or-more': '1,001+',
       };
       const [searchParams] = useSearchParams();
       return (
@@ -331,10 +335,10 @@ export const questionsById: Record<
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
-              {['john@example.com', 'alice@example.com', 'bob@example.com', 'susan@example.com'].map((placeholder) => (
+              {['john@example.com', '', '', ''].map((placeholder) => (
                 <Input
                   key={placeholder}
-                  className="h-12 w-full text-lg"
+                  className="h-12 w-full text-lg placeholder:text-muted-foreground/70"
                   type="email"
                   name={props.id}
                   placeholder={placeholder}
@@ -400,10 +404,11 @@ export const questionsById: Record<
                   </Link>
                 )
               )}
+              <input type="hidden" name={props.id} value="" />
             </div>
             <QuestionFormFooter>
               <BackButton />
-              <Button type="submit" size="lg" disabled={!other} onClick={() => trackNextQuestionClick(props.id)}>
+              <Button type="submit" size="lg" onClick={() => trackNextQuestionClick(props.id)}>
                 Next
               </Button>
             </QuestionFormFooter>
@@ -440,7 +445,7 @@ export const questionsById: Record<
                 loading={isSubmittingFree}
                 onClick={() => trackNextQuestionClick(props.id)}
               >
-                Get started
+                Open Quadratic
               </Button>
             </FreePlan>
             <ProPlan className={className}>
@@ -626,87 +631,6 @@ function QuestionForm({
 
 function QuestionFormFooter({ children }: { children: React.ReactNode }) {
   return <div className="flex w-full items-center justify-center gap-2 pb-10 pt-10">{children}</div>;
-}
-
-function ImageCarousel() {
-  const images = [1, 2, 3, 4];
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-  };
-
-  return (
-    <div className="relative w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
-      <div className="-mt-6 flex justify-center gap-6 pb-4">
-        {/* Go left */}
-        <button
-          type="button"
-          onClick={goToPrevious}
-          className="left-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
-          aria-label="Previous image"
-        >
-          <ChevronLeftIcon className="relative left-[-1px] scale-150" />
-        </button>
-
-        {/* Indicators */}
-        <div className="flex items-center justify-center gap-3">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => goToSlide(index)}
-              className={cn(
-                'h-3 w-3 rounded-full transition-all',
-                currentIndex === index ? 'bg-primary' : 'bg-foreground/20'
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-
-        {/* Go right */}
-        <button
-          type="button"
-          onClick={goToNext}
-          className="right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border border-border text-foreground shadow-sm transition-opacity hover:bg-accent"
-          aria-label="Next image"
-        >
-          <ChevronRightIcon className="relative right-[-1px] scale-150" />
-        </button>
-      </div>
-
-      <div
-        className="flex transition-transform duration-500 ease-in-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {images.map((src, index) => (
-          <div key={src} className="max-w-full flex-shrink-0">
-            <img
-              src={`/onboarding/${src}.png`}
-              alt={`Quadratic onboarding ${index + 1}`}
-              className={cn(
-                'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
-                currentIndex === index
-                  ? 'scale-100 border-border shadow-sm'
-                  : 'scale-90 border-border opacity-20 grayscale'
-              )}
-              width="635"
-              height="380"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /**
