@@ -13,6 +13,7 @@ import {
   FormatButtonDropdownActions,
   FormatButtonPopover,
   FormatColorPickerButton,
+  FormatCurrencyButton,
   FormatDateAndTimePickerButton,
   FormatSeparator,
 } from '@/app/ui/menus/Toolbar/FormattingBar/components';
@@ -47,12 +48,7 @@ export const NumberFormatting = memo(
       />
       <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
       <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
-      <FormatButton
-        action={Action.FormatNumberCurrency}
-        actionArgs={undefined}
-        checked={props.formatSummary?.numericFormat?.type === 'CURRENCY'}
-        hideLabel={props.hideLabel}
-      />
+      <FormatCurrencyButton formatSummary={props.formatSummary} hideLabel={props.hideLabel} />
       <FormatButton
         action={Action.FormatNumberPercent}
         actionArgs={undefined}

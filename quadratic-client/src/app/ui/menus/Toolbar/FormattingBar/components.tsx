@@ -5,6 +5,9 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { textFormatSetCurrency } from '@/app/ui/helpers/formatCells';
+import { useDefaultCurrency } from '@/app/ui/hooks/useDefaultCurrency';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -334,3 +337,101 @@ export const TooltipContents = memo(({ label, keyboardShortcut }: { label: strin
     </p>
   );
 });
+
+type CurrencyOption = {
+  symbol: string;
+  label: string;
+  description: string;
+};
+
+const CURRENCY_OPTIONS: CurrencyOption[] = [
+  { symbol: '$', label: '$ English', description: '(United States)' },
+  { symbol: '£', label: '£ English', description: '(United Kingdom)' },
+  { symbol: '€', label: '€ Euro', description: '(€ 123)' },
+  { symbol: '¥', label: '¥ Chinese', description: '(Simplified, Mainland China)' },
+  { symbol: 'CHF', label: 'CHF French', description: '(Switzerland)' },
+];
+
+export const FormatCurrencyButton = memo(
+  ({
+    formatSummary,
+    hideLabel,
+  }: {
+    formatSummary: { numericFormat: { type: string; symbol: string | null } | null } | undefined;
+    hideLabel?: boolean;
+  }) => {
+    const [defaultCurrency, setDefaultCurrency] = useDefaultCurrency();
+    const isCurrency = formatSummary?.numericFormat?.type === 'CURRENCY';
+    const currentSymbol = formatSummary?.numericFormat?.symbol || defaultCurrency;
+    const displaySymbol = isCurrency ? currentSymbol : defaultCurrency;
+
+    return (
+      <DropdownMenu>
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={hideLabel ? '' : 'Currency'}
+                variant="ghost"
+                className={cn(
+                  'flex h-7 min-w-[2rem] items-center justify-center rounded-l rounded-r-none px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+                  isCurrency ? 'bg-accent' : ''
+                )}
+                onClick={() => {
+                  trackEvent('[FormattingBar].button', { label: 'Currency' });
+                  textFormatSetCurrency(defaultCurrency);
+                  focusGrid();
+                }}
+                data-testid={hideLabel ? '' : 'format_number_currency'}
+              >
+                <span className="text-sm font-medium">{displaySymbol}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <TooltipContents label={hideLabel ? '' : 'Currency'} />
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuTrigger
+            aria-label={hideLabel ? '' : 'Currency options'}
+            className={cn(
+              'flex h-7 w-6 items-center justify-center rounded-l-none rounded-r border-l border-border text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              isCurrency ? 'bg-accent' : ''
+            )}
+            data-testid={hideLabel ? '' : 'format_number_currency_dropdown'}
+          >
+            <ArrowDropDownIcon className="h-4 w-4" />
+          </DropdownMenuTrigger>
+        </div>
+        <DropdownMenuContent
+          className="hover:bg-background"
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            focusGrid();
+          }}
+        >
+          {CURRENCY_OPTIONS.map((option) => {
+            const isSelected = isCurrency && currentSymbol === option.symbol;
+            return (
+              <DropdownMenuItem
+                key={option.symbol}
+                onClick={() => {
+                  trackEvent('[FormattingBar].button', { label: `Currency: ${option.symbol}` });
+                  textFormatSetCurrency(option.symbol);
+                  setDefaultCurrency(option.symbol);
+                  focusGrid();
+                }}
+                aria-label={hideLabel ? '' : `${option.label} ${option.description}`}
+                data-testid={hideLabel ? '' : `currency_${option.symbol}`}
+                className={cn(isSelected && 'bg-accent')}
+              >
+                <span className="mr-2 font-medium">{option.symbol}</span>
+                <span>{option.label}</span>
+                <span className="ml-2 text-muted-foreground">{option.description}</span>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+);
