@@ -72,7 +72,6 @@ impl Pos {
         Self::try_a1_string(a1).unwrap()
     }
 
-    #[cfg(test)]
     pub fn try_a1_string(a1: &str) -> Option<Self> {
         if let Ok(end) = CellRefRangeEnd::parse_end(a1, None) {
             if end.is_unbounded() {
