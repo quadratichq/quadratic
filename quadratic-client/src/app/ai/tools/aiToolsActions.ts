@@ -12,6 +12,7 @@ import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
+import { countWords } from '@/app/ai/utils/wordCount';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -169,6 +170,21 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetChatName]: async (args) => {
     // no action as this tool is only meant to get structured data from AI
     return [createTextContent(`Executed set chat name tool successfully with name: ${args.chat_name}`)];
+  },
+  [AITool.SetFileName]: async (args) => {
+    // Validate word count (1-3 words)
+    const wordCount = countWords(args.file_name);
+
+    if (wordCount < 1 || wordCount > 3) {
+      return [
+        createTextContent(
+          `Error: File name must be 1-3 words. Received "${args.file_name}" which has ${wordCount} word(s). Please provide a shorter name.`
+        ),
+      ];
+    }
+
+    // no action as this tool is only meant to get structured data from AI
+    return [createTextContent(`Executed set file name tool successfully with name: ${args.file_name}`)];
   },
   [AITool.AddDataTable]: async (args) => {
     try {
