@@ -997,11 +997,11 @@ test('Resources Examples - Dashboard Views', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_dashboard_examples' });
 
-  // Click into examples under resources
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
+  // Click into templates under resources
+  await page.getByRole(`link`, { name: `view_carousel Templates` }).click({ timeout: 60 * 1000 });
 
   // Wait for page to appear
-  await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
+  await page.getByRole(`heading`, { name: `Templates by the Quadratic team` }).waitFor();
 
   //--------------------------------
   // Act:
@@ -1062,11 +1062,11 @@ test('Search - Search File Examples', async ({ page }) => {
   // Log in
   await logIn(page, { emailPrefix: 'e2e_dashboard_examples_search' });
 
-  // Go to examples under resources
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
+  // Go to templates under resources
+  await page.getByRole(`link`, { name: `view_carousel Templates` }).click({ timeout: 60 * 1000 });
 
   // Wait for the page
-  await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
+  await page.getByRole(`heading`, { name: `Templates by the Quadratic team` }).waitFor();
 
   // Find the card with the title that includes "JavaScript"
   const jsCard = page.locator('ul > li', { has: page.locator('h2', { hasText: 'JavaScript' }) }).first();
