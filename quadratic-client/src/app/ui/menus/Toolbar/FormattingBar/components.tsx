@@ -394,12 +394,12 @@ export const FormatCurrencyButton = memo(
           <DropdownMenuTrigger
             aria-label={hideLabel ? '' : 'Currency options'}
             className={cn(
-              'flex h-7 w-4 items-center justify-center rounded-l-none rounded-r text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              'flex h-7 w-[10px] items-center justify-center rounded-l-none rounded-r text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               isCurrency ? 'bg-accent' : ''
             )}
             data-testid={hideLabel ? '' : 'format_number_currency_dropdown'}
           >
-            <ArrowDropDownIcon className="h-4 w-4" />
+            <ArrowDropDownIcon className="h-3.5 w-3.5" />
           </DropdownMenuTrigger>
         </div>
         <DropdownMenuContent
