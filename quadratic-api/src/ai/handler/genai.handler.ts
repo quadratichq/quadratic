@@ -30,12 +30,18 @@ export const handleGenAIRequest = async ({
       maxOutputTokens: !options.max_tokens ? undefined : options.max_tokens,
       tools,
       toolConfig: tool_choice,
-      ...(options.thinking !== undefined && {
-        thinkingConfig: {
-          includeThoughts: options.thinking,
-          thinkingBudget: options.thinkingBudget,
-        },
-      }),
+      ...(options.thinkingLevel !== undefined
+        ? {
+            thinkingConfig: {
+              thinking_level: options.thinkingLevel,
+            },
+          }
+        : options.thinking !== undefined && {
+            thinkingConfig: {
+              includeThoughts: options.thinking,
+              thinkingBudget: options.thinkingBudget,
+            },
+          }),
       abortSignal: signal,
     },
   };

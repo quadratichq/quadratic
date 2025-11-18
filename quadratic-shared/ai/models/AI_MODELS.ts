@@ -263,7 +263,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingToggle: false,
-    thinkingBudget: 0,
+    thinkingLevel: 'HIGH',
     imageSupport: true,
   },
   'vertexai:gemini-3.0-pro:thinking-toggle-on': {
@@ -278,9 +278,9 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
-    thinking: true,
+    thinking: false,
     thinkingToggle: true,
-    thinkingBudget: 24576,
+    thinkingLevel: 'HIGH',
     imageSupport: true,
   },
   'vertexai:gemini-3.0-pro': {
@@ -296,6 +296,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
+    thinkingLevel: 'LOW',
     imageSupport: true,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {

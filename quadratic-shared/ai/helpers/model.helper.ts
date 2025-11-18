@@ -85,6 +85,7 @@ export const getModelOptions = (
   max_tokens: number;
   thinking?: boolean;
   thinkingBudget?: number;
+  thinkingLevel?: 'LOW' | 'HIGH';
   promptCaching: boolean;
   strictParams: boolean;
   imageSupport: boolean;
@@ -113,6 +114,7 @@ export const getModelOptions = (
     max_tokens: config.max_tokens,
     thinking: config.thinking,
     thinkingBudget: config.thinkingBudget,
+    thinkingLevel: config.thinkingLevel,
     promptCaching: config.promptCaching,
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,

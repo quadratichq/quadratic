@@ -199,6 +199,7 @@ export const AIModelConfigSchema = z
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
+    thinkingLevel: z.enum(['LOW', 'HIGH']).optional(),
     imageSupport: z.boolean(),
     supportsReasoning: z.boolean().optional(),
     serviceTier: z.enum(['auto', 'default', 'flex', 'scale', 'priority']).optional(),
