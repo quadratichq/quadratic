@@ -251,7 +251,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-3.0-pro:thinking-toggle-off': {
     ...AI_RATES.gemini_3_0_pro_rate,
-    model: 'gemini-3.0-pro',
+    model: 'gemini-3-pro-preview',
     displayName: '3.0 Pro',
     displayProvider: 'Gemini',
     temperature: 0.1,
@@ -268,7 +268,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-3.0-pro:thinking-toggle-on': {
     ...AI_RATES.gemini_3_0_pro_rate,
-    model: 'gemini-3.0-pro',
+    model: 'gemini-3-pro-preview',
     displayName: '3.0 Pro',
     displayProvider: 'Gemini',
     temperature: 0.1,
@@ -285,7 +285,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai:gemini-3.0-pro': {
     ...AI_RATES.gemini_3_0_pro_rate,
-    model: 'gemini-3.0-pro',
+    model: 'gemini-3-pro-preview',
     displayName: '3.0 Pro',
     displayProvider: 'Gemini',
     temperature: 0.1,
