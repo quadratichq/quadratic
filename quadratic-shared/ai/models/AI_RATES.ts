@@ -30,3 +30,11 @@ export const claude_haiku_4_5_20251001_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.1,
   rate_per_million_cache_write_tokens: 1.25,
 };
+// TODO: Update with official Gemini 3.0 Pro pricing when available
+// Using placeholder values similar to gemini-2.5-pro
+export const gemini_3_0_pro_rate: AIRates = {
+  rate_per_million_input_tokens: 1.25,
+  rate_per_million_output_tokens: 10,
+  rate_per_million_cache_read_tokens: 0.31,
+  rate_per_million_cache_write_tokens: 4.5,
+};
