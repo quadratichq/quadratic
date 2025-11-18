@@ -5,7 +5,7 @@ import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, closeExtraUI, createFile, navigateIntoFile, shareEditableFile } from './helpers/file.helpers';
 import { gotoCells } from './helpers/sheet.helper';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
@@ -13,7 +13,6 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
 
   // Constants
-  const teamName = `File Actions - ${Date.now()}`;
   const fileName = 'Action_Visibility';
 
   const user2Browser = await chromium.launch();
@@ -31,9 +30,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -52,7 +49,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -63,7 +60,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await userPage3.reload();
 
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
@@ -414,9 +411,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -435,7 +430,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -445,7 +440,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage3.bringToFront();
   await userPage3.reload();
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
@@ -548,7 +543,6 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   */
 
   // Constants
-  const teamName = `MultiUser - ${Date.now()}`;
   const fileName = 'MultiUser_Offline_Changes';
 
   const user2Browser = await chromium.launch();
@@ -566,9 +560,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -587,7 +579,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -598,7 +590,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage3.reload();
 
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
@@ -752,9 +744,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -773,7 +763,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -784,7 +774,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage3.reload();
 
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
@@ -930,9 +920,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await userPage1.locator('[placeholder*="Filter by file or creator name"]').waitFor();
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
@@ -952,7 +940,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -963,7 +951,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await userPage3.reload();
 
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
@@ -1102,9 +1090,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
 
   // First user creates a new team and file
   await userPage1.bringToFront();
-  const { teamUrl } = await createNewTeamByURL(userPage1, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(userPage1);
   await cleanUpFiles(userPage1, { fileName });
   await createFile(userPage1, { fileName });
 
@@ -1123,7 +1109,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -1134,7 +1120,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage3.reload();
 
   // Navigate to team URL
-  await userPage3.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage3.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
