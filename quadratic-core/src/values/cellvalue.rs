@@ -16,7 +16,7 @@ use crate::{
 };
 
 // todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
+const CURRENCY_SYMBOLS: &str = "$€£¥₹₩₺₽R";
 const PERCENTAGE_SYMBOL: char = '%';
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
