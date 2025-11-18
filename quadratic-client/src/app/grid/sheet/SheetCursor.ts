@@ -255,18 +255,11 @@ export class SheetCursor {
   /// Keyboard selection by deltaX and deltaY
   keyboardSelectTo = (deltaX: number, deltaY: number) => {
     this.jsSelection.keyboardSelectTo(deltaX, deltaY, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+    this.updatePosition(true);
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false, isShiftClick = false) => {
-    this.jsSelection.selectTo(
-      x,
-      y,
-      append,
-      isDrag,
-      isShiftClick,
-      this.sheets.jsA1Context,
-      this.sheets.sheet.mergeCells
-    );
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 

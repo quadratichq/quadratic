@@ -100,7 +100,7 @@ function selectTo(deltaX: number, deltaY: number) {
   // }
 
   // Use the Rust function which handles all the pivot logic
-  cursor.jsSelection.keyboardSelectTo(deltaX, deltaY, sheets.jsA1Context, sheets.sheet.mergeCells);
+  cursor.keyboardSelectTo(deltaX, deltaY);
   cursor.updatePosition(true);
 }
 

@@ -2,8 +2,6 @@
 
 use wasm_bindgen::prelude::*;
 
-use crate::grid::js_types::Direction;
-use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
 use crate::wasm_bindings::merge_cells::JsMergeCells;
 
 use super::*;
@@ -65,15 +63,15 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "keyboardSelectTo")]
     pub fn keyboard_select_to(
         &mut self,
-        x: u32,
-        y: u32,
+        x: i32,
+        y: i32,
         context: &JsA1Context,
         merge_cells: &JsMergeCells,
     ) {
-        self.end_pos = self.selection.keyboard_select_to(
+        self.selection.keyboard_select_to(
             x as i64,
             y as i64,
-            self.end_pos,
+            &mut self.end_pos,
             context.get_context(),
             merge_cells.get_merge_cells(),
         );
@@ -85,8 +83,6 @@ impl JsSelection {
         x: u32,
         y: u32,
         append: bool,
-        isDrag: bool,
-        isShiftClick: bool,
         context: &JsA1Context,
         merge_cells: &JsMergeCells,
     ) {
@@ -94,8 +90,6 @@ impl JsSelection {
             x as i64,
             y as i64,
             append,
-            isDrag,
-            isShiftClick,
             context.get_context(),
             merge_cells.get_merge_cells(),
         );
@@ -156,398 +150,398 @@ impl JsSelection {
     //     }
     // }
 
-    #[wasm_bindgen(js_name = "selectInDirection")]
-    pub fn select_in_direction(
-        &mut self,
-        direction: Direction,
-        context: &JsA1Context,
-        merge_cells: &JsMergeCells,
-        data_tables_cache: &SheetDataTablesCache,
-    ) {
-        use crate::SheetPos;
-        use crate::input::move_cursor::move_cursor;
+    // #[wasm_bindgen(js_name = "selectInDirection")]
+    // pub fn select_in_direction(
+    //     &mut self,
+    //     direction: Direction,
+    //     context: &JsA1Context,
+    //     merge_cells: &JsMergeCells,
+    //     data_tables_cache: &SheetDataTablesCache,
+    // ) {
+    //     use crate::SheetPos;
+    //     use crate::input::move_cursor::move_cursor;
 
-        // Get current selection bounds and cursor
-        let cursor_pos = self.selection.cursor;
+    //     // Get current selection bounds and cursor
+    //     let cursor_pos = self.selection.cursor;
 
-        // Save old selection bounds to determine if we're growing or shrinking
-        let old_selection =
-            if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
-                if range.is_finite() {
-                    Some((
-                        range.start.col(),
-                        range.start.row(),
-                        range.end.col(),
-                        range.end.row(),
-                    ))
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+    //     // Save old selection bounds to determine if we're growing or shrinking
+    //     let old_selection =
+    //         if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
+    //             if range.is_finite() {
+    //                 Some((
+    //                     range.start.col(),
+    //                     range.start.row(),
+    //                     range.end.col(),
+    //                     range.end.row(),
+    //                 ))
+    //             } else {
+    //                 None
+    //             }
+    //         } else {
+    //             None
+    //         };
 
-        // Determine which end to move from based on the direction
-        // This ensures we expand the correct edge instead of shrinking from the opposite edge
-        let (move_from_x, move_from_y) =
-            if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
-                if range.is_finite() {
-                    let range_start_x = range.start.col();
-                    let range_start_y = range.start.row();
-                    let range_end_x = range.end.col();
-                    let range_end_y = range.end.row();
+    //     // Determine which end to move from based on the direction
+    //     // This ensures we expand the correct edge instead of shrinking from the opposite edge
+    //     let (move_from_x, move_from_y) =
+    //         if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
+    //             if range.is_finite() {
+    //                 let range_start_x = range.start.col();
+    //                 let range_start_y = range.start.row();
+    //                 let range_end_x = range.end.col();
+    //                 let range_end_y = range.end.row();
 
-                    // Move from the edge in the direction we're moving
-                    let x = match direction {
-                        crate::grid::js_types::Direction::Left => range_start_x, // Left edge
-                        crate::grid::js_types::Direction::Right => range_end_x,  // Right edge
-                        _ => cursor_pos.x, // Vertical movement: use cursor x
-                    };
+    //                 // Move from the edge in the direction we're moving
+    //                 let x = match direction {
+    //                     crate::grid::js_types::Direction::Left => range_start_x, // Left edge
+    //                     crate::grid::js_types::Direction::Right => range_end_x,  // Right edge
+    //                     _ => cursor_pos.x, // Vertical movement: use cursor x
+    //                 };
 
-                    let y = match direction {
-                        crate::grid::js_types::Direction::Up => range_start_y, // Top edge
-                        crate::grid::js_types::Direction::Down => range_end_y, // Bottom edge
-                        _ => cursor_pos.y, // Horizontal movement: use cursor y
-                    };
+    //                 let y = match direction {
+    //                     crate::grid::js_types::Direction::Up => range_start_y, // Top edge
+    //                     crate::grid::js_types::Direction::Down => range_end_y, // Bottom edge
+    //                     _ => cursor_pos.y, // Horizontal movement: use cursor y
+    //                 };
 
-                    (x, y)
-                } else {
-                    (cursor_pos.x, cursor_pos.y)
-                }
-            } else {
-                (cursor_pos.x, cursor_pos.y)
-            };
+    //                 (x, y)
+    //             } else {
+    //                 (cursor_pos.x, cursor_pos.y)
+    //             }
+    //         } else {
+    //             (cursor_pos.x, cursor_pos.y)
+    //         };
 
-        // Try moving from the determined position
-        // Don't pass merge_cells to move_cursor - we'll handle merged cells after updating the selection
-        let move_from_pos = SheetPos {
-            x: move_from_x,
-            y: move_from_y,
-            sheet_id: self.selection.sheet_id,
-        };
+    //     // Try moving from the determined position
+    //     // Don't pass merge_cells to move_cursor - we'll handle merged cells after updating the selection
+    //     let move_from_pos = SheetPos {
+    //         x: move_from_x,
+    //         y: move_from_y,
+    //         sheet_id: self.selection.sheet_id,
+    //     };
 
-        let mut new_pos = move_cursor(
-            move_from_pos,
-            direction,
-            data_tables_cache,
-            context.get_context(),
-            None, // Don't jump over merged cells in move_cursor - we'll handle it after selection update
-        );
+    //     let mut new_pos = move_cursor(
+    //         move_from_pos,
+    //         direction,
+    //         data_tables_cache,
+    //         context.get_context(),
+    //         None, // Don't jump over merged cells in move_cursor - we'll handle it after selection update
+    //     );
 
-        // Check if movement is blocked (sheet boundary)
-        let movement_blocked = new_pos.x == move_from_x && new_pos.y == move_from_y;
-        let at_boundary = match direction {
-            Direction::Left => move_from_x == 1,
-            Direction::Up => move_from_y == 1,
-            Direction::Right | Direction::Down => false,
-        };
+    //     // Check if movement is blocked (sheet boundary)
+    //     let movement_blocked = new_pos.x == move_from_x && new_pos.y == move_from_y;
+    //     let at_boundary = match direction {
+    //         Direction::Left => move_from_x == 1,
+    //         Direction::Up => move_from_y == 1,
+    //         Direction::Right | Direction::Down => false,
+    //     };
 
-        // If movement is blocked (not at boundary), try pivoting
-        if movement_blocked && !at_boundary {
-            // Try pivoting from cursor position
-            let cursor_sheet_pos = SheetPos {
-                x: cursor_pos.x,
-                y: cursor_pos.y,
-                sheet_id: self.selection.sheet_id,
-            };
-            let pivot_new_pos = move_cursor(
-                cursor_sheet_pos,
-                direction,
-                data_tables_cache,
-                context.get_context(),
-                None,
-            );
+    //     // If movement is blocked (not at boundary), try pivoting
+    //     if movement_blocked && !at_boundary {
+    //         // Try pivoting from cursor position
+    //         let cursor_sheet_pos = SheetPos {
+    //             x: cursor_pos.x,
+    //             y: cursor_pos.y,
+    //             sheet_id: self.selection.sheet_id,
+    //         };
+    //         let pivot_new_pos = move_cursor(
+    //             cursor_sheet_pos,
+    //             direction,
+    //             data_tables_cache,
+    //             context.get_context(),
+    //             None,
+    //         );
 
-            // If we successfully moved from cursor/anchor, pivot the selection
-            if pivot_new_pos.x != cursor_pos.x || pivot_new_pos.y != cursor_pos.y {
-                new_pos = pivot_new_pos;
-                // Get the opposite corner to maintain selection extent during pivot
-                if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last()
-                {
-                    if range.is_finite() {
-                        let range_start_x = range.start.col();
-                        let range_start_y = range.start.row();
-                        let range_end_x = range.end.col();
-                        let range_end_y = range.end.row();
+    //         // If we successfully moved from cursor/anchor, pivot the selection
+    //         if pivot_new_pos.x != cursor_pos.x || pivot_new_pos.y != cursor_pos.y {
+    //             new_pos = pivot_new_pos;
+    //             // Get the opposite corner to maintain selection extent during pivot
+    //             if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last()
+    //             {
+    //                 if range.is_finite() {
+    //                     let range_start_x = range.start.col();
+    //                     let range_start_y = range.start.row();
+    //                     let range_end_x = range.end.col();
+    //                     let range_end_y = range.end.row();
 
-                        let opposite_x = if cursor_pos.x == range_start_x {
-                            range_end_x
-                        } else {
-                            range_start_x
-                        };
-                        let opposite_y = if cursor_pos.y == range_start_y {
-                            range_end_y
-                        } else {
-                            range_start_y
-                        };
+    //                     let opposite_x = if cursor_pos.x == range_start_x {
+    //                         range_end_x
+    //                     } else {
+    //                         range_start_x
+    //                     };
+    //                     let opposite_y = if cursor_pos.y == range_start_y {
+    //                         range_end_y
+    //                     } else {
+    //                         range_start_y
+    //                     };
 
-                        // Move cursor to new position
-                        self.selection.move_to(new_pos.x, new_pos.y, false);
+    //                     // Move cursor to new position
+    //                     self.selection.move_to(new_pos.x, new_pos.y, false);
 
-                        // // Select to opposite corner to maintain extent
-                        // let state =
-                        //     Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-                        //         x: new_pos.x,
-                        //         y: new_pos.y,
-                        //     }));
-                        // let _ = self.selection.select_to(
-                        //     opposite_x,
-                        //     opposite_y,
-                        //     false,
-                        //     context.get_context(),
-                        //     state,
-                        // );
+    //                     // // Select to opposite corner to maintain extent
+    //                     // let state =
+    //                     //     Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+    //                     //         x: new_pos.x,
+    //                     //         y: new_pos.y,
+    //                     //     }));
+    //                     // let _ = self.selection.select_to(
+    //                     //     opposite_x,
+    //                     //     opposite_y,
+    //                     //     false,
+    //                     //     context.get_context(),
+    //                     //     state,
+    //                     // );
 
-                        // Adjust selection for merged cells after update
-                        // self.adjust_selection_for_merged_cells(
-                        //     direction,
-                        //     old_selection,
-                        //     context,
-                        //     merge_cells,
-                        // );
-                        return;
-                    }
-                }
-            }
-            // If at boundary or still blocked, movement is not possible
-            return;
-        }
+    //                     // Adjust selection for merged cells after update
+    //                     // self.adjust_selection_for_merged_cells(
+    //                     //     direction,
+    //                     //     old_selection,
+    //                     //     context,
+    //                     //     merge_cells,
+    //                     // );
+    //                     return;
+    //                 }
+    //             }
+    //         }
+    //         // If at boundary or still blocked, movement is not possible
+    //         return;
+    //     }
 
-        // Check if we're moving into a merged cell - if so, we may need to adjust
-        // This will be handled after the selection update
+    //     // Check if we're moving into a merged cell - if so, we may need to adjust
+    //     // This will be handled after the selection update
 
-        // Normal case: select to the new position
-        // To maintain selection extent, we need to find the opposite corner and select to it
-        if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
-            if range.is_finite() {
-                let range_start_x = range.start.col();
-                let range_start_y = range.start.row();
-                let range_end_x = range.end.col();
-                let range_end_y = range.end.row();
+    //     // Normal case: select to the new position
+    //     // To maintain selection extent, we need to find the opposite corner and select to it
+    //     if let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() {
+    //         if range.is_finite() {
+    //             let range_start_x = range.start.col();
+    //             let range_start_y = range.start.row();
+    //             let range_end_x = range.end.col();
+    //             let range_end_y = range.end.row();
 
-                // Find the opposite corner from the cursor
-                let opposite_x = if cursor_pos.x == range_start_x {
-                    range_end_x
-                } else {
-                    range_start_x
-                };
-                let opposite_y = if cursor_pos.y == range_start_y {
-                    range_end_y
-                } else {
-                    range_start_y
-                };
+    //             // Find the opposite corner from the cursor
+    //             let opposite_x = if cursor_pos.x == range_start_x {
+    //                 range_end_x
+    //             } else {
+    //                 range_start_x
+    //             };
+    //             let opposite_y = if cursor_pos.y == range_start_y {
+    //                 range_end_y
+    //             } else {
+    //                 range_start_y
+    //             };
 
-                // Move cursor to new position
-                self.selection.move_to(new_pos.x, new_pos.y, false);
+    //             // Move cursor to new position
+    //             self.selection.move_to(new_pos.x, new_pos.y, false);
 
-                // Select from new position to opposite corner to maintain extent
-                // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-                //     x: new_pos.x,
-                //     y: new_pos.y,
-                // }));
-                // let _ = self.selection.select_to(
-                //     opposite_x,
-                //     opposite_y,
-                //     false,
-                //     context.get_context(),
-                //     state,
-                // );
+    //             // Select from new position to opposite corner to maintain extent
+    //             // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+    //             //     x: new_pos.x,
+    //             //     y: new_pos.y,
+    //             // }));
+    //             // let _ = self.selection.select_to(
+    //             //     opposite_x,
+    //             //     opposite_y,
+    //             //     false,
+    //             //     context.get_context(),
+    //             //     state,
+    //             // );
 
-                // // Adjust selection for merged cells after update
-                // self.adjust_selection_for_merged_cells(
-                //     direction,
-                //     old_selection,
-                //     context,
-                //     merge_cells,
-                // );
-                return;
-            }
-        }
+    //             // // Adjust selection for merged cells after update
+    //             // self.adjust_selection_for_merged_cells(
+    //             //     direction,
+    //             //     old_selection,
+    //             //     context,
+    //             //     merge_cells,
+    //             // );
+    //             return;
+    //         }
+    //     }
 
-        // // Fallback for unbounded ranges or no range
-        // let _ = self
-        //     .selection
-        //     .select_to(new_pos.x, new_pos.y, false, context.get_context(), None);
+    //     // // Fallback for unbounded ranges or no range
+    //     // let _ = self
+    //     //     .selection
+    //     //     .select_to(new_pos.x, new_pos.y, false, context.get_context(), None);
 
-        // Adjust selection for merged cells after update
-        self.adjust_selection_for_merged_cells(direction, old_selection, context, merge_cells);
-    }
+    //     // Adjust selection for merged cells after update
+    //     self.adjust_selection_for_merged_cells(direction, old_selection, context, merge_cells);
+    // }
 
-    /// Adjusts the selection to handle partial merged cells.
-    /// If the selection is growing and overlaps with merged cells, contracts to the merged cell's boundary.
-    /// If the selection is shrinking and partially overlaps, also adjusts appropriately.
-    fn adjust_selection_for_merged_cells(
-        &mut self,
-        direction: Direction,
-        old_selection: Option<(i64, i64, i64, i64)>,
-        context: &JsA1Context,
-        merge_cells: &JsMergeCells,
-    ) {
-        use crate::Rect;
+    // /// Adjusts the selection to handle partial merged cells.
+    // /// If the selection is growing and overlaps with merged cells, contracts to the merged cell's boundary.
+    // /// If the selection is shrinking and partially overlaps, also adjusts appropriately.
+    // fn adjust_selection_for_merged_cells(
+    //     &mut self,
+    //     direction: Direction,
+    //     old_selection: Option<(i64, i64, i64, i64)>,
+    //     context: &JsA1Context,
+    //     merge_cells: &JsMergeCells,
+    // ) {
+    //     use crate::Rect;
 
-        // Get current selection
-        let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() else {
-            return;
-        };
+    //     // Get current selection
+    //     let Some(crate::a1::CellRefRange::Sheet { range }) = self.selection.ranges.last() else {
+    //         return;
+    //     };
 
-        if !range.is_finite() {
-            return;
-        }
+    //     if !range.is_finite() {
+    //         return;
+    //     }
 
-        let current_start_x = range.start.col();
-        let current_start_y = range.start.row();
-        let current_end_x = range.end.col();
-        let current_end_y = range.end.row();
+    //     let current_start_x = range.start.col();
+    //     let current_start_y = range.start.row();
+    //     let current_end_x = range.end.col();
+    //     let current_end_y = range.end.row();
 
-        let selection_rect = Rect::new(
-            current_start_x,
-            current_start_y,
-            current_end_x,
-            current_end_y,
-        );
+    //     let selection_rect = Rect::new(
+    //         current_start_x,
+    //         current_start_y,
+    //         current_end_x,
+    //         current_end_y,
+    //     );
 
-        let merged_rects = merge_cells
-            .get_merge_cells()
-            .get_merge_cells(selection_rect);
+    //     let merged_rects = merge_cells
+    //         .get_merge_cells()
+    //         .get_merge_cells(selection_rect);
 
-        if merged_rects.is_empty() {
-            return;
-        }
+    //     if merged_rects.is_empty() {
+    //         return;
+    //     }
 
-        // Check if all merged cells are fully contained within the selection
-        // If they are, no adjustment is needed
-        let all_fully_contained = merged_rects
-            .iter()
-            .all(|merge_rect| selection_rect.contains_rect(merge_rect));
+    //     // Check if all merged cells are fully contained within the selection
+    //     // If they are, no adjustment is needed
+    //     let all_fully_contained = merged_rects
+    //         .iter()
+    //         .all(|merge_rect| selection_rect.contains_rect(merge_rect));
 
-        if all_fully_contained {
-            return; // All merged cells are fully contained, no adjustment needed
-        }
+    //     if all_fully_contained {
+    //         return; // All merged cells are fully contained, no adjustment needed
+    //     }
 
-        // Determine if we're growing or shrinking by comparing with old selection
-        let is_growing =
-            if let Some((old_start_x, old_start_y, old_end_x, old_end_y)) = old_selection {
-                match direction {
-                    crate::grid::js_types::Direction::Left => current_start_x < old_start_x,
-                    crate::grid::js_types::Direction::Right => current_end_x > old_end_x,
-                    crate::grid::js_types::Direction::Up => current_start_y < old_start_y,
-                    crate::grid::js_types::Direction::Down => current_end_y > old_end_y,
-                }
-            } else {
-                true // Assume growing if no old selection
-            };
+    //     // Determine if we're growing or shrinking by comparing with old selection
+    //     let is_growing =
+    //         if let Some((old_start_x, old_start_y, old_end_x, old_end_y)) = old_selection {
+    //             match direction {
+    //                 crate::grid::js_types::Direction::Left => current_start_x < old_start_x,
+    //                 crate::grid::js_types::Direction::Right => current_end_x > old_end_x,
+    //                 crate::grid::js_types::Direction::Up => current_start_y < old_start_y,
+    //                 crate::grid::js_types::Direction::Down => current_end_y > old_end_y,
+    //             }
+    //         } else {
+    //             true // Assume growing if no old selection
+    //         };
 
-        // Find the relevant merged cell boundary based on direction
-        // Handle two cases:
-        // 1. If we're before/after the boundary and growing, contract to the boundary
-        // 2. If we're exactly at the boundary and growing, jump over the merged cell
-        let (target_x, target_y) = match direction {
-            crate::grid::js_types::Direction::Left => {
-                if let Some(leftmost_merge) = merged_rects.iter().min_by_key(|r| r.min.x) {
-                    if is_growing {
-                        if current_start_x < leftmost_merge.min.x {
-                            // Before boundary: contract to boundary
-                            (leftmost_merge.min.x, current_start_y)
-                        } else if current_start_x == leftmost_merge.min.x {
-                            // At boundary: jump over
-                            (leftmost_merge.min.x - 1, current_start_y)
-                        } else {
-                            return; // Already past, no adjustment needed
-                        }
-                    } else {
-                        return; // Shrinking, no adjustment needed
-                    }
-                } else {
-                    return;
-                }
-            }
-            crate::grid::js_types::Direction::Right => {
-                if let Some(rightmost_merge) = merged_rects.iter().max_by_key(|r| r.max.x) {
-                    if is_growing {
-                        if current_end_x > rightmost_merge.max.x {
-                            // After boundary: contract to boundary
-                            (rightmost_merge.max.x, current_end_y)
-                        } else if current_end_x == rightmost_merge.max.x {
-                            // At boundary: jump over
-                            (rightmost_merge.max.x + 1, current_end_y)
-                        } else {
-                            return; // Already before, no adjustment needed
-                        }
-                    } else {
-                        return; // Shrinking, no adjustment needed
-                    }
-                } else {
-                    return;
-                }
-            }
-            crate::grid::js_types::Direction::Up => {
-                if let Some(topmost_merge) = merged_rects.iter().min_by_key(|r| r.min.y) {
-                    if is_growing {
-                        if current_start_y < topmost_merge.min.y {
-                            // Above boundary: contract to boundary
-                            (current_start_x, topmost_merge.min.y)
-                        } else if current_start_y == topmost_merge.min.y {
-                            // At boundary: jump over
-                            (current_start_x, topmost_merge.min.y - 1)
-                        } else {
-                            return; // Already below, no adjustment needed
-                        }
-                    } else {
-                        return; // Shrinking, no adjustment needed
-                    }
-                } else {
-                    return;
-                }
-            }
-            crate::grid::js_types::Direction::Down => {
-                if let Some(bottommost_merge) = merged_rects.iter().max_by_key(|r| r.max.y) {
-                    if is_growing {
-                        if current_end_y > bottommost_merge.max.y {
-                            // Below boundary: contract to boundary
-                            (current_end_x, bottommost_merge.max.y)
-                        } else if current_end_y == bottommost_merge.max.y {
-                            // At boundary: jump over
-                            (current_end_x, bottommost_merge.max.y + 1)
-                        } else {
-                            return; // Already above, no adjustment needed
-                        }
-                    } else {
-                        return; // Shrinking, no adjustment needed
-                    }
-                } else {
-                    return;
-                }
-            }
-        };
+    //     // Find the relevant merged cell boundary based on direction
+    //     // Handle two cases:
+    //     // 1. If we're before/after the boundary and growing, contract to the boundary
+    //     // 2. If we're exactly at the boundary and growing, jump over the merged cell
+    //     let (target_x, target_y) = match direction {
+    //         crate::grid::js_types::Direction::Left => {
+    //             if let Some(leftmost_merge) = merged_rects.iter().min_by_key(|r| r.min.x) {
+    //                 if is_growing {
+    //                     if current_start_x < leftmost_merge.min.x {
+    //                         // Before boundary: contract to boundary
+    //                         (leftmost_merge.min.x, current_start_y)
+    //                     } else if current_start_x == leftmost_merge.min.x {
+    //                         // At boundary: jump over
+    //                         (leftmost_merge.min.x - 1, current_start_y)
+    //                     } else {
+    //                         return; // Already past, no adjustment needed
+    //                     }
+    //                 } else {
+    //                     return; // Shrinking, no adjustment needed
+    //                 }
+    //             } else {
+    //                 return;
+    //             }
+    //         }
+    //         crate::grid::js_types::Direction::Right => {
+    //             if let Some(rightmost_merge) = merged_rects.iter().max_by_key(|r| r.max.x) {
+    //                 if is_growing {
+    //                     if current_end_x > rightmost_merge.max.x {
+    //                         // After boundary: contract to boundary
+    //                         (rightmost_merge.max.x, current_end_y)
+    //                     } else if current_end_x == rightmost_merge.max.x {
+    //                         // At boundary: jump over
+    //                         (rightmost_merge.max.x + 1, current_end_y)
+    //                     } else {
+    //                         return; // Already before, no adjustment needed
+    //                     }
+    //                 } else {
+    //                     return; // Shrinking, no adjustment needed
+    //                 }
+    //             } else {
+    //                 return;
+    //             }
+    //         }
+    //         crate::grid::js_types::Direction::Up => {
+    //             if let Some(topmost_merge) = merged_rects.iter().min_by_key(|r| r.min.y) {
+    //                 if is_growing {
+    //                     if current_start_y < topmost_merge.min.y {
+    //                         // Above boundary: contract to boundary
+    //                         (current_start_x, topmost_merge.min.y)
+    //                     } else if current_start_y == topmost_merge.min.y {
+    //                         // At boundary: jump over
+    //                         (current_start_x, topmost_merge.min.y - 1)
+    //                     } else {
+    //                         return; // Already below, no adjustment needed
+    //                     }
+    //                 } else {
+    //                     return; // Shrinking, no adjustment needed
+    //                 }
+    //             } else {
+    //                 return;
+    //             }
+    //         }
+    //         crate::grid::js_types::Direction::Down => {
+    //             if let Some(bottommost_merge) = merged_rects.iter().max_by_key(|r| r.max.y) {
+    //                 if is_growing {
+    //                     if current_end_y > bottommost_merge.max.y {
+    //                         // Below boundary: contract to boundary
+    //                         (current_end_x, bottommost_merge.max.y)
+    //                     } else if current_end_y == bottommost_merge.max.y {
+    //                         // At boundary: jump over
+    //                         (current_end_x, bottommost_merge.max.y + 1)
+    //                     } else {
+    //                         return; // Already above, no adjustment needed
+    //                     }
+    //                 } else {
+    //                     return; // Shrinking, no adjustment needed
+    //                 }
+    //             } else {
+    //                 return;
+    //             }
+    //         }
+    //     };
 
-        // Adjust the selection to the target position
-        let cursor_pos = self.selection.cursor;
-        let opposite_x = if cursor_pos.x == current_start_x {
-            current_end_x
-        } else {
-            current_start_x
-        };
-        let opposite_y = if cursor_pos.y == current_start_y {
-            current_end_y
-        } else {
-            current_start_y
-        };
+    //     // Adjust the selection to the target position
+    //     let cursor_pos = self.selection.cursor;
+    //     let opposite_x = if cursor_pos.x == current_start_x {
+    //         current_end_x
+    //     } else {
+    //         current_start_x
+    //     };
+    //     let opposite_y = if cursor_pos.y == current_start_y {
+    //         current_end_y
+    //     } else {
+    //         current_start_y
+    //     };
 
-        // Move cursor to target position
-        self.selection.move_to(target_x, target_y, false);
+    //     // Move cursor to target position
+    //     self.selection.move_to(target_x, target_y, false);
 
-        // // Select from target position to opposite corner
-        // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
-        //     x: target_x,
-        //     y: target_y,
-        // }));
-        // let _ =
-        //     self.selection
-        //         .select_to(opposite_x, opposite_y, false, context.get_context(), state);
+    //     // // Select from target position to opposite corner
+    //     // let state = Some(crate::a1::SelectionState::for_keyboard_shift(crate::Pos {
+    //     //     x: target_x,
+    //     //     y: target_y,
+    //     // }));
+    //     // let _ =
+    //     //     self.selection
+    //     //         .select_to(opposite_x, opposite_y, false, context.get_context(), state);
 
-        // If we jumped over, we might need to adjust again (recursively, but limit depth)
-        // Actually, let's not recurse - the next arrow press will handle further adjustments
-    }
+    //     // If we jumped over, we might need to adjust again (recursively, but limit depth)
+    //     // Actually, let's not recurse - the next arrow press will handle further adjustments
+    // }
 
     #[wasm_bindgen(js_name = "moveTo")]
     pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
