@@ -7,10 +7,10 @@ use crate::{
 };
 
 impl A1Selection {
-    /// Expands the selection to include anchor cells for any merged cells.
-    /// This ensures that formatting operations are applied to the anchor cells
-    /// where the data actually lives, while preserving the original selection
-    /// for navigation purposes.
+    /// Expands the selection to include anchor cells for any merged cells. This
+    /// ensures that operations are applied to the anchor cells where the data
+    /// actually lives, while preserving the original selection for navigation
+    /// purposes.
     pub fn expand_to_include_merge_anchors(&self, merge_cells: &MergeCells) -> Self {
         let mut expanded_selection = self.clone();
         let mut anchors_to_add = HashSet::new();
@@ -58,21 +58,21 @@ impl A1Selection {
                     start: CellRefRangeEnd {
                         col: CellRefCoord {
                             coord: anchor.x,
-                            is_absolute: true,
+                            is_absolute: false,
                         },
                         row: CellRefCoord {
                             coord: anchor.y,
-                            is_absolute: true,
+                            is_absolute: false,
                         },
                     },
                     end: CellRefRangeEnd {
                         col: CellRefCoord {
                             coord: anchor.x,
-                            is_absolute: true,
+                            is_absolute: false,
                         },
                         row: CellRefCoord {
                             coord: anchor.y,
-                            is_absolute: true,
+                            is_absolute: false,
                         },
                     },
                 },

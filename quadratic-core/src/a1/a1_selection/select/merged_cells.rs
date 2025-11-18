@@ -27,9 +27,7 @@ impl A1Selection {
                             // cells are not already completed contained by the
                             // range
                             if !new_rect.contains_rect(&merged_rect) {
-                                dbg!("adjusting for merged cells");
                                 if last_range_grew {
-                                    dbg!("growing selection");
                                     new_rect.union_in_place(&merged_rect);
                                 } else {
                                     // todo! we need to shrink the selection so it excludes the merged cell
