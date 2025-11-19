@@ -280,7 +280,7 @@ const MentionsTextarea = memo(
               {/* Mentions dropdown */}
               <div
                 data-mentions-dropdown
-                className="absolute z-50 w-80 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                className="absolute z-50 w-96 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
                 style={{
                   position: 'fixed',
                   top: mentionState.position.top - 24,
@@ -320,7 +320,7 @@ const MentionsTextarea = memo(
                                 <span className="truncate font-medium">{mention.label}</span>
                               </div>
                               {mention.description && (
-                                <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-muted-foreground">
+                                <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
                                   {mention.description}
                                 </span>
                               )}
