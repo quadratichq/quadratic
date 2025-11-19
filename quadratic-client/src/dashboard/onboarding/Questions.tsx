@@ -7,12 +7,13 @@ import {
 } from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
-import { ArrowRightIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
+import { ArrowRightIcon, DesktopIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
@@ -40,6 +41,21 @@ export const questionsById: Record<
   instructions: {
     title: 'Welcome to Quadratic!',
     Form: (props) => {
+      if (isMobile) {
+        return (
+          <Question title={props.title}>
+            <QuestionForm>
+              <div className="flex flex-col items-center gap-4 text-center">
+                <DesktopIcon size="2xl" className="text-muted-foreground" />
+                <p className="text-lg text-muted-foreground">Quadratic is view only on mobile.</p>
+                <p className="text-lg text-muted-foreground">Come back on your computer.</p>
+              </div>
+              <input type="hidden" name={props.id} value="" />
+            </QuestionForm>
+          </Question>
+        );
+      }
+
       return (
         <Question title={props.title}>
           <QuestionForm>
