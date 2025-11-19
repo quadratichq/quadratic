@@ -56,7 +56,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
 
       // Click 'Delete payment method' and confirm deletion
       await page
-        .locator(`[data-test="PaymentInstrumentActionsDetatchModalConfirmButton"]`)
+        .locator(`[data-test="PaymentInstrumentActionsDetachModalConfirmButton"]`)
         .click({ timeout: 60 * 1000 });
 
       // **Assert that payment method was deleted:
@@ -120,12 +120,13 @@ export const upgradeToProPlan = async (page: Page) => {
     });
 
     // Locate the parent div that contains 'Pro plan' details
-    const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
+    //const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
+    const proPlanParentEl = page.getByText(`$20/user/month`);
 
     // Locate the text within the parent div of the 'Pro plan' heading
     // Use a regex to extract the number between `$` and `/user/month` to store the Pro plan cost
     const proPlanCostText = await proPlanParentEl.textContent();
-    const proPlanCost = proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1];
+    const proPlanCost = parseInt(proPlanCostText!.match(/\d+/)![0], 10);
 
     // Click 'Upgrade to Pro' to upgrade the account
     await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
@@ -142,10 +143,10 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Store the checkout page total
     const checkoutTotalText = await page
-      .locator(`[data-testid="product-summary-total-amount"]`)
+      .locator(`[data-testid="product-summary-total-amount"] .CurrencyAmount`)
       .getByText(`$`)
       .innerText();
-    const checkoutTotal = checkoutTotalText.replace('$', '').split('.')[0];
+    const checkoutTotal = parseInt(checkoutTotalText.replace('$', '').split('.')[0],10);
 
     // Assert the cost reflects the Pro Plan cost shown on the 'Settings' page
     expect(checkoutTotal).toBe(proPlanCost);
@@ -153,7 +154,6 @@ export const upgradeToProPlan = async (page: Page) => {
     // Assert that the bank account textbox is not visible
     // This ensures that we will be filling in credit card details and not bank details (debit)
     await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 60 * 1000 });
-
     // Fill the card number in the input for 'Card Information'
     await page.getByRole(`textbox`, { name: `Card number` }).fill(SWIPE_TEST_CARD.number);
 
@@ -183,25 +183,14 @@ export const upgradeToProPlan = async (page: Page) => {
     const navigationPromise = page.waitForNavigation();
     await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
-    // Wait for the page to redirect to the Team files page
+    // Wait for the page to redirect to the Team Settings page
     await navigationPromise;
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('domcontentloaded');
 
-    // Assert that page has redirected to the Team files page
-    await expect(page).toHaveTitle(/Team files/);
-    await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
-
-    // Navigate to the Settings page by clicking the 'Settings' link
-    await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
-
-    await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
-
-    // Assert page is currently displaying Settings
-    await expect(page).toHaveURL(/settings/);
-    await expect(page).toHaveTitle(/settings/);
+    // Assert that page has redirected to the Team Settings page
+    await expect(page).toHaveTitle(/Team settings/);
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
@@ -210,8 +199,10 @@ export const upgradeToProPlan = async (page: Page) => {
     await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Pro plan' container includes the 'Current plan' flag
-    await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
-    await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
+    const proPlanParent = page.locator(`:text("Pro plan")`).locator('..').locator('..');
+    await expect(proPlanParent.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+    await expect(proPlanParent.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
+
 
     // Assert that the 'Upgrade to Pro' button is no longer visible
     await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
