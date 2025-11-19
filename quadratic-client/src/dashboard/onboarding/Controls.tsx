@@ -79,6 +79,7 @@ export function ControlCheckboxInputOther(props: {
   value: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  stacked?: boolean;
 }) {
   const { children, id, value, checked, onChange } = props;
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,17 +93,13 @@ export function ControlCheckboxInputOther(props: {
     }
   }, [checked]);
 
+  const ControlCheckbox = props.stacked ? ControlCheckboxStacked : ControlCheckboxInline;
+
   return (
     <>
-      <ControlCheckboxInline
-        checked={checked}
-        id={id}
-        name={id}
-        value={value}
-        onChange={(e) => onChange(e.target.checked)}
-      >
+      <ControlCheckbox checked={checked} id={id} name={id} value={value} onChange={(e) => onChange(e.target.checked)}>
         {children}
-      </ControlCheckboxInline>
+      </ControlCheckbox>
 
       {checked && (
         <input
