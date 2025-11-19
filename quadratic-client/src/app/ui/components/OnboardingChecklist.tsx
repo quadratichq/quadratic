@@ -1,6 +1,7 @@
 import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusPromptsAtom';
 import { events } from '@/app/events/events';
 import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
+import { useShareTutorial } from '@/app/onboarding/useShareTutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { OnboardingVideoDialog } from '@/app/ui/components/OnboardingVideoDialog';
 import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
@@ -20,6 +21,7 @@ export const OnboardingChecklist = () => {
 
   const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog } = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
+  const shareTutorial = useShareTutorial();
 
   const [demoRunning, setDemoRunning] = useState(false);
 
@@ -47,7 +49,7 @@ export const OnboardingChecklist = () => {
           break;
         case 'demo-connection':
           setDemoRunning(true);
-          console.log('TODO');
+          shareTutorial(repeat);
           break;
         case 'watch-tutorial':
           setDemoRunning(true);
@@ -57,7 +59,7 @@ export const OnboardingChecklist = () => {
           console.warn(`Unknown category: ${category}`);
       }
     },
-    [promptAITutorial, watchTutorial]
+    [promptAITutorial, shareTutorial, watchTutorial]
   );
 
   const handleClose = useCallback(() => {

@@ -14,6 +14,7 @@ export const TopBarShareButton = () => {
     <>
       {isAuthenticated ? (
         <Button
+          id="top-bar-share-button"
           variant="outline"
           size="sm"
           onClick={() => {
