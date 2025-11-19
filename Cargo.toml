@@ -23,3 +23,6 @@ version = "0.21.1"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[profile.bench]
+debug = true

@@ -1,8 +1,43 @@
 use crate::{
-    Pos,
-    a1::{A1Context, A1Selection, CellRefRange, CellRefRangeEnd, ColRange},
+    Pos, Rect,
+    a1::{A1Context, A1Selection, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds},
     grid::sheet::merge_cells::MergeCells,
 };
+
+#[derive(Debug, PartialEq, Eq)]
+enum Adjustment {
+    GrowRight,
+    GrowLeft,
+    GrowDown,
+    GrowUp,
+    ShrinkRight,
+    ShrinkLeft,
+    ShrinkDown,
+    ShrinkUp,
+}
+
+// utility to determine the adjustment needed to grow or shrink the selection
+fn find_adjustment(cursor: &Pos, delta_x: i64, delta_y: i64, range: Rect) -> Adjustment {
+    if delta_x > 0 && cursor.x < range.max.x {
+        Adjustment::GrowRight
+    } else if delta_x > 0 {
+        Adjustment::ShrinkLeft
+    } else if delta_x < 0 && cursor.x > range.min.x {
+        Adjustment::GrowLeft
+    } else if delta_x < 0 {
+        Adjustment::ShrinkRight
+    } else if delta_y > 0 && cursor.y < range.max.y {
+        Adjustment::GrowDown
+    } else if delta_y > 0 {
+        Adjustment::ShrinkUp
+    } else if delta_y < 0 && cursor.y > range.min.y {
+        Adjustment::GrowUp
+    } else if delta_y < 0 {
+        Adjustment::ShrinkDown
+    } else {
+        Adjustment::GrowRight // should not happen
+    }
+}
 
 impl A1Selection {
     pub fn keyboard_select_to(
@@ -18,14 +53,6 @@ impl A1Selection {
             self.ranges
                 .push(CellRefRange::new_relative_pos(self.cursor));
         };
-
-        // Calculate the size of the last range before any change
-        let size_before = self
-            .ranges
-            .last()
-            .and_then(|range| range.to_rect(a1_context))
-            .map(|rect| rect.count())
-            .unwrap_or(0);
 
         if let Some(last) = self.ranges.last_mut() {
             match last {
@@ -104,25 +131,34 @@ impl A1Selection {
                     //     self.cursor.x = delta_x;
                     // }
 
+                    // handle the case where the end_pos is inside a merged
+                    // cell. If so, we need to use the deltas to move one cell
+                    // beyond the merged cell.
+                    let adjustment =
+                        find_adjustment(&self.cursor, delta_x, delta_y, range.to_rect_unbounded());
+                    // if delta_x > 0 {
+                    //     // Move to the right edge of the merged cell at the current row
+                    //     end_pos.x = merged_rect.max.x;
+                    // } else if delta_x < 0 {
+                    //     // Move to the left edge of the merged cell at the current row
+                    //     end_pos.x = merged_rect.min.x;
+                    // }
+                    // if delta_y > 0 {
+                    //     // Move to the bottom edge of the merged cell at the current column
+                    //     end_pos.y = merged_rect.max.y;
+                    // } else if delta_y < 0 {
+                    //     // Move to the top edge of the merged cell at the current column
+                    //     end_pos.y = merged_rect.min.y;
+                    // }
                     range.end = CellRefRangeEnd::new_relative_xy(
                         (end_pos.x + delta_x).clamp(1, i64::MAX),
                         (end_pos.y + delta_y).clamp(1, i64::MAX),
                     );
                     *end_pos = Pos::new(range.end.col(), range.end.row());
+                    self.adjust_for_merged_cells(merge_cells, delta_x, delta_y, end_pos);
                 }
             };
         }
-
-        // Calculate the size after adjustment and determine if it shrunk or grew
-        let size_after = self
-            .ranges
-            .last()
-            .and_then(|range| range.to_rect(a1_context))
-            .map(|rect| rect.count())
-            .unwrap_or(0);
-
-        let last_range_grew = size_after > size_before;
-        self.adjust_for_merged_cells(merge_cells, last_range_grew, end_pos);
     }
 }
 
@@ -268,7 +304,21 @@ mod tests {
                 );
             };
 
-        assert_move(1, 0, "B7:C7", "C7");
-        assert_move(0, 1, "B7:E10", "E10");
+        assert_move(1, 0, "B5:E10", "E7");
+        assert_move(0, 1, "B5:E10", "E10");
+    }
+
+    #[test]
+    fn test_find_adjustment() {
+        let cursor = Pos::test_a1("B2");
+        let rect = Rect::test_a1("B2:D4");
+        assert_eq!(find_adjustment(&cursor, 1, 0, rect), Adjustment::GrowRight);
+        let cursor = Pos::test_a1("D4");
+        assert_eq!(find_adjustment(&cursor, 1, 0, rect), Adjustment::ShrinkLeft);
+        let cursor = Pos::test_a1("B2");
+        assert_eq!(find_adjustment(&cursor, 0, 1, rect), Adjustment::GrowDown);
+        let cursor = Pos::test_a1("B4");
+        assert_eq!(find_adjustment(&cursor, 0, 1, rect), Adjustment::ShrinkUp);
+        let cursor = Pos::test_a1("")
     }
 }

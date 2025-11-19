@@ -217,11 +217,10 @@ impl A1Selection {
                     if range.end.is_unbounded() {
                         self.cursor
                     } else {
-                        // todo! in merge-cell-3
-                        // Use SelectionState to get the active end
-                        // let state = SelectionState::from_selection(self, a1_context);
-                        // state.get_active_end(self, a1_context)
-                        self.cursor
+                        Pos {
+                            x: range.end.col(),
+                            y: range.end.row(),
+                        }
                     }
                 }
                 CellRefRange::Table { range } => {
