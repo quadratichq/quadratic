@@ -213,7 +213,6 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
   await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
-
   // Assert that the 'Pro plan' container includes the 'Current plan' flag
   await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
   await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
