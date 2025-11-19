@@ -32,7 +32,11 @@ const Icon = (props: BaseIconProps) => {
   const _size = size ? sizes[size] : sizes['sm'];
 
   return (
-    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
+    <span
+      className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`}
+      {...rest}
+      translate="no"
+    >
       {children}
     </span>
   );
@@ -737,6 +741,10 @@ export const SheetComeFromIcon: IconComponent = (props) => {
 
 export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
+};
+
+export const TeamIcon: IconComponent = (props) => {
+  return <Icon {...props}>groups</Icon>;
 };
 
 export const GenericLanguageIcon: IconComponent = (props) => {

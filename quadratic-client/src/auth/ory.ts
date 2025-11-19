@@ -1,13 +1,12 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { VITE_ORY_HOST } from '@/env-vars';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
 import { captureEvent } from '@sentry/react';
 
-const ORY_HOST = import.meta.env.VITE_ORY_HOST;
-
 // verify all Ory env variables are set
-if (!ORY_HOST) {
+if (!VITE_ORY_HOST) {
   const message = 'Ory variables are not configured correctly.';
   captureEvent({
     message,
@@ -16,7 +15,7 @@ if (!ORY_HOST) {
 }
 
 const config = new Configuration({
-  basePath: ORY_HOST,
+  basePath: VITE_ORY_HOST,
   baseOptions: {
     withCredentials: true,
   },
@@ -80,7 +79,7 @@ export const oryClient: AuthClient = {
    */
   async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
     const urlSegment = args.isSignupFlow ? 'registration' : 'login';
-    const url = new URL(`${ORY_HOST}/self-service/${urlSegment}/browser`);
+    const url = new URL(`${VITE_ORY_HOST}/self-service/${urlSegment}/browser`);
     url.searchParams.set('return_to', args.redirectTo);
 
     // redirect to the login/signup flow
@@ -111,11 +110,11 @@ export const oryClient: AuthClient = {
 
   /**
    * Tries to get a token for the current user from the Ory client.
-   * If the token is still valid, it'll pull it from a cache. If it’s expired,
+   * If the token is still valid, it'll pull it from a cache. If it's expired,
    * it will fail and we will manually redirect the user to ory to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect(skipRedirect?: boolean) {
+  async getTokenOrRedirect(skipRedirect?: boolean, request?: Request) {
     try {
       const session = await getSession();
       if (session && session.tokenized) {
@@ -125,29 +124,11 @@ export const oryClient: AuthClient = {
       }
     } catch (e) {
       if (!skipRedirect) {
-        const { pathname, search } = new URL(window.location.href);
-        await this.login({ redirectTo: pathname + search, href: window.location.href });
+        const href = request ? request.url : window.location.href;
+        const { pathname, search } = new URL(href);
+        await this.login({ redirectTo: pathname + search, href });
       }
     }
     return '';
-  },
-
-  async loginWithPassword(_) {
-    throw new Error('loginWithPassword called in Ory');
-  },
-  async loginWithOAuth(_) {
-    throw new Error('loginWithOAuth called in Ory');
-  },
-  async signupWithPassword(_) {
-    throw new Error('signupWithPassword called in Ory');
-  },
-  async verifyEmail(_) {
-    throw new Error('verifyEmail called in Ory');
-  },
-  async sendResetPassword(_) {
-    throw new Error('sendResetPassword called in Ory');
-  },
-  async resetPassword(_) {
-    throw new Error('resetPassword called in Ory');
   },
 };

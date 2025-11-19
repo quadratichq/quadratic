@@ -24,7 +24,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid.PATCH.response']>) {
   const {
-    body: { name, clientDataKv, settings },
+    body: { name, clientDataKv, onboardingResponses, settings },
     params: { uuid },
   } = parseRequest(req, schema);
   const {
@@ -61,6 +61,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       uuid,
     },
     data: {
+      ...(onboardingResponses ? { onboardingResponses, onboardingComplete: true } : {}),
       ...(name ? { name } : {}),
       ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
       ...(settings
