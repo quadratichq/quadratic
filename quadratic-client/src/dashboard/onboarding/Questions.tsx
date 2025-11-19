@@ -45,10 +45,12 @@ export const questionsById: Record<
         return (
           <Question title={props.title}>
             <QuestionForm>
-              <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex flex-col items-center gap-4 px-6 text-center">
                 <DesktopIcon size="2xl" className="text-muted-foreground" />
                 <p className="text-lg text-muted-foreground">Quadratic is view only on mobile.</p>
-                <p className="text-lg text-muted-foreground">Come back on your computer.</p>
+                <p className="text-lg text-muted-foreground">
+                  Please switch to a laptop or desktop for the best experience.
+                </p>
               </div>
               <input type="hidden" name={props.id} value="" />
             </QuestionForm>
