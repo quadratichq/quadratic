@@ -16,14 +16,12 @@
  * - Simpler codebase
  */
 
-import * as Sentry from '@sentry/node';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatBedrockConverse } from '@langchain/aws';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
-import { GoogleAuth } from 'google-auth-library';
+import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
 import {
   createTextContent,
@@ -57,14 +55,9 @@ import {
   DEFAULT_BACKUP_MODEL_THINKING,
   MODELS_CONFIGURATION,
 } from 'quadratic-shared/ai/models/AI_MODELS';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey, AIRequestHelperArgs, AIUsage, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
-import logger from '../../utils/logger';
-import { createFileForFineTuning } from '../helpers/fineTuning.helper';
-import { calculateUsage } from '../helpers/usage.helper';
-import { getAIToolsInOrder } from '../helpers/tools';
 import {
   ANTHROPIC_API_KEY,
   AWS_S3_ACCESS_KEY_ID,
@@ -73,17 +66,20 @@ import {
   AZURE_OPENAI_API_KEY,
   AZURE_OPENAI_ENDPOINT,
   BASETEN_API_KEY,
+  debugAndNotInProduction,
+  ENVIRONMENT,
+  FINE_TUNE,
   FIREWORKS_API_KEY,
-  GCP_CLIENT_EMAIL,
   GCP_GEMINI_API_KEY,
-  GCP_PRIVATE_KEY,
-  GCP_PROJECT_ID,
-  GCP_REGION,
   GCP_REGION_ANTHROPIC,
   OPEN_ROUTER_API_KEY,
   OPENAI_API_KEY,
   XAI_API_KEY,
 } from '../../env-vars';
+import logger from '../../utils/logger';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
+import { getAIToolsInOrder } from '../helpers/tools';
+import { calculateUsage } from '../helpers/usage.helper';
 
 export interface HandleAIRequestArgs {
   modelKey: AIModelKey;
@@ -134,11 +130,21 @@ function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
   const messages: BaseMessage[] = [];
   const { systemMessages, promptMessages } = getSystemPromptMessages(args.messages);
 
-  // Add system messages
-  for (const sysMsg of systemMessages) {
-    if (sysMsg.trim()) {
-      messages.push(new SystemMessage(sysMsg.trim()));
-    }
+  logger.info('[AI Handler] Converting messages', {
+    totalMessages: args.messages.length,
+    systemMessagesCount: systemMessages.length,
+    promptMessagesCount: promptMessages.length,
+    messageTypes: args.messages.map((m) => ({ role: m.role, contextType: m.contextType })),
+  });
+
+  // Merge all system messages into one (required by Anthropic)
+  const mergedSystemMessage = systemMessages
+    .map((msg) => msg.trim())
+    .filter((msg) => msg.length > 0)
+    .join('\n\n');
+
+  if (mergedSystemMessage) {
+    messages.push(new SystemMessage(mergedSystemMessage));
   }
 
   // Convert prompt messages
@@ -154,23 +160,33 @@ function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
         .map((c) => (isContentText(c) && 'text' in c ? c.text.trim() : ''))
         .join('\n');
 
-      const messageData: any = {
-        content: textContent || ' ',
-      };
-
-      // Add tool calls if present
+      // For Anthropic, we need to format content as blocks when there are tool calls
       if (msg.toolCalls && msg.toolCalls.length > 0) {
-        messageData.tool_calls = msg.toolCalls.map((tc) => ({
-          id: tc.id,
-          type: 'function',
-          function: {
-            name: tc.name,
-            arguments: tc.arguments,
-          },
-        }));
-      }
+        const contentBlocks: any[] = [];
 
-      messages.push(new AIMessage(messageData));
+        // Add text content if present
+        if (textContent) {
+          contentBlocks.push({
+            type: 'text',
+            text: textContent,
+          });
+        }
+
+        // Add tool use blocks
+        for (const tc of msg.toolCalls) {
+          contentBlocks.push({
+            type: 'tool_use',
+            id: tc.id,
+            name: tc.name,
+            input: JSON.parse(tc.arguments),
+          });
+        }
+
+        messages.push(new AIMessage({ content: contentBlocks }));
+      } else {
+        // No tool calls - simple text message
+        messages.push(new AIMessage({ content: textContent || ' ' }));
+      }
     } else if (isToolResultMessage(msg)) {
       // Tool result messages
       for (const toolResult of msg.content) {
@@ -221,6 +237,11 @@ function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
     }
   }
 
+  logger.info('[AI Handler] Final LangChain messages', {
+    messageCount: messages.length,
+    messageTypes: messages.map((m) => m._getType()),
+  });
+
   return messages;
 }
 
@@ -231,6 +252,16 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
   const options = getModelOptions(modelKey, args);
   const modelName = getModelFromModelKey(modelKey);
   const tools = createLangChainTools(args.source, options.aiModelMode, args.toolName);
+
+  logger.info('[AI Handler] Creating chat model', {
+    modelKey,
+    modelName,
+    source: args.source,
+    hasOpenAIKey: !!OPENAI_API_KEY,
+    hasAzureKey: !!AZURE_OPENAI_API_KEY,
+    hasAzureEndpoint: !!AZURE_OPENAI_ENDPOINT,
+    azureEndpoint: AZURE_OPENAI_ENDPOINT ? AZURE_OPENAI_ENDPOINT.substring(0, 30) + '...' : 'not set',
+  });
 
   // Anthropic models
   if (isAnthropicModel(modelKey)) {
@@ -280,6 +311,17 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
 
   // OpenAI
   if (isOpenAIModel(modelKey)) {
+    logger.info('[AI Handler] Using OpenAI model', {
+      modelKey,
+      modelName,
+      hasOpenAIKey: !!OPENAI_API_KEY,
+    });
+
+    if (!OPENAI_API_KEY) {
+      const error = `OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.`;
+      logger.error('[AI Handler] OpenAI API key missing', { error });
+      throw new Error(error);
+    }
     const model = new ChatOpenAI({
       model: modelName,
       temperature: options.temperature,
@@ -292,6 +334,19 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
 
   // Azure OpenAI
   if (isAzureOpenAIModel(modelKey)) {
+    logger.info('[AI Handler] Using Azure OpenAI model', {
+      modelKey,
+      modelName,
+      hasAzureKey: !!AZURE_OPENAI_API_KEY,
+      hasAzureEndpoint: !!AZURE_OPENAI_ENDPOINT,
+      azureEndpoint: AZURE_OPENAI_ENDPOINT,
+    });
+
+    if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT) {
+      const error = `Azure OpenAI credentials not configured. Please set AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT environment variables.`;
+      logger.error('[AI Handler] Azure OpenAI credentials missing', { error });
+      throw new Error(error);
+    }
     const model = new ChatOpenAI({
       model: modelName,
       temperature: options.temperature,
@@ -440,20 +495,57 @@ async function handleStreamingResponse(
   };
 
   try {
+    logger.info('[AI Handler] Starting stream', { modelKey });
     const stream = await chatModel.stream(messages, { signal });
+    logger.info('[AI Handler] Stream created, waiting for chunks', { modelKey });
 
+    let chunkCount = 0;
     for await (const chunk of stream) {
+      chunkCount++;
+      if (chunkCount === 1) {
+        logger.info('[AI Handler] Received first chunk', { modelKey });
+      }
+
       if (signal?.aborted) {
+        logger.info('[AI Handler] Stream aborted by signal', { modelKey });
         break;
       }
 
-      const content = typeof chunk.content === 'string' ? chunk.content : '';
+      // Extract content - handle both string and array formats
+      let content = '';
+      if (typeof chunk.content === 'string') {
+        content = chunk.content;
+      } else if (Array.isArray(chunk.content)) {
+        // Content is an array of content blocks (e.g., text, thinking blocks)
+        content = chunk.content
+          .filter((block: any) => block.type === 'text' && block.text)
+          .map((block: any) => block.text)
+          .join('');
+      }
+
+      // Log first few chunks to debug content extraction
+      if (chunkCount <= 3) {
+        logger.info('[AI Handler] Chunk details', {
+          chunkCount,
+          contentType: typeof chunk.content,
+          contentIsArray: Array.isArray(chunk.content),
+          contentLength: content.length,
+          content: content.substring(0, 100),
+          hasToolCalls: !!chunk.tool_calls,
+          hasToolCallChunks: !!chunk.tool_call_chunks,
+          toolCallChunksLength: chunk.tool_call_chunks?.length,
+          toolCallChunks: chunk.tool_call_chunks,
+          rawContent: Array.isArray(chunk.content) ? chunk.content.slice(0, 2) : chunk.content,
+        });
+      }
+
       if (content) {
         fullContent += content;
 
+        // Send the full accumulated content, not just the chunk
         const responseMessage: Partial<ApiTypes['/v0/ai/chat.POST.response']> = {
           role: 'assistant',
-          content: [createTextContent(content)],
+          content: [createTextContent(fullContent)],
           contextType: 'userPrompt',
           toolCalls: [],
           modelKey,
@@ -463,17 +555,53 @@ async function handleStreamingResponse(
         response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       }
 
-      // Extract tool calls
+      // Extract tool calls from tool_call_chunks (LangChain streaming format)
+      if (chunk.tool_call_chunks && chunk.tool_call_chunks.length > 0) {
+        for (const tcc of chunk.tool_call_chunks) {
+          // Use index to match tool calls, not ID (chunks may not have stable IDs)
+          const index = tcc.index !== undefined ? tcc.index : 0;
+
+          // Ensure we have a tool call at this index
+          while (toolCalls.length <= index) {
+            toolCalls.push({
+              id: '',
+              name: '',
+              arguments: '',
+              loading: false,
+            });
+          }
+
+          const toolCall = toolCalls[index];
+
+          // Accumulate the tool call data
+          if (tcc.id) toolCall.id = tcc.id;
+          if (tcc.name) toolCall.name = tcc.name;
+          if (tcc.args) toolCall.arguments += tcc.args;
+        }
+      }
+
+      // Also handle complete tool_calls (non-streaming or final)
       if (chunk.tool_calls && chunk.tool_calls.length > 0) {
         for (const tc of chunk.tool_calls) {
           const existing = toolCalls.find((t) => t.id === tc.id);
           if (!existing) {
-            toolCalls.push({
-              id: tc.id || `call_${Date.now()}`,
-              name: tc.name || '',
-              arguments: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args || {}),
-              loading: false,
-            });
+            // New tool call - only add if it has meaningful content
+            const argsString = typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args || {});
+            // Skip if args are empty object "{}"
+            if (argsString !== '{}' || tc.name) {
+              const toolCall = {
+                id: tc.id || `call_${Date.now()}`,
+                name: tc.name || '',
+                arguments: argsString,
+                loading: false,
+              };
+              toolCalls.push(toolCall);
+            }
+          } else {
+            // Update existing tool call - only replace if we have non-empty args
+            if (tc.args && Object.keys(tc.args).length > 0) {
+              existing.arguments = typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args);
+            }
           }
         }
       }
@@ -486,6 +614,32 @@ async function handleStreamingResponse(
       usage.cacheWriteTokens = Math.max(usage.cacheWriteTokens, chunkUsage.cacheWriteTokens);
     }
 
+    // Filter out empty/invalid tool calls
+    const validToolCalls = toolCalls.filter((tc) => tc.id && tc.name && tc.arguments);
+
+    logger.info('[AI Handler] Stream completed', {
+      modelKey,
+      chunkCount,
+      contentLength: fullContent.length,
+      toolCallsCount: toolCalls.length,
+      validToolCallsCount: validToolCalls.length,
+      toolCalls: validToolCalls,
+    });
+
+    // Send final tool calls if any
+    if (validToolCalls.length > 0) {
+      const responseMessage: Partial<ApiTypes['/v0/ai/chat.POST.response']> = {
+        role: 'assistant',
+        content: [],
+        contextType: 'userPrompt',
+        toolCalls: validToolCalls,
+        modelKey,
+        isOnPaidPlan,
+        exceededBillingLimit,
+      };
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+    }
+
     response?.end();
 
     return {
@@ -493,7 +647,7 @@ async function handleStreamingResponse(
         role: 'assistant',
         content: [createTextContent(fullContent || ' ')],
         contextType: 'userPrompt',
-        toolCalls,
+        toolCalls: validToolCalls,
         modelKey,
       },
       usage: {
@@ -579,6 +733,14 @@ export const handleAIRequest = async ({
   signal,
 }: HandleAIRequestArgs): Promise<ParsedAIResponse | undefined> => {
   try {
+    logger.info('[AI Handler] Starting AI request', {
+      modelKey,
+      source: args.source,
+      isOnPaidPlan,
+      exceededBillingLimit,
+      messageCount: args.messages.length,
+    });
+
     const chatModel = createChatModel(modelKey, args);
     const messages = convertToLangChainMessages(args);
     const options = getModelOptions(modelKey, args);
@@ -627,7 +789,13 @@ export const handleAIRequest = async ({
       return;
     }
 
-    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
+    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      modelKey,
+      source: args.source,
+    });
 
     Sentry.captureException(error, {
       level: 'error',
@@ -682,8 +850,17 @@ export const handleAIRequest = async ({
       error: true,
     };
 
-    const options = getModelOptions(modelKey, args);
-    if (!options.stream || !response?.headersSent) {
+    // Try to get model options, but handle case where model is invalid
+    let shouldStream = false;
+    try {
+      const options = getModelOptions(modelKey, args);
+      shouldStream = options.stream;
+    } catch (e) {
+      // Model key is invalid, default to non-streaming
+      shouldStream = false;
+    }
+
+    if (!shouldStream || !response?.headersSent) {
       response?.json(responseMessage);
     } else {
       response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
