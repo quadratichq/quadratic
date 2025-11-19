@@ -12,10 +12,9 @@ interface ChangelogVersion {
 
 // Static changelog versions - these are hardcoded as requested
 const CHANGELOG_VERSIONS: ChangelogVersion[] = [
-  { version: '0.21.2', changelogUrl: 'https://github.com/quadratichq/quadratic/releases/tag/v0.21.2' },
-  { version: '0.21.1', changelogUrl: 'https://github.com/quadratichq/quadratic/releases/tag/v0.21.1' },
-  { version: '0.21.0', changelogUrl: 'https://github.com/quadratichq/quadratic/releases/tag/v0.21.0' },
-  { version: '0.20.0', changelogUrl: 'https://github.com/quadratichq/quadratic/releases/tag/v0.20.0' },
+  { version: 'AI usability', changelogUrl: 'https://www.quadratichq.com/changelog/ai-usability' },
+  { version: 'New models', changelogUrl: 'https://www.quadratichq.com/changelog/new-models-and-bug-fixes' },
+  { version: 'Agentic AI', changelogUrl: 'https://www.quadratichq.com/changelog/new-tools-for-agentic-ai' },
 ];
 
 export const ChangelogMenu = () => {
@@ -63,4 +62,3 @@ export const ChangelogMenu = () => {
     </Popover>
   );
 };
-
