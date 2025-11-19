@@ -225,7 +225,7 @@ export const questionsById: Record<
   // Shared
   'connections[]': {
     title: 'What data sources are you interested in connecting to?',
-    subtitle: 'Select any option you’d be interested in.',
+    // subtitle: 'Select all you are interested in.',
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [searchParams] = useSearchParams();
@@ -262,6 +262,12 @@ export const questionsById: Record<
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
+            <p className="flex items-center justify-center pb-4">
+              <Button variant="link" size="lg" asChild>
+                <Link to={`./?${searchParams.toString()}&${props.id}=`}>Skip, i'm not interested in any of these.</Link>
+              </Button>
+            </p>
+
             <div className="grid grid-cols-3 gap-2">
               {optionsSorted.map(({ name, value, Logo }) => {
                 return value === 'OTHER' ? (
@@ -285,12 +291,6 @@ export const questionsById: Record<
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
-
-            <p className="flex items-center justify-center pt-10">
-              <Button variant="link" size="lg" asChild>
-                <Link to={`./?${searchParams.toString()}&${props.id}=`}>I don’t have any data to connect to</Link>
-              </Button>
-            </p>
 
             <QuestionFormFooter>
               <BackButton />
