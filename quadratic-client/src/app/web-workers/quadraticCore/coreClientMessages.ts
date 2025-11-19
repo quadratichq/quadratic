@@ -67,11 +67,22 @@ export interface CoreClientMultiplayerState {
   state: MultiplayerState;
 }
 
-export interface CoreClientCodeRunningState {
+export interface CodeOperation {
+  x: number;
+  y: number;
+  sheet_id: string;
+  language: string;
+}
+
+export interface CodeRunningState {
+  current: CodeOperation | null;
+  pending: CodeOperation[];
+}
+
+export interface CoreClientCodeExecutionState {
   type: 'coreClientCodeRunningState';
   transactionId: string;
-  codeOperations: string; // JSON array of [x, y, sheetId, language, code] tuples
-  // First item is the currently executing cell, rest are pending
+  codeRunningState: CodeRunningState;
 }
 
 export interface ClientCoreInitPython {
@@ -1631,7 +1642,7 @@ export type CoreClientMessage =
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
-  | CoreClientCodeRunningState
+  | CoreClientCodeExecutionState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
   | CoreClientGetJwt

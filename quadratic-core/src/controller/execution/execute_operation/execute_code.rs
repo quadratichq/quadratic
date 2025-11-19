@@ -6,6 +6,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::CodeCellLanguage,
+    wasm_bindings::controller::code::{CodeOperation, CodeRunningState},
 };
 use anyhow::Result;
 impl GridController {
@@ -224,9 +225,7 @@ impl GridController {
                     // Notify client about all code operations (current + pending)
                     self.notify_code_running_state(
                         transaction,
-                        sheet_pos,
-                        language_for_notify,
-                        code_for_notify,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
                     );
                 }
                 CodeCellLanguage::Formula => {
@@ -239,9 +238,7 @@ impl GridController {
                     // This ensures the UI is updated before the connection operation starts executing
                     self.notify_code_running_state(
                         transaction,
-                        sheet_pos,
-                        language_for_notify,
-                        code_for_notify,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
                     );
                     self.run_connection(transaction, sheet_pos, code, kind, id);
                 }
@@ -250,9 +247,7 @@ impl GridController {
                     // Notify client about all code operations (current + pending)
                     self.notify_code_running_state(
                         transaction,
-                        sheet_pos,
-                        language_for_notify,
-                        code_for_notify,
+                        Some((sheet_pos, language_for_notify, code_for_notify)),
                     );
                 }
                 CodeCellLanguage::Import => {
@@ -264,46 +259,50 @@ impl GridController {
     }
 
     /// Notifies the client about all code operations (currently executing + pending)
-    pub(super) fn notify_code_running_state(
+    /// If current is None, all operations are pending. If current is Some, that operation is running.
+    pub(crate) fn notify_code_running_state(
         &self,
         transaction: &PendingTransaction,
-        current_sheet_pos: SheetPos,
-        current_language: CodeCellLanguage,
-        current_code: String,
+        current: Option<(SheetPos, CodeCellLanguage, String)>,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            let mut code_ops = Vec::new();
+            // Store reference to current for later use
+            let current_ref = current.as_ref();
 
-            // Add currently executing cell as first item
-            let current_language_str = match &current_language {
-                CodeCellLanguage::Python => "Python".to_string(),
-                CodeCellLanguage::Javascript => "Javascript".to_string(),
-                CodeCellLanguage::Formula => "Formula".to_string(),
-                CodeCellLanguage::Connection { kind, id } => {
-                    format!("Connection:{}:{}", kind.to_string(), id)
-                }
-                _ => return, // Only send for Python, JavaScript, Formula, and Connection
-            };
-            code_ops.push((
-                current_sheet_pos.x as i32,
-                current_sheet_pos.y as i32,
-                current_sheet_pos.sheet_id.to_string(),
-                current_language_str,
-                current_code,
-            ));
+            // Serialize current operation if present
+            let current_op = current_ref.and_then(|(sheet_pos, language, _code)| {
+                let language_str = match language {
+                    CodeCellLanguage::Python => "Python".to_string(),
+                    CodeCellLanguage::Javascript => "Javascript".to_string(),
+                    CodeCellLanguage::Formula => "Formula".to_string(),
+                    CodeCellLanguage::Connection { kind, id } => {
+                        format!("Connection:{}:{}", kind.to_string(), id)
+                    }
+                    _ => return None, // Only send for Python, JavaScript, Formula, and Connection
+                };
+                Some(CodeOperation {
+                    x: sheet_pos.x as i32,
+                    y: sheet_pos.y as i32,
+                    sheet_id: sheet_pos.sheet_id.to_string(),
+                    language: language_str,
+                })
+            });
 
-            // Add all pending operations in order, skipping the current one
+            // Collect all pending operations
+            let mut pending_ops = Vec::new();
             for pending_op in transaction.operations.iter() {
                 if let Operation::ComputeCode {
                     sheet_pos: pending_sheet_pos,
                 } = pending_op
                 {
-                    // Skip the currently executing operation (already added as first item)
-                    if pending_sheet_pos.sheet_id == current_sheet_pos.sheet_id
-                        && pending_sheet_pos.x == current_sheet_pos.x
-                        && pending_sheet_pos.y == current_sheet_pos.y
-                    {
-                        continue;
+                    // Skip the currently executing operation if present
+                    if let Some((current_sheet_pos, _, _)) = current_ref {
+                        if pending_sheet_pos.sheet_id == current_sheet_pos.sheet_id
+                            && pending_sheet_pos.x == current_sheet_pos.x
+                            && pending_sheet_pos.y == current_sheet_pos.y
+                        {
+                            continue;
+                        }
                     }
 
                     if let Some(pending_sheet) = self.try_sheet(pending_sheet_pos.sheet_id) {
@@ -329,30 +328,42 @@ impl GridController {
                                     }
                                     _ => continue,
                                 };
-                                code_ops.push((
-                                    pending_sheet_pos.x as i32,
-                                    pending_sheet_pos.y as i32,
-                                    pending_sheet_pos.sheet_id.to_string(),
-                                    language_str,
-                                    pending_code_run.code.clone(),
-                                ));
+                                pending_ops.push(CodeOperation {
+                                    x: pending_sheet_pos.x as i32,
+                                    y: pending_sheet_pos.y as i32,
+                                    sheet_id: pending_sheet_pos.sheet_id.to_string(),
+                                    language: language_str,
+                                });
                             }
                         }
                     }
                 }
             }
 
-            let code_ops_json = serde_json::to_string(&code_ops).unwrap_or_default();
-            crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
+            // Only send if there are operations (current or pending)
+            if current_op.is_some() || !pending_ops.is_empty() {
+                let state = CodeRunningState {
+                    current: current_op,
+                    pending: pending_ops,
+                };
+                let code_ops_json = serde_json::to_string(&state).unwrap_or_default();
+                crate::wasm_bindings::js::jsCodeRunningState(
+                    transaction.id.to_string(),
+                    code_ops_json,
+                );
+            }
         }
     }
 
     /// Notifies the client that all code operations are complete (sends empty state)
     pub(crate) fn notify_code_running_state_clear(&self, transaction: &PendingTransaction) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            // Send empty array to clear code running state
-            let code_ops: Vec<(i32, i32, String, String, String)> = vec![];
-            let code_ops_json = serde_json::to_string(&code_ops).unwrap_or_default();
+            // Send empty state to clear code running state
+            let state = CodeRunningState {
+                current: None,
+                pending: Vec::new(),
+            };
+            let code_ops_json = serde_json::to_string(&state).unwrap_or_default();
             crate::wasm_bindings::js::jsCodeRunningState(transaction.id.to_string(), code_ops_json);
         }
     }

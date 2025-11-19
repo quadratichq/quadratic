@@ -42,7 +42,7 @@ impl GridController {
             .iter()
             .any(|op| matches!(op, Operation::ComputeCode { .. }))
         {
-            self.notify_pending_code_operations(transaction);
+            self.notify_code_running_state(transaction, None);
         }
 
         loop {

@@ -13,6 +13,7 @@ import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/mu
 import type {
   ClientCoreGetJwt,
   ClientCoreMessage,
+  CodeRunningState,
   CoreClientMessage,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
@@ -1021,7 +1022,12 @@ class CoreClient {
   };
 
   sendCodeRunningState = (transactionId: string, codeOperations: string) => {
-    this.send({ type: 'coreClientCodeRunningState', transactionId, codeOperations });
+    try {
+      const codeRunningState = JSON.parse(codeOperations) as CodeRunningState;
+      this.send({ type: 'coreClientCodeRunningState', transactionId, codeRunningState });
+    } catch (error) {
+      console.error('Failed to parse code running state:', error);
+    }
   };
 
   sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {

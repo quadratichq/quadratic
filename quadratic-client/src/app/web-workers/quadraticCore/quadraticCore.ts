@@ -50,8 +50,6 @@ import type {
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
-import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -62,8 +60,9 @@ import type {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CodeOperation,
   CoreClientAddSheetResponse,
-  CoreClientCodeRunningState,
+  CoreClientCodeExecutionState,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
   CoreClientDataTableFirstRowAsHeader,
@@ -200,72 +199,27 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientCodeRunningState') {
       try {
-        const data = e.data as CoreClientCodeRunningState;
-        const codeOps: [number, number, string, string, string][] = JSON.parse(data.codeOperations);
+        const data = e.data as CoreClientCodeExecutionState;
+        const state = data.codeRunningState;
 
-        if (codeOps.length === 0) {
-          // No code running - emit empty state
-          events.emit('codeRunningState', undefined, []);
-          return;
-        }
-
-        // Rust always sends the currently executing cell as the first item when
-        // execution has started (via notify_code_running_state), or all
-        // operations as pending when execution hasn't started (via
-        // notify_pending_code_operations).
-        //
-        // When Rust calls notify_code_running_state, it means execution has started,
-        // so the first item is always the current one. We need to check if any worker
-        // is currently executing OR if we can infer that execution has started.
-        //
-        // For connection operations: if notify_code_running_state was called, Rust sends
-        // the connection as the first item (current). If notify_pending_code_operations
-        // was called, all operations are pending. Since both call the same JS function,
-        // we infer execution has started if: (1) Python/JS workers are running, OR
-        // (2) the first operation is a connection (Rust sends connections as current
-        // when notify_code_running_state is called, even if it's the only operation).
-        const [firstOp] = codeOps;
-        const isFirstOpConnection = firstOp && firstOp[3]?.startsWith('Connection:');
-        const hasWorkerExecution = pythonWebWorker.state === 'running' || javascriptWebWorker.state === 'running';
-        // If first op is connection, Rust likely sent it as current via notify_code_running_state
-        // (we moved notify_code_running_state before run_connection, so UI updates before execution starts)
-        const hasConnectionExecution = isFirstOpConnection;
-        const hasCurrentExecution = hasWorkerExecution || hasConnectionExecution;
-
+        // Parse current operation if present
         let current: CodeRun | undefined;
-        let awaitingExecution: CodeRun[];
-
-        if (hasCurrentExecution && codeOps.length > 0) {
-          // First item is currently executing (Rust sent it via notify_code_running_state)
-          // Rest are pending
-          const [currentOp, ...pendingOps] = codeOps;
-          const [x, y, sheetId, , code] = currentOp;
-
+        if (state.current) {
           current = {
             transactionId: data.transactionId,
-            sheetPos: { x, y, sheetId },
-            code,
+            sheetPos: { x: state.current.x, y: state.current.y, sheetId: state.current.sheet_id },
+            code: '', // Code is not needed for display, can be retrieved from grid if needed
           };
-
-          // Include ALL pending operations - Rust sends the full list
-          awaitingExecution = pendingOps.map(([x, y, sheetId, , code]) => ({
-            transactionId: data.transactionId,
-            sheetPos: { x, y, sheetId },
-            code,
-          }));
-        } else {
-          // All operations are pending (Rust sent them via notify_pending_code_operations)
-          // This happens when Rust sends pending operations before execution starts
-          current = undefined;
-          // Include ALL operations - Rust sends the full list
-          awaitingExecution = codeOps.map(([x, y, sheetId, , code]) => ({
-            transactionId: data.transactionId,
-            sheetPos: { x, y, sheetId },
-            code,
-          }));
         }
 
-        // Emit unified code running state with ALL operations from Rust
+        // Parse pending operations
+        const awaitingExecution: CodeRun[] = state.pending.map((op: CodeOperation) => ({
+          transactionId: data.transactionId,
+          sheetPos: { x: op.x, y: op.y, sheetId: op.sheet_id },
+          code: '', // Code is not needed for display, can be retrieved from grid if needed
+        }));
+
+        // Emit unified code running state
         events.emit('codeRunningState', current, awaitingExecution);
       } catch (error) {
         console.error('Failed to parse code running state:', error);
