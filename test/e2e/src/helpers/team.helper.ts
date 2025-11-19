@@ -1,36 +1,34 @@
 import { expect, type Page } from '@playwright/test';
+import { handleOnboarding } from './auth.helpers';
 import { buildUrl } from './buildUrl.helpers';
 
 /**
- * Creates a new team by navigating to the create team URL and filling in the team name.
+ * Creates a new team, walks through the onboarding process, and navigates to the dashboard.
  */
-type CreateNewTeamOptions = {
-  teamName: string;
-};
-export const createNewTeamByURL = async (page: Page, { teamName }: CreateNewTeamOptions) => {
-  // Navigate to the create team url
-  await page.goto(buildUrl('/teams/create'));
+export const createNewTeamAndNavigateToDashboard = async (page: Page) => {
+  // Open dropdown
+  await page.locator(`[data-testid="team-switcher-button"]`).click({ timeout: 60 * 1000 });
 
-  await expect(page.getByRole(`heading`, { name: `Create a team` })).toBeVisible({ timeout: 60 * 1000 });
+  // Click "Create team"
+  await page.locator(`[data-testid="create-team-button"]`).click({ timeout: 60 * 1000 });
 
-  // Fill in the new team name
-  await page.locator(`[role="dialog"] [name="name"]`).fill(teamName);
+  // Confirm team creation
+  const createTeamButtonSubmit = await page.locator(`[data-testid="create-team-button-submit"]`);
+  await expect(createTeamButtonSubmit).toBeVisible({ timeout: 60 * 1000 });
+  await createTeamButtonSubmit.click({ timeout: 60 * 1000 });
 
-  // Click on the "Create team" submit button
-  await page.locator(`[type="submit"]:text("Create team")`).click({ timeout: 60 * 1000 });
+  // Wait to be redirected to the new team onboarding page
+  await page.waitForURL(/onboarding/, { timeout: 60 * 1000 });
 
-  // Assert that the "No files" text is visible on the page
-  await expect(page.locator(`:text("No files")`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page).not.toHaveURL('/create');
+  // Get the team's UUID: `/teams/:uuid/*`
+  const teamUuid = page.url().match(/\/teams\/([^\/]+)\//)?.[1];
 
-  // Assert getting started with your team message
-  await expect(page.getByRole(`heading`, { name: `Getting started with your team` })).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  // Walk through the onboarding process
+  await handleOnboarding(page);
 
-  // Return the URL for the team to verify it's visible
-  await page.waitForLoadState('domcontentloaded');
+  // Navigate to the dashboard
+  await page.goto(buildUrl(`/teams/${teamUuid}`));
 
   const teamUrl = page.url().split('/teams/')[1];
-  return { teamUrl };
+  return { teamUuid: teamUrl };
 };
