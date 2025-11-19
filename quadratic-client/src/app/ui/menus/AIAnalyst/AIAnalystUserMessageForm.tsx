@@ -64,7 +64,7 @@ export const AIAnalystUserMessageForm = memo(
     );
 
     return (
-      <div className="flex h-full flex-col justify-center gap-2">
+      <div className="flex h-full flex-col justify-end gap-2">
         <AIUserMessageForm
           {...props}
           ref={ref}
