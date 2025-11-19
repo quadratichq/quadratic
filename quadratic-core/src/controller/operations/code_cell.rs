@@ -185,16 +185,16 @@ impl GridController {
                                 return ops;
                             }
                             // Also check if the table is an import (imports don't have anchors)
-                            if let Some(data_table) = sheet.data_table_at(&anchor_pos) {
-                                if matches!(data_table.kind, DataTableKind::Import(_)) {
-                                    if cfg!(target_family = "wasm") || cfg!(test) {
-                                        crate::wasm_bindings::js::jsClientMessage(
-                                            "Cannot add code cell to table".to_string(),
-                                            JsSnackbarSeverity::Error.to_string(),
-                                        );
-                                    }
-                                    return ops;
+                            if let Some(data_table) = sheet.data_table_at(&anchor_pos)
+                                && matches!(data_table.kind, DataTableKind::Import(_))
+                            {
+                                if cfg!(target_family = "wasm") || cfg!(test) {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        "Cannot add code cell to table".to_string(),
+                                        JsSnackbarSeverity::Error.to_string(),
+                                    );
                                 }
+                                return ops;
                             }
                         }
                     }
