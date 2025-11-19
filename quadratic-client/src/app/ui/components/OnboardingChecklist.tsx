@@ -2,6 +2,7 @@ import { bonusPromptsAtom, onboardingChecklistAtom } from '@/app/atoms/bonusProm
 import { events } from '@/app/events/events';
 import { usePromptAITutorial } from '@/app/onboarding/usePromptAITutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
+import { OnboardingVideoDialog } from '@/app/ui/components/OnboardingVideoDialog';
 import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
 import { CheckBoxEmptyIcon, CheckBoxIcon, ChecklistIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -17,7 +18,7 @@ export const OnboardingChecklist = () => {
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
 
-  const watchTutorial = useWatchTutorial();
+  const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog } = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
 
   const [demoRunning, setDemoRunning] = useState(false);
@@ -101,91 +102,103 @@ export const OnboardingChecklist = () => {
   const { translateX, translateY, scale, width, height } = currentTransform;
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed bottom-[65px] right-2 overflow-hidden rounded-lg border bg-background shadow-md"
-      style={{
-        transform: showTransform ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
-        transformOrigin: 'center center',
-        width: showTransform && width > 0 ? `${width}px` : 'auto',
-        height: showTransform && height > 0 ? `${height}px` : 'auto',
-        opacity: isInitialized ? 1 : 0,
-        pointerEvents: isInitialized ? 'auto' : 'none',
-        zIndex: 1,
-      }}
-    >
-      {showIconOnly ? (
-        // Show just the icon during the final stage of animation - fill entire container
-        <div className="flex h-full w-full items-center justify-center rounded bg-border text-muted-foreground">
-          <div
-            style={{
-              transform: scale < 1 ? `scale(${1 / scale})` : 'none',
-              transformOrigin: 'center center',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ChecklistIcon />
-          </div>
-        </div>
-      ) : (
-        // Show full content
-        <div className="flex flex-col gap-2 p-4">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <h2 className="text-lg font-semibold">Onboarding checklist</h2>
-            <Button
-              id="onboarding-checklist-close"
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleClose}
-              className="text-muted-foreground hover:text-foreground"
+    <>
+      <div
+        ref={containerRef}
+        className="fixed bottom-[65px] right-2 overflow-hidden rounded-lg border bg-background shadow-md"
+        style={{
+          transform: showTransform ? `translate(${translateX}px, ${translateY}px) scale(${scale})` : 'none',
+          transformOrigin: 'center center',
+          width: showTransform && width > 0 ? `${width}px` : 'auto',
+          height: showTransform && height > 0 ? `${height}px` : 'auto',
+          opacity: isInitialized ? 1 : 0,
+          pointerEvents: isInitialized ? 'auto' : 'none',
+          zIndex: 1,
+        }}
+      >
+        {showIconOnly ? (
+          // Show just the icon during the final stage of animation - fill entire container
+          <div className="flex h-full w-full items-center justify-center rounded bg-border text-muted-foreground">
+            <div
+              style={{
+                transform: scale < 1 ? `scale(${1 / scale})` : 'none',
+                transformOrigin: 'center center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <Cross2Icon />
-            </Button>
+              <ChecklistIcon />
+            </div>
           </div>
-
-          {/* Subtitle */}
-          <div className="flex flex-col gap-0">
-            <Progress value={(completedCount / totalCount) * 100} className="h-2" />
-            <p className="text-xs text-muted-foreground">{Math.round((completedCount / totalCount) * 100)}% complete</p>
-          </div>
-
-          {/* Checklist items */}
-          <div>
-            {bonusPrompts.map((prompt) => (
-              <div
-                id={`onboarding-checklist-item-${prompt.category}`}
-                key={prompt.category}
-                className="flex cursor-pointer items-center rounded-sm py-2 transition-colors hover:bg-muted/50"
-                onClick={() => handleItemClick(prompt.category, prompt.received)}
+        ) : (
+          // Show full content
+          <div className="flex flex-col gap-2 p-4">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <h2 className="text-lg font-semibold">Onboarding checklist</h2>
+              <Button
+                id="onboarding-checklist-close"
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleClose}
+                className="text-muted-foreground hover:text-foreground"
               >
-                {/* Checkmark circle */}
+                <Cross2Icon />
+              </Button>
+            </div>
 
-                {prompt.received ? (
-                  <CheckBoxIcon className="mr-2 text-primary" />
-                ) : (
-                  <CheckBoxEmptyIcon className="mr-2 text-muted-foreground" />
-                )}
+            {/* Subtitle */}
+            <div className="flex flex-col gap-0">
+              <Progress value={(completedCount / totalCount) * 100} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {Math.round((completedCount / totalCount) * 100)}% complete
+              </p>
+            </div>
 
-                {/* Task name */}
-                <span className={cn('flex-1 text-sm', prompt.received && 'text-muted-foreground line-through')}>
-                  {prompt.name}
-                </span>
-
-                {/* Badge */}
-                <Badge
-                  variant={!prompt.received ? 'outline' : 'primary'}
-                  className={cn('ml-4', prompt.received && 'ztext-muted-foreground line-through')}
+            {/* Checklist items */}
+            <div className="-mx-2">
+              {bonusPrompts.map((prompt) => (
+                <div
+                  id={`onboarding-checklist-item-${prompt.category}`}
+                  key={prompt.category}
+                  className="flex cursor-pointer items-center rounded-sm px-2 py-2 transition-colors hover:bg-muted/50"
+                  onClick={() => handleItemClick(prompt.category, prompt.received)}
                 >
-                  +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
-                </Badge>
-              </div>
-            ))}
+                  {/* Checkmark circle */}
+
+                  {prompt.received ? (
+                    <CheckBoxIcon className="mr-2 text-primary" />
+                  ) : (
+                    <CheckBoxEmptyIcon className="mr-2 text-muted-foreground" />
+                  )}
+
+                  {/* Task name */}
+                  <span
+                    className={cn(
+                      'flex-1 text-sm font-medium',
+                      prompt.received && 'text-muted-foreground line-through'
+                    )}
+                  >
+                    {prompt.name}
+                  </span>
+
+                  {/* Badge */}
+                  <Badge
+                    variant={!prompt.received ? 'primary' : 'outline'}
+                    className={cn('ml-4', prompt.received && 'ztext-muted-foreground line-through')}
+                  >
+                    +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+      </div>
+      {showVideoDialog && (
+        <OnboardingVideoDialog open={showVideoDialog} onOpenChange={(open) => !open && closeVideoDialog()} />
       )}
-    </div>
+    </>
   );
 };

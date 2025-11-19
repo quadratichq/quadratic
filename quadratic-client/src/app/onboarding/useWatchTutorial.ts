@@ -6,9 +6,9 @@ import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
 const CATEGORY = 'watch-tutorial';
-type State = undefined | 'menu-open' | 'video-open' | 'complete' | 'cancel';
+type State = undefined | 'menu-open' | 'complete' | 'cancel';
 
-const WATCH_TUTORIAL_ITEM_IDS = ['onboarding-checklist-item-watch-tutorial', 'onboarding-checklist-close'];
+// const WATCH_TUTORIAL_ITEM_IDS = ['onboarding-checklist-item-watch-tutorial', 'onboarding-checklist-close'];
 
 // Opens the Quadratic 101 video and claims the bonus prompt
 export const useWatchTutorial = () => {
@@ -18,20 +18,16 @@ export const useWatchTutorial = () => {
 
   const [state, setState] = useState<State>();
   const [repeat, setRepeat] = useState(false);
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
 
   useEffect(() => {
     switch (state) {
       case 'menu-open':
-        setTutorial({ show: true, unmaskedElements: [...WATCH_TUTORIAL_ITEM_IDS, 'help-menubar-trigger'] });
-        setCallout({ callouts: [{ id: 'help-menubar-trigger', side: 'right', text: 'Open help menu' }] });
-        break;
-      case 'video-open':
-        setTutorial({ show: true, unmaskedElements: [...WATCH_TUTORIAL_ITEM_IDS, 'help-quadratic-101-trigger'] });
-        setCallout({ callouts: [{ id: 'help-quadratic-101-trigger', side: 'right', text: 'Watch video' }] });
+        setShowVideoDialog(true);
         break;
       case 'complete':
         setTutorial({ show: false, unmaskedElements: [] });
-        setCallout({ callouts: [] });
+        setShowVideoDialog(false);
         events.emit('tutorialTrigger', 'complete');
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
@@ -39,7 +35,7 @@ export const useWatchTutorial = () => {
         break;
       case 'cancel':
         setTutorial({ show: false, unmaskedElements: [] });
-        setCallout({ callouts: [] });
+        setShowVideoDialog(false);
         setState(undefined);
         break;
     }
@@ -49,10 +45,6 @@ export const useWatchTutorial = () => {
     const handleTutorialTrigger = (trigger: string) => {
       if (trigger === 'cancel') {
         setState('cancel');
-      } else if (trigger === 'help-menubar-trigger') {
-        setState('video-open');
-      } else if (trigger === 'help-quadratic-101-trigger') {
-        setState('complete');
       }
     };
     events.on('tutorialTrigger', handleTutorialTrigger);
@@ -61,8 +53,14 @@ export const useWatchTutorial = () => {
     };
   }, [setTutorial]);
 
-  return useCallback((repeat: boolean = false) => {
+  const startTutorial = useCallback((repeat: boolean = false) => {
     setRepeat(repeat);
     setState('menu-open');
   }, []);
+
+  const closeVideoDialog = useCallback(() => {
+    setState('cancel');
+  }, []);
+
+  return { startTutorial, showVideoDialog, closeVideoDialog };
 };

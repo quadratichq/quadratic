@@ -176,7 +176,7 @@ export const CalloutUI = () => {
     const borderWidth = `${POINTER_SIZE}px`;
     const transparent = 'transparent';
     // Match pointer color to callout background
-    const color = 'hsl(var(--callout-background))';
+    const color = 'hsl(var(--foreground))';
 
     switch (side) {
       case 'top':
@@ -216,14 +216,12 @@ export const CalloutUI = () => {
           <div
             key={callout.id}
             id={`callout-${callout.id}`}
-            className={`pointer-events-none fixed max-w-[300px] rounded-lg p-2 text-sm font-bold leading-[1.5] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-opacity duration-300 ease-in-out`}
+            className={`pointer-events-none fixed max-w-[300px] rounded-lg bg-foreground py-2 pl-3 pr-4 text-sm font-bold leading-[1.5] text-background shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-opacity duration-300 ease-in-out`}
             style={{
               top: `${position.top}px`,
               left: `${position.left}px`,
               opacity: visibleCallouts.has(callout.id) ? 1 : 0,
               zIndex: Z_INDEX,
-              backgroundColor: 'hsl(var(--callout-background))',
-              color: 'hsl(var(--callout-foreground))',
             }}
           >
             {callout.text}
