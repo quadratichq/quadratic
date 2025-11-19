@@ -318,6 +318,9 @@ export const ApiSchemas = {
    * Examples
    * Given the publicly-accessible URL of a (example) file in production,
    * duplicate it to the user's account.
+   *
+   * TODO: rename to `templates` one day. Used to call these "examples" but now
+   * we call them "templates".
    * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({
@@ -365,7 +368,7 @@ export const ApiSchemas = {
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(
-      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string() })
+      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string(), onboardingComplete: z.boolean() })
     ),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
@@ -408,6 +411,13 @@ export const ApiSchemas = {
         showConnectionDemo: z.boolean().optional(),
       })
         .partial()
+        .optional(),
+      onboardingResponses: z
+        .object({
+          __version: z.number(),
+          __createdAt: z.string().datetime(),
+        })
+        .catchall(z.any())
         .optional(),
     })
     .refine(
@@ -470,6 +480,8 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  // TODO: this is considered deprecated as we moved onboarding to be part of the team
+  // Once that ships, we can remove this from the schema and the API
   '/v0/user.POST.request': z.object({
     onboardingResponses: z
       .object({

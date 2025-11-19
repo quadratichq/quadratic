@@ -258,7 +258,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
-                      expandedDefault={true}
+                      expandedDefault={false}
                       onContentChange={
                         debugAIAnalystChatEditing &&
                         ((newItem) => {

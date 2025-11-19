@@ -13,6 +13,9 @@ model User {
     auth0Id             String            @unique @map("auth0_id")
     email               String            @unique @map("email")
     eduStatus           EduStatus?        @map("edu_status")
+    /**
+     * @deprecated We now store this info on the Team as `onboardingResponses`
+     */
     onboardingResponses Json?             @map("onboarding_responses")
     ownedFiles          File[]            @relation(name: "OwnerRelation")
     createdFiles        File[]            @relation(name: "CreatorRelation")
@@ -124,6 +127,10 @@ model Team {
     TeamInvite   TeamInvite[]
     File         File[]
     Connection   Connection[]
+
+    // Onboarding
+    onboardingComplete  Boolean? @default(false) @map("onboarding_complete") // null = legacy, do not gate, false = new, gate, true = completed
+    onboardingResponses Json?    @map("onboarding_responses")
 
     // Billing
     stripeCustomerId                    String?             @unique @map("stripe_customer_id")

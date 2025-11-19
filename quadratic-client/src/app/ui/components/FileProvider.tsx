@@ -1,5 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { fileManuallyRenamedAtom } from '@/app/atoms/fileNamingAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -34,6 +35,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const [name, setName] = useState<FileContextType['name']>(initialFileData.file.name);
   let isFirstUpdate = useRef(true);
   const setPermissions = useSetRecoilState(editorInteractionStatePermissionsAtom);
+  const setFileManuallyRenamed = useSetRecoilState(fileManuallyRenamedAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
@@ -67,9 +69,11 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
       trackEvent('[Files].renameCurrentFile', { newFilename: newName });
       setName(newName);
       updateRecentFiles(uuid, newName, true);
+      // Mark file as manually renamed to prevent AI auto-naming
+      setFileManuallyRenamed(true);
       syncChanges(() => apiClient.files.update(uuid, { name: newName }));
     },
-    [syncChanges, uuid]
+    [syncChanges, uuid, setFileManuallyRenamed]
   );
 
   // When the file name changes, update document title and sync to server
@@ -83,6 +87,11 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   useEffect(() => {
     setPermissions(initialFileData.userMakingRequest.filePermissions);
   }, [initialFileData.userMakingRequest.filePermissions, setPermissions]);
+
+  // Reset fileManuallyRenamed when file changes
+  useEffect(() => {
+    setFileManuallyRenamed(false);
+  }, [uuid, setFileManuallyRenamed]);
 
   // Keep track of lifecycle so we can run things at a specific time
   useEffect(() => {
