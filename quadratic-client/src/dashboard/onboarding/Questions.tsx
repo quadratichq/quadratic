@@ -48,9 +48,7 @@ export const questionsById: Record<
               <div className="flex flex-col items-center gap-4 px-6 text-center">
                 <DesktopIcon size="2xl" className="text-muted-foreground" />
                 <p className="text-lg text-muted-foreground">Quadratic is view only on mobile.</p>
-                <p className="text-lg text-muted-foreground">
-                  Please switch to a laptop or desktop for the best experience.
-                </p>
+                <p className="text-lg text-muted-foreground">Please switch to a laptop or desktop to get started.</p>
               </div>
               <input type="hidden" name={props.id} value="" />
             </QuestionForm>
