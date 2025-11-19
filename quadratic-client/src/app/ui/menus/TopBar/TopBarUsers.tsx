@@ -1,9 +1,11 @@
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -27,6 +29,7 @@ export const TopBarUsers = () => {
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
   const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
+  const isAILoading = useRecoilValue(aiAnalystLoadingAtom);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const anonymous = useMemo(
@@ -64,7 +67,42 @@ export const TopBarUsers = () => {
     }
   };
 
-  const displayUsers = users.map((user) => {
+  // Create AI user when AI is active
+  const aiUser: MultiplayerUser | null = useMemo(() => {
+    if (!isAILoading) return null;
+
+    const aiIndex = 999; // Use a high index so it appears last
+    const aiColorIndex = 4; // Use violet color (index 4)
+    const aiColorString = MULTIPLAYER_COLORS[aiColorIndex];
+
+    return {
+      session_id: 'ai-analyst',
+      file_id: '',
+      user_id: 'ai-analyst',
+      first_name: 'AI',
+      last_name: 'Analyst',
+      email: 'ai@quadratic.ai',
+      image: '/logo192.png',
+      sheet_id: '',
+      cell_edit: {
+        active: false,
+        text: '',
+        cursor: 0,
+        code_editor: false,
+        inline_code_editor: false,
+      },
+      visible: true,
+      viewport: '{}',
+      code_running: '',
+      color: aiColorIndex,
+      index: aiIndex,
+      colorString: aiColorString,
+      parsedCodeRunning: [],
+    };
+  }, [isAILoading]);
+
+  // Separate AI user from regular users and always put it first
+  const regularUsers = users.map((user) => {
     const isBeingFollowedByYou = follow === user.session_id; // follow
     const isFollowingYou = followers.includes(user.session_id); // follower
     const sessionId = user.session_id;
@@ -80,20 +118,44 @@ export const TopBarUsers = () => {
       viewport,
       isBeingFollowedByYou,
       isFollowingYou,
+      isAI: false,
       handleFollow: () => handleFollow({ isFollowingYou, isBeingFollowedByYou, sessionId, viewport }),
     };
   });
 
+  const aiUserDisplay = aiUser
+    ? {
+        email: aiUser.email,
+        name: displayName(aiUser, false),
+        initials: displayInitials(aiUser),
+        avatarSrc: '/logo192.png',
+        highlightColor: aiUser.colorString,
+        sessionId: aiUser.session_id,
+        viewport: aiUser.viewport,
+        isBeingFollowedByYou: false,
+        isFollowingYou: false,
+        isAI: true,
+        handleFollow: () => {
+          // AI user cannot be followed
+        },
+      }
+    : null;
+
   const visibleAvatarBtns = 4;
-  const truncateUsers = displayUsers.length > visibleAvatarBtns;
-  let visibleUsers = truncateUsers ? displayUsers.slice(0, visibleAvatarBtns - 1) : displayUsers;
-  let extraUsers = truncateUsers ? displayUsers.slice(visibleAvatarBtns - 1) : [];
+  // AI user doesn't count against the visible limit, so we have one less slot for regular users
+  const maxRegularUsersVisible = aiUserDisplay ? visibleAvatarBtns - 1 : visibleAvatarBtns;
+  const truncateUsers = regularUsers.length > maxRegularUsersVisible;
+  let visibleRegularUsers = truncateUsers ? regularUsers.slice(0, maxRegularUsersVisible) : regularUsers;
+  let extraUsers = truncateUsers ? regularUsers.slice(maxRegularUsersVisible) : [];
   let userYouAreFollowing = extraUsers.filter((user) => user.isBeingFollowedByYou);
   // If you follow someone in the dropdown, move them to the visible list of users
   if (userYouAreFollowing.length === 1) {
-    visibleUsers = visibleUsers.concat(userYouAreFollowing);
+    visibleRegularUsers = visibleRegularUsers.concat(userYouAreFollowing);
     extraUsers = extraUsers.filter((user) => !user.isBeingFollowedByYou);
   }
+
+  // Always include AI user last (leftmost position due to flex-row-reverse) if it exists
+  const visibleUsers = aiUserDisplay ? [...visibleRegularUsers, aiUserDisplay] : visibleRegularUsers;
 
   return (
     <>
@@ -133,12 +195,13 @@ export const TopBarUsers = () => {
             viewport,
             isBeingFollowedByYou,
             isFollowingYou,
+            isAI,
             handleFollow,
           }) => (
             <div className={cn('hidden lg:relative lg:flex lg:items-center')} key={sessionId}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={handleFollow} disabled={isFollowingYou}>
+                  <button onClick={handleFollow} disabled={isFollowingYou || isAI}>
                     <UserAvatar
                       email={email}
                       name={name}
@@ -147,6 +210,7 @@ export const TopBarUsers = () => {
                       highlightColor={highlightColor}
                       isBeingFollowedByYou={isBeingFollowedByYou}
                       isFollowingYou={isFollowingYou}
+                      isAI={isAI}
                     />
                   </button>
                 </TooltipTrigger>
@@ -154,9 +218,12 @@ export const TopBarUsers = () => {
                   <TooltipContent>
                     <p>
                       {name}{' '}
-                      <span className="opacity-60">
-                        ({isFollowingYou ? 'following you' : `click to ${follow ? 'unfollow' : 'follow'}`})
-                      </span>
+                      {!isAI && (
+                        <span className="opacity-60">
+                          ({isFollowingYou ? 'following you' : `click to ${follow ? 'unfollow' : 'follow'}`})
+                        </span>
+                      )}
+                      {isAI && <span className="opacity-60">(AI Analyst)</span>}
                     </p>
                   </TooltipContent>
                 </TooltipPortal>
@@ -192,16 +259,20 @@ export const TopBarUsers = () => {
                   viewport,
                   isBeingFollowedByYou,
                   isFollowingYou,
+                  isAI,
                   handleFollow,
                 }) => {
                   return (
                     <DropdownMenuItem
                       key={sessionId}
-                      className={cn('flex w-full items-center gap-3 rounded p-2 text-sm')}
+                      className={cn('flex w-full items-center gap-3 rounded p-2 text-sm', isAI && 'cursor-default')}
                       onClick={() => {
-                        handleFollow();
-                        setIsPopoverOpen(false);
+                        if (!isAI) {
+                          handleFollow();
+                          setIsPopoverOpen(false);
+                        }
                       }}
+                      disabled={isAI}
                     >
                       <UserAvatar
                         email={email}
@@ -211,11 +282,13 @@ export const TopBarUsers = () => {
                         highlightColor={highlightColor}
                         isBeingFollowedByYou={isBeingFollowedByYou}
                         isFollowingYou={isFollowingYou}
+                        isAI={isAI}
                       />
                       <span className="truncate">{name}</span>
                       {isFollowingYou && (
                         <span className="ml-auto flex-shrink-0 text-xs text-muted-foreground">Following you</span>
                       )}
+                      {isAI && <span className="ml-auto flex-shrink-0 text-xs text-muted-foreground">AI Analyst</span>}
                     </DropdownMenuItem>
                   );
                 }
@@ -236,6 +309,7 @@ function UserAvatar({
   highlightColor,
   isBeingFollowedByYou,
   isFollowingYou,
+  isAI,
 }: {
   email: string;
   name: string;
@@ -244,19 +318,31 @@ function UserAvatar({
   highlightColor: string;
   isBeingFollowedByYou: boolean;
   isFollowingYou: boolean;
+  isAI?: boolean;
 }) {
   return (
     <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
-      <Avatar
-        alt={name}
-        src={avatarSrc}
-        className={cn(isBeingFollowedByYou && 'border border-background')}
-        style={{
-          boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
-        }}
-      >
-        {initials}
-      </Avatar>
+      {isAI ? (
+        <div
+          className="flex h-6 w-6 items-center justify-center"
+          style={{
+            boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
+          }}
+        >
+          <img src={avatarSrc} alt={name} className="h-6 w-6 object-contain" />
+        </div>
+      ) : (
+        <Avatar
+          alt={name}
+          src={avatarSrc}
+          className={cn(isBeingFollowedByYou && 'border border-background')}
+          style={{
+            boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
+          }}
+        >
+          {initials}
+        </Avatar>
+      )}
 
       {isFollowingYou || isBeingFollowedByYou ? (
         <svg
