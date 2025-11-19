@@ -5,6 +5,8 @@ import { useShareTutorial } from '@/app/onboarding/useShareTutorial';
 import { useWatchTutorial } from '@/app/onboarding/useWatchTutorial';
 import { OnboardingVideoDialog } from '@/app/ui/components/OnboardingVideoDialog';
 import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { Avatar } from '@/shared/components/Avatar';
 import { CheckBoxEmptyIcon, CheckBoxIcon, ChecklistIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -18,6 +20,7 @@ export const OnboardingChecklist = () => {
   const bonusPrompts = useAtomValue(bonusPromptsAtom);
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
+  const { loggedInUser } = useRootRouteLoaderData();
 
   const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog } = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
@@ -136,26 +139,35 @@ export const OnboardingChecklist = () => {
         ) : (
           // Show full content
           <div className="flex flex-col gap-2 p-4">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <h2 className="text-lg font-semibold">Onboarding checklist</h2>
-              <Button
-                id="onboarding-checklist-close"
-                variant="ghost"
-                size="icon-sm"
-                onClick={handleClose}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Cross2Icon />
-              </Button>
-            </div>
+            {/* Close button */}
+            <Button
+              id="onboarding-checklist-close"
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleClose}
+              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+            >
+              <Cross2Icon />
+            </Button>
 
-            {/* Subtitle */}
-            <div className="flex flex-col gap-0">
-              <Progress value={(completedCount / totalCount) * 100} className="h-2" />
+            {/* Content */}
+            <div className="mt-2 rounded-md p-2 text-center">
+              <div className="relative mx-auto h-16 w-16">
+                <Avatar
+                  size="large"
+                  className="mx-auto !h-16 !w-16"
+                  src={loggedInUser?.picture}
+                  alt={loggedInUser?.name}
+                />
+                <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-background">
+                  <ChecklistIcon className="text-primary" />
+                </div>
+              </div>
+              <h2 className="mt-2 text-lg font-semibold">Your onboarding checklist</h2>
               <p className="text-xs text-muted-foreground">
-                {Math.round((completedCount / totalCount) * 100)}% complete
+                {completedCount} / {totalCount} tasks complete
               </p>
+              <Progress value={(completedCount / totalCount) * 100} className="mx-auto mt-2 h-2 w-3/4" />
             </div>
 
             {/* Checklist items */}
@@ -188,7 +200,7 @@ export const OnboardingChecklist = () => {
                   {/* Badge */}
                   <Badge
                     variant={!prompt.received ? 'primary' : 'outline'}
-                    className={cn('ml-4', prompt.received && 'ztext-muted-foreground line-through')}
+                    className={cn('ml-4', prompt.received && 'text-muted-foreground line-through')}
                   >
                     +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
                   </Badge>
