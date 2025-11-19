@@ -23,13 +23,10 @@ pub fn object_store_error(e: impl ToString) -> SharedError {
 }
 
 /// Create a new object store URL.
-pub fn object_store_url(kind: ObjectStoreKind, bucket_name: Option<&str>) -> Result<Url> {
+pub fn object_store_url(kind: ObjectStoreKind, bucket_or_path: &str) -> Result<Url> {
     let url = match kind {
-        ObjectStoreKind::S3 => format!(
-            "s3://{}",
-            bucket_name.ok_or_else(|| object_store_error("Bucket name is required"))?
-        ),
-        ObjectStoreKind::FileSystem => "file://".to_string(),
+        ObjectStoreKind::S3 => format!("s3://{}", bucket_or_path),
+        ObjectStoreKind::FileSystem => format!("file://{}", bucket_or_path),
     };
 
     Url::parse(&url).map_err(object_store_error)
@@ -67,11 +64,6 @@ pub fn new_filesystem_object_store(path: &str) -> Result<(Arc<dyn ObjectStore>, 
     // Trim trailing slashes to avoid issues with object_store
     let normalized_path = path.trim().trim_end_matches('/');
 
-    println!(
-        "Creating filesystem object store at path: {} (original: {:?})",
-        normalized_path, path
-    );
-
     let file_system = LocalFileSystem::new_with_prefix(normalized_path).map_err(|e| {
         object_store_error(format!(
             "Failed to create LocalFileSystem with path {:?}: {}",
@@ -80,6 +72,7 @@ pub fn new_filesystem_object_store(path: &str) -> Result<(Arc<dyn ObjectStore>, 
     })?;
 
     let arc_file_system = Arc::new(file_system);
+
     Ok((arc_file_system, PathBuf::from(normalized_path)))
 }
 
@@ -131,7 +124,7 @@ mod tests {
     fn test_object_store_url() {
         // s3
         let bucket_name = "test-bucket";
-        let result = object_store_url(ObjectStoreKind::S3, Some(bucket_name));
+        let result = object_store_url(ObjectStoreKind::S3, bucket_name);
         assert!(result.is_ok());
 
         let url = result.unwrap();
@@ -139,11 +132,13 @@ mod tests {
         assert_eq!(url.host_str(), Some(bucket_name));
 
         // missing bucket name
-        let result = object_store_url(ObjectStoreKind::S3, None);
+        let result = object_store_url(ObjectStoreKind::S3, "");
         assert!(result.is_err());
 
         // filesystem
-        let result = object_store_url(ObjectStoreKind::FileSystem, None);
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().to_str().unwrap();
+        let result = object_store_url(ObjectStoreKind::FileSystem, path);
         assert!(result.is_ok());
 
         let url = result.unwrap();

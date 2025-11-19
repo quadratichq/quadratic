@@ -24,11 +24,18 @@ pub enum SyncedConnectionKind {
     GoogleAnalytics,
 }
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum SyncedConnectionTableKind {
+    TimeSeries,
+    SingleTable,
+}
+
 #[async_trait]
 pub trait SyncedConnection: Send + Sync {
     fn name(&self) -> &str;
     fn kind(&self) -> SyncedConnectionKind;
     fn start_date(&self) -> NaiveDate;
+    fn streams(&self) -> Vec<&'static str>;
     async fn to_client(&self) -> Result<Box<dyn SyncedClient>>;
 }
 

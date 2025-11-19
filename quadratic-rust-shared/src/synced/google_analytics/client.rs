@@ -54,6 +54,10 @@ impl SyncedConnection for GoogleAnalyticsConnection {
         NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap()
     }
 
+    fn streams(&self) -> Vec<&'static str> {
+        GoogleAnalyticsClient::streams()
+    }
+
     async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),

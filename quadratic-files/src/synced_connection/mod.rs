@@ -27,10 +27,27 @@ pub(crate) enum SyncKind {
     Full,
 }
 
-/// Check if a connection can be processed.  A connection can be processed if it is not already being processed.
-async fn can_process_connection(state: Arc<State>, connection_id: Uuid) -> Result<bool> {
+/// Check if a connection can be processed.
+/// - If no sync is running: allow
+/// - If FULL is running: block all syncs
+/// - If DAILY is running: block DAILY, allow FULL
+async fn can_process_connection(
+    state: Arc<State>,
+    connection_id: Uuid,
+    sync_kind: SyncKind,
+) -> Result<bool> {
     let status = state.synced_connection_cache.get(connection_id).await;
-    Ok(status.is_none())
+
+    match status {
+        None => Ok(true), // No sync running, allow
+        Some((_, running_sync_kind, _)) => {
+            match (running_sync_kind, sync_kind) {
+                (SyncKind::Full, _) => Ok(false), // FULL running: block everything
+                (SyncKind::Daily, SyncKind::Daily) => Ok(false), // DAILY running: block DAILY
+                (SyncKind::Daily, SyncKind::Full) => Ok(true), // DAILY running: allow FULL
+            }
+        }
+    }
 }
 
 /// Start a connection status.
@@ -40,10 +57,16 @@ async fn start_connection_status(
     synced_connection_id: u64,
     run_id: Uuid,
     kind: SyncedConnectionKind,
+    sync_kind: SyncKind,
 ) -> Result<()> {
     state
         .synced_connection_cache
-        .add(connection_id, kind, SyncedConnectionStatus::Setup)
+        .add(
+            connection_id,
+            kind,
+            sync_kind,
+            SyncedConnectionStatus::Setup,
+        )
         .await;
 
     send_synced_connection_log(
@@ -76,11 +99,12 @@ async fn update_connection_status(
     state: Arc<State>,
     connection_id: Uuid,
     kind: SyncedConnectionKind,
+    sync_kind: SyncKind,
     status: SyncedConnectionStatus,
 ) -> Result<()> {
     state
         .synced_connection_cache
-        .update(connection_id, kind, status.clone())
+        .update(connection_id, kind, sync_kind, status.clone())
         .await;
 
     Ok(())
@@ -158,7 +182,7 @@ mod tests {
     async fn test_can_process_connection() {
         let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
-        let can_process = can_process_connection(state.clone(), connection_id)
+        let can_process = can_process_connection(state.clone(), connection_id, SyncKind::Full)
             .await
             .unwrap();
 
@@ -168,11 +192,14 @@ mod tests {
             state.clone(),
             connection_id,
             SyncedConnectionKind::Mixpanel,
+            SyncKind::Full,
             SyncedConnectionStatus::Setup,
         )
         .await
         .unwrap();
-        let can_process = can_process_connection(state, connection_id).await.unwrap();
+        let can_process = can_process_connection(state, connection_id, SyncKind::Full)
+            .await
+            .unwrap();
 
         assert!(!can_process);
     }
@@ -190,6 +217,7 @@ mod tests {
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
+            SyncKind::Full,
         )
         .await;
 
@@ -198,8 +226,9 @@ mod tests {
         let status = state.synced_connection_cache.get(connection_id).await;
         assert!(status.is_some());
 
-        let (kind, status) = status.unwrap();
+        let (kind, sync_kind, status) = status.unwrap();
         assert!(matches!(kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(sync_kind, SyncKind::Full));
         assert!(matches!(status, SyncedConnectionStatus::Setup));
     }
 
@@ -216,6 +245,7 @@ mod tests {
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
+            SyncKind::Full,
         )
         .await;
 
@@ -225,6 +255,7 @@ mod tests {
             state.clone(),
             connection_id,
             SyncedConnectionKind::Mixpanel,
+            SyncKind::Full,
             SyncedConnectionStatus::ApiRequest,
         )
         .await
@@ -233,8 +264,9 @@ mod tests {
         let cached_status = state.synced_connection_cache.get(connection_id).await;
         assert!(cached_status.is_some());
 
-        let (kind, status) = cached_status.unwrap();
+        let (kind, sync_kind, status) = cached_status.unwrap();
         assert!(matches!(kind, SyncedConnectionKind::Mixpanel));
+        assert!(matches!(sync_kind, SyncKind::Full));
         assert!(matches!(status, SyncedConnectionStatus::ApiRequest));
     }
 
@@ -251,6 +283,7 @@ mod tests {
             synced_connection_id,
             run_id,
             SyncedConnectionKind::Mixpanel,
+            SyncKind::Full,
         )
         .await;
 

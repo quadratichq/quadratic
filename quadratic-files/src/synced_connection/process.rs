@@ -118,7 +118,7 @@ pub(crate) async fn process_synced_connection<
 ) -> Result<()> {
     let connection_name = connection.name();
 
-    if !can_process_connection(state.clone(), connection_id).await? {
+    if !can_process_connection(state.clone(), connection_id, sync_kind.clone()).await? {
         tracing::info!(
             "Skipping {connection_name} connection {}, kind: {:?}",
             connection_id,
@@ -131,9 +131,9 @@ pub(crate) async fn process_synced_connection<
     let today = chrono::Utc::now().date_naive();
     let run_id = Uuid::new_v4();
 
-    let client = connection.to_client().await?;
     let sync_start_date = connection.start_date();
-    let streams = client.streams();
+    let streams = connection.streams();
+    let client = connection.to_client().await?;
 
     tracing::info!(
         "Processing {connection_name} connection {} with {} stream(s): {:?}",
@@ -158,6 +158,7 @@ pub(crate) async fn process_synced_connection<
         synced_connection_id,
         run_id,
         connection.kind(),
+        sync_kind.clone(),
     )
     .await?;
 
@@ -169,7 +170,10 @@ pub(crate) async fn process_synced_connection<
             connection_id
         );
 
-        let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
+        let dates_to_exclude = state
+            .synced_connection_cache
+            .get_dates(connection_id, stream)
+            .await;
         let mut date_ranges = dates_to_sync(
             &object_store,
             connection_id,
@@ -233,23 +237,24 @@ pub(crate) async fn process_synced_connection<
                     state.clone(),
                     connection_id,
                     connection.kind(),
+                    sync_kind.clone(),
                     SyncedConnectionStatus::ApiRequest,
                 )
                 .await?;
 
-                let results = client.process_all(chunk_start, chunk_end).await?;
+                let parquet_data = client.process(stream, chunk_start, chunk_end).await?;
 
                 update_connection_status(
                     state.clone(),
                     connection_id,
                     connection.kind(),
+                    sync_kind.clone(),
                     SyncedConnectionStatus::Upload,
                 )
                 .await?;
 
-                // Get the parquet data for this specific stream
-                if let Some(parquet_data) = results.get(stream) {
-                    let num_files = upload(&object_store, &prefix, parquet_data.clone())
+                let num_files =
+                    upload(&object_store, &prefix, parquet_data)
                         .await
                         .map_err(|e| {
                             FilesError::SyncedConnection(format!(
@@ -260,16 +265,15 @@ pub(crate) async fn process_synced_connection<
                             ))
                         })?;
 
-                    total_files_processed += num_files;
+                total_files_processed += num_files;
 
-                    tracing::info!(
-                        "Completed stream '{}' chunk {}/{}: processed {} files",
-                        stream,
-                        chunk_index + 1,
-                        total_chunks,
-                        num_files
-                    );
-                }
+                tracing::info!(
+                    "Completed stream '{}' chunk {}/{}: processed {} files",
+                    stream,
+                    chunk_index + 1,
+                    total_chunks,
+                    num_files
+                );
 
                 // add the dates to the cache
                 let mut current_date = chunk_start;
@@ -277,7 +281,7 @@ pub(crate) async fn process_synced_connection<
                 while current_date <= chunk_end {
                     state
                         .synced_connection_cache
-                        .add_date(connection_id, current_date)
+                        .add_date(connection_id, stream, current_date)
                         .await;
                     dates_processed.push(current_date);
                     current_date += chrono::Duration::days(1);

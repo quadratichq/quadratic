@@ -313,7 +313,6 @@ pub async fn create_synced_connection_log(
         .await?;
 
     let response = handle_response(response).await?;
-
     let synced_connection_log = response.json::<SyncedConnectionLogResponse>().await?;
 
     Ok(synced_connection_log)

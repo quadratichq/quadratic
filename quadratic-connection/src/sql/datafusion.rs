@@ -52,20 +52,15 @@ pub(crate) async fn test_google_analytics(
 
 /// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
-    state: &State,
+    state: State,
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
     headers: &HeaderMap,
 ) -> Result<ApiConnection<DatafusionConnection>> {
-    let mut datafusion_connection = match cfg!(not(test)) {
-        true => state.settings.datafusion_connection.clone(),
-        false => new_datafusion_test_connection(),
-    };
-
     let api_connection: ApiConnection<EmptyConnection> = match cfg!(not(test)) {
         true => {
-            get_api_connection(state, "", &claims.email, connection_id, team_id, headers).await?
+            get_api_connection(&state, "", &claims.email, connection_id, team_id, headers).await?
         }
         false => ApiConnection {
             uuid: Uuid::new_v4(),
@@ -73,6 +68,11 @@ async fn get_connection(
             r#type: "".into(),
             type_details: EmptyConnection {},
         },
+    };
+
+    let mut datafusion_connection = match cfg!(not(test)) {
+        true => state.settings.datafusion_connection,
+        false => new_datafusion_test_connection(),
     };
 
     let streams = match api_connection.r#type.as_str() {
@@ -106,7 +106,14 @@ pub(crate) async fn query(
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
     let connection_id = sql_query.connection_id;
-    let connection = get_connection(&state, &claims, &connection_id, &team_id, &headers).await?;
+    let connection = get_connection(
+        (**state).clone(),
+        &claims,
+        &connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
 
     query_generic::<DatafusionConnection>(connection.type_details, state, sql_query).await
 }
@@ -120,7 +127,8 @@ pub(crate) async fn schema(
     Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let api_connection = get_connection(&state, &claims, &id, &team_id, &headers).await?;
+    let api_connection =
+        get_connection((**state).clone(), &claims, &id, &team_id, &headers).await?;
 
     schema_generic(api_connection, state, params).await
 }
@@ -161,7 +169,8 @@ mod tests {
         let team_id = Uuid::new_v4();
         let headers = HeaderMap::new();
 
-        let result = get_connection(&state, &claims, &connection_id, &team_id, &headers).await;
+        let result =
+            get_connection(state.clone(), &claims, &connection_id, &team_id, &headers).await;
         println!("result: {:?}", result);
         assert!(result.is_ok());
 

@@ -44,7 +44,7 @@ pub struct DatafusionConnection {
     pub session_context: SessionContext,
     #[serde(skip, default = "default_object_store")]
     #[derivative(Debug = "ignore")]
-    pub object_store: Arc<dyn ObjectStore>,
+    object_store: Arc<dyn ObjectStore>,
     pub object_store_url: Url,
 }
 
@@ -78,12 +78,12 @@ impl DatafusionConnection {
     }
 
     /// Get the parquet path for a table in the object store (format: s3://synced-data/consolidated/{table}/{connection_id}/{table}.parquet)
-    pub fn object_store_parquet_path(&self, url: &Url, table: &str) -> Result<String> {
+    pub fn object_store_parquet_path(&self, table: &str) -> Result<String> {
         let connection_id = self
             .connection_id
             .ok_or_else(|| connect_error("Connection ID is required"))?;
 
-        Ok(format!("{}/{}/{}/", url.as_str(), connection_id, table))
+        Ok(format!("/{}/{}/", connection_id, table))
     }
 }
 
@@ -119,16 +119,14 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
     /// Connect to a datafusion database
     async fn connect(&self) -> Result<SessionContext> {
-        let ctx: SessionContext = SessionContext::new();
+        let ctx = SessionContext::new();
 
         // register the object store in datafusion context
         ctx.register_object_store(&self.object_store_url, self.object_store.clone());
 
         // register the parquet path for every table
         for table in &self.streams {
-            let parquet_path = self.object_store_parquet_path(&self.object_store_url, table)?;
-
-            tracing::info!("parquet_path: {}", parquet_path);
+            let parquet_path = self.object_store_parquet_path(table)?;
 
             ctx.register_parquet(
                 table.to_owned(),
@@ -152,6 +150,12 @@ impl<'a> Connection<'a> for DatafusionConnection {
         let df = client.sql(sql).await.map_err(query_error)?;
         // test helper
         // df.clone().show().await.unwrap();
+        df.clone()
+            .explain(false, false)
+            .unwrap()
+            .show()
+            .await
+            .unwrap();
         let batches = df.collect().await.map_err(query_error)?;
 
         if batches.is_empty() {

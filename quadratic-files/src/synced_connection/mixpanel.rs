@@ -86,7 +86,7 @@ pub(crate) async fn process_mixpanel_connection(
     synced_connection_id: u64,
     sync_kind: SyncKind,
 ) -> Result<()> {
-    if !can_process_connection(state.clone(), connection_id).await? {
+    if !can_process_connection(state.clone(), connection_id, sync_kind.clone()).await? {
         tracing::info!(
             "Skipping Mixpanel connection {}, kind: {:?}",
             connection_id,
@@ -108,7 +108,10 @@ pub(crate) async fn process_mixpanel_connection(
     let client = MixpanelClient::new(api_secret, project_id);
     let sync_start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
         .unwrap_or_else(|_| chrono::Utc::now().date_naive());
-    let dates_to_exclude = state.synced_connection_cache.get_dates(connection_id).await;
+    let dates_to_exclude = state
+        .synced_connection_cache
+        .get_dates(connection_id, "events")
+        .await;
     let mut date_ranges = dates_to_sync(
         &object_store,
         connection_id,
@@ -145,6 +148,7 @@ pub(crate) async fn process_mixpanel_connection(
         synced_connection_id,
         run_id,
         SyncedConnectionKind::Mixpanel,
+        sync_kind.clone(),
     )
     .await?;
 
@@ -175,6 +179,7 @@ pub(crate) async fn process_mixpanel_connection(
                 state.clone(),
                 connection_id,
                 SyncedConnectionKind::Mixpanel,
+                sync_kind.clone(),
                 SyncedConnectionStatus::ApiRequest,
             )
             .await?;
@@ -192,6 +197,7 @@ pub(crate) async fn process_mixpanel_connection(
                 state.clone(),
                 connection_id,
                 SyncedConnectionKind::Mixpanel,
+                sync_kind.clone(),
                 SyncedConnectionStatus::Upload,
             )
             .await?;
@@ -221,7 +227,7 @@ pub(crate) async fn process_mixpanel_connection(
             while current_date <= chunk_end {
                 state
                     .synced_connection_cache
-                    .add_date(connection_id, current_date)
+                    .add_date(connection_id, "events", current_date)
                     .await;
                 dates_processed.push(current_date);
                 current_date += chrono::Duration::days(1);

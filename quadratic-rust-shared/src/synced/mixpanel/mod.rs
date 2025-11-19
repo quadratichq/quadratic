@@ -35,6 +35,10 @@ impl SyncedConnection for MixpanelConnection {
         NaiveDate::parse_from_str(&self.start_date, DATE_FORMAT).unwrap()
     }
 
+    fn streams(&self) -> Vec<&'static str> {
+        MixpanelClient::streams()
+    }
+
     async fn to_client(&self) -> Result<Box<dyn SyncedClient>> {
         let client = MixpanelClient::new(&self.api_secret, &self.project_id);
 

@@ -47,6 +47,7 @@ router.post(
     // Ensure error field is included in response even when undefined
     const response = {
       ...result,
+      syncedDates: req.body.syncedDates,
       error: result.error || undefined,
     };
 
