@@ -130,20 +130,19 @@ pub(crate) async fn process_synced_connection<
     let object_store = state.settings.object_store.clone();
     let today = chrono::Utc::now().date_naive();
     let run_id = Uuid::new_v4();
-
     let sync_start_date = connection.start_date();
     let streams = connection.streams();
     let client = connection.to_client().await?;
+    let start_time = std::time::Instant::now();
+    let mut total_files_processed = 0;
+    let streams_len = streams.len();
 
     tracing::info!(
         "Processing {connection_name} connection {} with {} stream(s): {:?}",
         connection_id,
-        streams.len(),
+        streams_len,
         streams
     );
-
-    let start_time = std::time::Instant::now();
-    let mut total_files_processed = 0;
 
     // add the connection to the cache
     state
@@ -294,7 +293,9 @@ pub(crate) async fn process_synced_connection<
     }
 
     tracing::info!(
-        "Fnished processing streams for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
+        "Fnished processing {} streams with {} files for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
+        streams_len,
+        total_files_processed,
         connection_id,
         sync_kind,
         start_time.elapsed()

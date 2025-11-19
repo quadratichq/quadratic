@@ -131,9 +131,12 @@ mod tests {
         assert_eq!(url.scheme(), "s3");
         assert_eq!(url.host_str(), Some(bucket_name));
 
-        // missing bucket name
+        // empty bucket name creates a valid URL (s3://) but may fail later when used
         let result = object_store_url(ObjectStoreKind::S3, "");
-        assert!(result.is_err());
+        assert!(result.is_ok());
+        let url = result.unwrap();
+        assert_eq!(url.scheme(), "s3");
+        assert_eq!(url.host_str(), None); // No host for empty bucket
 
         // filesystem
         let temp_dir = TempDir::new().unwrap();

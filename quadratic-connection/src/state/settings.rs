@@ -94,7 +94,7 @@ pub fn new_datafusion_connection(
             "Expected AWS_S3_SYNCED_DATA_BUCKET_NAME to have a value".to_string(),
         )
     })?;
-    let object_store_url = object_store_url(kind, &path)?;
+    let object_store_url = object_store_url(kind, path)?;
 
     Ok(DatafusionConnection::new(object_store, object_store_url))
 }

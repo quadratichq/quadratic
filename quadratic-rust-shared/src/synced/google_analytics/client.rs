@@ -303,7 +303,7 @@ impl GoogleAnalyticsClient {
         response: RunReportResponse,
     ) -> Result<HashMap<String, Bytes>> {
         // Handle empty responses
-        if response.rows.as_ref().map_or(true, |r| r.is_empty()) {
+        if response.rows.as_ref().is_none_or(|r| r.is_empty()) {
             return Ok(HashMap::new());
         }
 
@@ -329,17 +329,16 @@ impl GoogleAnalyticsClient {
         let mut rows_by_date: HashMap<String, Vec<_>> = HashMap::new();
 
         for row in rows {
-            if let Some(dim_values) = &row.dimension_values {
-                if let Some(dim_value) = dim_values.get(date_dim_idx) {
-                    if let Some(date_str) = &dim_value.value {
-                        // GA4 returns dates in YYYYMMDD format, convert to YYYY-MM-DD
-                        let formatted_date = Self::format_ga_date(date_str);
-                        rows_by_date
-                            .entry(formatted_date)
-                            .or_default()
-                            .push(row.clone());
-                    }
-                }
+            if let Some(dim_values) = &row.dimension_values
+                && let Some(dim_value) = dim_values.get(date_dim_idx)
+                && let Some(date_str) = &dim_value.value
+            {
+                // GA4 returns dates in YYYYMMDD format, convert to YYYY-MM-DD
+                let formatted_date = Self::format_ga_date(date_str);
+                rows_by_date
+                    .entry(formatted_date)
+                    .or_default()
+                    .push(row.clone());
             }
         }
 
@@ -373,7 +372,6 @@ impl GoogleAnalyticsClient {
 
         let batch_request = BatchRunReportsRequest {
             requests: Some(requests),
-            ..Default::default()
         };
 
         let (_, response) = self
@@ -505,9 +503,9 @@ impl GoogleAnalyticsClient {
 
 // For testing
 use std::sync::{LazyLock, Mutex};
-pub static GOOGLE_ANALYTICS_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+pub static GOOGLE_ANALYTICS_CREDENTIALS: LazyLock<Mutex<Option<String>>> = LazyLock::new(|| {
     let _path = dotenv::from_filename(".env.test").ok();
-    let credentials = std::env::var("GOOGLE_ANALYTICS_CREDENTIALS").unwrap();
+    let credentials = std::env::var("GOOGLE_ANALYTICS_CREDENTIALS").ok();
 
     Mutex::new(credentials)
 });
@@ -517,14 +515,30 @@ pub struct GoogleAnalyticsConfigFromEnv {
     pub property_id: String,
 }
 
-pub async fn new_google_analytics_connection() -> GoogleAnalyticsClient {
-    let credentials = GOOGLE_ANALYTICS_CREDENTIALS.lock().unwrap().to_string();
-    let config = serde_json::from_str::<GoogleAnalyticsConfigFromEnv>(&credentials).unwrap();
+pub async fn new_google_analytics_connection() -> Result<GoogleAnalyticsClient> {
+    let credentials = {
+        let credentials_guard = GOOGLE_ANALYTICS_CREDENTIALS
+            .lock()
+            .map_err(|e| SharedError::Synced(format!("Failed to lock credentials: {}", e)))?;
+
+        credentials_guard
+            .as_ref()
+            .ok_or_else(|| {
+                SharedError::Synced(
+                    "GOOGLE_ANALYTICS_CREDENTIALS environment variable not set. \
+                Please set it in .env.test for testing."
+                        .to_string(),
+                )
+            })?
+            .clone()
+    }; // MutexGuard is dropped here
+
+    let config = serde_json::from_str::<GoogleAnalyticsConfigFromEnv>(&credentials)
+        .map_err(|e| SharedError::Synced(format!("Failed to parse credentials config: {}", e)))?;
+
     let start_date = today().format(DATE_FORMAT).to_string();
 
-    GoogleAnalyticsClient::new(credentials, config.property_id, start_date)
-        .await
-        .unwrap()
+    GoogleAnalyticsClient::new(credentials, config.property_id, start_date).await
 }
 
 #[cfg(test)]
@@ -542,7 +556,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_connection() {
-        let client = new_google_analytics_connection().await;
+        let client = new_google_analytics_connection().await.unwrap();
         let is_connected = client.test_connection().await;
         assert!(is_connected);
     }
@@ -550,7 +564,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_batch_run_reports() {
-        let client = new_google_analytics_connection().await;
+        let client = new_google_analytics_connection().await.unwrap();
         let daily_active_users = REPORTS.get("daily_active_users").unwrap();
         let website_overview = REPORTS.get("website_overview").unwrap();
         let date_ranges = vec![DateRange {
@@ -602,8 +616,9 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_run_report() {
-        let client = new_google_analytics_connection().await;
+        let client = new_google_analytics_connection().await.unwrap();
         let path = "/Users/daviddimaria/Downloads";
         let (store, _) = new_filesystem_object_store(path).unwrap();
         let now = Instant::now();
@@ -627,7 +642,7 @@ mod tests {
             }
 
             // Verify each date group
-            for (_date_key, parquet_bytes) in &parquet_by_date {
+            for parquet_bytes in parquet_by_date.values() {
                 assert!(!parquet_bytes.is_empty());
 
                 // Verify we can read the Parquet data back
@@ -644,8 +659,9 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_response_to_parquet() {
-        let client = new_google_analytics_connection().await;
+        let client = new_google_analytics_connection().await.unwrap();
 
         let parquet_by_date = client
             .run_report(

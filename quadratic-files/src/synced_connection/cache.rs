@@ -11,11 +11,13 @@ use uuid::Uuid;
 
 use crate::synced_connection::{SyncKind, SyncedConnectionStatus};
 
+pub(crate) type SyncedConnectionCacheKind =
+    MemoryCache<Uuid, (SyncedConnectionKind, SyncKind, SyncedConnectionStatus)>;
+pub(crate) type SyncedConnectionDatesCacheKind = MemoryCache<(Uuid, String), Vec<NaiveDate>>;
 #[derive(Debug, Clone)]
 pub(crate) struct SyncedConnectionCache {
-    pub(crate) synced_connection:
-        Arc<Mutex<MemoryCache<Uuid, (SyncedConnectionKind, SyncKind, SyncedConnectionStatus)>>>,
-    pub(crate) synced_connection_dates: Arc<Mutex<MemoryCache<(Uuid, String), Vec<NaiveDate>>>>,
+    pub(crate) synced_connection: Arc<Mutex<SyncedConnectionCacheKind>>,
+    pub(crate) synced_connection_dates: Arc<Mutex<SyncedConnectionDatesCacheKind>>,
 }
 
 impl SyncedConnectionCache {
