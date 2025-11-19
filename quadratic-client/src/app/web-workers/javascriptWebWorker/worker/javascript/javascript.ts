@@ -90,29 +90,20 @@ export class Javascript {
         return this.run(this.codeRunToCoreJavascript(run));
       }
     } else {
-      javascriptClient.sendState('ready', {
-        current: undefined,
-        awaitingExecution: this.awaitingExecution,
-      });
+      javascriptClient.sendState('ready');
     }
   };
 
   run = async (message: CoreJavascriptRun, withLineNumbers = true): Promise<void> => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
-      // Send state update immediately to show queued cells
-      // Note: current run is already tracked by UI from previous state updates
-      javascriptClient.sendState(this.state, {
-        awaitingExecution: this.awaitingExecution,
-      });
+      // Send state update - Rust handles code running state via coreClientCodeRunningState
+      javascriptClient.sendState(this.state);
       return;
     }
 
     this.state = 'running';
-    javascriptClient.sendState('running', {
-      current: this.coreJavascriptToCodeRun(message),
-      awaitingExecution: this.awaitingExecution,
-    });
+    javascriptClient.sendState('running');
 
     this.withLineNumbers = withLineNumbers;
 
