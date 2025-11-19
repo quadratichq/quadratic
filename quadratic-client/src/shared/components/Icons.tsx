@@ -119,6 +119,10 @@ export const BlockIcon: IconComponent = (props) => {
   return <Icon {...props}>block</Icon>;
 };
 
+export const BoxIcon: IconComponent = (props) => {
+  return <Icon {...props}>inventory_2</Icon>;
+};
+
 export const BorderAllIcon: IconComponent = (props) => {
   return <Icon {...props}>border_all</Icon>;
 };

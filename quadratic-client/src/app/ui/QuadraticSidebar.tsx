@@ -10,6 +10,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { ChangelogMenu } from '@/app/ui/components/ChangelogMenu';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
@@ -101,6 +102,7 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
+        <ChangelogMenu />
         <ThemePickerMenu />
       </div>
     </nav>
