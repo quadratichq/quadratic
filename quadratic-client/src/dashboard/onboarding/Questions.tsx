@@ -7,12 +7,13 @@ import {
 } from '@/dashboard/onboarding/Controls';
 import { useOnboardingLoaderData } from '@/routes/teams.$teamUuid.onboarding';
 import { connectionsByType, potentialConnectionsByType } from '@/shared/components/connections/connectionsByType';
-import { ArrowRightIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
+import { ArrowRightIcon, DesktopIcon, EducationIcon, PersonalIcon, WorkIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
@@ -40,6 +41,21 @@ export const questionsById: Record<
   instructions: {
     title: 'Welcome to Quadratic!',
     Form: (props) => {
+      if (isMobile) {
+        return (
+          <Question title={props.title}>
+            <QuestionForm>
+              <div className="flex flex-col items-center gap-4 px-6 text-center">
+                <DesktopIcon size="2xl" className="text-muted-foreground" />
+                <p className="text-lg text-muted-foreground">Quadratic is view only on mobile.</p>
+                <p className="text-lg text-muted-foreground">Please switch to a laptop or desktop to get started.</p>
+              </div>
+              <input type="hidden" name={props.id} value="" />
+            </QuestionForm>
+          </Question>
+        );
+      }
+
       return (
         <Question title={props.title}>
           <QuestionForm>
@@ -209,7 +225,7 @@ export const questionsById: Record<
   // Shared
   'connections[]': {
     title: 'What data sources are you interested in connecting to?',
-    subtitle: 'Select any option you’d be interested in.',
+    // subtitle: 'Select all you are interested in.',
     Form: (props) => {
       const [other, setOther] = useRecoilState(otherCheckboxAtom);
       const [searchParams] = useSearchParams();
@@ -246,6 +262,12 @@ export const questionsById: Record<
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
+            <p className="flex items-center justify-center pb-4">
+              <Button variant="link" size="lg" asChild>
+                <Link to={`./?${searchParams.toString()}&${props.id}=`}>Skip, i'm not interested in any of these.</Link>
+              </Button>
+            </p>
+
             <div className="grid grid-cols-3 gap-2">
               {optionsSorted.map(({ name, value, Logo }) => {
                 return value === 'OTHER' ? (
@@ -269,12 +291,6 @@ export const questionsById: Record<
 
             {/* Allows submission of empty values */}
             <input type="hidden" name={props.id} value="" />
-
-            <p className="flex items-center justify-center pt-10">
-              <Button variant="link" size="lg" asChild>
-                <Link to={`./?${searchParams.toString()}&${props.id}=`}>I don’t have any data to connect to</Link>
-              </Button>
-            </p>
 
             <QuestionFormFooter>
               <BackButton />

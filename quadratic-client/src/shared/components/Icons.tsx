@@ -774,3 +774,7 @@ export const WebBrowserIcon: IconComponent = (props) => {
 export const WarningIcon: IconComponent = (props) => {
   return <Icon {...props}>warning</Icon>;
 };
+
+export const DesktopIcon: IconComponent = (props) => {
+  return <Icon {...props}>computer</Icon>;
+};
