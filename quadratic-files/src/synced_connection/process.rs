@@ -61,7 +61,7 @@ pub(crate) async fn process_synced_connections<
     )
     .await?;
 
-    tracing::info!("Found {} {connection_type} connections", connections.len());
+    tracing::trace!("Found {} {connection_type} connections", connections.len());
 
     // process each connection in a separate thread
     for connection in connections {
@@ -119,7 +119,7 @@ pub(crate) async fn process_synced_connection<
     let connection_name = connection.name();
 
     if !can_process_connection(state.clone(), connection_id, sync_kind.clone()).await? {
-        tracing::info!(
+        tracing::trace!(
             "Skipping {connection_name} connection {}, kind: {:?}",
             connection_id,
             sync_kind
@@ -164,12 +164,6 @@ pub(crate) async fn process_synced_connection<
 
     // Process each stream/table
     for stream in streams {
-        tracing::info!(
-            "Processing stream '{}' for {connection_name} connection {}",
-            stream,
-            connection_id
-        );
-
         let dates_to_exclude = state
             .synced_connection_cache
             .get_dates(connection_id, stream)
@@ -184,7 +178,7 @@ pub(crate) async fn process_synced_connection<
         .await?;
 
         if sync_kind == SyncKind::Full && date_ranges.is_empty() {
-            tracing::info!(
+            tracing::trace!(
                 "Skipping stream '{}' for {connection_name} connection {}, kind: {:?}, no dates to sync",
                 stream,
                 connection_id,
@@ -213,7 +207,7 @@ pub(crate) async fn process_synced_connection<
             let chunks = chunk_date_range(start_date, end_date, CHUNK_SIZE);
             let total_chunks = chunks.len();
 
-            tracing::info!(
+            tracing::trace!(
                 "Exporting {connection_name} stream '{}' from {} to {} in {} {}-day chunks...",
                 stream,
                 start_date,
@@ -224,7 +218,7 @@ pub(crate) async fn process_synced_connection<
 
             // Process each chunk in reverse order (most recent first)
             for (chunk_index, (chunk_start, chunk_end)) in chunks.into_iter().rev().enumerate() {
-                tracing::info!(
+                tracing::trace!(
                     "Processing stream '{}' chunk {}/{}: {} to {}",
                     stream,
                     chunk_index + 1,
@@ -267,7 +261,7 @@ pub(crate) async fn process_synced_connection<
 
                 total_files_processed += num_files;
 
-                tracing::info!(
+                tracing::trace!(
                     "Completed stream '{}' chunk {}/{}: processed {} files",
                     stream,
                     chunk_index + 1,
@@ -300,10 +294,10 @@ pub(crate) async fn process_synced_connection<
     }
 
     tracing::info!(
-        "Processed {} {connection_name} files in {:?} for connection {}",
-        total_files_processed,
-        start_time.elapsed(),
-        connection_id
+        "Fnished processing streams for {connection_name} connection {}, kind: {:?}, elapsed: {:?}",
+        connection_id,
+        sync_kind,
+        start_time.elapsed()
     );
 
     state

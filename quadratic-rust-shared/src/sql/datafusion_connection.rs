@@ -150,12 +150,12 @@ impl<'a> Connection<'a> for DatafusionConnection {
         let df = client.sql(sql).await.map_err(query_error)?;
         // test helper
         // df.clone().show().await.unwrap();
-        df.clone()
-            .explain(false, false)
-            .unwrap()
-            .show()
-            .await
-            .unwrap();
+        // df.clone()
+        //     .explain(false, false)
+        //     .unwrap()
+        //     .show()
+        //     .await
+        //     .unwrap();
         let batches = df.collect().await.map_err(query_error)?;
 
         if batches.is_empty() {
