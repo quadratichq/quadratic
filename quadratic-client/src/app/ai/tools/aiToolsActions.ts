@@ -39,6 +39,7 @@ import {
   xyToA1,
   type JsSelection,
 } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -228,6 +229,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
+        // Move AI cursor to show the range being written
+        try {
+          const endX = x + cell_values[0].length - 1;
+          const endY = y + cell_values.length - 1;
+          const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+          const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+
         await quadraticCore.setCellValues(sheetId, x, y, cell_values, true);
 
         ensureRectVisible(sheetId, { x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
@@ -250,6 +263,14 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       const { x, y } = selection.getCursor();
+
+      // Move AI cursor to the code cell position
+      try {
+        const selectionString = selection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
 
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
@@ -371,6 +392,14 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
+      // Move AI cursor to the code cell position
+      try {
+        const selectionString = selection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -410,6 +439,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the formula cells
+      try {
+        const jsSelection = sheets.stringToSelection(code_cell_position, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const transactionId = await quadraticCore.setFormula({
         sheetId,
         selection: code_cell_position,
@@ -458,6 +497,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
+      // Move AI cursor to show the target destination
+      try {
+        const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
+        const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
+        const targetRange = `${xyToA1(x, y)}:${xyToA1(x + rangeWidth, y + rangeHeight)}`;
+        const jsSelection = sheets.stringToSelection(targetRange, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false, true);
 
       return [createTextContent('Executed move cells tool successfully.')];
@@ -469,6 +520,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, selection } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being deleted
+      try {
+        const jsSelection = sheets.stringToSelection(selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const sourceSelection = sheets.stringToSelection(selection, sheetId).save();
       const response = await quadraticCore.deleteCellValues(sourceSelection, true);
       if (response?.result) {
@@ -493,6 +554,16 @@ export const aiToolsActions: AIToolActionsRecord = {
         : pixiAppSettings.codeEditorState.editorContent;
 
       const codeCell = pixiAppSettings.codeEditorState.codeCell;
+
+      // Move AI cursor to the code cell being updated
+      try {
+        const cellA1 = xyToA1(codeCell.pos.x, codeCell.pos.y);
+        const jsSelection = sheets.stringToSelection(cellA1, codeCell.sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, codeCell.sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
 
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
@@ -560,6 +631,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the starting cell and show selection
+      try {
+        const jsSelection = sheets.stringToSelection(selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.getAICells(selection, sheetId, page);
       if (!response || typeof response === 'string' || ('error' in response && response.error)) {
         const error = typeof response === 'string' ? response : response?.error;
@@ -607,6 +688,16 @@ export const aiToolsActions: AIToolActionsRecord = {
       };
 
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being formatted
+      try {
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.setFormats(sheetId, args.selection, formatUpdates, true);
       if (response?.result) {
         return [
@@ -624,6 +715,16 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.GetTextFormats]: async (args) => {
     try {
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being read
+      try {
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
       if (typeof response === 'string') {
         return [createTextContent(`The selection ${args.selection} has:\n${response}`)];
@@ -964,6 +1065,14 @@ export const aiToolsActions: AIToolActionsRecord = {
         return [createTextContent(`Invalid selection in SetBorders tool call: ${e.message}.`)];
       }
 
+      // Move AI cursor to the cells getting borders
+      try {
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const colorObject = color ? Color(color).rgb().object() : { r: 0, g: 0, b: 0 };
       const style: BorderStyle = {
         line,
@@ -1161,6 +1270,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddMessage]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addMessageToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1169,6 +1289,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddLogicalValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addLogicalValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1177,6 +1308,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddListValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addListValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1185,6 +1327,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddTextValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addTextValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1193,6 +1346,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddNumberValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addNumberValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1201,6 +1365,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddDateTimeValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addDateTimeValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1209,6 +1384,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.RemoveValidations]: async (args) => {
     try {
+      // Move AI cursor to the cells having validation removed
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await removeValidationsToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1248,6 +1434,17 @@ export const aiToolsActions: AIToolActionsRecord = {
         ),
       ];
     }
+
+    // Move AI cursor to the code cell being read
+    try {
+      const cellA1 = xyToA1(codePos.x, codePos.y);
+      const jsSelection = sheets.stringToSelection(cellA1, sheetId);
+      const selectionString = jsSelection.save();
+      aiUser.updateSelection(selectionString, sheetId);
+    } catch (e) {
+      console.warn('Failed to update AI user selection:', e);
+    }
+
     try {
       const text = await codeCellToMarkdown(sheetId, codePos.x, codePos.y);
       return [createTextContent(text)];

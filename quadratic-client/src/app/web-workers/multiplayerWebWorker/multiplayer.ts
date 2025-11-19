@@ -6,12 +6,14 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
 import { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
@@ -24,6 +26,7 @@ import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
 import { VERSION } from '@/shared/constants/appConstants';
+import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { displayName } from '@/shared/utils/userUtil';
 import { v4 as uuid } from 'uuid';
@@ -291,9 +294,112 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerFollow', follow });
   }
 
+  setAIUser(isActive: boolean) {
+    const aiSessionId = 'ai-analyst';
+    // Use primary color from CSS variables
+    const aiColorString = getCSSVariableAsHexColor('primary');
+    const aiColor = getCSSVariableTint('primary');
+
+    if (isActive) {
+      // Add AI user if not already present
+      if (!this.users.has(aiSessionId)) {
+        // Get the top-left cell (0, 0) position in world coordinates
+        const topLeftCell = sheets.sheet.getCellOffsets(0, 0);
+        const x = topLeftCell.x + topLeftCell.width / 2; // Center of the cell
+        const y = topLeftCell.y + topLeftCell.height / 2; // Center of the cell
+
+        const aiUser: MultiplayerUser = {
+          session_id: aiSessionId,
+          file_id: this.fileId || '',
+          user_id: 'ai-analyst',
+          first_name: 'Quadratic',
+          last_name: 'AI',
+          email: 'ai@quadratic.ai',
+          image: '/logo192.png',
+          sheet_id: sheets.current,
+          selection: undefined,
+          parsedSelection: undefined,
+          cell_edit: {
+            active: false,
+            text: '',
+            cursor: 0,
+            code_editor: false,
+            inline_code_editor: false,
+          },
+          x,
+          y,
+          color: aiColor,
+          colorString: aiColorString,
+          visible: true,
+          index: 999,
+          viewport: '{}',
+          code_running: '',
+          parsedCodeRunning: [],
+          follow: undefined,
+        };
+        this.users.set(aiSessionId, aiUser);
+        events.emit('multiplayerUpdate', this.getUsers());
+        events.emit('setDirty', { multiplayerCursor: true });
+        events.emit('multiplayerCursor');
+      }
+    } else {
+      // Remove AI user if present
+      if (this.users.has(aiSessionId)) {
+        // Stop any ongoing animation
+        aiUser.stopAnimation();
+
+        this.users.delete(aiSessionId);
+        events.emit('multiplayerUpdate', this.getUsers());
+        events.emit('setDirty', { multiplayerCursor: true });
+        events.emit('multiplayerCursor');
+      }
+    }
+  }
+
+  updateAIUserPosition(x?: number, y?: number, visible?: boolean, sheetId?: string) {
+    const aiSessionId = 'ai-analyst';
+    const player = this.users.get(aiSessionId);
+    if (!player) return;
+
+    let needsUpdate = false;
+
+    if (x !== undefined && y !== undefined) {
+      player.x = x;
+      player.y = y;
+      needsUpdate = true;
+    }
+
+    if (visible !== undefined) {
+      player.visible = visible;
+      needsUpdate = true;
+    }
+
+    if (sheetId !== undefined) {
+      const sheetChanged = player.sheet_id !== sheetId;
+      player.sheet_id = sheetId;
+      if (sheetChanged) {
+        events.emit('multiplayerChangeSheet');
+      }
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      if (player.sheet_id === sheets.current) {
+        events.emit('setDirty', { multiplayerCursor: true });
+        events.emit('multiplayerCursor');
+      }
+      events.emit('multiplayerUpdate', this.getUsers());
+    }
+  }
+
   private clearAllUsers() {
     if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] Clearing all users.');
+    // Preserve AI user if it exists (it's managed client-side)
+    const aiUser = this.users.get('ai-analyst');
     this.users.clear();
+    if (aiUser) {
+      this.users.set('ai-analyst', aiUser);
+    }
     events.emit('setDirty', { multiplayerCursor: true });
     events.emit('multiplayerUpdate', this.getUsers());
     events.emit('multiplayerChangeSheet');
@@ -467,12 +573,15 @@ export class Multiplayer {
       }
     }
     remaining.forEach((sessionId) => {
+      // Don't remove the AI user - it's managed client-side
+      if (sessionId === 'ai-analyst') return;
       if (debugFlag('debugShowMultiplayer'))
         console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
       this.users.delete(sessionId);
     });
     events.emit('multiplayerUpdate', this.getUsers());
     events.emit('setDirty', { multiplayerCursor: true });
+    events.emit('multiplayerCursor');
 
     await this.checkVersion(room.version);
   }

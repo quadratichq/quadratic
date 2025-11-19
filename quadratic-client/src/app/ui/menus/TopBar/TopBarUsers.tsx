@@ -5,7 +5,6 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -19,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -31,6 +30,11 @@ export const TopBarUsers = () => {
   const { users, followers } = useMultiplayerUsers();
   const isAILoading = useRecoilValue(aiAnalystLoadingAtom);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  // Sync AI user with multiplayer system
+  useEffect(() => {
+    multiplayer.setAIUser(isAILoading);
+  }, [isAILoading]);
 
   const anonymous = useMemo(
     () =>
@@ -67,71 +71,44 @@ export const TopBarUsers = () => {
     }
   };
 
-  // Create AI user when AI is active
-  const aiUser: MultiplayerUser | null = useMemo(() => {
-    if (!isAILoading) return null;
+  // Get AI user from multiplayer system (it's added there when isAILoading is true)
+  const aiUserFromMultiplayer = useMemo(() => {
+    return users.find((user) => user.session_id === 'ai-analyst') || null;
+  }, [users]);
 
-    const aiIndex = 999; // Use a high index so it appears last
-    const aiColorIndex = 4; // Use violet color (index 4)
-    const aiColorString = MULTIPLAYER_COLORS[aiColorIndex];
+  // Separate AI user from regular users - filter it out since it's handled separately
+  const regularUsers = users
+    .filter((user) => user.session_id !== 'ai-analyst')
+    .map((user) => {
+      const isBeingFollowedByYou = follow === user.session_id; // follow
+      const isFollowingYou = followers.includes(user.session_id); // follower
+      const sessionId = user.session_id;
+      const viewport = user.viewport;
 
-    return {
-      session_id: 'ai-analyst',
-      file_id: '',
-      user_id: 'ai-analyst',
-      first_name: 'AI',
-      last_name: 'Analyst',
-      email: 'ai@quadratic.ai',
-      image: '/logo192.png',
-      sheet_id: '',
-      cell_edit: {
-        active: false,
-        text: '',
-        cursor: 0,
-        code_editor: false,
-        inline_code_editor: false,
-      },
-      visible: true,
-      viewport: '{}',
-      code_running: '',
-      color: aiColorIndex,
-      index: aiIndex,
-      colorString: aiColorString,
-      parsedCodeRunning: [],
-    };
-  }, [isAILoading]);
+      return {
+        email: user.email,
+        name: displayName(user, false),
+        initials: displayInitials(user),
+        avatarSrc: user.image,
+        highlightColor: user.colorString,
+        sessionId,
+        viewport,
+        isBeingFollowedByYou,
+        isFollowingYou,
+        isAI: false,
+        handleFollow: () => handleFollow({ isFollowingYou, isBeingFollowedByYou, sessionId, viewport }),
+      };
+    });
 
-  // Separate AI user from regular users and always put it first
-  const regularUsers = users.map((user) => {
-    const isBeingFollowedByYou = follow === user.session_id; // follow
-    const isFollowingYou = followers.includes(user.session_id); // follower
-    const sessionId = user.session_id;
-    const viewport = user.viewport;
-
-    return {
-      email: user.email,
-      name: displayName(user, false),
-      initials: displayInitials(user),
-      avatarSrc: user.image,
-      highlightColor: user.colorString,
-      sessionId,
-      viewport,
-      isBeingFollowedByYou,
-      isFollowingYou,
-      isAI: false,
-      handleFollow: () => handleFollow({ isFollowingYou, isBeingFollowedByYou, sessionId, viewport }),
-    };
-  });
-
-  const aiUserDisplay = aiUser
+  const aiUserDisplay = aiUserFromMultiplayer
     ? {
-        email: aiUser.email,
-        name: displayName(aiUser, false),
-        initials: displayInitials(aiUser),
+        email: aiUserFromMultiplayer.email,
+        name: displayName(aiUserFromMultiplayer, false),
+        initials: displayInitials(aiUserFromMultiplayer),
         avatarSrc: '/logo192.png',
-        highlightColor: aiUser.colorString,
-        sessionId: aiUser.session_id,
-        viewport: aiUser.viewport,
+        highlightColor: aiUserFromMultiplayer.colorString,
+        sessionId: aiUserFromMultiplayer.session_id,
+        viewport: aiUserFromMultiplayer.viewport,
         isBeingFollowedByYou: false,
         isFollowingYou: false,
         isAI: true,
