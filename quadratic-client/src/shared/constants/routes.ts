@@ -46,7 +46,7 @@ export const ROUTES = {
 
     return url.pathname + url.search;
   },
-  CREATE_FILE_EXAMPLE: ({
+  CREATE_FILE_FROM_TEMPLATE: ({
     teamUuid,
     publicFileUrlInProduction,
     additionalParams,
@@ -55,11 +55,10 @@ export const ROUTES = {
     publicFileUrlInProduction: string;
     additionalParams: string;
   }) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private${
+    `/teams/${teamUuid}/files/create?template=${publicFileUrlInProduction}&private${
       additionalParams ? `&${additionalParams}` : ''
     }`,
   TEAMS: `/teams`,
-  TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
   TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
@@ -70,14 +69,13 @@ export const ROUTES = {
     `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
+  TEAM_ONBOARDING: (teamUuid: string) => `/teams/${teamUuid}/onboarding`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
-  EXAMPLES: '/examples',
+  TEMPLATES: '/templates',
   LABS: '/labs',
-  ONBOARDING_QUESTIONNAIRE: '/onboarding',
-  ONBOARDING_VIDEO: '/onboarding-video',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
