@@ -551,7 +551,7 @@ pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
-    js_call("jsCodeRunningState", format!("code_running_state"));
+    js_call("jsCodeRunningState", "code_running_state".to_string());
 }
 
 #[cfg(test)]

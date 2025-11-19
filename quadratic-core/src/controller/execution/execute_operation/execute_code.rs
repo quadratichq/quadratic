@@ -276,7 +276,7 @@ impl GridController {
                     CodeCellLanguage::Javascript => "Javascript".to_string(),
                     CodeCellLanguage::Formula => "Formula".to_string(),
                     CodeCellLanguage::Connection { kind, id } => {
-                        format!("Connection:{}:{}", kind.to_string(), id)
+                        format!("Connection:{}:{}", kind, id)
                     }
                     _ => return None, // Only send for Python, JavaScript, Formula, and Connection
                 };
@@ -296,13 +296,12 @@ impl GridController {
                 } = pending_op
                 {
                     // Skip the currently executing operation if present
-                    if let Some((current_sheet_pos, _, _)) = current_ref {
-                        if pending_sheet_pos.sheet_id == current_sheet_pos.sheet_id
-                            && pending_sheet_pos.x == current_sheet_pos.x
-                            && pending_sheet_pos.y == current_sheet_pos.y
-                        {
-                            continue;
-                        }
+                    if let Some((current_sheet_pos, _, _)) = current_ref
+                        && pending_sheet_pos.sheet_id == current_sheet_pos.sheet_id
+                        && pending_sheet_pos.x == current_sheet_pos.x
+                        && pending_sheet_pos.y == current_sheet_pos.y
+                    {
+                        continue;
                     }
 
                     if let Some(pending_sheet) = self.try_sheet(pending_sheet_pos.sheet_id) {
@@ -310,31 +309,31 @@ impl GridController {
                             x: pending_sheet_pos.x,
                             y: pending_sheet_pos.y,
                         };
-                        if let Some(pending_code_run) = pending_sheet.code_run_at(&pos) {
-                            if matches!(
+                        if let Some(pending_code_run) = pending_sheet.code_run_at(&pos)
+                            && matches!(
                                 pending_code_run.language,
                                 CodeCellLanguage::Python
                                     | CodeCellLanguage::Javascript
                                     | CodeCellLanguage::Formula
                                     | CodeCellLanguage::Connection { .. }
-                            ) {
-                                // Serialize language as string for JSON
-                                let language_str = match &pending_code_run.language {
-                                    CodeCellLanguage::Python => "Python".to_string(),
-                                    CodeCellLanguage::Javascript => "Javascript".to_string(),
-                                    CodeCellLanguage::Formula => "Formula".to_string(),
-                                    CodeCellLanguage::Connection { kind, id } => {
-                                        format!("Connection:{}:{}", kind.to_string(), id)
-                                    }
-                                    _ => continue,
-                                };
-                                pending_ops.push(CodeOperation {
-                                    x: pending_sheet_pos.x as i32,
-                                    y: pending_sheet_pos.y as i32,
-                                    sheet_id: pending_sheet_pos.sheet_id.to_string(),
-                                    language: language_str,
-                                });
-                            }
+                            )
+                        {
+                            // Serialize language as string for JSON
+                            let language_str = match &pending_code_run.language {
+                                CodeCellLanguage::Python => "Python".to_string(),
+                                CodeCellLanguage::Javascript => "Javascript".to_string(),
+                                CodeCellLanguage::Formula => "Formula".to_string(),
+                                CodeCellLanguage::Connection { kind, id } => {
+                                    format!("Connection:{}:{}", kind, id)
+                                }
+                                _ => continue,
+                            };
+                            pending_ops.push(CodeOperation {
+                                x: pending_sheet_pos.x as i32,
+                                y: pending_sheet_pos.y as i32,
+                                sheet_id: pending_sheet_pos.sheet_id.to_string(),
+                                language: language_str,
+                            });
                         }
                     }
                 }

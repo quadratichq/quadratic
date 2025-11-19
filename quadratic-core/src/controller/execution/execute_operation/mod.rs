@@ -234,17 +234,16 @@ impl GridController {
     /// newly added operations are included in the notification
     pub(super) fn notify_next_operation_if_code(&self, transaction: &PendingTransaction) {
         // Peek at the front of the queue without removing it
-        if let Some(Operation::ComputeCode { sheet_pos }) = transaction.operations.front() {
-            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                if let Some(code_run) = sheet.code_run_at(&(*sheet_pos).into()) {
-                    let language = code_run.language.clone();
-                    let code = code_run.code.clone();
-                    // Notify about this operation as current, with all remaining operations as pending
-                    // Call notify_code_running_state which is defined in execute_code module
-                    // Since both are impl GridController blocks, we can call it directly on self
-                    self.notify_code_running_state(transaction, Some((*sheet_pos, language, code)));
-                }
-            }
+        if let Some(Operation::ComputeCode { sheet_pos }) = transaction.operations.front()
+            && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
+            && let Some(code_run) = sheet.code_run_at(&(*sheet_pos).into())
+        {
+            let language = code_run.language.clone();
+            let code = code_run.code.clone();
+            // Notify about this operation as current, with all remaining operations as pending
+            // Call notify_code_running_state which is defined in execute_code module
+            // Since both are impl GridController blocks, we can call it directly on self
+            self.notify_code_running_state(transaction, Some((*sheet_pos, language, code)));
         }
     }
 }
