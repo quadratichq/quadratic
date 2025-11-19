@@ -751,6 +751,10 @@ export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
 };
 
+export const TeamIcon: IconComponent = (props) => {
+  return <Icon {...props}>groups</Icon>;
+};
+
 export const GenericLanguageIcon: IconComponent = (props) => {
   return <Icon {...props}>subject</Icon>;
 };
@@ -777,4 +781,8 @@ export const WebBrowserIcon: IconComponent = (props) => {
 
 export const WarningIcon: IconComponent = (props) => {
   return <Icon {...props}>warning</Icon>;
+};
+
+export const DesktopIcon: IconComponent = (props) => {
+  return <Icon {...props}>computer</Icon>;
 };

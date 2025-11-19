@@ -1,7 +1,8 @@
-import { requireAuth } from '@/auth/auth';
-import { getPrompt } from '@/dashboard/onboarding/getPrompt';
-import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
+import { authClient } from '@/auth/auth';
+import { OnboardingResponseV2Schema } from '@/dashboard/onboarding/onboardingSchema';
+import { Questions, questionsById } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException, flush } from '@sentry/react';
@@ -22,30 +23,37 @@ import { RecoilRoot } from 'recoil';
  * That is derived as a count of 2 questions: [use, role]
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireAuth(request);
-
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
 
   const currentUse = searchParams.get('use');
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
-  const currentQuestionStackIds = currentUse ? questionStackIdsByUse[currentUse] : [];
+  const currentQuestionStackIds = Object.entries(questionsById)
+    .filter(([id, { excludeForUse }]) => {
+      if (excludeForUse) {
+        return !excludeForUse.includes(currentUse ?? '');
+      }
+      return true;
+    })
+    .map(([id]) => id);
   const currentIndex = uniqueKeys.size;
-  const currentId = currentUse
+  const currentId = currentQuestionStackIds[currentIndex]
     ? currentQuestionStackIds[currentIndex]
-      ? currentQuestionStackIds[currentIndex]
-      : currentQuestionStackIds[currentIndex - 1]
-    : 'use';
-  const currentQuestionNumber = currentQuestionStackIds.indexOf(currentId);
-  const currentQuestionsTotal = currentQuestionStackIds.length - 1;
+    : Object.keys(questionsById)[0];
+
+  const currentQuestionNumber = currentIndex + 1;
+  const currentQuestionsTotal = currentQuestionStackIds.length;
+
+  const user = await authClient.user();
 
   const out = {
     currentId,
-    currentIndex: currentIndex,
+    currentIndex,
     currentQuestionStackIds,
     currentQuestionNumber,
     currentQuestionsTotal,
     isLastQuestion: currentQuestionStackIds.indexOf(currentId) === currentQuestionStackIds.length - 1,
+    username: user?.name || '',
   };
   return out;
 };
@@ -72,7 +80,9 @@ export const Component = () => {
  * All question answers are stored in the URL search params.
  * When submitted, we parse them into JSON and save them to the server.
  */
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const teamUuid = params.teamUuid || '';
+
   // Pull the form data from the URL
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
@@ -84,8 +94,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   for (const [key, value] of searchParams.entries()) {
     const isArrayKey = key.endsWith('[]');
     if (isArrayKey) {
-      if (!formJson[key]) formJson[key] = [];
       if (value !== '') {
+        if (!formJson[key]) formJson[key] = [];
         (formJson[key] as string[]).push(value);
       }
     } else if (value !== '') {
@@ -94,21 +104,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Parse and validate the payload against the v1 schema
-  const result = OnboardingResponseV1Schema.safeParse({
-    __version: 1,
+  const result = OnboardingResponseV2Schema.safeParse({
+    __version: 2,
     __createdAt: new Date().toISOString(),
     ...formJson,
   });
 
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];
-  let prompt = '';
+
   if (result.success) {
-    prompt = getPrompt(result.data);
     try {
-      const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
-      const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
-      const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
+      // If there are invites, yeet them off to the server.
+      const inviteEmails = result.data['team-invites[]'] ? result.data['team-invites[]'].map((email) => email) : [];
+      const uploadInvitesPromise = inviteEmails.map((email) =>
+        apiClient.teams.invites.create(teamUuid, { email, role: 'EDITOR' })
+      );
+      // Upload the responses and the team name
+      const uploadResponsesPromise = apiClient.teams.update(teamUuid, {
+        onboardingResponses: result.data,
+        name: result.data['team-name'],
+      });
+      // Also send everything to Mixpanel
+      const uploadResponsesToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
+      const [serverResult, mixpanelResult] = await Promise.allSettled([
+        uploadResponsesPromise,
+        uploadResponsesToMixpanelPromise,
+        uploadInvitesPromise,
+      ]);
 
       if (serverResult.status === 'rejected') {
         captureException({
@@ -157,6 +180,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // Hard-redirect user to a new file
-  return redirectDocument(`/files/create?private=false${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''}`);
+  // When done, we'll send people to a new _team_ file
+  const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
+
+  // If the user wants to upgrade to Pro, we'll send them to Stripe first
+  if (result.data && result.data['team-plan'] === 'pro') {
+    // Send them back to the last step of onboarding if they cancel
+    const redirectUrlCancel = new URL(window.location.href);
+    redirectUrlCancel.searchParams.delete('team-plan');
+    const { url } = await apiClient.teams.billing.getCheckoutSessionUrl(
+      teamUuid,
+      window.location.origin + newFilePath,
+      redirectUrlCancel.href
+    );
+    return redirectDocument(url);
+  }
+
+  // Otherwise, hard-redirect user to a new file
+  return redirectDocument(newFilePath);
 };
