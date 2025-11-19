@@ -48,7 +48,7 @@ export const AIUserMessageFormOptimizeButton = memo(
           onClick={handleOptimize}
         >
           {isOptimizing ? <SpinnerIcon /> : <EnhancePromptIcon />}
-          <span className="hidden text-xs @[450px]:inline">Enhance Prompt</span>
+          <span className="hidden text-xs @[450px]:inline">Enhance prompt</span>
         </Button>
       </TooltipPopover>
     );
