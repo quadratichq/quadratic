@@ -23,15 +23,15 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   }
 
   // Are they trying to duplicate an example file? Do that.
-  const example = url.searchParams.get('example');
-  url.searchParams.delete('example');
-  if (example) {
+  const template = url.searchParams.get('template');
+  url.searchParams.delete('template');
+  if (template) {
     url.searchParams.delete('private');
     const additionalParams = url.searchParams.toString();
     return redirect(
-      ROUTES.CREATE_FILE_EXAMPLE({
+      ROUTES.CREATE_FILE_FROM_TEMPLATE({
         teamUuid: activeTeamUuid,
-        publicFileUrlInProduction: example,
+        publicFileUrlInProduction: template,
         additionalParams,
       })
     );
