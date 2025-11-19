@@ -1,9 +1,25 @@
 import * as fontKit from 'fontkit';
+import { readFileSync } from 'fs';
 import fse from 'fs-extra';
 import generateBMFont from 'msdf-bmfont-xml';
-import path from 'path';
+import path, { dirname } from 'path';
 import { exit } from 'process';
+import { fileURLToPath } from 'url';
 import xml2js from 'xml2js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Read font version from appConstants.ts
+const appConstantsPath = path.join(__dirname, '..', 'src', 'shared', 'constants', 'appConstants.ts');
+const appConstantsContent = readFileSync(appConstantsPath, 'utf-8');
+// Extract FONT_VERSION constant value using regex
+const fontVersionMatch = appConstantsContent.match(/export const FONT_VERSION = ['"]([^'"]+)['"]/);
+if (!fontVersionMatch) {
+  console.error('Could not find FONT_VERSION in appConstants.ts');
+  exit(1);
+}
+const VERSION = fontVersionMatch[1];
 
 const fontDirectory = path.join('public', 'fonts');
 const fontFamilies = ['opensans'];
@@ -42,6 +58,33 @@ async function writeFontFiles(textures, fontData) {
     }
   }
   try {
+    // Add version to PNG file references in the font XML
+    const { parseString, Builder } = xml2js;
+    await new Promise((resolve) => {
+      parseString(fontData.data, (err, fontXml) => {
+        if (err) {
+          console.error(`Warning: Could not parse font XML: ${err.message}`);
+          // Write without versioning if parsing fails
+          resolve();
+          return;
+        }
+
+        // Add version query parameter to all page file references
+        if (fontXml.font && fontXml.font.pages && fontXml.font.pages[0] && fontXml.font.pages[0].page) {
+          fontXml.font.pages[0].page.forEach((page) => {
+            if (page.$ && page.$.file && !page.$.file.includes('?v=')) {
+              page.$.file = `${page.$.file}?v=${VERSION}`;
+            }
+          });
+        }
+
+        // Rebuild XML with versioned PNG references
+        const builder = new Builder({ headless: true });
+        fontData.data = builder.buildObject(fontXml);
+        resolve();
+      });
+    });
+
     console.log(`Writing ${fontData.filename}...`);
     await fse.writeFile(fontData.filename, fontData.data);
   } catch (e) {
@@ -83,7 +126,7 @@ function convertFont(family, font) {
 }
 
 async function mergeNotoSansGlyphs(notoSansFontFile, missingChars, existingTextures, existingFontData) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     generateBMFont(
       notoSansFontFile,
       { 'smart-size': true, charset: missingChars },
@@ -145,13 +188,22 @@ async function mergeNotoSansGlyphs(notoSansFontFile, missingChars, existingTextu
 
             // Update page elements with new filenames and IDs
             // Extract the base name from the first existing page file (e.g., "OpenSans" from "OpenSans.0.png")
+            // Remove version query parameter if present
             const firstExistingPageFile = existingFont.font.pages[0].page[0].$.file || '';
-            const basePageName = firstExistingPageFile.replace(/\.\d+\.png$/i, '').replace(/\.png$/i, '');
+            let basePageName = firstExistingPageFile.split('?')[0]; // Remove query params
+            basePageName = basePageName.replace(/\.\d+\.png$/i, '').replace(/\.png$/i, '');
+
+            // Add version to existing page files if not already present
+            existingFont.font.pages[0].page.forEach((page) => {
+              if (page.$ && page.$.file && !page.$.file.includes('?v=')) {
+                page.$.file = `${page.$.file}?v=${VERSION}`;
+              }
+            });
 
             const updatedNotoPages = notoFont.font.pages[0].page.map((page, idx) => {
               const newPageNumber = pageOffset + idx;
               // Create new filename matching the Open Sans naming convention
-              const newFileName = `${basePageName}.${newPageNumber}.png`;
+              const newFileName = `${basePageName}.${newPageNumber}.png?v=${VERSION}`;
               return {
                 $: {
                   ...page.$,
