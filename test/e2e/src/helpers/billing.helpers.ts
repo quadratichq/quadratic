@@ -154,6 +154,7 @@ export const upgradeToProPlan = async (page: Page) => {
     // Assert that the bank account textbox is not visible
     // This ensures that we will be filling in credit card details and not bank details (debit)
     await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 60 * 1000 });
+    
     // Fill the card number in the input for 'Card Information'
     await page.getByRole(`textbox`, { name: `Card number` }).fill(SWIPE_TEST_CARD.number);
 
