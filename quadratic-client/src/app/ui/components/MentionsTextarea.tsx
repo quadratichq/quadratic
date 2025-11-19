@@ -315,12 +315,12 @@ const MentionsTextarea = memo(
                             )}
                           >
                             <div className="flex min-w-0 flex-row items-center gap-1">
-                              <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
+                              <div className="flex min-w-0 flex-[3] flex-row items-center gap-2">
                                 {mention.icon && mention.icon}
                                 <span className="truncate font-medium">{mention.label}</span>
                               </div>
                               {mention.description && (
-                                <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
+                                <span className="min-w-0 flex-[1] truncate text-right text-xs text-muted-foreground">
                                   {mention.description}
                                 </span>
                               )}
