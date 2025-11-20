@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { buildUrl } from './buildUrl.helpers';
 
 /**
- * Creates a new team by navigating to the create team URL and filling in the team name.
+ * Creates a new team, walks through the onboarding process, and navigates to the dashboard.
  */
 type CreateNewTeamOptions = {
   teamName: string;
