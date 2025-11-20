@@ -164,7 +164,6 @@ export type PotentialConnectionType =
   | 'NETSUITE'
   | 'QUICKBOOKS'
   | 'SHOPIFY'
-  | 'GOOGLE_ANALYTICS'
   | 'OTHER';
 export const potentialConnectionsByType: Record<
   PotentialConnectionType,
@@ -240,10 +239,6 @@ export const potentialConnectionsByType: Record<
   SHOPIFY: {
     name: 'Shopify',
     Logo: ShopifyLogo,
-  },
-  GOOGLE_ANALYTICS: {
-    name: 'Google Analytics',
-    Logo: GoogleAnalyticsLogo,
   },
   OTHER: {
     name: 'Other',
