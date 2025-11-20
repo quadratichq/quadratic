@@ -33,8 +33,7 @@ export const SetSQLCodeCellValue = memo(
               ? (sheets.getSheetByName(partialJson.sheet_name)?.id ?? sheets.current)
               : sheets.current;
             const selection = sheets.stringToSelection(partialJson.code_cell_position, sheetId);
-            const { x, y } = selection.getCursor();
-            
+
             // Move AI cursor to the code cell position as soon as we know the location
             try {
               const selectionString = selection.save();
@@ -42,7 +41,7 @@ export const SetSQLCodeCellValue = memo(
             } catch (e) {
               console.warn('[SetSQLCodeCellValue] Failed to update AI cursor while loading:', e);
             }
-            
+
             selection.free();
           } catch (e) {
             console.warn('[SetSQLCodeCellValue] Failed to parse position while loading:', e);

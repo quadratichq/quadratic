@@ -287,7 +287,7 @@ export function useSubmitAIAnalystPrompt() {
         try {
           // Initialize AI user in multiplayer system
           multiplayer.setAIUser(true);
-          
+
           // Update AI cursor to A1
           const sheetId = sheets.current;
           const jsSelection = sheets.stringToSelection('A1', sheetId);

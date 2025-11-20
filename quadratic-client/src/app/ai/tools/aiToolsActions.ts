@@ -211,7 +211,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         const endX = x + table_data[0].length - 1;
         const endY = y + table_data.length; // Don't subtract 1 to include the full table
         ensureRectVisible(sheetId, { x, y }, { x: endX, y: endY });
-        
+
         // Update AI cursor to show selection over entire table
         try {
           const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
@@ -303,7 +303,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
-          
+
           // Update AI cursor to show selection over entire output area
           if (width > 1 || height > 1) {
             try {
@@ -450,7 +450,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
-          
+
           // Update AI cursor to show selection over entire output area
           if (width > 1 || height > 1) {
             try {
