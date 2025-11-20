@@ -85,9 +85,9 @@ export class GridHeadings extends Container {
     this.dirty = true;
   };
 
-  // Check if the grid canvas has focus
+  // Check if the grid canvas has focus (or user is editing a cell)
   private isGridFocused(): boolean {
-    return document.activeElement === pixiApp.canvas;
+    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
   }
 
   private setDirty = (dirty: DirtyObject) => {

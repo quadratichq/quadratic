@@ -73,9 +73,9 @@ export class Cursor extends Container {
     }
   };
 
-  // Check if the grid canvas has focus
+  // Check if the grid canvas has focus (or user is editing a cell)
   private isGridFocused(): boolean {
-    return document.activeElement === pixiApp.canvas;
+    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
   }
 
   // redraws corners if there is an error
