@@ -196,14 +196,7 @@ export const handleOnboarding = async (page: Page) => {
   // Wait for the onboarding page to be ready
   await page.waitForLoadState('networkidle', { timeout: 5 * 1000 }).catch(() => {});
 
-  // const onboardingQuestionTitle = page.locator('[data-testid="onboarding-question-title"]');
-  const onboardingBtnGetStarted = page.locator('[data-testid="onboarding-btn-get-started"]');
-
-  // Get started
-  await onboardingBtnGetStarted.click({ timeout: 60 * 1000 });
-  await onboardingBtnGetStarted.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-
-  // Personal use
+  // Personal use (first step after removing instructions)
   const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
   await onboardingBtnUsePersonal.click({ timeout: 60 * 1000 });
   await onboardingBtnUsePersonal.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });

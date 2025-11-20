@@ -38,12 +38,20 @@ export const questionsById: Record<
   string,
   QuestionProps & { Form: (props: QuestionProps & { id: string }) => React.ReactNode }
 > = {
-  instructions: {
-    title: 'Welcome to Quadratic!',
+  use: {
+    title: 'How will you use Quadratic?',
+    subtitle: 'Your answers help personalize your experience.',
     Form: (props) => {
+      const [searchParams] = useSearchParams();
+      const options = [
+        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
+        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
+        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
+      ];
+
       if (isMobile) {
         return (
-          <Question title={props.title}>
+          <Question title="Welcome to Quadratic!">
             <QuestionForm>
               <div className="flex flex-col items-center gap-4 px-6 text-center">
                 <DesktopIcon size="2xl" className="text-muted-foreground" />
@@ -55,48 +63,6 @@ export const questionsById: Record<
           </Question>
         );
       }
-
-      return (
-        <Question title={props.title}>
-          <QuestionForm>
-            <div className="relative -mt-4 w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
-              <img
-                src={`/onboarding/1.png`}
-                alt={`Quadratic onboarding screenshot`}
-                className={cn(
-                  'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
-                  'scale-100 border-border shadow-sm'
-                )}
-                width="635"
-                height="380"
-              />
-            </div>
-            <input type="hidden" name={props.id} value="" />
-            <QuestionFormFooter>
-              <Button
-                type="submit"
-                size="lg"
-                data-testid="onboarding-btn-get-started"
-                onClick={() => trackNextQuestionClick(props.id)}
-              >
-                Next
-              </Button>
-            </QuestionFormFooter>
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-  use: {
-    title: 'How will you use Quadratic?',
-    subtitle: 'Your answers help personalize your experience.',
-    Form: (props) => {
-      const [searchParams] = useSearchParams();
-      const options = [
-        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
-        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
-        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
-      ];
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
@@ -120,9 +86,6 @@ export const questionsById: Record<
                 </Link>
               ))}
             </div>
-            <QuestionFormFooter>
-              <BackButton />
-            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
