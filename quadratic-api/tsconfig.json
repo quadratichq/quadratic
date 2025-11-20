@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "commonjs",
+    "module": "node16",
     "esModuleInterop": true,
     "target": "es2020",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",
     "sourceMap": true,
     "outDir": "dist",
     "skipLibCheck": true,
