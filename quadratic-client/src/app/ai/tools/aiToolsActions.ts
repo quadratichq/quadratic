@@ -808,6 +808,17 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { sheet_name, insert_before_sheet_name } = args;
       const response = await quadraticCore.addSheet(sheet_name, insert_before_sheet_name ?? undefined, true);
       if (response?.result) {
+        // Move AI cursor to the new sheet at A1
+        try {
+          const newSheetId = sheets.getSheetByName(sheet_name)?.id;
+          if (newSheetId) {
+            const jsSelection = sheets.stringToSelection('A1', newSheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, newSheetId);
+          }
+        } catch (e) {
+          console.warn('Failed to update AI cursor to new sheet:', e);
+        }
         return [createTextContent('Create new sheet tool executed successfully.')];
       } else {
         return [createTextContent(`Error executing add sheet tool: ${response?.error}`)];
@@ -825,6 +836,17 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const response = await quadraticCore.duplicateSheet(sheetId, name_of_new_sheet, true);
       if (response?.result) {
+        // Move AI cursor to the duplicated sheet at A1
+        try {
+          const newSheetId = sheets.getSheetByName(name_of_new_sheet)?.id;
+          if (newSheetId) {
+            const jsSelection = sheets.stringToSelection('A1', newSheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, newSheetId);
+          }
+        } catch (e) {
+          console.warn('Failed to update AI cursor to duplicated sheet:', e);
+        }
         return [createTextContent('Duplicate sheet tool executed successfully.')];
       } else {
         return [createTextContent(`Error executing duplicate sheet tool: ${response?.error}`)];
