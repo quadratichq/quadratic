@@ -235,6 +235,7 @@ jobs:
 
       - name: Run npm test:ci in quadratic-api
         run: |
+          export NODE_OPTIONS="--max-old-space-size=4096"
           npm install
           cd quadratic-api
           npm run docker:test:ci
