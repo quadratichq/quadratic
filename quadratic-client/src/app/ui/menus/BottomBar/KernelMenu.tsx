@@ -25,7 +25,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -86,13 +85,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
   }, [pythonCodeRunning, javascriptCodeRunning, connectionCodeRunning]);
 
   return (
-    <DropdownMenu
-      onOpenChange={(open) => {
-        if (open) {
-          trackEvent('[QuadraticSidebar].button', { label: 'Kernel' });
-        }
-      }}
-    >
+    <DropdownMenu>
       <SidebarTooltip label="Kernel">
         <DropdownMenuTrigger asChild>
           <SidebarToggle>
