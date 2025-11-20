@@ -53,6 +53,23 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
       >
         New file
       </Button>
+      <Button
+        variant="default"
+        asChild
+        className="gap-2"
+        onClick={async (e) => {
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          if (hasReachedLimit) {
+            e.preventDefault();
+            showUpgradeDialog('fileLimitReached');
+            return;
+          }
+        }}
+      >
+        <Link to={ROUTES.FILES_CREATE_AI}>
+          Start with <span className="rounded-md bg-background/20 px-2 py-0.5 text-xs font-semibold">AI</span>
+        </Link>
+      </Button>
       <input
         ref={fileInputRef}
         type="file"
