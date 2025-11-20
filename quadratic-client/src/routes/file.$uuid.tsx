@@ -18,6 +18,7 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useSubscriptionVerification } from '@/shared/hooks/useSubscriptionVerification';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
@@ -51,12 +52,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   };
 
   // load file information from the api
-  const loadFileFromApi = async (uuid: string, isVersionHistoryPreview: boolean): Promise<FileData | Response> => {
+  const loadFileFromApi = async (
+    uuid: string,
+    isVersionHistoryPreview: boolean,
+    shouldUpdateBilling?: boolean
+  ): Promise<FileData | Response> => {
     // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
     let data: ApiTypes['/v0/files/:uuid.GET.response'];
     try {
       startupTimer.start('file.loader.files.get');
-      data = await apiClient.files.get(uuid);
+      data = await apiClient.files.get(uuid, { shouldUpdateBilling });
       startupTimer.end('file.loader.files.get');
     } catch (error: any) {
       const isLoggedIn = await authClient.isAuthenticated();
@@ -88,8 +93,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
   const isVersionHistoryPreview = checkpointId !== null;
 
+  // Check if we're checking for subscription updates (for verification)
+  const shouldUpdateBilling = searchParams.get('subscription') === 'created';
+
   const [data] = await Promise.all([
-    loadFileFromApi(uuid, isVersionHistoryPreview),
+    loadFileFromApi(uuid, isVersionHistoryPreview, shouldUpdateBilling),
     loadPixi(),
     initWorkers(),
     initializeCoreClient(),
@@ -198,6 +206,9 @@ export const Component = memo(() => {
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
+
+  // Verify billing status after checkout (only runs if billing data is available)
+  useSubscriptionVerification(isOnPaidPlan, teamUuid);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed

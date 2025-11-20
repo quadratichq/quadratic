@@ -35,8 +35,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Update billing info
-  await updateBilling(team);
+  // Update billing info to ensure we have the latest subscription status
+  // Only do this if we're checking for a subscription update after checkout
+  if (req.query.subscription === 'created') {
+    await updateBilling(team);
+  }
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({

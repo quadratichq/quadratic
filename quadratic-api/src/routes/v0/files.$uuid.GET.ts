@@ -8,6 +8,7 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
+import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
@@ -42,6 +43,12 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
 
   if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
+  }
+
+  // Update billing info to ensure we have the latest subscription status
+  // Only do this if we're checking for a subscription update after checkout
+  if (req.query.subscription === 'created') {
+    await updateBilling(ownerTeam);
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);

@@ -9,6 +9,7 @@ import { UpgradeDialogWithPeriodicReminder } from '@/shared/components/UpgradeDi
 import { ROUTE_LOADER_IDS, ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
+import { useSubscriptionVerification } from '@/shared/hooks/useSubscriptionVerification';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -79,6 +80,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
     throw redirect(ROUTES.TEAM(teamUuid) + url.search);
   }
 
+  // Check if we're checking for subscription updates (for verification)
+  const shouldUpdateBilling = url.searchParams.get('subscription') === 'created';
+
   /**
    * Get the initial data
    */
@@ -91,7 +95,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
-    .get(teamUuid)
+    .get(teamUuid, { shouldUpdateBilling })
     .then((data) => {
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
@@ -167,6 +171,9 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+
+  // Verify billing status after checkout (only runs if billing data is available)
+  useSubscriptionVerification(billingStatus === 'ACTIVE', activeTeamUuid);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {

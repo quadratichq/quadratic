@@ -14,12 +14,14 @@ export const apiClient = {
     list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
-    async get(uuid: string) {
-      const response = await fetchFromApi(
-        `/v0/teams/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/teams/:uuid.GET.response']
-      );
+    async get(uuid: string, options?: { shouldUpdateBilling?: boolean }) {
+      const queryParams = new URLSearchParams();
+      if (options?.shouldUpdateBilling) {
+        queryParams.set('subscription', 'created');
+      }
+      const queryString = queryParams.toString();
+      const url = `/v0/teams/${uuid}${queryString ? `?${queryString}` : ''}`;
+      const response = await fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
 
       if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);
@@ -47,6 +49,16 @@ export const apiClient = {
           `/v0/teams/${uuid}/billing/portal/session`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
+        );
+      },
+      verifyCheckoutSession(uuid: string, sessionId: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/checkout/verify`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ sessionId }),
+          },
+          ApiSchemas['/v0/teams/:uuid/billing/checkout/verify.POST.response']
         );
       },
       getCheckoutSessionUrl(uuid: string, redirectUrlSuccess: string, redirectUrlCancel: string) {
@@ -134,12 +146,14 @@ export const apiClient = {
       const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
-    async get(uuid: string) {
-      let response = await fetchFromApi(
-        `/v0/files/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/files/:uuid.GET.response']
-      );
+    async get(uuid: string, options?: { shouldUpdateBilling?: boolean }) {
+      const queryParams = new URLSearchParams();
+      if (options?.shouldUpdateBilling) {
+        queryParams.set('subscription', 'created');
+      }
+      const queryString = queryParams.toString();
+      const url = `/v0/files/${uuid}${queryString ? `?${queryString}` : ''}`;
+      let response = await fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
 
       if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);

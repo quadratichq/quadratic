@@ -29,6 +29,29 @@ import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
+// Mock Stripe
+jest.mock('../../stripe/stripe', () => {
+  const actual = jest.requireActual('../../stripe/stripe');
+  // Create mock inside factory to avoid temporal dead zone
+  const customersRetrieve = jest.fn();
+
+  // Store reference globally so tests can access it
+  (global as any).__mockCustomersRetrieve = customersRetrieve;
+
+  return {
+    ...actual,
+    stripe: {
+      customers: {
+        retrieve: customersRetrieve,
+      },
+    },
+  };
+});
+
+// Access mock from global scope - it's set up in the jest.mock factory above
+// The factory runs early due to hoisting, so this will be available when tests run
+const mockCustomersRetrieve = (global as any).__mockCustomersRetrieve as jest.Mock;
+
 beforeEach(async () => {
   const user_1 = await createUser({ auth0Id: 'team_1_owner' });
   const user_2 = await createUser({ auth0Id: 'team_1_editor' });
@@ -58,6 +81,9 @@ beforeEach(async () => {
       creatorUserId: user_1.id,
     },
   });
+
+  // Reset mocks
+  mockCustomersRetrieve.mockClear();
 });
 
 afterEach(clearDb);
@@ -115,6 +141,56 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.connections).toHaveLength(1);
           expect(res.body.connections[0].isDemo).toBe(true);
         });
+    });
+
+    it('does not call updateBilling when subscription query param is not present', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200);
+
+      expect(mockCustomersRetrieve).not.toHaveBeenCalled();
+    });
+
+    it('calls updateBilling when subscription=created query param is present', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      // Update team to have a Stripe customer ID
+      await dbClient.team.update({
+        where: { id: team.id },
+        data: { stripeCustomerId: 'cus_test123' },
+      });
+
+      // Mock Stripe customer response with no subscriptions
+      mockCustomersRetrieve.mockResolvedValue({
+        id: 'cus_test123',
+        deleted: false,
+        subscriptions: {
+          data: [],
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?subscription=created`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200);
+
+      expect(mockCustomersRetrieve).toHaveBeenCalledTimes(1);
+      expect(mockCustomersRetrieve).toHaveBeenCalledWith('cus_test123', {
+        expand: ['subscriptions'],
+      });
+    });
+
+    it('does not call updateBilling when team has no Stripe customer', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?subscription=created`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200);
+
+      // updateBilling should return early if no stripeCustomerId, so Stripe shouldn't be called
+      expect(mockCustomersRetrieve).not.toHaveBeenCalled();
     });
   });
 });
