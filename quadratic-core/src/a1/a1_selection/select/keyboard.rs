@@ -69,16 +69,16 @@ fn keyboard_select_sheet_range(
     end_pos: &mut Pos,
     merge_cells: &MergeCells,
 ) {
-    // Step 1: Check if end_pos is currently inside a merged cell
+    // Check if end_pos is currently inside a merged cell
     if let Some(merged_rect) = merge_cells.get_merge_cell_rect(*end_pos) {
         // Exit the merged cell in the direction of movement
         *end_pos = exit_merged_cell(merged_rect, *end_pos, delta_x, delta_y);
     } else {
-        // Step 2: Calculate target position by applying delta
+        // Calculate target position by applying delta
         let mut target_pos = Pos::new((end_pos.x + delta_x).max(1), (end_pos.y + delta_y).max(1));
 
-        // Step 2.5: If end_pos is aligned with merged cells in the selection,
-        // skip past them in the direction of movement
+        // If end_pos is aligned with merged cells in the selection, skip past
+        // them in the direction of movement
         let current_rect = range.to_rect_unbounded();
         let merged_cells_in_selection = merge_cells.get_merge_cells(current_rect);
 
@@ -119,7 +119,7 @@ fn keyboard_select_sheet_range(
         target_pos.x = furthest_skip_x;
         target_pos.y = furthest_skip_y;
 
-        // Step 3: Check if target is inside a merged cell
+        // Check if target is inside a merged cell
         if let Some(merged_rect) = merge_cells.get_merge_cell_rect(target_pos) {
             // Determine if we're growing (moving away from anchor) or shrinking (moving toward anchor)
             let is_growing = is_growing_from_anchor(anchor, *end_pos, delta_x, delta_y);
@@ -137,7 +137,7 @@ fn keyboard_select_sheet_range(
         }
     }
 
-    // Final step: Update range based on anchor and end_pos, including all partial merged cells
+    // Update range based on anchor and end_pos, including all partial merged cells
     // Start with anchor:end_pos range
     range.start = CellRefRangeEnd::new_relative_xy(anchor.x, anchor.y);
     range.end = CellRefRangeEnd::new_relative_xy(end_pos.x, end_pos.y);
