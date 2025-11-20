@@ -62,7 +62,7 @@ impl Settings {
         let storage_dir = if is_file_storage {
             expected(&config.storage_dir, "STORAGE_DIR")
         } else {
-            expected(&config.STORAGE_DIR_SYNCED_DATA, "STORAGE_DIR_SYNCED_DATA")
+            expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR")
         };
 
         let storage = match config.storage_type {
