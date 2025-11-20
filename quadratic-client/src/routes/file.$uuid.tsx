@@ -18,7 +18,10 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
-import { useSubscriptionVerification } from '@/shared/hooks/useSubscriptionVerification';
+import {
+  usePendingSubscriptionConfirmation,
+  useSubscriptionVerification,
+} from '@/shared/hooks/useSubscriptionVerification';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
@@ -203,9 +206,13 @@ export const Component = memo(() => {
   );
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const pendingConfirmation = usePendingSubscriptionConfirmation();
   useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-  }, [isOnPaidPlan, setIsOnPaidPlan]);
+    // Don't overwrite optimistic paid status if we're waiting for server confirmation
+    if (!pendingConfirmation) {
+      setIsOnPaidPlan(isOnPaidPlan);
+    }
+  }, [isOnPaidPlan, setIsOnPaidPlan, pendingConfirmation]);
 
   // Verify billing status after checkout (only runs if billing data is available)
   useSubscriptionVerification(isOnPaidPlan, teamUuid);

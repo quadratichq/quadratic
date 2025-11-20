@@ -31,6 +31,7 @@ import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { usePendingSubscriptionConfirmation } from '@/shared/hooks/useSubscriptionVerification';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -92,9 +93,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const pendingConfirmation = usePendingSubscriptionConfirmation();
   useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-  }, [isOnPaidPlan, setIsOnPaidPlan]);
+    // Don't overwrite optimistic paid status if we're waiting for server confirmation
+    if (!pendingConfirmation) {
+      setIsOnPaidPlan(isOnPaidPlan);
+    }
+  }, [isOnPaidPlan, setIsOnPaidPlan, pendingConfirmation]);
 
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
