@@ -126,16 +126,10 @@ function createLangChainTools(
  * Converts internal message format to LangChain BaseMessage format
  * Handles text, images, PDFs, tool calls, and tool results
  */
-function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
+function convertToLangChainMessages(args: AIRequestHelperArgs, modelKey: AIModelKey): BaseMessage[] {
   const messages: BaseMessage[] = [];
   const { systemMessages, promptMessages } = getSystemPromptMessages(args.messages);
-
-  logger.info('[AI Handler] Converting messages', {
-    totalMessages: args.messages.length,
-    systemMessagesCount: systemMessages.length,
-    promptMessagesCount: promptMessages.length,
-    messageTypes: args.messages.map((m) => ({ role: m.role, contextType: m.contextType })),
-  });
+  const options = getModelOptions(modelKey, args);
 
   // Merge all system messages into one (required by Anthropic)
   const mergedSystemMessage = systemMessages
@@ -160,11 +154,17 @@ function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
         .map((c) => (isContentText(c) && 'text' in c ? c.text.trim() : ''))
         .join('\n');
 
+      // Extract thinking blocks
+      const thinkingBlocks = msg.content.filter(
+        (c) => c.type === 'anthropic_thinking' || c.type === 'anthropic_redacted_thinking'
+      );
+
       // For Anthropic, we need to format content as blocks when there are tool calls
       if (msg.toolCalls && msg.toolCalls.length > 0) {
+        // Use Anthropic's native content block format (LangChain's tool_calls conversion is buggy)
         const contentBlocks: any[] = [];
 
-        // Add text content if present
+        // Add text content first
         if (textContent) {
           contentBlocks.push({
             type: 'text',
@@ -237,11 +237,6 @@ function convertToLangChainMessages(args: AIRequestHelperArgs): BaseMessage[] {
     }
   }
 
-  logger.info('[AI Handler] Final LangChain messages', {
-    messageCount: messages.length,
-    messageTypes: messages.map((m) => m._getType()),
-  });
-
   return messages;
 }
 
@@ -253,25 +248,27 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
   const modelName = getModelFromModelKey(modelKey);
   const tools = createLangChainTools(args.source, options.aiModelMode, args.toolName);
 
-  logger.info('[AI Handler] Creating chat model', {
-    modelKey,
-    modelName,
-    source: args.source,
-    hasOpenAIKey: !!OPENAI_API_KEY,
-    hasAzureKey: !!AZURE_OPENAI_API_KEY,
-    hasAzureEndpoint: !!AZURE_OPENAI_ENDPOINT,
-    azureEndpoint: AZURE_OPENAI_ENDPOINT ? AZURE_OPENAI_ENDPOINT.substring(0, 30) + '...' : 'not set',
-  });
-
   // Anthropic models
   if (isAnthropicModel(modelKey)) {
-    const model = new ChatAnthropic({
+    const modelConfig: any = {
       model: modelName,
       temperature: options.temperature,
       maxTokens: options.max_tokens,
       streaming: options.stream,
       anthropicApiKey: ANTHROPIC_API_KEY,
-    });
+    };
+
+    // Add thinking configuration if enabled
+    // Disable thinking if there are tool results in the conversation (LangChain limitation)
+    const hasToolResults = args.messages.some((m) => m.contextType === 'toolResult');
+    if (options.thinking && !hasToolResults) {
+      modelConfig.thinking = {
+        type: 'enabled',
+        budget_tokens: Math.floor(options.max_tokens * 0.75),
+      };
+    }
+
+    const model = new ChatAnthropic(modelConfig);
     return tools ? model.bindTools(tools) : model;
   }
 
@@ -311,12 +308,6 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
 
   // OpenAI
   if (isOpenAIModel(modelKey)) {
-    logger.info('[AI Handler] Using OpenAI model', {
-      modelKey,
-      modelName,
-      hasOpenAIKey: !!OPENAI_API_KEY,
-    });
-
     if (!OPENAI_API_KEY) {
       const error = `OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.`;
       logger.error('[AI Handler] OpenAI API key missing', { error });
@@ -334,14 +325,6 @@ function createChatModel(modelKey: AIModelKey, args: AIRequestHelperArgs): any {
 
   // Azure OpenAI
   if (isAzureOpenAIModel(modelKey)) {
-    logger.info('[AI Handler] Using Azure OpenAI model', {
-      modelKey,
-      modelName,
-      hasAzureKey: !!AZURE_OPENAI_API_KEY,
-      hasAzureEndpoint: !!AZURE_OPENAI_ENDPOINT,
-      azureEndpoint: AZURE_OPENAI_ENDPOINT,
-    });
-
     if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT) {
       const error = `Azure OpenAI credentials not configured. Please set AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT environment variables.`;
       logger.error('[AI Handler] Azure OpenAI credentials missing', { error });
@@ -486,6 +469,7 @@ async function handleStreamingResponse(
   response?.write('stream\n\n');
 
   let fullContent = '';
+  const contentBlocks: any[] = [];
   const toolCalls: any[] = [];
   let usage: AIUsage = {
     inputTokens: 0,
@@ -495,19 +479,13 @@ async function handleStreamingResponse(
   };
 
   try {
-    logger.info('[AI Handler] Starting stream', { modelKey });
     const stream = await chatModel.stream(messages, { signal });
-    logger.info('[AI Handler] Stream created, waiting for chunks', { modelKey });
 
     let chunkCount = 0;
     for await (const chunk of stream) {
       chunkCount++;
-      if (chunkCount === 1) {
-        logger.info('[AI Handler] Received first chunk', { modelKey });
-      }
 
       if (signal?.aborted) {
-        logger.info('[AI Handler] Stream aborted by signal', { modelKey });
         break;
       }
 
@@ -515,39 +493,61 @@ async function handleStreamingResponse(
       let content = '';
       if (typeof chunk.content === 'string') {
         content = chunk.content;
+        if (content) {
+          fullContent += content;
+        }
       } else if (Array.isArray(chunk.content)) {
         // Content is an array of content blocks (e.g., text, thinking blocks)
-        content = chunk.content
-          .filter((block: any) => block.type === 'text' && block.text)
-          .map((block: any) => block.text)
-          .join('');
+        for (const block of chunk.content) {
+          if (block.type === 'text' && block.text) {
+            content += block.text;
+            fullContent += block.text;
+          } else if (block.type === 'thinking' && block.thinking) {
+            // Handle Anthropic thinking blocks
+            const existingThinking = contentBlocks.find((b) => b.type === 'anthropic_thinking' && !b.signature);
+            if (existingThinking) {
+              existingThinking.text += block.thinking;
+            } else {
+              contentBlocks.push({
+                type: 'anthropic_thinking',
+                text: block.thinking,
+                signature: block.signature || '',
+              });
+            }
+          } else if (block.type === 'redacted_thinking' && block.data) {
+            // Handle redacted thinking blocks
+            const existingRedacted = contentBlocks.find((b) => b.type === 'anthropic_redacted_thinking');
+            if (existingRedacted) {
+              existingRedacted.text += block.data;
+            } else {
+              contentBlocks.push({
+                type: 'anthropic_redacted_thinking',
+                text: block.data,
+              });
+            }
+          }
+        }
       }
 
-      // Log first few chunks to debug content extraction
-      if (chunkCount <= 3) {
-        logger.info('[AI Handler] Chunk details', {
-          chunkCount,
-          contentType: typeof chunk.content,
-          contentIsArray: Array.isArray(chunk.content),
-          contentLength: content.length,
-          content: content.substring(0, 100),
-          hasToolCalls: !!chunk.tool_calls,
-          hasToolCallChunks: !!chunk.tool_call_chunks,
-          toolCallChunksLength: chunk.tool_call_chunks?.length,
-          toolCallChunks: chunk.tool_call_chunks,
-          rawContent: Array.isArray(chunk.content) ? chunk.content.slice(0, 2) : chunk.content,
-        });
-      }
+      // Always send the complete state on every chunk (matching old implementation)
+      // Filter valid tool calls at this point
+      const currentValidToolCalls = toolCalls.filter((tc) => tc.id && tc.name && tc.arguments);
 
-      if (content) {
-        fullContent += content;
+      // Only send if we have content or tool calls to avoid sending empty updates
+      if (fullContent || contentBlocks.length > 0 || currentValidToolCalls.length > 0) {
+        // Build content array with text and thinking blocks
+        const responseContent: any[] = [];
+        if (fullContent) {
+          responseContent.push(createTextContent(fullContent));
+        }
+        // Add thinking blocks
+        responseContent.push(...contentBlocks);
 
-        // Send the full accumulated content, not just the chunk
         const responseMessage: Partial<ApiTypes['/v0/ai/chat.POST.response']> = {
           role: 'assistant',
-          content: [createTextContent(fullContent)],
+          content: responseContent,
           contextType: 'userPrompt',
-          toolCalls: [],
+          toolCalls: currentValidToolCalls,
           modelKey,
           isOnPaidPlan,
           exceededBillingLimit,
@@ -617,35 +617,33 @@ async function handleStreamingResponse(
     // Filter out empty/invalid tool calls
     const validToolCalls = toolCalls.filter((tc) => tc.id && tc.name && tc.arguments);
 
-    logger.info('[AI Handler] Stream completed', {
-      modelKey,
-      chunkCount,
-      contentLength: fullContent.length,
-      toolCallsCount: toolCalls.length,
-      validToolCallsCount: validToolCalls.length,
-      toolCalls: validToolCalls,
-    });
-
-    // Send final tool calls if any
-    if (validToolCalls.length > 0) {
-      const responseMessage: Partial<ApiTypes['/v0/ai/chat.POST.response']> = {
-        role: 'assistant',
-        content: [],
-        contextType: 'userPrompt',
-        toolCalls: validToolCalls,
-        modelKey,
-        isOnPaidPlan,
-        exceededBillingLimit,
-      };
-      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+    // Build final content array with text and thinking blocks
+    const finalContent: any[] = [];
+    if (fullContent) {
+      finalContent.push(createTextContent(fullContent));
     }
+    // Filter thinking blocks to only include those with signatures (completed thinking)
+    const completedThinkingBlocks = contentBlocks.filter((b) => b.type !== 'anthropic_thinking' || b.signature);
+    finalContent.push(...completedThinkingBlocks);
 
+    // Send final message one more time to ensure complete state (matching old implementation)
+    const finalResponseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
+      role: 'assistant',
+      content: finalContent,
+      contextType: 'userPrompt',
+      toolCalls: validToolCalls,
+      modelKey,
+      isOnPaidPlan,
+      exceededBillingLimit,
+    };
+
+    response?.write(`data: ${JSON.stringify(finalResponseMessage)}\n\n`);
     response?.end();
 
     return {
       responseMessage: {
         role: 'assistant',
-        content: [createTextContent(fullContent || ' ')],
+        content: finalContent.length > 0 ? finalContent : [createTextContent(' ')],
         contextType: 'userPrompt',
         toolCalls: validToolCalls,
         modelKey,
@@ -733,16 +731,8 @@ export const handleAIRequest = async ({
   signal,
 }: HandleAIRequestArgs): Promise<ParsedAIResponse | undefined> => {
   try {
-    logger.info('[AI Handler] Starting AI request', {
-      modelKey,
-      source: args.source,
-      isOnPaidPlan,
-      exceededBillingLimit,
-      messageCount: args.messages.length,
-    });
-
     const chatModel = createChatModel(modelKey, args);
-    const messages = convertToLangChainMessages(args);
+    const messages = convertToLangChainMessages(args, modelKey);
     const options = getModelOptions(modelKey, args);
 
     let parsedResponse: ParsedAIResponse;
@@ -789,13 +779,7 @@ export const handleAIRequest = async ({
       return;
     }
 
-    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, {
-      error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-      modelKey,
-      source: args.source,
-    });
+    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
