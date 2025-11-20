@@ -1,7 +1,6 @@
 mod column_row;
 mod helpers;
 mod keyboard;
-pub(crate) mod merged_cells;
 mod mouse;
 mod normalize;
 
