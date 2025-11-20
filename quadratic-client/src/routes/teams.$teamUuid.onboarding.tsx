@@ -22,9 +22,27 @@ import { RecoilRoot } from 'recoil';
  *
  * That is derived as a count of 2 questions: [use, role]
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
+
+  // Allow skipping onboarding with ?skip
+  if (searchParams.has('skip')) {
+    const teamUuid = params.teamUuid || '';
+
+    // Mark the team as having completed onboarding
+    await apiClient.teams.update(teamUuid, {
+      onboardingResponses: {
+        __version: 2,
+        __createdAt: new Date().toISOString(),
+        skipped: true,
+      },
+    });
+
+    // Redirect to create a new file, same as after completing onboarding
+    const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
+    return redirectDocument(newFilePath);
+  }
 
   const currentUse = searchParams.get('use');
   const uniqueKeys = new Set(Array.from(searchParams.keys()).filter((key) => !key.endsWith('-other')));
@@ -58,8 +76,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return out;
 };
 
+type OnboardingLoaderData = {
+  currentId: string;
+  currentIndex: number;
+  currentQuestionStackIds: string[];
+  currentQuestionNumber: number;
+  currentQuestionsTotal: number;
+  isLastQuestion: boolean;
+  username: string;
+};
+
 export const useOnboardingLoaderData = () => {
-  return useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  return useLoaderData() as OnboardingLoaderData;
 };
 
 export const Component = () => {
