@@ -208,7 +208,19 @@ export const aiToolsActions: AIToolActionsRecord = {
           isAi: true,
         });
 
-        ensureRectVisible(sheetId, { x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
+        const endX = x + table_data[0].length - 1;
+        const endY = y + table_data.length; // Don't subtract 1 to include the full table
+        ensureRectVisible(sheetId, { x, y }, { x: endX, y: endY });
+        
+        // Update AI cursor to show selection over entire table
+        try {
+          const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+          const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection for data table:', e);
+        }
 
         return [createTextContent(`Executed add data table tool successfully with name: ${table_name}`)];
       } else {
@@ -285,12 +297,26 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        // After execution, adjust viewport to show full output if it exists
+        // After execution, adjust viewport and cursor to show full output if it exists
         const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+          
+          // Update AI cursor to show selection over entire output area
+          if (width > 1 || height > 1) {
+            try {
+              const endX = x + width - 1;
+              const endY = y + height - 1;
+              const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+              const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+              const selectionString = jsSelection.save();
+              aiUser.updateSelection(selectionString, sheetId);
+            } catch (e) {
+              console.warn('Failed to update AI user selection to full output range:', e);
+            }
+          }
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
@@ -418,12 +444,26 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        // After execution, adjust viewport to show full output if it exists
+        // After execution, adjust viewport and cursor to show full output if it exists
         const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+          
+          // Update AI cursor to show selection over entire output area
+          if (width > 1 || height > 1) {
+            try {
+              const endX = x + width - 1;
+              const endY = y + height - 1;
+              const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+              const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+              const selectionString = jsSelection.save();
+              aiUser.updateSelection(selectionString, sheetId);
+            } catch (e) {
+              console.warn('Failed to update AI user selection to full output range:', e);
+            }
+          }
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);

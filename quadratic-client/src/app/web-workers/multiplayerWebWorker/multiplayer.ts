@@ -6,7 +6,6 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { isPatchVersionDifferent } from '@/app/schemas/compareVersions';
 import { RefreshType } from '@/app/shared/types/RefreshType';
@@ -26,9 +25,9 @@ import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
 import { VERSION } from '@/shared/constants/appConstants';
-import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { displayName } from '@/shared/utils/userUtil';
+import Color from 'color';
 import { v4 as uuid } from 'uuid';
 
 // time to recheck the version of the client after receiving a different version
@@ -296,9 +295,9 @@ export class Multiplayer {
 
   setAIUser(isActive: boolean) {
     const aiSessionId = 'ai-analyst';
-    // Use primary color from CSS variables
-    const aiColorString = getCSSVariableAsHexColor('primary');
-    const aiColor = getCSSVariableTint('primary');
+    // Use purple color for AI
+    const aiColorString = '#a855f7'; // Purple color
+    const aiColor = Color(aiColorString).rgbNumber();
 
     if (isActive) {
       // Add AI user if not already present

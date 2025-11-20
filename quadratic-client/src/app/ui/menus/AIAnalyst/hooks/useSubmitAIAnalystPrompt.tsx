@@ -24,7 +24,10 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
@@ -279,6 +282,20 @@ export function useSubmitAIAnalystPrompt() {
         });
 
         set(aiAnalystLoadingAtom, true);
+
+        // Show AI cursor at A1 when AI joins the document
+        try {
+          // Initialize AI user in multiplayer system
+          multiplayer.setAIUser(true);
+          
+          // Update AI cursor to A1
+          const sheetId = sheets.current;
+          const jsSelection = sheets.stringToSelection('A1', sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to initialize AI cursor:', e);
+        }
 
         await importFilesToGrid({ importFiles, userMessage });
 

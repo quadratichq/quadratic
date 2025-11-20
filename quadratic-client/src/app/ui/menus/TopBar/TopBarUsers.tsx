@@ -7,6 +7,7 @@ import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
+import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -301,12 +302,13 @@ function UserAvatar({
     <div data-testid={`top-bar-user-avatar-${email}`} className="relative">
       {isAI ? (
         <div
-          className="flex h-6 w-6 items-center justify-center"
+          className="flex h-6 w-6 items-center justify-center rounded-full"
           style={{
+            backgroundColor: highlightColor,
             boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
           }}
         >
-          <img src={avatarSrc} alt={name} className="h-6 w-6 object-contain" />
+          <AIIcon className="text-white" style={{ fontSize: '1rem' }} />
         </div>
       ) : (
         <Avatar
