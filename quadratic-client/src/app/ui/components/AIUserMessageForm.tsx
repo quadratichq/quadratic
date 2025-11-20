@@ -17,7 +17,6 @@ import {
   useMentionsState,
 } from '@/app/ui/components/MentionsTextarea';
 import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
-import { AIAnalystEmptyStateWaypoint } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyStateWaypoint';
 import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -299,14 +298,6 @@ export const AIUserMessageForm = memo(
       () => waitingOnMessageIndex !== undefined || !editingOrDebugEditing,
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
-    const showWaypoints = useMemo(
-      () =>
-        isAnalyst &&
-        (context === undefined || (context.connection === undefined && context.importFiles === undefined)) &&
-        importFiles.length === 0 &&
-        files.length === 0,
-      [context, importFiles, files, isAnalyst]
-    );
 
     // Mentions-related state & functionality
     const [mentionState, setMentionState] = useMentionsState();
@@ -374,7 +365,9 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={uiContext.startsWith('analyst') ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        placeholder={
+          uiContext.startsWith('analyst') ? 'Ask a question (use @ to reference the sheet).' : 'Ask a question.'
+        }
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
@@ -383,17 +376,15 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <div className="relative">
+      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
           <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}
             context={context}
             files={files}
             importFiles={importFiles}
-            showWaypoints={showWaypoints}
           />
         )}
-        {showWaypoints && <AIAnalystEmptyStateWaypoint />}
 
         <form
           className={cn(
@@ -588,7 +579,7 @@ const AIUserMessageFormFooter = memo(
       <>
         <div
           className={cn(
-            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs',
+            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs @container',
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
@@ -600,15 +591,7 @@ const AIUserMessageFormFooter = memo(
               filesSupportedText={filesSupportedText}
             />
             {isAnalyst && (
-              <AIUserMessageFormConnectionsButton
-                disabled={disabled}
-                context={context}
-                setContext={setContext}
-                textareaRef={textareaRef}
-              />
-            )}
-            {isAnalyst && (
-              <TooltipPopover label="Reference data">
+              <TooltipPopover label="Reference sheet data" fastMode={true}>
                 <Button
                   size="icon-sm"
                   className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
@@ -619,6 +602,14 @@ const AIUserMessageFormFooter = memo(
                   <MentionIcon />
                 </Button>
               </TooltipPopover>
+            )}
+            {isAnalyst && (
+              <AIUserMessageFormConnectionsButton
+                disabled={disabled}
+                context={context}
+                setContext={setContext}
+                textareaRef={textareaRef}
+              />
             )}
             <AIUserMessageFormOptimizeButton
               disabled={disabled}
