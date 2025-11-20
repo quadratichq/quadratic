@@ -2,16 +2,14 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "module": "node16",
+    "module": "commonjs",
     "esModuleInterop": true,
     "target": "es2020",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node16",
+    "moduleResolution": "node10",
     "sourceMap": false,
-    "outDir": "dist",
-    "resolvePackageJsonExports": true,
-    "resolvePackageJsonImports": true
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
   "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]
