@@ -24,7 +24,7 @@ impl Settings {
     // Create a new Settings struct from the provided Config.
     // Panics are OK here since this is set at startup and we want to fail fast.
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
-        let storage = Self::new_storage(config, true).await?;
+        let file_storage = Self::new_storage(config, true).await?;
         let synced_data_storage = Self::new_storage(config, false).await?;
 
         let object_store = StorageConfig::from(&synced_data_storage)
@@ -35,7 +35,7 @@ impl Settings {
             jwks,
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
-            storage,
+            storage: file_storage,
             pubsub_processed_transactions_channel: config
                 .pubsub_processed_transactions_channel
                 .to_owned(),
@@ -62,7 +62,7 @@ impl Settings {
         let storage_dir = if is_file_storage {
             expected(&config.storage_dir, "STORAGE_DIR")
         } else {
-            expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR")
+            expected(&config.STORAGE_DIR_SYNCED_DATA, "STORAGE_DIR_SYNCED_DATA")
         };
 
         let storage = match config.storage_type {

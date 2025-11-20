@@ -50,7 +50,7 @@ impl Settings {
             "AWS_S3_SYNCED_DATA_BUCKET_NAME",
         );
 
-        let storage_dir = expected(&config.synced_data_storage_dir, "SYNCED_DATA_STORAGE_DIR");
+        let storage_dir = expected(&config.STORAGE_DIR_SYNCED_DATA, "STORAGE_DIR_SYNCED_DATA");
 
         let storage = match config.storage_type {
             StorageType::S3 => StorageContainer::S3(S3::new(
@@ -89,7 +89,7 @@ pub fn new_datafusion_connection(
         StorageType::FileSystem => ObjectStoreKind::FileSystem,
     };
 
-    let path = config.synced_data_storage_dir.as_ref().ok_or_else(|| {
+    let path = config.STORAGE_DIR_SYNCED_DATA.as_ref().ok_or_else(|| {
         ConnectionError::CreateObjectStore(
             "Expected AWS_S3_SYNCED_DATA_BUCKET_NAME to have a value".to_string(),
         )

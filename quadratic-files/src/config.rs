@@ -44,7 +44,7 @@ pub(crate) struct Config {
 
     // StorageType::FileSystem
     pub(crate) storage_dir: Option<String>,
-    pub(crate) synced_data_storage_dir: Option<String>,
+    pub(crate) STORAGE_DIR_SYNCED_DATA: Option<String>,
     pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 

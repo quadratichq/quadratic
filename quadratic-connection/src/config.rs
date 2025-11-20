@@ -35,7 +35,7 @@ pub(crate) struct Config {
     pub(crate) aws_s3_secret_access_key: Option<String>,
 
     // StorageType::FileSystem
-    pub(crate) synced_data_storage_dir: Option<String>,
+    pub(crate) STORAGE_DIR_SYNCED_DATA: Option<String>,
     pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 
