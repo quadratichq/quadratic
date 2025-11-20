@@ -156,7 +156,8 @@ export const SidebarTooltip = React.forwardRef(
     <Tooltip>
       <TooltipTrigger
         asChild
-        onClick={() => {
+        // Use pointerDown to ensure nested children still fire tracking the event
+        onPointerDown={() => {
           trackEvent('[QuadraticSidebar].button', { label });
         }}
       >
