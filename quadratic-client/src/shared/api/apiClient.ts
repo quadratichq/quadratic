@@ -34,10 +34,10 @@ export const apiClient = {
         ApiSchemas['/v0/teams/:uuid.PATCH.response']
       );
     },
-    create(body: ApiTypes['/v0/teams.POST.request']) {
+    create() {
       return fetchFromApi(
         `/v0/teams`,
-        { method: 'POST', body: JSON.stringify(body) },
+        { method: 'POST', body: JSON.stringify({ name: 'My Team' }) },
         ApiSchemas['/v0/teams.POST.response']
       );
     },
@@ -49,10 +49,9 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
-      getCheckoutSessionUrl(uuid: string) {
-        const redirect = window.location.href;
+      getCheckoutSessionUrl(uuid: string, redirectUrlSuccess: string, redirectUrlCancel: string) {
         return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/session?redirect=${redirect}`,
+          `/v0/teams/${uuid}/billing/checkout/session?redirect-success=${encodeURIComponent(redirectUrlSuccess)}&redirect-cancel=${encodeURIComponent(redirectUrlCancel)}`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
