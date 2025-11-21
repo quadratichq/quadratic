@@ -1,7 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
-import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
+import type { CellAlign, CellFormatSummary, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { DEFAULT_FONT_SIZE, MAX_FONT_SIZE, MIN_FONT_SIZE } from '@/shared/constants/gridConstants';
 import type { ColorResult } from 'react-color';
 
 export const setFillColor = (color?: ColorResult) => {
@@ -87,21 +88,21 @@ export const setFontSize = (fontSize: number) => {
 export const increaseFontSize = async () => {
   const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
   if (formatSummary && 'fontSize' in formatSummary) {
-    const currentSize = (formatSummary as any).fontSize ?? 14;
-    const newSize = Math.min(currentSize + 2, 96);
+    const currentSize = (formatSummary as CellFormatSummary).fontSize ?? DEFAULT_FONT_SIZE;
+    const newSize = Math.min(currentSize + 2, MAX_FONT_SIZE);
     setFontSize(newSize);
   } else {
-    setFontSize(16);
+    setFontSize(DEFAULT_FONT_SIZE + 2);
   }
 };
 
 export const decreaseFontSize = async () => {
   const formatSummary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
   if (formatSummary && 'fontSize' in formatSummary) {
-    const currentSize = (formatSummary as any).fontSize ?? 14;
-    const newSize = Math.max(currentSize - 2, 8);
+    const currentSize = (formatSummary as CellFormatSummary).fontSize ?? DEFAULT_FONT_SIZE;
+    const newSize = Math.max(currentSize - 2, MIN_FONT_SIZE);
     setFontSize(newSize);
   } else {
-    setFontSize(12);
+    setFontSize(DEFAULT_FONT_SIZE - 2);
   }
 };

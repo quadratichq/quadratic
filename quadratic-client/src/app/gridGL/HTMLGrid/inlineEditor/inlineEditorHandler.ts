@@ -20,6 +20,7 @@ import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/us
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import BigNumber from 'bignumber.js';
@@ -375,7 +376,7 @@ class InlineEditorHandler {
     inlineEditorMonaco.setFontFamily(fontFamily);
 
     // Set font size from format summary
-    const fontSize = this.formatSummary?.fontSize ?? 14;
+    const fontSize = this.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
     inlineEditorMonaco.setFontSize(fontSize);
   };
 

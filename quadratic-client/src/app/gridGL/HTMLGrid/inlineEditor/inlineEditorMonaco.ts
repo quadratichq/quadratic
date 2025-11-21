@@ -11,7 +11,8 @@ import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-cor
 import { provideCompletionItems, provideHover } from '@/app/quadratic-core/quadratic_core';
 import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -34,7 +35,7 @@ window.MonacoEnvironment = {
   },
 };
 
-// Base padding for the inline editor width calculation at 14px font size.
+// Base padding for the inline editor width calculation at DEFAULT_FONT_SIZE font size.
 // This scales linearly with font size to ensure adequate space.
 const BASE_PADDING_FOR_WIDTH = 15;
 
@@ -195,14 +196,14 @@ class InlineEditorMonaco {
       const measuredWidth = metrics.width;
 
       // Add padding that scales linearly with font size
-      const fontScale = fontSize / 14;
+      const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
 
       width = textWrap === 'wrap' ? width : Math.max(width, measuredWidth + scaledPadding);
     } else {
       // Fallback to scrollWidth if canvas is not available
       const scrollWidth = textarea.scrollWidth;
-      const fontScale = fontSize / 14;
+      const fontScale = fontSize / DEFAULT_FONT_SIZE;
       const scaledPadding = BASE_PADDING_FOR_WIDTH * fontScale;
       width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + scaledPadding);
     }
@@ -283,7 +284,7 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setFontSize');
     }
-    const lineHeight = (fontSize / FONT_SIZE) * LINE_HEIGHT;
+    const lineHeight = (fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
     this.editor.updateOptions({ fontSize, lineHeight });
   }
 
@@ -531,7 +532,7 @@ class InlineEditorMonaco {
         autoFindInSelection: 'never',
         seedSearchStringFromSelection: 'never',
       },
-      fontSize: FONT_SIZE,
+      fontSize: DEFAULT_FONT_SIZE,
       lineHeight: LINE_HEIGHT,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',

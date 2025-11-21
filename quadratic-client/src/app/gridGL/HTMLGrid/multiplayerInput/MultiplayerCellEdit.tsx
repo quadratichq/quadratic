@@ -3,6 +3,7 @@ import type { MultiplayerCell } from '@/app/gridGL/HTMLGrid/multiplayerInput/Mul
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -29,7 +30,7 @@ export const MultiplayerCellEdit = (props: Props) => {
   const displayUnderline = input.cellEdit.underline === undefined ? formatting?.underline : input.cellEdit.underline;
   const displayStrikeThrough =
     input.cellEdit.strikeThrough === undefined ? formatting?.strikeThrough : input.cellEdit.strikeThrough;
-  const fontSize = formatting?.fontSize ?? 14;
+  const fontSize = formatting?.fontSize ?? DEFAULT_FONT_SIZE;
   let fontFamily: string = 'OpenSans';
   if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';

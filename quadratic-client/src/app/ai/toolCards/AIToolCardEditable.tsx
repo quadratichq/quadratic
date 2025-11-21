@@ -3,6 +3,7 @@ import './aiToolCardEditable.css';
 import { AIToolCard } from '@/app/ai/toolCards/AIToolCard';
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { cn } from '@/shared/shadcn/utils';
 import { Editor } from '@monaco-editor/react';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -138,7 +139,7 @@ const AIToolCallEditor = memo(({ toolCall, onToolCallChange }: AIToolCallEditorP
               automaticLayout: true,
               folding: true,
               renderLineHighlightOnlyWhenFocus: true,
-              fontSize: 14,
+              fontSize: DEFAULT_FONT_SIZE,
               lineHeight: 19,
             }}
           />

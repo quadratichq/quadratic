@@ -35,6 +35,7 @@ import {
   CELL_HEIGHT,
   CELL_TEXT_MARGIN_LEFT,
   CELL_WIDTH,
+  DEFAULT_FONT_SIZE,
   MIN_CELL_WIDTH,
   SORT_BUTTON_PADDING,
   SORT_BUTTON_RADIUS,
@@ -67,8 +68,6 @@ const STRIKE_THROUGH_OFFSET = 32;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
-// todo: make this part of the cell's style data structure
-export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
 
 const URL_REGEX = /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i;
@@ -190,8 +189,8 @@ export class CellLabel {
     this.originalText = cell.value;
     this.text = this.getText(cell);
     this.link = this.isLink(cell);
-    this.fontSize = cell.fontSize ?? FONT_SIZE;
-    this.lineHeight = (this.fontSize / FONT_SIZE) * LINE_HEIGHT;
+    this.fontSize = cell.fontSize ?? DEFAULT_FONT_SIZE;
+    this.lineHeight = (this.fontSize / DEFAULT_FONT_SIZE) * LINE_HEIGHT;
     this.underlineOffset = UNDERLINE_OFFSET;
     this.strikeThroughOffset = STRIKE_THROUGH_OFFSET;
     this.roundPixels = true;

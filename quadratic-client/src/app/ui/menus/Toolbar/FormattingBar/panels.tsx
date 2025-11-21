@@ -19,6 +19,7 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/components';
 import {
   BorderAllIcon,
+  CheckIcon,
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
   FormatAlignRightIcon,
@@ -30,6 +31,7 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
+import { DEFAULT_FONT_SIZE, FONT_SIZES, FONT_SIZE_DISPLAY_ADJUSTMENT } from '@/shared/constants/gridConstants';
 import { DropdownMenuItem } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
@@ -121,8 +123,8 @@ export const FontSizeFormatting = memo(
     HTMLDivElement | null,
     { className?: string; formatSummary?: CellFormatSummary | undefined; hideLabel?: boolean }
   >((props, ref) => {
-    const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72, 96];
-    const currentFontSize = props.formatSummary?.fontSize ?? 14;
+    const currentFontSize = props.formatSummary?.fontSize ?? DEFAULT_FONT_SIZE;
+    const displayFontSize = currentFontSize + FONT_SIZE_DISPLAY_ADJUSTMENT;
 
     return (
       <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
@@ -137,22 +139,33 @@ export const FontSizeFormatting = memo(
             action="font-size"
             tooltipLabel="Font size"
             Icon={null}
-            IconNode={<span className="text-xs">{currentFontSize}</span>}
+            IconNode={<span className="text-xs">{displayFontSize}</span>}
             hideLabel={props.hideLabel}
           >
             <div className="max-h-full overflow-y-auto">
-              {fontSizes.map((size) => {
+              {FONT_SIZES.map((displaySize) => {
                 const actionSpec = defaultActionSpec[Action.FormatFontSize];
+                // Convert display value (user-facing) to internal value
+                const internalSize = displaySize - FONT_SIZE_DISPLAY_ADJUSTMENT;
+                const defaultDisplaySize = DEFAULT_FONT_SIZE + FONT_SIZE_DISPLAY_ADJUSTMENT;
+                const isDefault = displaySize === defaultDisplaySize;
+                const isSelected = displaySize === displayFontSize;
                 return (
                   <DropdownMenuItem
-                    key={size}
+                    key={displaySize}
                     onClick={() => {
-                      actionSpec.run(size);
+                      actionSpec.run(internalSize);
                     }}
-                    aria-label={props.hideLabel ? '' : `${size}px`}
-                    className="justify-center py-1.5"
+                    aria-label={
+                      props.hideLabel
+                        ? ''
+                        : `${displaySize}px${isDefault ? ' (default)' : ''}${isSelected ? ' (selected)' : ''}`
+                    }
+                    className="py-1.5"
                   >
-                    {size}
+                    <CheckIcon className={cn('mr-2 flex-shrink-0', isSelected ? 'visible' : 'invisible opacity-0')} />
+                    {displaySize}
+                    {isDefault && <span className="ml-1 text-muted-foreground">(default)</span>}
                   </DropdownMenuItem>
                 );
               })}
