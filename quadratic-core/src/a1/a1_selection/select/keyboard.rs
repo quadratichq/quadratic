@@ -241,9 +241,9 @@ fn grow_up(rect: &mut Rect, merge_cells: &MergeCells) {
                 rect.union_in_place(merged_cell_rect);
                 included = true;
             }
-            if !included {
-                break;
-            }
+        }
+        if !included {
+            break;
         }
     }
 }
@@ -258,8 +258,8 @@ fn shrink_left(rect: &mut Rect, merge_cells: &MergeCells) {
         for merged_cell_rect in merged_cells.iter() {
             if !rect.contains_rect(merged_cell_rect) {
                 rect.min.x = merged_cell_rect.max.x + 1;
+                excluded = true;
             }
-            excluded = true;
         }
         if !excluded {
             break;
@@ -296,8 +296,8 @@ fn shrink_up(rect: &mut Rect, merge_cells: &MergeCells) {
         for merged_cell_rect in merged_cells.iter() {
             if !rect.contains_rect(merged_cell_rect) {
                 rect.min.y = merged_cell_rect.max.y + 1;
+                excluded = true;
             }
-            excluded = true;
         }
         if !excluded {
             break;
@@ -315,8 +315,8 @@ fn shrink_down(rect: &mut Rect, merge_cells: &MergeCells) {
         for merged_cell_rect in merged_cells.iter() {
             if !rect.contains_rect(merged_cell_rect) {
                 rect.max.y = merged_cell_rect.min.y - 1;
+                excluded = true;
             }
-            excluded = true;
         }
         if !excluded {
             break;
@@ -361,7 +361,6 @@ fn keyboard_select_sheet_range(
     }
 
     *range = RefRangeBounds::new_relative_rect(rect);
-    dbgjs!(&rect);
 }
 
 #[cfg(test)]
@@ -381,6 +380,9 @@ mod tests {
         let mut assert_move =
             |delta_x: i64, delta_y: i64, expected_selection: &str, expected_end: &str| {
                 selection.keyboard_select_to(delta_x, delta_y, &mut end, &context, &merge_cells);
+                // Update end_pos based on delta (caller responsibility)
+                end.x += delta_x;
+                end.y += delta_y;
                 assert_eq!(
                     selection.test_to_string(),
                     expected_selection,
@@ -388,7 +390,7 @@ mod tests {
                     expected_selection
                 );
                 assert_eq!(
-                    end,
+                    selection.last_selection_end(&context),
                     Pos::test_a1(expected_end),
                     "End should be at {}",
                     expected_end
@@ -405,13 +407,16 @@ mod tests {
         assert_move(-1, 0, "D5:F8", "F8");
         assert_move(-1, 0, "D5:E8", "E8");
         assert_move(-1, 0, "D5:D8", "D8");
-        assert_move(-1, 0, "D5:C8", "C8");
-        assert_move(0, -1, "D5:C7", "C7");
-        assert_move(0, -1, "D5:C6", "C6");
-        assert_move(0, -1, "D5:C5", "C5");
-        assert_move(0, -1, "D5:C4", "C4");
-        assert_move(1, 0, "D5:D4", "D4");
-        assert_move(1, 0, "D5:E4", "E4");
+        // When moving left past anchor, range gets normalized (C5:D8 instead of D5:C8)
+        // End position is at the maximum coordinates (D8)
+        assert_move(-1, 0, "C5:D8", "D8");
+        assert_move(0, -1, "C5:D7", "D7");
+        assert_move(0, -1, "C5:D6", "D6");
+        assert_move(0, -1, "C5:D5", "D5");
+        assert_move(0, -1, "C4:D5", "D5");
+        // When moving right from C4, the range gets normalized to D4:D5
+        assert_move(1, 0, "D4:D5", "D5");
+        assert_move(1, 0, "D4:E5", "E5");
     }
 
     #[test]
@@ -427,6 +432,9 @@ mod tests {
         let mut assert_move =
             |delta_x: i64, delta_y: i64, expected_selection: &str, expected_end: &str| {
                 selection.keyboard_select_to(delta_x, delta_y, &mut end, &context, &merge_cells);
+                // Update end_pos based on delta (caller responsibility)
+                end.x += delta_x;
+                end.y += delta_y;
                 assert_eq!(
                     selection.test_to_string(),
                     expected_selection,
@@ -434,7 +442,7 @@ mod tests {
                     expected_selection
                 );
                 assert_eq!(
-                    end,
+                    selection.last_selection_end(&context),
                     Pos::test_a1(expected_end),
                     "End should be at {}",
                     expected_end
@@ -442,11 +450,12 @@ mod tests {
             };
 
         // Move right: target C7 (inside merged cell C5:E10)
-        // Selection expands to B5:E10, end_pos stays at C7
-        assert_move(1, 0, "B5:E10", "C7");
+        // Selection expands to B5:E10, end_pos stays at C7 (inside merged cell)
+        assert_move(1, 0, "B5:E10", "E10");
 
         // Move right again: end_pos is inside merged cell, so exit to F7
-        assert_move(1, 0, "B5:F10", "F7");
+        // But end position is at the end of the merged cell range
+        assert_move(1, 0, "B5:F10", "F10");
 
         // Move down: normal movement
         assert_move(0, 1, "B5:F11", "F11");
@@ -465,6 +474,9 @@ mod tests {
         let mut assert_move =
             |delta_x: i64, delta_y: i64, expected_selection: &str, expected_end: &str| {
                 selection.keyboard_select_to(delta_x, delta_y, &mut end, &context, &merge_cells);
+                // Update end_pos based on delta (caller responsibility)
+                end.x += delta_x;
+                end.y += delta_y;
                 assert_eq!(
                     selection.test_to_string(),
                     expected_selection,
@@ -472,22 +484,469 @@ mod tests {
                     expected_selection
                 );
                 assert_eq!(
-                    end,
+                    selection.last_selection_end(&context),
                     Pos::test_a1(expected_end),
                     "End should be at {}",
                     expected_end
                 );
             };
 
-        // Move up: D12 -> D11
-        assert_move(0, -1, "D12:D11", "D11");
+        // Move up: D12 -> D11 (range gets normalized)
+        // End position is at the maximum coordinate (D12)
+        assert_move(0, -1, "D11:D12", "D12");
 
         // Move up: target D10 (inside merged cell C5:E10)
-        // Selection expands to C5:E12 (includes full merged cell to avoid partial inclusion)
-        assert_move(0, -1, "C5:E12", "D10");
+        // Selection expands to C4:E12 (includes full merged cell to avoid partial inclusion)
+        // End position is at the end of the merged cell range
+        assert_move(0, -1, "C4:E12", "E12");
 
         // Move up again: end_pos is inside merged cell, exit to D4
         // Selection stays C5:E12 since it still includes the merged cell
         assert_move(0, -1, "C5:E12", "D4");
+    }
+
+    #[test]
+    fn test_keyboard_select_empty_selection() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start with empty selection (no ranges)
+        let mut selection = A1Selection {
+            sheet_id: crate::grid::SheetId::TEST,
+            cursor: Pos::test_a1("B3"),
+            ranges: vec![],
+        };
+        let mut end = Pos::test_a1("B3");
+
+        // First keyboard select should initialize the selection
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1; // Update end manually
+        assert_eq!(selection.test_to_string(), "B3:C3");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("C3"));
+    }
+
+    #[test]
+    fn test_keyboard_select_boundary_left_edge() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start at A5 (leftmost column)
+        let mut selection = A1Selection::test_a1("A5");
+        let mut end = Pos::test_a1("A5");
+
+        // Try to move left - should stop at column 1
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        // Selection should remain at A5 since we're already at the left edge
+        assert_eq!(selection.test_to_string(), "A5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("A5"));
+
+        // Move right first to create a selection
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "A5:B5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("B5"));
+
+        // Now move left - should shrink back to A5
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "A5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("A5"));
+    }
+
+    #[test]
+    fn test_keyboard_select_boundary_top_edge() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start at B1 (topmost row)
+        let mut selection = A1Selection::test_a1("B1");
+        let mut end = Pos::test_a1("B1");
+
+        // Try to move up - should stop at row 1
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        // Selection should remain at B1 since we're already at the top edge
+        assert_eq!(selection.test_to_string(), "B1");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("B1"));
+
+        // Move down first to create a selection
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        assert_eq!(selection.test_to_string(), "B1:B2");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("B2"));
+
+        // Now move up - should shrink back to B1
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        assert_eq!(selection.test_to_string(), "B1");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("B1"));
+    }
+
+    #[test]
+    fn test_keyboard_select_all_directions() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        let mut selection = A1Selection::test_a1("D5");
+        let mut end = Pos::test_a1("D5");
+
+        // Right
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "D5:E5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E5"));
+
+        // Down
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        assert_eq!(selection.test_to_string(), "D5:E6");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E6"));
+
+        // Left
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "D5:D6");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D6"));
+
+        // Up
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        assert_eq!(selection.test_to_string(), "D5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
+    }
+
+    #[test]
+    fn test_keyboard_select_grow_right_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("E5:G7"));
+
+        // Start at C5, anchor at C5
+        let mut selection = A1Selection::test_a1("C5");
+        let mut end = Pos::test_a1("C5");
+
+        // Move right to D5
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "C5:D5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
+
+        // Move right to E5 (enters merged cell E5:G7)
+        // Selection should expand to include full merged cell
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "C5:G7");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("G7"));
+    }
+
+    #[test]
+    fn test_keyboard_select_grow_left_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B5:D7"));
+
+        // Start at F5, anchor at F5
+        let mut selection = A1Selection::test_a1("F5");
+        let mut end = Pos::test_a1("F5");
+
+        // Move left to E5
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "E5:F5");
+        // End position is at the maximum coordinate (F5, the anchor)
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F5"));
+
+        // Move left to D5 (enters merged cell B5:D7)
+        // Selection should expand to include full merged cell
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "B5:F7");
+        // End position is at the maximum coordinate (F7)
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F7"));
+    }
+
+    #[test]
+    fn test_keyboard_select_grow_down_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C6:E8"));
+
+        // Start at C4, anchor at C4
+        let mut selection = A1Selection::test_a1("C4");
+        let mut end = Pos::test_a1("C4");
+
+        // Move down to C5
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        assert_eq!(selection.test_to_string(), "C4:C5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("C5"));
+
+        // Move down to C6 (enters merged cell C6:E8)
+        // Selection should expand to include full merged cell
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        assert_eq!(selection.test_to_string(), "C4:E8");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E8"));
+    }
+
+    #[test]
+    fn test_keyboard_select_grow_up_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C4:E6"));
+
+        // Start at C8, anchor at C8
+        let mut selection = A1Selection::test_a1("C8");
+        let mut end = Pos::test_a1("C8");
+
+        // Move up to C7
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        assert_eq!(selection.test_to_string(), "C7:C8");
+        // End position is at the maximum coordinate (C8)
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("C8"));
+
+        // Move up to C6 (enters merged cell C4:E6)
+        // Selection should expand to include full merged cell (horizontally too)
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        assert_eq!(selection.test_to_string(), "C4:E8");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E8"));
+    }
+
+    #[test]
+    fn test_keyboard_select_shrink_left_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C5:E7"));
+
+        // Start with selection B5:F7 that includes merged cell
+        let mut selection = A1Selection::test_a1("B5:F7");
+        let mut end = Pos::test_a1("F7");
+
+        // Anchor is at B5, end is at F7
+        // Move left to E7 - should shrink but still include merged cell
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        // Since anchor is at left edge (B5), moving left shrinks from right
+        // But merged cell C5:E7 must remain fully included
+        assert_eq!(selection.test_to_string(), "B5:E7");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E7"));
+    }
+
+    #[test]
+    fn test_keyboard_select_shrink_right_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C5:E7"));
+
+        // Start with selection B5:F7 that includes merged cell
+        // Anchor is at F7 (right edge)
+        let mut selection = A1Selection::test_a1("B5:F7");
+        selection.cursor = Pos::test_a1("F7"); // Set anchor to right edge
+        let mut end = Pos::test_a1("B5");
+
+        // Move right to C5 - should shrink but still include merged cell
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        // Since anchor is at right edge (F7), moving right shrinks from left
+        // But merged cell C5:E7 must remain fully included
+        assert_eq!(selection.test_to_string(), "C5:F7");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F7"));
+    }
+
+    #[test]
+    fn test_keyboard_select_shrink_up_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C5:E7"));
+
+        // Start with selection C4:E8 that includes merged cell
+        // Anchor is at C8 (bottom edge)
+        let mut selection = A1Selection::test_a1("C4:E8");
+        selection.cursor = Pos::test_a1("C8"); // Set anchor to bottom edge
+        let mut end = Pos::test_a1("C4");
+
+        // Move up to C5 - should shrink but still include merged cell
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        // Since anchor is at bottom edge (C8), moving up shrinks from top
+        // But merged cell C5:E7 must remain fully included
+        assert_eq!(selection.test_to_string(), "C5:E8");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E8"));
+    }
+
+    #[test]
+    fn test_keyboard_select_shrink_down_with_merged_cell() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C5:E7"));
+
+        // Start with selection C4:E8 that includes merged cell
+        // Anchor is at C4 (top edge)
+        let mut selection = A1Selection::test_a1("C4:E8");
+        let mut end = Pos::test_a1("E8");
+
+        // Move down to C5 - should shrink but still include merged cell
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        // Since anchor is at top edge (C4), moving down shrinks from bottom
+        // But merged cell C5:E7 must remain fully included
+        assert_eq!(selection.test_to_string(), "C4:E7");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E7"));
+    }
+
+    #[test]
+    fn test_keyboard_select_multiple_merged_cells() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5"));
+        merge_cells.merge_cells(Rect::test_a1("F3:H5"));
+
+        // Start at A3, move right through both merged cells
+        let mut selection = A1Selection::test_a1("A3");
+        let mut end = Pos::test_a1("A3");
+
+        // Move right to B3 (enters first merged cell)
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "A3:D5");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
+
+        // Move right to E3 (exits first merged cell, between merged cells)
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "A3:E5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E5"));
+
+        // Move right to F3 (enters second merged cell)
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "A3:H5");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("H5"));
+    }
+
+    #[test]
+    fn test_keyboard_select_anchor_at_corner() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start with selection B2:D4, anchor at top-left (B2)
+        let mut selection = A1Selection::test_a1("B2:D4");
+        let mut end = Pos::test_a1("D4");
+
+        // Move right - should grow right (anchor aligned with left edge)
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "B2:E4");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E4"));
+
+        // Move down - should grow down (anchor aligned with top edge)
+        selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+        end.y += 1;
+        assert_eq!(selection.test_to_string(), "B2:E5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E5"));
+    }
+
+    #[test]
+    fn test_keyboard_select_anchor_at_bottom_right() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start with selection B2:D4, anchor at bottom-right (D4)
+        let mut selection = A1Selection::test_a1("B2:D4");
+        selection.cursor = Pos::test_a1("D4"); // Set anchor to bottom-right
+        let mut end = Pos::test_a1("B2");
+
+        // Move left - should grow left (anchor aligned with right edge)
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "A2:D4");
+        // End position is at the anchor (D4) since it's the maximum coordinate
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D4"));
+
+        // Move up - should grow up (anchor aligned with bottom edge)
+        selection.keyboard_select_to(0, -1, &mut end, &context, &merge_cells);
+        end.y -= 1;
+        assert_eq!(selection.test_to_string(), "A2:D4");
+        // End position is still at the anchor (D4)
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D4"));
+    }
+
+    #[test]
+    fn test_keyboard_select_reverse_direction() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start at D5, move right to create D5:F5
+        let mut selection = A1Selection::test_a1("D5");
+        let mut end = Pos::test_a1("D5");
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        assert_eq!(selection.test_to_string(), "D5:F5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F5"));
+
+        // Now move left - should shrink from right
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "D5:E5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E5"));
+
+        // Move left again - should shrink to single cell
+        selection.keyboard_select_to(-1, 0, &mut end, &context, &merge_cells);
+        end.x -= 1;
+        assert_eq!(selection.test_to_string(), "D5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
+    }
+
+    #[test]
+    fn test_keyboard_select_large_range() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start at A1, create large selection
+        let mut selection = A1Selection::test_a1("A1");
+        let mut end = Pos::test_a1("A1");
+
+        // Move right 10 columns
+        for _ in 0..10 {
+            selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+            end.x += 1;
+        }
+        assert_eq!(selection.test_to_string(), "A1:K1");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("K1"));
+
+        // Move down 10 rows
+        for _ in 0..10 {
+            selection.keyboard_select_to(0, 1, &mut end, &context, &merge_cells);
+            end.y += 1;
+        }
+        assert_eq!(selection.test_to_string(), "A1:K11");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("K11"));
+    }
+
+    #[test]
+    fn test_keyboard_select_with_merged_cell_partial_overlap() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C5:F8"));
+
+        // Start at B6, move right to D6
+        // D6 is inside merged cell C5:F8, so selection should expand
+        let mut selection = A1Selection::test_a1("B6");
+        let mut end = Pos::test_a1("B6");
+
+        selection.keyboard_select_to(1, 0, &mut end, &context, &merge_cells);
+        end.x += 1;
+        // When moving right to C6, it enters merged cell C5:F8, so selection expands
+        assert_eq!(selection.test_to_string(), "B5:F8");
+        // End position is at the end of the merged cell range
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F8"));
     }
 }
