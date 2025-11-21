@@ -9,17 +9,17 @@ beforeEach(async () => {
 
 afterEach(clearDb);
 
-describe('GET /v0/user/tutorialBonusPrompt', () => {
+describe('GET /v0/user/tutorial-bonus-prompts', () => {
   describe('authentication', () => {
     it('responds with 401 if no token is provided', async () => {
-      await request(app).get('/v0/user/tutorialBonusPrompt').expect(401);
+      await request(app).get('/v0/user/tutorial-bonus-prompts').expect(401);
     });
   });
 
   describe('fetching bonus prompts', () => {
     it('responds with all active bonus prompts when user has received none', async () => {
       const response = await request(app)
-        .get('/v0/user/tutorialBonusPrompt')
+        .get('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
@@ -60,7 +60,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
       });
 
       const response = await request(app)
-        .get('/v0/user/tutorialBonusPrompt')
+        .get('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
@@ -108,7 +108,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
       });
 
       const response = await request(app)
-        .get('/v0/user/tutorialBonusPrompt')
+        .get('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
@@ -135,7 +135,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
       });
 
       const response = await request(app)
-        .get('/v0/user/tutorialBonusPrompt')
+        .get('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
@@ -174,7 +174,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
       });
 
       const response = await request(app)
-        .get('/v0/user/tutorialBonusPrompt')
+        .get('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
@@ -201,3 +201,4 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
     });
   });
 });
+

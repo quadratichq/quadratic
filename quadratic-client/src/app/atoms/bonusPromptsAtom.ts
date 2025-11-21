@@ -5,7 +5,7 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
-type BonusPrompt = ApiTypes['/v0/user/tutorialBonusPrompt.GET.response']['bonusPrompts'][number];
+type BonusPrompt = ApiTypes['/v0/user/tutorial-bonus-prompts.GET.response']['bonusPrompts'][number];
 
 const bonusPromptsDataAtom = atom<BonusPrompt[] | null>(null);
 
@@ -21,7 +21,7 @@ const fetchBonusPromptsAtom = atom(null, async (get, set) => {
   if (cached !== null) {
     return cached;
   }
-  const response = await apiClient.user.tutorialBonusPrompt.get();
+  const response = await apiClient.user.tutorialBonusPrompts.get();
   set(bonusPromptsDataAtom, response.bonusPrompts);
   return response.bonusPrompts;
 });
@@ -74,7 +74,7 @@ const celebrateChecklistItem = (category: string) => {
 // Write-only atom for claiming bonus prompts (calls API and updates state)
 export const claimBonusPromptAtom = atom(null, async (get, set, category: string) => {
   try {
-    const result = await apiClient.user.tutorialBonusPrompt.claim({ category });
+    const result = await apiClient.user.tutorialBonusPrompts.claim({ category });
     set(bonusPromptsAtom, { type: 'claim', category });
     events.emit('aiAnalystMessagesLeftRefresh');
     celebrateChecklistItem(category);

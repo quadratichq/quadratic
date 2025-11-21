@@ -385,19 +385,19 @@ export const apiClient = {
         );
       },
     },
-    tutorialBonusPrompt: {
+    tutorialBonusPrompts: {
       get() {
         return fetchFromApi(
-          `/v0/user/tutorialBonusPrompt`,
+          `/v0/user/tutorial-bonus-prompts`,
           { method: 'GET' },
-          ApiSchemas['/v0/user/tutorialBonusPrompt.GET.response']
+          ApiSchemas['/v0/user/tutorial-bonus-prompts.GET.response']
         );
       },
-      claim(body: ApiTypes['/v0/user/tutorialBonusPrompt.POST.request']) {
+      claim(body: ApiTypes['/v0/user/tutorial-bonus-prompts.POST.request']) {
         return fetchFromApi(
-          `/v0/user/tutorialBonusPrompt`,
+          `/v0/user/tutorial-bonus-prompts`,
           { method: 'POST', body: JSON.stringify(body) },
-          ApiSchemas['/v0/user/tutorialBonusPrompt.POST.response']
+          ApiSchemas['/v0/user/tutorial-bonus-prompts.POST.response']
         );
       },
     },

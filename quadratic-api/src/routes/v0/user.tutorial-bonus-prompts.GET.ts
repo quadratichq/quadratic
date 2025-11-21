@@ -12,7 +12,7 @@ export default [validateAccessToken, userMiddleware, handler];
 
 async function handler(
   req: RequestWithUser,
-  res: Response<ApiTypes['/v0/user/tutorialBonusPrompt.GET.response'] | ResponseError>
+  res: Response<ApiTypes['/v0/user/tutorial-bonus-prompts.GET.response'] | ResponseError>
 ) {
   const userId = req.user.id;
 
@@ -86,3 +86,4 @@ async function handler(
     throw new ApiError(500, 'Failed to fetch tutorial bonus prompts', error);
   }
 }
+

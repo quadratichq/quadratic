@@ -9,17 +9,17 @@ beforeEach(async () => {
 
 afterEach(clearDb);
 
-describe('POST /v0/user/tutorialBonusPrompt', () => {
+describe('POST /v0/user/tutorial-bonus-prompts', () => {
   describe('authentication', () => {
     it('responds with 401 if no token is provided', async () => {
-      await request(app).post('/v0/user/tutorialBonusPrompt').send({ category: 'share-file' }).expect(401);
+      await request(app).post('/v0/user/tutorial-bonus-prompts').send({ category: 'share-file' }).expect(401);
     });
   });
 
   describe('validation', () => {
     it('responds with 400 if no category is provided', async () => {
       await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({})
         .expect(400);
@@ -27,7 +27,7 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
 
     it('responds with 400 if category is invalid', async () => {
       await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'invalid-category' })
         .expect(400)
@@ -43,7 +43,7 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
       const userId = user!.id;
 
       const response = await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'share-file' })
         .expect(200);
@@ -73,7 +73,7 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
       const userId = user!.id;
 
       const response = await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'watch-tutorial' })
         .expect(200);
@@ -104,14 +104,14 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
 
       // First claim
       await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'share-file' })
         .expect(200);
 
       // Second claim should fail
       await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'share-file' })
         .expect(400)
@@ -133,14 +133,14 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
     it('allows claiming different bonus categories', async () => {
       // Claim share-file
       await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'share-file' })
         .expect(200);
 
       // Claim watch-tutorial
       const response = await request(app)
-        .post('/v0/user/tutorialBonusPrompt')
+        .post('/v0/user/tutorial-bonus-prompts')
         .set('Authorization', 'Bearer ValidToken user1')
         .send({ category: 'watch-tutorial' })
         .expect(200);
@@ -153,3 +153,4 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
     });
   });
 });
+

@@ -14,12 +14,12 @@ import { ApiError } from '../../utils/ApiError';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/user/tutorialBonusPrompt.POST.request'],
+  body: ApiSchemas['/v0/user/tutorial-bonus-prompts.POST.request'],
 });
 
 async function handler(
   req: RequestWithUser,
-  res: Response<ApiTypes['/v0/user/tutorialBonusPrompt.POST.response'] | ResponseError>
+  res: Response<ApiTypes['/v0/user/tutorial-bonus-prompts.POST.response'] | ResponseError>
 ) {
   const { body } = parseRequest(req, schema);
   const userId = req.user.id;
@@ -67,3 +67,4 @@ async function handler(
     throw new ApiError(500, 'Failed to award tutorial bonus prompts', error);
   }
 }
+
