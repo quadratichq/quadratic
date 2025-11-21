@@ -133,7 +133,7 @@ export class PointerDown {
       // If ctrl/cmd is also pressed, it's append mode (MouseCtrlClick)
       // Otherwise it's MouseShiftClick
       const isAppend = event.metaKey || event.ctrlKey;
-      cursor.selectTo(column, row, isAppend, true, false, true);
+      cursor.selectTo(column, row, isAppend, true);
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
@@ -194,7 +194,7 @@ export class PointerDown {
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
       pixiApp.viewport.enableMouseEdges(world);
 
-      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false, true);
+      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false);
       this.previousPosition = new Point(column, row);
 
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {

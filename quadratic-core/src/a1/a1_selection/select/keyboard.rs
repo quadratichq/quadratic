@@ -1,6 +1,6 @@
 use crate::{
     Pos, Rect,
-    a1::{A1Context, A1Selection, CellRefRange, CellRefRangeEnd},
+    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds},
     grid::sheet::merge_cells::MergeCells,
 };
 
@@ -60,221 +60,308 @@ impl A1Selection {
     }
 }
 
-/// Core keyboard selection logic for sheet ranges
-fn keyboard_select_sheet_range(
-    range: &mut crate::a1::RefRangeBounds,
+fn is_anchor_aligned_with_left_rect_edge(
     anchor: Pos,
-    delta_x: i64,
-    delta_y: i64,
-    end_pos: &mut Pos,
+    selection: Rect,
     merge_cells: &MergeCells,
-) {
-    // Check if end_pos is currently inside a merged cell
-    if let Some(merged_rect) = merge_cells.get_merge_cell_rect(*end_pos) {
-        // Exit the merged cell in the direction of movement
-        *end_pos = exit_merged_cell(merged_rect, *end_pos, delta_x, delta_y);
-    } else {
-        // Calculate target position by applying delta
-        let mut target_pos = Pos::new((end_pos.x + delta_x).max(1), (end_pos.y + delta_y).max(1));
-
-        // If end_pos is aligned with merged cells in the selection, skip past
-        // them in the direction of movement
-        let current_rect = range.to_rect_unbounded();
-        let merged_cells_in_selection = merge_cells.get_merge_cells(current_rect);
-
-        // Track the furthest skip to avoid checking the same merged cell multiple times
-        let mut furthest_skip_x = target_pos.x;
-        let mut furthest_skip_y = target_pos.y;
-
-        for merged_rect in &merged_cells_in_selection {
-            // Check if end_pos is outside the merged cell but aligned with it
-            let is_outside_horizontally =
-                end_pos.x < merged_rect.min.x || end_pos.x > merged_rect.max.x;
-            let is_outside_vertically =
-                end_pos.y < merged_rect.min.y || end_pos.y > merged_rect.max.y;
-
-            // If moving vertically and horizontally aligned with merged cell
-            if delta_y != 0 && !is_outside_vertically && is_outside_horizontally {
-                if delta_y > 0 && target_pos.y <= merged_rect.max.y {
-                    // Moving down and target is within merged cell's y-range: skip past it
-                    furthest_skip_y = furthest_skip_y.max(merged_rect.max.y + 1);
-                } else if delta_y < 0 && target_pos.y >= merged_rect.min.y {
-                    // Moving up and target is within merged cell's y-range: skip past it
-                    furthest_skip_y = furthest_skip_y.min(merged_rect.min.y - 1);
-                }
-            }
-
-            // If moving horizontally and vertically aligned with merged cell
-            if delta_x != 0 && !is_outside_horizontally && is_outside_vertically {
-                if delta_x > 0 && target_pos.x <= merged_rect.max.x {
-                    // Moving right and target is within merged cell's x-range: skip past it
-                    furthest_skip_x = furthest_skip_x.max(merged_rect.max.x + 1);
-                } else if delta_x < 0 && target_pos.x >= merged_rect.min.x {
-                    // Moving left and target is within merged cell's x-range: skip past it
-                    furthest_skip_x = furthest_skip_x.min(merged_rect.min.x - 1);
-                }
-            }
-        }
-
-        target_pos.x = furthest_skip_x;
-        target_pos.y = furthest_skip_y;
-
-        // Check if target is inside a merged cell
-        if let Some(merged_rect) = merge_cells.get_merge_cell_rect(target_pos) {
-            // Determine if we're growing (moving away from anchor) or shrinking (moving toward anchor)
-            let is_growing = is_growing_from_anchor(anchor, *end_pos, delta_x, delta_y);
-
-            if is_growing {
-                // Growing: keep end_pos at target (inside merged cell)
-                *end_pos = target_pos;
-            } else {
-                // Shrinking: skip over merged cell, exit on opposite side
-                *end_pos = exit_merged_cell(merged_rect, target_pos, delta_x, delta_y);
-            }
-        } else {
-            // Normal case: target is not in a merged cell
-            *end_pos = target_pos;
-        }
+) -> bool {
+    if anchor.x == selection.min.x {
+        return true;
     }
 
-    // Update range based on anchor and end_pos, including all partial merged cells
-    // Start with anchor:end_pos range
-    range.start = CellRefRangeEnd::new_relative_xy(anchor.x, anchor.y);
-    range.end = CellRefRangeEnd::new_relative_xy(end_pos.x, end_pos.y);
+    // check for any merged cells that are aligned with the left edge of the rect.
+    let merged_cells = merge_cells.get_merge_cells(Rect::new(
+        anchor.x,
+        selection.min.y,
+        anchor.x,
+        selection.max.y,
+    ));
 
-    // Recursively expand to include any partially overlapping merged cells
-    expand_for_partial_merged_cells(range, anchor, merge_cells);
-}
-
-/// Determines if movement is growing away from anchor or shrinking toward it
-fn is_growing_from_anchor(anchor: Pos, end_pos: Pos, delta_x: i64, delta_y: i64) -> bool {
-    // Calculate current distance from anchor
-    let current_dx = end_pos.x - anchor.x;
-    let current_dy = end_pos.y - anchor.y;
-
-    // Calculate new position and its distance from anchor
-    let new_x = end_pos.x + delta_x;
-    let new_y = end_pos.y + delta_y;
-    let new_dx = new_x - anchor.x;
-    let new_dy = new_y - anchor.y;
-
-    // Growing if absolute distance increases or we cross anchor (change sign)
-    if delta_x != 0 {
-        let growing = new_dx.abs() > current_dx.abs()
-            || (current_dx != 0 && new_dx != 0 && current_dx.signum() != new_dx.signum());
-        return growing;
-    }
-
-    if delta_y != 0 {
-        let growing = new_dy.abs() > current_dy.abs()
-            || (current_dy != 0 && new_dy != 0 && current_dy.signum() != new_dy.signum());
-        return growing;
+    // check the left-most edge of the merged cells
+    if let Some(edge) = merged_cells.iter().map(|cell| cell.min.x).min() {
+        return edge == selection.min.x;
     }
 
     false
 }
 
-/// Exits a merged cell in the direction of movement
-/// Returns the position one cell past the merged cell edge
-fn exit_merged_cell(merged_rect: Rect, _current_pos: Pos, delta_x: i64, delta_y: i64) -> Pos {
-    if delta_x > 0 {
-        // Moving right: exit to right edge + 1, preserve y within merged cell bounds
-        Pos::new(merged_rect.max.x + 1, _current_pos.y)
-    } else if delta_x < 0 {
-        // Moving left: exit to left edge - 1, preserve y within merged cell bounds
-        Pos::new(merged_rect.min.x - 1, _current_pos.y)
-    } else if delta_y > 0 {
-        // Moving down: exit to bottom edge + 1, preserve x within merged cell bounds
-        Pos::new(_current_pos.x, merged_rect.max.y + 1)
-    } else if delta_y < 0 {
-        // Moving up: exit to top edge - 1, preserve x within merged cell bounds
-        Pos::new(_current_pos.x, merged_rect.min.y - 1)
-    } else {
-        // No movement
-        _current_pos
+fn is_anchor_aligned_with_right_rect_edge(
+    anchor: Pos,
+    selection: Rect,
+    merge_cells: &MergeCells,
+) -> bool {
+    if anchor.x == selection.max.x {
+        return true;
+    }
+
+    // check for any merged cells that are aligned with the right edge of the rect.
+    let merged_cells = merge_cells.get_merge_cells(Rect::new(
+        anchor.x,
+        selection.min.y,
+        anchor.x,
+        selection.max.y,
+    ));
+
+    // check the right-most edge of the merged cells
+    if let Some(edge) = merged_cells.iter().map(|cell| cell.max.x).max() {
+        return edge == selection.max.x;
+    }
+
+    false
+}
+
+fn is_anchor_aligned_with_top_rect_edge(
+    anchor: Pos,
+    selection: Rect,
+    merge_cells: &MergeCells,
+) -> bool {
+    if anchor.y == selection.min.y {
+        return true;
+    }
+
+    // check for any merged cells that are aligned with the left edge of the rect.
+    let merged_cells = merge_cells.get_merge_cells(Rect::new(
+        selection.min.x,
+        anchor.y,
+        selection.max.x,
+        anchor.y,
+    ));
+
+    // check the top-most edge of the merged cells
+    if let Some(edge) = merged_cells.iter().map(|cell| cell.min.y).min() {
+        return edge == selection.min.y;
+    }
+
+    false
+}
+
+fn is_anchor_aligned_with_bottom_rect_edge(
+    anchor: Pos,
+    selection: Rect,
+    merge_cells: &MergeCells,
+) -> bool {
+    if anchor.y == selection.max.y {
+        return true;
+    }
+
+    // check for any merged cells that are aligned with the right edge of the rect.
+    let merged_cells = merge_cells.get_merge_cells(Rect::new(
+        selection.min.x,
+        anchor.y,
+        selection.max.x,
+        anchor.y,
+    ));
+
+    // check the bottom-most edge of the merged cells
+    if let Some(edge) = merged_cells.iter().map(|cell| cell.max.y).max() {
+        return edge == selection.max.y;
+    }
+
+    false
+}
+
+fn grow_right(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.max.x += 1;
+
+    // check if we have any partial merged cells and expand to include them
+    loop {
+        let mut included = false;
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.union_in_place(merged_cell_rect);
+                included = true;
+            }
+        }
+        if !included {
+            break;
+        }
     }
 }
 
-/// Recursively expands selection to fully include any partially overlapping merged cells
-fn expand_for_partial_merged_cells(
-    range: &mut crate::a1::RefRangeBounds,
-    anchor: Pos,
-    merge_cells: &MergeCells,
-) {
-    const MAX_ITERATIONS: usize = 100; // Prevent infinite loops
-    let mut iterations = 0;
+fn grow_left(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.min.x -= 1;
 
+    // we're at the boundary; nothing more to do
+    if rect.min.x < 1 {
+        rect.min.x = 1;
+        return;
+    }
+
+    // check if we have any partial merged cells and expand to include them
     loop {
-        iterations += 1;
-        if iterations > MAX_ITERATIONS {
-            // Safety: prevent infinite loops
-            break;
-        }
-
-        let current_rect = range.to_rect_unbounded();
-        let intersecting = merge_cells.get_merge_cells(current_rect);
-
-        let mut needs_expansion = false;
-        let mut union_rect = current_rect;
-        let mut merged_cells_bounds = Rect::new(i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-
-        for merged_rect in &intersecting {
-            // If merged cell is not fully contained, we need to expand
-            if !current_rect.contains_rect(merged_rect) {
-                // Track the bounds of all merged cells
-                if needs_expansion {
-                    merged_cells_bounds = Rect::new(
-                        merged_cells_bounds.min.x.min(merged_rect.min.x),
-                        merged_cells_bounds.min.y.min(merged_rect.min.y),
-                        merged_cells_bounds.max.x.max(merged_rect.max.x),
-                        merged_cells_bounds.max.y.max(merged_rect.max.y),
-                    );
-                } else {
-                    merged_cells_bounds = *merged_rect;
-                }
-
-                // Union with this merged cell
-                union_rect = Rect::new(
-                    union_rect.min.x.min(merged_rect.min.x),
-                    union_rect.min.y.min(merged_rect.min.y),
-                    union_rect.max.x.max(merged_rect.max.x),
-                    union_rect.max.y.max(merged_rect.max.y),
-                );
-                needs_expansion = true;
+        let mut included = false;
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.union_in_place(merged_cell_rect);
+                included = true;
             }
         }
-
-        if needs_expansion {
-            // When merged cells are involved, expand to include them
-            let end_pos = Pos::new(range.end.col(), range.end.row());
-
-            // The final selection should span from anchor to the union
-            let start_x = anchor.x.min(union_rect.min.x);
-            let start_y = anchor.y.min(union_rect.min.y);
-            let end_x = anchor.x.max(union_rect.max.x);
-            let end_y = anchor.y.max(union_rect.max.y);
-
-            // Clamp to not go beyond the actual merged cell extents when end_pos is outside them
-            let clamped_start_y = if end_pos.y < merged_cells_bounds.min.y {
-                // end_pos is above merged cells, clamp to merged cell top
-                start_y.max(merged_cells_bounds.min.y)
-            } else {
-                start_y
-            };
-            let clamped_start_x = if end_pos.x < merged_cells_bounds.min.x {
-                // end_pos is left of merged cells, clamp to merged cell left
-                start_x.max(merged_cells_bounds.min.x)
-            } else {
-                start_x
-            };
-
-            range.start = CellRefRangeEnd::new_relative_xy(clamped_start_x, clamped_start_y);
-            range.end = CellRefRangeEnd::new_relative_xy(end_x, end_y);
-        } else {
-            // No expansion needed, we're done
+        if !included {
             break;
         }
     }
+}
+
+fn grow_down(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.max.y += 1;
+
+    // check if we have any partial merged cells and expand to include them
+    loop {
+        let mut included = false;
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.union_in_place(merged_cell_rect);
+                included = true;
+            }
+        }
+        if !included {
+            break;
+        }
+    }
+}
+
+fn grow_up(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.min.y -= 1;
+
+    // we're at the boundary; nothing more to do
+    if rect.min.y < 1 {
+        rect.min.y = 1;
+        return;
+    }
+
+    // check if we have any partial merged cells and expand to include them
+    loop {
+        let mut included = false;
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.union_in_place(merged_cell_rect);
+                included = true;
+            }
+            if !included {
+                break;
+            }
+        }
+    }
+}
+
+fn shrink_left(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.min.x += 1;
+
+    // need to loop through until we don't exclude any more cells
+    loop {
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        let mut excluded = false;
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.min.x = merged_cell_rect.max.x + 1;
+            }
+            excluded = true;
+        }
+        if !excluded {
+            break;
+        }
+    }
+}
+
+fn shrink_right(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.max.x -= 1;
+
+    // need to loop through until we don't exclude any more cells
+    loop {
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        let mut excluded = false;
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.max.x = merged_cell_rect.min.x - 1;
+                excluded = true;
+            }
+        }
+        if !excluded {
+            break;
+        }
+    }
+}
+
+fn shrink_up(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.min.y += 1;
+
+    // need to loop through until we don't exclude any more cells
+    loop {
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        let mut excluded = false;
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.min.y = merged_cell_rect.max.y + 1;
+            }
+            excluded = true;
+        }
+        if !excluded {
+            break;
+        }
+    }
+}
+
+fn shrink_down(rect: &mut Rect, merge_cells: &MergeCells) {
+    rect.max.y -= 1;
+
+    // need to loop through until we don't exclude any more cells
+    loop {
+        let merged_cells = merge_cells.get_merge_cells(*rect);
+        let mut excluded = false;
+        for merged_cell_rect in merged_cells.iter() {
+            if !rect.contains_rect(merged_cell_rect) {
+                rect.max.y = merged_cell_rect.min.y - 1;
+            }
+            excluded = true;
+        }
+        if !excluded {
+            break;
+        }
+    }
+}
+
+/// Core keyboard selection logic for sheet ranges
+fn keyboard_select_sheet_range(
+    range: &mut RefRangeBounds,
+    anchor: Pos,
+    delta_x: i64,
+    delta_y: i64,
+    _end_pos: &mut Pos,
+    merge_cells: &MergeCells,
+) {
+    let mut rect = range.to_rect_unbounded();
+    if delta_x > 0 {
+        if is_anchor_aligned_with_left_rect_edge(anchor, rect, merge_cells) {
+            grow_right(&mut rect, merge_cells);
+        } else {
+            shrink_left(&mut rect, merge_cells);
+        }
+    } else if delta_x < 0 {
+        if is_anchor_aligned_with_right_rect_edge(anchor, rect, merge_cells) {
+            grow_left(&mut rect, merge_cells);
+        } else {
+            shrink_right(&mut rect, merge_cells);
+        }
+    } else if delta_y > 0 {
+        if is_anchor_aligned_with_top_rect_edge(anchor, rect, merge_cells) {
+            grow_down(&mut rect, merge_cells);
+        } else {
+            shrink_up(&mut rect, merge_cells);
+        }
+    } else if delta_y < 0 {
+        if is_anchor_aligned_with_bottom_rect_edge(anchor, rect, merge_cells) {
+            grow_up(&mut rect, merge_cells);
+        } else {
+            shrink_down(&mut rect, merge_cells);
+        }
+    }
+
+    *range = RefRangeBounds::new_relative_rect(rect);
+    dbgjs!(&rect);
 }
 
 #[cfg(test)]
@@ -402,52 +489,5 @@ mod tests {
         // Move up again: end_pos is inside merged cell, exit to D4
         // Selection stays C5:E12 since it still includes the merged cell
         assert_move(0, -1, "C5:E12", "D4");
-    }
-
-    #[test]
-    fn test_exit_merged_cell() {
-        let merged_rect = Rect::test_a1("C5:E10");
-        let pos = Pos::test_a1("D7");
-
-        // Exit right
-        assert_eq!(exit_merged_cell(merged_rect, pos, 1, 0), Pos::test_a1("F7"));
-
-        // Exit left
-        assert_eq!(
-            exit_merged_cell(merged_rect, pos, -1, 0),
-            Pos::test_a1("B7")
-        );
-
-        // Exit down
-        assert_eq!(
-            exit_merged_cell(merged_rect, pos, 0, 1),
-            Pos::test_a1("D11")
-        );
-
-        // Exit up
-        assert_eq!(
-            exit_merged_cell(merged_rect, pos, 0, -1),
-            Pos::test_a1("D4")
-        );
-    }
-
-    #[test]
-    fn test_is_growing_from_anchor() {
-        let anchor = Pos::test_a1("D5");
-
-        // Starting at anchor, moving right: growing
-        assert!(is_growing_from_anchor(anchor, anchor, 1, 0));
-
-        // At E5, moving right: growing
-        assert!(is_growing_from_anchor(anchor, Pos::test_a1("E5"), 1, 0));
-
-        // At E5, moving left: shrinking
-        assert!(!is_growing_from_anchor(anchor, Pos::test_a1("E5"), -1, 0));
-
-        // At C5 (left of anchor), moving left: growing
-        assert!(is_growing_from_anchor(anchor, Pos::test_a1("C5"), -1, 0));
-
-        // At C5, moving right: shrinking
-        assert!(!is_growing_from_anchor(anchor, Pos::test_a1("C5"), 1, 0));
     }
 }

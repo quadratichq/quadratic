@@ -2,7 +2,6 @@ mod column_row;
 mod helpers;
 mod keyboard;
 mod mouse;
-mod normalize;
 
 #[cfg(test)]
 mod tests;

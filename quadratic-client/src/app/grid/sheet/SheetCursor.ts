@@ -258,7 +258,7 @@ export class SheetCursor {
     this.updatePosition(true);
   };
 
-  selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false, isShiftClick = false) => {
+  selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
     this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };

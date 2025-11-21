@@ -99,16 +99,7 @@ impl A1Selection {
                         self.cursor.x = column;
                     }
 
-                    // // Normalize the selection using the new normalize module
-                    // let new_cursor = normalize_selection(
-                    //     range,
-                    //     column,
-                    //     row,
-                    //     original_cursor,
-                    //     None, // Merged cell adjustments handled separately
-                    //     &mut state,
-                    // );
-                    // self.cursor = new_cursor;
+                    range.end = CellRefRangeEnd::new_relative_xy(column, row);
 
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
@@ -116,8 +107,5 @@ impl A1Selection {
                 }
             };
         }
-        // state.selection_end = Pos::new(column, row);
-
-        // state
     }
 }
