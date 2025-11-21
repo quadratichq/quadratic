@@ -277,12 +277,8 @@ export const Component = () => {
               File recovery
             </Type>
             <div>
-              <p className="mb-2 pt-2 text-sm">
-                You can recover public or private files that have been deleted on this team. Deleted files are kept for
-                30 days.
-              </p>
               <Button variant="outline" asChild>
-                <Link to={`../files/deleted`}>View deleted files</Link>
+                <Link to={ROUTES.TEAM_FILES_DELETED(team.uuid)}>Recover deleted files</Link>
               </Button>
             </div>
           </SettingsRow>

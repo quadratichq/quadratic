@@ -102,7 +102,8 @@ export const Component = () => {
             <DialogHeader>
               <DialogTitle>Restore file</DialogTitle>
               <DialogDescription>
-                This file will be restored to (the team’s files | your personal files).
+                This file will be restored to{' '}
+                {activeFile.file.ownerUserId === null ? 'the team’s files' : 'your personal files'}.
               </DialogDescription>
             </DialogHeader>
 
