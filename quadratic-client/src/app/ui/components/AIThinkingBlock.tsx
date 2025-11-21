@@ -34,7 +34,7 @@ export const AIThinkingBlock = memo(
     const [isExpanded, setIsExpanded] = useState(false);
     const [showLastSentence, setShowLastSentence] = useState(false);
 
-    // After 2 seconds of loading, show the last sentence
+    // After 1 second of loading, show the last sentence
     useEffect(() => {
       if (isLoading && isCurrentMessage && !isExpanded) {
         const timer = setTimeout(() => {
