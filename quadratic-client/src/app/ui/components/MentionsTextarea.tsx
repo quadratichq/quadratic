@@ -280,7 +280,7 @@ const MentionsTextarea = memo(
               {/* Mentions dropdown */}
               <div
                 data-mentions-dropdown
-                className="absolute z-50 w-80 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                className="absolute z-50 w-96 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
                 style={{
                   position: 'fixed',
                   top: mentionState.position.top - 24,
@@ -314,13 +314,15 @@ const MentionsTextarea = memo(
                                 : 'hover:bg-accent hover:text-accent-foreground'
                             )}
                           >
-                            <div className="flex flex-row items-center justify-between">
-                              <div className="flex flex-row items-center gap-2">
+                            <div className="flex min-w-0 flex-row items-center gap-1">
+                              <div className="flex min-w-0 flex-[3] flex-row items-center gap-2">
                                 {mention.icon && mention.icon}
-                                <span className="font-medium">{mention.label}</span>
+                                <span className="truncate font-medium">{mention.label}</span>
                               </div>
                               {mention.description && (
-                                <span className="text-xs text-muted-foreground">{mention.description}</span>
+                                <span className="min-w-0 flex-[1] truncate text-right text-xs text-muted-foreground">
+                                  {mention.description}
+                                </span>
                               )}
                             </div>
                           </div>

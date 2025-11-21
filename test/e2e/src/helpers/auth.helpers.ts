@@ -186,47 +186,51 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   return email;
 };
 
-const handleOnboarding = async (page: Page) => {
-  // Check for "Get started in"
-  const getStartedHeader = page.locator('h2:has-text("Get started in")');
-  if (await getStartedHeader.isVisible()) {
-    const skipButton = page.locator('[data-testid="skip-get-started"]');
-    if (await skipButton.isVisible()) {
-      await skipButton.click({ timeout: 60 * 1000 });
-      await handleQuadraticLoading(page);
-      return;
-    }
-  }
-
-  const onboardingStart = page.locator('h2:has-text("How will you use Quadratic?")');
-  if (!(await onboardingStart.isVisible())) {
+export const handleOnboarding = async (page: Page) => {
+  // First, check if we're on the onboarding page
+  if (!page.url().includes('/onboarding')) {
     await handleQuadraticLoading(page);
     return;
   }
 
-  await page.locator('a:has-text("Work")').click({ timeout: 60 * 1000 });
-  await onboardingStart.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Wait for the onboarding page to be ready
+  await page.waitForLoadState('networkidle', { timeout: 5 * 1000 }).catch(() => {});
 
-  const onboardingFirstQuestion = page.locator('h2:has-text("What best describes your role?")');
-  await onboardingFirstQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('a:has-text("Software Development")').click({ timeout: 60 * 1000 });
-  await onboardingFirstQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Personal use (first step after removing instructions)
+  const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
+  await onboardingBtnUsePersonal.click({ timeout: 60 * 1000 });
+  await onboardingBtnUsePersonal.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  const onboardingSecondQuestion = page.locator('h2:has-text("Which languages are you proficient in?")');
-  await onboardingSecondQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('label:has-text("Formulas")').click({ timeout: 60 * 1000 });
-  await page.getByRole(`button`, { name: `Next` }).click({ timeout: 60 * 1000 });
-  await onboardingSecondQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Connections
+  const onboardingBtnConnections = page.locator('[data-testid="onboarding-btn-connections-next"]');
+  await onboardingBtnConnections.click({ timeout: 60 * 1000 });
+  await onboardingBtnConnections.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
-  const onboardingThirdQuestion = page.locator('h2:has-text("What are you looking to accomplish in Quadratic?")');
-  await onboardingThirdQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('label:has-text("AI analysis")').click({ timeout: 60 * 1000 });
-  await page.getByRole(`button`, { name: `Done` }).click({ timeout: 60 * 1000 });
-  await onboardingThirdQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Team name
+  const onboardingInputTeamName = page.locator('[data-testid="onboarding-input-team-name"]');
+  await onboardingInputTeamName.fill('E2E Test Team', { timeout: 60 * 1000 });
+  const onboardingBtnTeamName = page.locator('[data-testid="onboarding-btn-team-name-next"]');
+  await onboardingBtnTeamName.click({ timeout: 60 * 1000 });
+  await onboardingBtnTeamName.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+
+  // Team invites
+  const onboardingBtnTeamInvites = page.locator('[data-testid="onboarding-btn-team-invites-next"]');
+  await onboardingBtnTeamInvites.click({ timeout: 60 * 1000 });
+  await onboardingBtnTeamInvites.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+
+  // How they heard
+  const onboardingBtnHowTheyHeard = page.locator('[data-testid="onboarding-btn-source-other"]');
+  await onboardingBtnHowTheyHeard.click({ timeout: 60 * 1000 });
+  await onboardingBtnHowTheyHeard.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+
+  // Team plan
+  const onboardingBtnTeamPlanFree = page.locator('[data-testid="onboarding-btn-team-plan-free"]');
+  await onboardingBtnTeamPlanFree.click({ timeout: 60 * 1000 });
+  await onboardingBtnTeamPlanFree.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   await handleQuadraticLoading(page);
 };
 
-const handleQuadraticLoading = async (page: Page) => {
+export const handleQuadraticLoading = async (page: Page) => {
   await page.locator('html[data-loading-start]').waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 };

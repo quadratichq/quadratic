@@ -34,13 +34,13 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
 
   // 1.
   // Clone an example file by passing the file id, e.g.
-  // /teams/:teamUuid/files/create?example=:publicFileUrlInProduction&{isPrivate?}
-  const exampleUrl = searchParams.get('example');
-  searchParams.delete('example');
-  if (exampleUrl) {
+  // /teams/:teamUuid/files/create?template=:publicFileUrlInProduction&{isPrivate?}
+  const templateUrl = searchParams.get('template');
+  searchParams.delete('template');
+  if (templateUrl) {
     try {
-      const { uuid, name } = await apiClient.examples.duplicate({
-        publicFileUrlInProduction: exampleUrl,
+      const { uuid, name } = await apiClient.templates.duplicate({
+        publicFileUrlInProduction: templateUrl,
         teamUuid,
         isPrivate,
       });
@@ -51,10 +51,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
         message: 'Client failed to load the selected example file.',
         level: 'warning',
         extra: {
-          publicFileUrlInProduction: exampleUrl,
+          publicFileUrlInProduction: templateUrl,
         },
       });
-      return replace(getFailUrl(ROUTES.EXAMPLES));
+      return replace(getFailUrl(ROUTES.TEMPLATES));
     }
   }
 
