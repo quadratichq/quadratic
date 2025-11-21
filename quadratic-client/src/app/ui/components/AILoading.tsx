@@ -7,9 +7,9 @@ interface AILoadingProps {
 export const AILoading = memo(({ loading }: AILoadingProps) => {
   return (
     <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
-      <span className="h-2 w-2 animate-bounce bg-primary" />
-      <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
-      <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
+      <span className="h-2 w-2 animate-bounce" style={{ backgroundColor: '#a855f7' }} />
+      <span className="h-2 w-2 animate-bounce delay-100" style={{ backgroundColor: '#a855f799' }} />
+      <span className="h-2 w-2 animate-bounce delay-200" style={{ backgroundColor: '#a855f733' }} />
     </div>
   );
 });
