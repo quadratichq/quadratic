@@ -4,6 +4,7 @@ import { claimBonusPromptAtom } from '@/app/atoms/bonusPromptsAtom';
 import { calloutAtom } from '@/app/atoms/calloutAtom';
 import { tutorialAtom } from '@/app/atoms/tutorialAtom';
 import { events } from '@/app/events/events';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -54,6 +55,7 @@ export const usePromptAITutorial = () => {
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
         }
+        trackEvent('[OnboardingChecklist].taskComplete', { id: CATEGORY });
         events.emit('tutorialTrigger', 'complete');
         break;
       case 'cancel':

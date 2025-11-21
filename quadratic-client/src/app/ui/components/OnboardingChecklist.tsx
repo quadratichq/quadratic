@@ -13,6 +13,7 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
@@ -49,6 +50,7 @@ export const OnboardingChecklist = () => {
 
   const handleItemClick = useCallback(
     (category: string, repeat: boolean) => {
+      trackEvent('[OnboardingChecklist].taskStart', { id: category });
       switch (category) {
         case 'prompt-ai':
           setDemoRunning(true);
@@ -75,8 +77,15 @@ export const OnboardingChecklist = () => {
       return;
     }
 
+    // Track dismiss event with completion status
+    if (bonusPrompts) {
+      const tasksComplete = bonusPrompts.filter((prompt) => prompt.received).length;
+      const tasksTotal = bonusPrompts.length;
+      trackEvent('[OnboardingChecklist].dismiss', { tasksComplete, tasksTotal });
+    }
+
     handleAnimationClose();
-  }, [demoRunning, handleAnimationClose]);
+  }, [demoRunning, handleAnimationClose, bonusPrompts]);
 
   useEffect(() => {
     const handleTutorialTrigger = (trigger: string) => {

@@ -2,6 +2,7 @@ import { claimBonusPromptAtom } from '@/app/atoms/bonusPromptsAtom';
 import { calloutAtom } from '@/app/atoms/calloutAtom';
 import { tutorialAtom } from '@/app/atoms/tutorialAtom';
 import { events } from '@/app/events/events';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -28,6 +29,7 @@ export const useWatchTutorial = () => {
       case 'complete':
         setTutorial({ show: false, unmaskedElements: [] });
         setShowVideoDialog(false);
+        trackEvent('[OnboardingChecklist].taskComplete', { id: CATEGORY });
         events.emit('tutorialTrigger', 'complete');
         if (!repeat) {
           claimBonusPrompt(CATEGORY);

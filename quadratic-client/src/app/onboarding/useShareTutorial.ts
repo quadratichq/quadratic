@@ -3,6 +3,7 @@ import { calloutAtom } from '@/app/atoms/calloutAtom';
 import { editorInteractionStateShowShareFileMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { tutorialAtom } from '@/app/atoms/tutorialAtom';
 import { events } from '@/app/events/events';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -62,6 +63,7 @@ export const useShareTutorial = () => {
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
         }
+        trackEvent('[OnboardingChecklist].taskComplete', { id: CATEGORY });
         events.emit('tutorialTrigger', 'complete');
         break;
       case 'cancel':
