@@ -8,6 +8,7 @@ import { useAnimateOnboarding } from '@/app/ui/hooks/useAnimateOnboarding';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { CheckBoxEmptyIcon, CheckBoxIcon, ChecklistIcon } from '@/shared/components/Icons';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
@@ -21,6 +22,9 @@ export const OnboardingChecklist = () => {
   const showOnboardingChecklist = useAtomValue(onboardingChecklistAtom);
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
   const { loggedInUser } = useRootRouteLoaderData();
+  const {
+    team: { isOnPaidPlan },
+  } = useFileRouteLoaderData();
 
   const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog, completeVideoDialog } = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
@@ -197,12 +201,14 @@ export const OnboardingChecklist = () => {
                   </span>
 
                   {/* Badge */}
-                  <Badge
-                    variant={!prompt.received ? 'primary' : 'outline'}
-                    className={cn('ml-4', prompt.received && 'text-muted-foreground line-through')}
-                  >
-                    +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
-                  </Badge>
+                  {!isOnPaidPlan && (
+                    <Badge
+                      variant={!prompt.received ? 'primary' : 'outline'}
+                      className={cn('ml-4', prompt.received && 'text-muted-foreground line-through')}
+                    >
+                      +{prompt.prompts} prompt{prompt.prompts !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
