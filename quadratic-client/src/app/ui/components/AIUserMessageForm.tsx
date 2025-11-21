@@ -395,7 +395,7 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
+      <div className={'flex flex-col'}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
           <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}

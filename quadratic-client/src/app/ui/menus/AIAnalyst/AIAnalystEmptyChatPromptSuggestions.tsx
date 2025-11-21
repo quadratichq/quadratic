@@ -87,7 +87,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-4 px-2">
+      <div className="flex flex-grow flex-col items-center justify-center gap-4 px-2">
         <h2 className="text-xl font-medium">What would you like to do?</h2>
         <div className="flex flex-row flex-wrap justify-center gap-2">
           {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
