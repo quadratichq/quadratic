@@ -1,6 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -23,7 +24,29 @@ export const SetSQLCodeCellValue = memo(
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
     useEffect(() => {
+      // Try to parse position even while loading to move cursor early
       if (loading) {
+        const partialJson = parsePartialJson<SetSQLCodeCellValueResponse>(args);
+        if (partialJson && 'code_cell_position' in partialJson && partialJson.code_cell_position) {
+          try {
+            const sheetId = partialJson.sheet_name
+              ? (sheets.getSheetByName(partialJson.sheet_name)?.id ?? sheets.current)
+              : sheets.current;
+            const selection = sheets.stringToSelection(partialJson.code_cell_position, sheetId);
+
+            // Move AI cursor to the code cell position as soon as we know the location
+            try {
+              const selectionString = selection.save();
+              aiUser.updateSelection(selectionString, sheetId);
+            } catch (e) {
+              console.warn('[SetSQLCodeCellValue] Failed to update AI cursor while loading:', e);
+            }
+
+            selection.free();
+          } catch (e) {
+            console.warn('[SetSQLCodeCellValue] Failed to parse position while loading:', e);
+          }
+        }
         setToolArgs(undefined);
         return;
       }
@@ -45,8 +68,8 @@ export const SetSQLCodeCellValue = memo(
             : sheets.current;
           const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
           const { x, y } = selection.getCursor();
-          selection.free();
           setCodeCellPos({ x, y });
+          selection.free();
         } catch (e) {
           console.warn('[SetSQLCodeCellValue] Failed to set code cell position: ', e);
           setCodeCellPos(undefined);

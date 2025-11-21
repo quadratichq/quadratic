@@ -12,6 +12,7 @@ import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
+import { countWords } from '@/app/ai/utils/wordCount';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -38,6 +39,7 @@ import {
   xyToA1,
   type JsSelection,
 } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -170,6 +172,21 @@ export const aiToolsActions: AIToolActionsRecord = {
     // no action as this tool is only meant to get structured data from AI
     return [createTextContent(`Executed set chat name tool successfully with name: ${args.chat_name}`)];
   },
+  [AITool.SetFileName]: async (args) => {
+    // Validate word count (1-3 words)
+    const wordCount = countWords(args.file_name);
+
+    if (wordCount < 1 || wordCount > 3) {
+      return [
+        createTextContent(
+          `Error: File name must be 1-3 words. Received "${args.file_name}" which has ${wordCount} word(s). Please provide a shorter name.`
+        ),
+      ];
+    }
+
+    // no action as this tool is only meant to get structured data from AI
+    return [createTextContent(`Executed set file name tool successfully with name: ${args.file_name}`)];
+  },
   [AITool.AddDataTable]: async (args) => {
     try {
       const { sheet_name, top_left_position, table_name, table_data } = args;
@@ -191,7 +208,19 @@ export const aiToolsActions: AIToolActionsRecord = {
           isAi: true,
         });
 
-        ensureRectVisible(sheetId, { x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
+        const endX = x + table_data[0].length - 1;
+        const endY = y + table_data.length; // Don't subtract 1 to include the full table
+        ensureRectVisible(sheetId, { x, y }, { x: endX, y: endY });
+
+        // Update AI cursor to show selection over entire table
+        try {
+          const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+          const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection for data table:', e);
+        }
 
         return [createTextContent(`Executed add data table tool successfully with name: ${table_name}`)];
       } else {
@@ -212,6 +241,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
+        // Move AI cursor to show the range being written
+        try {
+          const endX = x + cell_values[0].length - 1;
+          const endY = y + cell_values.length - 1;
+          const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+          const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+
         await quadraticCore.setCellValues(sheetId, x, y, cell_values, true);
 
         ensureRectVisible(sheetId, { x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
@@ -235,6 +276,14 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
+      // Move AI cursor to the code cell position
+      try {
+        const selectionString = selection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -248,12 +297,26 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        // After execution, adjust viewport to show full output if it exists
+        // After execution, adjust viewport and cursor to show full output if it exists
         const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+
+          // Update AI cursor to show selection over entire output area
+          if (width > 1 || height > 1) {
+            try {
+              const endX = x + width - 1;
+              const endY = y + height - 1;
+              const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+              const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+              const selectionString = jsSelection.save();
+              aiUser.updateSelection(selectionString, sheetId);
+            } catch (e) {
+              console.warn('Failed to update AI user selection to full output range:', e);
+            }
+          }
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
@@ -355,6 +418,14 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
+      // Move AI cursor to the code cell position
+      try {
+        const selectionString = selection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -373,12 +444,26 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (transactionId) {
         await waitForSetCodeCellValue(transactionId);
 
-        // After execution, adjust viewport to show full output if it exists
+        // After execution, adjust viewport and cursor to show full output if it exists
         const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
         if (tableCodeCell) {
           const width = tableCodeCell.w;
           const height = tableCodeCell.h;
           ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+
+          // Update AI cursor to show selection over entire output area
+          if (width > 1 || height > 1) {
+            try {
+              const endX = x + width - 1;
+              const endY = y + height - 1;
+              const rangeSelection = `${xyToA1(x, y)}:${xyToA1(endX, endY)}`;
+              const jsSelection = sheets.stringToSelection(rangeSelection, sheetId);
+              const selectionString = jsSelection.save();
+              aiUser.updateSelection(selectionString, sheetId);
+            } catch (e) {
+              console.warn('Failed to update AI user selection to full output range:', e);
+            }
+          }
         }
 
         const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
@@ -394,6 +479,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       let { sheet_name, code_cell_position, formula_string } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the formula cells
+      try {
+        const jsSelection = sheets.stringToSelection(code_cell_position, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const transactionId = await quadraticCore.setFormula({
         sheetId,
         selection: code_cell_position,
@@ -442,6 +537,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
+      // Move AI cursor to show the target destination
+      try {
+        const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
+        const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
+        const targetRange = `${xyToA1(x, y)}:${xyToA1(x + rangeWidth, y + rangeHeight)}`;
+        const jsSelection = sheets.stringToSelection(targetRange, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false, true);
 
       return [createTextContent('Executed move cells tool successfully.')];
@@ -453,6 +560,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, selection } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being deleted
+      try {
+        const jsSelection = sheets.stringToSelection(selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const sourceSelection = sheets.stringToSelection(selection, sheetId).save();
       const response = await quadraticCore.deleteCellValues(sourceSelection, true);
       if (response?.result) {
@@ -477,6 +594,16 @@ export const aiToolsActions: AIToolActionsRecord = {
         : pixiAppSettings.codeEditorState.editorContent;
 
       const codeCell = pixiAppSettings.codeEditorState.codeCell;
+
+      // Move AI cursor to the code cell being updated
+      try {
+        const cellA1 = xyToA1(codeCell.pos.x, codeCell.pos.y);
+        const jsSelection = sheets.stringToSelection(cellA1, codeCell.sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, codeCell.sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
 
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
@@ -544,6 +671,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the starting cell and show selection
+      try {
+        const jsSelection = sheets.stringToSelection(selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.getAICells(selection, sheetId, page);
       if (!response || typeof response === 'string' || ('error' in response && response.error)) {
         const error = typeof response === 'string' ? response : response?.error;
@@ -592,6 +729,16 @@ export const aiToolsActions: AIToolActionsRecord = {
       };
 
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being formatted
+      try {
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.setFormats(sheetId, args.selection, formatUpdates, true);
       if (response?.result) {
         return [
@@ -609,6 +756,16 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.GetTextFormats]: async (args) => {
     try {
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Move AI cursor to the cells being read
+      try {
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
       if (typeof response === 'string') {
         return [createTextContent(`The selection ${args.selection} has:\n${response}`)];
@@ -652,6 +809,17 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { sheet_name, insert_before_sheet_name } = args;
       const response = await quadraticCore.addSheet(sheet_name, insert_before_sheet_name ?? undefined, true);
       if (response?.result) {
+        // Move AI cursor to the new sheet at A1
+        try {
+          const newSheetId = sheets.getSheetByName(sheet_name)?.id;
+          if (newSheetId) {
+            const jsSelection = sheets.stringToSelection('A1', newSheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, newSheetId);
+          }
+        } catch (e) {
+          console.warn('Failed to update AI cursor to new sheet:', e);
+        }
         return [createTextContent('Create new sheet tool executed successfully.')];
       } else {
         return [createTextContent(`Error executing add sheet tool: ${response?.error}`)];
@@ -669,6 +837,17 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const response = await quadraticCore.duplicateSheet(sheetId, name_of_new_sheet, true);
       if (response?.result) {
+        // Move AI cursor to the duplicated sheet at A1
+        try {
+          const newSheetId = sheets.getSheetByName(name_of_new_sheet)?.id;
+          if (newSheetId) {
+            const jsSelection = sheets.stringToSelection('A1', newSheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, newSheetId);
+          }
+        } catch (e) {
+          console.warn('Failed to update AI cursor to duplicated sheet:', e);
+        }
         return [createTextContent('Duplicate sheet tool executed successfully.')];
       } else {
         return [createTextContent(`Error executing duplicate sheet tool: ${response?.error}`)];
@@ -951,6 +1130,14 @@ export const aiToolsActions: AIToolActionsRecord = {
         return [createTextContent(`Invalid selection in SetBorders tool call: ${e.message}.`)];
       }
 
+      // Move AI cursor to the cells getting borders
+      try {
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
       const colorObject = color ? Color(color).rgb().object() : { r: 0, g: 0, b: 0 };
       const style: BorderStyle = {
         line,
@@ -1148,6 +1335,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddMessage]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addMessageToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1156,6 +1354,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddLogicalValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addLogicalValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1164,6 +1373,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddListValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addListValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1172,6 +1392,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddTextValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addTextValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1180,6 +1411,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddNumberValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addNumberValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1188,6 +1430,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.AddDateTimeValidation]: async (args) => {
     try {
+      // Move AI cursor to the cells getting validation
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await addDateTimeValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1196,6 +1449,17 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.RemoveValidations]: async (args) => {
     try {
+      // Move AI cursor to the cells having validation removed
+      try {
+        const sheetId = args.sheet_name
+          ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        const jsSelection = sheets.stringToSelection(args.selection, sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
       const text = await removeValidationsToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -1235,6 +1499,17 @@ export const aiToolsActions: AIToolActionsRecord = {
         ),
       ];
     }
+
+    // Move AI cursor to the code cell being read
+    try {
+      const cellA1 = xyToA1(codePos.x, codePos.y);
+      const jsSelection = sheets.stringToSelection(cellA1, sheetId);
+      const selectionString = jsSelection.save();
+      aiUser.updateSelection(selectionString, sheetId);
+    } catch (e) {
+      console.warn('Failed to update AI user selection:', e);
+    }
+
     try {
       const text = await codeCellToMarkdown(sheetId, codePos.x, codePos.y);
       return [createTextContent(text)];
