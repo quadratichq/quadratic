@@ -34,10 +34,35 @@ export const MaskUI = () => {
     }
   }, [show, isVisible]);
 
-  // Block all keyboard events
+  // Block all keyboard events except for unmasked elements
   useEffect(() => {
+    const isWithinUnmaskedElement = (target: EventTarget | null): boolean => {
+      if (!(target instanceof Element)) return false;
+
+      // Check if the target is within any unmasked element
+      for (const id of unmaskedElements) {
+        const unmaskedElement = document.getElementById(id);
+        if (unmaskedElement && (unmaskedElement === target || unmaskedElement.contains(target))) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!show) return;
+
+      // Allow keyboard input for unmasked elements
+      if (isWithinUnmaskedElement(e.target)) {
+        // Still allow Escape to cancel the tutorial
+        if (e.code === 'Escape') {
+          events.emit('tutorialTrigger', 'cancel');
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+
       // If debug, allow through Cmd+R or Ctrl+R, otherwise block
       if (debug) {
         if (e.code === 'KeyR' && (e.metaKey || e.ctrlKey)) {
@@ -53,12 +78,24 @@ export const MaskUI = () => {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (!show) return;
+
+      // Allow keyboard input for unmasked elements
+      if (isWithinUnmaskedElement(e.target)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
     };
 
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!show) return;
+
+      // Allow keyboard input for unmasked elements
+      if (isWithinUnmaskedElement(e.target)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
     };
@@ -72,7 +109,7 @@ export const MaskUI = () => {
       document.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('keypress', handleKeyPress, true);
     };
-  }, [debug, show]);
+  }, [debug, show, unmaskedElements]);
 
   // Calculate blocking rectangles based on unmasked elements
   useEffect(() => {

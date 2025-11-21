@@ -532,7 +532,11 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
               <Button
                 variant={null}
                 size="icon"
-                onClick={onClose}
+                id="tutorial-share-file-close-button"
+                onClick={() => {
+                  events.emit('tutorialTrigger', 'cancel');
+                  onClose();
+                }}
                 className="opacity-70 transition-opacity hover:opacity-100"
               >
                 <Cross2Icon />
@@ -662,10 +666,9 @@ export function InviteForm({
   }, []);
 
   return (
-    <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
+    <form id="tutorial-share-file" className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
       <div className="flex flex-grow flex-col">
         <Input
-          id="share-file-email-input"
           autoComplete="off"
           spellCheck="false"
           aria-label="Email"

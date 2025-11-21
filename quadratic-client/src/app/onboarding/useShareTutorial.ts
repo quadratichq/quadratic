@@ -5,15 +5,15 @@ import { tutorialAtom } from '@/app/atoms/tutorialAtom';
 import { events } from '@/app/events/events';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 
-const CATEGORY = 'demo-connection';
+const CATEGORY = 'share-file';
 type State = undefined | 'click-share' | 'enter-email' | 'complete' | 'cancel';
 
-const SHARE_TUTORIAL_ITEM_IDS = ['onboarding-checklist-item-demo-connection', 'onboarding-checklist-close'];
+const SHARE_TUTORIAL_ITEM_IDS = ['onboarding-checklist-item-share-file', 'onboarding-checklist-close'];
 
 export const useShareTutorial = () => {
-  const showShareFileMenu = useRecoilValue(editorInteractionStateShowShareFileMenuAtom);
+  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const claimBonusPrompt = useSetAtom(claimBonusPromptAtom);
   const setTutorial = useSetAtom(tutorialAtom);
   const setCallout = useSetAtom(calloutAtom);
@@ -26,44 +26,39 @@ export const useShareTutorial = () => {
       case 'click-share':
         setTutorial({
           show: true,
-          unmaskedElements: [...SHARE_TUTORIAL_ITEM_IDS, 'top-bar-share-button'],
+          unmaskedElements: [...SHARE_TUTORIAL_ITEM_IDS, 'tutorial-top-bar-share-button'],
         });
         setCallout({
-          callouts: [{ id: 'top-bar-share-button', side: 'left', text: 'Click Share to invite someone' }],
+          callouts: [{ id: 'tutorial-top-bar-share-button', side: 'left', text: 'Click Share to invite someone' }],
         });
         break;
       case 'enter-email':
         // Wait for the dialog to be fully rendered before highlighting the input
-        setTimeout(() => {
-          setTutorial({
-            show: true,
-            unmaskedElements: [...SHARE_TUTORIAL_ITEM_IDS, 'share-file-email-input'],
-          });
-          setCallout({
-            callouts: [
-              {
-                id: 'share-file-email-input',
-                side: 'right',
-                text: 'Enter an email address to share this file',
-              },
-            ],
-          });
-          // Focus and highlight the input
-          const input = document.getElementById('share-file-email-input') as HTMLInputElement;
-          if (input) {
-            input.focus();
-            // Add a highlight class temporarily
-            input.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
-            setTimeout(() => {
-              input.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
-            }, 2000);
-          }
-        }, 200);
+        setTutorial({
+          show: true,
+          unmaskedElements: ['tutorial-share-file', 'tutorial-share-file-close-button'],
+        });
+        setCallout({
+          callouts: [
+            {
+              id: 'tutorial-share-file',
+              side: 'right',
+              text: 'Enter an email address to share this file',
+            },
+          ],
+        });
+        // Focus and highlight the input
+        const input = document.getElementById('tutorial-share-file') as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+
         break;
       case 'complete':
         setTutorial({ show: false, unmaskedElements: [] });
         setCallout({ callouts: [] });
         setState(undefined);
+        setShowShareFileMenu(false);
         if (!repeat) {
           claimBonusPrompt(CATEGORY);
         }
@@ -75,7 +70,7 @@ export const useShareTutorial = () => {
         setState(undefined);
         break;
     }
-  }, [claimBonusPrompt, repeat, setCallout, setTutorial, state]);
+  }, [claimBonusPrompt, repeat, setShowShareFileMenu, setCallout, setTutorial, state]);
 
   // Watch for share dialog opening
   useEffect(() => {

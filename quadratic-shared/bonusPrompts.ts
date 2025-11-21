@@ -9,7 +9,7 @@ export const BONUS_PROMPTS = {
     prompts: 3,
     active: true,
   },
-  'demo-connection': {
+  'share-file': {
     name: 'Share',
     prompts: 3,
     active: true,

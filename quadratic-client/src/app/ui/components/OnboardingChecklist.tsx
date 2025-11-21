@@ -50,7 +50,7 @@ export const OnboardingChecklist = () => {
           setDemoRunning(true);
           promptAITutorial(repeat);
           break;
-        case 'demo-connection':
+        case 'share-file':
           setDemoRunning(true);
           shareTutorial(repeat);
           break;

@@ -12,7 +12,7 @@ afterEach(clearDb);
 describe('POST /v0/user/tutorialBonusPrompt', () => {
   describe('authentication', () => {
     it('responds with 401 if no token is provided', async () => {
-      await request(app).post('/v0/user/tutorialBonusPrompt').send({ category: 'demo-connection' }).expect(401);
+      await request(app).post('/v0/user/tutorialBonusPrompt').send({ category: 'share-file' }).expect(401);
     });
   });
 
@@ -38,18 +38,18 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
   });
 
   describe('awarding bonus prompts', () => {
-    it('responds with 200 and awards bonus prompts for demo-connection', async () => {
+    it('responds with 200 and awards bonus prompts for share-file', async () => {
       const user = await dbClient.user.findUnique({ where: { auth0Id: 'user1' } });
       const userId = user!.id;
 
       const response = await request(app)
         .post('/v0/user/tutorialBonusPrompt')
         .set('Authorization', 'Bearer ValidToken user1')
-        .send({ category: 'demo-connection' })
+        .send({ category: 'share-file' })
         .expect(200);
 
       expect(response.body).toEqual({
-        category: 'demo-connection',
+        category: 'share-file',
         promptsAwarded: 3,
         received: true,
       });
@@ -59,7 +59,7 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
         where: {
           userId_category: {
             userId,
-            category: 'demo-connection',
+            category: 'share-file',
           },
         },
       });
@@ -106,14 +106,14 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
       await request(app)
         .post('/v0/user/tutorialBonusPrompt')
         .set('Authorization', 'Bearer ValidToken user1')
-        .send({ category: 'demo-connection' })
+        .send({ category: 'share-file' })
         .expect(200);
 
       // Second claim should fail
       await request(app)
         .post('/v0/user/tutorialBonusPrompt')
         .set('Authorization', 'Bearer ValidToken user1')
-        .send({ category: 'demo-connection' })
+        .send({ category: 'share-file' })
         .expect(400)
         .expect((res) => {
           expect(res.body.error.message).toBe('Bonus already claimed for this category');
@@ -123,7 +123,7 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
       const bonusRecords = await dbClient.tutorialBonusPrompt.findMany({
         where: {
           userId,
-          category: 'demo-connection',
+          category: 'share-file',
         },
       });
 
@@ -131,11 +131,11 @@ describe('POST /v0/user/tutorialBonusPrompt', () => {
     });
 
     it('allows claiming different bonus categories', async () => {
-      // Claim demo-connection
+      // Claim share-file
       await request(app)
         .post('/v0/user/tutorialBonusPrompt')
         .set('Authorization', 'Bearer ValidToken user1')
-        .send({ category: 'demo-connection' })
+        .send({ category: 'share-file' })
         .expect(200);
 
       // Claim watch-tutorial

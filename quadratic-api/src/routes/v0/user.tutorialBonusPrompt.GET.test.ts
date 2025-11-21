@@ -25,10 +25,10 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
 
       expect(response.body.bonusPrompts).toHaveLength(2);
 
-      // Check demo-connection prompt
-      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'demo-connection');
+      // Check share-file prompt
+      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
       expect(demoConnection).toEqual({
-        category: 'demo-connection',
+        category: 'share-file',
         name: 'Chat with our demo connection',
         prompts: 3,
         received: false,
@@ -50,11 +50,11 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
       const user = await dbClient.user.findUnique({ where: { auth0Id: 'user1' } });
       const userId = user!.id;
 
-      // Create a bonus prompt record for demo-connection
+      // Create a bonus prompt record for share-file
       await dbClient.tutorialBonusPrompt.create({
         data: {
           userId,
-          category: 'demo-connection',
+          category: 'share-file',
           promptsAwarded: 3,
         },
       });
@@ -66,10 +66,10 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
 
       expect(response.body.bonusPrompts).toHaveLength(2);
 
-      // Check demo-connection is marked as received
-      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'demo-connection');
+      // Check share-file is marked as received
+      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
       expect(demoConnection).toEqual({
-        category: 'demo-connection',
+        category: 'share-file',
         name: 'Chat with our demo connection',
         prompts: 3,
         received: true,
@@ -96,7 +96,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
         data: [
           {
             userId,
-            category: 'demo-connection',
+            category: 'share-file',
             promptsAwarded: 3,
           },
           {
@@ -162,7 +162,7 @@ describe('GET /v0/user/tutorialBonusPrompt', () => {
         data: [
           {
             userId,
-            category: 'demo-connection',
+            category: 'share-file',
             promptsAwarded: 3,
           },
           {
