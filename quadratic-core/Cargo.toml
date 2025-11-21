@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.21.2"
+version = "0.21.3"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"

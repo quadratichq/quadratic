@@ -30,13 +30,13 @@ export const AddMessage = memo(
     const label = 'Add Message';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     return (

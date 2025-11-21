@@ -83,16 +83,17 @@ export const AIUserMessageFormConnectionsButton = memo(
 
     return (
       <DropdownMenu>
-        <TooltipPopover label="Add a connection">
+        <TooltipPopover label="Chat with a connected data source" fastMode={true}>
           <DropdownMenuTrigger asChild>
             <Button
-              size="icon-sm"
-              className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+              size="sm"
+              className="h-7 w-7 gap-1.5 rounded-full px-0 shadow-none hover:bg-border @[450px]:w-auto @[450px]:px-2"
               variant="ghost"
               disabled={disabled}
               onClick={handleOnClickButton}
             >
               <DatabaseIcon className="" />
+              <span className="hidden text-xs @[450px]:inline">Connections</span>
             </Button>
           </DropdownMenuTrigger>
         </TooltipPopover>

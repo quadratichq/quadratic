@@ -25,13 +25,12 @@ export const HasCellData = memo(
       }
     }, [args, loading]);
 
-    const label = useMemo(
-      () =>
-        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Checking empty space in ${toolArgs.data.sheet_name} for ${toolArgs.data.selection}`
-          : 'Checking empty space...',
-      [toolArgs?.data?.selection, toolArgs?.data?.sheet_name]
-    );
+    const label = useMemo(() => {
+      const verb = loading ? 'Checking' : 'Checked';
+      return toolArgs?.data?.sheet_name && toolArgs?.data?.selection
+        ? `${verb} empty space in ${toolArgs.data.sheet_name} for ${toolArgs.data.selection}`
+        : `${verb} empty space...`;
+    }, [toolArgs?.data?.selection, toolArgs?.data?.sheet_name, loading]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;
