@@ -1,35 +1,60 @@
-import { ChevronRightIcon, CloseIcon, RefreshIcon } from '@/shared/components/Icons';
+import {
+  ChevronRightIcon,
+  CloseIcon,
+  CopyIcon,
+  MoreHorizIcon,
+  RefreshIcon,
+  type IconComponent,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Label } from '@/shared/shadcn/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 
+type SchemaBrowserTableAction = {
+  label: string;
+  onClick: (args: { table: Table; tableQuery: string }) => void;
+  Icon: IconComponent;
+};
+export type SchemaBrowserTableActionOnClick = Parameters<SchemaBrowserTableAction['onClick']>[0];
+
+type ConnectionSchemaBrowserProps = {
+  eventSource: string;
+  teamUuid: string;
+  type: ConnectionType;
+  additionalActions?: React.ReactNode;
+  hideRefreshButton?: boolean;
+  tableActions?: Array<SchemaBrowserTableAction>;
+  uuid?: string;
+};
+
 export const ConnectionSchemaBrowser = ({
-  TableQueryAction,
-  selfContained,
+  additionalActions,
+  hideRefreshButton = false,
+  tableActions,
+  eventSource,
   teamUuid,
   type,
   uuid,
-}: {
-  TableQueryAction: React.FC<{ query: string }>;
-  teamUuid: string;
-  selfContained?: boolean;
-  type?: ConnectionType;
-  uuid?: string;
-}) => {
+}: ConnectionSchemaBrowserProps) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
-  const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
+
   const [filterQuery, setFilterQuery] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,21 +68,16 @@ export const ConnectionSchemaBrowser = ({
     );
   }, [data, filterQuery]);
 
-  useEffect(() => {
-    if (!data) return;
-    if (filteredTables.length === 0) {
-      setSelectedTableIndex(-1);
-      return;
-    }
-  }, [data, filteredTables]);
+  const handleReload = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].refresh', { eventSource });
+    reloadSchema();
+  }, [eventSource, reloadSchema]);
 
   if (type === undefined || uuid === undefined) return null;
 
   // Designed to live in a box that takes up the full height of its container
   return (
-    <div
-      className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
-    >
+    <div className="h-full overflow-auto text-sm">
       <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 truncate">
@@ -73,18 +93,14 @@ export const ConnectionSchemaBrowser = ({
             )}
           </div>
           <div className="flex flex-row-reverse items-center gap-1">
-            <TableQueryAction
-              query={
-                !isLoading && data && filteredTables[selectedTableIndex]
-                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
-                  : ''
-              }
-            />
-            <TooltipPopover label="Reload schema">
-              <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
-                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
-              </Button>
-            </TooltipPopover>
+            {additionalActions}
+            {!hideRefreshButton && (
+              <TooltipPopover label="Reload schema">
+                <Button onClick={handleReload} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                  <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+                </Button>
+              </TooltipPopover>
+            )}
           </div>
         </div>
         <div className="relative">
@@ -93,7 +109,6 @@ export const ConnectionSchemaBrowser = ({
             value={filterQuery}
             onChange={(e) => {
               setFilterQuery(e.target.value);
-              setSelectedTableIndex(0);
             }}
             placeholder="Filter tables"
             className="h-8"
@@ -107,7 +122,6 @@ export const ConnectionSchemaBrowser = ({
               className="absolute right-0 top-0 h-8 w-8 !bg-transparent text-muted-foreground hover:text-foreground"
               onClick={() => {
                 setFilterQuery('');
-                setSelectedTableIndex(0);
                 inputRef.current?.focus();
               }}
             >
@@ -121,20 +135,17 @@ export const ConnectionSchemaBrowser = ({
         <div className="mb-4 flex min-h-16 items-center justify-center text-muted-foreground">Loading…</div>
       )}
 
-      {data && (
-        <RadioGroup
-          value={String(selectedTableIndex)}
-          onValueChange={(newIndexStr) => {
-            const newIndex = Number(newIndexStr);
-            setSelectedTableIndex(newIndex);
-          }}
-          className="block"
-        >
-          {filteredTables.map((table, index) => (
-            <TableListItem index={index} selfContained={selfContained} data={table} key={index} />
-          ))}
-        </RadioGroup>
-      )}
+      {data &&
+        filteredTables.map((table, index) => (
+          <TableListItem
+            index={index}
+            data={table}
+            key={index}
+            connectionType={type}
+            tableActions={tableActions}
+            eventSource={eventSource}
+          />
+        ))}
       {data === null && (
         <div className="mx-auto my-2 flex max-w-md flex-col items-center justify-center gap-2 pb-4 text-center text-sm text-muted-foreground">
           <h4 className="font-semibold text-destructive">Error loading connection schema</h4>
@@ -182,50 +193,91 @@ type Column = {
 
 function TableListItem({
   index,
-  data: { name, columns, schema },
-  selfContained,
+  data,
+  connectionType,
+  tableActions,
+  eventSource,
 }: {
   index: number;
   data: Table;
-  selfContained?: boolean;
+  connectionType: ConnectionType;
+  tableActions: ConnectionSchemaBrowserProps['tableActions'];
+  eventSource: string;
 }) {
+  const { name, columns } = data;
   const [isExpanded, setIsExpanded] = useState(false);
-  const id = `sql-table-${index}`;
+
+  const handleTableClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      trackEvent('[ConnectionSchemaBrowser].clickTable', { eventSource });
+      setIsExpanded((prev) => !prev);
+    },
+    [eventSource]
+  );
+
+  const handleDropdownClick = useCallback(() => {
+    trackEvent('[ConnectionSchemaBrowser].clickDropdown', { eventSource });
+  }, [eventSource]);
+
+  const handleDropdownMenuItemClick = useCallback(
+    ({
+      label,
+      onClick,
+    }: {
+      label: string;
+      onClick: NonNullable<ConnectionSchemaBrowserProps['tableActions']>[number]['onClick'];
+    }) => {
+      trackEvent('[ConnectionSchemaBrowser].clickDropdownItem', { eventSource, label });
+      onClick({
+        table: data,
+        tableQuery: getTableQuery({ table: data, connectionType }),
+      });
+    },
+    [eventSource, data, connectionType]
+  );
 
   return (
-    <div className="group">
-      <Label
-        htmlFor={id}
-        className={cn('flex items-center justify-between group-has-[button[data-state=checked]]:bg-accent')}
+    <div className="group relative">
+      <button
+        className={cn(
+          'flex h-7 w-full min-w-0 flex-initial cursor-default select-text items-center pl-2 font-normal hover:bg-accent',
+          tableActions ? 'pr-10' : 'pr-3'
+        )}
+        onClick={handleTableClick}
       >
-        <button
-          className={cn(
-            'flex h-8 min-w-0 flex-initial cursor-default items-center font-normal',
-            selfContained ? 'px-2' : 'px-1.5'
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded((prev) => !prev);
-          }}
-        >
-          <div className="flex h-6 w-6 flex-none items-center">
-            <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
-          </div>
-          <div className="truncate leading-normal">{name}</div>
-          <div className="ml-2 flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
-        </button>
+        <div className="-ml-0.5 flex h-6 w-6 flex-none items-center">
+          <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
+        </div>
+        <div className="truncate leading-normal">{name}</div>
+        <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
+      </button>
+      {tableActions && (
+        <div className="absolute right-2 top-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="ghost" className="text-muted-foreground" onClick={handleDropdownClick}>
+                <MoreHorizIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {tableActions.map(({ label, onClick, Icon }) => (
+                <DropdownMenuItem key={label} onClick={() => handleDropdownMenuItemClick({ label, onClick })}>
+                  <Icon className="mr-2" /> {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
-        <RadioGroupItem value={String(index)} id={id} className="ml-4 mr-3 cursor-default" />
-      </Label>
       {isExpanded && (
         <ul className={cn('pl-8 pr-2')}>
           {columns.length ? (
             columns.map(({ name, type, is_nullable }, k) => (
-              <li key={k} className="border border-l border-transparent border-l-border pl-0">
-                <div className="flex w-full items-center gap-1 py-0.5 pl-2">
-                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
-                    {name}
-                  </div>
+              <li key={k} className="border border-l border-transparent border-l-border pl-0.5">
+                <div className="flex w-full items-center justify-between gap-1 py-0.5 pl-2">
+                  <div className="truncate">{name}</div>
 
                   <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                     {type}
@@ -245,8 +297,25 @@ function TableListItem({
   );
 }
 
-function getTableQuery({ table: { name, schema }, connectionKind }: { table: Table; connectionKind: string }) {
-  switch (connectionKind) {
+export const SCHEMA_BROWSER_TABLE_ACTIONS: Record<string, SchemaBrowserTableAction> = {
+  COPY_NAME: {
+    label: 'Copy name',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+  COPY_QUERY: {
+    label: 'Copy query',
+    Icon: CopyIcon,
+    onClick: ({ tableQuery }) => {
+      navigator.clipboard.writeText(tableQuery);
+    },
+  },
+} as const;
+
+function getTableQuery({ table: { name, schema }, connectionType }: { table: Table; connectionType: ConnectionType }) {
+  switch (connectionType) {
     case 'POSTGRES':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'COCKROACHDB':
@@ -265,6 +334,8 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'BIGQUERY':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    case 'MIXPANEL':
+      return `SELECT * FROM \`${name}\` LIMIT 100`;
     default:
       return '';
   }

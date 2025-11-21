@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb, createUsers } from '../../tests/testDataGenerator';
+import { clearDb, createFile as createFileData, createUsers, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
 const validPayload = {
   name: 'new_file_with_name',
@@ -23,7 +23,7 @@ describe('POST /v0/files', () => {
     // Create a test user
     const [test_user_1, test_user_2] = await createUsers(['test_user_1', 'test_user_2', 'test_user_3']);
     // Create a team
-    await dbClient.team.create({
+    const team = await dbClient.team.create({
       data: {
         name: 'test_team_1',
         uuid: '00000000-0000-4000-8000-000000000001',
@@ -41,6 +41,8 @@ describe('POST /v0/files', () => {
         },
       },
     });
+    // Upgrade the team to paid so tests don't hit file limits
+    await upgradeTeamToPro(team.id);
   });
 
   afterAll(clearDb);
@@ -122,6 +124,345 @@ describe('POST /v0/files', () => {
         .expect(expectValidResponse)
         .expect((res) => {
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
+        });
+    });
+  });
+
+  describe('file limit for unpaid plan', () => {
+    it('rejects creating a file when unpaid team has reached the 3 file limit', async () => {
+      // Create a new user and team for this test
+      const [limitTestUser] = await createUsers(['limit_test_user']);
+
+      const limitTeam = await dbClient.team.create({
+        data: {
+          name: 'limit_test_team',
+          uuid: '00000000-0000-4000-8000-000000000002',
+          UserTeamRole: {
+            create: [
+              {
+                userId: limitTestUser.id,
+                role: 'OWNER',
+              },
+            ],
+          },
+        },
+      });
+
+      // Don't upgrade team - keep it as unpaid/free plan
+
+      // Create 3 files (the limit)
+      for (let i = 0; i < 3; i++) {
+        await createFileData({
+          data: {
+            uuid: `00000000-0000-0000-0000-0000000000${i.toString().padStart(2, '0')}`,
+            name: `Test File ${i}`,
+            creatorUserId: limitTestUser.id,
+            ownerTeamId: limitTeam.id,
+          },
+        });
+      }
+
+      // Attempt to create a 4th file and expect rejection
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'file_over_limit',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000002',
+        })
+        .set('Authorization', 'Bearer ValidToken limit_test_user')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe(
+            'Team has reached the maximum number of files for the free plan. Upgrade to continue.'
+          );
+        });
+    });
+
+    it('allows creating files beyond the limit for paid teams', async () => {
+      // Create a new user and team for this test
+      const [paidTestUser] = await createUsers(['paid_test_user']);
+
+      const paidTeam = await dbClient.team.create({
+        data: {
+          name: 'paid_test_team',
+          uuid: '00000000-0000-4000-8000-000000000003',
+          UserTeamRole: {
+            create: [
+              {
+                userId: paidTestUser.id,
+                role: 'OWNER',
+              },
+            ],
+          },
+        },
+      });
+
+      // Upgrade team to paid plan
+      await upgradeTeamToPro(paidTeam.id);
+
+      // Create 3 files (which would be the limit for unpaid)
+      for (let i = 0; i < 3; i++) {
+        await createFileData({
+          data: {
+            uuid: `00000000-0000-0000-0001-0000000000${i.toString().padStart(2, '0')}`,
+            name: `Test File ${i}`,
+            creatorUserId: paidTestUser.id,
+            ownerTeamId: paidTeam.id,
+          },
+        });
+      }
+
+      // Paid team should be able to create a 4th file (and more)
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'file_beyond_unpaid_limit',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000003',
+        })
+        .set('Authorization', 'Bearer ValidToken paid_test_user')
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.file.name).toBe('file_beyond_unpaid_limit');
+        });
+    });
+
+    it('allows two users to each create private files up to their individual limit', async () => {
+      // Create two users and a team
+      const [multiUser1, multiUser2] = await createUsers(['multi_user_1', 'multi_user_2']);
+
+      const multiTeam = await dbClient.team.create({
+        data: {
+          name: 'multi_user_team',
+          uuid: '00000000-0000-4000-8000-000000000004',
+          UserTeamRole: {
+            create: [
+              {
+                userId: multiUser1.id,
+                role: 'OWNER',
+              },
+              {
+                userId: multiUser2.id,
+                role: 'EDITOR',
+              },
+            ],
+          },
+        },
+      });
+
+      // User 1 creates 1 private file (the per-user limit is 1)
+      await createFileData({
+        data: {
+          uuid: '00000000-0000-0000-0002-000000000001',
+          name: 'User 1 File 1',
+          creatorUserId: multiUser1.id,
+          ownerTeamId: multiTeam.id,
+          ownerUserId: multiUser1.id,
+        },
+      });
+
+      // User 2 should be able to create their own private file
+      // even though user 1 already has 1 file (per-user limits are separate)
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'user_2_private_file',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000004',
+          isPrivate: true,
+        })
+        .set('Authorization', 'Bearer ValidToken multi_user_2')
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.file.name).toBe('user_2_private_file');
+        });
+
+      // User 1 tries to create a second private file - should be blocked by per-user limit (1)
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'user_1_second_file',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000004',
+          isPrivate: true,
+        })
+        .set('Authorization', 'Bearer ValidToken multi_user_1')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe(
+            'Team has reached the maximum number of files for the free plan. Upgrade to continue.'
+          );
+        });
+
+      // User 2 tries to create a second private file - should also be blocked by per-user limit (1)
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'user_2_second_file',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000004',
+          isPrivate: true,
+        })
+        .set('Authorization', 'Bearer ValidToken multi_user_2')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe(
+            'Team has reached the maximum number of files for the free plan. Upgrade to continue.'
+          );
+        });
+    });
+
+    it('allows creating team files when user has reached their private file limit', async () => {
+      // Create a new user and team for this test
+      const [privateUser1, privateUser2] = await createUsers(['private_user_1', 'private_user_2']);
+
+      const privateTeam = await dbClient.team.create({
+        data: {
+          name: 'private_limit_team',
+          uuid: '00000000-0000-4000-8000-000000000005',
+          UserTeamRole: {
+            create: [
+              {
+                userId: privateUser1.id,
+                role: 'OWNER',
+              },
+              {
+                userId: privateUser2.id,
+                role: 'EDITOR',
+              },
+            ],
+          },
+        },
+      });
+
+      // User 1 creates 1 private file (reaching their private limit of 1)
+      await createFileData({
+        data: {
+          uuid: '00000000-0000-0000-0003-000000000001',
+          name: 'User 1 Private File',
+          creatorUserId: privateUser1.id,
+          ownerTeamId: privateTeam.id,
+          ownerUserId: privateUser1.id,
+        },
+      });
+
+      // User 1 tries to create another private file - should be blocked
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'user_1_second_private_file',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000005',
+          isPrivate: true,
+        })
+        .set('Authorization', 'Bearer ValidToken private_user_1')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe(
+            'Team has reached the maximum number of files for the free plan. Upgrade to continue.'
+          );
+        });
+
+      // But user 1 should be able to create a team (public) file
+      // because the team file limit (3) has not been reached yet
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'user_1_team_file',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000005',
+          isPrivate: false,
+        })
+        .set('Authorization', 'Bearer ValidToken private_user_1')
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.file.name).toBe('user_1_team_file');
+        });
+    });
+
+    it('blocks creating team files when team has reached the team file limit', async () => {
+      // Create users and team for this test
+      const [teamUser1, teamUser2, teamUser3] = await createUsers(['team_user_1', 'team_user_2', 'team_user_3']);
+
+      const teamLimitTeam = await dbClient.team.create({
+        data: {
+          name: 'team_limit_team',
+          uuid: '00000000-0000-4000-8000-000000000006',
+          UserTeamRole: {
+            create: [
+              {
+                userId: teamUser1.id,
+                role: 'OWNER',
+              },
+              {
+                userId: teamUser2.id,
+                role: 'EDITOR',
+              },
+              {
+                userId: teamUser3.id,
+                role: 'EDITOR',
+              },
+            ],
+          },
+        },
+      });
+
+      // Create 3 team files from different users (reaching team limit of 3)
+      await createFileData({
+        data: {
+          uuid: '00000000-0000-0000-0004-000000000001',
+          name: 'Team File 1',
+          creatorUserId: teamUser1.id,
+          ownerTeamId: teamLimitTeam.id,
+          ownerUserId: null,
+        },
+      });
+
+      await createFileData({
+        data: {
+          uuid: '00000000-0000-0000-0004-000000000002',
+          name: 'Team File 2',
+          creatorUserId: teamUser2.id,
+          ownerTeamId: teamLimitTeam.id,
+          ownerUserId: null,
+        },
+      });
+
+      await createFileData({
+        data: {
+          uuid: '00000000-0000-0000-0004-000000000003',
+          name: 'Team File 3',
+          creatorUserId: teamUser3.id,
+          ownerTeamId: teamLimitTeam.id,
+          ownerUserId: null,
+        },
+      });
+
+      // Team has reached the team file limit (3 files)
+      // Any user trying to create a team file should be blocked
+      await request(app)
+        .post('/v0/files')
+        .send({
+          name: 'team_file_over_limit',
+          contents: 'contents',
+          version: '1.0.0',
+          teamUuid: '00000000-0000-4000-8000-000000000006',
+          isPrivate: false,
+        })
+        .set('Authorization', 'Bearer ValidToken team_user_1')
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error.message).toBe(
+            'Team has reached the maximum number of files for the free plan. Upgrade to continue.'
+          );
         });
     });
   });

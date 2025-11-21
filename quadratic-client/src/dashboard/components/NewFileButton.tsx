@@ -3,7 +3,9 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
+import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -37,9 +39,20 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
   return (
     <div className="flex flex-row-reverse gap-2">
-      <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
-        <Button variant="default">New file</Button>
-      </Link>
+      <Button
+        variant="default"
+        onClick={async (e) => {
+          e.preventDefault();
+          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+          if (hasReachedLimit) {
+            showUpgradeDialog('fileLimitReached');
+            return;
+          }
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+        }}
+      >
+        New file
+      </Button>
       <input
         ref={fileInputRef}
         type="file"
@@ -63,7 +76,7 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
           <DropdownMenuContent>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <DraftIcon className="mr-3 text-primary" />
+              <FileIcon className="mr-3 text-primary" />
               <span className="flex flex-col">
                 Local file
                 <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>
@@ -84,11 +97,11 @@ export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
-              <Link to="/examples" className="flex items-center">
+              <Link to={ROUTES.TEMPLATES} className="flex items-center">
                 <ExamplesIcon className="mr-3 text-primary" />
 
                 <span className="flex flex-col">
-                  Examples
+                  Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>
                 </span>
               </Link>

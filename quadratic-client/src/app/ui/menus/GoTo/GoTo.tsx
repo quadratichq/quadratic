@@ -1,38 +1,44 @@
 import '@/app/ui/styles/floating-dialog.css';
 
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { tableInfoAtom } from '@/app/atoms/tableInfoAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import type { A1Error } from '@/app/quadratic-core-types';
+import { useGetGridItems } from '@/app/ui/hooks/useGetGridItems';
 import { GoToIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 export const GoTo = memo(() => {
   const inputRef = useRef<HTMLInputElement>(null);
   const setShowGoToMenu = useSetRecoilState(editorInteractionStateShowGoToMenuAtom);
-  const [value, setValue] = useState<string>();
+  const [value, setValue] = useState<string>('');
   const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
-  const tableInfo = useRecoilValue(tableInfoAtom);
+  const { tablesFiltered, codeTablesFiltered, sheetsFiltered } = useGetGridItems(value);
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
 
-  const tableNameToRange = useCallback((tableName: string): string => {
-    let range = '';
-    try {
-      range = sheets.convertTableToRange(tableName, sheets.current);
-    } catch (e) {
-      console.error('Error getting table name range in GoTo.tsx', e);
-    }
-    return range;
-  }, []);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMenu();
+        // Use setTimeout to ensure the menu state has updated before focusing
+        setTimeout(() => {
+          focusGrid();
+        }, 0);
+      }
+    },
+    [closeMenu]
+  );
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -105,41 +111,6 @@ export const GoTo = memo(() => {
     [closeMenu]
   );
 
-  const tablesFiltered = useMemo(
-    () =>
-      tableInfo
-        ? tableInfo.filter(({ name, language }) => {
-            if (language !== 'Import') {
-              return false;
-            }
-
-            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-          })
-        : [],
-    [tableInfo, value]
-  );
-
-  const codeTablesFiltered = useMemo(
-    () =>
-      tableInfo
-        ? tableInfo.filter(({ name, language }) => {
-            if (language === 'Formula' || language === 'Import') {
-              return false;
-            }
-            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-          })
-        : [],
-    [tableInfo, value]
-  );
-
-  const sheetsFiltered = useMemo(
-    () =>
-      sheets
-        .map((sheet) => sheet)
-        .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
-    [value]
-  );
-
   useEffect(() => {
     if (currentSheet !== sheets.current) {
       sheets.current = currentSheet;
@@ -154,7 +125,8 @@ export const GoTo = memo(() => {
             ref={inputRef}
             value={value}
             onValueChange={setValue}
-            placeholder="Enter a cell “A1” or range “A1:B2”"
+            onKeyDown={handleKeyDown}
+            placeholder='Enter a cell "A1" or range "A1:B2"'
             omitIcon={true}
           />
         </div>
@@ -254,3 +226,13 @@ const CommandItemGoto = memo(
     );
   }
 );
+
+export function tableNameToRange(tableName: string) {
+  let range = '';
+  try {
+    range = sheets.convertTableToRange(tableName, sheets.current);
+  } catch (e) {
+    console.error('Error getting table name range in useGetMentions.tsx', e);
+  }
+  return range;
+}

@@ -5,7 +5,6 @@ import type {
   ResponseInput,
   ResponseInputContent,
   ResponseInputItem,
-  ResponseOutputItem,
   ResponseReasoningItem,
   Tool,
   ToolChoiceFunction,
@@ -17,6 +16,7 @@ import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
   createTextContent,
   getSystemPromptMessages,
+  isAIPromptMessage,
   isContentImage,
   isContentOpenAIReasoning,
   isContentText,
@@ -89,9 +89,9 @@ export function getOpenAIResponsesApiArgs(
   const messages: Array<ResponseInputItem> = promptMessages.reduce<Array<ResponseInputItem>>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
-    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    } else if (isAIPromptMessage(message)) {
       const reasoningItems: ResponseReasoningItem[] = [];
-      const openaiMessages: ResponseOutputItem[] = [
+      const openaiMessages: ResponseInputItem[] = [
         {
           role: message.role,
           content: message.content
@@ -133,6 +133,7 @@ export function getOpenAIResponsesApiArgs(
               type: 'output_text' as const,
               text: content.text.trim(),
               annotations: [],
+              logprobs: [],
             })),
           id: message.id?.startsWith('msg_') ? message.id : `msg_${v4()}`,
           status: 'completed',
@@ -144,7 +145,7 @@ export function getOpenAIResponsesApiArgs(
           name: toolCall.name,
           arguments: toolCall.arguments,
         })),
-      ];
+      ] as ResponseInputItem[];
       return [...acc, ...openaiMessages];
     } else if (isToolResultMessage(message)) {
       const openaiMessages: ResponseInputItem[] = message.content.map((toolResult) => ({
@@ -166,6 +167,7 @@ export function getOpenAIResponsesApiArgs(
           type: 'output_text' as const,
           text: content.text,
           annotations: [],
+          logprobs: [],
         })),
         id: v4(),
         status: 'completed',

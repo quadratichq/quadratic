@@ -51,7 +51,7 @@ export class Content extends Container {
   copy = new UICopy();
   private singleCellOutlines = new UISingleCellOutlines();
 
-  private debug = new Graphics();
+  debug = new Graphics();
 
   copying = false;
   accentColor = colors.cursorCell;
@@ -87,6 +87,7 @@ export class Content extends Container {
 
   destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+    this.multiplayerCursor.destroy();
     super.destroy();
   };
 

@@ -51,6 +51,7 @@ import type {
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
+  CoreClientImportFile,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
@@ -420,24 +421,21 @@ class Core {
     cursor,
     csvDelimiter,
     hasHeading,
+    isOverwrite,
     isAi,
-  }: ClientCoreImportFile): Promise<{
-    contents?: ArrayBufferLike;
-    version?: string;
-    error?: string;
-  }> {
+  }: ClientCoreImportFile): Promise<Omit<CoreClientImportFile, 'type' | 'id'>> {
     if (cursor === undefined) {
       try {
         await initCore();
         let gc: GridController;
         switch (fileType) {
-          case 'excel':
+          case 'Excel':
             gc = GridController.importExcel(new Uint8Array(file), fileName);
             break;
-          case 'csv':
+          case 'CSV':
             gc = GridController.importCsv(new Uint8Array(file), fileName, csvDelimiter, hasHeading);
             break;
-          case 'parquet':
+          case 'Parquet':
             gc = GridController.importParquet(new Uint8Array(file), fileName);
             break;
           default:
@@ -453,23 +451,16 @@ class Core {
     } else {
       try {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
+        let response: JsResponse | string;
         switch (fileType) {
-          case 'excel':
-            const response: JsResponse = this.gridController.importExcelIntoExistingFile(
-              new Uint8Array(file),
-              fileName,
-              cursor,
-              isAi
-            );
-            if (response.error) {
-              return { error: response.error };
-            }
+          case 'Excel':
+            response = this.gridController.importExcelIntoExistingFile(new Uint8Array(file), fileName, cursor, isAi);
             break;
-          case 'csv':
+          case 'CSV':
             if (sheetId === undefined || location === undefined) {
               return { error: 'Expected sheetId and location to be defined' };
             }
-            this.gridController.importCsvIntoExistingFile(
+            response = this.gridController.importCsvIntoExistingFile(
               new Uint8Array(file),
               fileName,
               sheetId,
@@ -477,26 +468,32 @@ class Core {
               cursor,
               csvDelimiter,
               hasHeading,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
-          case 'parquet':
+          case 'Parquet':
             if (sheetId === undefined || location === undefined) {
               return { error: 'Expected sheetId and location to be defined' };
             }
-            this.gridController.importParquetIntoExistingFile(
+            response = this.gridController.importParquetIntoExistingFile(
               new Uint8Array(file),
               fileName,
               sheetId,
               posToPos(location.x, location.y),
               cursor,
-              isAi
+              isAi,
+              !!isOverwrite
             );
             break;
           default:
             return { error: 'Unsupported file type' };
         }
-        return {};
+        return typeof response === 'string'
+          ? { responsePrompt: response }
+          : response.error
+            ? { error: response.error }
+            : {};
       } catch (error: unknown) {
         this.handleCoreError('importFile.App', error);
         return { error: error as string };
@@ -522,9 +519,12 @@ class Core {
     codeCellName: string | undefined,
     cursor: string,
     isAi: boolean
-  ): string | undefined {
+  ): string | { error: string } | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
+      if (this.gridController.cellIntersectsDataTable(sheetId, posToPos(x, y))) {
+        return { error: 'Error in set code cell: Cannot add code cell to a data table' };
+      }
       return this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, codeCellName, cursor, isAi);
     } catch (e) {
       this.handleCoreError('setCodeCellValue', e);
@@ -1454,6 +1454,24 @@ class Core {
       return this.gridController.getAITransactions();
     } catch (e) {
       this.handleCoreError('getAITransactions', e);
+    }
+  }
+
+  setFormula(
+    sheetId: string,
+    selection: string,
+    codeString: string,
+    codeCellName: string | undefined,
+    cursor: string
+  ): string | { error: string } | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      if (this.gridController.selectionIntersectsDataTable(sheetId, selection)) {
+        return { error: 'Error in set formula: Cannot add formula to a data table' };
+      }
+      return this.gridController.setFormula(sheetId, selection, codeString, codeCellName, cursor);
+    } catch (e) {
+      this.handleCoreError('setFormula', e);
     }
   }
 }

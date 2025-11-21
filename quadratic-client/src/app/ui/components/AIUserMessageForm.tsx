@@ -1,17 +1,30 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
+import { events } from '@/app/events/events';
+import { getExtension } from '@/app/helpers/files';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
+import { AIUserMessageFormConnectionsButton } from '@/app/ui/components/AIUserMessageFormConnectionsButton';
+import { AIUserMessageFormOptimizeButton } from '@/app/ui/components/AIUserMessageFormOptimizeButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import {
+  detectMentionInText,
+  getMentionCursorPosition,
+  MentionsTextarea,
+  useMentionsState,
+} from '@/app/ui/components/MentionsTextarea';
+import { AIAnalystEmptyChatPromptSuggestions } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatPromptSuggestions';
+import { ArrowUpwardIcon, BackspaceIcon, MentionIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { createTextContent, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
+import { createTextContent, isContentFile, isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
@@ -25,109 +38,127 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import { type SetterOrUpdater } from 'recoil';
+import type { SetterOrUpdater } from 'recoil';
 
-export type AIUserMessageFormWrapperProps = {
+export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
   initialContent?: Content;
   initialContext?: Context;
   messageIndex: number;
   onContentChange?: (content: Content) => void;
-};
+  showEmptyChatPromptSuggestions?: boolean;
+  uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
+}
 
-export type SubmitPromptArgs = {
+export interface SubmitPromptArgs {
   content: Content;
-};
+  context: Context;
+  importFiles: ImportFile[];
+}
 
-type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
+interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
+  cancelDisabled: boolean;
+  context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
   submitPrompt: (args: SubmitPromptArgs) => void;
-  isFileSupported: (mimeType: string) => boolean;
+  isChatFileSupported: (mimeType: string) => boolean;
+  isImportFileSupported: (extension: string) => boolean;
   fileTypes: string[];
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
-  ctx: {
-    context: Context;
-    setContext?: React.Dispatch<React.SetStateAction<Context>>;
-    initialContext?: Context;
-  };
   waitingOnMessageIndex?: number;
-};
+  filesSupportedText: string;
+}
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
     const {
       textareaRef: bottomTextareaRef,
       autoFocusRef,
       initialContent,
+      initialContext,
+      messageIndex,
       onContentChange,
-      ctx,
-      waitingOnMessageIndex,
+      showEmptyChatPromptSuggestions,
       abortController,
       loading,
       setLoading,
-      isFileSupported,
-      fileTypes,
+      cancelDisabled,
+      context,
+      setContext,
       submitPrompt,
+      isChatFileSupported,
+      isImportFileSupported,
+      fileTypes,
       formOnKeyDown,
       maxHeight = '120px',
+      waitingOnMessageIndex,
+      filesSupportedText,
+      uiContext,
     } = props;
+
     const [editing, setEditing] = useState(!initialContent?.length);
     const editingOrDebugEditing = useMemo(() => editing || !!onContentChange, [editing, onContentChange]);
 
     const [dragOver, setDragOver] = useState(false);
-    const dragOverMessage = useMemo(
-      () =>
-        fileTypes.includes('.pdf') && fileTypes.includes('image/*')
-          ? 'PDFs and images supported'
-          : fileTypes.includes('.pdf')
-            ? 'PDFs supported'
-            : fileTypes.includes('image/*')
-              ? 'Images supported'
-              : 'Files not supported by this model',
-      [fileTypes]
-    );
 
     const [files, setFiles] = useState<FileContent[]>([]);
+    const [importFiles, setImportFiles] = useState<ImportFile[]>([]);
     const [prompt, setPrompt] = useState<string>('');
+    const isAnalyst = useMemo(() => uiContext.startsWith('analyst'), [uiContext]);
+
     useEffect(() => {
-      setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
-      setPrompt(
-        initialContent
-          ?.filter((item) => isContentText(item))
-          .map((item) => item.text)
-          .join('\n') ?? ''
-      );
-    }, [initialContent]);
+      if (initialContent) {
+        setFiles(initialContent.filter((item) => isContentFile(item)) ?? []);
+        setImportFiles([]);
+        setPrompt(
+          initialContent
+            .filter((item) => isContentText(item))
+            .map((item) => item.text)
+            .join('\n')
+        );
+      }
+
+      setContext?.(initialContext ? { ...initialContext } : {});
+    }, [initialContent, initialContext, setContext, setPrompt]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
       [props.messageIndex, waitingOnMessageIndex]
     );
 
-    const handleClickForm = useCallback(() => {
-      if (editingOrDebugEditing) {
-        textareaRef.current?.focus();
-      }
-    }, [editingOrDebugEditing]);
+    const handleClickForm = useCallback(
+      (e: React.MouseEvent<HTMLFormElement>) => {
+        // Don't focus if clicking the model selector popover (hack)
+        if (editingOrDebugEditing && !(e.target as HTMLElement).closest('#ai-model-popover-content')) {
+          textareaRef.current?.focus();
+        }
+      },
+      [editingOrDebugEditing]
+    );
 
-    const submit = useCallback(
+    const handleSubmit = useCallback(
       (prompt: string) => {
         const trimmedPrompt = prompt.trim();
         if (trimmedPrompt.length === 0) return;
 
-        if (initialContent === undefined) {
-          setPrompt('');
-          setFiles([]);
-        }
-
         submitPrompt({
           content: [...files, createTextContent(trimmedPrompt)],
+          context,
+          importFiles,
         });
+
+        if (initialContent === undefined) {
+          setFiles([]);
+          setImportFiles([]);
+          setPrompt('');
+          setContext?.({});
+        }
       },
-      [files, initialContent, submitPrompt]
+      [context, files, importFiles, initialContent, setContext, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -154,12 +185,11 @@ export const AIUserMessageForm = memo(
     const handleKeyDown = useCallback(
       (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         event.stopPropagation();
-
         if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
           event.preventDefault();
           if (loading || waitingOnMessageIndex !== undefined) return;
 
-          submit(prompt);
+          handleSubmit(prompt);
 
           if (initialContent === undefined) {
             textareaRef.current?.focus();
@@ -182,27 +212,38 @@ export const AIUserMessageForm = memo(
           formOnKeyDown(event);
         }
       },
-      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, submit, waitingOnMessageIndex]
+      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, handleSubmit, waitingOnMessageIndex]
     );
 
     const handleFiles = useCallback(
-      (newFiles: FileList | File[]) => {
+      async (newFiles: FileList | File[]) => {
         if (newFiles && newFiles.length > 0) {
-          for (const file of newFiles) {
-            const mimeType = file.type;
-            if (isSupportedMimeType(mimeType) && isFileSupported(mimeType)) {
+          for (const newFile of newFiles) {
+            const mimeType = newFile.type;
+            const extension = getExtension(newFile.name);
+            if (isSupportedMimeType(mimeType) && isChatFileSupported(mimeType)) {
               const reader = new FileReader();
               reader.onloadend = (e) => {
                 const dataUrl = e.target?.result as string;
                 const base64 = dataUrl.split(',')[1];
-                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+                handleFilesChange([...files, { type: 'data', data: base64, mimeType, fileName: newFile.name }]);
               };
-              reader.readAsDataURL(file);
+              reader.onerror = (e) => {
+                console.error('Error reading file', e);
+              };
+              reader.readAsDataURL(newFile);
+            } else if (isImportFileSupported(`.${extension}`)) {
+              try {
+                const data = await newFile.arrayBuffer();
+                setImportFiles((prev) => [...prev, { name: newFile.name, size: newFile.size, data }]);
+              } catch (error) {
+                console.error('Error reading file', error);
+              }
             }
           }
         }
       },
-      [files, handleFilesChange, isFileSupported]
+      [files, handleFilesChange, isChatFileSupported, isImportFileSupported]
     );
 
     const handlePasteOrDrop = useCallback(
@@ -228,6 +269,15 @@ export const AIUserMessageForm = memo(
       [editingOrDebugEditing]
     );
 
+    useEffect(() => {
+      if (initialContent === undefined) {
+        events.on('aiAnalystDroppedFiles', handleFiles);
+      }
+      return () => {
+        events.off('aiAnalystDroppedFiles', handleFiles);
+      };
+    }, [handleFiles, initialContent]);
+
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
 
@@ -249,122 +299,206 @@ export const AIUserMessageForm = memo(
       [waitingOnMessageIndex, editingOrDebugEditing]
     );
 
-    return (
-      <form
+    // Mentions-related state & functionality
+    const [mentionState, setMentionState] = useMentionsState();
+    const handleClickMention = useCallback(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      trackEvent('[AIMentions].clickInsertMentionButton');
+
+      // Get current cursor position
+      const cursorPos = textarea.selectionStart || 0;
+      const currentValue = prompt;
+
+      // Insert @ at cursor position
+      const beforeCursor = currentValue.substring(0, cursorPos);
+      const afterCursor = currentValue.substring(cursorPos);
+      const newValue = beforeCursor + '@' + afterCursor;
+
+      setPrompt(newValue);
+
+      // Trigger mention detection using shared utilities
+      const mention = detectMentionInText(newValue, cursorPos + 1);
+      if (mention) {
+        const position = getMentionCursorPosition(textarea);
+        setMentionState((prev) => ({
+          ...prev,
+          isOpen: true,
+          query: mention.query,
+          startIndex: mention.startIndex,
+          endIndex: mention.endIndex,
+          position,
+          selectedIndex: 0,
+        }));
+      }
+
+      // Focus and position cursor after @
+      textarea.focus();
+      textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+    }, [textareaRef, prompt, setMentionState]);
+
+    // Listen for when the user uses the "Reference in chat" action via the grid
+    // Apply _only_ for new
+    useEffect(() => {
+      const handleAddReference = (reference: string) => {
+        setPrompt((prev) => `${prev}${prev.length > 0 && !prev.endsWith(' ') ? ' ' : ''}@${reference} `);
+        textareaRef.current?.focus();
+      };
+      if (uiContext === 'analyst-new-chat') {
+        events.on('aiAnalystAddReference', handleAddReference);
+      }
+      return () => {
+        events.off('aiAnalystAddReference', handleAddReference);
+      };
+    }, [uiContext]);
+
+    const textarea = (
+      <Textarea
+        ref={textareaRef}
+        value={prompt}
         className={cn(
-          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
-          editingOrDebugEditing ? '' : 'select-none'
+          'rounded-none border-none p-2 pb-0 pt-1 shadow-none focus-visible:ring-0',
+          editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+          (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
         )}
-        onSubmit={(e) => e.preventDefault()}
-        onClick={handleClickForm}
-        onPaste={handlePasteOrDrop}
-        onDrop={handlePasteOrDrop}
-      >
-        {editingOrDebugEditing && dragOver && (
-          <div
-            className="absolute bottom-2 left-2 right-2 top-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
-            onDrop={handlePasteOrDrop}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-          >
-            <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
-              <span className="text-sm font-bold">Drop files here</span>
-              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
-            </div>
-          </div>
+        onChange={handlePromptChange}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+        placeholder={
+          uiContext.startsWith('analyst') ? 'Ask a question (use @ to reference the sheet).' : 'Ask a question.'
+        }
+        autoHeight={true}
+        maxHeight={maxHeight}
+        disabled={waitingOnMessageIndex !== undefined}
+        onDragEnter={handleDrag}
+      />
+    );
+
+    return (
+      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
+        {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
+          <AIAnalystEmptyChatPromptSuggestions
+            submit={handleSubmit}
+            context={context}
+            files={files}
+            importFiles={importFiles}
+          />
         )}
 
-        <EditButton
-          show={!editingOrDebugEditing && !loading && waitingOnMessageIndex === undefined}
-          loading={loading}
-          setEditing={setEditing}
-          textareaRef={textareaRef}
-        />
-
-        <AIContext
-          initialContext={ctx.initialContext}
-          context={ctx.context}
-          setContext={ctx.setContext}
-          files={files}
-          setFiles={handleFilesChange}
-          editing={editingOrDebugEditing}
-          isFileSupported={isFileSupported}
-          disabled={disabled}
-          textareaRef={textareaRef}
-        />
-
-        <Textarea
-          ref={textareaRef}
-          value={prompt}
+        <form
           className={cn(
-            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            editingOrDebugEditing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
-            (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+            'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
+            editingOrDebugEditing ? '' : 'select-none'
           )}
-          onChange={handlePromptChange}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-          placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-          autoHeight={true}
-          maxHeight={maxHeight}
-          disabled={waitingOnMessageIndex !== undefined}
-          onDragEnter={handleDrag}
-        />
+          onSubmit={(e) => e.preventDefault()}
+          onClick={handleClickForm}
+          onPaste={handlePasteOrDrop}
+          onDrop={handlePasteOrDrop}
+        >
+          {editingOrDebugEditing && dragOver && (
+            <div
+              className="absolute bottom-2 left-2 right-2 top-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
+              onDrop={handlePasteOrDrop}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+            >
+              <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+                <span className="text-sm font-bold">Drop files here</span>
+                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
+                  {filesSupportedText} supported
+                </span>
+              </div>
+            </div>
+          )}
 
-        <AIUsageExceeded show={showAIUsageExceeded} />
+          <EditButton
+            show={!editingOrDebugEditing && !loading && waitingOnMessageIndex === undefined}
+            loading={loading}
+            setEditing={setEditing}
+            textareaRef={textareaRef}
+          />
 
-        <AIUserMessageFormFooter
-          show={editing}
-          loading={loading}
-          waitingOnMessageIndex={waitingOnMessageIndex}
-          textareaRef={textareaRef}
-          prompt={prompt}
-          submitPrompt={() => submit(prompt)}
-          abortPrompt={abortPrompt}
-          disabled={disabled}
-          handleFiles={handleFiles}
-          fileTypes={fileTypes}
-        />
-      </form>
+          <AIContext
+            context={context}
+            setContext={setContext}
+            files={files}
+            setFiles={handleFilesChange}
+            importFiles={importFiles}
+            setImportFiles={setImportFiles}
+            disabled={disabled}
+            textareaRef={textareaRef}
+          />
+
+          {/* Don't use @-mentions if we're not in the analyst */}
+          {isAnalyst ? (
+            <MentionsTextarea textareaRef={textareaRef} mentionState={mentionState} setMentionState={setMentionState}>
+              {textarea}
+            </MentionsTextarea>
+          ) : (
+            textarea
+          )}
+
+          {showAIUsageExceeded && <AIUsageExceeded />}
+
+          <AIUserMessageFormFooter
+            show={editing}
+            loading={loading}
+            waitingOnMessageIndex={waitingOnMessageIndex}
+            textareaRef={textareaRef}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            submitPrompt={handleSubmit}
+            abortPrompt={abortPrompt}
+            disabled={disabled}
+            cancelDisabled={cancelDisabled}
+            handleFiles={handleFiles}
+            fileTypes={fileTypes}
+            handleClickMention={handleClickMention}
+            context={context}
+            setContext={setContext}
+            filesSupportedText={filesSupportedText}
+            isAnalyst={isAnalyst}
+          />
+        </form>
+      </div>
     );
   })
 );
 
-type EditButtonProps = {
+interface EditButtonProps {
   show: boolean;
   loading: boolean;
   setEditing: (editing: boolean) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-};
+}
 const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
   if (!show) {
     return null;
   }
 
   return (
-    <TooltipPopover label="Edit">
-      <Button
-        variant="ghost"
-        className="pointer-events-auto absolute right-0.5 top-0.5 z-10 bg-accent text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-        size="icon-sm"
-        onClick={(e) => {
-          if (loading) return;
-          e.stopPropagation();
-          setEditing(true);
-          textareaRef.current?.focus();
-        }}
-      >
-        <EditIcon />
-      </Button>
-    </TooltipPopover>
+    <button
+      className="absolute bottom-0 left-0 right-0 top-0 z-10 bg-transparent indent-[-9999px]"
+      onClick={(e) => {
+        if (loading) return;
+        e.stopPropagation();
+        setEditing(true);
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
+      }}
+    >
+      Edit
+    </button>
   );
 });
 
-type CancelButtonProps = {
+interface CancelButtonProps {
   show: boolean;
+  disabled: boolean;
   abortPrompt: () => void;
-};
-const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
+}
+const CancelButton = memo(({ show, disabled, abortPrompt }: CancelButtonProps) => {
   if (!show) {
     return null;
   }
@@ -378,37 +512,65 @@ const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
         e.stopPropagation();
         abortPrompt();
       }}
+      disabled={disabled}
     >
       <BackspaceIcon className="mr-1" /> Cancel generating
     </Button>
   );
 });
 
-type AIUserMessageFormFooterProps = {
+interface AIUserMessageFormFooterProps {
   disabled: boolean;
+  cancelDisabled: boolean;
   show: boolean;
   loading: boolean;
   waitingOnMessageIndex?: number;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   prompt: string;
-  submitPrompt: () => void;
+  setPrompt: (prompt: React.SetStateAction<string>) => void;
+  submitPrompt: (prompt: string) => void;
   abortPrompt: () => void;
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
-};
+  handleClickMention: () => void;
+  context: Context;
+  setContext?: React.Dispatch<React.SetStateAction<Context>>;
+  filesSupportedText: string;
+  isAnalyst: boolean;
+}
 const AIUserMessageFormFooter = memo(
   ({
+    disabled,
+    cancelDisabled,
     show,
     loading,
     waitingOnMessageIndex,
     textareaRef,
     prompt,
+    setPrompt,
     submitPrompt,
     abortPrompt,
-    disabled,
     handleFiles,
     fileTypes,
+    handleClickMention,
+    context,
+    setContext,
+    filesSupportedText,
+    isAnalyst,
   }: AIUserMessageFormFooterProps) => {
+    const handleClickSubmit = useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        submitPrompt(prompt);
+      },
+      [submitPrompt, prompt]
+    );
+
+    const disabledSubmit = useMemo(
+      () => prompt.length === 0 || loading || waitingOnMessageIndex !== undefined,
+      [prompt, loading, waitingOnMessageIndex]
+    );
+
     if (!show) {
       return null;
     }
@@ -417,39 +579,74 @@ const AIUserMessageFormFooter = memo(
       <>
         <div
           className={cn(
-            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs text-muted-foreground',
+            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs @container',
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
-          <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+          <div className="flex items-center gap-1">
+            <AIUserMessageFormAttachFileButton
+              disabled={disabled}
+              handleFiles={handleFiles}
+              fileTypes={fileTypes}
+              filesSupportedText={filesSupportedText}
+            />
+            {isAnalyst && (
+              <TooltipPopover label="Reference sheet data" fastMode={true}>
+                <Button
+                  size="icon-sm"
+                  className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={handleClickMention}
+                >
+                  <MentionIcon />
+                </Button>
+              </TooltipPopover>
+            )}
+            {isAnalyst && (
+              <AIUserMessageFormConnectionsButton
+                disabled={disabled}
+                context={context}
+                setContext={setContext}
+                textareaRef={textareaRef}
+              />
+            )}
+            <AIUserMessageFormOptimizeButton
+              disabled={disabled}
+              prompt={prompt}
+              setPrompt={setPrompt}
+              textareaRef={textareaRef}
+            />
+          </div>
 
-          <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
-
-          <div className="flex items-center gap-3">
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                  {children as React.ReactElement}
-                </TooltipPopover>
-              )}
-            >
-              <Button
-                size="icon-sm"
-                className="rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submitPrompt();
-                }}
-                disabled={prompt.length === 0 || loading || waitingOnMessageIndex !== undefined}
+          <div className="flex">
+            <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
+            <div className="flex items-center gap-3">
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                    {children as React.ReactElement}
+                  </TooltipPopover>
+                )}
               >
-                <ArrowUpwardIcon />
-              </Button>
-            </ConditionalWrapper>
+                <Button
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClickSubmit(e);
+                  }}
+                  disabled={disabledSubmit}
+                >
+                  <ArrowUpwardIcon />
+                </Button>
+              </ConditionalWrapper>
+            </div>
           </div>
         </div>
 
-        <CancelButton show={loading} abortPrompt={abortPrompt} />
+        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
       </>
     );
   }

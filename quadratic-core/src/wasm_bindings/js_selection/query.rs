@@ -348,4 +348,9 @@ impl JsSelection {
             .map(|c| *c as u32)
             .collect()
     }
+
+    #[wasm_bindgen(js_name = "is1dRange")]
+    pub fn is_1d_range(&self, context: &JsA1Context) -> bool {
+        self.selection.is_1d_range(context.get_context())
+    }
 }

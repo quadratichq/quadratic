@@ -50,7 +50,9 @@ export function Search() {
       if (sheets.current !== cursor.sheet_id.id) {
         sheets.current = cursor.sheet_id.id;
       }
-      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y));
+      sheets.sheet.cursor.moveTo(Number(cursor.x), Number(cursor.y), {
+        ensureVisible: { x: Number(cursor.x), y: Number(cursor.y) },
+      });
       inputEl?.focus();
     }
   }, [cursor, inputEl]);
@@ -65,7 +67,8 @@ export function Search() {
           setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
           events.emit(
             'search',
-            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), 0)
+            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+            0
           );
           return;
         }
@@ -76,6 +79,39 @@ export function Search() {
     [searchOptions]
   );
 
+  useEffect(() => {
+    const updateSearch = async () => {
+      if (!showSearch || !inputEl?.value) return;
+      const found = await quadraticCore.search(inputEl?.value, searchOptions);
+      if (found) {
+        setResults(found);
+        const currentLocal = current > found.length - 1 ? 0 : current;
+        setCurrent((current) => {
+          if (current > found.length - 1) return 0;
+          return current;
+        });
+        setCursor({
+          x: found[currentLocal].x,
+          y: found[currentLocal].y,
+          sheet_id: { id: found[currentLocal].sheet_id },
+        });
+        events.emit(
+          'search',
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+          currentLocal
+        );
+      } else {
+        setResults([]);
+        events.emit('search');
+      }
+    };
+    events.on('transactionEnd', updateSearch);
+
+    return () => {
+      events.off('transactionEnd', updateSearch);
+    };
+  }, [current, inputEl?.value, searchOptions, showSearch]);
+
   const navigate = useCallback(
     (delta: 1 | -1) => {
       setCurrent((current) => {
@@ -83,7 +119,8 @@ export function Search() {
         if (next < 0) next = results.length - 1;
         events.emit(
           'search',
-          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), next)
+          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id })),
+          next
         );
         const result = results[next];
         setCursor({ x: result.x, y: result.y, sheet_id: { id: result.sheet_id } });
@@ -121,6 +158,8 @@ export function Search() {
   );
 
   const closeSearch = useCallback(() => {
+    setCursor(undefined);
+    setSearchOptions({ case_sensitive: null, whole_cell: null, search_code: null, sheet_id: null });
     events.emit('search');
     focusGrid();
   }, []);
@@ -215,16 +254,31 @@ export function Search() {
             autoCorrect="off"
           />
           {inputEl && inputEl.value.length !== 0 && (
-            <div className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground">
+            <div
+              className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground"
+              data-testid="search-results-count"
+            >
               {results.length === 0 ? '0' : current + 1} of {results.length}
             </div>
           )}
         </div>
         <div className="flex w-full justify-between min-[400px]:w-auto">
-          <Button variant="ghost" className="px-2" onClick={() => navigate(-1)} disabled={results.length === 0}>
+          <Button
+            variant="ghost"
+            className="px-2"
+            onClick={() => navigate(-1)}
+            disabled={results.length === 0}
+            data-testid="search-results-previous"
+          >
             <ChevronLeftIcon />
           </Button>
-          <Button variant="ghost" className="px-2" onClick={() => navigate(1)} disabled={results.length === 0}>
+          <Button
+            variant="ghost"
+            className="px-2"
+            onClick={() => navigate(1)}
+            disabled={results.length === 0}
+            data-testid="search-results-next"
+          >
             <ChevronRightIcon />
           </Button>
 

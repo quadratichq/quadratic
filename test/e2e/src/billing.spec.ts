@@ -11,7 +11,7 @@ import {
 } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile } from './helpers/file.helpers';
-import { createNewTeamByURL } from './helpers/team.helper';
+import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
 
 test.skip('AI Message Counter', async ({ page }) => {
   //--------------------------------
@@ -37,8 +37,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_ai_message_count' });
 
   // Create new team
-  const teamName = `AI Counter - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -183,8 +182,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_add_payment' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -218,7 +216,9 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Navigate to the billing management page
   await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
@@ -336,10 +336,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   ]);
 
   // Create new team
-  const teamName = `Add user to team - ${Date.now()}`;
-  const { teamUrl } = await createNewTeamByURL(page, {
-    teamName,
-  });
+  const { teamUuid } = await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -409,7 +406,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await userPage2.reload();
 
   // Navigate to team URL
-  await userPage2.goto(buildUrl(`/teams/${teamUrl}`));
+  await userPage2.goto(buildUrl(`/teams/${teamUuid}`));
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
@@ -445,7 +442,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the page reflects the increased cost due to new members
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
@@ -507,8 +504,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_cancel_subscription' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -545,7 +541,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
   // Assert that the page to confirm the cancellation appears
   await expect(page).toHaveTitle(/Cancel subscription/);
@@ -593,8 +589,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   const emailAddress = await logIn(page, { emailPrefix: 'e2e_update_billing' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Upgrade to Pro plan
   await upgradeToProPlan(page);
@@ -628,7 +623,9 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Click 'Manage billing' to reach the billing management page
   await page.getByRole(`button`, { name: `Manage subscription` }).click({ timeout: 60 * 1000 });
@@ -714,8 +711,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_upgrade_pro' });
 
   // Create new team
-  const teamName = `Team - ${Date.now()}`;
-  await createNewTeamByURL(page, { teamName });
+  await createNewTeamAndNavigateToDashboard(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
   await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
@@ -736,7 +732,9 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Locate the parent div that contains 'Pro plan' details
   const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
@@ -773,7 +771,9 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Assert that the 'Manage billing' button is visible
   // This indicates that the user has an active subscription to manage
@@ -825,7 +825,9 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
   // Locate the parent div that contains 'Pro plan' details
   const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
@@ -839,7 +841,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   //--------------------------------
 
   // Click 'Upgrade to Pro' to upgrade the account
-  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
 
   // Assert that page was redirected to a Stripe integrated payment page
   await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });

@@ -11,6 +11,7 @@ import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
+import { isRestrictedModelCountry } from '../../utils/geolocation';
 import { getDecryptedTeam } from '../../utils/teams';
 import { getUserClientDataKv } from '../../utils/userClientData';
 
@@ -110,6 +111,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       fileTeamPrivacy,
       teamRole,
       teamPermissions,
+      restrictedModel: isRestrictedModelCountry(req, isOnPaidPlan),
     },
     license,
   };

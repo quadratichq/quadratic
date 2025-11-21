@@ -3,10 +3,14 @@ import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  isAIPromptMessage,
+  isToolResultMessage,
+  isUserPromptMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -16,6 +20,7 @@ import type { z } from 'zod';
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
+  activeSchemaConnectionUuid: string | undefined;
   showChatHistory: boolean;
   abortController?: AbortController;
   loading: boolean;
@@ -33,12 +38,16 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     loading: boolean;
   };
+  importFilesToGrid: {
+    loading: boolean;
+  };
   waitingOnMessageIndex?: number;
   failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: false,
+  activeSchemaConnectionUuid: undefined,
   showChatHistory: false,
   abortController: undefined,
   loading: false,
@@ -61,6 +70,9 @@ export const defaultAIAnalystState: AIAnalystState = {
     abortController: undefined,
     loading: false,
   },
+  importFilesToGrid: {
+    loading: false,
+  },
   waitingOnMessageIndex: undefined,
   failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
 };
@@ -73,7 +85,11 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   effects: [
     ({ setSelf, trigger, getLoadable }) => {
       if (trigger === 'get') {
-        const showAIAnalyst = getLoadable(showAIAnalystOnStartupAtom).getValue();
+        // Ensure gridSettingsAtom is initialized from localStorage before reading the value
+        // This prevents the race condition where we read the default value (true) instead of
+        // the saved localStorage value
+        const gridSettings = getLoadable(gridSettingsAtom).getValue();
+        const showAIAnalyst = gridSettings.showAIAnalystOnStartup;
         setSelf({
           ...defaultAIAnalystState,
           showAIAnalyst,
@@ -140,9 +156,26 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
       }));
     },
   });
-export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
+export const aiAnalystActiveSchemaConnectionUuidAtom = createSelector('activeSchemaConnectionUuid');
+
+export const showAIAnalystAtom = selector<boolean>({
+  key: 'showAIAnalystAtom',
+  get: ({ get }) => get(aiAnalystAtom).showAIAnalyst,
+  set: ({ set, get }, newValue) => {
+    const currentState = get(aiAnalystAtom);
+    const isShowing = currentState.showAIAnalyst;
+    const willShow = newValue instanceof DefaultValue ? currentState.showAIAnalyst : newValue;
+
+    set(aiAnalystAtom, (prev) => ({
+      ...prev,
+      showAIAnalyst: newValue instanceof DefaultValue ? prev.showAIAnalyst : newValue,
+      // Reset when hiding the AI Analyst
+      activeSchemaConnectionUuid: isShowing && !willShow ? undefined : prev.activeSchemaConnectionUuid,
+    }));
+  },
+});
 
 export const aiAnalystLoadingAtom = selector<boolean>({
   key: 'aiAnalystLoadingAtom',
@@ -212,18 +245,28 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
         });
       }
 
+      // Update currentChat if it was deleted or if it exists in the new chats array (e.g., renamed)
+      let updatedCurrentChat = prev.currentChat;
+      if (deletedChatIds.includes(prev.currentChat.id)) {
+        updatedCurrentChat = {
+          id: '',
+          name: '',
+          lastUpdated: Date.now(),
+          messages: [],
+        };
+      } else if (prev.currentChat.id) {
+        // If currentChat exists, check if it was updated in the new chats array
+        const updatedChat = newValue.find((chat) => chat.id === prev.currentChat.id);
+        if (updatedChat) {
+          updatedCurrentChat = updatedChat;
+        }
+      }
+
       return {
         ...prev,
         showChatHistory: newValue.length > 0 ? prev.showChatHistory : false,
         chats: newValue,
-        currentChat: deletedChatIds.includes(prev.currentChat.id)
-          ? {
-              id: '',
-              name: '',
-              lastUpdated: Date.now(),
-              messages: [],
-            }
-          : prev.currentChat,
+        currentChat: updatedCurrentChat,
         promptSuggestions: { abortController: undefined, suggestions: [] },
       };
     });
@@ -256,7 +299,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
       const lastMessage = newValue.messages.at(-1);
       const secondToLastMessage = newValue.messages.at(-2);
       const lastAIMessage = !!lastMessage && isToolResultMessage(lastMessage) ? secondToLastMessage : lastMessage;
-      if (lastAIMessage?.role === 'assistant' && lastAIMessage.contextType === 'userPrompt') {
+      if (!!lastAIMessage && isAIPromptMessage(lastAIMessage)) {
         const promptSuggestions = lastAIMessage.toolCalls
           .filter(
             (toolCall) =>
@@ -347,10 +390,7 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
 
 export const aiAnalystCurrentChatUserMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatUserMessagesCountAtom',
-  get: ({ get }) =>
-    get(aiAnalystCurrentChatAtom).messages.filter(
-      (message) => message.role === 'user' && message.contextType === 'userPrompt'
-    ).length,
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.filter((message) => isUserPromptMessage(message)).length,
 });
 
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
@@ -373,6 +413,12 @@ export const aiAnalystWebSearchAtom = createSelector('webSearch');
 export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
   key: 'aiAnalystWebSearchLoadingAtom',
   get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
+});
+
+export const aiAnalystImportFilesToGridAtom = createSelector('importFilesToGrid');
+export const aiAnalystImportFilesToGridLoadingAtom = selector<boolean>({
+  key: 'aiAnalystImportFilesToGridLoadingAtom',
+  get: ({ get }) => get(aiAnalystImportFilesToGridAtom).loading,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({

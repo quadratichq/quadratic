@@ -9,7 +9,6 @@ import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { memo, useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -81,11 +80,6 @@ export const PixiAppEffects = memo(() => {
   useEffect(() => {
     pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState, submitPrompt);
   }, [aiAnalystState, setAIAnalystState, submitPrompt]);
-
-  const [filesImportProgress, setFilesImportProgress] = useRecoilState(filesImportProgressAtom);
-  useEffect(() => {
-    pixiAppSettings.updateFilesImportProgress(filesImportProgress, setFilesImportProgress);
-  }, [filesImportProgress, setFilesImportProgress]);
 
   useEffect(() => {
     events.emit('pixiAppSettingsInitialized');

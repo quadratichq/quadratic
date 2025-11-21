@@ -1001,7 +1001,7 @@ function ListItemPublicLink({
               setPublicLinkAccess(value);
             }}
           >
-            <SelectTrigger className={`w-auto`}>
+            <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
               <SelectValue>{activeOptionLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1023,7 +1023,14 @@ function ListItem({ className, children }: { className?: string; children: React
     console.warn('<ListItem> expects exactly 3 children');
   }
 
-  return <div className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}>{children}</div>;
+  return (
+    <div
+      data-testid="share-dialog-list-item"
+      className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}
+    >
+      {children}
+    </div>
+  );
 }
 
 // TODO: write tests for these

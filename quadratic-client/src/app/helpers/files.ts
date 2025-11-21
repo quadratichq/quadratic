@@ -6,13 +6,13 @@ export function getExtension(name: string): string {
   return name.split('.').pop() || '';
 }
 
-export function getFileTypeFromName(name: string): 'csv' | 'excel' | 'parquet' | 'grid' | undefined {
+export function getFileTypeFromName(name: string): 'CSV' | 'Excel' | 'Parquet' | 'Grid' | undefined {
   const extension = getExtension(name);
-  if (extension === 'csv') return 'csv';
-  if (extension === 'xlsx') return 'excel';
-  if (extension === 'xls') return 'excel';
-  if (extension === 'parquet' || extension === 'parq' || extension === 'pqt') return 'parquet';
-  if (extension === 'grid') return 'grid';
+  if (extension === 'csv') return 'CSV';
+  if (extension === 'xlsx') return 'Excel';
+  if (extension === 'xls') return 'Excel';
+  if (extension === 'parquet' || extension === 'parq' || extension === 'pqt') return 'Parquet';
+  if (extension === 'grid') return 'Grid';
   return undefined;
 }
 
@@ -48,10 +48,10 @@ export function isParquet(file: File): boolean {
 }
 
 export const getFileType = (file: File) => {
-  if (isCsv(file)) return 'csv';
-  if (isExcel(file)) return 'excel';
-  if (isParquet(file)) return 'parquet';
-  if (isGrid(file)) return 'grid';
+  if (isCsv(file)) return 'CSV';
+  if (isExcel(file)) return 'Excel';
+  if (isParquet(file)) return 'Parquet';
+  if (isGrid(file)) return 'Grid';
 
   throw new Error(`Unsupported file type`);
 };

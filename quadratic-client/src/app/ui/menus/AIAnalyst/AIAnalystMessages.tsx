@@ -5,6 +5,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -15,13 +16,13 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
+import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
+import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
+import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { Markdown } from '@/app/ui/components/Markdown';
-import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
-import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -33,6 +34,8 @@ import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
+  isContentImportFilesToGridInternal,
+  isContentText,
   isContentThinking,
   isInternalMessage,
   isToolResultMessage,
@@ -157,7 +160,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }, [promptSuggestionsCount, scrollToBottom]);
 
   if (messagesCount === 0) {
-    return <AIAnalystExamplePrompts />;
+    return null;
   }
 
   return (
@@ -178,7 +181,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
+        if (
+          !debugShowAIInternalContext &&
+          !['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+        ) {
           return null;
         }
 
@@ -192,7 +198,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+                ? ''
+                : 'rounded-lg bg-gray-500 p-2'
             )}
           >
             {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
@@ -200,6 +208,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />
+              ) : isContentImportFilesToGridInternal(message.content) ? (
+                <ImportFilesToGrid content={message.content} />
               ) : null
             ) : isUserPromptMessage(message) ? (
               <AIAnalystUserMessageForm
@@ -215,6 +225,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                     setMessages(newMessages);
                   })
                 }
+                uiContext="analyst-edit-chat"
               />
             ) : isToolResultMessage(message) ? (
               message.content.map((result, resultIndex) => (
@@ -235,18 +246,19 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       setMessages(newMessages);
                     })
                   }
+                  uiContext="analyst-edit-chat"
                 />
               ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
                   isContentThinking(item) ? (
-                    <ThinkingBlock
+                    <AIThinkingBlock
                       key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
-                      expandedDefault={true}
+                      expandedDefault={false}
                       onContentChange={
                         debugAIAnalystChatEditing &&
                         ((newItem) => {
@@ -258,7 +270,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                         })
                       }
                     />
-                  ) : item.type === 'text' ? (
+                  ) : isContentText(item) ? (
                     <Markdown
                       key={`${index}-${contentIndex}-${item.type}`}
                       text={item.text}
@@ -393,30 +405,40 @@ const FeedbackButtons = memo(() => {
 
 const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
-  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
+  const handleClick = useRecoilCallback(
+    ({ snapshot }) =>
+      async (prompt: string) => {
+        const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
+        trackEvent('[AIAnalyst].submitPromptSuggestion', { userMessageCountUponSubmit: userMessagesCount });
 
-  if (!messages.length || !promptSuggestions.suggestions.length) {
+        const messages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
+        const lastContext = getUserPromptMessages(messages).at(-1)?.context;
+        submitPrompt({
+          messageSource: 'User',
+          content: [createTextContent(prompt)],
+          context: {
+            ...(lastContext ? { codeCell: lastContext.codeCell } : defaultAIAnalystContext),
+          },
+          messageIndex: messages.length,
+          importFiles: [],
+        });
+      },
+    [submitPrompt]
+  );
+
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  if (!messagesCount || !promptSuggestions.suggestions.length) {
     return null;
   }
 
   return (
-    <div className="flex flex-col gap-2 px-2">
+    <div className="flex flex-row flex-wrap gap-2 px-2">
       {promptSuggestions.suggestions.map((suggestion, index) => (
         <div
           key={`${index}-${suggestion.label}`}
-          className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-          onClick={() =>
-            submitPrompt({
-              messageSource: 'User',
-              content: [createTextContent(suggestion.prompt)],
-              context: {
-                ...(lastContext ?? defaultAIAnalystContext),
-              },
-              messageIndex: messages.length,
-            })
-          }
+          className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+          onClick={() => handleClick(suggestion.prompt)}
         >
           <span className="truncate">{suggestion.label}</span>
         </div>

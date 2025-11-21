@@ -412,6 +412,7 @@ export const SheetBar = memo((): JSX.Element => {
           }}
           className="rounded-none border-r border-t border-border"
           tooltip="Add sheet"
+          data-testid="sheet-bar-add-button"
         >
           <AddIcon />
         </SheetBarButton>

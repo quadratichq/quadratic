@@ -10,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
 import { parseAndValidateClientDataKv } from '../../utils/teams';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -23,7 +24,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid.PATCH.response']>) {
   const {
-    body: { name, clientDataKv, settings },
+    body: { name, clientDataKv, onboardingResponses, settings },
     params: { uuid },
   } = parseRequest(req, schema);
   const {
@@ -31,15 +32,24 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
   const {
     userMakingRequest: { permissions },
+    team,
     team: { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId },
   } = await getTeam({ uuid, userId });
 
-  // Can they make the edits they’re trying to make?
+  // Can they make the edits they're trying to make?
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
   if (settings && !permissions.includes('TEAM_MANAGE')) {
     throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
+  }
+
+  // You can't change privacy settings without a paid plan
+  if (settings && 'analyticsAi' in settings) {
+    const isOnPaidPlan = await getIsOnPaidPlan(team);
+    if (!isOnPaidPlan) {
+      throw new ApiError(403, 'Upgrade to plan to disable analytics.');
+    }
   }
 
   // Validate existing data in the db
@@ -51,6 +61,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       uuid,
     },
     data: {
+      ...(onboardingResponses ? { onboardingResponses, onboardingComplete: true } : {}),
       ...(name ? { name } : {}),
       ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
       ...(settings

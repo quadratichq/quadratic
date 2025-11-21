@@ -18,7 +18,11 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
@@ -26,6 +30,7 @@ import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
+  isAIPromptMessage,
   isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -34,7 +39,7 @@ import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadrat
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
-const MAX_TOOL_CALL_ITERATIONS = 25;
+const MAX_TOOL_CALL_ITERATIONS = 200;
 
 export type SubmitAIAssistantPromptArgs = {
   messageSource: string;
@@ -145,7 +150,7 @@ export function useSubmitAIAssistantPrompt() {
 
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               currentContent.text = currentContent.text.trim();
@@ -169,10 +174,29 @@ export function useSubmitAIAssistantPrompt() {
             }
             return prevMessages;
           });
+
+          // Remove AI cursor when chat is aborted
+          multiplayer.setAIUser(false);
         });
         set(aiAssistantAbortControllerAtom, abortController);
 
         set(aiAssistantLoadingAtom, true);
+
+        // Show AI cursor at the code cell being edited
+        if (codeCell) {
+          try {
+            // Initialize AI user in multiplayer system
+            multiplayer.setAIUser(true);
+
+            // Update AI cursor to the code cell position
+            const cellA1 = xyToA1(codeCell.pos.x, codeCell.pos.y);
+            const jsSelection = sheets.stringToSelection(cellA1, codeCell.sheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, codeCell.sheetId);
+          } catch (e) {
+            console.warn('Failed to initialize AI cursor:', e);
+          }
+        }
 
         let lastMessageIndex = -1;
         let chatId = '';
@@ -290,7 +314,7 @@ export function useSubmitAIAssistantPrompt() {
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+            if (!!lastMessage && isAIPromptMessage(lastMessage)) {
               const newLastMessage = { ...lastMessage };
               let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
@@ -319,6 +343,9 @@ export function useSubmitAIAssistantPrompt() {
 
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
+
+        // Remove AI cursor when chat finishes
+        multiplayer.setAIUser(false);
       },
     [handleAIRequestToAPI, updateInternalContext, modelKey]
   );

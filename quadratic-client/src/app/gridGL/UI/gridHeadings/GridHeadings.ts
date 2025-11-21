@@ -1,5 +1,6 @@
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -66,11 +67,27 @@ export class GridHeadings extends Container {
     this.gridHeadingsRows = new GridHeadingRows();
 
     events.on('setDirty', this.setDirty);
+
+    // Listen for focus/blur events to update heading colors when grid focus changes
+    document.addEventListener('focusin', this.handleFocusChange);
+    document.addEventListener('focusout', this.handleFocusChange);
   }
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    document.removeEventListener('focusin', this.handleFocusChange);
+    document.removeEventListener('focusout', this.handleFocusChange);
     super.destroy();
+  }
+
+  private handleFocusChange = () => {
+    // Mark as dirty when focus changes (the update will check if canvas is focused)
+    this.dirty = true;
+  };
+
+  // Check if the grid canvas has focus (or user is editing a cell)
+  private isGridFocused(): boolean {
+    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
   }
 
   private setDirty = (dirty: DirtyObject) => {
@@ -118,7 +135,9 @@ export class GridHeadings extends Container {
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    // Use light gray for selected headings when grid doesn't have focus, otherwise use accent color
+    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
@@ -169,15 +188,17 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
-          1,
-          colors.gridLines,
-          colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          0.5,
-          true
-        );
-        this.headingsGraphics.moveTo(x, bounds.top);
-        this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        if (column > 0) {
+          this.headingsGraphics.lineStyle(
+            1,
+            colors.gridLines,
+            colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+            0.5,
+            true
+          );
+          this.headingsGraphics.moveTo(x, bounds.top);
+          this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        }
         this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
       }
 
@@ -230,7 +251,7 @@ export class GridHeadings extends Container {
           }
 
           // show only when selected or not intersects one of the selected numbers
-          if (!intersectsLast) {
+          if (!intersectsLast && column > 0) {
             const text = getColumnA1Notation(column);
             this.labels.add({ text, x: xPosition, y });
             lastLabel = { left, right, selected };
@@ -278,7 +299,9 @@ export class GridHeadings extends Container {
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    // Use light gray for selected headings when grid doesn't have focus, otherwise use accent color
+    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {
@@ -339,15 +362,17 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle({
-          width: 1,
-          color: colors.gridLines,
-          alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          alignment: 0.5,
-          native: true,
-        });
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        if (row > 0) {
+          this.headingsGraphics.lineStyle({
+            width: 1,
+            color: colors.gridLines,
+            alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+            alignment: 0.5,
+            native: true,
+          });
+          this.headingsGraphics.moveTo(bounds.left, y);
+          this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        }
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -383,7 +408,7 @@ export class GridHeadings extends Container {
         }
 
         // show only when selected or not intersects one of the selected numbers
-        if (!intersectsLast) {
+        if (!intersectsLast && row > 0) {
           const text = row.toString();
           this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
           lastLabel = { top, bottom, selected };

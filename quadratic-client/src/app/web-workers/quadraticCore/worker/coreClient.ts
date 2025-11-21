@@ -110,6 +110,7 @@ class CoreClient {
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
+    let transactionId: string | { error: string } | undefined = undefined;
     switch (e.data.type) {
       case 'clientCoreLoad':
         this.sendStartupTimer('offlineSync', { start: performance.now() });
@@ -225,7 +226,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCodeCellValue':
-        const transactionId = core.setCodeCellValue(
+        transactionId = core.setCodeCellValue(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -235,11 +236,20 @@ class CoreClient {
           e.data.cursor,
           e.data.isAi
         );
-        this.send({
-          type: 'coreClientSetCodeCellValue',
-          id: e.data.id,
-          transactionId,
-        });
+        if (typeof transactionId === 'object' && 'error' in transactionId) {
+          this.send({
+            type: 'coreClientSetCodeCellValue',
+            id: e.data.id,
+            transactionId: undefined,
+            error: transactionId.error,
+          });
+        } else {
+          this.send({
+            type: 'coreClientSetCodeCellValue',
+            id: e.data.id,
+            transactionId,
+          });
+        }
         return;
 
       case 'clientCoreAddSheet':
@@ -809,6 +819,30 @@ class CoreClient {
           id: e.data.id,
           transactions: core.getAITransactions(),
         });
+        return;
+
+      case 'clientCoreSetFormula':
+        transactionId = core.setFormula(
+          e.data.sheetId,
+          e.data.selection,
+          e.data.codeString,
+          e.data.codeCellName,
+          e.data.cursor
+        );
+        if (typeof transactionId === 'object' && 'error' in transactionId) {
+          this.send({
+            type: 'coreClientSetFormula',
+            id: e.data.id,
+            transactionId: undefined,
+            error: transactionId.error,
+          });
+        } else {
+          this.send({
+            type: 'coreClientSetFormula',
+            id: e.data.id,
+            transactionId,
+          });
+        }
         return;
 
       default:

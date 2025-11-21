@@ -1,33 +1,37 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
+import type { ResponseError } from '../../types/Response';
 import { getIsOnPaidPlan } from '../../utils/billing';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+  query: z.object({
+    'redirect-success': z.string().url(),
+    'redirect-cancel': z.string().url(),
+  }),
+});
 
-async function handler(req: Request, res: Response) {
+export default [validateAccessToken, userMiddleware, handler];
+
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] | ResponseError>
+) {
+  const { id: userId, email } = req.user;
   const {
     params: { uuid },
-    user: { id: userId, email },
-  } = req as RequestWithUser;
+    query: { 'redirect-success': redirectSuccess, 'redirect-cancel': redirectCancel },
+  } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
   // Can the user even edit this team?
@@ -56,7 +60,7 @@ async function handler(req: Request, res: Response) {
 
   const monthlyPriceId = await getMonthlyPriceId();
 
-  const session = await createCheckoutSession(uuid, monthlyPriceId, req.headers.origin || 'http://localhost:3000');
+  const session = await createCheckoutSession(uuid, monthlyPriceId, redirectSuccess, redirectCancel);
 
   if (!session.url) {
     return res.status(500).json({ error: { message: 'Failed to create checkout session' } });

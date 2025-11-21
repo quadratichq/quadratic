@@ -4,7 +4,8 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
+import { events } from '@/app/events/events';
+import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
@@ -35,6 +36,13 @@ export const AIAnalyst = memo(() => {
     }
   }, [showAIAnalyst]);
 
+  // Emit ready event when AIAnalyst is rendered
+  useEffect(() => {
+    if (showAIAnalyst && !presentationMode) {
+      events.emit('aiAnalystReady');
+    }
+  }, [showAIAnalyst, presentationMode]);
+
   const handleResize = useCallback(
     (event: MouseEvent) => {
       const panel = aiPanelRef.current;
@@ -48,6 +56,15 @@ export const AIAnalyst = memo(() => {
     },
     [setPanelWidth]
   );
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      events.emit('aiAnalystDroppedFiles', files);
+    }
+  }, []);
 
   if (!showAIAnalyst || presentationMode) {
     return null;
@@ -64,8 +81,10 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
+        onDragOver={handleDrop}
+        onDrop={handleDrop}
       >
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
+        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
 
         <div
           className={cn(
@@ -81,14 +100,17 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="px-2 py-0.5">
+              <div className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5">
+                {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}
                   messageIndex={messagesCount}
+                  showEmptyChatPromptSuggestions={messagesCount === 0}
+                  uiContext="analyst-new-chat"
                 />
-                <AIUserMessageFormDisclaimer />
+                <AIMessageCounterBar />
               </div>
             </>
           )}

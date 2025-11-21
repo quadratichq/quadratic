@@ -32,7 +32,11 @@ const Icon = (props: BaseIconProps) => {
   const _size = size ? sizes[size] : sizes['sm'];
 
   return (
-    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
+    <span
+      className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`}
+      {...rest}
+      translate="no"
+    >
       {children}
     </span>
   );
@@ -97,6 +101,10 @@ export const ArrowDropDownCircleIcon: IconComponent = (props) => {
 
 export const ArrowUpwardIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const AsteriskIcon: IconComponent = (props) => {
+  return <Icon {...props}>asterisk</Icon>;
 };
 
 export const AttachFileIcon: IconComponent = (props) => {
@@ -283,10 +291,6 @@ export const DownloadExcelIcon: IconComponent = (props) => {
   return <Icon {...props}>file_export</Icon>;
 };
 
-export const DraftIcon: IconComponent = (props) => {
-  return <Icon {...props}>draft</Icon>;
-};
-
 export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
@@ -311,6 +315,10 @@ export const CollapseIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_more</Icon>;
 };
 
+export const EnhancePromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>wand_stars</Icon>;
+};
+
 export const ErrorIcon: IconComponent = (props) => {
   return <Icon {...props}>error</Icon>;
 };
@@ -329,6 +337,10 @@ export const ExternalLinkIcon: IconComponent = (props) => {
 
 export const FastForwardIcon: IconComponent = (props) => {
   return <Icon {...props}>fast_forward</Icon>;
+};
+
+export const FileIcon: IconComponent = (props) => {
+  return <Icon {...props}>draft</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {
@@ -461,6 +473,10 @@ export const MailIcon: IconComponent = (props) => {
 
 export const ManageSearch: IconComponent = (props) => {
   return <Icon {...props}>manage_search</Icon>;
+};
+
+export const MentionIcon: IconComponent = (props) => {
+  return <Icon {...props}>alternate_email</Icon>;
 };
 
 export const MenuIcon: IconComponent = (props) => {
@@ -727,6 +743,10 @@ export const SheetGoToIcon: IconComponent = (props) => {
   return <Icon {...props}>step_into</Icon>;
 };
 
+export const TeamIcon: IconComponent = (props) => {
+  return <Icon {...props}>groups</Icon>;
+};
+
 export const GenericLanguageIcon: IconComponent = (props) => {
   return <Icon {...props}>subject</Icon>;
 };
@@ -749,4 +769,12 @@ export const RadioButtonCheckedIcon: IconComponent = (props) => {
 
 export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
+};
+
+export const WarningIcon: IconComponent = (props) => {
+  return <Icon {...props}>warning</Icon>;
+};
+
+export const DesktopIcon: IconComponent = (props) => {
+  return <Icon {...props}>computer</Icon>;
 };

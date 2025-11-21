@@ -4,10 +4,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    CellValue, Pos, Rect,
+    Pos, Rect,
     a1::CellRefRange,
     formulas::convert_a1_to_rc,
-    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
+    grid::{CodeCellLanguage, CodeRun, Grid},
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -51,25 +51,14 @@ lazy_static! {
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     let a1_context = grid.expensive_make_a1_context();
-    for (sheet_id, sheet) in grid.sheets.iter_mut() {
-        sheet.migration_recalculate_bounds(&a1_context);
-        sheet.columns.migration_regenerate_has_cell_value();
-
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-            for x in bounds.x_range() {
-                if sheet.get_column(x).is_none() {
-                    continue;
-                }
-                for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
-                        && code_cell.language == CodeCellLanguage::Formula {
-                            code_cell.code = convert_a1_to_rc(
-                                &code_cell.code,
-                                &a1_context,
-                                crate::SheetPos::new(*sheet_id, x + 1, y),
-                            );
-                        }
-                }
+    for sheet in grid.sheets.values_mut() {
+        for (pos, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
+            if code_run.language == CodeCellLanguage::Formula {
+                code_run.code = convert_a1_to_rc(
+                    &code_run.code,
+                    &a1_context,
+                    crate::SheetPos::new(sheet.id, pos.x + 1, pos.y),
+                );
             }
         }
     }
@@ -79,70 +68,41 @@ pub fn migrate_code_cell_references(
     grid: &mut Grid,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
-        sheet.migration_recalculate_bounds(&a1_context);
-        sheet.columns.migration_regenerate_has_cell_value();
-
         let sheet_name = sheet.name.clone();
-        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-            for x in bounds.x_range() {
-                if sheet.get_column(x).is_none() {
-                    continue;
+        for (pos, code_run) in sheet.data_tables.migration_iter_code_runs_mut() {
+            match code_run.language {
+                CodeCellLanguage::Python => {
+                    migrate_python_c_cell_getcell(code_run, &sheet_name, shifted_offsets);
+                    migrate_python_cells_getcells(code_run, &sheet_name, shifted_offsets);
+                    migrate_python_rc_relcell(code_run, pos);
+                    migrate_python_relcells(code_run, pos);
+                    migrate_python_javascript_pos(code_run);
                 }
-                for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
-                        match code_cell.language {
-                            CodeCellLanguage::Python => {
-                                migrate_python_c_cell_getcell(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_python_cells_getcells(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_python_rc_relcell(code_cell, (x, y).into());
-                                migrate_python_relcells(code_cell, (x, y).into());
-                                migrate_python_javascript_pos(code_cell);
-                            }
-                            CodeCellLanguage::Javascript => {
-                                migrate_javascript_c_cell_getcell(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_javascript_cells_getcells(
-                                    code_cell,
-                                    &sheet_name,
-                                    shifted_offsets,
-                                );
-                                migrate_javascript_rc_relcell(code_cell, (x, y).into());
-                                migrate_javascript_relcells(code_cell, (x, y).into());
-                                migrate_python_javascript_pos(code_cell);
-                            }
-                            _ => {}
-                        }
-                    }
+                CodeCellLanguage::Javascript => {
+                    migrate_javascript_c_cell_getcell(code_run, &sheet_name, shifted_offsets);
+                    migrate_javascript_cells_getcells(code_run, &sheet_name, shifted_offsets);
+                    migrate_javascript_rc_relcell(code_run, pos);
+                    migrate_javascript_relcells(code_run, pos);
+                    migrate_python_javascript_pos(code_run);
                 }
+                _ => {}
             }
         }
     }
 }
 
 fn migrate_python_c_cell_getcell(
-    code_cell: &mut CodeCellValue,
-    code_cell_sheet_name: &str,
+    code_run: &mut CodeRun,
+    code_run_sheet_name: &str,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    if code_cell.language != CodeCellLanguage::Python {
+    if code_run.language != CodeCellLanguage::Python {
         return;
     }
 
-    code_cell.code = PYTHON_C_CELL_GETCELL_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = PYTHON_C_CELL_GETCELL_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x = &caps[1]; // x coordinate
             let y = &caps[2]; // y coordinate
@@ -152,7 +112,7 @@ fn migrate_python_c_cell_getcell(
                 let sheet_name = caps
                     .get(3)
                     .map(|m| m.as_str())
-                    .unwrap_or(code_cell_sheet_name);
+                    .unwrap_or(code_run_sheet_name);
 
                 // get the shift offsets for the sheet having the reference
                 let (delta_x, delta_y) = shifted_offsets.get(sheet_name).unwrap_or(&(0, 0));
@@ -189,16 +149,16 @@ fn migrate_python_c_cell_getcell(
 }
 
 fn migrate_python_cells_getcells(
-    code_cell: &mut CodeCellValue,
-    code_cell_sheet_name: &str,
+    code_run: &mut CodeRun,
+    code_run_sheet_name: &str,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    if code_cell.language != CodeCellLanguage::Python {
+    if code_run.language != CodeCellLanguage::Python {
         return;
     }
 
-    code_cell.code = PYTHON_CELLS_GETCELLS_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = PYTHON_CELLS_GETCELLS_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x0 = &caps[1]; // x0 coordinate of first tuple
             let y0 = &caps[2]; // y0 coordinate of first tuple
@@ -215,7 +175,7 @@ fn migrate_python_cells_getcells(
                 let sheet_name = caps
                     .get(5)
                     .map(|m| m.as_str())
-                    .unwrap_or(code_cell_sheet_name);
+                    .unwrap_or(code_run_sheet_name);
 
                 // get the shift offsets for the sheet having the reference
                 let (delta_x, delta_y) = shifted_offsets.get(sheet_name).unwrap_or(&(0, 0));
@@ -253,21 +213,21 @@ fn migrate_python_cells_getcells(
         .to_string();
 }
 
-fn migrate_python_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
-    if code_cell.language != CodeCellLanguage::Python {
+fn migrate_python_rc_relcell(code_run: &mut CodeRun, code_run_pos: Pos) {
+    if code_run.language != CodeCellLanguage::Python {
         return;
     }
 
-    code_cell.code = PYTHON_RC_RELCELL_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = PYTHON_RC_RELCELL_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x = &caps[1]; // x coordinate
             let y = &caps[2]; // y coordinate
 
             if let (Ok(mut x), Ok(mut y)) = (x.parse::<i64>(), y.parse::<i64>()) {
                 // apply code cell position to the reference delta coordinates
-                x += code_cell_pos.x;
-                y += code_cell_pos.y;
+                x += code_run_pos.x;
+                y += code_run_pos.y;
 
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x > 0 && y > 0 {
@@ -286,13 +246,13 @@ fn migrate_python_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: Pos) 
         .to_string();
 }
 
-fn migrate_python_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
-    if code_cell.language != CodeCellLanguage::Python {
+fn migrate_python_relcells(code_run: &mut CodeRun, code_run_pos: Pos) {
+    if code_run.language != CodeCellLanguage::Python {
         return;
     }
 
-    code_cell.code = PYTHON_RELCELLS_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = PYTHON_RELCELLS_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x0 = &caps[1]; // x0 coordinate of first tuple
             let y0 = &caps[2]; // y0 coordinate of first tuple
@@ -306,10 +266,10 @@ fn migrate_python_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
                 y1.parse::<i64>(),
             ) {
                 // apply code cell position to the reference delta coordinates
-                x0 += code_cell_pos.x;
-                y0 += code_cell_pos.y;
-                x1 += code_cell_pos.x;
-                y1 += code_cell_pos.y;
+                x0 += code_run_pos.x;
+                y0 += code_run_pos.y;
+                x1 += code_run_pos.x;
+                y1 += code_run_pos.y;
 
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x0 > 0 && y0 > 0 && x1 > 0 && y1 > 0 {
@@ -339,16 +299,16 @@ fn migrate_python_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
 }
 
 fn migrate_javascript_c_cell_getcell(
-    code_cell: &mut CodeCellValue,
-    code_cell_sheet_name: &str,
+    code_run: &mut CodeRun,
+    code_run_sheet_name: &str,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    if code_cell.language != CodeCellLanguage::Javascript {
+    if code_run.language != CodeCellLanguage::Javascript {
         return;
     }
 
-    code_cell.code = JAVASCRIPT_C_CELL_GETCELL_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = JAVASCRIPT_C_CELL_GETCELL_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x = &caps[1]; // x coordinate
             let y = &caps[2]; // y coordinate
@@ -358,7 +318,7 @@ fn migrate_javascript_c_cell_getcell(
                 let sheet_name = caps
                     .get(3)
                     .map(|m| m.as_str())
-                    .unwrap_or(code_cell_sheet_name);
+                    .unwrap_or(code_run_sheet_name);
 
                 // get the shift offsets for the sheet having the reference
                 let (delta_x, delta_y) = shifted_offsets.get(sheet_name).unwrap_or(&(0, 0));
@@ -395,16 +355,16 @@ fn migrate_javascript_c_cell_getcell(
 }
 
 fn migrate_javascript_cells_getcells(
-    code_cell: &mut CodeCellValue,
-    code_cell_sheet_name: &str,
+    code_run: &mut CodeRun,
+    code_run_sheet_name: &str,
     shifted_offsets: &HashMap<String, (i64, i64)>,
 ) {
-    if code_cell.language != CodeCellLanguage::Javascript {
+    if code_run.language != CodeCellLanguage::Javascript {
         return;
     }
 
-    code_cell.code = JAVASCRIPT_CELLS_GETCELLS_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = JAVASCRIPT_CELLS_GETCELLS_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x0 = &caps[1]; // x0 coordinate of first tuple
             let y0 = &caps[2]; // y0 coordinate of first tuple
@@ -421,7 +381,7 @@ fn migrate_javascript_cells_getcells(
                 let sheet_name = caps
                     .get(5)
                     .map(|m| m.as_str())
-                    .unwrap_or(code_cell_sheet_name);
+                    .unwrap_or(code_run_sheet_name);
 
                 // get the shift offsets for the sheet having the reference
                 let (delta_x, delta_y) = shifted_offsets.get(sheet_name).unwrap_or(&(0, 0));
@@ -459,21 +419,21 @@ fn migrate_javascript_cells_getcells(
         .to_string();
 }
 
-fn migrate_javascript_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
-    if code_cell.language != CodeCellLanguage::Javascript {
+fn migrate_javascript_rc_relcell(code_run: &mut CodeRun, code_run_pos: Pos) {
+    if code_run.language != CodeCellLanguage::Javascript {
         return;
     }
 
-    code_cell.code = JAVASCRIPT_RC_RELCELL_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = JAVASCRIPT_RC_RELCELL_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x = &caps[1]; // x coordinate
             let y = &caps[2]; // y coordinate
 
             if let (Ok(mut x), Ok(mut y)) = (x.parse::<i64>(), y.parse::<i64>()) {
                 // apply code cell position to the reference delta coordinates
-                x += code_cell_pos.x;
-                y += code_cell_pos.y;
+                x += code_run_pos.x;
+                y += code_run_pos.y;
 
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x > 0 && y > 0 {
@@ -492,13 +452,13 @@ fn migrate_javascript_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: P
         .to_string();
 }
 
-fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
-    if code_cell.language != CodeCellLanguage::Javascript {
+fn migrate_javascript_relcells(code_run: &mut CodeRun, code_run_pos: Pos) {
+    if code_run.language != CodeCellLanguage::Javascript {
         return;
     }
 
-    code_cell.code = JAVASCRIPT_RELCELLS_REGEX_COMPILED
-        .replace_all(&code_cell.code, |caps: &regex::Captures<'_>| {
+    code_run.code = JAVASCRIPT_RELCELLS_REGEX_COMPILED
+        .replace_all(&code_run.code, |caps: &regex::Captures<'_>| {
             let full_match = &caps[0]; // Capture the entire match
             let x0 = &caps[1]; // x0 coordinate of first tuple
             let y0 = &caps[2]; // y0 coordinate of first tuple
@@ -512,10 +472,10 @@ fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos
                 y1.parse::<i64>(),
             ) {
                 // apply code cell position to the reference delta coordinates
-                x0 += code_cell_pos.x;
-                y0 += code_cell_pos.y;
-                x1 += code_cell_pos.x;
-                y1 += code_cell_pos.y;
+                x0 += code_run_pos.x;
+                y0 += code_run_pos.y;
+                x1 += code_run_pos.x;
+                y1 += code_run_pos.y;
 
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x0 > 0 && y0 > 0 && x1 > 0 && y1 > 0 {
@@ -544,15 +504,15 @@ fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos
         .to_string();
 }
 
-fn migrate_python_javascript_pos(code_cell: &mut CodeCellValue) {
-    if code_cell.language != CodeCellLanguage::Python
-        && code_cell.language != CodeCellLanguage::Javascript
+fn migrate_python_javascript_pos(code_run: &mut CodeRun) {
+    if code_run.language != CodeCellLanguage::Python
+        && code_run.language != CodeCellLanguage::Javascript
     {
         return;
     }
 
-    code_cell.code = POS_REGEX_COMPILED
-        .replace_all(&code_cell.code, |_: &regex::Captures<'_>| "q.pos()")
+    code_run.code = POS_REGEX_COMPILED
+        .replace_all(&code_run.code, |_: &regex::Captures<'_>| "q.pos()")
         .to_string();
 }
 
@@ -562,10 +522,11 @@ mod test {
 
     use super::*;
 
-    fn create_code_cell(language: CodeCellLanguage, code: &str) -> CodeCellValue {
-        CodeCellValue {
+    fn create_code_run(language: CodeCellLanguage, code: &str) -> CodeRun {
+        CodeRun {
             language,
             code: code.to_string(),
+            ..Default::default()
         }
     }
 
@@ -615,9 +576,9 @@ mod test {
         ];
 
         for (input, expected, sheet_name) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
-            migrate_python_c_cell_getcell(&mut code_cell, sheet_name, &shifted_offsets);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Python, input);
+            migrate_python_c_cell_getcell(&mut code_run, sheet_name, &shifted_offsets);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -655,9 +616,9 @@ mod test {
         ];
 
         for (input, expected, sheet_name) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
-            migrate_python_cells_getcells(&mut code_cell, sheet_name, &shifted_offsets);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Python, input);
+            migrate_python_cells_getcells(&mut code_run, sheet_name, &shifted_offsets);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -673,9 +634,9 @@ mod test {
         ];
 
         for (input, expected, pos) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
-            migrate_python_rc_relcell(&mut code_cell, pos);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Python, input);
+            migrate_python_rc_relcell(&mut code_run, pos);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -697,9 +658,9 @@ mod test {
         ];
 
         for (input, expected, pos) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
-            migrate_python_relcells(&mut code_cell, pos);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Python, input);
+            migrate_python_relcells(&mut code_run, pos);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -749,9 +710,9 @@ mod test {
         ];
 
         for (input, expected, sheet_name) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
-            migrate_javascript_c_cell_getcell(&mut code_cell, sheet_name, &shifted_offsets);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Javascript, input);
+            migrate_javascript_c_cell_getcell(&mut code_run, sheet_name, &shifted_offsets);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -785,9 +746,9 @@ mod test {
         ];
 
         for (input, expected, sheet_name) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
-            migrate_javascript_cells_getcells(&mut code_cell, sheet_name, &shifted_offsets);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Javascript, input);
+            migrate_javascript_cells_getcells(&mut code_run, sheet_name, &shifted_offsets);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -803,9 +764,9 @@ mod test {
         ];
 
         for (input, expected, pos) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
-            migrate_javascript_rc_relcell(&mut code_cell, pos);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Javascript, input);
+            migrate_javascript_rc_relcell(&mut code_run, pos);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -823,9 +784,9 @@ mod test {
         ];
 
         for (input, expected, pos) in test_cases {
-            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
-            migrate_javascript_relcells(&mut code_cell, pos);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(CodeCellLanguage::Javascript, input);
+            migrate_javascript_relcells(&mut code_run, pos);
+            assert_eq!(code_run.code, expected);
         }
     }
 
@@ -837,9 +798,9 @@ mod test {
         ];
 
         for (input, expected, language) in test_cases {
-            let mut code_cell = create_code_cell(language, input);
-            migrate_python_javascript_pos(&mut code_cell);
-            assert_eq!(code_cell.code, expected);
+            let mut code_run = create_code_run(language, input);
+            migrate_python_javascript_pos(&mut code_run);
+            assert_eq!(code_run.code, expected);
         }
     }
 }

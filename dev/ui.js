@@ -24,8 +24,20 @@ export class UI {
             }
         }, ANIMATION_INTERVAL);
     }
-    quit() {
+    quit(errorMessage) {
         this.clear();
+        if (errorMessage) {
+            const width = Math.max(80, errorMessage.length + 4);
+            const border = "-".repeat(width - 2);
+            const message = chalk.yellow.bgRed(errorMessage);
+            const padding = " ".repeat(Math.max(0, width - errorMessage.length - 4));
+            const borderStyle = chalk.yellow.bgRed;
+            process.stdout.write(borderStyle(`+${border}+\n`));
+            process.stdout.write(borderStyle(`| `));
+            process.stdout.write(`${message}`);
+            process.stdout.write(borderStyle(`${padding} |\n`));
+            process.stdout.write(borderStyle(`+${border}+\n`));
+        }
         clearInterval(this.interval);
         process.stdin.pause();
     }
@@ -43,15 +55,6 @@ export class UI {
             process.stdout.cursorTo(0);
             this.showing = false;
         }
-    }
-    writeWarning(text, highlight) {
-        if (highlight) {
-            process.stdout.write(chalk.yellow.bgRed(text));
-        }
-        else {
-            process.stdout.write(chalk.red(text));
-        }
-        this.trackPromptTextSize(text);
     }
     write(text, color, underline) {
         if (underline) {
@@ -125,35 +128,30 @@ export class UI {
         process.stdout.write("\n");
         this.prompt();
     }
-    promptExternal() {
-        const postgres = this.control.status.postgres;
-        const redis = this.control.status.redis;
-        if (postgres !== true || redis !== true) {
-            let s = "\n\n ";
-            if (postgres === "error") {
-                s += "postgres is NOT running";
-            }
-            else if (postgres === "killed") {
-                s += "pg_isready not found in path";
-            }
-            if (redis) {
-                s += SPACE;
-            }
-            if (redis === "error") {
-                s += "redis is NOT running";
-            }
-            else if (redis === "killed") {
-                s += "redis-server not found in path";
-            }
-            this.writeWarning(s, postgres === "error" || redis === "error");
-        }
+    printBoxedError(component, text) {
+        if (this.getHideOption(component))
+            return;
+        this.clear();
+        const { name, color, dark } = COMPONENTS[component];
+        const displayColor = this.cli.options.dark ? dark : color;
+        const prefix = `[${chalk[displayColor](name)}] `;
+        const message = chalk.red(text);
+        const width = Math.max(80, text.length + 4);
+        const border = "-".repeat(width - 2);
+        process.stdout.write(`${prefix}+${border}+\n`);
+        process.stdout.write(`${prefix}| ${message}${" ".repeat(Math.max(0, width - text.length - 4))} |\n`);
+        process.stdout.write(`${prefix}+${border}+\n`);
+        this.prompt();
     }
     prompt() {
         this.clear();
         this.write("\n");
         this.statusItem("client");
         this.statusItem("api");
-        this.statusItem("core");
+        // we don't need to show core since we're not compiling it
+        if (!this.cli.options.noRust) {
+            this.statusItem("core");
+        }
         this.statusItem("multiplayer");
         this.statusItem("files");
         this.statusItem("connection");
@@ -166,7 +164,6 @@ export class UI {
         else if (this.help) {
             this.write(helpKeyboard);
         }
-        this.promptExternal();
         this.showing = true;
     }
     getHideOption(name) {

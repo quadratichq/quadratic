@@ -2,12 +2,14 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, RefAdjust, SheetPos, Value,
     a1::A1Selection,
-    cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
-    grid::{CodeCellLanguage, CodeCellValue, SheetId},
+    grid::{
+        CodeCellLanguage, CodeRun, DataTable, DataTableKind, SheetId, js_types::JsSnackbarSeverity,
+    },
+    util::now,
 };
 
 impl GridController {
@@ -19,33 +21,250 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let parse_ctx = self.a1_context();
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return ops;
+        };
+
+        let pos = sheet_pos.into();
+
+        // Check if it's an anchor cell (source cell)
+        if sheet.is_source_cell(pos) {
+            // Block if it's an import cell (imports don't have anchors)
+            if sheet.is_data_table_cell(pos) {
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsClientMessage(
+                        "Cannot add code cell to table".to_string(),
+                        JsSnackbarSeverity::Error.to_string(),
+                    );
+                }
+                return ops;
+            }
+            // Otherwise it's a code cell anchor - allowed
+        } else if sheet.data_table_pos_that_contains(pos).is_some() {
+            // It's in the output area - block it (can't write to output area without overwriting anchor)
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                crate::wasm_bindings::js::jsClientMessage(
+                    "Cannot add code cell to table".to_string(),
+                    JsSnackbarSeverity::Error.to_string(),
+                );
+            }
+            return ops;
+        }
+
         let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, self.a1_context(), sheet_pos),
             _ => code,
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
+        if let Some((existing_data_table_index, existing_data_table)) =
+            sheet.data_table_full_at(&sheet_pos.into())
+            && let DataTableKind::CodeRun(existing_code_run) = &existing_data_table.kind
+            && existing_code_run.language == language
+        {
+            ops.push(Operation::SetDataTable {
                 sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..existing_code_run.clone()
+                    }),
+                    ..existing_data_table.clone()
+                }),
+                index: existing_data_table_index,
+                ignore_old_data_table: false,
+            });
+        } else {
+            let name = CellValue::Text(
+                code_cell_name.unwrap_or_else(|| format!("{}1", language.as_string())),
+            );
 
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableOptionMeta {
-                    sheet_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
+            ops.push(Operation::SetDataTable {
+                sheet_pos,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..Default::default()
+                    }),
+                    name,
+                    header_is_first_row: false,
                     show_name: None,
                     show_columns: None,
-                });
-            }
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single(CellValue::Blank),
+                    spill_value: false,
+                    spill_data_table: false,
+                    last_modified: now(),
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                }),
+                index: usize::MAX,
+                ignore_old_data_table: false,
+            });
+        }
 
+        ops.push(Operation::ComputeCode { sheet_pos });
+        ops
+    }
+
+    pub fn set_formula_operations(
+        &self,
+        selection: A1Selection,
+        code_string: String,
+        code_cell_name: Option<String>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return ops;
+        };
+
+        let rects = selection.rects(&self.a1_context);
+        if rects.is_empty() {
+            return ops;
+        }
+
+        // Check if any rect in the selection overlaps with data tables (set
+        // formulas are more complicated than set code cells because it allows
+        // writing formulas in a selection range)
+        let intersects_data_table = rects
+            .iter()
+            .any(|rect| sheet.contains_data_table_within_rect(*rect, None));
+
+        if intersects_data_table {
+            // Check each cell in the selection to determine if we should allow or block:
+            // - Block if it's an import cell (imports don't have anchors)
+            // - Block if it's in the output area of a table whose anchor is NOT in the selection
+            // - Allow if it's in the output area of a non-import table whose anchor IS in the selection
+            for rect in &rects {
+                for x in rect.min.x..=rect.max.x {
+                    for y in rect.min.y..=rect.max.y {
+                        let pos = crate::Pos { x, y };
+
+                        // Check if it's an anchor cell (source cell)
+                        if sheet.is_source_cell(pos) {
+                            // Block if it's an import cell
+                            if sheet.is_data_table_cell(pos) {
+                                if cfg!(target_family = "wasm") || cfg!(test) {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        "Cannot add code cell to table".to_string(),
+                                        JsSnackbarSeverity::Error.to_string(),
+                                    );
+                                }
+                                return ops;
+                            }
+                            // Otherwise it's a code cell anchor - allowed
+                        } else if let Some(anchor_pos) = sheet.data_table_pos_that_contains(pos) {
+                            // It's in the output area - check if the anchor is in the selection
+                            let anchor_in_selection = rects.iter().any(|r| {
+                                r.min.x <= anchor_pos.x
+                                    && anchor_pos.x <= r.max.x
+                                    && r.min.y <= anchor_pos.y
+                                    && anchor_pos.y <= r.max.y
+                            });
+
+                            if !anchor_in_selection {
+                                // Block: output area cell whose anchor is not in the selection
+                                if cfg!(target_family = "wasm") || cfg!(test) {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        "Cannot add code cell to table".to_string(),
+                                        JsSnackbarSeverity::Error.to_string(),
+                                    );
+                                }
+                                return ops;
+                            }
+                            // Also check if the table is an import (imports don't have anchors)
+                            if let Some(data_table) = sheet.data_table_at(&anchor_pos)
+                                && matches!(data_table.kind, DataTableKind::Import(_))
+                            {
+                                if cfg!(target_family = "wasm") || cfg!(test) {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        "Cannot add code cell to table".to_string(),
+                                        JsSnackbarSeverity::Error.to_string(),
+                                    );
+                                }
+                                return ops;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let first_pos = rects[0].min.to_sheet_pos(selection.sheet_id);
+        rects.iter().for_each(|rect| {
+            for x in rect.min.x..=rect.max.x {
+                for y in rect.min.y..=rect.max.y {
+                    let sheet_pos = SheetPos {
+                        x,
+                        y,
+                        sheet_id: selection.sheet_id,
+                    };
+
+                    let name = code_cell_name
+                        .clone()
+                        .unwrap_or_else(|| format!("{}1", CodeCellLanguage::Formula.as_string()));
+                    let mut code_run = CodeRun {
+                        language: CodeCellLanguage::Formula,
+                        code: code_string.clone(),
+                        ..Default::default()
+                    };
+                    if first_pos != sheet_pos {
+                        let ref_adjust = RefAdjust {
+                            sheet_id: Some(first_pos.sheet_id),
+                            relative_only: true,
+                            dx: x - first_pos.x,
+                            dy: y - first_pos.y,
+                            x_start: 0,
+                            y_start: 0,
+                        };
+                        code_run.adjust_references(
+                            selection.sheet_id,
+                            self.a1_context(),
+                            sheet_pos,
+                            ref_adjust,
+                        );
+                    }
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(DataTable {
+                            kind: DataTableKind::CodeRun(code_run),
+                            name: CellValue::Text(name),
+                            header_is_first_row: false,
+                            show_name: None,
+                            show_columns: None,
+                            column_headers: None,
+                            sort: None,
+                            sort_dirty: false,
+                            display_buffer: None,
+                            value: Value::Single(CellValue::Blank),
+                            spill_value: false,
+                            spill_data_table: false,
+                            last_modified: now(),
+                            alternating_colors: true,
+                            formats: None,
+                            borders: None,
+                            chart_pixel_output: None,
+                            chart_output: None,
+                        }),
+                        index: usize::MAX,
+                        ignore_old_data_table: false,
+                    });
+                    ops.push(Operation::ComputeCode { sheet_pos });
+                }
+            }
+        });
         ops
     }
 
@@ -172,40 +391,184 @@ mod test {
 
     #[test]
     fn test_set_code_cell_operations() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
-        let pos = Pos { x: 0, y: 0 };
-        sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
+        let sheet_pos = pos![sheet_id!A1];
+        gc.set_cell_value(sheet_pos, "delete me".to_string(), None, false);
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id),
+            sheet_pos,
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
         );
         assert_eq!(operations.len(), 2);
+        let Operation::SetDataTable { data_table, .. } = &operations[0] else {
+            panic!("Expected SetDataTable");
+        };
         assert_eq!(
-            operations[0],
-            Operation::SetCellValues {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-                values: CellValues::from(CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: "print('hello world')".to_string(),
-                })),
-            }
+            data_table.as_ref().unwrap().kind,
+            DataTableKind::CodeRun(CodeRun {
+                language: CodeCellLanguage::Python,
+                code: "print('hello world')".to_string(),
+                ..Default::default()
+            })
         );
-        assert_eq!(
-            operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
-            }
+
+        assert_eq!(operations[1], Operation::ComputeCode { sheet_pos });
+    }
+
+    #[test]
+    fn test_set_code_cell_overwrites_formula_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a formula code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "=1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should allow overwriting the anchor cell
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "print('hello')".to_string(),
+            None,
+        );
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting formula anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_code_cell_overwrites_python_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a Python code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should allow overwriting the anchor cell
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            "1 + 1".to_string(),
+            None,
+        );
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting Python anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_code_cell_overwrites_javascript_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a Javascript code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should allow overwriting the anchor cell
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "=1+1".to_string(),
+            None,
+        );
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting Javascript anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_code_cell_blocks_output_area() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table that outputs to multiple cells (e.g., A1 outputs to A1:A3)
+        use crate::test_util::test_create_code_table;
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 1, 3);
+
+        // Should block setting code cell in output area (A2, which is not the anchor)
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Python,
+            "print('hello')".to_string(),
+            None,
+        );
+        assert!(
+            ops.is_empty(),
+            "Should block setting code cell in output area"
+        );
+    }
+
+    #[test]
+    fn test_set_code_cell_blocks_import_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create an import table at A1
+        gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
+
+        // Should block setting code cell on import cell
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "print('hello')".to_string(),
+            None,
+        );
+        assert!(
+            ops.is_empty(),
+            "Should block setting code cell on import cell"
+        );
+    }
+
+    #[test]
+    fn test_set_code_cell_blocks_import_output_area() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create an import table at A1 that outputs to A1:B2
+        gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
+
+        // Should block setting code cell in import output area
+        let ops = gc.set_code_cell_operations(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Python,
+            "print('hello')".to_string(),
+            None,
+        );
+        assert!(
+            ops.is_empty(),
+            "Should block setting code cell in import output area"
         );
     }
 
     #[test]
     fn test_rerun_all_code_cells_operations() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         gc.add_sheet(None, None, None, false);
 
         // (1, 1) = 1 + 1
@@ -322,7 +685,7 @@ mod test {
         check_operations(&gc);
 
         // test same operations in different orders
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         gc.add_sheet(None, None, None, false);
 
         second(&mut gc);
@@ -331,7 +694,7 @@ mod test {
         check_operations(&gc);
 
         // test same operations in different orders
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         gc.add_sheet(None, None, None, false);
         first(&mut gc);
         third(&mut gc);
@@ -339,7 +702,7 @@ mod test {
         check_operations(&gc);
 
         // test same operations in different orders
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         gc.add_sheet(None, None, None, false);
         third(&mut gc);
         second(&mut gc);
@@ -347,7 +710,7 @@ mod test {
         check_operations(&gc);
 
         // test same operations in different orders
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         gc.add_sheet(None, None, None, false);
         third(&mut gc);
         first(&mut gc);
@@ -381,13 +744,13 @@ mod test {
         };
 
         // test the operations without the second sheet
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         first(&mut gc);
         second(&mut gc);
         check_sheet_operations(&gc);
 
         // test same operations in different orders
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         second(&mut gc);
         first(&mut gc);
         check_sheet_operations(&gc);
@@ -395,7 +758,7 @@ mod test {
 
     #[test]
     fn rerun_all_code_cells_one() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 1,
@@ -417,5 +780,168 @@ mod test {
             false,
         );
         gc.rerun_sheet_code_cells(sheet_id, None, false);
+    }
+
+    #[test]
+    fn test_set_formula_overwrites_formula_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a formula code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "=1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+        // Run the code cell to create the data table
+        gc.rerun_all_code_cells(None, false);
+
+        // Verify the data table exists
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        assert!(
+            sheet.is_source_cell(pos![A1]),
+            "Data table should exist at A1"
+        );
+        assert!(
+            !sheet.is_data_table_cell(pos![A1]),
+            "A1 should not be an import cell"
+        );
+        assert!(
+            sheet.contains_data_table_within_rect(
+                crate::Rect {
+                    min: pos![A1],
+                    max: pos![A1],
+                },
+                None
+            ),
+            "Selection should intersect with data table"
+        );
+
+        // Should allow overwriting the anchor cell
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting formula anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_formula_overwrites_python_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a Python code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Python,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+        // Run the code cell to create the data table
+        gc.rerun_all_code_cells(None, false);
+
+        // Should allow overwriting the anchor cell with a formula
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting Python anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_formula_overwrites_javascript_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a Javascript code cell at A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            "1 + 1".to_string(),
+            None,
+            None,
+            false,
+        );
+        // Run the code cell to create the data table
+        gc.rerun_all_code_cells(None, false);
+
+        // Should allow overwriting the anchor cell with a formula
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=2+2".to_string(), None);
+        assert!(
+            !ops.is_empty(),
+            "Should allow overwriting Javascript anchor cell"
+        );
+    }
+
+    #[test]
+    fn test_set_formula_blocks_output_area() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a code table that outputs to multiple cells (e.g., A1 outputs to A1:A3)
+        use crate::test_util::test_create_code_table;
+        test_create_code_table(&mut gc, sheet_id, pos![A1], 1, 3);
+
+        // Should block setting formula in output area (A2, which is not the anchor)
+        // when the anchor is NOT being overwritten
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string(), None);
+        assert!(
+            ops.is_empty(),
+            "Should block setting formula in output area when anchor is not overwritten"
+        );
+
+        // Should allow if selection includes both anchor and output area
+        // (overwriting the anchor allows writing to its output area)
+        let ops =
+            gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string(), None);
+        assert!(
+            !ops.is_empty(),
+            "Should allow if selection includes anchor and its output area"
+        );
+    }
+
+    #[test]
+    fn test_set_formula_blocks_import_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create an import table at A1
+        gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
+
+        // Should block setting formula on import cell
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A1"), "=1+1".to_string(), None);
+        assert!(
+            ops.is_empty(),
+            "Should block setting formula on import cell"
+        );
+    }
+
+    #[test]
+    fn test_set_formula_blocks_import_output_area() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create an import table at A1 that outputs to A1:B2
+        gc.test_set_data_table(pos![sheet_id!A1], 2, 2, false, None, None);
+
+        // Should block setting formula in import output area
+        let ops = gc.set_formula_operations(A1Selection::test_a1("A2"), "=1+1".to_string(), None);
+        assert!(
+            ops.is_empty(),
+            "Should block setting formula in import output area"
+        );
+
+        // Should also block if selection includes import anchor
+        let ops =
+            gc.set_formula_operations(A1Selection::test_a1("A1:A2"), "=1+1".to_string(), None);
+        assert!(
+            ops.is_empty(),
+            "Should block if selection includes import cell"
+        );
     }
 }

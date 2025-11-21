@@ -32,6 +32,7 @@ export enum Action {
   HelpCommunity = 'help_community',
   HelpChangelog = 'help_changelog',
   HelpFeedback = 'help_feedback',
+  HelpYouTube = 'help_youtube',
   FormatAlignHorizontalCenter = 'format_align_horizontal_center',
   FormatAlignHorizontalLeft = 'format_align_horizontal_left',
   FormatAlignHorizontalRight = 'format_align_horizontal_right',
@@ -173,4 +174,5 @@ export enum Action {
   ShowAllColumns = 'show_all_columns',
   EditTableCode = 'edit_table_code',
   ToggleAIAnalyst = 'toggle_ai_analyst',
+  AddReferenceToAIAnalyst = 'add_reference_to_ai_analyst',
 }

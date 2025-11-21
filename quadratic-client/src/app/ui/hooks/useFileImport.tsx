@@ -6,6 +6,7 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -19,7 +20,17 @@ const fileImportSendAnalyticsError = (from: string, error: Error | unknown) => {
   sendAnalyticsError('useFileImport', from, error);
 };
 
-export function useFileImport() {
+interface FileImportProps {
+  files?: File[];
+  sheetId?: string;
+  insertAt?: JsCoordinate;
+  cursor?: string;
+  isPrivate?: boolean;
+  teamUuid?: string;
+  isOverwrite?: boolean;
+}
+
+export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
 
@@ -29,21 +40,15 @@ export function useFileImport() {
   const navigate = useNavigate();
 
   const handleImport = useCallback(
-    async ({
-      files,
-      sheetId,
-      insertAt,
-      cursor,
-      isPrivate = true,
-      teamUuid,
-    }: {
-      files?: File[];
-      sheetId?: string;
-      insertAt?: JsCoordinate;
-      cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
-      isPrivate?: boolean;
-      teamUuid?: string;
-    }) => {
+    async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
+      // Only check file limit when creating new files (teamUuid must be defined)
+      if (teamUuid !== undefined) {
+        const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
+        if (hasReachedLimit) {
+          showUpgradeDialog('fileLimitReached');
+          return;
+        }
+      }
       quadraticCore.initWorker();
 
       if (!files) files = await uploadFile(supportedFileTypes);
@@ -68,7 +73,7 @@ export function useFileImport() {
         location: createNewFile ? 'Dashboard' : 'In sheet',
       });
 
-      if (!createNewFile && firstFileType === 'grid') {
+      if (!createNewFile && firstFileType === 'Grid') {
         addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
           severity: 'warning',
         });
@@ -78,10 +83,10 @@ export function useFileImport() {
 
       // Only one file can be imported at a time (except for excel), inside a existing file
       if (!createNewFile && files.length > 1) {
-        if (firstFileType === 'excel') {
+        if (firstFileType === 'Excel') {
           // importing into a existing file, use only excel files
           files = files.filter((file) => {
-            if (getFileType(file) === 'excel') {
+            if (getFileType(file) === 'Excel') {
               return true;
             } else {
               addGlobalSnackbar(`Error importing ${file.name}: Cannot import multiple types files at once`, {
@@ -91,7 +96,7 @@ export function useFileImport() {
             }
           });
         } else {
-          // csv or parquet file
+          // CSV or Parquet file
           // importing into a existing file, use only the first file
           for (let i = 1; i < files.length; i++) {
             addGlobalSnackbar(
@@ -163,9 +168,9 @@ export function useFileImport() {
 
           let result: { contents?: ArrayBufferLike; version?: string; error?: string } | undefined = undefined;
 
-          if (fileType === 'grid') {
+          if (fileType === 'Grid') {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
-          } else if (fileType === 'excel' || fileType === 'csv' || fileType === 'parquet') {
+          } else if (fileType === 'Excel' || fileType === 'CSV' || fileType === 'Parquet') {
             result = await quadraticCore.importFile({
               file: arrayBuffer,
               fileName,
@@ -174,6 +179,7 @@ export function useFileImport() {
               sheetId,
               location: insertAt,
               isAi: false,
+              isOverwrite,
             });
           } else {
             throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);

@@ -1,3 +1,4 @@
+import type { AnalyticsAIChat } from '@prisma/client';
 import type { Response } from 'express';
 import {
   getLastAIPromptMessageIndex,
@@ -27,6 +28,7 @@ import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
+import { isRestrictedModelCountry } from '../../utils/geolocation';
 import logger from '../../utils/logger';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
@@ -103,8 +105,22 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     }
   }
 
+  // Abort the request if the client disconnects or aborts the request
+  const abortController = new AbortController();
+  req.socket.on('close', () => {
+    abortController.abort();
+  });
+
   const source = args.source;
-  let modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+  const restrictedCountry = isRestrictedModelCountry(req, isOnPaidPlan);
+  let modelKey = await getModelKey(
+    clientModelKey,
+    args,
+    isOnPaidPlan,
+    exceededBillingLimit,
+    restrictedCountry,
+    abortController.signal
+  );
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
     throw new ApiError(400, 'User message not found');
@@ -120,7 +136,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...quadraticContext, ...args.messages];
   }
 
-  const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
+  const parsedResponse = await handleAIRequest({
+    modelKey,
+    args,
+    isOnPaidPlan,
+    exceededBillingLimit,
+    response: res,
+    signal: abortController.signal,
+  });
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);
@@ -129,42 +152,48 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const model = getModelFromModelKey(modelKey);
   const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
 
-  const chat = await dbClient.analyticsAIChat.upsert({
-    where: { chatId },
-    create: {
-      userId,
-      fileId,
-      chatId,
-      source,
-      messages: {
-        create: {
-          model,
-          messageIndex,
-          messageType,
-          source: messageSource,
-          inputTokens: parsedResponse?.usage.inputTokens,
-          outputTokens: parsedResponse?.usage.outputTokens,
-          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
-          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+  let chat: AnalyticsAIChat;
+  try {
+    chat = await dbClient.analyticsAIChat.upsert({
+      where: { chatId },
+      create: {
+        userId,
+        fileId,
+        chatId,
+        source,
+        messages: {
+          create: {
+            model,
+            messageIndex,
+            messageType,
+            source: messageSource,
+            inputTokens: parsedResponse?.usage.inputTokens,
+            outputTokens: parsedResponse?.usage.outputTokens,
+            cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+            cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+          },
         },
       },
-    },
-    update: {
-      messages: {
-        create: {
-          model,
-          messageIndex,
-          messageType,
-          source: messageSource,
-          inputTokens: parsedResponse?.usage.inputTokens,
-          outputTokens: parsedResponse?.usage.outputTokens,
-          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
-          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+      update: {
+        messages: {
+          create: {
+            model,
+            messageIndex,
+            messageType,
+            source: messageSource,
+            inputTokens: parsedResponse?.usage.inputTokens,
+            outputTokens: parsedResponse?.usage.outputTokens,
+            cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+            cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+          },
         },
+        updatedDate: new Date(),
       },
-      updatedDate: new Date(),
-    },
-  });
+    });
+  } catch (error) {
+    logger.error('Error in ai.chat.POST handler', error);
+    throw new Error('Error in ai.chat.POST handler');
+  }
 
   if (ownerTeam.settingAnalyticsAi) {
     // If we are using s3 and the analytics bucket name is set, save the data

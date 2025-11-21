@@ -1,10 +1,12 @@
 import { requireAuth } from '@/auth/auth';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
+import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
@@ -25,15 +27,17 @@ import {
   type LoaderFunctionArgs,
 } from 'react-router';
 
-type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
+type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'] & {
+  activeTeamUuid: string;
+};
 
 export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData> => {
-  await requireAuth();
-
+  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
   const { params } = loaderArgs;
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.files.checkpoints.list(uuid);
-  return data;
+  const checkpointsData = await apiClient.files.checkpoints.list(uuid);
+
+  return { ...checkpointsData, activeTeamUuid };
 };
 
 export const Component = () => {
@@ -75,15 +79,21 @@ export const Component = () => {
   );
   const btnsDisabled = useMemo(() => isLoading || !activeCheckpoint, [activeCheckpoint, isLoading]);
 
-  const handleDuplicateVersion = useCallback(() => {
+  const handleDuplicateVersion = useCallback(async () => {
     if (!activeCheckpoint || !teamUuid) return;
+
+    const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
+    if (hasReachedLimit) {
+      showUpgradeDialog('fileLimitReached');
+      return;
+    }
 
     trackEvent('[FileVersionHistory].duplicateVersion', {
       uuid,
       checkpointId: activeCheckpoint.id,
     });
 
-    const data = getActionFileDuplicate({
+    const duplicateAction = getActionFileDuplicate({
       teamUuid,
       isPrivate: true,
       redirect: true,
@@ -91,7 +101,7 @@ export const Component = () => {
       checkpointDataUrl: activeCheckpoint.dataUrl,
     });
 
-    fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+    fetcher.submit(duplicateAction, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
   }, [activeCheckpoint, fetcher, teamUuid, uuid]);
 
   const handleDownload = useCallback(() => {
@@ -111,6 +121,7 @@ export const Component = () => {
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
+      <UpgradeDialog teamUuid={teamUuid} />
       <div className="grid grid-rows-[auto_1fr] overflow-hidden border-r border-border">
         <div className="overflow-hidden border-b border-border p-3">
           <div className="mb-1 flex items-center justify-between">

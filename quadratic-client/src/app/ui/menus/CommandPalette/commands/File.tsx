@@ -10,7 +10,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
-import { DeleteIcon, DownloadIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
+import { DeleteIcon, DownloadIcon, FileCopyIcon, FileIcon } from '@/shared/components/Icons';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
@@ -31,7 +31,7 @@ const commands: CommandGroup = {
       Component: (props) => {
         const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
         const action = () => createNewFileAction.run({ teamUuid });
-        return <CommandPaletteListItem {...props} icon={<DraftIcon />} action={action} />;
+        return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
       },
     },
     {
@@ -39,8 +39,9 @@ const commands: CommandGroup = {
       isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
         const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+        const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
         const action = () => {
-          duplicateFileAction.run({ fileUuid });
+          duplicateFileAction.run({ fileUuid, teamUuid });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },

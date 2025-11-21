@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import { z } from 'zod';
 import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
@@ -190,6 +190,7 @@ export const ApiSchemas = {
       fileRole: UserFileRoleSchema.optional(),
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
+      restrictedModel: z.boolean(),
     }),
     license: LicenseSchema,
   }),
@@ -317,6 +318,9 @@ export const ApiSchemas = {
    * Examples
    * Given the publicly-accessible URL of a (example) file in production,
    * duplicate it to the user's account.
+   *
+   * TODO: rename to `templates` one day. Used to call these "examples" but now
+   * we call them "templates".
    * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({
@@ -364,7 +368,7 @@ export const ApiSchemas = {
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(
-      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string() })
+      z.object({ settings: TeamSettingsSchema, sshPublicKey: z.string(), onboardingComplete: z.boolean() })
     ),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
@@ -407,6 +411,13 @@ export const ApiSchemas = {
         showConnectionDemo: z.boolean().optional(),
       })
         .partial()
+        .optional(),
+      onboardingResponses: z
+        .object({
+          __version: z.number(),
+          __createdAt: z.string().datetime(),
+        })
+        .catchall(z.any())
         .optional(),
     })
     .refine(
@@ -456,6 +467,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/retention-discount.POST.response': z.object({
     message: z.string(),
   }),
+  '/v0/teams/:uuid/file-limit.GET.response': z.object({ hasReachedLimit: z.boolean() }),
 
   /**
    * Connections (which are all under `/v0/teams/:uuid/connections/*`)
@@ -468,6 +480,8 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  // TODO: this is considered deprecated as we moved onboarding to be part of the team
+  // Once that ships, we can remove this from the schema and the API
   '/v0/user.POST.request': z.object({
     onboardingResponses: z
       .object({
@@ -610,24 +624,6 @@ export const ApiSchemas = {
   }),
   '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
-  }),
-
-  '/v0/auth/send-magic-auth-code.POST.request': z.object({
-    email: z.string().email('Must be a valid email address.'),
-  }),
-  '/v0/auth/send-magic-auth-code.POST.response': z.object({
-    message: z.string(),
-    email: z.string().email('Must be a valid email address.').optional(),
-    pendingAuthenticationToken: z.string().optional(),
-  }),
-
-  '/v0/auth/authenticate-with-magic-code.POST.request': z.object({
-    email: z.string().email('Must be a valid email address.'),
-    code: z.string(),
-  }),
-  '/v0/auth/authenticate-with-magic-code.POST.response': z.object({
-    message: z.string(),
-    pendingAuthenticationToken: z.string().optional(),
   }),
 };
 

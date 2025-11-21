@@ -63,7 +63,15 @@ describe('PATCH /v0/teams/:uuid', () => {
           expect(res.body.name).toBe('Foobar');
         });
     });
-    it('accepts setting change', async () => {
+    it('accepts setting change for privacy if user is on a paid plan', async () => {
+      await dbClient.team.update({
+        where: {
+          uuid: '00000000-0000-4000-8000-000000000001',
+        },
+        data: {
+          stripeSubscriptionStatus: 'ACTIVE',
+        },
+      });
       await request(app)
         .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ settings: { analyticsAi: false } })
@@ -72,6 +80,13 @@ describe('PATCH /v0/teams/:uuid', () => {
         .expect((res) => {
           expect(res.body.settings.analyticsAi).toBe(false);
         });
+    });
+    it('rejects setting change for privacy if user is not on a paid plan', async () => {
+      await request(app)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .send({ settings: { analyticsAi: false } })
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect(403);
     });
     it('accepst key/value pair updates', async () => {
       // Create value

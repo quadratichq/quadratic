@@ -82,7 +82,12 @@ export const createBillingPortalSession = async (teamUuid: string, returnUrlBase
   });
 };
 
-export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrlBase: string) => {
+export const createCheckoutSession = async (
+  teamUuid: string,
+  priceId: string,
+  redirectUrlSuccess: string,
+  redirectUrlCancel: string
+) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -96,6 +101,17 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
   // get the number of users on the team
   const numUsersOnTeam = await getTeamSeatQuantity(team.id);
 
+  // Set the callback URL on success
+  //
+  // We track `subscription=created` via google analytics, so any URL that has
+  // that search param will get tracked as a signup in stripe.
+  //
+  // Stripe will swap out the `session_id` value, but you can't URL encode it or
+  // it won't work. So we have to manually set it.
+  const url = new URL(redirectUrlSuccess);
+  url.searchParams.set('subscription', 'created');
+  const redirectUrlSuccessWithTracking = url.toString() + '&session_id={CHECKOUT_SESSION_ID}';
+
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
     line_items: [
@@ -106,8 +122,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     allow_promotion_codes: true,
-    success_url: `${returnUrlBase}/teams/${teamUuid}/settings?subscription=created&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${returnUrlBase}`,
+    success_url: redirectUrlSuccessWithTracking,
+    cancel_url: redirectUrlCancel,
   });
 };
 

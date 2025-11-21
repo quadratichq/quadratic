@@ -21,6 +21,7 @@ export const ConnectionTypeSchema = z.enum([
   'MARIADB',
   'SUPABASE',
   'NEON',
+  'MIXPANEL',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
@@ -32,6 +33,9 @@ export function isLocalHostAddress(host: string): boolean {
   if (host.includes('localhost')) return true;
 
   // Check for local IP ranges
+  if (host === 'unknown') return true;
+
+  if (host === '::1') return true;
   if (host.startsWith('127.')) return true; // Loopback addresses
   if (host.includes('0.0.0.0')) return true; // Default route
   if (host.startsWith('169.254.')) return true; // Link-local addresses
@@ -118,6 +122,12 @@ export const ConnectionTypeDetailsBigquerySchema = z.object({
   service_account_configuration: z.string().min(1, { message: 'Required' }),
 });
 
+export const ConnectionTypeDetailsMixpanelSchema = z.object({
+  api_secret: z.string().min(1, { message: 'Required' }),
+  project_id: z.string().min(1, { message: 'Required' }),
+  start_date: z.string().date(),
+});
+
 /**
  * =============================================================================
  * Export
@@ -135,6 +145,17 @@ export const ConnectionListSchema = z.array(
   })
 );
 export type ConnectionList = z.infer<typeof ConnectionListSchema>;
+
+export const ConnectionListSchemaInternal = z.array(
+  z.object({
+    uuid: z.string().uuid(),
+    name: ConnectionNameSchema,
+    type: ConnectionTypeSchema,
+    teamId: z.string().uuid(),
+    semanticDescription: ConnectionSemanticDescriptionSchema,
+    typeDetails: ConnectionTypeDetailsSchema,
+  })
+);
 
 export const ApiSchemasConnections = {
   // List connections
@@ -162,4 +183,7 @@ export const ApiSchemasConnections = {
 
   // Delete connection
   '/v0/teams/:uuid/connections/:connectionUuid.DELETE.response': z.object({ message: z.string() }),
+
+  // Get all connections (internal)
+  '/v0/internal/connection.GET.response': ConnectionListSchemaInternal,
 };

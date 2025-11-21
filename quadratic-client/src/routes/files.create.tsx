@@ -5,7 +5,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth();
+  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
 
   const { request } = loaderArgs;
   const url = new URL(request.url);
@@ -23,15 +23,15 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   }
 
   // Are they trying to duplicate an example file? Do that.
-  const example = url.searchParams.get('example');
-  url.searchParams.delete('example');
-  if (example) {
+  const template = url.searchParams.get('template');
+  url.searchParams.delete('template');
+  if (template) {
     url.searchParams.delete('private');
     const additionalParams = url.searchParams.toString();
     return redirect(
-      ROUTES.CREATE_FILE_EXAMPLE({
+      ROUTES.CREATE_FILE_FROM_TEMPLATE({
         teamUuid: activeTeamUuid,
-        publicFileUrlInProduction: example,
+        publicFileUrlInProduction: template,
         additionalParams,
       })
     );

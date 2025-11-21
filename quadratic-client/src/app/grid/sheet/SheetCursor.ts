@@ -11,6 +11,7 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
@@ -512,5 +513,18 @@ export class SheetCursor {
 
   isAllSelected = (): boolean => {
     return this.jsSelection.isAllSelected();
+  };
+
+  getTableNameFromPos = (codeCell: CodeCell): string | undefined => {
+    return this.jsSelection.getTableNameFromPos(
+      codeCell.sheetId,
+      codeCell.pos.x,
+      codeCell.pos.y,
+      this.sheets.jsA1Context
+    );
+  };
+
+  is1dRange = (): boolean => {
+    return this.jsSelection.is1dRange(this.sheets.jsA1Context);
   };
 }
