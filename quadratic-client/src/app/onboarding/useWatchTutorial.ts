@@ -58,9 +58,13 @@ export const useWatchTutorial = () => {
     setState('menu-open');
   }, []);
 
+  const completeVideoDialog = useCallback(() => {
+    setState('complete');
+  }, []);
+
   const closeVideoDialog = useCallback(() => {
     setState('cancel');
   }, []);
 
-  return { startTutorial, showVideoDialog, closeVideoDialog };
+  return { startTutorial, showVideoDialog, closeVideoDialog, completeVideoDialog };
 };

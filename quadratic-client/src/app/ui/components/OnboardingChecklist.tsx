@@ -22,7 +22,7 @@ export const OnboardingChecklist = () => {
   const fetchBonusPrompts = useSetAtom(bonusPromptsAtom);
   const { loggedInUser } = useRootRouteLoaderData();
 
-  const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog } = useWatchTutorial();
+  const { startTutorial: watchTutorial, showVideoDialog, closeVideoDialog, completeVideoDialog } = useWatchTutorial();
   const promptAITutorial = usePromptAITutorial();
   const shareTutorial = useShareTutorial();
 
@@ -209,7 +209,7 @@ export const OnboardingChecklist = () => {
           </div>
         )}
       </div>
-      {showVideoDialog && <OnboardingVideoDialog close={closeVideoDialog} />}
+      {showVideoDialog && <OnboardingVideoDialog close={closeVideoDialog} complete={completeVideoDialog} />}
     </>
   );
 };

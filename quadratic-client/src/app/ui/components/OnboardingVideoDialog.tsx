@@ -8,9 +8,10 @@ const ONBOARDING_VIDEO_MANIFEST_URL =
 
 interface OnboardingVideoDialogProps {
   close: () => void;
+  complete: () => void;
 }
 
-export const OnboardingVideoDialog = ({ close }: OnboardingVideoDialogProps) => {
+export const OnboardingVideoDialog = ({ close, complete }: OnboardingVideoDialogProps) => {
   const [startedPlaying, setStartedPlaying] = useState(false);
   const [videoKey, setVideoKey] = useState(0);
 
@@ -86,6 +87,7 @@ export const OnboardingVideoDialog = ({ close }: OnboardingVideoDialogProps) => 
           }}
           onEnded={() => {
             trackEvent('[OnboardingVideo].completedPlaying');
+            complete();
           }}
           controls
           autoPlay
