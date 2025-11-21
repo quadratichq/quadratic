@@ -8,7 +8,7 @@ use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::Bytes;
-use datafusion::prelude::{ParquetReadOptions, SessionContext};
+use datafusion::prelude::{ParquetReadOptions, SessionConfig, SessionContext};
 use derivative::Derivative;
 use object_store::ObjectStore;
 use parquet::arrow::ArrowWriter;
@@ -39,7 +39,7 @@ pub struct DatafusionConnection {
     pub connection_id: Option<Uuid>,
     pub database: Option<String>,
     pub streams: Vec<String>,
-    #[serde(skip, default = "SessionContext::new")]
+    #[serde(skip, default = "DatafusionConnection::new_session_context")]
     #[derivative(Debug = "ignore")]
     pub session_context: SessionContext,
     #[serde(skip, default = "default_object_store")]
@@ -55,7 +55,7 @@ impl DatafusionConnection {
             connection_id: None,
             database: None,
             streams: vec![],
-            session_context: SessionContext::new(),
+            session_context: Self::new_session_context(),
             object_store,
             object_store_url,
         }
@@ -75,6 +75,12 @@ impl DatafusionConnection {
             database: Some(database),
             ..self
         }
+    }
+
+    fn new_session_context() -> SessionContext {
+        let config = SessionConfig::new()
+            .set_bool("datafusion.sql_parser.enable_ident_normalization", false);
+        SessionContext::new_with_config(config)
     }
 
     /// Get the parquet path for a table in the object store (format: s3://synced-data/consolidated/{table}/{connection_id}/{table}.parquet)
@@ -119,7 +125,7 @@ impl<'a> Connection<'a> for DatafusionConnection {
 
     /// Connect to a datafusion database
     async fn connect(&self) -> Result<SessionContext> {
-        let ctx = SessionContext::new();
+        let ctx = Self::new_session_context();
 
         // register the object store in datafusion context
         ctx.register_object_store(&self.object_store_url, self.object_store.clone());
