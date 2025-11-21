@@ -30,13 +30,13 @@ export const SetCellValues = memo(
     const label = 'Data';
 
     if (loading) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={icon} label={label} hasError className={className} />;
+      return <ToolCard icon={icon} label={label} hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
-      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+      return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
     }
 
     const { top_left_position, cell_values } = toolArgs.data;
@@ -48,6 +48,7 @@ export const SetCellValues = memo(
         label={label}
         description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
         className={className}
+        compact
       />
     );
   }

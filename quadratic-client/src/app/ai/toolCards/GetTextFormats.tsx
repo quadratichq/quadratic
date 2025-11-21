@@ -25,18 +25,18 @@ export const GetTextFormats = memo(
       }
     }, [args, loading]);
 
-    let label = useMemo(
-      () =>
+    const label = useMemo(() => {
+      const verb = loading ? 'Reading' : 'Read';
+      let text =
         toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-          ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
-          : 'Reading formats...',
-      [toolArgs?.data?.sheet_name, toolArgs?.data?.selection]
-    );
+          ? `${verb} formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
+          : `${verb} formats...`;
 
-    if (toolArgs?.data?.page) {
-      label += ` in page ${toolArgs.data.page + 1}`;
-    }
-    label += '.';
+      if (toolArgs?.data?.page) {
+        text += ` in page ${toolArgs.data.page + 1}`;
+      }
+      return text + '.';
+    }, [toolArgs?.data?.sheet_name, toolArgs?.data?.selection, toolArgs?.data?.page, loading]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;

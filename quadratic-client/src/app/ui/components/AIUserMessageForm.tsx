@@ -384,7 +384,9 @@ export const AIUserMessageForm = memo(
         onChange={handlePromptChange}
         onKeyDown={handleKeyDown}
         autoComplete="off"
-        placeholder={uiContext.startsWith('analyst') ? 'Ask a question (type @ to reference data)…' : 'Ask a question…'}
+        placeholder={
+          uiContext.startsWith('analyst') ? 'Ask a question (use @ to reference the sheet).' : 'Ask a question.'
+        }
         autoHeight={true}
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
@@ -393,7 +395,7 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <div className="relative">
+      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
           <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}
@@ -596,7 +598,7 @@ const AIUserMessageFormFooter = memo(
       <>
         <div
           className={cn(
-            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs',
+            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs @container',
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
@@ -608,15 +610,7 @@ const AIUserMessageFormFooter = memo(
               filesSupportedText={filesSupportedText}
             />
             {isAnalyst && (
-              <AIUserMessageFormConnectionsButton
-                disabled={disabled}
-                context={context}
-                setContext={setContext}
-                textareaRef={textareaRef}
-              />
-            )}
-            {isAnalyst && (
-              <TooltipPopover label="Reference data">
+              <TooltipPopover label="Reference sheet data" fastMode={true}>
                 <Button
                   size="icon-sm"
                   className="h-7 w-7 rounded-full px-0 shadow-none hover:bg-border"
@@ -627,6 +621,14 @@ const AIUserMessageFormFooter = memo(
                   <MentionIcon />
                 </Button>
               </TooltipPopover>
+            )}
+            {isAnalyst && (
+              <AIUserMessageFormConnectionsButton
+                disabled={disabled}
+                context={context}
+                setContext={setContext}
+                textareaRef={textareaRef}
+              />
             )}
             <AIUserMessageFormOptimizeButton
               disabled={disabled}

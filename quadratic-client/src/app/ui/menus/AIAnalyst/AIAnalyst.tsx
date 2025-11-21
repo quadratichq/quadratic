@@ -102,14 +102,15 @@ export const AIAnalyst = memo(() => {
 
               <div
                 id="ai-analyst-user-message-form"
-                className={cn('px-2 pb-2 pt-0.5', messagesCount === 0 && 'mt-auto')}
+                className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5"
               >
+                {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}
                   messageIndex={messagesCount}
-                  showEmptyChatPromptSuggestions={true}
+                  showEmptyChatPromptSuggestions={messagesCount === 0}
                   uiContext="analyst-new-chat"
                 />
                 <AIMessageCounterBar />

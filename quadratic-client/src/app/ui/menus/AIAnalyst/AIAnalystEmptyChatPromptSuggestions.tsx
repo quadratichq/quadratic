@@ -15,17 +15,16 @@ import { useRecoilValue } from 'recoil';
 
 const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   {
-    label: 'Build a chart',
-    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet add sample data and plot it.',
+    label: 'Introduce Quadratic',
+    prompt: 'What can you help me with in Quadratic?',
   },
   {
-    label: 'Search the web',
-    prompt: 'Search the web for the top 10 companies in the US by revenue.',
+    label: 'Make a chart',
+    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet, add sample data and plot it.',
   },
   {
-    label: 'Connect an API',
-    prompt:
-      'Show me how to do a GET request using Python. Pull data from jsonplaceholder.typicode.com and put it on the sheet. Wrap everything in a single function and have that be the last thing returned to the sheet.',
+    label: 'Search for data',
+    prompt: 'Search the web for the top 10 tech companies and add them to my sheet.',
   },
 ];
 
@@ -88,30 +87,33 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(
     }, [aiAnalystLoading, abortController]);
 
     return (
-      <div className="absolute bottom-full left-0 mb-2 flex w-full flex-row flex-wrap gap-2">
-        {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
-          <HoverCard key={`${index}-${label}-card`}>
-            <HoverCardTrigger asChild>
-              <Button
-                key={`${index}-${label}`}
-                disabled={loading}
-                variant="secondary"
-                size="sm"
-                className="relative flex h-6 items-center px-2 text-sm font-normal hover:underline"
-                onClick={() => {
-                  trackEvent('[AIAnalyst].submitExamplePrompt');
-                  submit(prompt);
-                }}
-              >
-                {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
-                <span className={cn(loading && 'opacity-0')}>{label}</span>
-              </Button>
-            </HoverCardTrigger>
-            <HoverCardContent>
-              <p className="text-sm">{prompt}</p>
-            </HoverCardContent>
-          </HoverCard>
-        ))}
+      <div className="absolute left-0 right-0 top-[40%] flex -translate-y-1/2 flex-col items-center gap-4 px-2">
+        <h2 className="text-xl font-medium">What would you like to do?</h2>
+        <div className="flex flex-row flex-wrap justify-center gap-2">
+          {(promptSuggestions ?? defaultPromptSuggestions).map(({ label, prompt }, index) => (
+            <HoverCard key={`${index}-${label}-card`}>
+              <HoverCardTrigger asChild>
+                <Button
+                  key={`${index}-${label}`}
+                  disabled={loading}
+                  variant="secondary"
+                  size="sm"
+                  className="relative flex h-6 items-center px-2 text-sm font-normal hover:underline"
+                  onClick={() => {
+                    trackEvent('[AIAnalyst].submitExamplePrompt');
+                    submit(prompt);
+                  }}
+                >
+                  {loading && <Skeleton className="absolute left-0 top-0 h-full w-full" />}
+                  <span className={cn(loading && 'opacity-0')}>{label}</span>
+                </Button>
+              </HoverCardTrigger>
+              <HoverCardContent side="top" align="start">
+                <p className="text-sm">{prompt}</p>
+              </HoverCardContent>
+            </HoverCard>
+          ))}
+        </div>
       </div>
     );
   }
