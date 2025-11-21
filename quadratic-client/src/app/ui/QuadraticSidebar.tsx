@@ -112,21 +112,23 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
-        <SidebarTooltip label="Onboarding checklist">
-          <SidebarToggle
-            id="onboarding-checklist-trigger"
-            pressed={!!showOnboardingChecklist}
-            onPressedChange={(pressed) => {
-              if (pressed) {
-                setShowOnboardingChecklist('open');
-              } else {
-                events.emit('onboardingChecklistClose');
-              }
-            }}
-          >
-            <ChecklistIcon />
-          </SidebarToggle>
-        </SidebarTooltip>
+        {canEditFile && (
+          <SidebarTooltip label="Onboarding checklist">
+            <SidebarToggle
+              id="onboarding-checklist-trigger"
+              pressed={!!showOnboardingChecklist}
+              onPressedChange={(pressed) => {
+                if (pressed) {
+                  setShowOnboardingChecklist('open');
+                } else {
+                  events.emit('onboardingChecklistClose');
+                }
+              }}
+            >
+              <ChecklistIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
         <ThemePickerMenu />
       </div>
     </nav>
