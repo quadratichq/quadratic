@@ -1,6 +1,6 @@
 export const BONUS_PROMPTS = {
   'watch-tutorial': {
-    name: 'Watch Quadratic 101 video',
+    name: 'Watch ~90s intro video',
     prompts: 1,
     active: true,
   },
