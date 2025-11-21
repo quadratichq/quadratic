@@ -31,11 +31,15 @@ export const usePromptAITutorial = () => {
       case 'add-prompt':
         setTutorial({
           show: true,
-          unmaskedElements: [...PROMPT_AI_TUTORIAL_ITEM_IDS, 'ai-analyst-user-message-form'],
+          unmaskedElements: [
+            ...PROMPT_AI_TUTORIAL_ITEM_IDS,
+            'tutorial-ai-analyst-user-message-form',
+            'tutorial-ai-analyst-user-message-form-submit-button',
+          ],
         });
         setCallout({
           callouts: [
-            { id: 'ai-analyst-user-message-form', side: 'right', text: 'Submit a prompt to try Quadratic AI' },
+            { id: 'tutorial-ai-analyst-user-message-form', side: 'right', text: 'Submit a prompt to try Quadratic AI' },
           ],
         });
         events.emit(

@@ -100,10 +100,7 @@ export const AIAnalyst = memo(() => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div
-                id="ai-analyst-user-message-form"
-                className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5"
-              >
+              <div className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5">
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}

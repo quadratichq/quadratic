@@ -40,6 +40,7 @@ import {
 } from 'react';
 import type { SetterOrUpdater } from 'recoil';
 
+type AIAnalystUIContext = 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
 export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
@@ -48,7 +49,7 @@ export interface AIUserMessageFormWrapperProps {
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
-  uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
+  uiContext: AIAnalystUIContext;
 }
 
 export interface SubmitPromptArgs {
@@ -374,6 +375,7 @@ export const AIUserMessageForm = memo(
 
     const textarea = (
       <Textarea
+        id={uiContext === 'analyst-new-chat' ? 'tutorial-ai-analyst-user-message-form' : ''}
         ref={textareaRef}
         value={prompt}
         className={cn(
@@ -461,6 +463,7 @@ export const AIUserMessageForm = memo(
           {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
+            uiContext={uiContext}
             show={editing}
             loading={loading}
             waitingOnMessageIndex={waitingOnMessageIndex}
@@ -556,6 +559,7 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   isAnalyst: boolean;
+  uiContext: AIAnalystUIContext;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -576,6 +580,7 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     isAnalyst,
+    uiContext,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -650,6 +655,7 @@ const AIUserMessageFormFooter = memo(
                 )}
               >
                 <Button
+                  id={uiContext === 'analyst-new-chat' ? 'tutorial-ai-analyst-user-message-form-submit-button' : ''}
                   size="icon-sm"
                   className="rounded-full"
                   onClick={(e) => {
