@@ -180,7 +180,6 @@ export const OnboardingChecklist = () => {
                   onClick={() => handleItemClick(prompt.category, prompt.received)}
                 >
                   {/* Checkmark circle */}
-
                   {prompt.received ? (
                     <CheckBoxIcon className="mr-2 text-primary" />
                   ) : (
@@ -210,9 +209,7 @@ export const OnboardingChecklist = () => {
           </div>
         )}
       </div>
-      {showVideoDialog && (
-        <OnboardingVideoDialog open={showVideoDialog} onOpenChange={(open) => !open && closeVideoDialog()} />
-      )}
+      {showVideoDialog && <OnboardingVideoDialog close={closeVideoDialog} />}
     </>
   );
 };

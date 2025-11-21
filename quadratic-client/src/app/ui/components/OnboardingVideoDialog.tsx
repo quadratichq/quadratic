@@ -7,51 +7,74 @@ const ONBOARDING_VIDEO_MANIFEST_URL =
   'https://customer-ia5m0yvds0jb4gxr.cloudflarestream.com/6ca8c5bde0049926eb96ae6db577bf7c/manifest/video.m3u8';
 
 interface OnboardingVideoDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  close: () => void;
 }
 
-export const OnboardingVideoDialog = ({ open, onOpenChange }: OnboardingVideoDialogProps) => {
+export const OnboardingVideoDialog = ({ close }: OnboardingVideoDialogProps) => {
   const [startedPlaying, setStartedPlaying] = useState(false);
+  const [videoKey, setVideoKey] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls>(null);
+
+  // Update video key when dialog opens to force remount
+  useEffect(() => {
+    setVideoKey((prev) => prev + 1);
+    setStartedPlaying(false);
+  }, []);
+
+  // Initialize video when element mounts (remounts on each dialog open due to key)
   useEffect(() => {
     if (!videoRef.current) return;
-    if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      videoRef.current.src = ONBOARDING_VIDEO_MANIFEST_URL;
+
+    const video = videoRef.current;
+
+    const playVideo = () => {
+      video.play().catch((error) => {
+        console.error('Error playing video', error);
+      });
+    };
+
+    // Set up video source and play
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = ONBOARDING_VIDEO_MANIFEST_URL;
+      video.addEventListener('loadeddata', playVideo, { once: true });
     } else if (Hls.isSupported()) {
       hlsRef.current = new Hls({
         lowLatencyMode: true,
         capLevelToPlayerSize: true,
         startLevel: -1,
       });
-      hlsRef.current.attachMedia(videoRef.current);
+      hlsRef.current.attachMedia(video);
+      hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+        playVideo();
+      });
       hlsRef.current.loadSource(ONBOARDING_VIDEO_MANIFEST_URL);
     }
 
-    videoRef.current.play().catch((error) => {
-      console.error('Error playing video', error);
-    });
     return () => {
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
+      video.removeEventListener('loadeddata', playVideo);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
-  }, []);
+  }, [videoKey]); // Re-run when video remounts
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={true} onOpenChange={close}>
       <DialogHeader className="sr-only">
         <DialogTitle>Onboarding Video</DialogTitle>
         <DialogDescription>Watch the Quadratic 101 tutorial video</DialogDescription>
       </DialogHeader>
       <DialogContent
         onClick={() => {
-          onOpenChange(false);
+          close();
         }}
         className="flex h-screen max-h-none w-screen max-w-none translate-y-0 items-center justify-center rounded-none bg-background/0 p-0"
       >
         <video
+          key={videoKey}
           ref={videoRef}
           onClick={(e) => {
             e.stopPropagation();
