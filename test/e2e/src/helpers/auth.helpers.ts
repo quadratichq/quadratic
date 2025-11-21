@@ -116,6 +116,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       await skipButton.click({ timeout: 60 * 1000 });
     }
   }
+
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
 
@@ -219,7 +220,7 @@ export const handleOnboarding = async (page: Page) => {
   await onboardingBtnTeamInvites.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 
   // How they heard
-  const onboardingBtnHowTheyHeard = page.locator('[data-testid="onboarding-btn-source-other"]');
+  const onboardingBtnHowTheyHeard = page.getByRole('link', { name: 'Twitter (X)' });
   await onboardingBtnHowTheyHeard.click({ timeout: 60 * 1000 });
   await onboardingBtnHowTheyHeard.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
 

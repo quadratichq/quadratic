@@ -1,4 +1,4 @@
 export const buildUrl = (route = '/') => {
-  const baseUrl = (process.env.E2E_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = (process.env.E2E_URL || 'http://qa.quadratic-preview.com/').replace(/\/$/, '');
   return `${baseUrl}${route}`;
 };

@@ -239,10 +239,6 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Assert the account email address is displayed on the billing page
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
-  // Store the credit card details from the initial payment method used to upgrade to Pro
-  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
-  const [initialPaymentNum, , initialPaymentExpiry] = initialPaymentEl.split('\n');
-
   // Click 'Add payment method' to add an additional payment method
   await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 60 * 1000 });
 
@@ -302,6 +298,10 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Assert that there are two card elements representing each card (initial card and newly added payment card)
   const newCardCount = await page.locator(`[data-testid="page-container-main"] .Card--radius--all`).count();
   expect(newCardCount).toBe(2);
+
+  // Store the credit card details from the initial payment method used to upgrade to Pro
+  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
+  const [initialPaymentNum, , initialPaymentExpiry] = initialPaymentEl.split('\n');
 
   // Assert that the previously added payment method is still visible, based on its expiration date
   await expect(page.getByText(initialPaymentExpiry)).toBeVisible({ timeout: 60 * 1000 });
@@ -367,7 +367,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
 
   // Extract the cost from the parent div of 'Pro plan' (the number between `$` and `/user/month`)
   const proPlanCostText = await proPlanParentEl.textContent();
-  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1]);
+  const proPlanCost = Number(proPlanCostText?.match(/\$(\d+)(?=\/user\/month)/)?.[1]);
 
   // Assert that the Pro plan cost is $20 per user per month
   expect(proPlanCost).toBe(20);
@@ -442,7 +442,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-testid="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the page reflects the increased cost due to new members
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
@@ -541,18 +541,18 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-testid="cancel-subscription"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
   // Assert that the page to confirm the cancellation appears
   await expect(page).toHaveTitle(/Cancel subscription/);
-  await expect(page.getByText(`Cancel your subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Confirm cancellation`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Store the text content of the main page container and remove the extra spaces
   const cancelSubscriptionRawText = await page.locator('[data-testid="page-container-main"]').textContent();
   const cancelSubscriptionText = cancelSubscriptionRawText?.replace(/\s+/g, ' ')?.trim();
 
   // Assert that the normalized text contains the expected phrase (indicating cancellation of plan)
-  expect(cancelSubscriptionText).toContain('subscription will be canceled');
+  expect(cancelSubscriptionText).toContain('If you cancel this subscription, it will still be available until the end of your billing period on');
 
   // Click 'Cancel subscription" to confirm the cancellation
   await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
