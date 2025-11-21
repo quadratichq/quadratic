@@ -6,6 +6,7 @@ import * as Mixpanel from '@/shared/components/connections/ConnectionFormMixpane
 import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Neon from '@/shared/components/connections/ConnectionFormNeon';
+import * as Plaid from '@/shared/components/connections/ConnectionFormPlaid';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import * as Snowflake from '@/shared/components/connections/ConnectionFormSnowflake';
 import * as Supabase from '@/shared/components/connections/ConnectionFormSupabase';
@@ -30,6 +31,7 @@ import NeonLogo from './logo-neon.svg?react';
 import NetsuiteLogo from './logo-netsuite.svg?react';
 import OracleLogo from './logo-oracle.svg?react';
 import OtherLogo from './logo-other.svg?react';
+import PlaidLogo from './logo-plaid.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 import QuickbooksLogo from './logo-quickbooks.svg?react';
 import RedshiftLogo from './logo-redshift.svg?react';
@@ -143,6 +145,12 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: GoogleAnalyticsLogo,
     ConnectionForm: GoogleAnalytics.ConnectionForm,
     useConnectionForm: GoogleAnalytics.useConnectionForm,
+  },
+  PLAID: {
+    name: 'Plaid',
+    Logo: PlaidLogo,
+    ConnectionForm: Plaid.ConnectionForm,
+    useConnectionForm: Plaid.useConnectionForm,
   },
 };
 

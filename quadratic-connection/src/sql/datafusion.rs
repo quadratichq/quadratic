@@ -11,9 +11,10 @@ use quadratic_rust_shared::{
         tests::new_datafusion_connection as new_datafusion_test_connection,
     },
     synced::{
-        SyncedClient,
+        SyncedClient, SyncedConnection,
         google_analytics::client::{GoogleAnalyticsClient, GoogleAnalyticsConnection},
         mixpanel::{MixpanelConnection, client::MixpanelClient},
+        plaid::{PlaidConnection, client::PlaidClient},
     },
 };
 use std::sync::Arc;
@@ -29,26 +30,21 @@ use crate::{
     state::State,
 };
 
-/// Test the connection to the database.
-pub(crate) async fn test_mixpanel(
-    Json(connection): Json<MixpanelConnection>,
-) -> Json<TestResponse> {
-    let client = MixpanelClient::new(&connection.api_secret, &connection.project_id);
-    TestResponse::new(client.test_connection().await, None).into()
+/// Macro to generate test handler functions for Datafusion connections.
+macro_rules! test_handler {
+    ($fn_name:ident, $connection_type:ty) => {
+        pub(crate) async fn $fn_name(
+            Json(connection): Json<$connection_type>,
+        ) -> Result<Json<TestResponse>> {
+            let client = connection.to_client().await?;
+            Ok(TestResponse::new(client.test_connection().await, None).into())
+        }
+    };
 }
 
-pub(crate) async fn test_google_analytics(
-    Json(connection): Json<GoogleAnalyticsConnection>,
-) -> Result<Json<TestResponse>> {
-    let client = GoogleAnalyticsClient::new(
-        connection.service_account_configuration.clone(),
-        connection.property_id.clone(),
-        connection.start_date.clone(),
-    )
-    .await?;
-
-    Ok(TestResponse::new(client.test_connection().await, None).into())
-}
+test_handler!(test_google_analytics, GoogleAnalyticsConnection);
+test_handler!(test_mixpanel, MixpanelConnection);
+test_handler!(test_plaid, PlaidConnection);
 
 /// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
@@ -78,6 +74,7 @@ async fn get_connection(
     let streams = match api_connection.r#type.as_str() {
         "MIXPANEL" => MixpanelClient::streams(),
         "GOOGLE_ANALYTICS" => GoogleAnalyticsClient::streams(),
+        "PLAID" => PlaidClient::streams(),
         _ => vec![],
     };
 
@@ -156,7 +153,7 @@ mod tests {
     #[ignore]
     async fn test_mixpanel_connection_success() {
         let connection = get_test_mixpanel_connection();
-        let response = test_mixpanel(Json(connection)).await;
+        let response = test_mixpanel(Json(connection)).await.unwrap();
         assert!(response.0.connected);
     }
 
