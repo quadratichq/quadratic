@@ -400,9 +400,9 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
     permission: 'Can Edit',
   });
 
-  //--------------------------------
+  //---------------------------------
   // Assert:
-  //--------------------------------
+  //---------------------------------
 
   // Assert that invited user is added as a team member
   await expect(page.getByText(user2Email).first()).toBeVisible({ timeout: 60 * 1000 });
