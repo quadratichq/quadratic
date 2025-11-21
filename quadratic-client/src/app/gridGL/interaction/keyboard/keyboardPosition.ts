@@ -47,7 +47,8 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
         direction,
         sheets.sheet.contentCache,
         dataTablesCache,
-        sheets.jsA1Context
+        sheets.jsA1Context,
+        sheets.sheet.mergeCells
       );
     } else {
       newPos = moveCursor(

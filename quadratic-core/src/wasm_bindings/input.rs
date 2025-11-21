@@ -22,6 +22,7 @@ pub fn js_jump_cursor(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &JsA1Context,
+    merge_cells: &JsMergeCells,
 ) -> Result<Pos, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let sheet_pos = SheetPos {
@@ -35,6 +36,7 @@ pub fn js_jump_cursor(
         content_cache,
         table_cache,
         context.get_context(),
+        Some(merge_cells.get_merge_cells()),
     ))
 }
 
