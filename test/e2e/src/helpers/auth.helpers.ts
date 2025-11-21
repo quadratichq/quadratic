@@ -9,6 +9,13 @@ type LogInOptions = {
   route?: string;
 };
 
+type CreateNewTeamOptions = {
+  teamName: string;
+};
+
+// Create a unique team name
+const teamName = `Name - ${Date.now()}`;
+
 const handleHumanCheck = async (page: Page) => {
   const humanCheckHeader = page.locator('text=Before continuing, we need to be sure');
   if (await humanCheckHeader.isVisible({ timeout: 1500 }).catch(() => false)) {
@@ -94,7 +101,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   await handleHumanCheck(page);
 
-  await handleOnboarding(page);
+  //await handleOnboarding(page, { teamName });
 
   await handleQuadraticLoading(page);
 
@@ -116,6 +123,15 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
       await skipButton.click({ timeout: 60 * 1000 });
     }
   }
+  
+  // Only run onboarding if the onboarding UI is present (fast check)
+  try {
+    await expect(page.getByRole(`img`, { name: `Quadratic onboarding` })).toBeVisible({ timeout: 2000 });
+    await handleOnboarding(page, { teamName });
+  } catch {
+    // onboarding not present — continue
+  }
+
   // wait for shared with me visibility on dashboard
   await page.locator(`:text("Shared with me")`).waitFor({ timeout: 2 * 60 * 1000 });
 
@@ -167,7 +183,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   await page.locator('[value="sign-up"]').click({ timeout: 60 * 1000 });
 
   await handleHumanCheck(page);
-  await handleOnboarding(page);
+  await handleOnboarding(page, { teamName });
 
   await handleQuadraticLoading(page);
 
@@ -186,7 +202,7 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   return email;
 };
 
-const handleOnboarding = async (page: Page) => {
+export const handleOnboarding = async (page: Page, { teamName }: CreateNewTeamOptions) => {
   // Check for "Get started in"
   const getStartedHeader = page.locator('h2:has-text("Get started in")');
   if (await getStartedHeader.isVisible()) {
@@ -198,31 +214,75 @@ const handleOnboarding = async (page: Page) => {
     }
   }
 
-  const onboardingStart = page.locator('h2:has-text("How will you use Quadratic?")');
-  if (!(await onboardingStart.isVisible())) {
-    await handleQuadraticLoading(page);
-    return;
-  }
+  // Validate Onboarding page flow
+  await expect(page.getByRole(`img`, { name: `Quadratic onboarding` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Welcome to Quadratic!` })).toBeVisible({ timeout: 60 * 1000 });
 
-  await page.locator('a:has-text("Work")').click({ timeout: 60 * 1000 });
-  await onboardingStart.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Click Next button
+  await page.locator(`[data-testid="onboarding-btn-get-started"]`).click();
 
-  const onboardingFirstQuestion = page.locator('h2:has-text("What best describes your role?")');
-  await onboardingFirstQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('a:has-text("Software Development")').click({ timeout: 60 * 1000 });
-  await onboardingFirstQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Validate Experience step in the Onboarding flow
+  await expect(page.getByRole(`heading`, { name: `How will you use Quadratic?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Back` })).toBeVisible({ timeout: 60 * 1000 });
+  await page.getByText('Your answers help personalize', { exact: true }).isVisible();
 
-  const onboardingSecondQuestion = page.locator('h2:has-text("Which languages are you proficient in?")');
-  await onboardingSecondQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('label:has-text("Formulas")').click({ timeout: 60 * 1000 });
-  await page.getByRole(`button`, { name: `Next` }).click({ timeout: 60 * 1000 });
-  await onboardingSecondQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Click on Work box option
+  await page.locator(`[data-testid="onboarding-btn-use-work"]`).click();
 
-  const onboardingThirdQuestion = page.locator('h2:has-text("What are you looking to accomplish in Quadratic?")');
-  await onboardingThirdQuestion.waitFor({ state: 'visible', timeout: 2 * 60 * 1000 });
-  await page.locator('label:has-text("AI analysis")').click({ timeout: 60 * 1000 });
-  await page.getByRole(`button`, { name: `Done` }).click({ timeout: 60 * 1000 });
-  await onboardingThirdQuestion.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  // Validate Describe your role Onboarding step
+  await expect(page.getByRole(`heading`, { name: `What best describes your role?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Next` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Next` })).toBeDisabled();
+
+  // Click on Data/Analytics option
+  await page.getByRole(`link`, { name: 'Data / Analytics' }).click();
+
+  // Validate 'how many people' Onboarding step
+  await expect(page.getByRole(`heading`, { name: `How many people are on your team?` })).toBeVisible({ timeout: 60 * 1000 });
+
+  // Select 1-5 option
+  await page.getByRole(`link`, { name: '1-5 keyboard_arrow_right' }).click();
+
+  // Validate Data Sources Onboarding step
+  await expect(page.getByRole(`heading`, { name: `What data sources are you interested in connecting to?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole('link', { name: 'Skip, i\'m not interested in any of these' })).toBeVisible({ timeout: 60 * 1000 });
+
+  // Click on the Skip link
+  await page.getByRole('link', { name: 'Skip, i\'m not interested in any of these' }).click();
+
+  // Fill in the new team name
+  await page.locator(`[data-testid="onboarding-input-team-name"]`).fill(teamName);
+
+  // Click on the Next button
+  await page.locator(`[data-testid="onboarding-btn-team-name-next"]`).click({ timeout: 60 * 1000 });
+
+  // Validate Who would you like to invite Onboarding step
+  await expect(page.getByRole(`heading`, { name: `Who would you like to invite to your team?` })).toBeVisible({ timeout: 60 * 1000 });
+  await page.getByText('Quadratic is better with your team. We’ll send them an invite.', { exact: true }).isVisible();
+
+  // Click Next button
+  await page.locator(`[data-testid="onboarding-btn-team-invites-next"]`).click({ timeout: 60 * 1000 });
+
+  // Validate How did you hear Onboarding step
+  await expect(page.getByText(`How did you hear about Quadratic?`, { exact: true } )).toBeVisible({ timeout: 60 * 1000 });
+
+  // Click on the Next button
+  await page.getByRole(`link`, { name: 'Email' }).click();
+
+  // Validate How did you hear Onboarding step
+  await expect(page.getByRole(`heading`, { name: `Which plan would you like?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Get started for free, or subscribe for full access.`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
+
+  // Click on the Open Quadratic button
+  await page.locator(`[data-testid="onboarding-btn-team-plan-free"]`).click({ timeout: 60 * 1000 });
+
+  // Validate the page was navigated to the Spreadsheet
+  await expect(page.getByRole(`button`, { name: `Sheet chat` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(teamName, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
+
+  // Navigate to the Dashboard
+  await page.locator(`[data-testid="back-to-dashboard-link"]`).click({ timeout: 60 * 1000 });
+  await expect(page).toHaveURL(/teams/);
 
   await handleQuadraticLoading(page);
 };
