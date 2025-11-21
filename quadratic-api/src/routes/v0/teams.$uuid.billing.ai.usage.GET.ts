@@ -79,7 +79,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // include bonus prompts in the calculation
   if (exceededBy > 0) {
-    exceededBillingLimit = exceededBy < bonusRemaining;
+    exceededBillingLimit = exceededBy > bonusRemaining;
   }
   const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
 

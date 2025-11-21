@@ -23,13 +23,13 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
-      expect(response.body.bonusPrompts).toHaveLength(2);
+      expect(response.body.bonusPrompts).toHaveLength(3);
 
       // Check share-file prompt
-      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
-      expect(demoConnection).toEqual({
+      const shareFile = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
+      expect(shareFile).toEqual({
         category: 'share-file',
-        name: 'Chat with our demo connection',
+        name: 'Share',
         prompts: 3,
         received: false,
         active: true,
@@ -39,8 +39,18 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
       const watchTutorial = response.body.bonusPrompts.find((bp: any) => bp.category === 'watch-tutorial');
       expect(watchTutorial).toEqual({
         category: 'watch-tutorial',
-        name: 'Watch Quadratic 101 video',
+        name: 'Watch ~90s intro video',
         prompts: 1,
+        received: false,
+        active: true,
+      });
+
+      // Check prompt-ai prompt
+      const promptAi = response.body.bonusPrompts.find((bp: any) => bp.category === 'prompt-ai');
+      expect(promptAi).toEqual({
+        category: 'prompt-ai',
+        name: 'Prompt the AI',
+        prompts: 3,
         received: false,
         active: true,
       });
@@ -64,13 +74,13 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
-      expect(response.body.bonusPrompts).toHaveLength(2);
+      expect(response.body.bonusPrompts).toHaveLength(3);
 
       // Check share-file is marked as received
-      const demoConnection = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
-      expect(demoConnection).toEqual({
+      const shareFile = response.body.bonusPrompts.find((bp: any) => bp.category === 'share-file');
+      expect(shareFile).toEqual({
         category: 'share-file',
-        name: 'Chat with our demo connection',
+        name: 'Share',
         prompts: 3,
         received: true,
         active: true,
@@ -80,8 +90,18 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
       const watchTutorial = response.body.bonusPrompts.find((bp: any) => bp.category === 'watch-tutorial');
       expect(watchTutorial).toEqual({
         category: 'watch-tutorial',
-        name: 'Watch Quadratic 101 video',
+        name: 'Watch ~90s intro video',
         prompts: 1,
+        received: false,
+        active: true,
+      });
+
+      // Check prompt-ai is not received
+      const promptAi = response.body.bonusPrompts.find((bp: any) => bp.category === 'prompt-ai');
+      expect(promptAi).toEqual({
+        category: 'prompt-ai',
+        name: 'Prompt the AI',
+        prompts: 3,
         received: false,
         active: true,
       });
@@ -104,6 +124,11 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
             category: 'watch-tutorial',
             promptsAwarded: 1,
           },
+          {
+            userId,
+            category: 'prompt-ai',
+            promptsAwarded: 3,
+          },
         ],
       });
 
@@ -112,7 +137,7 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
-      expect(response.body.bonusPrompts).toHaveLength(2);
+      expect(response.body.bonusPrompts).toHaveLength(3);
 
       // All should be marked as received
       response.body.bonusPrompts.forEach((bp: any) => {
@@ -139,8 +164,8 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
         .set('Authorization', 'Bearer ValidToken user1')
         .expect(200);
 
-      // Should have 3 prompts: 2 active + 1 inactive
-      expect(response.body.bonusPrompts).toHaveLength(3);
+      // Should have 4 prompts: 3 active + 1 inactive
+      expect(response.body.bonusPrompts).toHaveLength(4);
 
       // Check the inactive bonus is included
       const inactiveBonus = response.body.bonusPrompts.find((bp: any) => bp.category === 'old-inactive-category');
@@ -179,13 +204,13 @@ describe('GET /v0/user/tutorial-bonus-prompts', () => {
         .expect(200);
 
       const bonusPrompts = response.body.bonusPrompts;
-      expect(bonusPrompts).toHaveLength(3);
+      expect(bonusPrompts).toHaveLength(4);
 
       // Active ones should come first
       const activeCount = bonusPrompts.filter((bp: any) => bp.active).length;
       const inactiveCount = bonusPrompts.filter((bp: any) => !bp.active).length;
 
-      expect(activeCount).toBe(2);
+      expect(activeCount).toBe(3);
       expect(inactiveCount).toBe(1);
 
       // Check that all active ones come before inactive ones
