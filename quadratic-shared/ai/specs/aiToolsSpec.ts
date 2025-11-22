@@ -2948,9 +2948,10 @@ Each task should have a unique id, a clear description of what needs to be done,
 You can update the task list multiple times to mark tasks as completed (set completed to true) or add new tasks as needed.\n
 The task list will be included in your context in future messages, so you can track progress and update it accordingly.\n
 \n
-IMPORTANT: When creating tasks that involve adding data to the sheet:\n
-- Include formatting steps: When adding cells with data (not table data), always include a task to format those cells appropriately (e.g., "Format the added data cells with appropriate number formats, alignment, and styling"). Table data does NOT need formatting as the table UI handles that automatically.\n
-- Include column resizing: When adding columns that will likely contain large content (long text, wide numbers, dates, etc.), include a task to auto-resize those columns (e.g., "Auto-resize columns containing [description] to fit content").\n
+IMPORTANT: When creating tasks that involve adding data to the sheet (e.g., using SetCellValues):\n
+- Include formatting steps: When adding cells with data (not table data), always include a task to format those cells appropriately (e.g., "Format the added data cells with appropriate number formats, alignment, and styling").
+- Table data does NOT need formatting as the table UI handles that automatically.\n
+- Include column resizing steps: When adding columns that will likely contain large content (long text, wide numbers, dates, etc.), include a task to auto-resize those columns (e.g., "Auto-resize columns containing [description] to fit content").\n
 - Formatting and resizing should be separate tasks or combined into a single "Format and resize" task after data is added.\n
 \n
 Examples of requests that REQUIRE a task list:\n

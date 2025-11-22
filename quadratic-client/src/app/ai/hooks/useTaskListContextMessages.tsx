@@ -26,7 +26,7 @@ export function useTaskListContextMessages() {
         role: 'user',
         content: [
           createTextContent(
-            `Note: This is an internal message for context. Do not quote it in your response.\n\nCurrent task list progress (${completedCount}/${totalCount} completed):\n\n${taskListText}\n\nUse this task list to track your progress. Update it using the set_task_list tool as you complete tasks or need to add new ones.\n\nRemember: When tasks involve adding data to the sheet, ensure formatting and column resizing are included. Format cells with data (not table data - tables handle their own formatting). Auto-resize columns that will contain large content.`
+            `Note: This is an internal message for context. Do not quote it in your response.\n\nCurrent task list progress (${completedCount}/${totalCount} completed):\n\n${taskListText}\n\nUse this task list to track your progress. Update it using the set_task_list tool as you complete tasks or need to add new ones.\n\nCRITICAL REMINDER: If ANY task uses set_cell_values (adding non-table data), you MUST have a formatting task immediately following it. This is REQUIRED. Formatting tasks should use set_text_formats to apply appropriate number formats, alignment, and styling. Table data (added via add_data_table) does NOT need formatting tasks. If you notice a set_cell_values task without a corresponding formatting task, immediately update the task list to add one before proceeding.`
           ),
         ],
         contextType: 'taskList',
