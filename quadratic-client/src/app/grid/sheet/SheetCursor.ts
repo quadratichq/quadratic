@@ -6,12 +6,11 @@ import { events } from '@/app/events/events';
 import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { JsSelection, JsSelectionState } from '@/app/quadratic-core/quadratic_core';
+import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -50,9 +49,6 @@ export class SheetCursor {
 
   // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
-
-  // Track selection state for drag operations
-  private dragState: JsSelectionState | null = null;
 
   constructor(sheet: Sheet) {
     this.sheet = sheet;
@@ -251,73 +247,19 @@ export class SheetCursor {
     const checkForTableRef = options?.checkForTableRef ?? false;
     const append = options?.append ?? false;
     const ensureVisible = options?.ensureVisible ?? true;
-    // Clear drag state when starting a new selection
-    this.dragState = null;
     this.jsSelection.moveTo(x, y, append);
     if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
-  selectTo = (x: number, y: number, append: boolean, ensureVisible = true, isDrag = false, isShiftClick = false) => {
-    // Get current selection state or create new one based on action type
-    let state: JsSelectionState | null = null;
-    if (isDrag) {
-      // For drag operations, use tracked state if available, otherwise create new one
-      if (this.dragState) {
-        // Use state from previous drag move
-        state = this.dragState;
-      } else {
-        // First drag move - create state with cursor as anchor (cursor is at drag start from moveTo)
-        // Mode 1 = MouseDrag
-        const cursor = this.position;
-        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 1);
-      }
-    } else if (isShiftClick) {
-      // Mouse shift-click: extend selection from current cursor to clicked position
-      // If ctrl/cmd is also pressed, it's append mode (MouseCtrlClick), otherwise MouseShiftClick
-      const cursor = this.position;
-      if (append) {
-        // Shift+Ctrl/Cmd click - Mode 3 = MouseCtrlClick (append mode)
-        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(x), BigInt(y), 3);
-      } else {
-        // Shift-click - Mode 2 = MouseShiftClick
-        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(x), BigInt(y), 2);
-      }
-    } else if (append && !isDrag) {
-      // This shouldn't happen for mouse clicks (those use isShiftClick), but handle it anyway
-      // For keyboard+shift with append, we use KeyboardShift mode
-      const currentState = this.jsSelection.getSelectionState(this.sheets.jsA1Context);
-      if (currentState && currentState.mode === 0) {
-        state = currentState;
-      } else {
-        const cursor = this.position;
-        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 0);
-      }
-    } else {
-      // For keyboard+shift operations - Mode 0 = KeyboardShift
-      // Get current state to maintain anchor position, or create new one
-      const currentState = this.jsSelection.getSelectionState(this.sheets.jsA1Context);
-      if (currentState && currentState.mode === 0) {
-        // Continue existing keyboard shift selection - maintain anchor
-        state = currentState;
-      } else {
-        // Start new keyboard shift selection - anchor is current cursor when shift is first pressed
-        const cursor = this.position;
-        state = new JsSelectionState(BigInt(cursor.x), BigInt(cursor.y), BigInt(cursor.x), BigInt(cursor.y), 0);
-      }
-      // Clear drag state when starting keyboard selection
-      this.dragState = null;
-    }
+  /// Keyboard selection by deltaX and deltaY
+  keyboardSelectTo = (deltaX: number, deltaY: number) => {
+    this.jsSelection.keyboardSelectTo(deltaX, deltaY, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+    this.updatePosition(true);
+  };
 
-    const updatedState = this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheet.mergeCells, state);
-
-    // Track state for drag operations
-    if (isDrag) {
-      this.dragState = updatedState;
-    } else {
-      this.dragState = null;
-    }
-
+  selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
@@ -344,21 +286,23 @@ export class SheetCursor {
   };
 
   selectPageDown = () => {
-    if (isAnimating()) return;
-    const { x, y, row } = calculatePageUpDown(false, true);
-    const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, this.sheet.mergeCells, null);
-    this.updatePosition(false);
-    animateViewport({ x: -x, y: -y });
+    // if (isAnimating()) return;
+    // const { x, y, row } = calculatePageUpDown(false, true);
+    // const column = this.selectionEnd.x;
+    // const state = this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, null);
+    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+    // this.updatePosition(false);
+    // animateViewport({ x: -x, y: -y });
   };
 
   selectPageUp = () => {
-    if (isAnimating()) return;
-    const { x, y, row } = calculatePageUpDown(true, true);
-    const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, this.sheet.mergeCells, null);
-    this.updatePosition(false);
-    animateViewport({ x: -x, y: -y });
+    // if (isAnimating()) return;
+    // const { x, y, row } = calculatePageUpDown(true, true);
+    // const column = this.selectionEnd.x;
+    // const state = this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, null);
+    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
+    // this.updatePosition(false);
+    // animateViewport({ x: -x, y: -y });
   };
 
   isMultiCursor = (): boolean => {

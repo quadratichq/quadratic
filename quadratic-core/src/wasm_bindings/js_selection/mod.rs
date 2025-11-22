@@ -19,6 +19,9 @@ pub mod validate_name;
 #[wasm_bindgen]
 pub struct JsSelection {
     selection: A1Selection,
+
+    // keeps track of the end position of the selection for keyboard selections
+    end_pos: Pos,
 }
 
 impl From<Pos> for JsCoordinate {

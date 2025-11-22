@@ -35,9 +35,9 @@ impl GridController {
             return ops;
         };
 
-        // Expand selection to include anchor cells for any merged cells
-        // This ensures formatting is applied to anchors where data lives
-        let expanded_selection = selection.expand_to_include_merge_anchors(&sheet.merge_cells);
+        // Expand selection to include full merged cell rects for all format operations
+        // This ensures formatting is applied to all cells within merged cells
+        let expanded_selection = selection.expand_to_include_merge_rects(&sheet.merge_cells);
 
         let mut sheet_format_update =
             SheetFormatUpdates::from_selection(&expanded_selection, format_update.clone());
@@ -750,6 +750,239 @@ mod test {
                 .fill_color,
             Some("blue".to_string())
         );
+    }
+
+    #[test]
+    fn test_set_fill_color_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells A1:C3
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Set fill color on just the anchor cell (A1)
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1"),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+
+            // All cells within the merged cell should have the fill color
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A3 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B3 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C3 should have fill color"
+            );
+        }
+
+        // Test with cursor at non-anchor position
+        gc.set_fill_color(
+            &A1Selection::test_a1("B2"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // All cells should now have red fill color
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(pos![A1])
+                .unwrap_or_default()
+                .fill_color,
+            Some("red".to_string()),
+            "A1 should have red fill color after filling from B2"
+        );
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(pos![C3])
+                .unwrap_or_default()
+                .fill_color,
+            Some("red".to_string()),
+            "C3 should have red fill color after filling from B2"
+        );
+    }
+
+    #[test]
+    fn test_format_operations_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells A1:C3
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Test bold formatting
+        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None, false)
+            .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have bold formatting
+            assert_eq!(
+                sheet.formats.bold.get(pos![A1]),
+                Some(true),
+                "A1 should be bold"
+            );
+            assert_eq!(
+                sheet.formats.bold.get(pos![B2]),
+                Some(true),
+                "B2 should be bold"
+            );
+            assert_eq!(
+                sheet.formats.bold.get(pos![C3]),
+                Some(true),
+                "C3 should be bold"
+            );
+        }
+
+        // Test text color formatting
+        gc.set_text_color(
+            &A1Selection::test_a1("A1"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have blue text color
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A1])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "A1 should have blue text color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B2])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "B2 should have blue text color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C3])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "C3 should have blue text color"
+            );
+        }
+
+        // Test italic formatting
+        gc.set_italic(&A1Selection::test_a1("C1"), Some(true), None, false)
+            .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have italic formatting
+            assert_eq!(
+                sheet.formats.italic.get(pos![A1]),
+                Some(true),
+                "A1 should be italic"
+            );
+            assert_eq!(
+                sheet.formats.italic.get(pos![B2]),
+                Some(true),
+                "B2 should be italic"
+            );
+            assert_eq!(
+                sheet.formats.italic.get(pos![C3]),
+                Some(true),
+                "C3 should be italic"
+            );
+        }
     }
 
     #[test]

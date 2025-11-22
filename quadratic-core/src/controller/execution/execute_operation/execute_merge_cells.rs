@@ -42,6 +42,31 @@ impl GridController {
 
         transaction.merge_cells_updates.insert(sheet_id);
 
+        // Check if any cells within the merge range have borders set
+        // Only signal border update if borders exist (since merging/unmerging affects border rendering)
+        let has_borders_in_range = rects_for_spill_check.iter().any(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
+                // Expand rect slightly to check borders on edges (borders are between cells)
+                let expanded_rect = Rect::new(
+                    rect.min.x.saturating_sub(1),
+                    rect.min.y.saturating_sub(1),
+                    rect.max.x.saturating_add(1),
+                    rect.max.y.saturating_add(1),
+                );
+                sheet.borders.top.intersects(expanded_rect)
+                    || sheet.borders.bottom.intersects(expanded_rect)
+                    || sheet.borders.left.intersects(expanded_rect)
+                    || sheet.borders.right.intersects(expanded_rect)
+            } else {
+                false
+            }
+        });
+
+        if has_borders_in_range {
+            transaction.add_borders(sheet_id);
+        }
+
         // Check for spills after merge/unmerge operations
         // Find all data table positions whose output intersects with the merged/unmerged rects
         // and check spills for those data tables

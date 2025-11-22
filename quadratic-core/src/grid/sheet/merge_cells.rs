@@ -139,3 +139,16 @@ impl Sheet {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_merge_cells() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:E3"));
+        let merge_cells = merge_cells.get_merge_cells(Rect::test_a1("B2:C3"));
+        assert_eq!(merge_cells, vec![Rect::test_a1("B3:E3")]);
+    }
+}

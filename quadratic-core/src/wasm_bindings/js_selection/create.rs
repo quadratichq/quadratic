@@ -11,13 +11,17 @@ impl Default for JsSelection {
     fn default() -> Self {
         JsSelection {
             selection: A1Selection::from_xy(1, 1, SheetId::TEST),
+            end_pos: Pos::new(1, 1),
         }
     }
 }
 
 impl JsSelection {
     pub fn new_with_selection(selection: A1Selection) -> Self {
-        JsSelection { selection }
+        JsSelection {
+            end_pos: selection.cursor,
+            selection,
+        }
     }
 }
 
@@ -31,6 +35,7 @@ impl JsSelection {
         };
         JsSelection {
             selection: A1Selection::from_xy(1, 1, sheet_id),
+            end_pos: Pos::new(1, 1),
         }
     }
 
@@ -46,6 +51,7 @@ impl JsSelection {
         if let Ok(selection) =
             serde_json::from_str::<A1Selection>(&selection).map_err(|e| e.to_string())
         {
+            self.end_pos = selection.cursor;
             self.selection = selection;
         }
     }
@@ -74,6 +80,7 @@ pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<JsSelect
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     Ok(JsSelection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
+        end_pos: Pos::new(x as i64, y as i64),
     })
 }
 
@@ -88,6 +95,7 @@ pub fn new_rect_selection(
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let selection = JsSelection {
         selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, sheet_id)),
+        end_pos: Pos::new(x1, y1),
     };
     selection.save()
 }
@@ -97,6 +105,7 @@ pub fn new_all_selection(sheet_id: String) -> Result<String, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let selection = JsSelection {
         selection: A1Selection::all(sheet_id),
+        end_pos: Pos::new(1, 1),
     };
     selection.save()
 }

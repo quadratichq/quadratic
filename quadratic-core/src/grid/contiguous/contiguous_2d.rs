@@ -212,19 +212,47 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     /// This is useful when the internal representation splits a contiguous region
     /// into multiple rects (e.g., across column boundaries), and you want to
     /// combine them back together.
+    ///
+    /// Note: This returns the FULL rects for values that appear in the range,
+    /// not just the portion that intersects with the range. This is useful for
+    /// cases like merged cells where you want the complete merged cell rect
+    /// even if only part of it intersects the search range.
     pub fn nondefault_rects_in_range_combined(&self, range: RefRangeBounds) -> Vec<(Rect, T)>
     where
         T: Eq + Hash,
     {
         use std::collections::HashMap;
+
+        let [x1, x2, y1, y2] = range_to_rect(range);
+        let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        let default = T::default();
+
+        // Get blocks that touch the range (efficient - only touches relevant blocks)
+        // Use blocks_touching_range to get FULL blocks, not clipped ones
         let mut value_to_rects: HashMap<T, Vec<Rect>> = HashMap::new();
 
-        // Collect all rects grouped by value
-        for (rect, value) in self.nondefault_rects_in_range(range) {
-            value_to_rects
-                .entry(value)
-                .or_insert_with(Vec::new)
-                .push(rect);
+        for column_block in self.0.blocks_touching_range(x1, x2) {
+            for y_block in column_block.value.blocks_touching_range(y1, y2) {
+                // Skip default blocks - same pattern as unique_values_in_range
+                let value = y_block.value.clone();
+                if value != default {
+                    // Collect the FULL block rect (blocks_touching_range gives us full blocks)
+                    let full_block_rect = Rect::new(
+                        u64_to_i64(column_block.start),
+                        u64_to_i64(y_block.start),
+                        u64_to_i64(column_block.end.saturating_sub(1)),
+                        u64_to_i64(y_block.end.saturating_sub(1)),
+                    );
+                    value_to_rects
+                        .entry(value)
+                        .or_insert_with(Vec::new)
+                        .push(full_block_rect);
+                }
+            }
+        }
+
+        if value_to_rects.is_empty() {
+            return Vec::new();
         }
 
         // Combine rects with the same value into bounding boxes
@@ -1441,6 +1469,17 @@ mod tests {
         // First two should combine
         assert!(result.contains(&(Rect::new(1, 1, 5, 3), Some(anchor1))));
         assert!(result.contains(&(Rect::new(6, 6, 8, 8), Some(anchor2))));
+
+        // Test that full rects are returned even when search range only partially intersects
+        // This is the key behavior for merged cells - if a merged cell extends beyond
+        // the search range, we want the full merged cell rect, not just the intersection
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 3, Some(5), Some(3), 42); // Data at B3:E3
+        let r = Rect::new(2, 2, 3, 3); // Search B2:C3 (only partially intersects)
+        let result = c.nondefault_rects_in_rect_combined(r);
+        assert_eq!(result.len(), 1);
+        // Should return full rect B3:E3, not just the intersection B3:C3
+        assert_eq!(result[0], (Rect::new(2, 3, 5, 3), 42));
     }
 
     #[test]
