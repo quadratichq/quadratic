@@ -8,6 +8,7 @@ import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation'
 import { GridHeadingsLabels } from '@/app/gridGL/UI/gridHeadings/GridHeadingsLabels';
 import { GridHeadingRows } from '@/app/gridGL/UI/gridHeadings/GridHeadingsRows';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { Size } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -66,11 +67,27 @@ export class GridHeadings extends Container {
     this.gridHeadingsRows = new GridHeadingRows();
 
     events.on('setDirty', this.setDirty);
+
+    // Listen for focus/blur events to update heading colors when grid focus changes
+    document.addEventListener('focusin', this.handleFocusChange);
+    document.addEventListener('focusout', this.handleFocusChange);
   }
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    document.removeEventListener('focusin', this.handleFocusChange);
+    document.removeEventListener('focusout', this.handleFocusChange);
     super.destroy();
+  }
+
+  private handleFocusChange = () => {
+    // Mark as dirty when focus changes (the update will check if canvas is focused)
+    this.dirty = true;
+  };
+
+  // Check if the grid canvas has focus (or user is editing a cell)
+  private isGridFocused(): boolean {
+    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
   }
 
   private setDirty = (dirty: DirtyObject) => {
@@ -118,7 +135,8 @@ export class GridHeadings extends Container {
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     const baseColumnRanges = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     this.selectedColumns = this.expandColumnRangesForMergedCells(baseColumnRanges, leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
@@ -527,7 +545,9 @@ export class GridHeadings extends Container {
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    // Use light gray for selected headings when grid doesn't have focus, otherwise use accent color
+    const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+    this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     const baseRowRanges = cursor.getSelectedRowRanges(topRow, bottomRow);
     this.selectedRows = this.expandRowRangesForMergedCells(baseRowRanges, topRow, bottomRow);

@@ -4,6 +4,7 @@ import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorIntera
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import type { A1Error } from '@/app/quadratic-core-types';
 import { useGetGridItems } from '@/app/ui/hooks/useGetGridItems';
 import { GoToIcon } from '@/shared/components/Icons';
@@ -23,6 +24,21 @@ export const GoTo = memo(() => {
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMenu();
+        // Use setTimeout to ensure the menu state has updated before focusing
+        setTimeout(() => {
+          focusGrid();
+        }, 0);
+      }
+    },
+    [closeMenu]
+  );
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -109,7 +125,8 @@ export const GoTo = memo(() => {
             ref={inputRef}
             value={value}
             onValueChange={setValue}
-            placeholder="Enter a cell “A1” or range “A1:B2”"
+            onKeyDown={handleKeyDown}
+            placeholder='Enter a cell "A1" or range "A1:B2"'
             omitIcon={true}
           />
         </div>

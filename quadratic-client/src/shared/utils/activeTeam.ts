@@ -71,7 +71,7 @@ export async function getOrInitializeActiveTeam(): Promise<string> {
     // Otherwise, they’re _likely_ a new user
     // (they could be a user who was removed from a team and now has 0 teams)
     // In either case, we'll create a new team for them automatically and use it.
-    const newTeam = await apiClient.teams.create({ name: 'My Team' });
+    const newTeam = await apiClient.teams.create();
     const newTeamUuid = newTeam.uuid;
     localStorage.setItem(KEY, newTeamUuid);
     return newTeamUuid;

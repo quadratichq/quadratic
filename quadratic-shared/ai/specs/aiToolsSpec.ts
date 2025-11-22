@@ -14,6 +14,7 @@ import { z } from 'zod';
 export enum AITool {
   SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
+  SetFileName = 'set_file_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   GetCodeCellValue = 'get_code_cell_value',
@@ -71,6 +72,7 @@ export enum AITool {
 export const AIToolSchema = z.enum([
   AITool.SetAIModel,
   AITool.SetChatName,
+  AITool.SetFileName,
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.GetCodeCellValue,
@@ -234,6 +236,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.SetChatName]: z.object({
     chat_name: stringSchema,
+  }),
+  [AITool.SetFileName]: z.object({
+    file_name: stringSchema,
   }),
   [AITool.AddDataTable]: z.object({
     sheet_name: stringSchema,
@@ -649,6 +654,32 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
+    prompt: '',
+  },
+  [AITool.SetFileName]: {
+    sources: ['GetFileName'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+Set the name of the file based on the AI chat conversation, this is the name of the file in the file system.\n
+You should use the set_file_name function to set the name of the file based on the AI chat conversation between AI assistant and the user.\n
+This function requires the name of the file, this should be concise and descriptive of the file's content and purpose, and should be easily understandable by a non-technical user.\n
+The file name should be based on user's messages and should reflect the file's purpose and content.\n
+This name should be from user's perspective, not the assistant's.\n
+IMPORTANT: The file name must be 1-3 words only. Keep it short and concise.\n
+The file name should focus on the analysis or topic being explored (e.g., "GDP over time", "Sales trends", "Budget analysis"), not on implementation details like "chart", "table", "report", or "dashboard". Focus on what is being analyzed, not how it's presented.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        file_name: {
+          type: 'string',
+          description: 'The name of the file. Must be 1-3 words only. Keep it short and concise.',
+        },
+      },
+      required: ['file_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetFileName],
     prompt: '',
   },
   [AITool.GetCellData]: {

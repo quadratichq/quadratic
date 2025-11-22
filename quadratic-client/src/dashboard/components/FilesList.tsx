@@ -180,14 +180,14 @@ export function FilesList({
   );
 }
 
-export type FilesListExampleFile = {
+export type FilesListTemplateFile = {
   description: string;
   href: string;
   name: string;
   thumbnail: string;
 };
 
-export function ExampleFilesList({ files, emptyState }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
+export function ExampleFilesList({ files, emptyState }: { files: FilesListTemplateFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(

@@ -1,8 +1,24 @@
 import { Markdown } from '@/app/ui/components/Markdown';
-import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import type { AIResponseContent } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
+
+// Helper function to extract the last sentence from text
+function getLastSentence(text: string): string {
+  if (!text) return '';
+
+  // Split by sentence-ending punctuation (., !, ?)
+  // Keep the punctuation with the sentence
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+
+  // If we have complete sentences, return the last one
+  if (sentences.length > 0) {
+    return sentences[sentences.length - 1].trim();
+  }
+
+  // If no complete sentences, return the entire text (work in progress)
+  return text.trim();
+}
 
 // Props for the thinking block
 interface AIThinkingBlockProps {
@@ -14,28 +30,26 @@ interface AIThinkingBlockProps {
 }
 export const AIThinkingBlock = memo(
   ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: AIThinkingBlockProps) => {
-    // Each thinking block tracks its own expanded state
-    const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage && expandedDefault);
-    // Track whether this is the first load completion
-    const firstLoadCompletedRef = useRef(false);
+    // Each thinking block tracks its own expanded state - always collapsed by default
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [showLastSentence, setShowLastSentence] = useState(false);
 
-    // Update expanded state when loading changes
+    // After 1 second of loading, show the last sentence
     useEffect(() => {
-      if (isLoading && isCurrentMessage && expandedDefault) {
-        // Always show thinking while loading the current message
-        setIsExpanded(true);
-      } else if (!isLoading && !firstLoadCompletedRef.current) {
-        firstLoadCompletedRef.current = true;
-        setIsExpanded(false);
+      if (isLoading && isCurrentMessage && !isExpanded) {
+        const timer = setTimeout(() => {
+          setShowLastSentence(true);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+      } else {
+        setShowLastSentence(false);
       }
-    }, [isLoading, isCurrentMessage, expandedDefault]);
+    }, [isLoading, isCurrentMessage, isExpanded]);
 
     const toggleExpanded = useCallback(() => {
-      // Only allow toggling if not loading or not the current message
-      if (!(isLoading && isCurrentMessage)) {
-        setIsExpanded((prev) => !prev);
-      }
-    }, [isLoading, isCurrentMessage]);
+      setIsExpanded((prev) => !prev);
+    }, []);
 
     const handleContentChange = useCallback(
       (text: string) => {
@@ -44,25 +58,39 @@ export const AIThinkingBlock = memo(
       [onContentChange, thinkingContent]
     );
 
+    // Hide component completely once thinking completes
+    if (!(isLoading && isCurrentMessage)) {
+      return null;
+    }
+
+    const lastSentence = getLastSentence(thinkingContent.text);
+
     return (
       <div className="flex flex-col">
         <div
-          className={cn(
-            'flex items-center gap-1 text-xs text-muted-foreground',
-            isLoading && isCurrentMessage ? '' : 'cursor-pointer hover:text-foreground'
-          )}
+          className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           onClick={toggleExpanded}
         >
-          {isExpanded ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
-          <span className="select-none">
-            {isLoading && isCurrentMessage ? 'Thinking...' : isExpanded ? 'Hide thinking' : 'Show thinking'}
+          <span
+            className={`select-none ${
+              !isExpanded && isLoading
+                ? 'animate-shimmer bg-gradient-to-r from-muted-foreground via-foreground to-muted-foreground bg-[length:200%_100%] bg-clip-text text-transparent'
+                : ''
+            }`}
+          >
+            {isExpanded ? 'Hide thinking' : 'Thinking'}
           </span>
+          {isExpanded ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
         </div>
 
         {isExpanded && (
           <div className="mt-1 border-l-2 border-muted-foreground/40 pl-4 italic text-muted-foreground">
             <Markdown text={thinkingContent.text} onChange={onContentChange && handleContentChange} />
           </div>
+        )}
+
+        {!isExpanded && showLastSentence && lastSentence && (
+          <div className="mt-1 text-xs italic text-muted-foreground">{lastSentence}</div>
         )}
       </div>
     );

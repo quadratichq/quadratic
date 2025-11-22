@@ -19,7 +19,7 @@ export class Input {
     process.stdin.on("data", this.handleKey);
   }
 
-  private handleKey = (data: Buffer) => {
+  private handleKey = async (data: Buffer) => {
     // uncomment to capture ctrl+letter keystroke values
     // console.log(JSON.stringify(data));
     // process.exit(0);
@@ -143,7 +143,7 @@ export class Input {
         break;
       case "L":
         this.cli.options.servicesLocal = !this.cli.options.servicesLocal;
-        this.control.checkServices();
+        await this.control.checkServices(false);
         break;
     }
   };
