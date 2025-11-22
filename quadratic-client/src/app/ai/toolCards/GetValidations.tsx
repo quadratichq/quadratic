@@ -25,10 +25,10 @@ export const GetValidations = memo(
       }
     }, [args, loading]);
 
-    let label = useMemo(
-      () => `Finding all validations in "${toolArgs?.data?.sheet_name}"`,
-      [toolArgs?.data?.sheet_name]
-    );
+    const label = useMemo(() => {
+      const verb = loading ? 'Finding' : 'Found';
+      return `${verb} all validations in "${toolArgs?.data?.sheet_name}"`;
+    }, [toolArgs?.data?.sheet_name, loading]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;

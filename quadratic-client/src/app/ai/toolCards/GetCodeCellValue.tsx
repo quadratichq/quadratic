@@ -26,11 +26,10 @@ export const GetCodeCellValue = memo(
       }
     }, [args, loading]);
 
-    let label = useMemo(
-      () =>
-        `Reading code cell ${toolArgs?.data?.sheet_name ? `in ${toolArgs?.data?.sheet_name}` : ''} from ${toolArgs?.data?.code_cell_name ?? toolArgs?.data?.code_cell_position}.`,
-      [toolArgs?.data?.sheet_name, toolArgs?.data?.code_cell_name, toolArgs?.data?.code_cell_position]
-    );
+    const label = useMemo(() => {
+      const verb = loading ? 'Reading' : 'Read';
+      return `${verb} code cell ${toolArgs?.data?.sheet_name ? `in ${toolArgs?.data?.sheet_name}` : ''} from ${toolArgs?.data?.code_cell_name ?? toolArgs?.data?.code_cell_position}.`;
+    }, [toolArgs?.data?.sheet_name, toolArgs?.data?.code_cell_name, toolArgs?.data?.code_cell_position, loading]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;

@@ -20,7 +20,7 @@ const defaultPromptSuggestions: EmptyChatPromptSuggestions = [
   },
   {
     label: 'Make a chart',
-    prompt: 'Create a chart with sample data.',
+    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet, add sample data and plot it.',
   },
   {
     label: 'Search for data',
