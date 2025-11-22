@@ -1,11 +1,10 @@
 use crate::{
-    CellValue, ClearOption, Pos, Rect, SheetPos,
+    CellValue, Pos, Rect, SheetPos,
     cell_values::CellValues,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::sheet::borders::BordersUpdates,
 };
 
 impl GridController {
@@ -43,154 +42,29 @@ impl GridController {
 
         transaction.merge_cells_updates.insert(sheet_id);
 
-        // Expand borders for merged cells
-        // Read borders from anchor cells and expand them to cover the entire merged rect
-        let mut border_updates = BordersUpdates::default();
-        let mut original_border_updates = BordersUpdates::default();
-        let rects = merge_cells_updates.to_rects().collect::<Vec<_>>();
-        for (x1, y1, x2, y2, _) in rects {
+        // Check if any cells within the merge range have borders set
+        // Only signal border update if borders exist (since merging/unmerging affects border rendering)
+        let has_borders_in_range = rects_for_spill_check.iter().any(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                let rect = Rect::new(x1, y1, x2, y2);
-                let anchor_pos = rect.min;
-
-                // Capture original borders within the merged rect before making any changes
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let pos = Pos { x, y };
-                        let original_border_cell = sheet.borders.get_style_cell(pos);
-                        if !original_border_cell.is_empty() {
-                            original_border_updates.set_style_cell(pos, original_border_cell);
-                        }
-                    }
-                }
-
-                // Read borders from the anchor cell
-                let border_cell = sheet.borders.get_style_cell(anchor_pos);
-
-                // If any borders are set, expand them to cover the entire merged rect
-                if !border_cell.is_empty() {
-                    // First, clear all borders within the merged rect
-                    border_updates
-                        .top
-                        .get_or_insert_with(Default::default)
-                        .set_rect(
-                            rect.min.x,
-                            rect.min.y,
-                            Some(rect.max.x),
-                            Some(rect.max.y),
-                            Some(ClearOption::Clear),
-                        );
-                    border_updates
-                        .bottom
-                        .get_or_insert_with(Default::default)
-                        .set_rect(
-                            rect.min.x,
-                            rect.min.y,
-                            Some(rect.max.x),
-                            Some(rect.max.y),
-                            Some(ClearOption::Clear),
-                        );
-                    border_updates
-                        .left
-                        .get_or_insert_with(Default::default)
-                        .set_rect(
-                            rect.min.x,
-                            rect.min.y,
-                            Some(rect.max.x),
-                            Some(rect.max.y),
-                            Some(ClearOption::Clear),
-                        );
-                    border_updates
-                        .right
-                        .get_or_insert_with(Default::default)
-                        .set_rect(
-                            rect.min.x,
-                            rect.min.y,
-                            Some(rect.max.x),
-                            Some(rect.max.y),
-                            Some(ClearOption::Clear),
-                        );
-
-                    // Then apply expanded borders on the outer edges
-                    // Top border: expand across all top cells (rect.min.y, from rect.min.x to rect.max.x)
-                    if let Some(top_border) = border_cell.top {
-                        border_updates
-                            .top
-                            .get_or_insert_with(Default::default)
-                            .set_rect(
-                                rect.min.x,
-                                rect.min.y,
-                                Some(rect.max.x),
-                                Some(rect.min.y),
-                                Some(ClearOption::Some(top_border)),
-                            );
-                    }
-
-                    // Bottom border: expand across all bottom cells (rect.max.y, from rect.min.x to rect.max.x)
-                    if let Some(bottom_border) = border_cell.bottom {
-                        border_updates
-                            .bottom
-                            .get_or_insert_with(Default::default)
-                            .set_rect(
-                                rect.min.x,
-                                rect.max.y,
-                                Some(rect.max.x),
-                                Some(rect.max.y),
-                                Some(ClearOption::Some(bottom_border)),
-                            );
-                    }
-
-                    // Left border: expand across all left cells (rect.min.x, from rect.min.y to rect.max.y)
-                    if let Some(left_border) = border_cell.left {
-                        border_updates
-                            .left
-                            .get_or_insert_with(Default::default)
-                            .set_rect(
-                                rect.min.x,
-                                rect.min.y,
-                                Some(rect.min.x),
-                                Some(rect.max.y),
-                                Some(ClearOption::Some(left_border)),
-                            );
-                    }
-
-                    // Right border: expand across all right cells (rect.max.x, from rect.min.y to rect.max.y)
-                    if let Some(right_border) = border_cell.right {
-                        border_updates
-                            .right
-                            .get_or_insert_with(Default::default)
-                            .set_rect(
-                                rect.max.x,
-                                rect.min.y,
-                                Some(rect.max.x),
-                                Some(rect.max.y),
-                                Some(ClearOption::Some(right_border)),
-                            );
-                    }
-                }
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
+                // Expand rect slightly to check borders on edges (borders are between cells)
+                let expanded_rect = Rect::new(
+                    rect.min.x.saturating_sub(1),
+                    rect.min.y.saturating_sub(1),
+                    rect.max.x.saturating_add(1),
+                    rect.max.y.saturating_add(1),
+                );
+                sheet.borders.top.intersects(expanded_rect)
+                    || sheet.borders.bottom.intersects(expanded_rect)
+                    || sheet.borders.left.intersects(expanded_rect)
+                    || sheet.borders.right.intersects(expanded_rect)
+            } else {
+                false
             }
-        }
+        });
 
-        // Apply border updates if any were created
-        if !border_updates.is_empty() {
-            // Apply borders to the sheet
-            sheet.borders.set_borders_a1(&border_updates);
-
+        if has_borders_in_range {
             transaction.add_borders(sheet_id);
-
-            transaction
-                .forward_operations
-                .push(Operation::SetBordersA1 {
-                    sheet_id,
-                    borders: border_updates,
-                });
-            // Add reverse operation to restore original borders
-            transaction
-                .reverse_operations
-                .push(Operation::SetBordersA1 {
-                    sheet_id,
-                    borders: original_border_updates,
-                });
         }
 
         // Check for spills after merge/unmerge operations

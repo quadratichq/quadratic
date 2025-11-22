@@ -221,38 +221,38 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     where
         T: Eq + Hash,
     {
-        use std::collections::{HashMap, HashSet};
+        use std::collections::HashMap;
 
-        // First, find all unique values that appear in the range
-        let values_in_range: HashSet<T> = self
-            .unique_values_in_range(range)
-            .into_iter()
-            .filter(|v| *v != T::default())
-            .collect();
-
-        if values_in_range.is_empty() {
-            return Vec::new();
-        }
-
-        // Now iterate over ALL blocks and collect full rects for values that appear in range
-        let mut value_to_rects: HashMap<T, Vec<Rect>> = HashMap::new();
+        let [x1, x2, y1, y2] = range_to_rect(range);
         let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
+        let default = T::default();
 
-        for column_block in self.0.iter() {
-            for y_block in column_block.value.iter() {
-                if values_in_range.contains(&y_block.value) {
-                    let rect = Rect::new(
+        // Get blocks that touch the range (efficient - only touches relevant blocks)
+        // Use blocks_touching_range to get FULL blocks, not clipped ones
+        let mut value_to_rects: HashMap<T, Vec<Rect>> = HashMap::new();
+
+        for column_block in self.0.blocks_touching_range(x1, x2) {
+            for y_block in column_block.value.blocks_touching_range(y1, y2) {
+                // Skip default blocks - same pattern as unique_values_in_range
+                let value = y_block.value.clone();
+                if value != default {
+                    // Collect the FULL block rect (blocks_touching_range gives us full blocks)
+                    let full_block_rect = Rect::new(
                         u64_to_i64(column_block.start),
                         u64_to_i64(y_block.start),
                         u64_to_i64(column_block.end.saturating_sub(1)),
                         u64_to_i64(y_block.end.saturating_sub(1)),
                     );
                     value_to_rects
-                        .entry(y_block.value.clone())
+                        .entry(value)
                         .or_insert_with(Vec::new)
-                        .push(rect);
+                        .push(full_block_rect);
                 }
             }
+        }
+
+        if value_to_rects.is_empty() {
+            return Vec::new();
         }
 
         // Combine rects with the same value into bounding boxes
