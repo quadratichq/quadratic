@@ -364,7 +364,23 @@ export const FormatColorFillIcon: IconComponent = (props) => {
 };
 
 export const FormatColorTextIcon: IconComponent = (props) => {
-  return <Icon {...props}>format_color_text</Icon>;
+  const { className, style, ...rest } = props;
+  const underlineColor = (style as any)?.underlineColor;
+  const iconStyle = underlineColor ? { ...style, underlineColor: undefined } : style;
+
+  return (
+    <span className={cn('relative inline-flex items-center justify-center', className)}>
+      <Icon {...rest} className="" style={iconStyle}>
+        format_color_text
+      </Icon>
+      {underlineColor && (
+        <div
+          className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+          style={{ backgroundColor: underlineColor }}
+        />
+      )}
+    </span>
+  );
 };
 
 export const FormatBoldIcon: IconComponent = (props) => {

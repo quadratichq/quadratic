@@ -1,0 +1,211 @@
+import { cn } from '@/shared/shadcn/utils';
+import Color from 'color';
+import * as React from 'react';
+
+// ColorResult interface
+export interface ColorResult {
+  hex: string;
+  rgb: {
+    r: number;
+    g: number;
+    b: number;
+    a?: number;
+  };
+  hsl: {
+    h: number;
+    s: number;
+    l: number;
+    a?: number;
+  };
+}
+
+export type ColorChangeHandler = (color: ColorResult) => void;
+
+interface ColorPickerProps {
+  onChangeComplete?: ColorChangeHandler;
+  onClear?: () => void;
+  color?: string;
+  removeColor?: boolean;
+  className?: string;
+  clearLabel?: string;
+  showClearIcon?: boolean;
+}
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : { r: 0, g: 0, b: 0 };
+}
+
+// Helper function to normalize color strings for comparison
+function normalizeColor(color: string): string | null {
+  try {
+    const c = Color(color);
+    return c.hex().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
+  (
+    { onChangeComplete, onClear, color, removeColor = false, className, clearLabel = 'Clear', showClearIcon = true },
+    ref
+  ) => {
+    const colors = [
+      '#F9D2CE' /* first row of colors */,
+      '#FFEAC8',
+      '#FFF3C1',
+      '#D8FFE8',
+      '#D5FFF7',
+      '#DAF0FF',
+      '#EBD7F3',
+      '#D9F2FA',
+      '#FFB4AC' /* second row of colors */,
+      '#FFDA9F',
+      '#F2E2A4',
+      '#AAF1C8',
+      '#ADEFE2',
+      '#AFD0E7',
+      '#D1B4DD',
+      '#B4D3DC',
+      '#EE8277' /* third row of colors */,
+      '#F8C97D',
+      '#F5D657',
+      '#86E3AE',
+      '#7BE9D3',
+      '#84BFE7',
+      '#C39BD3',
+      '#A1B9BA',
+      '#E74C3C' /* forth row of colors */,
+      '#F39C12',
+      '#F1C40F',
+      '#2ECC71',
+      '#17C8A5',
+      '#3498DB',
+      '#9B59B6',
+      '#698183',
+      '#963127' /* fifth row of colors */,
+      '#C46B1D',
+      '#B69100',
+      '#1C8347',
+      '#056D6D',
+      '#1F608B',
+      '#6F258E',
+      '#34495E',
+      '#000000' /* sixth row of colors */,
+      '#333333',
+    ];
+
+    if (removeColor) {
+      colors.push(
+        '#737373',
+        '#cccccc',
+        '#dddddd',
+        '#eeeeee',
+        '#ffffff',
+        '#123456' // special indicator for remove color. See useBorders.tsx#CLEAR_COLOR
+      );
+    } else {
+      colors.push('#4d4d4d', '#737373', '#cccccc', '#dddddd', '#eeeeee', '#ffffff');
+    }
+
+    const handleColorClick = (hex: string) => {
+      if (onChangeComplete) {
+        const rgb = hexToRgb(hex);
+        const color = Color(hex);
+        const hsl = color.hsl().object();
+
+        onChangeComplete({
+          hex,
+          rgb: {
+            r: rgb.r,
+            g: rgb.g,
+            b: rgb.b,
+            a: 1,
+          },
+          hsl: {
+            h: Math.round(hsl.h || 0),
+            s: Math.round((hsl.s || 0) * 100),
+            l: Math.round((hsl.l || 0) * 100),
+            a: 1,
+          },
+        });
+      }
+    };
+
+    const isLastColor = (index: number) => removeColor && index === colors.length - 1;
+
+    return (
+      <div ref={ref} className={cn('w-40 p-1', className)}>
+        <div className="grid grid-cols-8 gap-1">
+          {colors.map((hex, index) => {
+            const normalizedHex = hex.toLowerCase();
+            const normalizedColor = color ? normalizeColor(color) : null;
+            const isSelected = normalizedColor === normalizedHex;
+            const isClearColor = isLastColor(index);
+
+            return (
+              <button
+                key={`${hex}-${index}`}
+                type="button"
+                onClick={() => handleColorClick(hex)}
+                className={cn(
+                  'duration-50 relative h-4 w-4 rounded-sm transition-all hover:scale-110 hover:ring-2 hover:ring-ring hover:ring-offset-1',
+                  isSelected && 'ring-2 ring-ring ring-offset-1',
+                  (hex === '#ffffff' || isClearColor) && 'ring-1 ring-border'
+                )}
+                style={{ backgroundColor: hex }}
+                aria-label={`Select color ${hex}`}
+              >
+                {/* Border for white colors */}
+                {hex === '#ffffff' && <div className="absolute inset-0 rounded-sm ring-1 ring-border/20" />}
+
+                {/* Special clear color indicator */}
+                {isClearColor && (
+                  <>
+                    <div className="absolute inset-0 rounded-sm bg-white ring-1 ring-border/20" />
+                    <div
+                      className="absolute left-1/2 top-1/2 h-full w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-red-500"
+                      style={{ transform: 'translate(-50%, -50%) rotate(45deg)' }}
+                    />
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {onClear && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={onClear}
+              className={cn(
+                'duration-50 cursor-pointer text-sm text-foreground transition-all hover:text-foreground/80 hover:ring-2 hover:ring-ring hover:ring-offset-1',
+                showClearIcon && 'relative pl-5'
+              )}
+            >
+              {/* Clear button indicator */}
+              {showClearIcon && (
+                <>
+                  <span className="absolute left-0 top-0.5 h-3.5 w-3.5 rounded-sm bg-white ring-1 ring-border" />
+                  <span
+                    className="absolute left-0 top-0.5 h-full w-0.5 rounded-sm bg-red-500"
+                    style={{ transform: 'rotate(45deg) translate(3px, -6px)' }}
+                  />
+                </>
+              )}
+              {clearLabel}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
