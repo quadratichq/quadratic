@@ -2,12 +2,10 @@ import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
-  aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
-  aiAnalystImportFilesToGridLoadingAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -16,7 +14,6 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { aiTaskListAtom, aiTaskListMinimizedAtom } from '@/app/atoms/aiTaskListAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
@@ -24,16 +21,14 @@ import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
 import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
-import { AITaskList } from '@/app/ui/menus/AIAnalyst/AITaskList';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
-import { BackspaceIcon, ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
+import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useAtomValue } from 'jotai';
 import {
   createTextContent,
   getLastAIPromptMessageIndex,
@@ -69,15 +64,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
   const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
-  const tasks = useAtomValue(aiTaskListAtom);
-  const hasTasks = tasks.length > 0;
-  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
-  const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
-  const taskListMinimized = useAtomValue(aiTaskListMinimizedAtom);
-
-  const handleAbort = useCallback(() => {
-    abortController?.abort();
-  }, [abortController]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -179,198 +165,176 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }
 
   return (
-    <div
-      ref={ref}
-      className="flex select-text flex-col gap-2 overflow-y-auto px-2 outline-none"
-      spellCheck={false}
-      onKeyDown={(e) => {
-        if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
-          // Allow a few commands, but nothing else
-        } else {
-          e.preventDefault();
-        }
-      }}
-      // Disable Grammarly
-      data-gramm="false"
-      data-gramm_editor="false"
-      data-enable-grammarly="false"
-    >
-      {messages.map((message, index) => {
-        if (
-          !debugShowAIInternalContext &&
-          !['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
-        ) {
-          return null;
-        }
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <div
+        ref={ref}
+        className="flex flex-1 select-text flex-col gap-2 overflow-y-auto px-2 outline-none"
+        spellCheck={false}
+        onKeyDown={(e) => {
+          if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
+            // Allow a few commands, but nothing else
+          } else {
+            e.preventDefault();
+          }
+        }}
+        // Disable Grammarly
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
+      >
+        {messages.map((message, index) => {
+          if (
+            !debugShowAIInternalContext &&
+            !['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+          ) {
+            return null;
+          }
 
-        const isCurrentMessage = index === messagesCount - 1;
-        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
+          const isCurrentMessage = index === messagesCount - 1;
+          const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
-        return (
-          <div
-            key={`${index}-${message.role}-${message.contextType}-${message.content}`}
-            className={cn(
-              'flex flex-col gap-2',
-              message.role === 'assistant' ? 'px-2' : '',
-              // For debugging internal context
-              ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
-                ? ''
-                : 'rounded-lg bg-gray-500 p-2'
-            )}
-          >
-            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+          return (
+            <div
+              key={`${index}-${message.role}-${message.contextType}-${message.content}`}
+              className={cn(
+                'flex flex-col gap-2',
+                message.role === 'assistant' ? 'px-2' : '',
+                // For debugging internal context
+                ['userPrompt', 'webSearchInternal', 'importFilesToGrid'].includes(message.contextType)
+                  ? ''
+                  : 'rounded-lg bg-gray-500 p-2'
+              )}
+            >
+              {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
-            {isInternalMessage(message) ? (
-              isContentGoogleSearchInternal(message.content) ? (
-                <GoogleSearchSources content={message.content} />
-              ) : isContentImportFilesToGridInternal(message.content) ? (
-                <ImportFilesToGrid content={message.content} />
-              ) : null
-            ) : isUserPromptMessage(message) ? (
-              <AIAnalystUserMessageForm
-                initialContent={message.content}
-                initialContext={message.context}
-                textareaRef={textareaRef}
-                messageIndex={index}
-                onContentChange={
-                  debugAIAnalystChatEditing &&
-                  ((content) => {
-                    const newMessages = [...messages];
-                    newMessages[index] = { ...message, content };
-                    setMessages(newMessages);
-                  })
-                }
-                uiContext="analyst-edit-chat"
-              />
-            ) : isToolResultMessage(message) ? (
-              message.content.map((result, resultIndex) => (
+              {isInternalMessage(message) ? (
+                isContentGoogleSearchInternal(message.content) ? (
+                  <GoogleSearchSources content={message.content} />
+                ) : isContentImportFilesToGridInternal(message.content) ? (
+                  <ImportFilesToGrid content={message.content} />
+                ) : null
+              ) : isUserPromptMessage(message) ? (
                 <AIAnalystUserMessageForm
-                  key={`${index}-${result.id}`}
-                  initialContent={result.content}
+                  initialContent={message.content}
+                  initialContext={message.context}
                   textareaRef={textareaRef}
                   messageIndex={index}
                   onContentChange={
                     debugAIAnalystChatEditing &&
                     ((content) => {
                       const newMessages = [...messages];
-                      newMessages[index] = { ...message, content: [...message.content] };
-                      newMessages[index].content[resultIndex] = {
-                        ...result,
-                        content: content as ToolResultContent,
-                      };
+                      newMessages[index] = { ...message, content };
                       setMessages(newMessages);
                     })
                   }
                   uiContext="analyst-edit-chat"
                 />
-              ))
-            ) : (
-              <>
-                {message.content.map((item, contentIndex) =>
-                  isContentThinking(item) ? (
-                    <AIThinkingBlock
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                      isLoading={loading}
-                      thinkingContent={item}
-                      expandedDefault={false}
-                      onContentChange={
-                        debugAIAnalystChatEditing &&
-                        ((newItem) => {
-                          const newMessage = { ...message, content: [...message.content] };
-                          newMessage.content[contentIndex] = newItem;
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ) : isContentText(item) ? (
-                    <Markdown
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      text={item.text}
-                      onChange={
-                        debugAIAnalystChatEditing &&
-                        ((text) => {
-                          const newMessage = { ...message, content: [...message.content] };
-                          newMessage.content[contentIndex] = { ...item, text };
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ) : null
-                )}
-
-                {message.contextType === 'userPrompt' &&
-                  message.toolCalls
-                    .filter((toolCall) => toolCall.name !== AITool.SetTaskList)
-                    .map((toolCall, toolCallIndex) => (
-                      <AIToolCardEditable
-                        key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
-                        toolCall={toolCall}
-                        onToolCallChange={
+              ) : isToolResultMessage(message) ? (
+                message.content.map((result, resultIndex) => (
+                  <AIAnalystUserMessageForm
+                    key={`${index}-${result.id}`}
+                    initialContent={result.content}
+                    textareaRef={textareaRef}
+                    messageIndex={index}
+                    onContentChange={
+                      debugAIAnalystChatEditing &&
+                      ((content) => {
+                        const newMessages = [...messages];
+                        newMessages[index] = { ...message, content: [...message.content] };
+                        newMessages[index].content[resultIndex] = {
+                          ...result,
+                          content: content as ToolResultContent,
+                        };
+                        setMessages(newMessages);
+                      })
+                    }
+                    uiContext="analyst-edit-chat"
+                  />
+                ))
+              ) : (
+                <>
+                  {message.content.map((item, contentIndex) =>
+                    isContentThinking(item) ? (
+                      <AIThinkingBlock
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                        isLoading={loading}
+                        thinkingContent={item}
+                        expandedDefault={false}
+                        onContentChange={
                           debugAIAnalystChatEditing &&
-                          ((newToolCall) => {
-                            const newMessage = { ...message, toolCalls: [...message.toolCalls] };
-                            newMessage.toolCalls[toolCallIndex] = newToolCall;
+                          ((newItem) => {
+                            const newMessage = { ...message, content: [...message.content] };
+                            newMessage.content[contentIndex] = newItem;
                             const newMessages = [...messages];
                             (newMessages as typeof messages)[index] = newMessage as typeof message;
                             setMessages(newMessages);
                           })
                         }
                       />
-                    ))}
-              </>
-            )}
-          </div>
-        );
-      })}
+                    ) : isContentText(item) ? (
+                      <Markdown
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        text={item.text}
+                        onChange={
+                          debugAIAnalystChatEditing &&
+                          ((text) => {
+                            const newMessage = { ...message, content: [...message.content] };
+                            newMessage.content[contentIndex] = { ...item, text };
+                            const newMessages = [...messages];
+                            (newMessages as typeof messages)[index] = newMessage as typeof message;
+                            setMessages(newMessages);
+                          })
+                        }
+                      />
+                    ) : null
+                  )}
 
-      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
+                  {message.contextType === 'userPrompt' &&
+                    message.toolCalls
+                      .filter((toolCall) => toolCall.name !== AITool.SetTaskList)
+                      .map((toolCall, toolCallIndex) => (
+                        <AIToolCardEditable
+                          key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
+                          toolCall={toolCall}
+                          onToolCallChange={
+                            debugAIAnalystChatEditing &&
+                            ((newToolCall) => {
+                              const newMessage = { ...message, toolCalls: [...message.toolCalls] };
+                              newMessage.toolCalls[toolCallIndex] = newToolCall;
+                              const newMessages = [...messages];
+                              (newMessages as typeof messages)[index] = newMessage as typeof message;
+                              setMessages(newMessages);
+                            })
+                          }
+                        />
+                      ))}
+                </>
+              )}
+            </div>
+          );
+        })}
 
-      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
+        {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <FeedbackButtons />}
 
-      <PDFImportLoading />
+        {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
-      <WebSearchLoading />
+        <PDFImportLoading />
 
-      <UserPromptSuggestionsSkeleton
-        toolCall={{
-          id: 'user_prompt_suggestions',
-          name: 'UserPromptSuggestions',
-          arguments: '',
-          loading: promptSuggestionsLoading,
-        }}
-        className="tool-card"
-      />
+        <WebSearchLoading />
 
-      <AILoading loading={loading} />
+        <UserPromptSuggestionsSkeleton
+          toolCall={{
+            id: 'user_prompt_suggestions',
+            name: 'UserPromptSuggestions',
+            arguments: '',
+            loading: promptSuggestionsLoading,
+          }}
+          className="tool-card"
+        />
 
-      {loading && (
-        <div
-          className="sticky z-10 px-2"
-          style={hasTasks ? { bottom: taskListMinimized ? '48px' : '208px' } : { bottom: '0px' }}
-        >
-          <div className="pb-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full bg-background"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAbort();
-              }}
-              disabled={importFilesToGridLoading}
-            >
-              <BackspaceIcon className="mr-1" /> Cancel generating
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <AITaskList />
+        <AILoading loading={loading} />
+      </div>
     </div>
   );
 });

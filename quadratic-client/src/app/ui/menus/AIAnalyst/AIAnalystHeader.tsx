@@ -11,6 +11,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystCurrentChatTasksAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
 import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
@@ -44,6 +45,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const setTaskList = useSetRecoilState(aiAnalystCurrentChatTasksAtom);
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
     [currentUserMessagesCount, showChatHistory]
@@ -114,6 +116,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
                   messages: [],
                 });
                 setWaitingOnMessageIndex(undefined);
+                setTaskList([]);
                 textareaRef.current?.focus();
               }}
             >

@@ -16,6 +16,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystCurrentChatTasksAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -167,11 +168,16 @@ export function useSubmitAIAnalystPrompt() {
 
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
+          // Clear task list when starting a new chat if it's complete
+          const currentChat = await snapshot.getPromise(aiAnalystCurrentChatAtom);
+          const tasks = currentChat.tasks ?? [];
+          const isComplete = tasks.length > 0 && tasks.every((task) => task.completed);
           set(aiAnalystCurrentChatAtom, {
             id: v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
+            tasks: isComplete ? [] : tasks,
           });
         }
         // fork chat, if we are editing an existing chat
@@ -182,6 +188,7 @@ export function useSubmitAIAnalystPrompt() {
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex).map((message) => ({ ...message })),
+              tasks: prev.tasks,
             };
           });
         }
@@ -428,6 +435,11 @@ export function useSubmitAIAnalystPrompt() {
 
                   if (aiTool === AITool.UserPromptSuggestions) {
                     promptSuggestions = (args as any).prompt_suggestions;
+                  }
+
+                  if (aiTool === AITool.SetTaskList) {
+                    // Update tasks in the current chat
+                    set(aiAnalystCurrentChatTasksAtom, (args as any).tasks);
                   }
                 } catch (error) {
                   toolResultMessage.content.push({

@@ -1,5 +1,8 @@
 import {
+  aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatMessagesCountAtom,
+  aiAnalystImportFilesToGridLoadingAtom,
+  aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -12,7 +15,10 @@ import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatN
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { AITaskList } from '@/app/ui/menus/AIAnalyst/AITaskList';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { BackspaceIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -22,6 +28,9 @@ export const AIAnalyst = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
+  const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -66,6 +75,10 @@ export const AIAnalyst = memo(() => {
     }
   }, []);
 
+  const handleAbort = useCallback(() => {
+    abortController?.abort();
+  }, [abortController]);
+
   if (!showAIAnalyst || presentationMode) {
     return null;
   }
@@ -102,6 +115,23 @@ export const AIAnalyst = memo(() => {
 
               <div className="relative grid grid-rows-[1fr_auto_auto] px-2 pb-2 pt-0.5">
                 {messagesCount === 0 && <div className="relative flex items-center justify-center" />}
+                <AITaskList />
+                {loading && (
+                  <div className="pb-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full bg-background"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAbort();
+                      }}
+                      disabled={importFilesToGridLoading}
+                    >
+                      <BackspaceIcon className="mr-1" /> Cancel generating
+                    </Button>
+                  </div>
+                )}
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
                   autoFocusRef={autoFocusRef}

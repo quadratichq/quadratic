@@ -1,13 +1,16 @@
-import { aiTaskListAtom, aiTaskListMinimizedAtom, type AITask } from '@/app/atoms/aiTaskListAtom';
+import { aiAnalystCurrentChatTasksAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiTaskListMinimizedAtom } from '@/app/atoms/aiTaskListAtom';
 import { CheckIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { useAtom } from 'jotai';
 import { memo } from 'react';
+import { useRecoilValue } from 'recoil';
+import type { AITask } from 'quadratic-shared/typesAndSchemasAI';
 
 export const AITaskList = memo(() => {
-  const [tasks] = useAtom(aiTaskListAtom);
+  const tasks = useRecoilValue(aiAnalystCurrentChatTasksAtom);
   const [minimized, setMinimized] = useAtom(aiTaskListMinimizedAtom);
 
   if (tasks.length === 0) {
@@ -57,8 +60,17 @@ const TaskItem = memo(({ task }: { task: AITask }) => {
       <div
         className={cn(
           'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border',
-          task.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background'
+          task.completed ? '' : 'border-border bg-background'
         )}
+        style={
+          task.completed
+            ? {
+                borderColor: '#a855f7',
+                backgroundColor: '#a855f7',
+                color: '#ffffff',
+              }
+            : undefined
+        }
       >
         {task.completed && <CheckIcon className="h-3 w-3" />}
       </div>

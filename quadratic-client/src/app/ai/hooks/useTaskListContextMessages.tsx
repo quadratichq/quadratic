@@ -1,14 +1,13 @@
-import { aiTaskListAtom } from '@/app/atoms/aiTaskListAtom';
-import { getDefaultStore } from 'jotai';
+import { aiAnalystCurrentChatTasksAtom } from '@/app/atoms/aiAnalystAtom';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export function useTaskListContextMessages() {
-  const getTaskListContext = useCallback((): ChatMessage[] => {
-    const store = getDefaultStore();
-    const tasks = store.get(aiTaskListAtom);
+  const tasks = useRecoilValue(aiAnalystCurrentChatTasksAtom);
 
+  const getTaskListContext = useCallback((): ChatMessage[] => {
     if (tasks.length === 0) {
       return [];
     }
@@ -42,7 +41,7 @@ export function useTaskListContextMessages() {
         contextType: 'taskList',
       },
     ];
-  }, []);
+  }, [tasks]);
 
   return { getTaskListContext };
 }

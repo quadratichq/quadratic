@@ -496,11 +496,19 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatMessagesSchema = z.array(ChatMessageSchema);
 
+export const AITaskSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  completed: z.boolean(),
+});
+export type AITask = z.infer<typeof AITaskSchema>;
+
 export const ChatSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   lastUpdated: z.number(),
   messages: ChatMessagesSchema,
+  tasks: z.array(AITaskSchema).optional(),
 });
 export type Chat = z.infer<typeof ChatSchema>;
 

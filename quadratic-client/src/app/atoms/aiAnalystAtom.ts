@@ -13,7 +13,7 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AITask, Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -373,6 +373,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         name: prev.currentChat.name,
         lastUpdated: Date.now(),
         messages: newValue,
+        tasks: prev.currentChat.tasks,
       };
 
       // update chats
@@ -391,6 +392,27 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
 export const aiAnalystCurrentChatUserMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatUserMessagesCountAtom',
   get: ({ get }) => get(aiAnalystCurrentChatAtom).messages.filter((message) => isUserPromptMessage(message)).length,
+});
+
+export const aiAnalystCurrentChatTasksAtom = selector<AITask[]>({
+  key: 'aiAnalystCurrentChatTasksAtom',
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).tasks ?? [],
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      const currentChat: Chat = {
+        ...prev.currentChat,
+        tasks: newValue,
+      };
+
+      const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
+
+      return { ...prev, chats, currentChat };
+    });
+  },
 });
 
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
