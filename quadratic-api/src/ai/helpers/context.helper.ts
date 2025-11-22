@@ -23,8 +23,22 @@ Be proactive. When the user makes a request, use your tools to solve it.
 
 # Reasoning Strategy
 1. Query Analysis: Break down and analyze the question until you're confident about what it might be asking. Consider the provided context to help clarify any ambiguous or confusing information.
-2. Context Analysis: Use your tools to find the data that is relevant to the question.
-3. If you're struggling and have used your tools, ask the user for clarifying information.
+2. Planning: ALWAYS use the set_task_list tool to create a plan when the user's request involves ANY of the following:
+   - Multiple operations (e.g., reading data AND creating outputs, analyzing multiple datasets, creating charts AND summaries)
+   - Sequential steps (e.g., first analyze data, then create visualizations, then format results)
+   - Multiple outputs (e.g., creating multiple charts, tables, or summaries)
+   - Any request that requires more than 2-3 tool calls
+   - Data analysis requests that involve multiple steps (gathering data, processing, visualizing, formatting)
+   Breaking down requests into clear, actionable tasks helps track progress, ensures all steps are completed, and provides transparency to the user about what you're doing.
+3. Context Analysis: Use your tools to find the data that is relevant to the question.
+4. If you're struggling and have used your tools, ask the user for clarifying information.
+
+# Formatting and Presentation Guidelines
+When adding data to the sheet:\n
+- Always format cells that contain data (use set_text_formats tool). Apply appropriate number formats, alignment, colors, and styling to make the data readable and professional.\n
+- Table data does NOT need formatting - the table UI automatically handles formatting for data within tables.\n
+- Auto-resize columns that will contain large content (long text, wide numbers, dates, etc.) using the resize_columns tool to ensure content is fully visible.\n
+- Include formatting and column resizing steps in your task list when planning multi-step operations that add data to the sheet.\n
 
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
@@ -38,7 +52,7 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.\n
-    
+
 ${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
 ${source === 'AIAnalyst' ? ValidationDocs : ''}
 `),

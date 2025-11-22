@@ -8,6 +8,7 @@ import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSugg
 import { useImportFilesToGrid, type ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
+import { useTaskListContextMessages } from '@/app/ai/hooks/useTaskListContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
@@ -26,12 +27,12 @@ import {
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   createTextContent,
@@ -104,6 +105,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getAITransactions } = useAITransactions();
   const { importFilesToGrid } = useImportFilesToGrid();
   const { connections } = useConnectionsFetcher();
+  const { getTaskListContext } = useTaskListContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -127,6 +129,7 @@ export function useSubmitAIAnalystPrompt() {
           ...summaryContext,
           ...codeErrorContext,
           ...getPromptAndInternalMessages(chatMessages),
+          ...getTaskListContext(),
         ];
 
         return messagesWithContext;
@@ -140,6 +143,7 @@ export function useSubmitAIAnalystPrompt() {
       getSummaryContext,
       getCodeErrorContext,
       getAITransactions,
+      getTaskListContext,
     ]
   );
 

@@ -222,6 +222,7 @@ const InternalContextTypeSchema = z.enum([
   'codeErrors',
   'fileSummary',
   'aiUpdates',
+  'taskList',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;

@@ -646,7 +646,7 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />
+        {!isAnalyst && <CancelButton show={loading} disabled={cancelDisabled} abortPrompt={abortPrompt} />}
       </>
     );
   }

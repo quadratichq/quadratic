@@ -65,6 +65,7 @@ export enum AITool {
   Redo = 'redo',
   ContactUs = 'contact_us',
   OptimizePrompt = 'optimize_prompt',
+  SetTaskList = 'set_task_list',
 }
 
 export const AIToolSchema = z.enum([
@@ -121,6 +122,7 @@ export const AIToolSchema = z.enum([
   AITool.Redo,
   AITool.ContactUs,
   AITool.OptimizePrompt,
+  AITool.SetTaskList,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -545,6 +547,15 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
+  }),
+  [AITool.SetTaskList]: z.object({
+    tasks: z.array(
+      z.object({
+        id: stringSchema,
+        description: stringSchema,
+        completed: booleanSchema,
+      })
+    ),
   }),
 } as const;
 
@@ -1695,6 +1706,7 @@ This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
 This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
     parameters: {
       type: 'object',
@@ -1702,7 +1714,7 @@ This tool should not be used to list the sheets in the file. The names of all sh
         sheet_name: {
           type: 'string',
           description:
-            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ]. Avoid using spaces unless the user explicitly requests them - prefer underscores, hyphens, or camelCase instead.',
         },
         insert_before_sheet_name: {
           type: ['string', 'null'],
@@ -1719,6 +1731,7 @@ This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
 This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
 This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -1727,6 +1740,7 @@ This tool should not be used to list the sheets in the file. The names of all sh
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
     parameters: {
       type: 'object',
@@ -1738,7 +1752,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
         name_of_new_sheet: {
           type: 'string',
           description:
-            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ]. Avoid using spaces unless the user explicitly requests them - prefer underscores, hyphens, or camelCase instead.',
         },
       },
       required: ['sheet_name_to_duplicate', 'name_of_new_sheet'],
@@ -1749,6 +1763,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
 This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
   },
   [AITool.RenameSheet]: {
@@ -1757,6 +1772,7 @@ This tool should be used primarily when users explicitly ask to create a new she
     description: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
     parameters: {
       type: 'object',
@@ -1768,7 +1784,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
         new_name: {
           type: 'string',
           description:
-            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ].',
+            'The new name of the sheet. This must be a unique name and cannot be more than 31 characters. It cannot contain any of the following characters: / \\ ? * : [ ]. Avoid using spaces unless the user explicitly requests them - prefer underscores, hyphens, or camelCase instead.',
         },
       },
       required: ['sheet_name', 'new_name'],
@@ -1778,6 +1794,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
     prompt: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
+Avoid using spaces in sheet names unless the user explicitly requests them. Prefer using underscores, hyphens, or camelCase instead.\n
 `,
   },
   [AITool.DeleteSheet]: {
@@ -2877,5 +2894,68 @@ Optimized:\n
 - Place the result directly below the Revenue column\n
 
 Be specific, detailed, and actionable in every bullet point.\n`,
+  },
+  [AITool.SetTaskList]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool creates or updates a list of tasks in the AI panel. Use this for planning larger queries by breaking them down into steps.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        tasks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                description: 'A unique identifier for the task',
+              },
+              description: {
+                type: 'string',
+                description: 'A description of what needs to be done',
+              },
+              completed: {
+                type: 'boolean',
+                description: 'Whether the task has been completed',
+              },
+            },
+            required: ['id', 'description', 'completed'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['tasks'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetTaskList],
+    prompt: `
+This tool creates or updates a list of tasks in the AI panel. You SHOULD use this tool for ANY request that involves multiple steps, operations, or tool calls.\n
+\n
+ALWAYS use this tool when the user's request involves:\n
+- Multiple operations (e.g., reading data AND creating outputs, analyzing multiple datasets, creating charts AND summaries)\n
+- Sequential steps (e.g., first analyze data, then create visualizations, then format results)\n
+- Multiple outputs (e.g., creating multiple charts, tables, summaries, or code cells)\n
+- Any request requiring more than 2-3 tool calls\n
+- Data analysis requests with multiple phases (gathering data, processing/analyzing, visualizing, formatting)\n
+- Requests that combine different types of operations (e.g., reading data, performing calculations, creating visualizations, formatting cells)\n
+- Complex queries that would benefit from breaking down into clear, trackable steps\n
+\n
+Even if a request seems straightforward, if it involves multiple distinct operations or tool calls, create a task list to ensure nothing is missed and to provide transparency to the user.\n
+\n
+Each task should have a unique id, a clear description of what needs to be done, and a completed status (initially false).\n
+You can update the task list multiple times to mark tasks as completed (set completed to true) or add new tasks as needed.\n
+The task list will be included in your context in future messages, so you can track progress and update it accordingly.\n
+\n
+IMPORTANT: When creating tasks that involve adding data to the sheet:\n
+- Include formatting steps: When adding cells with data (not table data), always include a task to format those cells appropriately (e.g., "Format the added data cells with appropriate number formats, alignment, and styling"). Table data does NOT need formatting as the table UI handles that automatically.\n
+- Include column resizing: When adding columns that will likely contain large content (long text, wide numbers, dates, etc.), include a task to auto-resize those columns (e.g., "Auto-resize columns containing [description] to fit content").\n
+- Formatting and resizing should be separate tasks or combined into a single "Format and resize" task after data is added.\n
+\n
+Examples of requests that REQUIRE a task list:\n
+- "Analyze my sales data and create a summary with charts" → Tasks: 1) Read sales data, 2) Analyze trends, 3) Create summary metrics, 4) Create charts, 5) Format output\n
+- "Create a dashboard with multiple visualizations" → Tasks: 1) Gather data, 2) Create chart 1, 3) Create chart 2, 4) Create chart 3, 5) Format dashboard\n
+- "Compare these two datasets and show me the differences" → Tasks: 1) Read dataset 1, 2) Read dataset 2, 3) Compare data, 4) Create comparison output, 5) Format results\n`,
   },
 } as const;

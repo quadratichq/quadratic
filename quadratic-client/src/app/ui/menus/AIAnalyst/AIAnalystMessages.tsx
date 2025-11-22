@@ -2,10 +2,12 @@ import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
+  aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
+  aiAnalystImportFilesToGridLoadingAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -14,6 +16,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { aiTaskListAtom, aiTaskListMinimizedAtom } from '@/app/atoms/aiTaskListAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
@@ -21,14 +24,16 @@ import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
 import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { AITaskList } from '@/app/ui/menus/AIAnalyst/AITaskList';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
-import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
+import { BackspaceIcon, ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtomValue } from 'jotai';
 import {
   createTextContent,
   getLastAIPromptMessageIndex,
@@ -41,6 +46,7 @@ import {
   isToolResultMessage,
   isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
@@ -63,6 +69,15 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
   const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
+  const tasks = useAtomValue(aiTaskListAtom);
+  const hasTasks = tasks.length > 0;
+  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
+  const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
+  const taskListMinimized = useAtomValue(aiTaskListMinimizedAtom);
+
+  const handleAbort = useCallback(() => {
+    abortController?.abort();
+  }, [abortController]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -166,7 +181,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-2 overflow-y-auto px-2 pb-8 outline-none"
+      className="flex select-text flex-col gap-2 overflow-y-auto px-2 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -289,22 +304,24 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall, toolCallIndex) => (
-                    <AIToolCardEditable
-                      key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
-                      toolCall={toolCall}
-                      onToolCallChange={
-                        debugAIAnalystChatEditing &&
-                        ((newToolCall) => {
-                          const newMessage = { ...message, toolCalls: [...message.toolCalls] };
-                          newMessage.toolCalls[toolCallIndex] = newToolCall;
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ))}
+                  message.toolCalls
+                    .filter((toolCall) => toolCall.name !== AITool.SetTaskList)
+                    .map((toolCall, toolCallIndex) => (
+                      <AIToolCardEditable
+                        key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
+                        toolCall={toolCall}
+                        onToolCallChange={
+                          debugAIAnalystChatEditing &&
+                          ((newToolCall) => {
+                            const newMessage = { ...message, toolCalls: [...message.toolCalls] };
+                            newMessage.toolCalls[toolCallIndex] = newToolCall;
+                            const newMessages = [...messages];
+                            (newMessages as typeof messages)[index] = newMessage as typeof message;
+                            setMessages(newMessages);
+                          })
+                        }
+                      />
+                    ))}
               </>
             )}
           </div>
@@ -330,6 +347,30 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       />
 
       <AILoading loading={loading} />
+
+      {loading && (
+        <div
+          className="sticky z-10 px-2"
+          style={hasTasks ? { bottom: taskListMinimized ? '48px' : '208px' } : { bottom: '0px' }}
+        >
+          <div className="pb-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full bg-background"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAbort();
+              }}
+              disabled={importFilesToGridLoading}
+            >
+              <BackspaceIcon className="mr-1" /> Cancel generating
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <AITaskList />
     </div>
   );
 });

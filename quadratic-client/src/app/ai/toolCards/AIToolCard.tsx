@@ -152,6 +152,9 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ContactUs:
       return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.SetTaskList:
+      // Don't render a tool card for SetTaskList - it's displayed as a persistent UI element
+      return null;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

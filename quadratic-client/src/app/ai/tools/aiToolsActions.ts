@@ -13,6 +13,7 @@ import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/ut
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { countWords } from '@/app/ai/utils/wordCount';
+import { aiTaskListAtom } from '@/app/atoms/aiTaskListAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -44,6 +45,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import Color from 'color';
+import { getDefaultStore } from 'jotai';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -1537,5 +1539,14 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.OptimizePrompt]: async (args) => {
     return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
+  },
+  [AITool.SetTaskList]: async (args) => {
+    try {
+      const store = getDefaultStore();
+      store.set(aiTaskListAtom, args.tasks);
+      return [createTextContent(`Task list updated with ${args.tasks.length} task(s).`)];
+    } catch (e) {
+      return [createTextContent(`Error updating task list: ${e}`)];
+    }
   },
 } as const;
