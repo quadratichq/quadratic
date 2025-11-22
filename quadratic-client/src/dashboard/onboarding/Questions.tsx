@@ -315,19 +315,39 @@ export const questionsById: Record<
   },
   'team-invites[]': {
     title: 'Who would you like to invite to your team?',
-    subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
+    subtitle: "Quadratic is better with your team. We'll send them an invite.",
     Form: (props) => {
+      const [values, setValues] = useState<string[]>(Array(4).fill(''));
+
+      const handleInputChange = (index: number, value: string) => {
+        const newValues = [...values];
+        newValues[index] = value;
+
+        // Count how many fields have values
+        const filledCount = newValues.filter((v) => v.trim().length > 0).length;
+        const emptyCount = newValues.length - filledCount;
+
+        // If 3 or more fields are filled and less than 2 empty fields remain, add 2 more
+        if (filledCount >= 3 && emptyCount < 2) {
+          setValues([...newValues, '', '']);
+        } else {
+          setValues(newValues);
+        }
+      };
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
-              {['john@example.com', '', '', ''].map((placeholder) => (
+              {values.map((value, index) => (
                 <Input
-                  key={placeholder}
+                  key={index}
                   className="h-12 w-full text-lg placeholder:text-muted-foreground/70"
                   type="email"
                   name={props.id}
-                  placeholder={placeholder}
+                  placeholder={index === 0 ? 'john@example.com' : ''}
+                  value={value}
+                  onChange={(e) => handleInputChange(index, e.target.value)}
                 />
               ))}
             </div>
