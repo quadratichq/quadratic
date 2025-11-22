@@ -241,7 +241,13 @@ export const FormatColorPickerButton = memo(
       ) : null;
 
     return (
-      <FormatButtonDropdown tooltipLabel={label} IconNode={iconNode} hideLabel={hideLabel} action={action}>
+      <FormatButtonDropdown
+        tooltipLabel={label}
+        IconNode={iconNode}
+        checked={activeColor !== undefined}
+        hideLabel={hideLabel}
+        action={action}
+      >
         <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
           <ColorPicker
             color={activeColor}
