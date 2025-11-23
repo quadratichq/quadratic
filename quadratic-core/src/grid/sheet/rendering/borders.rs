@@ -9,14 +9,11 @@ impl Sheet {
         // get sheet borders with merged cell handling
         if let Some(h) = self
             .borders
-            .horizontal_borders_with_merge_cells(None, Some(&self.merge_cells))
+            .horizontal_borders(None, Some(&self.merge_cells))
         {
             horizontal.extend(h);
         }
-        if let Some(v) = self
-            .borders
-            .vertical_borders_with_merge_cells(None, Some(&self.merge_cells))
-        {
+        if let Some(v) = self.borders.vertical_borders(None, Some(&self.merge_cells)) {
             vertical.extend(v);
         }
 
@@ -24,10 +21,10 @@ impl Sheet {
         // Tables cannot overlap merged cells, so we don't need to check merge_cells for table borders
         self.data_tables.expensive_iter().for_each(|(pos, table)| {
             if let Some(borders) = table.borders.as_ref() {
-                if let Some(h) = borders.horizontal_borders(Some((*pos, table))) {
+                if let Some(h) = borders.horizontal_borders(Some((*pos, table)), None) {
                     horizontal.extend(h);
                 }
-                if let Some(v) = borders.vertical_borders(Some((*pos, table))) {
+                if let Some(v) = borders.vertical_borders(Some((*pos, table)), None) {
                     vertical.extend(v);
                 }
             }

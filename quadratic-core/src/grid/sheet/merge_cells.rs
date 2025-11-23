@@ -114,6 +114,14 @@ impl MergeCells {
                 }
             })
     }
+
+    /// Returns an iterator over all merge cell rects in the sheet.
+    /// Each rect represents a merged cell, with the anchor (top-left corner) at rect.min.
+    pub fn iter_merge_cells(&self) -> impl Iterator<Item = Rect> + '_ {
+        self.merge_cells
+            .nondefault_rects_all_combined()
+            .map(|(rect, _)| rect)
+    }
 }
 
 impl Sheet {
@@ -150,5 +158,35 @@ mod tests {
         merge_cells.merge_cells(Rect::test_a1("B3:E3"));
         let merge_cells = merge_cells.get_merge_cells(Rect::test_a1("B2:C3"));
         assert_eq!(merge_cells, vec![Rect::test_a1("B3:E3")]);
+    }
+
+    #[test]
+    fn test_iter_merge_cells() {
+        let mut merge_cells = MergeCells::default();
+
+        // Initially, there should be no merge cells
+        assert_eq!(merge_cells.iter_merge_cells().count(), 0);
+
+        // Add some merge cells
+        merge_cells.merge_cells(Rect::test_a1("B3:E3"));
+        merge_cells.merge_cells(Rect::test_a1("A1:A1"));
+        merge_cells.merge_cells(Rect::test_a1("F5:G6"));
+
+        // Should have 3 merge cells
+        let all_merge_cells: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(all_merge_cells.len(), 3);
+        assert!(all_merge_cells.contains(&Rect::test_a1("B3:E3")));
+        assert!(all_merge_cells.contains(&Rect::test_a1("A1:A1")));
+        assert!(all_merge_cells.contains(&Rect::test_a1("F5:G6")));
+
+        // Unmerge one
+        merge_cells.unmerge_cells(Rect::test_a1("B3:E3"));
+
+        // Should have 2 merge cells now
+        let all_merge_cells: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(all_merge_cells.len(), 2);
+        assert!(!all_merge_cells.contains(&Rect::test_a1("B3:E3")));
+        assert!(all_merge_cells.contains(&Rect::test_a1("A1:A1")));
+        assert!(all_merge_cells.contains(&Rect::test_a1("F5:G6")));
     }
 }
