@@ -1,7 +1,7 @@
 //! Adjust borders for merged cells.
 
 use crate::{
-    Rect,
+    Pos, Rect,
     a1::UNBOUNDED,
     grid::sheet::{
         borders::{BorderSide, BorderStyleTimestamp, Borders},
@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl Borders {
-    /// Adjust the borders for a merged cell. This is a rect of borders on a
+    /// Adjust the borders for a merged cell. The input is a rect of borders on a
     /// given side set with a given border style.
     ///
     /// If there are any overlapping merged cells, we need to adjust the borders
@@ -47,6 +47,8 @@ impl Borders {
             }
 
             let mut result = vec![];
+
+            // working list of segments
             let mut segments = vec![(x1, y1, x2, y2, border)];
 
             for merged_cell in merged_cells {
@@ -83,6 +85,12 @@ impl Borders {
                             let merge_x_min = merged_cell.min.x;
                             let merge_x_max = merged_cell.max.x;
 
+                            // If border is inside merged cell, clear it completely (don't add any parts)
+                            if is_inside {
+                                // Border is inside merged cell, clear it (don't add)
+                                continue;
+                            }
+
                             // Part before merged cell (if any)
                             if (seg_x1 as i64) < merge_x_min {
                                 new_segments.push((
@@ -103,9 +111,7 @@ impl Borders {
                                 seg_x2_val.min(merge_x_max)
                             };
                             if (overlap_x1 as i64) <= overlap_x2 {
-                                if is_inside {
-                                    // Border is inside merged cell, clear it (don't add)
-                                } else if is_at_top_edge {
+                                if is_at_top_edge {
                                     // At top edge, use anchor border and span full width
                                     if let Some(anchor_border) = anchor_border {
                                         new_segments.push((
@@ -137,22 +143,25 @@ impl Borders {
                             }
 
                             // Part after merged cell (if any)
-                            if seg_x2_val > merge_x_max {
-                                new_segments.push((
-                                    (merge_x_max + 1) as u64,
-                                    seg_y1,
-                                    seg_x2,
-                                    seg_y2,
-                                    seg_border,
-                                ));
-                            } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
-                                new_segments.push((
-                                    (merge_x_max + 1) as u64,
-                                    seg_y1,
-                                    None,
-                                    seg_y2,
-                                    seg_border,
-                                ));
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside {
+                                if seg_x2_val > merge_x_max {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        seg_y1,
+                                        seg_x2,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        seg_y1,
+                                        None,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                }
                             }
                         }
                         BorderSide::Bottom => {
@@ -174,7 +183,8 @@ impl Borders {
                             let merge_x_max = merged_cell.max.x;
 
                             // Part before merged cell (if any)
-                            if (seg_x1 as i64) < merge_x_min {
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside && (seg_x1 as i64) < merge_x_min {
                                 new_segments.push((
                                     seg_x1,
                                     seg_y1,
@@ -194,7 +204,10 @@ impl Borders {
                             };
                             if (overlap_x1 as i64) <= overlap_x2 {
                                 if is_inside {
-                                    // Border is inside merged cell, clear it (don't add)
+                                    // Border is inside merged cell, clear it completely (don't add)
+                                    // This clears borders from non-anchor cells within the merge
+                                    // The anchor cell's bottom border will be rendered at the bottom edge
+                                    // by the is_at_bottom_edge case below
                                 } else if is_at_bottom_edge {
                                     // At bottom edge, use anchor border and span full width
                                     if let Some(anchor_border) = anchor_border {
@@ -227,22 +240,25 @@ impl Borders {
                             }
 
                             // Part after merged cell (if any)
-                            if seg_x2_val > merge_x_max {
-                                new_segments.push((
-                                    (merge_x_max + 1) as u64,
-                                    seg_y1,
-                                    seg_x2,
-                                    seg_y2,
-                                    seg_border,
-                                ));
-                            } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
-                                new_segments.push((
-                                    (merge_x_max + 1) as u64,
-                                    seg_y1,
-                                    None,
-                                    seg_y2,
-                                    seg_border,
-                                ));
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside {
+                                if seg_x2_val > merge_x_max {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        seg_y1,
+                                        seg_x2,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        seg_y1,
+                                        None,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                }
                             }
                         }
                         BorderSide::Left => {
@@ -258,6 +274,12 @@ impl Borders {
                             let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64);
                             let merge_y_min = merged_cell.min.y;
                             let merge_y_max = merged_cell.max.y;
+
+                            // If border is inside merged cell, clear it completely (don't add any parts)
+                            if is_inside {
+                                // Border is inside merged cell, clear it (don't add)
+                                continue;
+                            }
 
                             // Part before merged cell (if any)
                             if (seg_y1 as i64) < merge_y_min {
@@ -279,9 +301,7 @@ impl Borders {
                                 seg_y2_val.min(merge_y_max)
                             };
                             if (overlap_y1 as i64) <= overlap_y2 {
-                                if is_inside {
-                                    // Border is inside merged cell, clear it (don't add)
-                                } else if is_at_left_edge {
+                                if is_at_left_edge {
                                     // At left edge, use anchor border and span full height
                                     if let Some(anchor_border) = anchor_border {
                                         new_segments.push((
@@ -313,22 +333,25 @@ impl Borders {
                             }
 
                             // Part after merged cell (if any)
-                            if seg_y2_val > merge_y_max {
-                                new_segments.push((
-                                    seg_x1,
-                                    (merge_y_max + 1) as u64,
-                                    seg_x2,
-                                    seg_y2,
-                                    seg_border,
-                                ));
-                            } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
-                                new_segments.push((
-                                    seg_x1,
-                                    (merge_y_max + 1) as u64,
-                                    seg_x2,
-                                    None,
-                                    seg_border,
-                                ));
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside {
+                                if seg_y2_val > merge_y_max {
+                                    new_segments.push((
+                                        seg_x1,
+                                        (merge_y_max + 1) as u64,
+                                        seg_x2,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        seg_x1,
+                                        (merge_y_max + 1) as u64,
+                                        seg_x2,
+                                        None,
+                                        seg_border,
+                                    ));
+                                }
                             }
                         }
                         BorderSide::Right => {
@@ -350,7 +373,8 @@ impl Borders {
                             let merge_y_max = merged_cell.max.y;
 
                             // Part before merged cell (if any)
-                            if (seg_y1 as i64) < merge_y_min {
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside && (seg_y1 as i64) < merge_y_min {
                                 new_segments.push((
                                     seg_x1,
                                     seg_y1,
@@ -370,7 +394,10 @@ impl Borders {
                             };
                             if (overlap_y1 as i64) <= overlap_y2 {
                                 if is_inside {
-                                    // Border is inside merged cell, clear it (don't add)
+                                    // Border is inside merged cell, clear it completely (don't add)
+                                    // This clears borders from non-anchor cells within the merge
+                                    // The anchor cell's right border will be rendered at the right edge
+                                    // by the is_at_right_edge case below
                                 } else if is_at_right_edge {
                                     // At right edge, use anchor border and span full height
                                     if let Some(anchor_border) = anchor_border {
@@ -403,22 +430,25 @@ impl Borders {
                             }
 
                             // Part after merged cell (if any)
-                            if seg_y2_val > merge_y_max {
-                                new_segments.push((
-                                    seg_x1,
-                                    (merge_y_max + 1) as u64,
-                                    seg_x2,
-                                    seg_y2,
-                                    seg_border,
-                                ));
-                            } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
-                                new_segments.push((
-                                    seg_x1,
-                                    (merge_y_max + 1) as u64,
-                                    seg_x2,
-                                    None,
-                                    seg_border,
-                                ));
+                            // Only add if the border is not inside the merged cell
+                            if !is_inside {
+                                if seg_y2_val > merge_y_max {
+                                    new_segments.push((
+                                        seg_x1,
+                                        (merge_y_max + 1) as u64,
+                                        seg_x2,
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        seg_x1,
+                                        (merge_y_max + 1) as u64,
+                                        seg_x2,
+                                        None,
+                                        seg_border,
+                                    ));
+                                }
                             }
                         }
                     }
@@ -440,7 +470,9 @@ mod tests {
     use crate::{
         a1::A1Selection,
         controller::GridController,
-        grid::sheet::borders::{BorderSelection, BorderStyle, JsBorderHorizontal},
+        grid::sheet::borders::{
+            BorderSelection, BorderStyle, JsBorderHorizontal, JsBorderVertical,
+        },
     };
 
     #[test]
@@ -490,9 +522,104 @@ mod tests {
             ]
         );
 
-        // let vertical = sheet
-        //     .borders
-        //     .vertical_borders(None, Some(&sheet.merge_cells))
-        //     .unwrap();
+        let vertical = sheet
+            .borders
+            .vertical_borders(None, Some(&sheet.merge_cells))
+            .unwrap();
+        assert_eq!(
+            vertical,
+            vec![
+                JsBorderVertical {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 2,
+                    y: 2,
+                    height: Some(2),
+                    unbounded: false,
+                },
+                JsBorderVertical {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 5,
+                    y: 2,
+                    height: Some(2),
+                    unbounded: false,
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn test_merged_cells_borders_all() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells B2:D3 (3x2 merged cell)
+        gc.merge_cells(A1Selection::test_a1("B2:D3"), None, false);
+
+        // Set borders on the merged cell
+        gc.set_borders(
+            A1Selection::test_a1("B2:D3"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Get rendered borders with merge cells
+        let horizontal = sheet
+            .borders
+            .horizontal_borders(None, Some(&sheet.merge_cells))
+            .unwrap();
+
+        assert_eq!(
+            horizontal,
+            vec![
+                JsBorderHorizontal {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 2,
+                    y: 2,
+                    width: Some(3),
+                    unbounded: false,
+                },
+                JsBorderHorizontal {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 2,
+                    y: 4,
+                    width: Some(3),
+                    unbounded: false,
+                }
+            ]
+        );
+
+        let vertical = sheet
+            .borders
+            .vertical_borders(None, Some(&sheet.merge_cells))
+            .unwrap();
+        assert_eq!(
+            vertical,
+            vec![
+                JsBorderVertical {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 2,
+                    y: 2,
+                    height: Some(2),
+                    unbounded: false,
+                },
+                JsBorderVertical {
+                    color: BorderStyle::default().color,
+                    line: BorderStyle::default().line,
+                    x: 5,
+                    y: 2,
+                    height: Some(2),
+                    unbounded: false,
+                }
+            ]
+        );
     }
 }
