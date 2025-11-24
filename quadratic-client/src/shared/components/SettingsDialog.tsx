@@ -1,7 +1,17 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
-import { ExternalLinkIcon } from '@/shared/components/Icons';
+import {
+  AIIcon,
+  CodeIcon,
+  CurrencyIcon,
+  ExternalLinkIcon,
+  FilePrivateIcon,
+  GroupIcon,
+  SheetIcon,
+  ThemeIcon,
+} from '@/shared/components/Icons';
+import { Type } from '@/shared/components/Type';
 import { VERSION } from '@/shared/constants/appConstants';
 import { WEBSITE_CHANGELOG } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
@@ -58,6 +68,8 @@ export function SettingsDialog() {
     return teamData?.activeTeam?.team?.uuid;
   }, [teamData]);
 
+  const classNameIcons = `mx-0.5 text-muted-foreground`;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
@@ -83,48 +95,69 @@ export function SettingsDialog() {
                 <h2 className="text-lg font-semibold">Settings</h2>
               </div>
               <TabsList className="h-auto flex-col items-start justify-start rounded-none border-0 bg-transparent p-0 sm:w-full">
+                <Type
+                  as="h3"
+                  variant="overline"
+                  className="mb-2 mt-1 flex items-baseline justify-between px-4 indent-2 text-muted-foreground"
+                >
+                  User
+                </Type>
                 <TabsTrigger
                   value="general"
-                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                  className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                 >
+                  <SheetIcon className={classNameIcons} />
                   Spreadsheet
                 </TabsTrigger>
                 <TabsTrigger
                   value="ai"
-                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                  className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                 >
+                  <AIIcon className={classNameIcons} />
                   AI
                 </TabsTrigger>
                 <TabsTrigger
                   value="theme"
-                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                  className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                 >
+                  <ThemeIcon className={classNameIcons} />
                   Theme
                 </TabsTrigger>
                 {hasTeamData && (
                   <>
-                    <TabsTrigger
-                      value="team"
-                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    <Type
+                      as="h3"
+                      variant="overline"
+                      className="mb-2 mt-6 flex items-baseline justify-between px-4 indent-2 text-muted-foreground"
                     >
                       Team
+                    </Type>
+                    <TabsTrigger
+                      value="team"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      <CurrencyIcon className={classNameIcons} />
+                      Billing
                     </TabsTrigger>
                     <TabsTrigger
                       value="team-members"
-                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                     >
-                      Team Members
+                      <GroupIcon className={classNameIcons} />
+                      Members
                     </TabsTrigger>
                     <TabsTrigger
                       value="team-ai"
-                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                     >
-                      Team AI
+                      <AIIcon className={classNameIcons} />
+                      AI
                     </TabsTrigger>
                     <TabsTrigger
                       value="team-privacy"
-                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                     >
+                      <FilePrivateIcon className={classNameIcons} />
                       Privacy
                     </TabsTrigger>
                   </>
@@ -132,8 +165,9 @@ export function SettingsDialog() {
                 {hasDebugAvailable && (
                   <TabsTrigger
                     value="debug"
-                    className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    className="mt-6 flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
                   >
+                    <CodeIcon className={classNameIcons} />
                     Debug
                   </TabsTrigger>
                 )}
