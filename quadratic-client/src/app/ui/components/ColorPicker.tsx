@@ -1,3 +1,4 @@
+import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import Color from 'color';
 import * as React from 'react';
@@ -157,8 +158,8 @@ export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
                 type="button"
                 onClick={() => handleColorClick(hex)}
                 className={cn(
-                  'duration-50 relative h-4 w-4 rounded-sm transition-all hover:scale-110 hover:ring-2 hover:ring-ring hover:ring-offset-1',
-                  isSelected && 'ring-2 ring-ring ring-offset-1',
+                  'duration-50 relative h-4 w-4 rounded-md transition-all hover:z-20 hover:scale-110 hover:ring-2 hover:ring-ring hover:ring-offset-1',
+                  isSelected && 'z-10 ring-2 ring-ring ring-offset-1',
                   (hex === '#ffffff' || isClearColor) && 'ring-1 ring-border'
                 )}
                 style={{ backgroundColor: hex }}
@@ -183,26 +184,25 @@ export const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         </div>
         {onClear && (
           <div className="mt-2 flex justify-center">
-            <button
+            <Button
+              variant="ghost"
               type="button"
               onClick={onClear}
-              className={cn(
-                'duration-50 cursor-pointer text-sm text-foreground transition-all hover:text-foreground/80 hover:ring-2 hover:ring-ring hover:ring-offset-1',
-                showClearIcon && 'relative pl-5'
-              )}
+              className={cn('duration-50 h-6 px-2 transition-all hover:bg-accent', showClearIcon && 'relative')}
             >
               {/* Clear button indicator */}
               {showClearIcon && (
                 <>
-                  <span className="absolute left-0 top-0.5 h-3.5 w-3.5 rounded-sm bg-white ring-1 ring-border" />
-                  <span
-                    className="absolute left-0 top-0.5 h-full w-0.5 rounded-sm bg-red-500"
-                    style={{ transform: 'rotate(45deg) translate(3px, -6px)' }}
-                  />
+                  <span className="relative left-0 mr-1 h-3.5 w-3.5 rounded-md bg-white ring-1 ring-border">
+                    <span
+                      className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 rounded-sm bg-red-500"
+                      style={{ transform: 'rotate(45deg) translate(-1px, 1px)' }}
+                    />
+                  </span>
                 </>
               )}
               {clearLabel}
-            </button>
+            </Button>
           </div>
         )}
       </div>
