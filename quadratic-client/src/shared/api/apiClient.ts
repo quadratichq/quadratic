@@ -385,6 +385,18 @@ export const apiClient = {
         );
       },
     },
+    aiRules: {
+      get() {
+        return fetchFromApi(`/v0/user/ai-rules`, { method: 'GET' }, ApiSchemas['/v0/user/ai-rules.GET.response']);
+      },
+      update(body: ApiTypes['/v0/user/ai-rules.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/user/ai-rules`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/ai-rules.PATCH.response']
+        );
+      },
+    },
   },
 
   education: {

@@ -1,26 +1,67 @@
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
+import { apiClient } from '@/shared/api/apiClient';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export function AISettings() {
   const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const [aiRules, setAiRules] = useState('');
   const [savedAiRules, setSavedAiRules] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const hasUserRulesChanges = aiRules !== savedAiRules;
 
-  const handleSaveUserRules = () => {
-    // TODO: Save to API when available
-    setSavedAiRules(aiRules);
+  useEffect(() => {
+    // Fetch user AI rules on mount
+    apiClient.user.aiRules
+      .get()
+      .then((response) => {
+        const rules = response.aiRules || '';
+        setAiRules(rules);
+        setSavedAiRules(rules);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch AI rules:', error);
+        addGlobalSnackbar('Failed to load AI rules', { severity: 'error' });
+        setIsLoading(false);
+      });
+  }, [addGlobalSnackbar]);
+
+  const handleSaveUserRules = async () => {
+    setIsSaving(true);
+    try {
+      const response = await apiClient.user.aiRules.update({ aiRules: aiRules || null });
+      setSavedAiRules(response.aiRules || '');
+      addGlobalSnackbar('AI rules saved successfully', { severity: 'success' });
+    } catch (error) {
+      console.error('Failed to save AI rules:', error);
+      addGlobalSnackbar('Failed to save AI rules', { severity: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelUserRules = () => {
     setAiRules(savedAiRules);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to save
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (hasUserRulesChanges && !isLoading && !isSaving) {
+        handleSaveUserRules();
+      }
+    }
   };
 
   return (
@@ -58,15 +99,16 @@ export function AISettings() {
             id="ai-rules-editor"
             value={aiRules}
             onChange={(e) => setAiRules(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Enter your custom rules or instructions here..."
             className="min-h-[300px] font-mono text-sm"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCancelUserRules} disabled={!hasUserRulesChanges}>
+            <Button variant="outline" onClick={handleCancelUserRules} disabled={!hasUserRulesChanges || isLoading}>
               Cancel
             </Button>
-            <Button onClick={handleSaveUserRules} disabled={!hasUserRulesChanges}>
-              Save
+            <Button onClick={handleSaveUserRules} disabled={!hasUserRulesChanges || isLoading || isSaving}>
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

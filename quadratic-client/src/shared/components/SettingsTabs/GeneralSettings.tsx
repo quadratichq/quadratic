@@ -43,26 +43,34 @@ export function GeneralSettings() {
           <Separator />
 
           <div className="flex items-center justify-between py-3">
-            <Label htmlFor="show-cell-outlines" className="cursor-pointer">
-              Code cell outlines
+            <Label htmlFor="show-scrollbars" className="cursor-pointer">
+              Scrollbars
             </Label>
+            <Switch id="show-scrollbars" checked={showScrollbars} onCheckedChange={setShowScrollbars} />
+          </div>
+          <Separator />
+
+          <div className="flex items-center justify-between py-3">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="show-cell-outlines" className="cursor-pointer">
+                Code cell outlines
+              </Label>
+              <div className="text-xs text-muted-foreground">Draw borders around code cells in the spreadsheet</div>
+            </div>
             <Switch id="show-cell-outlines" checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
           </div>
           <Separator />
 
           <div className="flex items-center justify-between py-3">
-            <Label htmlFor="show-code-peek" className="cursor-pointer">
-              Code peek
-            </Label>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="show-code-peek" className="cursor-pointer">
+                Code peek
+              </Label>
+              <div className="text-xs text-muted-foreground">
+                Show a summary of the code when hovering over a code cell
+              </div>
+            </div>
             <Switch id="show-code-peek" checked={showCodePeek} onCheckedChange={setShowCodePeek} />
-          </div>
-          <Separator />
-
-          <div className="flex items-center justify-between py-3">
-            <Label htmlFor="show-scrollbars" className="cursor-pointer">
-              Scrollbars
-            </Label>
-            <Switch id="show-scrollbars" checked={showScrollbars} onCheckedChange={setShowScrollbars} />
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import {
@@ -70,8 +71,17 @@ export function SettingsDialog() {
 
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setTimeout(() => {
+        focusGrid();
+      });
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={cn(
           // Full screen on small screens, dialog on larger screens
@@ -79,6 +89,7 @@ export function SettingsDialog() {
           // Remove default padding since we'll handle it internally
           'gap-0'
         )}
+        aria-describedby={undefined}
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Settings</DialogTitle>
