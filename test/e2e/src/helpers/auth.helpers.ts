@@ -94,7 +94,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   await handleHumanCheck(page);
 
-  await handleOnboarding(page);
+  //await handleOnboarding(page);
 
   await handleQuadraticLoading(page);
 
