@@ -377,6 +377,13 @@ export const apiClient = {
       );
     },
     clientDataKv: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/client-data-kv`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/client-data-kv.GET.response']
+        );
+      },
       update(body: ApiTypes['/v0/user/client-data-kv.POST.request']) {
         return fetchFromApi(
           `/v0/user/client-data-kv`,

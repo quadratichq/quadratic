@@ -495,6 +495,9 @@ export const ApiSchemas = {
   '/v0/user.POST.response': z.object({ message: z.string() }),
   '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
   '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.GET.response': z.object({
+    clientDataKv: UserClientDataKvSchema.optional(),
+  }),
   '/v0/user/ai-rules.PATCH.request': z.object({
     aiRules: z.string().nullable(),
   }),

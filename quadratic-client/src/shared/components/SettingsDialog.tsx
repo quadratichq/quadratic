@@ -1,6 +1,6 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { showChangelogDialog } from '@/shared/atom/changelogDialogAtom';
+import { changelogDialogAtom, showChangelogDialog } from '@/shared/atom/changelogDialogAtom';
 import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import {
@@ -56,10 +56,11 @@ export function SettingsDialog() {
   const [open, setOpen] = useAtom(settingsDialogAtom);
   const [activeTab, setActiveTab] = useState('general');
   const [shouldAnimateBadge, setShouldAnimateBadge] = useState(false);
+  const [hideChangelogDot, setHideChangelogDot] = useState(false);
   const { teamData } = useTeamData();
   const { debugFlags } = useDebugFlags();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const [hasNewChangelog] = useChangelogNew();
+  const { hasNewChangelog, markAsSeen } = useChangelogNew();
   const hasTeamData = teamData !== null;
   const hasDebugAvailable = debugFlags.debugAvailable;
 
@@ -72,10 +73,28 @@ export function SettingsDialog() {
   }, [teamData]);
 
   const classNameIcons = `mx-0.5 text-muted-foreground`;
+  const [changelogDialogOpen] = useAtom(changelogDialogAtom);
 
-  // Trigger animation when dialog opens and there's a new changelog
+  // Show the NEW badge if there's a new changelog and we haven't explicitly hidden it
+  const showNewBadge = hasNewChangelog && !hideChangelogDot;
+
+  // Hide badge when changelog dialog opens (changelog is being viewed)
   useEffect(() => {
-    if (open && hasNewChangelog) {
+    if (changelogDialogOpen) {
+      setHideChangelogDot(true);
+    }
+  }, [changelogDialogOpen]);
+
+  // Reset hide state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setHideChangelogDot(false);
+    }
+  }, [open]);
+
+  // Trigger animation when dialog opens and there's a new changelog badge
+  useEffect(() => {
+    if (open && showNewBadge) {
       // Wait for dialog animation to complete (~200ms) plus a small delay
       const timer = setTimeout(() => {
         setShouldAnimateBadge(true);
@@ -86,7 +105,7 @@ export function SettingsDialog() {
     } else {
       setShouldAnimateBadge(false);
     }
-  }, [open, hasNewChangelog]);
+  }, [open, showNewBadge]);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -100,6 +119,12 @@ export function SettingsDialog() {
         team_uuid: activeTeamUuid,
         final_tab: activeTab,
       });
+
+      // Mark changelog as seen when settings closes
+      if (hasNewChangelog) {
+        markAsSeen();
+      }
+
       setTimeout(() => {
         focusGrid();
       });
@@ -258,7 +283,7 @@ export function SettingsDialog() {
                       className="relative text-primary underline hover:text-primary/80"
                     >
                       Changelog
-                      {hasNewChangelog && (
+                      {showNewBadge && (
                         <span
                           className={cn(
                             'absolute -right-2 -top-3 rounded-full bg-primary px-1 py-0.5 text-[9px] font-semibold leading-none text-primary-foreground',

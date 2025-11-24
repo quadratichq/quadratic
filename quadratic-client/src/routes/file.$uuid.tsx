@@ -36,8 +36,16 @@ type FileData = ApiTypes['/v0/files/:uuid.GET.response'] & {
   activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
-  currentParams.uuid !== nextParams.uuid;
+export const shouldRevalidate = ({
+  currentParams,
+  nextParams,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) => {
+  // Always revalidate if explicitly requested (e.g., when updating user settings)
+  if (defaultShouldRevalidate) return true;
+  // Otherwise, only revalidate if the file UUID changed
+  return currentParams.uuid !== nextParams.uuid;
+};
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   startupTimer.start('file.loader');
@@ -170,10 +178,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
-  // Fetch full team data for settings
+  // Fetch full team data for settings and clientDataKv
   let activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'] | undefined = undefined;
+  let clientDataKv: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'] | undefined = undefined;
   try {
-    const fetchedTeam = await apiClient.teams.get(data.team.uuid);
+    const [fetchedTeam, fetchedClientDataKv] = await Promise.all([
+      apiClient.teams.get(data.team.uuid),
+      apiClient.user.clientDataKv.get(),
+    ]);
     // Sort the users so the logged-in user is first in the list
     fetchedTeam.users.sort((a, b) => {
       const loggedInUser = fetchedTeam.userMakingRequest.id;
@@ -182,13 +194,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       return 0;
     });
     activeTeam = fetchedTeam;
+    clientDataKv = fetchedClientDataKv.clientDataKv;
   } catch {
     // If we can't fetch team data, continue without it
     activeTeam = undefined;
+    clientDataKv = undefined;
   }
 
   startupTimer.end('file.loader');
-  return { ...data, activeTeam };
+  return { ...data, activeTeam, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
 };
 
 export const Component = memo(() => {

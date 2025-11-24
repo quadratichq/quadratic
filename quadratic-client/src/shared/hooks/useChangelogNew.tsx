@@ -1,88 +1,67 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { apiClient } from '@/shared/api/apiClient';
 import changelogData from '@/shared/constants/changelog.json';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { useEffect, useState } from 'react';
-import { useRouteLoaderData } from 'react-router';
+import { useRevalidator } from 'react-router';
+import { useMatches } from 'react-router';
 
-const CHANGELOG_STORAGE_KEY = 'changelog_last_seen_version';
 const CHANGELOG_ENTRIES = changelogData as Array<{ version: string }>;
+
+type RouteDataWithClientDataKv =
+  | {
+      userMakingRequest?: { clientDataKv?: { lastSeenChangelogVersion?: string | null } };
+    }
+  | null
+  | undefined;
 
 /**
  * Hook to check if there's a new changelog entry the user hasn't seen
- * Uses the user's clientDataKv from the database, with localStorage as fallback
- * @returns [hasNewChangelog, markAsSeen] - hasNewChangelog is true if there's a new version, markAsSeen marks the latest as seen
+ * Uses the user's clientDataKv from the route loader
+ * @returns { hasNewChangelog, markAsSeen } - hasNewChangelog is true if there's a new version, markAsSeen updates the server
  */
-export function useChangelogNew(): [boolean, () => void] {
+export function useChangelogNew() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const [serverLastSeenVersion, setServerLastSeenVersion] = useState<string | null | undefined>(undefined);
+  const revalidator = useRevalidator();
+  const matches = useMatches();
 
-  // Try to get clientDataKv from file route loader (if in file context)
-  // useRouteLoaderData returns undefined if the route doesn't exist, so this is safe
-  const fileRouteData = useRouteLoaderData(ROUTE_LOADER_IDS.FILE) as
-    | { userMakingRequest?: { clientDataKv?: { lastSeenChangelogVersion?: string } } }
-    | undefined;
+  // Get clientDataKv from route loaders using useMatches to safely access data
+  const fileMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.FILE);
+  const dashboardMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.DASHBOARD);
 
-  const fileServerLastSeenVersion = fileRouteData?.userMakingRequest?.clientDataKv?.lastSeenChangelogVersion;
+  const fileRouteData = fileMatch?.data as RouteDataWithClientDataKv | undefined;
+  const dashboardRouteData = dashboardMatch?.data as RouteDataWithClientDataKv | undefined;
 
-  // Fetch user clientDataKv if authenticated and we don't have it from file route
-  useEffect(() => {
-    if (isAuthenticated && !fileServerLastSeenVersion) {
-      // We could fetch it here, but for now we'll rely on localStorage
-      // The server will be updated when markAsSeen is called
-      setServerLastSeenVersion(null);
-    } else {
-      setServerLastSeenVersion(fileServerLastSeenVersion);
-    }
-  }, [isAuthenticated, fileServerLastSeenVersion]);
-
-  // Use localStorage as fallback (for unauthenticated users or when server data isn't available)
-  const [localLastSeenVersion, setLocalLastSeenVersion] = useLocalStorage<string | null>(
-    CHANGELOG_STORAGE_KEY,
-    serverLastSeenVersion || null
-  );
-
-  // Prioritize server value - if server value is empty/null/undefined, treat as "not seen" (show as new)
-  // Only use localStorage if server value is explicitly not available AND we're not authenticated
+  // Get last seen version from route loader data (prefer file route, fallback to dashboard)
   const lastSeenVersion =
-    serverLastSeenVersion !== undefined ? serverLastSeenVersion : isAuthenticated ? null : localLastSeenVersion;
+    fileRouteData?.userMakingRequest?.clientDataKv?.lastSeenChangelogVersion ??
+    dashboardRouteData?.userMakingRequest?.clientDataKv?.lastSeenChangelogVersion;
 
   const latestVersion = CHANGELOG_ENTRIES.length > 0 ? CHANGELOG_ENTRIES[0].version : null;
-  // Show as new if there's a latest version and either:
+
+  // Show as new for authenticated users if there's a latest version and either:
   // 1. No last seen version (null/undefined/empty string)
   // 2. Last seen version doesn't match latest version
   const hasNewChangelog =
+    isAuthenticated &&
     latestVersion !== null &&
     (!lastSeenVersion ||
       (typeof lastSeenVersion === 'string' && lastSeenVersion.trim() === '') ||
       latestVersion !== lastSeenVersion);
 
-  // Sync server value to localStorage when it changes
-  useEffect(() => {
-    if (serverLastSeenVersion && serverLastSeenVersion !== localLastSeenVersion) {
-      setLocalLastSeenVersion(serverLastSeenVersion);
-    }
-  }, [serverLastSeenVersion, localLastSeenVersion, setLocalLastSeenVersion]);
-
   const markAsSeen = async () => {
-    if (!latestVersion) return;
+    if (!latestVersion || !isAuthenticated) return;
 
-    // Update localStorage immediately for instant UI feedback
-    setLocalLastSeenVersion(latestVersion);
+    try {
+      const { apiClient } = await import('@/shared/api/apiClient');
+      await apiClient.user.clientDataKv.update({
+        lastSeenChangelogVersion: latestVersion,
+      });
 
-    // Update server if authenticated
-    if (isAuthenticated) {
-      try {
-        await apiClient.user.clientDataKv.update({
-          lastSeenChangelogVersion: latestVersion,
-        });
-      } catch (error) {
-        // If update fails, keep the localStorage value
-        console.warn('Failed to update changelog version on server:', error);
-      }
+      // Revalidate route loaders to sync with server
+      revalidator.revalidate();
+    } catch (error) {
+      console.warn('Failed to update changelog version:', error);
     }
   };
 
-  return [hasNewChangelog, markAsSeen];
+  return { hasNewChangelog, markAsSeen };
 }

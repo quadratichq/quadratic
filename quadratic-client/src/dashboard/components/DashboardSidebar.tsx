@@ -5,7 +5,7 @@ import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { settingsDialogAtom, showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
@@ -58,7 +58,7 @@ import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
-import { useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -90,7 +90,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
     },
   } = useDashboardRouteLoaderData();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const [hasNewChangelog] = useChangelogNew();
+  const { hasNewChangelog } = useChangelogNew();
+  const [settingsOpen] = useAtom(settingsDialogAtom);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
@@ -275,9 +276,17 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <div className="flex flex-shrink-0 items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-8 w-8" onClick={showSettingsDialog}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8"
+                  onClick={showSettingsDialog}
+                  disabled={!loggedInUser}
+                >
                   <SettingsIcon />
-                  {hasNewChangelog && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
+                  {hasNewChangelog && !settingsOpen && (
+                    <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top">Settings</TooltipContent>
