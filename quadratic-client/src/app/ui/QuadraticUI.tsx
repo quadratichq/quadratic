@@ -115,7 +115,6 @@ export default function QuadraticUI() {
       {!presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && !isEmbed && <Toolbar />}
 
         <div
           style={{
@@ -129,14 +128,16 @@ export default function QuadraticUI() {
           {canEditFile && isAuthenticated && <AIAnalyst />}
           {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
-            <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
+            <div className="flex h-full flex-col">
+              {!presentationMode && <SheetBar />}
+              <QuadraticGrid />
+              {!presentationMode && !isEmbed && <Toolbar />}
+              {!presentationMode && !isEmbed && <BottomBar />}
+            </div>
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
         </div>
-
-        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
       {/* Global overlay menus */}
       {canEditFile && isAuthenticated && <AIGetFileName />}

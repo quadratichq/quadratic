@@ -410,7 +410,7 @@ export const SheetBar = memo((): JSX.Element => {
             sheets.userAddSheet();
             focusGrid();
           }}
-          className="rounded-none border-r border-t border-border"
+          className="rounded-none border-b border-r border-border"
           tooltip="Add sheet"
           data-testid="sheet-bar-add-button"
         >
@@ -420,7 +420,7 @@ export const SheetBar = memo((): JSX.Element => {
 
       <div
         ref={sheetTabsRef}
-        className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pt-[1px] shadow-[inset_0_1px_0_hsl(var(--border))]"
+        className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pb-[1px] shadow-[inset_0_-1px_0_hsl(var(--border))]"
         onWheel={(e) => {
           if (sheetTabRef.current && e.deltaX) {
             sheetTabRef.current.scrollLeft += e.deltaX;
@@ -444,7 +444,7 @@ export const SheetBar = memo((): JSX.Element => {
         ))}
       </div>
 
-      <div className="flex border-t border-border">
+      <div className="flex border-b border-border">
         <SheetBarButton
           buttonRef={leftRef}
           onPointerDown={() => handleArrowDown(-1)}

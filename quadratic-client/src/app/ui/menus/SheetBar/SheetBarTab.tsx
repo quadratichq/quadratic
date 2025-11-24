@@ -64,7 +64,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
       className={cn(
         'group relative hover:bg-accent',
         active &&
-          'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
+          'sticky left-0 right-0 z-[1] -mt-[1px] border-t-2 border-primary !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
       )}
       style={{
         order: calculatedOrder,
