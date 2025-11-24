@@ -5,6 +5,7 @@ import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFetcher, useSubmit } from 'react-router';
 
@@ -41,6 +42,12 @@ export function TeamAISettings() {
 
   const handleSaveTeamRules = useCallback(() => {
     if (!team || !canManageSettings) return;
+
+    trackEvent('[Settings].teamAiRulesSaved', {
+      team_uuid: team.uuid,
+      has_rules: Boolean(teamAiRules),
+      rules_length: teamAiRules?.length || 0,
+    });
 
     const data = getActionUpdateTeam({ settings: { aiRules: teamAiRules || null } });
     submit(data, {

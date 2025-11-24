@@ -73,7 +73,16 @@ export function SettingsDialog() {
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
-    if (!newOpen) {
+    if (newOpen) {
+      trackEvent('[Settings].opened', {
+        team_uuid: activeTeamUuid,
+        initial_tab: activeTab,
+      });
+    } else {
+      trackEvent('[Settings].closed', {
+        team_uuid: activeTeamUuid,
+        final_tab: activeTab,
+      });
       setTimeout(() => {
         focusGrid();
       });
@@ -96,7 +105,14 @@ export function SettingsDialog() {
         </DialogHeader>
         <Tabs
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(newTab) => {
+            trackEvent('[Settings].tabChanged', {
+              team_uuid: activeTeamUuid,
+              from_tab: activeTab,
+              to_tab: newTab,
+            });
+            setActiveTab(newTab);
+          }}
           className="flex h-full flex-col overflow-hidden sm:flex-row"
         >
           {/* Left Navigation Pane */}
@@ -199,7 +215,7 @@ export function SettingsDialog() {
                       size="sm"
                       className="w-full"
                       onClick={() => {
-                        trackEvent('[SettingsDialog].upgradeToProClicked', {
+                        trackEvent('[Settings].upgradeToProClicked', {
                           team_uuid: activeTeamUuid,
                         });
                         setShowUpgradeDialog({ open: true, eventSource: 'SettingsDialog' });

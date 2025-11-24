@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { PieChartIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useFetcher, useSubmit } from 'react-router';
@@ -39,6 +40,11 @@ export function TeamSettings() {
       if (disabled || !team) {
         return;
       }
+
+      trackEvent('[Settings].teamNameSaved', {
+        team_uuid: team.uuid,
+        new_name: value,
+      });
 
       const data = getActionUpdateTeam({ name: value });
       submit(data, {

@@ -40,6 +40,14 @@ export function TeamPrivacySettings() {
   const handleUpdatePreference = useCallback(
     (key: keyof TeamSettingsType, checked: boolean) => {
       if (!team) return;
+
+      if (key === 'analyticsAi') {
+        trackEvent('[Settings].toggleAnalyticsAi', {
+          team_uuid: team.uuid,
+          enabled: checked,
+        });
+      }
+
       const data = getActionUpdateTeam({ settings: { [key]: checked } });
       submit(data, {
         method: 'POST',

@@ -6,6 +6,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -41,6 +42,10 @@ export function AISettings() {
     try {
       const response = await apiClient.user.aiRules.update({ aiRules: aiRules || null });
       setSavedAiRules(response.aiRules || '');
+      trackEvent('[Settings].userAiRulesSaved', {
+        has_rules: Boolean(aiRules),
+        rules_length: aiRules?.length || 0,
+      });
       addGlobalSnackbar('AI rules saved successfully', { severity: 'success' });
     } catch (error) {
       console.error('Failed to save AI rules:', error);
