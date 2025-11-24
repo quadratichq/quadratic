@@ -1,7 +1,7 @@
 //! Adjust borders for merged cells.
 
 use crate::{
-    Pos, Rect,
+    Rect,
     a1::UNBOUNDED,
     grid::sheet::{
         borders::{BorderSide, BorderStyleTimestamp, Borders},
