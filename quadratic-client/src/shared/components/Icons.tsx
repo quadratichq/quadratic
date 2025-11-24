@@ -179,6 +179,14 @@ export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
 };
 
+export const CircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>circle</Icon>;
+};
+
+export const CheckCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_circle</Icon>;
+};
+
 export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
 };
