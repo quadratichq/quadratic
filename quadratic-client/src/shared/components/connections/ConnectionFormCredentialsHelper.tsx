@@ -4,7 +4,7 @@ import { FormDescription } from '@/shared/shadcn/ui/form';
 export function ConnectionFormCredentialsHelper() {
   return (
     <FormDescription>
-      We recommend using read only credentials within Quadratic.{' '}
+      We recommend using read-only credentials.{' '}
       <a
         href={DOCUMENTATION_CONNECTIONS_DATABASE_ACCESS_URL}
         target="_blank"
@@ -13,6 +13,7 @@ export function ConnectionFormCredentialsHelper() {
       >
         Learn more
       </a>
+      .
     </FormDescription>
   );
 }
