@@ -18,6 +18,7 @@ import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
 const FETCHER_KEY = 'onboarding-form-submission';
+const RESET_FORM_DELAY = 600;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -315,9 +316,18 @@ export const questionsById: Record<
   },
   'team-invites[]': {
     title: 'Who would you like to invite to your team?',
-    subtitle: "Quadratic is better with your team. We'll send them an invite.",
+    subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
     Form: (props) => {
       const [values, setValues] = useState<string[]>(Array(4).fill(''));
+      const [searchParams] = useSearchParams();
+
+      // Reset the form values when search params change (navigating to next question)
+      // We have to do this manually because form values are controlled not uncontrolled
+      useEffect(() => {
+        setTimeout(() => {
+          setValues(Array(4).fill(''));
+        }, RESET_FORM_DELAY);
+      }, [searchParams]);
 
       const handleInputChange = (index: number, value: string) => {
         const newValues = [...values];
@@ -327,8 +337,8 @@ export const questionsById: Record<
         const filledCount = newValues.filter((v) => v.trim().length > 0).length;
         const emptyCount = newValues.length - filledCount;
 
-        // If 3 or more fields are filled and less than 2 empty fields remain, add 2 more
-        if (filledCount >= 3 && emptyCount < 2) {
+        // If one or
+        if (emptyCount < 1) {
           setValues([...newValues, '', '']);
         } else {
           setValues(newValues);
@@ -626,7 +636,7 @@ function QuestionForm({
         setSearchParams(newSearchParams);
         setTimeout(() => {
           form.reset();
-        }, 1000);
+        }, RESET_FORM_DELAY);
       }}
       className={className}
     >
