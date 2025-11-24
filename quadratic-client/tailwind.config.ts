@@ -83,12 +83,17 @@ const config: Config = {
           '0%': { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
         },
+        'badge-pop': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.2)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'slide-up': 'slide-up 0.3s ease-out',
         shimmer: 'shimmer 2.5s linear infinite',
+        'badge-pop': 'badge-pop 0.5s ease-in-out 3',
       },
     },
   },

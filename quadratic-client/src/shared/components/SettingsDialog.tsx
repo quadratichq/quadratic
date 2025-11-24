@@ -1,12 +1,12 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { showChangelogDialog } from '@/shared/atom/changelogDialogAtom';
 import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import {
   AIIcon,
   CodeIcon,
   CurrencyIcon,
-  ExternalLinkIcon,
   FilePrivateIcon,
   GroupIcon,
   SheetIcon,
@@ -14,7 +14,7 @@ import {
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { VERSION } from '@/shared/constants/appConstants';
-import { WEBSITE_CHANGELOG } from '@/shared/constants/urls';
+import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
@@ -23,7 +23,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { RocketIcon } from '@radix-ui/react-icons';
 import { useAtom, useSetAtom } from 'jotai';
-import { Component, useMemo, useState } from 'react';
+import { Component, useEffect, useMemo, useState } from 'react';
 import { AISettings } from './SettingsTabs/AISettings';
 import { DebugSettings } from './SettingsTabs/DebugSettings';
 import { GeneralSettings } from './SettingsTabs/GeneralSettings';
@@ -55,9 +55,11 @@ class TeamSettingsErrorBoundary extends Component<{ children: React.ReactNode },
 export function SettingsDialog() {
   const [open, setOpen] = useAtom(settingsDialogAtom);
   const [activeTab, setActiveTab] = useState('general');
+  const [shouldAnimateBadge, setShouldAnimateBadge] = useState(false);
   const { teamData } = useTeamData();
   const { debugFlags } = useDebugFlags();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const [hasNewChangelog] = useChangelogNew();
   const hasTeamData = teamData !== null;
   const hasDebugAvailable = debugFlags.debugAvailable;
 
@@ -70,6 +72,21 @@ export function SettingsDialog() {
   }, [teamData]);
 
   const classNameIcons = `mx-0.5 text-muted-foreground`;
+
+  // Trigger animation when dialog opens and there's a new changelog
+  useEffect(() => {
+    if (open && hasNewChangelog) {
+      // Wait for dialog animation to complete (~200ms) plus a small delay
+      const timer = setTimeout(() => {
+        setShouldAnimateBadge(true);
+        // Reset animation state after animation completes
+        setTimeout(() => setShouldAnimateBadge(false), 2000);
+      }, 350);
+      return () => clearTimeout(timer);
+    } else {
+      setShouldAnimateBadge(false);
+    }
+  }, [open, hasNewChangelog]);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -231,15 +248,27 @@ export function SettingsDialog() {
                   <h3 className="text-sm font-semibold">Quadratic</h3>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Version {VERSION}</span>
-                    <a
-                      href={WEBSITE_CHANGELOG}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline hover:text-primary/80"
+                    <button
+                      onClick={() => {
+                        trackEvent('[Settings].changelogClicked', {
+                          team_uuid: activeTeamUuid,
+                        });
+                        showChangelogDialog();
+                      }}
+                      className="relative text-primary underline hover:text-primary/80"
                     >
                       Changelog
-                      <ExternalLinkIcon className="relative top-0.5 ml-0.5 !text-xs" />
-                    </a>
+                      {hasNewChangelog && (
+                        <span
+                          className={cn(
+                            'absolute -right-2 -top-3 rounded-full bg-primary px-1 py-0.5 text-[9px] font-semibold leading-none text-primary-foreground',
+                            shouldAnimateBadge && 'animate-badge-pop'
+                          )}
+                        >
+                          NEW
+                        </span>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>

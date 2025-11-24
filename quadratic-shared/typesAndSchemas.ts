@@ -111,6 +111,7 @@ export const TeamClientDataKvSchema = z.record(z.any());
 export const UserClientDataKvSchema = z
   .object({
     knowsAboutModelPicker: z.boolean().optional(),
+    lastSeenChangelogVersion: z.string().optional(),
   })
   .strip();
 export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;

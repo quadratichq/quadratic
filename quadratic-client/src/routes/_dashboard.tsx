@@ -3,6 +3,7 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
+import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { MenuIcon } from '@/shared/components/Icons';
 import { SettingsDialog } from '@/shared/components/SettingsDialog';
@@ -236,6 +237,7 @@ export const Component = () => {
           billingStatus={billingStatus}
         />
         <SettingsDialog />
+        <ChangelogDialog />
       </TooltipProvider>
     </RecoilRoot>
   );

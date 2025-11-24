@@ -1,0 +1,114 @@
+[
+  {
+    "version": "0.21.3",
+    "date": "2024-12-20",
+    "changes": [
+      "Added in-app changelog viewer",
+      "Improved settings menu navigation"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.21.0",
+    "date": "2024-12-04",
+    "changes": [
+      "AI Chat release",
+      "Fixes to API requests",
+      "Numerous minor improvements and bug fixes"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.20.0",
+    "date": "2024-11-06",
+    "changes": [
+      "Theming for dark mode and accent colors",
+      "Insert/delete columns and rows",
+      "Smart autocomplete",
+      "Date & time formula support"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.19.0",
+    "date": "2024-09-20",
+    "changes": [
+      "App redesign throughout the sheet",
+      "AI improvements",
+      "Datetime support"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.18.0",
+    "date": "2024-08-30",
+    "changes": [
+      "Data validation",
+      "Big Python performance improvements",
+      "Lots of minor improvements and fixes"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.17.0",
+    "date": "2024-07-23",
+    "changes": [
+      "SQL for connecting to databases",
+      "Teams available to everyone",
+      "Improved AI"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.16.0",
+    "date": "2024-06-17",
+    "changes": [
+      "JavaScript language support",
+      "Cell ranges to Python",
+      "Major selection improvements",
+      "Lots of fixed papercuts"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.15.0",
+    "date": "2024-05-17",
+    "changes": [
+      "Inline formulas",
+      "Drag to move cells",
+      "Auto-resize columns",
+      "Education program"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.14.0",
+    "date": "2024-04-22",
+    "changes": [
+      "Relative references",
+      "Web workers",
+      "Editor improvements"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.13.0",
+    "date": "2024-03-18",
+    "changes": [
+      "Multiplayer",
+      "Python improvements",
+      "Various features and bug fixes"
+    ],
+    "details": null
+  },
+  {
+    "version": "0.12.0",
+    "date": "2024-01-02",
+    "changes": [
+      "Charts",
+      "Gallery",
+      "Numerous optimizations"
+    ],
+    "details": null
+  }
+]

@@ -31,6 +31,7 @@ import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { COMMUNITY_FORUMS, CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,6 +90,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
     },
   } = useDashboardRouteLoaderData();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const [hasNewChangelog] = useChangelogNew();
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
 
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
@@ -273,8 +275,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <div className="flex flex-shrink-0 items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={showSettingsDialog}>
+                <Button variant="ghost" size="icon" className="relative h-8 w-8" onClick={showSettingsDialog}>
                   <SettingsIcon />
+                  {hasNewChangelog && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top">Settings</TooltipContent>

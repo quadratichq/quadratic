@@ -17,6 +17,7 @@ import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SettingsIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
+import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -37,6 +38,7 @@ export const QuadraticSidebar = () => {
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
   const { isAuthenticated } = useRootRouteLoaderData();
+  const [hasNewChangelog] = useChangelogNew();
 
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
@@ -104,6 +106,7 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label="Settings">
           <SidebarToggle pressed={false} onPressedChange={() => showSettingsDialog()}>
             <SettingsIcon />
+            {hasNewChangelog && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
           </SidebarToggle>
         </SidebarTooltip>
       </div>

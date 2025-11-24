@@ -31,6 +31,7 @@ import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { SettingsDialog } from '@/shared/components/SettingsDialog';
@@ -159,6 +160,7 @@ export default function QuadraticUI() {
       <UpdateAlertVersion />
       <UserMessage />
       <SettingsDialog />
+      <ChangelogDialog />
     </div>
   );
 }
