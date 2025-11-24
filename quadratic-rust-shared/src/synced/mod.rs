@@ -15,6 +15,7 @@ use crate::{
 
 pub mod google_analytics;
 pub mod mixpanel;
+pub mod plaid;
 
 const DATE_FORMAT: &str = "%Y-%m-%d";
 
@@ -22,6 +23,7 @@ const DATE_FORMAT: &str = "%Y-%m-%d";
 pub enum SyncedConnectionKind {
     Mixpanel,
     GoogleAnalytics,
+    Plaid,
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -44,6 +46,9 @@ pub trait SyncedClient: Send + Sync {
     fn streams() -> Vec<&'static str>
     where
         Self: Sized;
+
+    /// Test the connection to the data source.
+    async fn test_connection(&self) -> bool;
 
     /// Process a single stream.
     async fn process(
