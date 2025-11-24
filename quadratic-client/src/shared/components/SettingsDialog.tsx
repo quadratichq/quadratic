@@ -1,0 +1,234 @@
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { settingsDialogAtom } from '@/shared/atom/settingsDialogAtom';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { ExternalLinkIcon } from '@/shared/components/Icons';
+import { VERSION } from '@/shared/constants/appConstants';
+import { WEBSITE_CHANGELOG } from '@/shared/constants/urls';
+import { useTeamData } from '@/shared/hooks/useTeamData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { RocketIcon } from '@radix-ui/react-icons';
+import { useAtom, useSetAtom } from 'jotai';
+import { Component, useMemo, useState } from 'react';
+import { AISettings } from './SettingsTabs/AISettings';
+import { DebugSettings } from './SettingsTabs/DebugSettings';
+import { GeneralSettings } from './SettingsTabs/GeneralSettings';
+import { TeamAISettings } from './SettingsTabs/TeamAISettings';
+import { TeamMembersSettings } from './SettingsTabs/TeamMembersSettings';
+import { TeamPrivacySettings } from './SettingsTabs/TeamPrivacySettings';
+import { TeamSettings } from './SettingsTabs/TeamSettings';
+import { ThemeSettings } from './SettingsTabs/ThemeSettings';
+
+// Error boundary wrapper for TeamSettings
+class TeamSettingsErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
+export function SettingsDialog() {
+  const [open, setOpen] = useAtom(settingsDialogAtom);
+  const [activeTab, setActiveTab] = useState('general');
+  const { teamData } = useTeamData();
+  const { debugFlags } = useDebugFlags();
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const hasTeamData = teamData !== null;
+  const hasDebugAvailable = debugFlags.debugAvailable;
+
+  const isOnPaidPlan = useMemo(() => {
+    return teamData?.activeTeam?.billing?.status === 'ACTIVE';
+  }, [teamData]);
+
+  const activeTeamUuid = useMemo(() => {
+    return teamData?.activeTeam?.team?.uuid;
+  }, [teamData]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+        className={cn(
+          // Full screen on small screens, dialog on larger screens
+          'h-[100vh] max-h-[100vh] w-[100vw] max-w-[100vw] translate-y-0 p-0 sm:h-auto sm:max-h-[calc(100vh-4rem)] sm:max-w-4xl sm:translate-y-3 sm:rounded-lg md:h-[80vh]',
+          // Remove default padding since we'll handle it internally
+          'gap-0'
+        )}
+      >
+        <DialogHeader className="sr-only">
+          <DialogTitle>Settings</DialogTitle>
+        </DialogHeader>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex h-full flex-col overflow-hidden sm:flex-row"
+        >
+          {/* Left Navigation Pane */}
+          <div className="flex-shrink-0 border-b border-border bg-accent sm:w-64 sm:border-b-0 sm:border-r">
+            <div className="flex h-full flex-col">
+              <div className="w-full px-4 py-3">
+                <h2 className="text-lg font-semibold">Settings</h2>
+              </div>
+              <TabsList className="h-auto flex-col items-start justify-start rounded-none border-0 bg-transparent p-0 sm:w-full">
+                <TabsTrigger
+                  value="general"
+                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                >
+                  Spreadsheet
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ai"
+                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                >
+                  AI
+                </TabsTrigger>
+                <TabsTrigger
+                  value="theme"
+                  className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                >
+                  Theme
+                </TabsTrigger>
+                {hasTeamData && (
+                  <>
+                    <TabsTrigger
+                      value="team"
+                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      Team
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="team-members"
+                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      Team Members
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="team-ai"
+                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      Team AI
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="team-privacy"
+                      className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      Privacy
+                    </TabsTrigger>
+                  </>
+                )}
+                {hasDebugAvailable && (
+                  <TabsTrigger
+                    value="debug"
+                    className="w-full justify-start rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                  >
+                    Debug
+                  </TabsTrigger>
+                )}
+                {/* Add more tabs here as needed */}
+              </TabsList>
+              {!isOnPaidPlan && hasTeamData && activeTeamUuid && (
+                <div className="mt-auto px-4 pb-3">
+                  <div className="flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+                    <div className="flex gap-2">
+                      <RocketIcon className="h-5 w-5 text-primary" />
+                      <div className="flex flex-col">
+                        <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                        <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        trackEvent('[SettingsDialog].upgradeToProClicked', {
+                          team_uuid: activeTeamUuid,
+                        });
+                        setShowUpgradeDialog({ open: true, eventSource: 'SettingsDialog' });
+                      }}
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <div className="border-t border-border px-4 py-3">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold">Quadratic</h3>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Version {VERSION}</span>
+                    <a
+                      href={WEBSITE_CHANGELOG}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      Changelog
+                      <ExternalLinkIcon className="relative top-0.5 ml-0.5 !text-xs" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Content Pane */}
+          <div className="flex-1 overflow-y-auto bg-background">
+            <TabsContent value="general" className="m-0 border-0 p-6 pb-16">
+              <GeneralSettings />
+            </TabsContent>
+            <TabsContent value="ai" className="m-0 border-0 p-6 pb-16">
+              <AISettings />
+            </TabsContent>
+            <TabsContent value="theme" className="m-0 border-0 p-6 pb-16">
+              <ThemeSettings />
+            </TabsContent>
+            {hasTeamData && (
+              <>
+                <TabsContent value="team" className="m-0 border-0 p-6 pb-16">
+                  <TeamSettingsErrorBoundary>
+                    <TeamSettings />
+                  </TeamSettingsErrorBoundary>
+                </TabsContent>
+                <TabsContent value="team-members" className="m-0 border-0 p-6 pb-16">
+                  <TeamSettingsErrorBoundary>
+                    <TeamMembersSettings />
+                  </TeamSettingsErrorBoundary>
+                </TabsContent>
+                <TabsContent value="team-ai" className="m-0 border-0 p-6 pb-16">
+                  <TeamSettingsErrorBoundary>
+                    <TeamAISettings />
+                  </TeamSettingsErrorBoundary>
+                </TabsContent>
+                <TabsContent value="team-privacy" className="m-0 border-0 p-6 pb-16">
+                  <TeamSettingsErrorBoundary>
+                    <TeamPrivacySettings />
+                  </TeamSettingsErrorBoundary>
+                </TabsContent>
+              </>
+            )}
+            {hasDebugAvailable && (
+              <TabsContent value="debug" className="m-0 border-0 p-6 pb-16">
+                <DebugSettings />
+              </TabsContent>
+            )}
+            {/* Add more tab content here as needed */}
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}

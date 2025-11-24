@@ -32,7 +32,9 @@ import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams,
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 
-type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+type FileData = ApiTypes['/v0/files/:uuid.GET.response'] & {
+  activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'];
+};
 
 export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
   currentParams.uuid !== nextParams.uuid;
@@ -168,18 +170,36 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
+  // Fetch full team data for settings
+  let activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'] | undefined = undefined;
+  try {
+    const fetchedTeam = await apiClient.teams.get(data.team.uuid);
+    // Sort the users so the logged-in user is first in the list
+    fetchedTeam.users.sort((a, b) => {
+      const loggedInUser = fetchedTeam.userMakingRequest.id;
+      if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
+      if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
+      return 0;
+    });
+    activeTeam = fetchedTeam;
+  } catch {
+    // If we can't fetch team data, continue without it
+    activeTeam = undefined;
+  }
+
   startupTimer.end('file.loader');
-  return data;
+  return { ...data, activeTeam };
 };
 
 export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
+  const loaderData = useLoaderData() as FileData & { activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'] };
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
-  } = useLoaderData() as FileData;
+  } = loaderData;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({

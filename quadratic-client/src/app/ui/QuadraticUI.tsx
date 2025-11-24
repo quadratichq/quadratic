@@ -33,6 +33,7 @@ import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { SettingsDialog } from '@/shared/components/SettingsDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
@@ -157,6 +158,7 @@ export default function QuadraticUI() {
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
+      <SettingsDialog />
     </div>
   );
 }
