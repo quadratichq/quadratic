@@ -337,7 +337,7 @@ export const questionsById: Record<
         const filledCount = newValues.filter((v) => v.trim().length > 0).length;
         const emptyCount = newValues.length - filledCount;
 
-        // If one or
+        // If there are no more empty fields, add 2 more
         if (emptyCount < 1) {
           setValues([...newValues, '', '']);
         } else {
