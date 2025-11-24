@@ -242,7 +242,7 @@ export function SettingsDialog() {
                 )}
                 {/* Add more tabs here as needed */}
               </TabsList>
-              {!isOnPaidPlan && hasTeamData && activeTeamUuid && (
+              {!isOnPaidPlan && hasTeamData && activeTeamUuid ? (
                 <div className="mt-auto px-4 pb-3">
                   <div className="flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
                     <div className="flex gap-2">
@@ -267,6 +267,8 @@ export function SettingsDialog() {
                     </Button>
                   </div>
                 </div>
+              ) : (
+                <div className="mt-auto" />
               )}
               <div className="border-t border-border px-4 py-3">
                 <div className="space-y-1">

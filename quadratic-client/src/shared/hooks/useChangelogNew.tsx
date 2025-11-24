@@ -1,10 +1,7 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import changelogData from '@/shared/constants/changelog.json';
+import { VERSION } from '@/shared/constants/appConstants';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
-import { useRevalidator } from 'react-router';
-import { useMatches } from 'react-router';
-
-const CHANGELOG_ENTRIES = changelogData as Array<{ version: string }>;
+import { useMatches, useRevalidator } from 'react-router';
 
 type RouteDataWithClientDataKv =
   | {
@@ -16,6 +13,7 @@ type RouteDataWithClientDataKv =
 /**
  * Hook to check if there's a new changelog entry the user hasn't seen
  * Uses the user's clientDataKv from the route loader
+ * Compares against the actual app VERSION instead of changelog.json
  * @returns { hasNewChangelog, markAsSeen } - hasNewChangelog is true if there's a new version, markAsSeen updates the server
  */
 export function useChangelogNew() {
@@ -35,25 +33,27 @@ export function useChangelogNew() {
     fileRouteData?.userMakingRequest?.clientDataKv?.lastSeenChangelogVersion ??
     dashboardRouteData?.userMakingRequest?.clientDataKv?.lastSeenChangelogVersion;
 
-  const latestVersion = CHANGELOG_ENTRIES.length > 0 ? CHANGELOG_ENTRIES[0].version : null;
+  // Use the actual app VERSION instead of changelog.json
+  const currentVersion = VERSION;
 
-  // Show as new for authenticated users if there's a latest version and either:
+  // Show as new for authenticated users if there's a current version and either:
   // 1. No last seen version (null/undefined/empty string)
-  // 2. Last seen version doesn't match latest version
+  // 2. Last seen version doesn't match current version
   const hasNewChangelog =
     isAuthenticated &&
-    latestVersion !== null &&
+    currentVersion !== null &&
+    currentVersion !== undefined &&
     (!lastSeenVersion ||
       (typeof lastSeenVersion === 'string' && lastSeenVersion.trim() === '') ||
-      latestVersion !== lastSeenVersion);
+      currentVersion !== lastSeenVersion);
 
   const markAsSeen = async () => {
-    if (!latestVersion || !isAuthenticated) return;
+    if (!currentVersion || !isAuthenticated) return;
 
     try {
       const { apiClient } = await import('@/shared/api/apiClient');
       await apiClient.user.clientDataKv.update({
-        lastSeenChangelogVersion: latestVersion,
+        lastSeenChangelogVersion: currentVersion,
       });
 
       // Revalidate route loaders to sync with server
