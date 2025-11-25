@@ -56,11 +56,11 @@ export function SettingsDialog() {
   const [open, setOpen] = useAtom(settingsDialogAtom);
   const [activeTab, setActiveTab] = useState('general');
   const [shouldAnimateBadge, setShouldAnimateBadge] = useState(false);
-  const [hideChangelogDot, setHideChangelogDot] = useState(false);
+  const [hideChangelogBadge, setHideChangelogBadge] = useState(false);
   const { teamData } = useTeamData();
   const { debugFlags } = useDebugFlags();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const { hasNewChangelog, markAsSeen } = useChangelogNew();
+  const { hasNewChangelog } = useChangelogNew();
   const hasTeamData = teamData !== null;
   const hasDebugAvailable = debugFlags.debugAvailable;
 
@@ -76,19 +76,19 @@ export function SettingsDialog() {
   const [changelogDialogOpen] = useAtom(changelogDialogAtom);
 
   // Show the NEW badge if there's a new changelog and we haven't explicitly hidden it
-  const showNewBadge = hasNewChangelog && !hideChangelogDot;
+  const showNewBadge = hasNewChangelog && !hideChangelogBadge;
 
   // Hide badge when changelog dialog opens (changelog is being viewed)
   useEffect(() => {
     if (changelogDialogOpen) {
-      setHideChangelogDot(true);
+      setHideChangelogBadge(true);
     }
   }, [changelogDialogOpen]);
 
   // Reset hide state when dialog closes
   useEffect(() => {
     if (!open) {
-      setHideChangelogDot(false);
+      setHideChangelogBadge(false);
     }
   }, [open]);
 
@@ -119,12 +119,6 @@ export function SettingsDialog() {
         team_uuid: activeTeamUuid,
         final_tab: activeTab,
       });
-
-      // Mark changelog as seen when settings closes
-      if (hasNewChangelog) {
-        markAsSeen();
-      }
-
       setTimeout(() => {
         focusGrid();
       });

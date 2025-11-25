@@ -36,16 +36,8 @@ type FileData = ApiTypes['/v0/files/:uuid.GET.response'] & {
   activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const shouldRevalidate = ({
-  currentParams,
-  nextParams,
-  defaultShouldRevalidate,
-}: ShouldRevalidateFunctionArgs) => {
-  // Always revalidate if explicitly requested (e.g., when updating user settings)
-  if (defaultShouldRevalidate) return true;
-  // Otherwise, only revalidate if the file UUID changed
-  return currentParams.uuid !== nextParams.uuid;
-};
+export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
+  currentParams.uuid !== nextParams.uuid;
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   startupTimer.start('file.loader');

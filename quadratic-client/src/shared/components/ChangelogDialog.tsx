@@ -26,11 +26,12 @@
  */
 import { changelogDialogAtom } from '@/shared/atom/changelogDialogAtom';
 import changelogData from '@/shared/constants/changelog.json';
+import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
 import { useAtom } from 'jotai';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ChangelogEntry {
   version: string;
@@ -51,8 +52,16 @@ export function ChangelogDialog() {
   const [selectedVersion, setSelectedVersion] = useState<string | null>(
     CHANGELOG_ENTRIES.length > 0 ? CHANGELOG_ENTRIES[0].version : null
   );
+  const { markAsSeen } = useChangelogNew();
 
   const selectedEntry = CHANGELOG_ENTRIES.find((entry) => entry.version === selectedVersion) || CHANGELOG_ENTRIES[0];
+
+  // Mark changelog as seen when dialog opens
+  useEffect(() => {
+    if (open) {
+      markAsSeen();
+    }
+  }, [open, markAsSeen]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

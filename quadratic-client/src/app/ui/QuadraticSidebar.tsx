@@ -13,16 +13,14 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { settingsDialogAtom, showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SettingsIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
-import { useChangelogNew } from '@/shared/hooks/useChangelogNew';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useAtom } from 'jotai';
 import React from 'react';
 import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -39,8 +37,6 @@ export const QuadraticSidebar = () => {
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
   const { isAuthenticated } = useRootRouteLoaderData();
-  const { hasNewChangelog } = useChangelogNew();
-  const [settingsOpen] = useAtom(settingsDialogAtom);
 
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
@@ -108,9 +104,6 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label="Settings">
           <SidebarToggle pressed={false} onPressedChange={() => showSettingsDialog()} disabled={!isAuthenticated}>
             <SettingsIcon />
-            {hasNewChangelog && !settingsOpen && (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
-            )}
           </SidebarToggle>
         </SidebarTooltip>
       </div>

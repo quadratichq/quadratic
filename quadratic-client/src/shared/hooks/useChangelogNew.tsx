@@ -1,7 +1,8 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { VERSION } from '@/shared/constants/appConstants';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
-import { useMatches, useRevalidator } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useMatches } from 'react-router';
 
 type RouteDataWithClientDataKv =
   | {
@@ -12,14 +13,16 @@ type RouteDataWithClientDataKv =
 
 /**
  * Hook to check if there's a new changelog entry the user hasn't seen
- * Uses the user's clientDataKv from the route loader
+ * Uses the user's clientDataKv from the route loader with optimistic updates
  * Compares against the actual app VERSION instead of changelog.json
  * @returns { hasNewChangelog, markAsSeen } - hasNewChangelog is true if there's a new version, markAsSeen updates the server
  */
 export function useChangelogNew() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const revalidator = useRevalidator();
   const matches = useMatches();
+
+  // Optimistic state - when user marks as seen, immediately reflect in UI
+  const [optimisticMarkedAsSeen, setOptimisticMarkedAsSeen] = useState(false);
 
   // Get clientDataKv from route loaders using useMatches to safely access data
   const fileMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.FILE);
@@ -36,10 +39,19 @@ export function useChangelogNew() {
   // Use the actual app VERSION instead of changelog.json
   const currentVersion = VERSION;
 
+  // Reset optimistic state when the route data catches up
+  useEffect(() => {
+    if (lastSeenVersion === currentVersion) {
+      setOptimisticMarkedAsSeen(false);
+    }
+  }, [lastSeenVersion, currentVersion]);
+
   // Show as new for authenticated users if there's a current version and either:
   // 1. No last seen version (null/undefined/empty string)
   // 2. Last seen version doesn't match current version
+  // But hide if user has optimistically marked as seen
   const hasNewChangelog =
+    !optimisticMarkedAsSeen &&
     isAuthenticated &&
     currentVersion !== null &&
     currentVersion !== undefined &&
@@ -50,16 +62,18 @@ export function useChangelogNew() {
   const markAsSeen = async () => {
     if (!currentVersion || !isAuthenticated) return;
 
+    // Optimistically mark as seen immediately
+    setOptimisticMarkedAsSeen(true);
+
     try {
       const { apiClient } = await import('@/shared/api/apiClient');
       await apiClient.user.clientDataKv.update({
         lastSeenChangelogVersion: currentVersion,
       });
-
-      // Revalidate route loaders to sync with server
-      revalidator.revalidate();
     } catch (error) {
       console.warn('Failed to update changelog version:', error);
+      // Revert optimistic update on error
+      setOptimisticMarkedAsSeen(false);
     }
   };
 
