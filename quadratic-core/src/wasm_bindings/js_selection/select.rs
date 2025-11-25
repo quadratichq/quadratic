@@ -71,7 +71,6 @@ impl JsSelection {
         self.selection.keyboard_select_to(
             x as i64,
             y as i64,
-            &mut self.end_pos,
             context.get_context(),
             merge_cells.get_merge_cells(),
         );
@@ -546,7 +545,6 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "moveTo")]
     pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
         self.selection.move_to(x as i64, y as i64, append);
-        self.end_pos = Pos::new(x as i64, y as i64);
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
