@@ -27,7 +27,6 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
-import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -202,28 +201,15 @@ function MenubarColorPickerSubMenu({
   const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
-  const iconNode =
-    Icon && action === Action.FormatFillColor ? (
-      <div className="relative flex items-center justify-center">
-        <Icon />
-        {activeColor && (
-          <div
-            className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
-            style={{ backgroundColor: activeColor }}
-          />
-        )}
-      </div>
-    ) : Icon && action === Action.FormatTextColor ? (
-      <Icon
-        style={
-          activeColor
-            ? ({ underlineColor: activeColor } as React.CSSProperties & { underlineColor?: string })
-            : undefined
-        }
-      />
-    ) : Icon ? (
+  const iconNode = Icon ? (
+    <div className="relative flex items-center justify-center">
       <Icon />
-    ) : null;
+      <div
+        className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+        style={{ backgroundColor: activeColor ?? 'currentColor' }}
+      />
+    </div>
+  ) : null;
 
   return (
     <MenubarSub>

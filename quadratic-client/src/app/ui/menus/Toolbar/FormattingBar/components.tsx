@@ -217,28 +217,15 @@ export const FormatColorPickerButton = memo(
     const label = actionSpec.label();
     const Icon = actionSpec.Icon;
 
-    const iconNode =
-      Icon && action === Action.FormatFillColor ? (
-        <div className="relative flex items-center justify-center">
-          <Icon />
-          {activeColor && (
-            <div
-              className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
-              style={{ backgroundColor: activeColor }}
-            />
-          )}
-        </div>
-      ) : Icon && action === Action.FormatTextColor ? (
-        <Icon
-          style={
-            activeColor
-              ? ({ underlineColor: activeColor } as React.CSSProperties & { underlineColor?: string })
-              : undefined
-          }
+    const iconNode = Icon ? (
+      <div className="relative flex items-center justify-center">
+        <Icon />
+        <div
+          className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+          style={{ backgroundColor: activeColor ?? 'currentColor' }}
         />
-      ) : Icon ? (
-        <Icon style={activeColor ? { color: activeColor } : undefined} />
-      ) : null;
+      </div>
+    ) : null;
 
     return (
       <FormatButtonDropdown
