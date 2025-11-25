@@ -614,7 +614,7 @@ export const Component = () => {
         <main className="flex flex-1 items-center justify-center p-6">
           <div
             className={cn(
-              'flex h-96 w-full max-w-2xl flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all',
+              'flex h-[450px] w-full max-w-3xl flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all',
               dragOver ? 'border-primary bg-primary/5' : 'border-border bg-background/50'
             )}
             onDrop={(e) => handleDrop(e, FILE_TYPES)}
@@ -648,7 +648,7 @@ export const Component = () => {
         <main className="flex flex-1 items-center justify-center p-6">
           <div
             className={cn(
-              'flex h-96 w-full max-w-2xl flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all',
+              'flex h-[450px] w-full max-w-3xl flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all',
               dragOver ? 'border-primary bg-primary/5' : 'border-border bg-background/50'
             )}
             onDrop={(e) => handleDrop(e, PDF_TYPES)}
@@ -847,43 +847,48 @@ export const Component = () => {
         <ChevronLeftIcon className="h-5 w-5" />
       </button>
 
-      <main className="flex flex-1 flex-col items-center justify-center overflow-auto p-6">
+      <main className="flex flex-1 justify-center overflow-auto p-6 pt-16">
         <div className="w-full max-w-2xl">
-          <div className="mb-8 text-center">
-            <h1 className="mb-3 text-3xl font-bold">Describe Your Spreadsheet</h1>
+          <div className="mb-6 text-center">
+            <h1 className="mb-2 text-3xl font-bold">Describe Your Spreadsheet</h1>
             <p className="text-base text-muted-foreground">Tell us what you want to create</p>
           </div>
 
-          {(uploadedFiles.length > 0 || selectedConnection) && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {uploadedFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm">
-                  <FileIcon size="sm" />
-                  <span className="max-w-32 truncate">{file.name}</span>
-                  <button
-                    onClick={() => handleRemoveFile(index)}
-                    className="ml-1 text-muted-foreground hover:text-foreground"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {selectedConnection && (
-                <div className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm">
-                  <LanguageIcon language={selectedConnection.type} />
-                  <span className="max-w-32 truncate">{selectedConnection.name}</span>
-                  <button
-                    onClick={() => setSelectedConnection(null)}
-                    className="ml-1 text-muted-foreground hover:text-foreground"
-                  >
-                    ×
-                  </button>
-                </div>
+          {/* Suggestions - above the chat */}
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {uploadedFiles.length > 0 || selectedConnection
+                  ? 'Suggestions based on your data'
+                  : 'Popular templates'}
+              </h3>
+              {isLoadingSuggestions && (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               )}
             </div>
-          )}
+            <div className="grid gap-3 md:grid-cols-3">
+              {isLoadingSuggestions
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
+                      <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+                      <div className="h-3 w-full rounded bg-muted" />
+                    </div>
+                  ))
+                : suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                      onClick={() => handleSubmitPrompt(suggestion.prompt)}
+                    >
+                      <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">{suggestion.title}</h3>
+                      <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                    </button>
+                  ))}
+            </div>
+          </div>
 
-          <div className="mb-6 rounded-xl border border-border bg-background shadow-lg">
+          {/* Chat box */}
+          <div className="rounded-xl border border-border bg-background shadow-lg">
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -891,6 +896,38 @@ export const Component = () => {
               placeholder="Describe what spreadsheet you want to create..."
               className="min-h-32 resize-none rounded-t-xl border-0 p-4 text-base shadow-none focus-visible:ring-0"
             />
+
+            {/* File attachments - inside the chat box */}
+            {(uploadedFiles.length > 0 || selectedConnection) && (
+              <div className="flex flex-wrap gap-2 border-t border-border px-4 py-2">
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm">
+                    <FileIcon size="sm" />
+                    <span className="max-w-32 truncate">{file.name}</span>
+                    <button
+                      onClick={() => handleRemoveFile(index)}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {selectedConnection && (
+                  <div className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm">
+                    <LanguageIcon language={selectedConnection.type} />
+                    <span className="max-w-32 truncate">{selectedConnection.name}</span>
+                    <button
+                      onClick={() => setSelectedConnection(null)}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Actions footer */}
             <div className="flex items-center justify-between border-t border-border px-4 py-3">
               <div className="flex items-center gap-2">
                 <DropdownMenu>
@@ -946,38 +983,6 @@ export const Component = () => {
                 <ArrowRightIcon className="h-4 w-4" />
                 Generate Plan
               </Button>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {uploadedFiles.length > 0 || selectedConnection
-                  ? 'Suggestions based on your data'
-                  : 'Popular templates'}
-              </h3>
-              {isLoadingSuggestions && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              )}
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              {isLoadingSuggestions
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse rounded-lg border border-border bg-background p-4">
-                      <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
-                      <div className="h-3 w-full rounded bg-muted" />
-                    </div>
-                  ))
-                : suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      className="group rounded-lg border border-border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-md"
-                      onClick={() => handleSubmitPrompt(suggestion.prompt)}
-                    >
-                      <h3 className="mb-1 text-sm font-semibold group-hover:text-primary">{suggestion.title}</h3>
-                      <p className="text-xs text-muted-foreground">{suggestion.description}</p>
-                    </button>
-                  ))}
             </div>
           </div>
         </div>
