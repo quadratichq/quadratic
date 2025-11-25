@@ -1,4 +1,5 @@
-import { uploadFile } from '@/app/helpers/files';
+import { aiChatFilesDirect } from '@/app/ai/aiChatFilesDirect';
+import { getExtension, uploadFile } from '@/app/helpers/files';
 import { authClient, requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { AttachFileIcon, DatabaseIcon, FileIcon, PDFIcon, SearchIcon, StarShineIcon } from '@/shared/components/Icons';
@@ -53,7 +54,7 @@ interface SuggestedPrompt {
   prompt: string;
 }
 
-const FILE_TYPES = ['.csv', '.xlsx', '.parquet'];
+const FILE_TYPES = ['.csv', '.xlsx', '.xls', '.parquet', '.parq', '.pqt'];
 const PDF_TYPES = ['.pdf'];
 
 const DEFAULT_SUGGESTIONS: SuggestedPrompt[] = [
@@ -240,43 +241,48 @@ export const Component = () => {
   };
 
   const handleFileUpload = async (fileTypes: string[]) => {
-    const files = await uploadFile(fileTypes);
-    if (files.length > 0) {
-      const newFiles: UploadedFile[] = [];
-      for (const file of files) {
-        const data = await file.arrayBuffer();
-        newFiles.push({
-          name: file.name,
-          size: file.size,
-          data,
-          type: file.type,
-        });
+    try {
+      const files = await uploadFile(fileTypes);
+      if (files.length > 0) {
+        const newFiles: UploadedFile[] = await Promise.all(
+          files.map(async (file) => ({
+            name: file.name,
+            size: file.size,
+            data: await file.arrayBuffer(),
+            type: file.type,
+          }))
+        );
+        setUploadedFiles((prev) => [...prev, ...newFiles]);
+        setView('outline');
       }
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-      setView('outline');
+    } catch (error) {
+      console.error('Error uploading files:', error);
     }
   };
 
   const handleDrop = async (e: DragEvent<HTMLDivElement>, acceptedTypes: string[]) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files).filter((file) => {
-      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-      return acceptedTypes.includes(ext);
+    const droppedFiles = e.dataTransfer?.files;
+    if (!droppedFiles) return;
+
+    // Filter files by extension or mime type
+    const supportedFiles = Array.from(droppedFiles).filter((file) => {
+      const ext = `.${getExtension(file.name).toLowerCase()}`;
+      return file.type.startsWith('image/') || acceptedTypes.includes(ext) || acceptedTypes.includes(file.type);
     });
 
-    if (files.length > 0) {
-      const newFiles: UploadedFile[] = [];
-      for (const file of files) {
-        const data = await file.arrayBuffer();
-        newFiles.push({
+    if (supportedFiles.length > 0) {
+      const newFiles: UploadedFile[] = await Promise.all(
+        supportedFiles.map(async (file) => ({
           name: file.name,
           size: file.size,
-          data,
+          data: await file.arrayBuffer(),
           type: file.type,
-        });
-      }
+        }))
+      );
       setUploadedFiles((prev) => [...prev, ...newFiles]);
       setView('outline');
     }
@@ -438,13 +444,29 @@ export const Component = () => {
     [generatePlan]
   );
 
-  const handleExecutePlan = () => {
+  const handleExecutePlan = async () => {
     if (!generatedPlan.trim()) return;
+
+    // Save files to IndexedDB so they can be picked up by the spreadsheet
+    let chatId: string | undefined;
+    if (uploadedFiles.length > 0) {
+      chatId = crypto.randomUUID();
+      await aiChatFilesDirect.saveFiles(
+        chatId,
+        uploadedFiles.map((f) => ({
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          data: f.data,
+        }))
+      );
+    }
 
     navigate(
       ROUTES.CREATE_FILE(teamUuid, {
         prompt: generatedPlan,
         private: true,
+        chatId,
       })
     );
   };
