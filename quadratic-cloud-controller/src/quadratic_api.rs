@@ -137,3 +137,171 @@ pub(crate) async fn insert_failed_logs(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::new_state;
+    use chrono::Utc;
+    use httpmock::prelude::*;
+    use serial_test::serial;
+
+    fn mock_log_response(run_id: Uuid, status: &str, error: Option<&str>) -> serde_json::Value {
+        serde_json::json!({
+            "id": 1,
+            "scheduledTaskId": 1,
+            "runId": run_id,
+            "status": status,
+            "error": error,
+            "createdDate": Utc::now().to_rfc3339()
+        })
+    }
+
+    fn mock_server() -> MockServer {
+        let server = MockServer::start();
+
+        unsafe {
+            std::env::set_var("QUADRATIC_API_URI", server.base_url());
+        }
+
+        server
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_file_init_data() {
+        let server = mock_server();
+        let file_id = Uuid::new_v4();
+
+        let mock = server.mock(|when, then| {
+            when.method(GET)
+                .path(format!("/v0/internal/file/{}/init-data", file_id));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(serde_json::json!({
+                    "teamId": "00000000-0000-0000-0000-000000000000",
+                    "sequenceNumber": 0,
+                    "presignedUrl": "https://example.com/file.grid",
+                    "timezone": "UTC"
+                }));
+        });
+        let state = new_state().await;
+        let result = file_init_data(&state, file_id).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+        let data = result.unwrap();
+        assert_eq!(data.sequence_number, 0);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_scheduled_tasks() {
+        let server = mock_server();
+        let mock = server.mock(|when, then| {
+            when.method(GET).path("/v0/internal/scheduled-tasks");
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(serde_json::json!([]));
+        });
+        let state = new_state().await;
+        let result = scheduled_tasks(&state).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insert_pending_logs() {
+        let server = mock_server();
+        let run_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path(format!("/v0/internal/scheduled-tasks/{}/log", task_id));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(run_id, "PENDING", None));
+        });
+        let state = new_state().await;
+        let ids = vec![(run_id, task_id)];
+        let result = insert_pending_logs(&state, ids).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insert_running_log() {
+        let server = mock_server();
+        let run_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path(format!("/v0/internal/scheduled-tasks/{}/log", task_id));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(run_id, "RUNNING", None));
+        });
+        let state = new_state().await;
+        let tasks = vec![(run_id, task_id)];
+        let result = insert_running_log(&state, tasks).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insert_completed_logs() {
+        let server = mock_server();
+        let run_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path(format!("/v0/internal/scheduled-tasks/{}/log", task_id));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(run_id, "COMPLETED", None));
+        });
+        let state = new_state().await;
+        let tasks = vec![("worker-1".to_string(), run_id, task_id)];
+        let result = insert_completed_logs(&state, tasks).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insert_failed_logs() {
+        let server = mock_server();
+        let run_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path(format!("/v0/internal/scheduled-tasks/{}/log", task_id));
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(mock_log_response(run_id, "FAILED", Some("test error")));
+        });
+        let state = new_state().await;
+        let tasks = vec![(
+            "worker-1".to_string(),
+            run_id,
+            task_id,
+            "test error".to_string(),
+        )];
+        let result = insert_failed_logs(&state, tasks).await;
+
+        mock.assert();
+        assert!(result.is_ok());
+    }
+}

@@ -16,9 +16,9 @@ use crate::{
     config::Config,
     controller_docker::IMAGE_NAME,
     error::{ControllerError, Result},
-    handle::{ack_tasks_for_worker, get_tasks_for_worker, shutdown_worker},
+    handle::{ack_tasks_for_worker, get_tasks_for_worker, jwks, shutdown_worker},
     health::{full_healthcheck, healthcheck},
-    state::{State, jwt::handle_jwks},
+    state::State,
 };
 
 const MAX_BACKOFF_SECONDS: u64 = 60;
@@ -54,7 +54,7 @@ pub(crate) fn public_app(state: Arc<State>) -> Router {
 
     Router::new()
         // JWKS for worker jwt validation
-        .route("/.well-known/jwks.json", get(handle_jwks))
+        .route("/.well-known/jwks.json", get(jwks))
         //
         // healthcheck
         .route("/health", get(healthcheck))

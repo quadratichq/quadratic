@@ -14,10 +14,10 @@ pub(crate) struct Settings {
     pub(crate) worker_internal_host: String,
     pub(crate) multiplayer_host: String,
     pub(crate) multiplayer_port: String,
-    pub(crate) connection_host: String,
-    pub(crate) connection_port: String,
     pub(crate) files_host: String,
     pub(crate) files_port: String,
+    pub(crate) connection_host: String,
+    pub(crate) connection_port: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) _jwt_encoding_key: EncodingKey,
@@ -106,6 +106,7 @@ impl Settings {
         Ok(url)
     }
 
+    // Get the URL for the controller
     pub(crate) fn controller_url(&self) -> String {
         let controller_port = self.worker_only_port.to_string();
         let controller_host = self.worker_internal_host.to_string();
@@ -120,6 +121,7 @@ impl Settings {
         format!("ws://{multiplayer_host}:{multiplayer_port}/ws")
     }
 
+    // Get the URL for the connection
     pub(crate) fn connection_url(&self) -> String {
         let connection_port = self.connection_port.to_string();
         let connection_host = self.connection_host.to_string();

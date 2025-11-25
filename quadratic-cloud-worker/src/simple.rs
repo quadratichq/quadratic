@@ -66,6 +66,7 @@ async fn main() -> Result<()> {
 
                             // Always attempt to leave the room, even if there were errors
                             let leave_result = worker.leave_room().await;
+
                             if let Err(e) = &leave_result {
                                 tracing::error!("Error leaving room for file {file_id}, error: {e}");
                             }

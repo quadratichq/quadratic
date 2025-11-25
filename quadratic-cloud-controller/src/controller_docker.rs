@@ -34,6 +34,13 @@ impl Controller {
         Ok(Self { state, image_name })
     }
 
+    /// Create a new controller with a specific image name (for testing)
+    #[cfg(test)]
+    pub(crate) fn new_with_image_name(state: Arc<State>, image_name: String) -> Self {
+        Self { state, image_name }
+    }
+
+    /// Create workers for the given file IDs
     pub(crate) async fn create_workers(&self, file_ids: HashSet<Uuid>) -> Result<()> {
         let total_file_count = file_ids.len();
         trace!("{} files need to be processed", total_file_count);
@@ -44,15 +51,7 @@ impl Controller {
         }
 
         // Get current active worker count
-        let active_worker_count = self
-            .state
-            .client
-            .lock()
-            .await
-            .list_ids(true)
-            .await
-            .map_err(|e| Self::error("create_workers", e))?
-            .len();
+        let active_worker_count = self.get_all_active_worker_file_ids().await?.len();
         let available_slots = MAX_CONCURRENT_WORKERS.saturating_sub(active_worker_count);
 
         if available_slots == 0 {
@@ -63,54 +62,17 @@ impl Controller {
             return Ok(());
         }
 
-        // Filter file IDs to only include those that have tasks in PubSub
-        // This prevents us from reserving worker slots for files with no tasks
-        info!("Checking which files have pending tasks in PubSub");
-        let file_checks = file_ids.iter().map(|file_id| async {
-            let has_tasks = self.state.file_has_tasks(*file_id).await.unwrap_or(false);
-            (*file_id, has_tasks)
-        });
-        let check_results = join_all(file_checks).await;
-
-        let files_with_tasks: Vec<_> = check_results
-            .into_iter()
-            .filter_map(|(file_id, has_tasks)| if has_tasks { Some(file_id) } else { None })
-            .collect();
-
-        let files_with_tasks_count = files_with_tasks.len();
-        let files_without_tasks_count = total_file_count - files_with_tasks_count;
-
-        if files_without_tasks_count > 0 {
-            info!(
-                "{} file(s) have no pending tasks, skipping worker creation for them",
-                files_without_tasks_count
-            );
-        }
-
-        if files_with_tasks.is_empty() {
-            info!("No files with pending tasks to create workers for");
-            return Ok(());
-        }
-
         // Only create workers up to the available slots
-        let files_to_process: Vec<_> = files_with_tasks.into_iter().take(available_slots).collect();
+        let files_to_process: Vec<_> = file_ids.into_iter().take(available_slots).collect();
+        let files_waiting = total_file_count - files_to_process.len();
 
-        if files_to_process.len() < files_with_tasks_count {
-            info!(
-                "Limited to {} workers (max: {}, active: {}, waiting: {})",
-                files_to_process.len(),
-                MAX_CONCURRENT_WORKERS,
-                active_worker_count,
-                files_with_tasks_count - files_to_process.len()
-            );
-        } else {
-            info!(
-                "Creating {} workers (max: {}, active: {})",
-                files_to_process.len(),
-                MAX_CONCURRENT_WORKERS,
-                active_worker_count
-            );
-        }
+        info!(
+            "Creating {} workers (max: {}, active: {}, waiting: {})",
+            files_to_process.len(),
+            MAX_CONCURRENT_WORKERS,
+            active_worker_count,
+            files_waiting
+        );
 
         let workers = files_to_process
             .iter()
@@ -142,7 +104,7 @@ impl Controller {
             })
     }
 
-    async fn _get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
+    async fn get_all_active_worker_file_ids(&self) -> Result<HashSet<Uuid>> {
         let active_file_ids = self
             .state
             .client
@@ -210,6 +172,14 @@ impl Controller {
             .await
             .map_err(|e| ControllerError::GetTasksForWorker(e.to_string()))?;
 
+        if tasks.is_empty() {
+            trace!(
+                "No tasks found in PubSub for file {file_id} - tasks may have already been consumed or never published"
+            );
+
+            return Ok((vec![], vec![]));
+        }
+
         let total_bytes: usize = tasks.iter().map(|(_, task)| task.operations.len()).sum();
 
         info!(
@@ -217,12 +187,6 @@ impl Controller {
             tasks.len(),
             total_bytes
         );
-
-        if tasks.is_empty() {
-            info!(
-                "No tasks found in PubSub for file {file_id} - tasks may have already been consumed or never published"
-            );
-        }
 
         let ids = tasks
             .iter()
@@ -348,18 +312,32 @@ mod tests {
 
     use super::*;
 
+    /// Create a test controller that uses a lightweight test image instead of
+    /// the actual worker image. This allows tests to run in CI without building
+    /// the full worker image.
+    async fn new_test_controller(state: Arc<State>) -> Controller {
+        // Use alpine:latest as a test image since it's small and widely available
+        // The actual worker logic won't run, but we can test the controller logic
+        Controller::new_with_image_name(state, "alpine:latest".to_string())
+    }
+
     #[tokio::test]
     async fn test_create_worker() {
         let state = new_state().await;
-        let controller = Controller::new(state).await.unwrap();
+        let controller = new_test_controller(state).await;
         let file_id = Uuid::new_v4();
-        controller.create_worker(file_id).await.unwrap();
+        // This will succeed but won't actually process anything since there are no tasks
+        let result = controller.create_worker(file_id).await;
+        assert!(
+            result.is_ok(),
+            "Should handle file with no tasks gracefully"
+        );
     }
 
     #[tokio::test]
     async fn test_create_workers_respects_max_concurrent_limit() {
         let state = new_state().await;
-        let controller = Controller::new(state.clone()).await.unwrap();
+        let controller = new_test_controller(state.clone()).await;
 
         // Create a set of file IDs that exceeds MAX_CONCURRENT_WORKERS
         let num_files = MAX_CONCURRENT_WORKERS + 10;
@@ -403,7 +381,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_workers_with_empty_set() {
         let state = new_state().await;
-        let controller = Controller::new(state).await.unwrap();
+        let controller = new_test_controller(state).await;
 
         let file_ids: HashSet<Uuid> = HashSet::new();
         let result = controller.create_workers(file_ids).await;
@@ -414,7 +392,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_workers_logs_waiting_files() {
         let state = new_state().await;
-        let controller = Controller::new(state.clone()).await.unwrap();
+        let controller = new_test_controller(state.clone()).await;
 
         // Create exactly MAX_CONCURRENT_WORKERS + 5 files
         let num_files = MAX_CONCURRENT_WORKERS + 5;
@@ -481,7 +459,7 @@ mod tests {
         use quadratic_rust_shared::quadratic_api::TaskRun;
 
         let state = new_state().await;
-        let controller = Controller::new(state.clone()).await.unwrap();
+        let controller = new_test_controller(state.clone()).await;
 
         // Create 5 file IDs
         let file_ids: HashSet<Uuid> = (0..5).map(|_| Uuid::new_v4()).collect();
@@ -522,7 +500,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_workers_skips_all_when_no_tasks_exist() {
         let state = new_state().await;
-        let controller = Controller::new(state.clone()).await.unwrap();
+        let controller = new_test_controller(state.clone()).await;
 
         // Create file IDs but don't add any tasks to PubSub
         let file_ids: HashSet<Uuid> = (0..5).map(|_| Uuid::new_v4()).collect();
@@ -553,7 +531,7 @@ mod tests {
         use quadratic_rust_shared::quadratic_api::TaskRun;
 
         let state = new_state().await;
-        let controller = Controller::new(state.clone()).await.unwrap();
+        let controller = new_test_controller(state.clone()).await;
 
         // Create MAX_CONCURRENT_WORKERS + 5 files
         let num_files = MAX_CONCURRENT_WORKERS + 5;

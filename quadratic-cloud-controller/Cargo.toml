@@ -36,6 +36,10 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 url = { version = "2" }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
+[dev-dependencies]
+httpmock = "0.8"
+serial_test = "3.2"
+
 [features]
 default = ["docker"]
 docker = ["quadratic-rust-shared/docker"]

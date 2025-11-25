@@ -17,6 +17,7 @@ where
     Ok(s.trim_matches('"').into())
 }
 
+/// Deserialize tasks
 fn deserialize_tasks<'de, D>(
     deserializer: D,
 ) -> std::result::Result<Vec<(String, TaskRun)>, D::Error>
@@ -27,6 +28,7 @@ where
     decompress_and_decode_tasks(deserialized).map_err(serde::de::Error::custom)
 }
 
+/// Deserialize worker init data
 fn deserialize_worker_init_data<'de, D>(
     deserializer: D,
 ) -> std::result::Result<GetWorkerInitDataResponse, D::Error>

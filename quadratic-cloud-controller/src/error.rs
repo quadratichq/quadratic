@@ -2,7 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::clean_errors;
+use quadratic_rust_shared::{SharedError, clean_errors};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, ControllerError>;
@@ -47,6 +47,9 @@ pub(crate) enum ControllerError {
 
     #[error("Error starting server: {0}")]
     StartServer(String),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
@@ -95,5 +98,14 @@ impl From<uuid::Error> for ControllerError {
 impl From<serde_json::Error> for ControllerError {
     fn from(error: serde_json::Error) -> Self {
         ControllerError::Serialization(error.to_string())
+    }
+}
+
+impl From<SharedError> for ControllerError {
+    fn from(error: SharedError) -> Self {
+        match error {
+            SharedError::PubSub(error) => ControllerError::PubSub(error),
+            _ => ControllerError::Unknown(format!("Unknown SharedError: {error}")),
+        }
     }
 }

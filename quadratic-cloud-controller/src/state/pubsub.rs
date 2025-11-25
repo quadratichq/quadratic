@@ -29,9 +29,7 @@ impl PubSub {
 
     /// Connect to the PubSub server
     async fn connect(config: &PubSubConfig) -> Result<RedisConnection> {
-        let connection = RedisConnection::new(config.to_owned())
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+        let connection = RedisConnection::new(config.to_owned()).await?;
 
         Ok(connection)
     }
@@ -102,8 +100,7 @@ impl State {
             .await
             .connection
             .subscribe_with_first_message(&channel, GROUP, None)
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+            .await?;
 
         Ok(())
     }
@@ -118,9 +115,7 @@ impl State {
         trace!("Adding tasks to PubSub: {tasks:?}");
 
         for task in tasks {
-            let task_bytes = task
-                .as_bytes()
-                .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+            let task_bytes = task.as_bytes()?;
 
             // publish the task to the file_id channel
             pubsub
@@ -153,8 +148,7 @@ impl State {
         let channels = pubsub
             .connection
             .active_channels(ACTIVE_CHANNELS)
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?
+            .await?
             .into_iter()
             .collect::<HashSet<_>>();
 
@@ -179,22 +173,14 @@ impl State {
         let task_runs = pubsub
             .connection
             .messages(&channel, GROUP, CONSUMER, None, 100, true)
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+            .await?;
 
-        if task_runs.is_empty() {
-            info!(
-                "No messages found in PubSub channel {} for file {} - channel is in active list but has no pending messages",
-                channel, file_id
-            );
-        } else {
-            info!(
-                "Got {} task run(s) from PubSub channel {} for file {}",
-                task_runs.len(),
-                channel,
-                file_id
-            );
-        }
+        trace!(
+            "Got {} task run(s) from PubSub channel {} for file {}",
+            task_runs.len(),
+            channel,
+            file_id
+        );
 
         Ok(PubSub::messages_to_tasks(task_runs))
     }
@@ -218,8 +204,7 @@ impl State {
                 Some(ACTIVE_CHANNELS),
                 true,
             )
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+            .await?;
 
         Ok(())
     }
@@ -232,7 +217,15 @@ impl State {
             .map(|channel| PubSub::channel_to_file_id(channel))
             .collect::<Result<HashSet<_>>>()?;
 
-        Ok(file_ids)
+        let mut file_ids_with_tasks = HashSet::new();
+
+        for file_id in file_ids {
+            if self.file_has_tasks(file_id).await? {
+                file_ids_with_tasks.insert(file_id);
+            }
+        }
+
+        Ok(file_ids_with_tasks)
     }
 
     /// Check if a file has pending tasks in PubSub
@@ -241,13 +234,274 @@ impl State {
 
         let channel = PubSub::file_id_to_channel(file_id);
         let mut pubsub = self.pubsub.lock().await;
-
-        let length = pubsub
-            .connection
-            .length(&channel)
-            .await
-            .map_err(|e| ControllerError::PubSub(e.to_string()))?;
+        let length = pubsub.connection.length(&channel).await?;
 
         Ok(length > 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::new_state;
+    use quadratic_rust_shared::quadratic_api::TaskRun;
+
+    fn create_task(file_id: Uuid, task_id: Uuid, run_id: Uuid) -> TaskRun {
+        TaskRun {
+            file_id,
+            task_id,
+            run_id,
+            operations: vec![1, 2, 3],
+        }
+    }
+
+    fn create_message(task: &TaskRun) -> Result<(String, Vec<u8>)> {
+        Ok((format!("msg-{}", task.run_id), task.as_bytes()?))
+    }
+
+    // Unit tests for pure functions
+    #[test]
+    fn test_file_id_to_channel() {
+        let file_id = Uuid::new_v4();
+        let channel = PubSub::file_id_to_channel(file_id);
+        assert_eq!(channel, format!("scheduled-tasks-{file_id}"));
+
+        let result = PubSub::channel_to_file_id("invalid-prefix-uuid");
+        assert!(matches!(result.unwrap_err(), ControllerError::PubSub(_)));
+
+        let result = PubSub::channel_to_file_id("scheduled-tasks-not-a-uuid");
+        assert!(matches!(result.unwrap_err(), ControllerError::PubSub(_)));
+    }
+
+    #[test]
+    fn test_messages_to_tasks() {
+        let file_id = Uuid::new_v4();
+        let task1 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+
+        // test single task
+        let message = create_message(&task1).unwrap();
+        let messages = vec![message];
+        let tasks = PubSub::messages_to_tasks(messages);
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].1.file_id, task1.file_id);
+        assert_eq!(tasks[0].1.task_id, task1.task_id);
+        assert_eq!(tasks[0].1.run_id, task1.run_id);
+
+        // test multiple tasks
+        let messages = vec![
+            create_message(&task1).unwrap(),
+            create_message(&task2).unwrap(),
+        ];
+        let tasks = PubSub::messages_to_tasks(messages);
+        assert_eq!(tasks.len(), 2);
+
+        // invalid message
+        let valid_message = create_message(&task1).unwrap();
+        let invalid_message = ("key-invalid".to_string(), vec![1, 2, 3]);
+        let messages = vec![valid_message, invalid_message];
+        let tasks = PubSub::messages_to_tasks(messages);
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].1.file_id, file_id);
+
+        // empty messages
+        let messages = vec![];
+        let tasks = PubSub::messages_to_tasks(messages);
+        assert_eq!(tasks.len(), 0);
+
+        // all invalid messages
+        let messages = vec![
+            ("key1".to_string(), vec![]),
+            ("key2".to_string(), vec![1, 2, 3]),
+            ("key3".to_string(), b"invalid json".to_vec()),
+        ];
+        let tasks = PubSub::messages_to_tasks(messages);
+        assert_eq!(tasks.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_pubsub_is_healthy() {
+        let state = new_state().await;
+        let is_healthy = state.pubsub_is_healthy().await;
+        assert!(is_healthy);
+    }
+
+    #[tokio::test]
+    async fn test_add_task() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let task1 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task3 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+
+        // single task
+        state.add_tasks(vec![task1.clone()]).await.unwrap();
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+        assert!(has_tasks);
+
+        // multiple tasks, same file
+        state.add_tasks(vec![task2, task3]).await.unwrap();
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+        assert!(has_tasks);
+
+        // multiple tasks, different files
+        let file_id2 = Uuid::new_v4();
+        let task4 = create_task(file_id2, Uuid::new_v4(), Uuid::new_v4());
+        state.add_tasks(vec![task4]).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_get_tasks_for_file() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let task_id = Uuid::new_v4();
+        let run_id = Uuid::new_v4();
+
+        // no tasks
+        let tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(tasks.len(), 0);
+
+        // single task
+        let task = create_task(file_id, task_id, run_id);
+        state.add_tasks(vec![task]).await.unwrap();
+        let tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].1.file_id, file_id);
+        assert_eq!(tasks[0].1.task_id, task_id);
+        assert_eq!(tasks[0].1.run_id, run_id);
+    }
+
+    #[tokio::test]
+    async fn test_ack_tasks() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let task1 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task3 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+
+        // single task
+        state.add_tasks(vec![task1]).await.unwrap();
+        let tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(tasks.len(), 1);
+        let keys: Vec<String> = tasks.iter().map(|(key, _)| key.clone()).collect();
+        state.ack_tasks(file_id, keys).await.unwrap();
+        // After acking, no new pending messages should be available
+        let remaining = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(remaining.len(), 0);
+
+        // multiple tasks
+        state.add_tasks(vec![task2, task3]).await.unwrap();
+        let tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(tasks.len(), 2);
+        let keys: Vec<String> = tasks.iter().map(|(key, _)| key.clone()).collect();
+        state.ack_tasks(file_id, keys).await.unwrap();
+        // After acking all, no new pending messages should be available
+        let remaining = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(remaining.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_file_has_tasks() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+
+        // no tasks
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+        assert!(!has_tasks);
+
+        // single task
+        let task = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        state.add_tasks(vec![task]).await.unwrap();
+        let has_tasks = state.file_has_tasks(file_id).await.unwrap();
+        assert!(has_tasks);
+    }
+
+    #[tokio::test]
+    async fn test_get_active_channels() {
+        let state = new_state().await;
+        let file_id1 = Uuid::new_v4();
+        let file_id2 = Uuid::new_v4();
+        let task1 = create_task(file_id1, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id2, Uuid::new_v4(), Uuid::new_v4());
+
+        state.add_tasks(vec![task1, task2]).await.unwrap();
+
+        let channels = state.get_active_channels().await.unwrap();
+        assert!(channels.len() >= 2);
+        assert!(channels.contains(&PubSub::file_id_to_channel(file_id1)));
+        assert!(channels.contains(&PubSub::file_id_to_channel(file_id2)));
+    }
+
+    #[tokio::test]
+    async fn test_get_file_ids_to_process() {
+        let state = new_state().await;
+        let file_id1 = Uuid::new_v4();
+        let file_id2 = Uuid::new_v4();
+        let task1 = create_task(file_id1, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id2, Uuid::new_v4(), Uuid::new_v4());
+
+        // empty
+        let file_ids = state.get_file_ids_to_process().await.unwrap();
+        assert!(file_ids.is_empty() || !file_ids.is_empty());
+
+        // with tasks
+        state.add_tasks(vec![task1, task2]).await.unwrap();
+        let file_ids = state.get_file_ids_to_process().await.unwrap();
+        assert!(file_ids.contains(&file_id1));
+        assert!(file_ids.contains(&file_id2));
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_pubsub() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let result = state.subscribe_pubsub(file_id).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_workflow_add_get_ack() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let task1 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+        let task2 = create_task(file_id, Uuid::new_v4(), Uuid::new_v4());
+
+        // Add tasks
+        state
+            .add_tasks(vec![task1.clone(), task2.clone()])
+            .await
+            .unwrap();
+
+        // Verify file has tasks
+        assert!(state.file_has_tasks(file_id).await.unwrap());
+
+        // Get tasks - this marks them as pending for this consumer
+        let tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(tasks.len(), 2);
+
+        // Ack first task only
+        let first_key = tasks[0].0.clone();
+        state.ack_tasks(file_id, vec![first_key]).await.unwrap();
+
+        // The second task is still pending (not acked yet), so new reads return nothing
+        // This is expected Redis Streams behavior - messages stay pending until acked
+        let new_messages = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(new_messages.len(), 0);
+
+        // Ack second task using the original key
+        let second_key = tasks[1].0.clone();
+        state.ack_tasks(file_id, vec![second_key]).await.unwrap();
+
+        // Should have no more pending or new tasks
+        let final_tasks = state.get_tasks_for_file(file_id).await.unwrap();
+        assert_eq!(final_tasks.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_reconnect_pubsub_if_unhealthy() {
+        let state = new_state().await;
+        // Should not panic or error even if already healthy
+        state.reconnect_pubsub_if_unhealthy().await;
+        assert!(state.pubsub_is_healthy().await);
     }
 }

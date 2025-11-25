@@ -167,3 +167,23 @@ async fn print_container_logs(state: Arc<State>) -> Result<()> {
         interval.tick().await;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+
+    async fn create_test_state() -> Arc<State> {
+        let config = Config::new().expect("Failed to create config");
+        Arc::new(State::new(&config).await.expect("Failed to create state"))
+    }
+
+    #[tokio::test]
+    async fn test_init_background_workers() {
+        let state = create_test_state().await;
+        let result = init_background_workers(state);
+        assert!(result.is_ok());
+
+        sleep(Duration::from_millis(100)).await;
+    }
+}

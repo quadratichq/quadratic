@@ -4,7 +4,6 @@
 //! struct.  All access and mutations to state should be performed here.
 
 mod client;
-pub mod jwt;
 mod pubsub;
 mod settings;
 
