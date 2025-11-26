@@ -28,7 +28,7 @@ export const useAIModel = (): UseAIModelReturn => {
   const { debug } = useDebugFlags();
 
   const [modelTypeRaw, setModelTypeRaw] = useLocalStorage<MODEL_TYPE | 'max_plus'>(AI_MODEL_TYPE_KEY, 'auto');
-  
+
   // Migrate old model types: 'max' -> 'auto', 'max_plus' -> 'max'
   useEffect(() => {
     if (modelTypeRaw === 'max') {
@@ -64,7 +64,9 @@ export const useAIModel = (): UseAIModelReturn => {
   }, []);
 
   const autoModelKey: AIModelKey = useMemo(() => {
-    const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'auto');
+    const key = Object.keys(MODELS_CONFIGURATION).find(
+      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'auto'
+    );
     if (!key) throw new Error('Auto model not found');
     return key as AIModelKey;
   }, []);
