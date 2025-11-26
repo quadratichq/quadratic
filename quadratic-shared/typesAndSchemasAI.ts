@@ -151,6 +151,7 @@ const AzureOpenAIModelKeySchema = z.enum([
   'azure-openai:gpt-5-codex',
   'azure-openai:gpt-5',
   'azure-openai:gpt-5.1',
+  'azure-openai:gpt-5.1:others',
   'azure-openai:gpt-4.1',
   'azure-openai:gpt-4.1-mini',
   'azure-openai:o3',
