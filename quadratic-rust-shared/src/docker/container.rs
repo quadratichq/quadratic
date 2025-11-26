@@ -34,7 +34,7 @@ pub struct Container {
     pub(crate) id: Uuid,
     pub(crate) file_id: Uuid,
     pub(crate) ids: Vec<(Uuid, Uuid)>,
-    pub(crate) image_id: String,
+    pub(crate) container_id: String,
     pub(crate) image: String,
     pub(crate) state: ContainerState,
     pub(crate) timeout_seconds: i64,
@@ -47,12 +47,12 @@ impl Display for Container {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"Container(image: {}, id: {}, file_id: {}, ids: {:?}, image_id: {}, state: {}, timeout_seconds: {}, start_time: {}, cpu_usage: {}, memory_usage: {})"#,
+            r#"Container(image: {}, id: {}, file_id: {}, ids: {:?}, container_id: {}, state: {}, timeout_seconds: {}, start_time: {}, cpu_usage: {}, memory_usage: {})"#,
             self.image,
             self.id,
             self.file_id,
             self.ids,
-            self.image_id,
+            self.container_id,
             self.state,
             self.timeout_seconds,
             self.start_time,
@@ -111,7 +111,7 @@ impl Container {
             id,
             file_id,
             ids,
-            image_id: create_container.id,
+            container_id: create_container.id,
             image: image.to_string(),
             state: ContainerState::Stopped,
             timeout_seconds: timeout_seconds.unwrap_or(DEFAULT_TIMEOUT_SECONDS),
@@ -126,7 +126,7 @@ impl Container {
         let start_options = StartContainerOptions { detach_keys: None };
 
         docker
-            .start_container(&self.image_id, Some(start_options))
+            .start_container(&self.container_id, Some(start_options))
             .await
             .map_err(Self::error)?;
 
@@ -142,14 +142,25 @@ impl Container {
             ..Default::default()
         };
 
-        docker
-            .stop_container(&self.image_id, Some(options))
+        match docker
+            .stop_container(&self.container_id, Some(options))
             .await
-            .map_err(Self::error)?;
-
-        self.state = ContainerState::Stopped;
-
-        Ok(())
+        {
+            Ok(_) => {
+                self.state = ContainerState::Stopped;
+                Ok(())
+            }
+            Err(e) => {
+                // If container doesn't exist (404), it may have been auto-removed
+                // This is not an error in our case
+                if e.to_string().contains("404") || e.to_string().contains("No such container") {
+                    self.state = ContainerState::Stopped;
+                    Ok(())
+                } else {
+                    Err(Self::error(e))
+                }
+            }
+        }
     }
 
     /// Remove the container
@@ -159,14 +170,25 @@ impl Container {
             ..Default::default()
         };
 
-        docker
-            .remove_container(&self.image_id, Some(options))
+        match docker
+            .remove_container(&self.container_id, Some(options))
             .await
-            .map_err(Self::error)?;
-
-        self.state = ContainerState::Removed;
-
-        Ok(())
+        {
+            Ok(_) => {
+                self.state = ContainerState::Removed;
+                Ok(())
+            }
+            Err(e) => {
+                // If container doesn't exist (404), it may have been auto-removed
+                // This is not an error in our case
+                if e.to_string().contains("404") || e.to_string().contains("No such container") {
+                    self.state = ContainerState::Removed;
+                    Ok(())
+                } else {
+                    Err(Self::error(e))
+                }
+            }
+        }
     }
 
     /// Get the logs from the container
@@ -196,7 +218,7 @@ impl Container {
             tail: "0".to_string(),
             ..Default::default()
         };
-        let logs_stream = docker.logs(&self.image_id, Some(options));
+        let logs_stream = docker.logs(&self.container_id, Some(options));
 
         Ok(logs_stream)
     }
@@ -206,9 +228,9 @@ impl Container {
         self.state.clone()
     }
 
-    /// Get the image ID of the container
-    pub fn image_id(&self) -> &str {
-        &self.image_id
+    /// Get the container ID
+    pub fn container_id(&self) -> &str {
+        &self.container_id
     }
 
     /// Get the total runtime of the container in milliseconds
@@ -231,7 +253,7 @@ impl Container {
         docker: Docker,
     ) -> Result<bollard::models::ContainerInspectResponse> {
         docker
-            .inspect_container(&self.image_id, None::<InspectContainerOptions>)
+            .inspect_container(&self.container_id, None::<InspectContainerOptions>)
             .await
             .map_err(Self::error)
     }
@@ -257,7 +279,7 @@ impl Container {
             one_shot: true,
         };
 
-        let mut stats_stream = docker.stats(&self.image_id, Some(stats_options));
+        let mut stats_stream = docker.stats(&self.container_id, Some(stats_options));
 
         if let Some(stats_result) = stats_stream.next().await {
             let stats = stats_result.map_err(Self::error)?;

@@ -548,7 +548,7 @@ impl Worker {
             let mut sender_lock = sender.lock().await;
 
             // Send leave room message - log errors but don't fail
-            match leave_room(&mut *sender_lock, self.session_id, self.file_id).await {
+            match leave_room(&mut sender_lock, self.session_id, self.file_id).await {
                 Ok(_) => {
                     tracing::info!("✅ [Worker] Leave room message sent successfully");
                     // Give the server a moment to process the leave room message
@@ -615,18 +615,16 @@ impl Worker {
 impl Drop for Worker {
     fn drop(&mut self) {
         // Clean up any running tasks when the worker is dropped
-        if let Some(handle) = &self.heartbeat_handle {
-            if !handle.is_finished() {
+        if let Some(handle) = &self.heartbeat_handle
+            && !handle.is_finished() {
                 tracing::debug!("[Worker Drop] Aborting heartbeat task");
                 handle.abort();
             }
-        }
-        if let Some(handle) = &self.websocket_receiver_handle {
-            if !handle.is_finished() {
+        if let Some(handle) = &self.websocket_receiver_handle
+            && !handle.is_finished() {
                 tracing::debug!("[Worker Drop] Aborting receiver task");
                 handle.abort();
             }
-        }
     }
 }
 

@@ -15,7 +15,7 @@ use quadratic_core::{
 use uuid::Uuid;
 
 use crate::{
-    connection::run_connection,
+    connection::{ConnectionParams, run_connection},
     error::{CoreCloudError, Result},
     javascript::{JavaScriptTcpServer, run_javascript},
     python::execute::run_python,
@@ -167,17 +167,17 @@ pub async fn process_transaction(
                         ));
                     };
 
-                    run_connection(
-                        Arc::clone(&grid),
-                        &code_run.code,
-                        *kind,
-                        id,
-                        &transaction_id,
-                        &team_id,
-                        &token,
-                        &connection_url,
+                    run_connection(ConnectionParams {
+                        grid: Arc::clone(&grid),
+                        query: &code_run.code,
+                        connection_kind: *kind,
+                        connection_id: id,
+                        transaction_id: &transaction_id,
+                        team_id: &team_id,
+                        token: &token,
+                        connection_url: &connection_url,
                         sheet_id,
-                    )
+                    })
                     .await?;
                     tracing::info!("🔌 [Core] Connection execution dispatched to grid controller");
                 }

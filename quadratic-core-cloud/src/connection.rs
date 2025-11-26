@@ -12,6 +12,19 @@ use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
 
+/// Parameters for running a connection
+pub(crate) struct ConnectionParams<'a> {
+    pub grid: Arc<Mutex<GridController>>,
+    pub query: &'a str,
+    pub connection_kind: ConnectionKind,
+    pub connection_id: &'a str,
+    pub transaction_id: &'a str,
+    pub team_id: &'a str,
+    pub token: &'a str,
+    pub connection_url: &'a str,
+    pub sheet_id: SheetId,
+}
+
 /// Replace handlebars {{A1}} style references with actual cell values
 fn replace_handlebars(
     grid: &mut GridController,
@@ -90,17 +103,19 @@ fn get_cells_comma_delimited_string(sheet: &quadratic_core::grid::Sheet, rect: R
     response
 }
 
-pub(crate) async fn run_connection(
-    grid: Arc<Mutex<GridController>>,
-    query: &str,
-    connection_kind: ConnectionKind,
-    connection_id: &str,
-    transaction_id: &str,
-    team_id: &str,
-    token: &str,
-    connection_url: &str,
-    sheet_id: SheetId,
-) -> Result<()> {
+pub(crate) async fn run_connection(params: ConnectionParams<'_>) -> Result<()> {
+    let ConnectionParams {
+        grid,
+        query,
+        connection_kind,
+        connection_id,
+        transaction_id,
+        team_id,
+        token,
+        connection_url,
+        sheet_id,
+    } = params;
+
     let start_time = std::time::Instant::now();
     tracing::info!(
         "🔌 [Connection] Starting {} execution for transaction: {}",
@@ -111,7 +126,7 @@ pub(crate) async fn run_connection(
     // Replace handlebars with actual cell values
     let processed_query = {
         let mut grid_lock = grid.lock().await;
-        replace_handlebars(&mut *grid_lock, query, sheet_id)?
+        replace_handlebars(&mut grid_lock, query, sheet_id)?
     };
 
     if processed_query != query {

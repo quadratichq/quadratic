@@ -312,10 +312,10 @@ impl super::PubSub for RedisConnection {
             .xack::<&str, &str, String, u128>(channel, group, &ids)
             .await?;
 
-        // remove the channel from the active channels set ONLY if the channel is empty
+        // remove the channel from the active channels set ONLY if there are no pending messages
         if let Some(active_channel) = active_channel {
-            let len: usize = self.multiplex.xlen(channel).await?;
-            if len == 0 {
+            let has_pending = self.has_pending_messages(channel, group).await?;
+            if !has_pending {
                 self.remove_active_channel(active_channel, channel).await?
             }
         }
@@ -386,10 +386,10 @@ impl super::PubSub for RedisConnection {
             // Remove mapping
             let () = self.multiplex.hdel(&dedupe_key, key).await?;
 
-            // remove the channel from the active channels set
+            // remove the channel from the active channels set if no pending messages
             if let Some(active_channel) = active_channel {
-                let len: usize = self.multiplex.xlen(channel).await?;
-                if len == 0 {
+                let has_pending = self.has_pending_messages(channel, group).await?;
+                if !has_pending {
                     let () = self.multiplex.zrem(active_channel, channel).await?;
                 }
             }
@@ -543,6 +543,68 @@ impl super::PubSub for RedisConnection {
     async fn length(&mut self, channel: &str) -> Result<usize> {
         let length = self.multiplex.xlen(channel).await?;
         Ok(length)
+    }
+}
+
+// Private helper methods for RedisConnection
+impl RedisConnection {
+    /// Check if a channel has any messages (pending or unread)
+    /// This is used to determine if a channel should remain in the active channels set
+    async fn has_pending_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
+        // Use XINFO GROUPS to get information about the consumer group
+        // This includes pending count and lag (undelivered messages)
+        let info_cmd = cmd("XINFO").arg("GROUPS").arg(channel).to_owned();
+
+        let result: Value = self.multiplex.send_packed_command(&info_cmd).await?;
+
+        // XINFO GROUPS returns an array of groups, each group is an array of key-value pairs
+        // We need to find our group and check its "pending" and "lag" fields
+        match result {
+            Value::Array(groups) => {
+                for group_info in groups {
+                    if let Value::Array(fields) = group_info {
+                        let mut is_our_group = false;
+                        let mut pending_count = 0i64;
+                        let mut lag = 0i64;
+
+                        // Parse the key-value pairs
+                        let mut i = 0;
+                        while i < fields.len() {
+                            if let (Some(Value::BulkString(key)), Some(value)) =
+                                (fields.get(i), fields.get(i + 1))
+                            {
+                                match key.as_slice() {
+                                    b"name" => {
+                                        if let Value::BulkString(name) = value {
+                                            is_our_group = name.as_slice() == group.as_bytes();
+                                        }
+                                    }
+                                    b"pending" => {
+                                        if let Value::Int(count) = value {
+                                            pending_count = *count;
+                                        }
+                                    }
+                                    b"lag" => {
+                                        if let Value::Int(l) = value {
+                                            lag = *l;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            i += 2;
+                        }
+
+                        if is_our_group {
+                            // Channel has messages if there are pending messages or undelivered messages (lag)
+                            return Ok(pending_count > 0 || lag > 0);
+                        }
+                    }
+                }
+                Ok(false)
+            }
+            _ => Ok(false),
+        }
     }
 }
 

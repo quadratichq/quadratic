@@ -145,12 +145,12 @@ impl Cluster {
             .get(id)
             .ok_or(Self::error("Container not found"))?;
 
-        let image_id = container.lock().await.image_id().to_string();
+        let container_id = container.lock().await.container_id().to_string();
 
         let options = InspectContainerOptions { size: false };
         let inspect = self
             .docker
-            .inspect_container(&image_id, Some(options))
+            .inspect_container(&container_id, Some(options))
             .await
             .map_err(Self::error)?;
 
@@ -389,9 +389,9 @@ impl Cluster {
             .get(id)
             .ok_or(Self::error("Container not found"))?;
 
-        let image_id = {
+        let container_id = {
             let locked_container = container.lock().await;
-            locked_container.image_id().to_string()
+            locked_container.container_id().to_string()
         };
 
         let options = LogsOptions {
@@ -402,7 +402,7 @@ impl Cluster {
             ..Default::default()
         };
 
-        Ok(Box::pin(self.docker.logs(&image_id, Some(options))))
+        Ok(Box::pin(self.docker.logs(&container_id, Some(options))))
     }
 
     /// Error helper

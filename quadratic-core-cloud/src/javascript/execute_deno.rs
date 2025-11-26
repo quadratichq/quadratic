@@ -10,6 +10,10 @@ use tokio::task::JoinHandle;
 
 use crate::error::{CoreCloudError, Result};
 
+/// Type alias for the get_cells callback function
+type GetCellsCallback =
+    Arc<TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>>;
+
 // JS code
 static GLOBALS_JS: &str = include_str!("js_code/globals.js");
 static PROCESS_OUTPUT_JS: &str = include_str!("js_code/process_output.js");
@@ -510,12 +514,7 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
 }
 
 // TCP server to handle get_cells requests from Deno
-async fn handle_get_cells_server(
-    listener: TcpListener,
-    get_cells: Arc<
-        TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>,
-    >,
-) -> Result<()> {
+async fn handle_get_cells_server(listener: TcpListener, get_cells: GetCellsCallback) -> Result<()> {
     loop {
         match listener.accept().await {
             Ok((stream, addr)) => {
@@ -548,12 +547,7 @@ async fn handle_get_cells_server(
     Ok(())
 }
 
-async fn handle_connection(
-    mut stream: TcpStream,
-    get_cells: Arc<
-        TokioMutex<Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>>,
-    >,
-) -> Result<()> {
+async fn handle_connection(mut stream: TcpStream, get_cells: GetCellsCallback) -> Result<()> {
     // Set TCP_NODELAY to disable Nagle's algorithm for more predictable latency
     stream.set_nodelay(true).ok();
 
@@ -579,10 +573,10 @@ async fn handle_connection(
             break;
         }
 
-        if header.to_lowercase().starts_with("content-length:") {
-            if let Some(len_str) = header.split(':').nth(1) {
-                content_length = len_str.trim().parse().unwrap_or(0);
-            }
+        if header.to_lowercase().starts_with("content-length:")
+            && let Some(len_str) = header.split(':').nth(1)
+        {
+            content_length = len_str.trim().parse().unwrap_or(0);
         }
     }
 
