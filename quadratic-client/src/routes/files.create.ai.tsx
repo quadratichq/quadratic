@@ -122,6 +122,7 @@ export const Component = () => {
   const [showFloatingExecute, setShowFloatingExecute] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedPrompt[]>(DEFAULT_SUGGESTIONS);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   const planTextareaRef = useRef<HTMLTextAreaElement>(null);
   const executeButtonRef = useRef<HTMLButtonElement>(null);
@@ -466,7 +467,8 @@ export const Component = () => {
   );
 
   const handleExecutePlan = async () => {
-    if (!generatedPlan.trim()) return;
+    if (!generatedPlan.trim() || isExecuting) return;
+    setIsExecuting(true);
 
     // Save files to IndexedDB so they can be picked up by the spreadsheet
     let chatId: string | undefined;
@@ -854,7 +856,7 @@ export const Component = () => {
                 <Button
                   ref={executeButtonRef}
                   onClick={handleExecutePlan}
-                  disabled={!generatedPlan.trim() || isGeneratingPlan}
+                  disabled={!generatedPlan.trim() || isGeneratingPlan || isExecuting}
                   className="gap-2"
                 >
                   <ArrowRightIcon className="h-4 w-4" />
@@ -869,7 +871,7 @@ export const Component = () => {
           <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur-sm">
             <div className="mx-auto flex max-w-3xl items-center justify-between">
               <p className="text-sm text-muted-foreground">Ready to create your spreadsheet?</p>
-              <Button onClick={handleExecutePlan} className="gap-2">
+              <Button onClick={handleExecutePlan} disabled={isExecuting} className="gap-2">
                 <ArrowRightIcon className="h-4 w-4" />
                 Build Spreadsheet
               </Button>
