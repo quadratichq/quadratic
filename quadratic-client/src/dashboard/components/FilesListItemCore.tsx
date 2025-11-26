@@ -2,6 +2,7 @@ import type { FilesListUserFile } from '@/dashboard/components/FilesList';
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
@@ -16,6 +17,7 @@ export function FilesListItemCore({
   creator,
   hasNetworkError,
   isShared,
+  isPrivate,
   viewPreferences,
   actions,
 }: {
@@ -28,6 +30,7 @@ export function FilesListItemCore({
   creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
   isShared?: boolean;
+  isPrivate?: boolean;
   actions?: ReactNode;
 }) {
   const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
@@ -45,7 +48,12 @@ export function FilesListItemCore({
           {hasNetworkError ? (
             <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
           ) : (
-            <p className={`${TYPE.caption}`}>
+            <p className={`${TYPE.caption} flex flex-wrap items-center gap-1`}>
+              {isPrivate !== undefined && (
+                <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
+                  {isPrivate ? 'Private' : 'Team'}
+                </Badge>
+              )}
               {isShared && (
                 <span className={`after:mr-1 after:pl-1 after:content-['·']`}>
                   <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public

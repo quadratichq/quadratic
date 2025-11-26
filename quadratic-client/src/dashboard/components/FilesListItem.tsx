@@ -217,6 +217,7 @@ export function FilesListItemUserFile({
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}
             isShared={publicLinkAccess !== 'NOT_SHARED'}
+            isPrivate={file.isPrivate}
             viewPreferences={viewPreferences}
             actions={
               <DropdownMenu>
