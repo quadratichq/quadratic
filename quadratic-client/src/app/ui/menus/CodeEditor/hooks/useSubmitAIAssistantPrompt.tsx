@@ -18,7 +18,11 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
@@ -170,10 +174,29 @@ export function useSubmitAIAssistantPrompt() {
             }
             return prevMessages;
           });
+
+          // Remove AI cursor when chat is aborted
+          multiplayer.setAIUser(false);
         });
         set(aiAssistantAbortControllerAtom, abortController);
 
         set(aiAssistantLoadingAtom, true);
+
+        // Show AI cursor at the code cell being edited
+        if (codeCell) {
+          try {
+            // Initialize AI user in multiplayer system
+            multiplayer.setAIUser(true);
+
+            // Update AI cursor to the code cell position
+            const cellA1 = xyToA1(codeCell.pos.x, codeCell.pos.y);
+            const jsSelection = sheets.stringToSelection(cellA1, codeCell.sheetId);
+            const selectionString = jsSelection.save();
+            aiUser.updateSelection(selectionString, codeCell.sheetId);
+          } catch (e) {
+            console.warn('Failed to initialize AI cursor:', e);
+          }
+        }
 
         let lastMessageIndex = -1;
         let chatId = '';
@@ -320,6 +343,9 @@ export function useSubmitAIAssistantPrompt() {
 
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
+
+        // Remove AI cursor when chat finishes
+        multiplayer.setAIUser(false);
       },
     [handleAIRequestToAPI, updateInternalContext, modelKey]
   );

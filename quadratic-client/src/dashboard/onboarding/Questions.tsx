@@ -18,6 +18,7 @@ import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
 const FETCHER_KEY = 'onboarding-form-submission';
+const RESET_FORM_DELAY = 600;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -38,12 +39,20 @@ export const questionsById: Record<
   string,
   QuestionProps & { Form: (props: QuestionProps & { id: string }) => React.ReactNode }
 > = {
-  instructions: {
-    title: 'Welcome to Quadratic!',
+  use: {
+    title: 'How will you use Quadratic?',
+    subtitle: 'Your answers help personalize your experience.',
     Form: (props) => {
+      const [searchParams] = useSearchParams();
+      const options = [
+        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
+        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
+        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
+      ];
+
       if (isMobile) {
         return (
-          <Question title={props.title}>
+          <Question title="Welcome to Quadratic!">
             <QuestionForm>
               <div className="flex flex-col items-center gap-4 px-6 text-center">
                 <DesktopIcon size="2xl" className="text-muted-foreground" />
@@ -55,48 +64,6 @@ export const questionsById: Record<
           </Question>
         );
       }
-
-      return (
-        <Question title={props.title}>
-          <QuestionForm>
-            <div className="relative -mt-4 w-full md:ml-[-4rem] md:w-[calc(100%+8rem)]">
-              <img
-                src={`/onboarding/1.png`}
-                alt={`Quadratic onboarding screenshot`}
-                className={cn(
-                  'w-full max-w-full rounded-lg border object-cover transition duration-500 ease-in-out',
-                  'scale-100 border-border shadow-sm'
-                )}
-                width="635"
-                height="380"
-              />
-            </div>
-            <input type="hidden" name={props.id} value="" />
-            <QuestionFormFooter>
-              <Button
-                type="submit"
-                size="lg"
-                data-testid="onboarding-btn-get-started"
-                onClick={() => trackNextQuestionClick(props.id)}
-              >
-                Next
-              </Button>
-            </QuestionFormFooter>
-          </QuestionForm>
-        </Question>
-      );
-    },
-  },
-  use: {
-    title: 'How will you use Quadratic?',
-    subtitle: 'Your answers help personalize your experience.',
-    Form: (props) => {
-      const [searchParams] = useSearchParams();
-      const options = [
-        { value: 'work', label: 'Work', icon: <WorkIcon size="lg" className="text-primary" /> },
-        { value: 'personal', label: 'Personal', icon: <PersonalIcon size="lg" className="text-primary" /> },
-        { value: 'education', label: 'Education', icon: <EducationIcon size="lg" className="text-primary" /> },
-      ];
 
       return (
         <Question title={props.title} subtitle={props.subtitle}>
@@ -120,9 +87,6 @@ export const questionsById: Record<
                 </Link>
               ))}
             </div>
-            <QuestionFormFooter>
-              <BackButton />
-            </QuestionFormFooter>
           </QuestionForm>
         </Question>
       );
@@ -354,17 +318,46 @@ export const questionsById: Record<
     title: 'Who would you like to invite to your team?',
     subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
     Form: (props) => {
+      const [values, setValues] = useState<string[]>(Array(4).fill(''));
+      const [searchParams] = useSearchParams();
+
+      // Reset the form values when search params change (navigating to next question)
+      // We have to do this manually because form values are controlled not uncontrolled
+      useEffect(() => {
+        setTimeout(() => {
+          setValues(Array(4).fill(''));
+        }, RESET_FORM_DELAY);
+      }, [searchParams]);
+
+      const handleInputChange = (index: number, value: string) => {
+        const newValues = [...values];
+        newValues[index] = value;
+
+        // Count how many fields have values
+        const filledCount = newValues.filter((v) => v.trim().length > 0).length;
+        const emptyCount = newValues.length - filledCount;
+
+        // If there are no more empty fields, add 2 more
+        if (emptyCount < 1) {
+          setValues([...newValues, '', '']);
+        } else {
+          setValues(newValues);
+        }
+      };
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
-              {['john@example.com', '', '', ''].map((placeholder) => (
+              {values.map((value, index) => (
                 <Input
-                  key={placeholder}
+                  key={index}
                   className="h-12 w-full text-lg placeholder:text-muted-foreground/70"
                   type="email"
                   name={props.id}
-                  placeholder={placeholder}
+                  placeholder={index === 0 ? 'john@example.com' : ''}
+                  value={value}
+                  onChange={(e) => handleInputChange(index, e.target.value)}
                 />
               ))}
             </div>
@@ -643,7 +636,7 @@ function QuestionForm({
         setSearchParams(newSearchParams);
         setTimeout(() => {
           form.reset();
-        }, 1000);
+        }, RESET_FORM_DELAY);
       }}
       className={className}
     >

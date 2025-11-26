@@ -48,18 +48,35 @@ export class Cursor extends Container {
     this.cursorRectangle = new Rectangle();
 
     events.on('setDirty', this.setDirty);
+
+    // Listen for focus/blur events to update cursor color when grid focus changes
+    // We listen on the document and check if the active element is the canvas
+    document.addEventListener('focusin', this.handleFocusChange);
+    document.addEventListener('focusout', this.handleFocusChange);
   }
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    document.removeEventListener('focusin', this.handleFocusChange);
+    document.removeEventListener('focusout', this.handleFocusChange);
     super.destroy();
   }
+
+  private handleFocusChange = () => {
+    // Mark as dirty when focus changes (the update will check if canvas is focused)
+    this.dirty = true;
+  };
 
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.cursor) {
       this.dirty = true;
     }
   };
+
+  // Check if the grid canvas has focus (or user is editing a cell)
+  private isGridFocused(): boolean {
+    return document.activeElement === pixiApp.canvas || pixiAppSettings.input.show;
+  }
 
   // redraws corners if there is an error
   private drawError(cell: JsCoordinate) {
@@ -104,7 +121,8 @@ export class Cursor extends Container {
     }
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
-    const color = content.accentColor;
+    // Use light gray when grid doesn't have focus, otherwise use accent color
+    const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
     const codeCell = codeEditorState.codeCell;
 
     content.hoverTableColumnsSelection.clear();
@@ -207,7 +225,9 @@ export class Cursor extends Container {
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
 
     if (!sheets.sheet.cursor.isSingleSelection()) {
-      drawFiniteSelection(this.graphics, content.accentColor, FILL_SELECTION_ALPHA, ranges);
+      // Use light gray when grid doesn't have focus, otherwise use accent color
+      const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
+      drawFiniteSelection(this.graphics, color, FILL_SELECTION_ALPHA, ranges);
     }
   }
 
@@ -227,7 +247,8 @@ export class Cursor extends Container {
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
 
-      const color = content.accentColor;
+      // Use light gray when grid doesn't have focus, otherwise use accent color
+      const color = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -286,7 +307,11 @@ export class Cursor extends Container {
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
 
-    const color = formula ? getCSSVariableTint('primary') : content.accentColor;
+    const color = formula
+      ? getCSSVariableTint('primary')
+      : this.isGridFocused()
+        ? content.accentColor
+        : getCSSVariableTint('muted-foreground');
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [
@@ -377,9 +402,11 @@ export class Cursor extends Container {
       const finiteRanges = cursor.getFiniteRefRangeBounds();
       this.drawFiniteCursor(finiteRanges);
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
+      // Use light gray when grid doesn't have focus, otherwise use accent color
+      const selectionColor = this.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
       const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
-        color: content.accentColor,
+        color: selectionColor,
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });
