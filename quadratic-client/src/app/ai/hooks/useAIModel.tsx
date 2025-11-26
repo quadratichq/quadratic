@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 const AI_MODEL_TYPE_KEY = 'aiModelTypeKey';
 const AI_MODEL_OTHERS_KEY = 'aiModelOthersKey';
 
-export type MODEL_TYPE = 'default' | 'max' | 'max_plus' | 'others';
+export type MODEL_TYPE = 'default' | 'auto' | 'max' | 'others';
 
 interface UseAIModelReturn {
   isOnPaidPlan: boolean;
@@ -27,7 +27,21 @@ export const useAIModel = (): UseAIModelReturn => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debug } = useDebugFlags();
 
-  const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'max');
+  const [modelTypeRaw, setModelTypeRaw] = useLocalStorage<MODEL_TYPE | 'max_plus'>(AI_MODEL_TYPE_KEY, 'auto');
+  
+  // Migrate old model types: 'max' -> 'auto', 'max_plus' -> 'max'
+  useEffect(() => {
+    if (modelTypeRaw === 'max') {
+      // Old 'max' becomes 'auto'
+      setModelTypeRaw('auto');
+    } else if (modelTypeRaw === 'max_plus') {
+      // Old 'max_plus' becomes 'max'
+      setModelTypeRaw('max');
+    }
+  }, [modelTypeRaw, setModelTypeRaw]);
+
+  const modelType = (modelTypeRaw === 'max_plus' ? 'max' : modelTypeRaw) as MODEL_TYPE;
+  const setModelType = setModelTypeRaw as (value: MODEL_TYPE) => void;
   const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
 
   const othersModelKeys: AIModelKey[] = useMemo(() => {
@@ -49,17 +63,15 @@ export const useAIModel = (): UseAIModelReturn => {
     return key as AIModelKey;
   }, []);
 
-  const maxModelKey: AIModelKey = useMemo(() => {
-    const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max');
-    if (!key) throw new Error('Max model not found');
+  const autoModelKey: AIModelKey = useMemo(() => {
+    const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'auto');
+    if (!key) throw new Error('Auto model not found');
     return key as AIModelKey;
   }, []);
 
-  const maxPlusModelKey: AIModelKey = useMemo(() => {
-    const key = Object.keys(MODELS_CONFIGURATION).find(
-      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max_plus'
-    );
-    if (!key) throw new Error('Max+ model not found');
+  const maxModelKey: AIModelKey = useMemo(() => {
+    const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max');
+    if (!key) throw new Error('Max model not found');
     return key as AIModelKey;
   }, []);
 
@@ -74,14 +86,14 @@ export const useAIModel = (): UseAIModelReturn => {
     if (modelType === 'default') {
       return defaultModelKey;
     }
+    if (modelType === 'auto') {
+      return autoModelKey;
+    }
     if (modelType === 'max') {
       return maxModelKey;
     }
-    if (modelType === 'max_plus') {
-      return maxPlusModelKey;
-    }
     return modelType;
-  }, [defaultModelKey, defaultOthersModelKey, maxModelKey, maxPlusModelKey, modelType, othersModelKey, setModelType]);
+  }, [defaultModelKey, defaultOthersModelKey, autoModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
 
   useEffect(() => {
     if (debug) return;
@@ -96,9 +108,9 @@ export const useAIModel = (): UseAIModelReturn => {
       setModelType('default');
     }
 
-    // max_plus is Pro-only, fall back to max if not on paid plan
-    if (modelType === 'max_plus' && !isOnPaidPlan) {
-      setModelType('max');
+    // max is Pro-only, fall back to auto if not on paid plan
+    if (modelType === 'max' && !isOnPaidPlan) {
+      setModelType('auto');
     }
   }, [debug, isOnPaidPlan, modelType, setModelType, othersModelKey]);
 
