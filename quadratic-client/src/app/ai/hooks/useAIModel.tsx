@@ -29,13 +29,9 @@ export const useAIModel = (): UseAIModelReturn => {
 
   const [modelTypeRaw, setModelTypeRaw] = useLocalStorage<MODEL_TYPE | 'max_plus'>(AI_MODEL_TYPE_KEY, 'auto');
 
-  // Migrate old model types: 'max' -> 'auto', 'max_plus' -> 'max'
+  // Migrate old 'max_plus' -> 'max' (max_plus no longer exists)
   useEffect(() => {
-    if (modelTypeRaw === 'max') {
-      // Old 'max' becomes 'auto'
-      setModelTypeRaw('auto');
-    } else if (modelTypeRaw === 'max_plus') {
-      // Old 'max_plus' becomes 'max'
+    if (modelTypeRaw === 'max_plus') {
       setModelTypeRaw('max');
     }
   }, [modelTypeRaw, setModelTypeRaw]);
