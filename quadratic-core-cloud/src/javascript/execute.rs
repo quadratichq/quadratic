@@ -52,7 +52,7 @@ impl JavaScriptTcpServer {
         let server_handle =
             tokio::spawn(async move { handle_get_cells_server(listener, get_cells).await });
 
-        tracing::info!("🌐 [JavaScript TCP Server] Started on port {}", port);
+        tracing::info!("[JavaScript TCP Server] Started on port {}", port);
 
         Ok(Self {
             port,
@@ -68,7 +68,7 @@ impl JavaScriptTcpServer {
     /// Shutdown the server gracefully
     pub async fn shutdown(self) {
         tracing::info!(
-            "🛑 [JavaScript TCP Server] Shutting down on port {}",
+            "[JavaScript TCP Server] Shutting down on port {}",
             self.port
         );
 
@@ -85,45 +85,13 @@ pub(crate) async fn run_javascript(
     transaction_id: &str,
     get_cells_port: u16,
 ) -> Result<()> {
-    let start_time = std::time::Instant::now();
     tracing::info!(
-        "🟨 [JavaScript] Starting execution for transaction: {}",
+        "[JavaScript] Starting execution for transaction: {}",
         transaction_id
     );
 
     // Execute JavaScript with the provided server port
     let js_code_result = execute(code, transaction_id, get_cells_port).await?;
-
-    let elapsed = start_time.elapsed();
-
-    if js_code_result.success {
-        tracing::info!(
-            "✅ [JavaScript] Execution completed successfully for transaction: {} (duration: {:.2}ms, output_type: {:?})",
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            js_code_result.output_display_type
-        );
-
-        if js_code_result.std_out.is_some() {
-            tracing::debug!(
-                "📝 [JavaScript] stdout captured for transaction: {}",
-                transaction_id
-            );
-        }
-        if js_code_result.std_err.is_some() {
-            tracing::debug!(
-                "⚠️  [JavaScript] stderr captured for transaction: {}",
-                transaction_id
-            );
-        }
-    } else {
-        tracing::error!(
-            "❌ [JavaScript] Execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            js_code_result.std_err
-        );
-    }
 
     grid.lock()
         .await
@@ -173,20 +141,6 @@ async fn execute(code: &str, transaction_id: &str, get_cells_port: u16) -> Resul
 fn build_javascript_wrapper(user_code: &str, get_cells_port: u16) -> Result<String> {
     // Transform q.cells() calls to await q.cells() if not already awaited
     let transformed_code = add_await_to_qcells(user_code);
-
-    // Log transformation for debugging
-    if transformed_code != user_code {
-        let count = transformed_code.matches("await q.cells(").count()
-            - user_code.matches("await q.cells(").count();
-        tracing::info!(
-            "🔄 Transformed {} q.cells() calls - added await keywords",
-            count
-        );
-        tracing::debug!("Original code:\n{}", user_code);
-        tracing::debug!("Transformed code:\n{}", transformed_code);
-    } else {
-        tracing::debug!("No q.cells() transformation needed");
-    }
 
     // Create a wrapper that includes all necessary globals and the user code
     let wrapped_code = format!(
@@ -1072,9 +1026,9 @@ return values;
         let output_array = result.output_array.unwrap();
         assert_eq!(output_array.len(), 2); // two rows
         assert_eq!(output_array[0].len(), 2); // two columns
-        // Empty cells should be filled with empty strings
-        assert_eq!(output_array[0][1].0, ""); // B1
-        assert_eq!(output_array[1][0].0, ""); // A2
+        // Empty cells should be filled with undefined
+        assert_eq!(output_array[0][1].0, "undefined"); // B1
+        assert_eq!(output_array[1][0].0, "undefined"); // A2
     }
 
     #[tokio::test]

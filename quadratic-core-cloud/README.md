@@ -1,25 +1,13 @@
 # Quadratic Core Cloud
 
-Process Quadratic Core transactions in the cloud.
+Process Quadratic Core transactions in the cloud. Executes Python and JavaScript code cells via worker processes.
 
-## Running
-
-First, copy over the environment variables (customize if applicable):
-
-```shell
-cp .env.example .env
-```
-
-To run the server:
-
-```shell
-RUST_LOG=info cargo run
-
-// npm alternative
-npm start
-```
 
 ## Development
+
+### Prerequisites
+
+- Deno must be installed locally for JavaScript execution: `npm run install:deno`
 
 To develop with the watcher enabled:
 
@@ -58,20 +46,3 @@ cargo clippy --all-targets --all-features -- -D warnings
 npm run lint
 ```
 
-## API
-
-### Health Checks
-
-#### Request
-
-```shell
-curl http://127.0.0.1:3004/health -i
-```
-
-#### Response
-
-```shell
-HTTP/1.1 200 OK
-content-length: 0
-date: Mon, 08 Jan 2024 22:56:23 GMT
-```

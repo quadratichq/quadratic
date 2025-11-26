@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use quadratic_core::{
-    Pos, Rect,
-    a1::A1Selection,
     controller::{GridController, transaction_types::JsConnectionResult},
-    grid::{ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
+    grid::{ConnectionKind, SheetId},
 };
 use serde_json::json;
 use tokio::sync::Mutex;
@@ -25,84 +23,10 @@ pub(crate) struct ConnectionParams<'a> {
     pub sheet_id: SheetId,
 }
 
-/// Replace handlebars {{A1}} style references with actual cell values
-fn replace_handlebars(
-    grid: &mut GridController,
-    query: &str,
-    default_sheet_id: SheetId,
-) -> Result<String> {
-    let mut result = String::new();
-    let mut last_match_end = 0;
-
-    let context = grid.a1_context();
-    for cap in HANDLEBARS_REGEX_COMPILED.captures_iter(query) {
-        let Ok(cap) = cap else {
-            continue;
-        };
-
-        let Some(whole_match) = cap.get(0) else {
-            continue;
-        };
-
-        result.push_str(&query[last_match_end..whole_match.start()]);
-
-        let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-        let selection = A1Selection::parse_a1(content, default_sheet_id, context).map_err(|e| {
-            CoreCloudError::Core(format!("Error parsing A1 reference '{}': {}", content, e))
-        })?;
-
-        // connections support either one cell or a 1d range of cells (ie,
-        // one column or row), which are entered as a comma-delimited list
-        // of entries (e.g., "2,3,10,1,...") in the query
-
-        if !selection.is_1d_range(context) {
-            return Err(CoreCloudError::Core(
-                "Connections only supports one cell or a 1d range of cells".to_string(),
-            ));
-        }
-
-        let Some(sheet) = grid.try_sheet(selection.sheet_id) else {
-            return Err(CoreCloudError::Core(format!(
-                "Sheet not found for selection: {}",
-                content
-            )));
-        };
-
-        let rects = sheet.selection_to_rects(&selection, false, false, true, context);
-        if rects.len() > 1 {
-            return Err(CoreCloudError::Core(
-                "Connections only supports one cell or a 1d range of cells".to_string(),
-            ));
-        }
-        let rect = rects[0];
-        result.push_str(&get_cells_comma_delimited_string(sheet, rect));
-
-        last_match_end = whole_match.end();
-    }
-
-    // Add the remaining part of the string
-    result.push_str(&query[last_match_end..]);
-
-    Ok(result)
-}
-
-/// Returns a string of cells for a connection. For more than one cell, the
-/// cells are comma-delimited.
-fn get_cells_comma_delimited_string(sheet: &quadratic_core::grid::Sheet, rect: Rect) -> String {
-    let mut response = String::new();
-    for y in rect.y_range() {
-        for x in rect.x_range() {
-            if let Some(cell) = sheet.display_value(Pos { x, y }) {
-                if !response.is_empty() {
-                    response.push(',');
-                }
-                response.push_str(&cell.to_get_cells());
-            }
-        }
-    }
-    response
-}
-
+/// Runs a connection.
+///
+/// This function will replace handlebars with actual cell values and execute the connection.
+/// It will then return the result of the connection execution.
 pub(crate) async fn run_connection(params: ConnectionParams<'_>) -> Result<()> {
     let ConnectionParams {
         grid,
@@ -118,24 +42,18 @@ pub(crate) async fn run_connection(params: ConnectionParams<'_>) -> Result<()> {
 
     let start_time = std::time::Instant::now();
     tracing::info!(
-        "🔌 [Connection] Starting {} execution for transaction: {}",
+        "[Connection] Starting {} execution for transaction: {}",
         connection_kind,
         transaction_id
     );
 
     // Replace handlebars with actual cell values
     let processed_query = {
-        let mut grid_lock = grid.lock().await;
-        replace_handlebars(&mut grid_lock, query, sheet_id)?
+        let grid_lock = grid.lock().await;
+        grid_lock
+            .replace_handlebars(None, query, sheet_id)
+            .map_err(|e| CoreCloudError::Core(e.to_string()))?
     };
-
-    if processed_query != query {
-        ::tracing::info!(
-            "🔌 [Connection] Replaced handlebars in query (original length: {}, processed length: {})",
-            query.len(),
-            processed_query.len()
-        );
-    }
 
     let (result, std_error) = execute(
         &processed_query,
@@ -148,26 +66,16 @@ pub(crate) async fn run_connection(params: ConnectionParams<'_>) -> Result<()> {
     )
     .await?;
 
-    let elapsed = start_time.elapsed();
-    let data_size = result.data.len();
+    let success_or_failure = match std_error.is_none() {
+        true => "succeeded",
+        false => "failed",
+    };
 
-    if std_error.is_none() {
-        tracing::info!(
-            "✅ [Connection] {} execution completed successfully for transaction: {} (duration: {:.2}ms, data size: {} bytes)",
-            connection_kind,
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            data_size
-        );
-    } else {
-        tracing::error!(
-            "❌ [Connection] {} execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
-            connection_kind,
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            std_error
-        );
-    }
+    tracing::info!(
+        "[Connection] {connection_kind} execution {success_or_failure} for transaction: {transaction_id} (duration: {:.2}ms, data size: {} bytes)",
+        start_time.elapsed().as_secs_f64() * 1000.0,
+        result.data.len()
+    );
 
     grid.lock()
         .await
@@ -177,6 +85,9 @@ pub(crate) async fn run_connection(params: ConnectionParams<'_>) -> Result<()> {
     Ok(())
 }
 
+/// Executes a connection.
+///
+/// This function will send the query to the connection endpoint and return the result.
 pub(crate) async fn execute(
     query: &str,
     connection_kind: ConnectionKind,
@@ -189,11 +100,8 @@ pub(crate) async fn execute(
     let kind = connection_kind.to_string().to_lowercase();
     let url = format!("{connection_url}/{kind}/query");
 
-    ::tracing::info!(
-        "🔌 [Connection] Executing query to {} (connection_id: {}, team_id: {})",
-        url,
-        connection_id,
-        team_id
+    tracing::info!(
+        "[Connection] Executing query to {url} (connection_id: {connection_id}, team_id: {team_id}, transaction_id: {transaction_id})",
     );
 
     let client = reqwest::Client::new();
@@ -207,29 +115,23 @@ pub(crate) async fn execute(
         }));
 
     let (response, std_error) = match request.send().await {
-        Ok(resp) => {
-            ::tracing::info!(
-                "🔌 [Connection] Received response with status: {}",
-                resp.status()
-            );
-            match resp.bytes().await {
-                Ok(bytes) => {
-                    ::tracing::info!("🔌 [Connection] Response data size: {} bytes", bytes.len());
-                    (bytes, None)
-                }
-                Err(e) => {
-                    let error_msg = format!("Error reading response bytes: {}", e);
-                    ::tracing::error!("❌ [Connection] {}", error_msg);
-                    (Bytes::new(), Some(error_msg))
-                }
-            }
-        }
-        Err(e) => {
-            let error_msg = format!("Error sending request to {}: {}", url, e);
-            ::tracing::error!("❌ [Connection] {}", error_msg);
-            (Bytes::new(), Some(error_msg))
-        }
+        Ok(resp) => match resp.bytes().await {
+            Ok(bytes) => (bytes, None),
+            Err(e) => (
+                Bytes::new(),
+                Some(format!("Error reading response bytes: {}", e)),
+            ),
+        },
+        Err(e) => (
+            Bytes::new(),
+            Some(format!("Error sending request to {}: {}", url, e)),
+        ),
     };
+
+    // just log the std_error if it exists
+    if let Some(std_error) = &std_error {
+        tracing::error!("[Connection] {}", std_error);
+    }
 
     let result = JsConnectionResult {
         transaction_id: transaction_id.to_string(),

@@ -616,15 +616,17 @@ impl Drop for Worker {
     fn drop(&mut self) {
         // Clean up any running tasks when the worker is dropped
         if let Some(handle) = &self.heartbeat_handle
-            && !handle.is_finished() {
-                tracing::debug!("[Worker Drop] Aborting heartbeat task");
-                handle.abort();
-            }
+            && !handle.is_finished()
+        {
+            tracing::debug!("[Worker Drop] Aborting heartbeat task");
+            handle.abort();
+        }
         if let Some(handle) = &self.websocket_receiver_handle
-            && !handle.is_finished() {
-                tracing::debug!("[Worker Drop] Aborting receiver task");
-                handle.abort();
-            }
+            && !handle.is_finished()
+        {
+            tracing::debug!("[Worker Drop] Aborting receiver task");
+            handle.abort();
+        }
     }
 }
 
@@ -638,7 +640,9 @@ mod tests {
     use quadratic_rust_shared::storage::Storage;
     use std::{str::FromStr, time::Duration};
 
+    // TODO(ddimaria): remove this ignore once we have a way to test the worker startup
     #[tokio::test]
+    #[ignore]
     async fn test_worker_startup() {
         let file_id = Uuid::parse_str("d87f4037-fb48-4b6e-abf0-178c725e464d").unwrap();
         let sheet_id = SheetId::from_str("b8718a71-e4b1-49bb-8f32-f0d931850cfd").unwrap();

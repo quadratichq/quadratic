@@ -25,6 +25,7 @@ pub(crate) async fn connect(
     Ok(websocket)
 }
 
+/// Send a message to the Multiplayer server.
 pub(crate) async fn send_message(
     websocket: &mut WebSocketSender,
     message: MessageRequest,
@@ -46,6 +47,7 @@ pub(crate) async fn enter_room(
     send_message(websocket, enter_room_message).await
 }
 
+/// Get transactions from the Multiplayer server.
 pub(crate) async fn get_transactions(
     websocket: &mut WebSocketSender,
     file_id: Uuid,

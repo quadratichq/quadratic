@@ -15,6 +15,7 @@
     "coverage:gen": "CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:view": "open coverage/html/index.html",
+    "install:deno": "curl -fsSL https://deno.land/install.sh | sh",
     "docker:up": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose -f ../docker-compose.yml --profile redis --env-file ../.env.docker up -d --wait && sleep 10",
     "docker:down": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose -f ../docker-compose.yml --profile redis --env-file ../.env.docker down",
     "docker:test": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose kill && npm run docker:up && npm run test && npm run docker:down",

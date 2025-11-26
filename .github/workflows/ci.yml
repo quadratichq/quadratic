@@ -28,6 +28,8 @@ jobs:
           - connection
           - rust-shared
           - cloud-controller
+          - cloud-worker
+          - core-cloud
         include:
           - package: core
             runner: blacksmith-2vcpu-ubuntu-2404
@@ -45,6 +47,12 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
           - package: cloud-controller
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: core-cloud
+            runner: blacksmith-4vcpu-ubuntu-2404
+            test_command: "npm run docker:test"
+          - package: cloud-worker
             runner: blacksmith-4vcpu-ubuntu-2404
             test_command: "npm run docker:test"
     steps:
@@ -75,6 +83,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Install Deno for core-cloud and cloud-worker
+        if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
+        run: |
+          curl -fsSL https://deno.land/install.sh | sh
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
 
       - name: Test quadratic-${{ matrix.package }}
         env:

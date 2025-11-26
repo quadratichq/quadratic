@@ -13,6 +13,7 @@ use crate::python::utils::{analyze_code, c_string, process_imports};
 static PROCESS_OUTPUT_CODE: &str = include_str!("py_code/process_output.py");
 static QUADRATIC: &str = include_str!("py_code/quadratic.py");
 
+/// Create an empty JsCodeResult.
 pub(crate) fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
     JsCodeResult {
         transaction_id: transaction_id.to_string(),
@@ -21,50 +22,19 @@ pub(crate) fn empty_js_code_result(transaction_id: &str) -> JsCodeResult {
     }
 }
 
+/// Run Python code.
 pub(crate) async fn run_python(
     grid: Arc<Mutex<GridController>>,
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
 ) -> Result<()> {
-    let start_time = std::time::Instant::now();
     tracing::info!(
-        "🐍 [Python] Starting execution for transaction: {}",
+        "[Python] Starting execution for transaction: {}",
         transaction_id
     );
 
     let js_code_result = execute(code, transaction_id, get_cells)?;
-
-    let elapsed = start_time.elapsed();
-
-    if js_code_result.success {
-        tracing::info!(
-            "✅ [Python] Execution completed successfully for transaction: {} (duration: {:.2}ms, output_type: {:?})",
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            js_code_result.output_display_type
-        );
-
-        if js_code_result.std_out.is_some() {
-            tracing::debug!(
-                "📝 [Python] stdout captured for transaction: {}",
-                transaction_id
-            );
-        }
-        if js_code_result.std_err.is_some() {
-            tracing::debug!(
-                "⚠️  [Python] stderr captured for transaction: {}",
-                transaction_id
-            );
-        }
-    } else {
-        tracing::error!(
-            "❌ [Python] Execution failed for transaction: {} (duration: {:.2}ms, error: {:?})",
-            transaction_id,
-            elapsed.as_secs_f64() * 1000.0,
-            js_code_result.std_err
-        );
-    }
 
     grid.lock()
         .await
@@ -72,6 +42,7 @@ pub(crate) async fn run_python(
         .map_err(|e| CoreCloudError::Core(e.to_string()))
 }
 
+/// Execute Python code.
 pub(crate) fn execute(
     code: &str,
     transaction_id: &str,
