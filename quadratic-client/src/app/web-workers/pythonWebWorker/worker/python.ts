@@ -24,6 +24,7 @@ class Python {
   private awaitingExecution: CodeRun[];
   private state: LanguageState;
   private transactionId?: string;
+  private currentJwt?: string;
 
   constructor() {
     this.awaitingExecution = [];
@@ -39,7 +40,8 @@ class Python {
   };
 
   private init = async (): Promise<void> => {
-    const jwt = await pythonClient.getJwt();
+    // Store reference to Python instance for use in XHR proxy
+    const pythonInstance = this;
 
     // patch XMLHttpRequest to send requests to the proxy
     SELF['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
@@ -80,17 +82,21 @@ class Python {
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === XMLHttpRequest.OPENED) {
-            // this applies the quadratic-authorization header as the only authorization header
-            // this is required for authentication with the proxy server
-            xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
-
-            // this applies the original request URL as the x-proxy-url header
-            // this will get prefixed with X-Proxy due to above setRequestHeader override
-            xhr.setRequestHeader('Url', (xhr as any).__url);
+            // Set auth headers with the current JWT when the connection is opened
+            // This must happen synchronously to work with pyodide-http
+            const jwt = pythonInstance.currentJwt;
+            if (jwt) {
+              xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
+              xhr.setRequestHeader('Url', (xhr as any).__url);
+            } else {
+              console.warn('No JWT available for proxy request');
+            }
           }
           // After completion of XHR request
           if (xhr.readyState === 4) {
             if (xhr.status === 401) {
+              // Handle unauthorized - JWT may have expired
+              console.warn('Proxy request returned 401 - JWT may have expired');
             }
           }
         };
@@ -208,6 +214,14 @@ class Python {
     });
 
     this.transactionId = message.transactionId;
+
+    // Fetch fresh JWT before execution to handle 5-minute expiration
+    try {
+      this.currentJwt = (await pythonClient.getJwt()) as string;
+    } catch (error) {
+      console.error('Failed to get JWT for Python execution:', error);
+      // Continue without JWT - requests will fail but code can still run
+    }
 
     // auto load packages
     await this.pyodide.loadPackagesFromImports(message.code, {
