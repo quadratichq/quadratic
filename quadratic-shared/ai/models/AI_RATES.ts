@@ -38,7 +38,7 @@ export const gemini_3_0_pro_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.31,
   rate_per_million_cache_write_tokens: 4.5,
 };
-export const claude_opus_4_5_20251124_rate: AIRates = {
+export const claude_opus_4_5_20251101_rate: AIRates = {
   rate_per_million_input_tokens: 15,
   rate_per_million_output_tokens: 75,
   rate_per_million_cache_read_tokens: 1.5,

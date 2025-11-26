@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 const AI_MODEL_TYPE_KEY = 'aiModelTypeKey';
 const AI_MODEL_OTHERS_KEY = 'aiModelOthersKey';
 
-export type MODEL_TYPE = 'default' | 'max' | 'others';
+export type MODEL_TYPE = 'default' | 'max' | 'max_plus' | 'others';
 
 interface UseAIModelReturn {
   isOnPaidPlan: boolean;
@@ -51,7 +51,15 @@ export const useAIModel = (): UseAIModelReturn => {
 
   const maxModelKey: AIModelKey = useMemo(() => {
     const key = Object.keys(MODELS_CONFIGURATION).find((key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max');
-    if (!key) throw new Error('Default model not found');
+    if (!key) throw new Error('Max model not found');
+    return key as AIModelKey;
+  }, []);
+
+  const maxPlusModelKey: AIModelKey = useMemo(() => {
+    const key = Object.keys(MODELS_CONFIGURATION).find(
+      (key) => MODELS_CONFIGURATION[key as AIModelKey].mode === 'max_plus'
+    );
+    if (!key) throw new Error('Max+ model not found');
     return key as AIModelKey;
   }, []);
 
@@ -69,8 +77,11 @@ export const useAIModel = (): UseAIModelReturn => {
     if (modelType === 'max') {
       return maxModelKey;
     }
+    if (modelType === 'max_plus') {
+      return maxPlusModelKey;
+    }
     return modelType;
-  }, [defaultModelKey, defaultOthersModelKey, maxModelKey, modelType, othersModelKey, setModelType]);
+  }, [defaultModelKey, defaultOthersModelKey, maxModelKey, maxPlusModelKey, modelType, othersModelKey, setModelType]);
 
   useEffect(() => {
     if (debug) return;
@@ -84,7 +95,12 @@ export const useAIModel = (): UseAIModelReturn => {
     } else if (modelType === 'others') {
       setModelType('default');
     }
-  }, [debug, modelType, setModelType, othersModelKey]);
+
+    // max_plus is Pro-only, fall back to max if not on paid plan
+    if (modelType === 'max_plus' && !isOnPaidPlan) {
+      setModelType('max');
+    }
+  }, [debug, isOnPaidPlan, modelType, setModelType, othersModelKey]);
 
   const setModel = useCallback(
     (modelType: MODEL_TYPE, othersKey?: AIModelKey) => {

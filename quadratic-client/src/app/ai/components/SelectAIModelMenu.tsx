@@ -26,10 +26,11 @@ import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemas
 import { memo, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-type UIModels = 'default' | 'max' | 'others';
-const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
+type UIModels = 'default' | 'max' | 'max_plus' | 'others';
+const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string; proOnly?: boolean }> = {
   default: { label: 'Fast', description: 'Good for everyday tasks' },
   max: { label: 'Max', description: 'Smartest and most capable' },
+  max_plus: { label: 'Max+', description: 'Most powerful model', proOnly: true },
   others: { label: 'Others', description: 'Experimental models' },
 };
 
@@ -108,7 +109,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
     );
   }
 
-  const isOthers = modelType !== 'default' && modelType !== 'max';
+  const isOthers = modelType !== 'default' && modelType !== 'max' && modelType !== 'max_plus';
   const radioGroupValue = isOthers ? othersModelKey : modelType;
 
   if (restrictedModel) {
@@ -131,7 +132,13 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
             e.stopPropagation();
           }}
         >
-          {isOthers ? selectedModelConfig.displayName : modelType === 'default' ? 'Fast' : 'Max'}
+          {isOthers
+            ? selectedModelConfig.displayName
+            : modelType === 'default'
+              ? 'Fast'
+              : modelType === 'max'
+                ? 'Max'
+                : 'Max+'}
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>
 
@@ -141,8 +148,8 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
               value={radioGroupValue}
               className="flex flex-col gap-0"
               onValueChange={(value) => {
-                // Check if the value is a quadratic model type ('default', 'max')
-                if (value === 'default' || value === 'max') {
+                // Check if the value is a quadratic model type ('default', 'max', 'max_plus')
+                if (value === 'default' || value === 'max' || value === 'max_plus') {
                   setModel(value, defaultOthersModelKey);
                 } else {
                   // Otherwise set as an 'others' with the specific key
@@ -157,8 +164,14 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
               <div className="flex flex-col rounded text-sm">
                 {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS)
                   .filter(([mode]) => mode !== 'others')
-                  .map(([mode, { label, description }], i) => (
-                    <RadioGroupLineItem key={mode} value={mode} label={label} description={description} />
+                  .map(([mode, { label, description, proOnly }]) => (
+                    <RadioGroupLineItem
+                      key={mode}
+                      value={mode}
+                      label={label}
+                      description={proOnly && !isOnPaidPlan ? 'Pro only' : description}
+                      disabled={proOnly && !isOnPaidPlan}
+                    />
                   ))}
               </div>
 

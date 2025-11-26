@@ -20,7 +20,7 @@ const AIProvidersSchema = z.enum([
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum([
-  'claude-opus-4-5@20251124',
+  'claude-opus-4-5@20251101',
   'claude-sonnet-4-5@20250929',
   'claude-haiku-4-5@20251001',
 ]);
@@ -32,13 +32,13 @@ const VertexAIModelSchema = z.enum([
 ]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
-  'us.anthropic.claude-opus-4-5-20251124-v1:0',
+  'us.anthropic.claude-opus-4-5-20251101-v1:0',
   'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
   'anthropic.claude-haiku-4-5-20251001-v1:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum([
-  'claude-opus-4-5-20251124',
+  'claude-opus-4-5-20251101',
   'claude-sonnet-4-5-20250929',
   'claude-haiku-4-5-20251001',
 ]);
@@ -86,9 +86,9 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off',
-  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on',
-  'vertexai-anthropic:claude-opus-4-5@20251124',
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off',
+  'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on',
+  'vertexai-anthropic:claude-opus-4-5@20251101',
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
   'vertexai-anthropic:claude-sonnet-4-5@20250929',
@@ -114,8 +114,8 @@ const GeminiAIModelKeySchema = z.enum(['geminiai:gemini-2.5-flash-lite-preview-0
 export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251124-v1:0:thinking-toggle-off',
-  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251124-v1:0:thinking-toggle-on',
+  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251101-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251101-v1:0:thinking-toggle-on',
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
   'bedrock-anthropic:anthropic.claude-haiku-4-5-20251001-v1:0:thinking-toggle-off',
@@ -129,6 +129,7 @@ export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 const AnthropicModelKeySchema = z.enum([
   'anthropic:claude-opus-4.5:thinking-toggle-off',
   'anthropic:claude-opus-4.5:thinking-toggle-on',
+  'anthropic:claude-opus-4.5',
   'anthropic:claude-sonnet-4.5:thinking-toggle-off',
   'anthropic:claude-sonnet-4.5:thinking-toggle-on',
   'anthropic:claude-haiku-4.5:thinking-toggle-off',
