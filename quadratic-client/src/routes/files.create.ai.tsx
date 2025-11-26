@@ -128,6 +128,7 @@ export const Component = () => {
   const executeButtonRef = useRef<HTMLButtonElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const suggestionsAbortRef = useRef<AbortController | null>(null);
+  const dragCounterRef = useRef(0);
 
   // Auto-resize plan textarea to fit content
   useEffect(() => {
@@ -285,6 +286,7 @@ export const Component = () => {
   const handleDrop = async (e: DragEvent<HTMLDivElement>, acceptedTypes: string[]) => {
     e.preventDefault();
     e.stopPropagation();
+    dragCounterRef.current = 0;
     setDragOver(false);
 
     const droppedFiles = e.dataTransfer?.files;
@@ -310,13 +312,24 @@ export const Component = () => {
     }
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setDragOver(true);
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) {
+      setDragOver(true);
+    }
   };
 
-  const handleDragLeave = () => {
-    setDragOver(false);
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setDragOver(false);
+    }
   };
 
   const handleRemoveFile = (index: number) => {
@@ -663,6 +676,7 @@ export const Component = () => {
               dragOver ? 'border-primary bg-primary/5' : 'border-border bg-background/50'
             )}
             onDrop={(e) => handleDrop(e, FILE_TYPES)}
+            onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
@@ -697,6 +711,7 @@ export const Component = () => {
               dragOver ? 'border-primary bg-primary/5' : 'border-border bg-background/50'
             )}
             onDrop={(e) => handleDrop(e, PDF_TYPES)}
+            onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
@@ -884,7 +899,24 @@ export const Component = () => {
 
   // Outline View (default)
   return (
-    <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+    <div
+      className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20"
+      onDrop={(e) => handleDrop(e, [...FILE_TYPES, ...PDF_TYPES])}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      {/* Drag overlay */}
+      {dragOver && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-primary bg-background/90 px-12 py-8 shadow-lg">
+            <UploadIcon className="h-12 w-12 text-primary" />
+            <p className="text-lg font-semibold">Drop files here</p>
+            <p className="text-sm text-muted-foreground">Supported: {[...FILE_TYPES, ...PDF_TYPES].join(', ')}</p>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={handleBack}
         className="absolute left-6 top-6 z-10 flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-background text-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
@@ -905,7 +937,9 @@ export const Component = () => {
               <h3 className="text-sm font-medium text-muted-foreground">
                 {uploadedFiles.length > 0 || selectedConnection
                   ? 'Suggestions based on your data'
-                  : 'Popular templates'}
+                  : entrySource === 'web-research'
+                    ? 'Search the web for'
+                    : 'Popular templates'}
               </h3>
               {isLoadingSuggestions && (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
