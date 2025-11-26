@@ -19,7 +19,11 @@ const AIProvidersSchema = z.enum([
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
-const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4-5@20250929', 'claude-haiku-4-5@20251001']);
+const VertexAnthropicModelSchema = z.enum([
+  'claude-opus-4-5@20251124',
+  'claude-sonnet-4-5@20250929',
+  'claude-haiku-4-5@20251001',
+]);
 const VertexAIModelSchema = z.enum([
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
@@ -28,11 +32,16 @@ const VertexAIModelSchema = z.enum([
 ]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
+  'us.anthropic.claude-opus-4-5-20251124-v1:0',
   'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
   'anthropic.claude-haiku-4-5-20251001-v1:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
-const AnthropicModelSchema = z.enum(['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001']);
+const AnthropicModelSchema = z.enum([
+  'claude-opus-4-5-20251124',
+  'claude-sonnet-4-5-20250929',
+  'claude-haiku-4-5-20251001',
+]);
 const OpenAIModelSchema = z.enum([
   'gpt-5-codex',
   'gpt-5-2025-08-07',
@@ -77,6 +86,9 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-off',
+  'vertexai-anthropic:claude-opus-4-5@20251124:thinking-toggle-on',
+  'vertexai-anthropic:claude-opus-4-5@20251124',
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
   'vertexai-anthropic:claude-sonnet-4-5@20250929',
@@ -102,6 +114,8 @@ const GeminiAIModelKeySchema = z.enum(['geminiai:gemini-2.5-flash-lite-preview-0
 export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
+  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251124-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-opus-4-5-20251124-v1:0:thinking-toggle-on',
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off',
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
   'bedrock-anthropic:anthropic.claude-haiku-4-5-20251001-v1:0:thinking-toggle-off',
@@ -113,6 +127,8 @@ const BedrockModelKeySchema = z.enum(['bedrock:us.deepseek.r1-v1:0']);
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
+  'anthropic:claude-opus-4.5:thinking-toggle-off',
+  'anthropic:claude-opus-4.5:thinking-toggle-on',
   'anthropic:claude-sonnet-4.5:thinking-toggle-off',
   'anthropic:claude-sonnet-4.5:thinking-toggle-on',
   'anthropic:claude-haiku-4.5:thinking-toggle-off',
@@ -183,7 +199,7 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
-const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'others', 'default']);
+const ModelModeSchema = z.enum(['disabled', 'fast', 'max', 'max_plus', 'others', 'default']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({
