@@ -180,8 +180,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // When done, we'll send people to a new _team_ file
-  const newFilePath = ROUTES.CREATE_FILE(teamUuid, { private: false });
+  // When done, we'll send people to the AI create flow
+  const newFilePath = ROUTES.FILES_CREATE_AI;
 
   // If the user wants to upgrade to Pro, we'll send them to Stripe first
   if (result.data && result.data['team-plan'] === 'pro') {
