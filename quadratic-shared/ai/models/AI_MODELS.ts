@@ -731,7 +731,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'others',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
