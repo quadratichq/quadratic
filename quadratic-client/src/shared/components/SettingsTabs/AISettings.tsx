@@ -108,14 +108,16 @@ export function AISettings() {
             placeholder="Enter your custom rules or instructions here..."
             className="min-h-[300px] font-mono text-sm"
           />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCancelUserRules} disabled={!hasUserRulesChanges || isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveUserRules} disabled={!hasUserRulesChanges || isLoading || isSaving}>
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
+          {hasUserRulesChanges && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleCancelUserRules} disabled={isLoading}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveUserRules} disabled={isLoading || isSaving}>
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

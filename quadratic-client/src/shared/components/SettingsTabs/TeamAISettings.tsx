@@ -139,18 +139,16 @@ export function TeamAISettings() {
             className="min-h-[300px] font-mono text-sm"
             disabled={!canManageSettings}
           />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCancelTeamRules}
-              disabled={!hasTeamRulesChanges || fetcher.state !== 'idle'}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSaveTeamRules} disabled={!hasTeamRulesChanges || fetcher.state !== 'idle'}>
-              {fetcher.state !== 'idle' ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
+          {hasTeamRulesChanges && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleCancelTeamRules} disabled={fetcher.state !== 'idle'}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveTeamRules} disabled={fetcher.state !== 'idle'}>
+                {fetcher.state !== 'idle' ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
