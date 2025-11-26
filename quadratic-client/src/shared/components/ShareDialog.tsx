@@ -253,43 +253,45 @@ function ManageTeamUser({
 function ShareFileDialogBody({
   uuid,
   data,
+  upgradeMember,
   setUpgradeMember,
 }: {
   uuid: string;
   data: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
+  upgradeMember: UpgradeMember;
   setUpgradeMember: SetUpgradeMember;
 }) {
   const {
     file: { publicLinkAccess },
+    team: { uuid: teamUuid },
     users,
     invites,
     userMakingRequest: { filePermissions, id: loggedInUserId },
     owner,
   } = data;
-  // const fetchers = useFetchers();
+  const fetchers = useFetchers();
   const action = useMemo(() => ROUTES.API.FILE_SHARING(uuid), [uuid]);
   const canEditFile = useMemo(() => filePermissions.includes('FILE_EDIT'), [filePermissions]);
 
   sortLoggedInUserFirst(users, loggedInUserId);
 
-  const pendingInvites: { id: number; email: string; role: UserFileRole }[] = [];
-  // useMemo(
-  //   () =>
-  //     fetchers
-  //       .filter(
-  //         (fetcher) =>
-  //           isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
-  //       )
-  //       .map((fetcher, i) => {
-  //         const { email, role } = fetcher.json as FileShareAction['request.create-file-invite'];
-  //         return {
-  //           id: i,
-  //           email,
-  //           role,
-  //         };
-  //       }),
-  //   [fetchers]
-  // );
+  const pendingInvites = useMemo(
+    () =>
+      fetchers
+        .filter(
+          (fetcher) =>
+            isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
+        )
+        .map((fetcher, i) => {
+          const { email, role } = fetcher.json as FileShareAction['request.create-file-invite'];
+          return {
+            id: i,
+            email,
+            role,
+          };
+        }),
+    [fetchers]
+  );
 
   const disallowedEmails: string[] = useMemo(
     () => [
@@ -341,36 +343,52 @@ function ShareFileDialogBody({
       )}
 
       {users.map((user) => (
-        <ManageFileUser
-          key={user.id}
-          publicLinkAccess={publicLinkAccess}
-          loggedInUserId={loggedInUserId}
-          user={user}
-          canEditFile={canEditFile}
-          action={action}
-        />
+        <ManageMemberUpgradeWrapper
+          key={user.email}
+          email={user.email}
+          upgradeMember={upgradeMember}
+          setUpgradeMember={setUpgradeMember}
+          teamUuid={teamUuid}
+        >
+          <ManageFileUser
+            key={user.id}
+            publicLinkAccess={publicLinkAccess}
+            loggedInUserId={loggedInUserId}
+            user={user}
+            canEditFile={canEditFile}
+            action={action}
+          />
+        </ManageMemberUpgradeWrapper>
       ))}
 
       {invites.map((invite) => (
-        <ManageInvite
-          key={invite.id}
-          invite={invite}
-          onDelete={
-            filePermissions.includes('FILE_EDIT')
-              ? (submit, inviteId) => {
-                  const data: FileShareAction['request.delete-file-invite'] = {
-                    intent: 'delete-file-invite',
-                    inviteId,
-                  };
-                  submit(data, {
-                    method: 'POST',
-                    action,
-                    encType: 'application/json',
-                  });
-                }
-              : undefined
-          }
-        />
+        <ManageMemberUpgradeWrapper
+          key={invite.email}
+          setUpgradeMember={setUpgradeMember}
+          upgradeMember={upgradeMember}
+          email={invite.email}
+          teamUuid={teamUuid}
+        >
+          <ManageInvite
+            key={invite.id}
+            invite={invite}
+            onDelete={
+              filePermissions.includes('FILE_EDIT')
+                ? (submit, inviteId) => {
+                    const data: FileShareAction['request.delete-file-invite'] = {
+                      intent: 'delete-file-invite',
+                      inviteId,
+                    };
+                    submit(data, {
+                      method: 'POST',
+                      action,
+                      encType: 'application/json',
+                    });
+                  }
+                : undefined
+            }
+          />
+        </ManageMemberUpgradeWrapper>
       ))}
 
       {pendingInvites.map((invite, i) => (
@@ -380,37 +398,63 @@ function ShareFileDialogBody({
   );
 }
 
-function ShareFileUpgradeMemberDialog({ setUpgradeMember }: { setUpgradeMember: SetUpgradeMember }) {
+function ManageMemberUpgradeWrapper({
+  children,
+  email,
+  upgradeMember,
+  setUpgradeMember,
+  teamUuid,
+}: {
+  children: ReactNode;
+  email: string;
+  upgradeMember: UpgradeMember;
+  setUpgradeMember: SetUpgradeMember;
+  teamUuid: string;
+}) {
+  const wrapInUpgrade = upgradeMember && upgradeMember.showUpgrade === true && upgradeMember.email === email;
+
   // TODO: message for paid vs. free
   const isPaid = true;
+  const submit = useSubmit();
+  const handleUpgrade = () => {
+    setUpgradeMember(null);
+    // Note: we set the type here so we can grep the codebase later for where
+    // we fire this action. But that means we have to manually cast the role
+    // until we can better set types for this part of the code.
+    const data: TeamAction['request.create-team-invite'] = {
+      intent: 'create-team-invite',
+      // TODO: get types right here
+      email: upgradeMember?.email as string,
+      // TODO: get types right here
+      role: upgradeMember?.role as UserFileRole,
+    };
+    submit(data, { method: 'POST', action: ROUTES.TEAM(teamUuid), encType: 'application/json', navigate: false });
+  };
+
+  if (!wrapInUpgrade) {
+    return children;
+  }
+
   return (
-    <div className="flex flex-col rounded-md bg-accent p-4 text-sm">
-      <h3 className="text-md font-semibold">Upgrade to team member?</h3>
-      <p className="text-muted-foreground">
-        Would you like to add {`{{person.email}}`} to {`{team.name}`}?{' '}
-        {isPaid
-          ? `They’ll get access to this file, other team files, and paid features like increased AI usage.`
-          : `They’ll get access to this file and other team files.`}
-      </p>
-      {isPaid && (
-        <p className="mt-2 flex items-center gap-2 italic">
-          <GroupAddIcon />
-          Reminder: additional team members are billed per seat.
+    <div className="-mx-3 -my-1.5 flex flex-col gap-1.5 rounded-md bg-accent px-3 py-1.5">
+      {children}
+      <div className="flex flex-col gap-2 rounded-md bg-accent py-1.5 text-sm">
+        <p>
+          <strong className="text-md font-semibold">Upgrade to team member?</strong> They’ll get access to this file as
+          well as other team files. On Pro plans, they’ll also get access to paid features like increased AI usage.
         </p>
-      )}
-      <div className="mt-4 flex gap-2">
-        <Button
-          autoFocus
-          onClick={() => {
-            // Fire off the team upgrade
-            setUpgradeMember(null);
-          }}
-        >
-          Upgrade to team member
-        </Button>
-        <Button variant="outline" onClick={() => setUpgradeMember(null)}>
-          Not now
-        </Button>
+        {isPaid && (
+          <p className="flex items-center gap-2 italic">
+            <GroupAddIcon />
+            Reminder: team members are billed per seat on Pro plans.
+          </p>
+        )}
+        <div className="mt-2 flex gap-2">
+          <Button onClick={handleUpgrade}>Upgrade to team member</Button>
+          <Button variant="outline" onClick={() => setUpgradeMember(null)}>
+            Not now
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -551,7 +595,6 @@ type UpgradeMember = { email: string; role: UserFileRole; showUpgrade?: boolean 
 type SetUpgradeMember = React.Dispatch<React.SetStateAction<UpgradeMember>>;
 
 export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
-  const [upgradeMember, setUpgradeMember] = useState<UpgradeMember>(null);
   const fetcher = useFetcher<FilesSharingLoader>();
   const loadState = useMemo(() => (!fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED'), [fetcher]);
 
@@ -563,6 +606,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
   }, [fetcher, uuid]);
 
   // When the data is refreshed, check if we want to show the upgrade member dialog
+  const [upgradeMember, setUpgradeMember] = useState<UpgradeMember>(null);
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data && fetcher.data.data) {
       console.log('refreshed data');
@@ -572,7 +616,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
       ];
 
       if (upgradeMember && upgradeMember.showUpgrade !== true && allEmails.includes(upgradeMember.email)) {
-        console.log('fired showUpgrade');
+        console.log('after refresh, show upgrade');
         setUpgradeMember((prev) => (prev ? { ...prev, showUpgrade: true } : null));
       }
     }
@@ -590,13 +634,12 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
             <DialogTitle>Share file</DialogTitle>
 
             <div className="mt-0 flex items-center">
-              {upgradeMember === null && (
-                <CopyLinkButton
-                  publicLinkAccess={loaderData?.file.publicLinkAccess}
-                  isTeamFile={loaderData?.owner.type === 'team'}
-                  uuid={uuid}
-                />
-              )}
+              <CopyLinkButton
+                publicLinkAccess={loaderData?.file.publicLinkAccess}
+                isTeamFile={loaderData?.owner.type === 'team'}
+                uuid={uuid}
+              />
+
               <Button
                 variant={null}
                 size="icon"
@@ -636,13 +679,14 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
               </Type>
             </div>
           )}
-          {loadState === 'LOADED' && loaderData ? (
-            upgradeMember && upgradeMember.showUpgrade ? (
-              <ShareFileUpgradeMemberDialog setUpgradeMember={setUpgradeMember} />
-            ) : (
-              <ShareFileDialogBody uuid={uuid} data={loaderData} setUpgradeMember={setUpgradeMember} />
-            )
-          ) : null}
+          {loadState === 'LOADED' && loaderData && (
+            <ShareFileDialogBody
+              uuid={uuid}
+              data={loaderData}
+              setUpgradeMember={setUpgradeMember}
+              upgradeMember={upgradeMember}
+            />
+          )}
         </DialogBody>
       </DialogContent>
     </Dialog>
@@ -684,17 +728,6 @@ export function InviteForm({
       ).length > 0,
     [fetchers]
   );
-  const isLoading = useMemo(
-    () =>
-      fetchers.filter(
-        (fetcher) =>
-          fetcher.state !== 'idle' &&
-          isJsonObject(fetcher.json) &&
-          typeof fetcher.json.intent === 'string' &&
-          (fetcher.json.intent === 'create-team-invite' || fetcher.json.intent === 'create-file-invite')
-      ).length > 0,
-    [fetchers]
-  );
 
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
@@ -729,18 +762,7 @@ export function InviteForm({
       }
 
       // Handle (optionally) upgrading the invite to a team member
-      if (setUpgradeMember) {
-        setUpgradeMember({ email, role: role as UserFileRole });
-        // Note: we set the type here so we can grep the codebase later for where
-        // we fire this action. But that means we have to manually cast the role
-        // until we can better set types for this part of the code.
-        // const data: TeamAction['request.create-team-invite'] = {
-        //   intent: 'create-team-invite',
-        //   email,
-        //   role: role as unknown as UserTeamRole,
-        // };
-        // submit(data, { method: 'POST', action: ROUTES.TEAM(team.uuid), encType: 'application/json', navigate: false });
-      }
+      setUpgradeMember?.({ email, role: role as UserFileRole });
     },
     [action, disallowedEmails, intent, submit, setUpgradeMember]
   );
@@ -784,7 +806,7 @@ export function InviteForm({
       </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role" disabled={isLoading}>
+        <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -804,7 +826,6 @@ export function InviteForm({
         onClick={() => {
           inputRef.current?.focus();
         }}
-        loading={isLoading}
       >
         Invite
       </Button>
