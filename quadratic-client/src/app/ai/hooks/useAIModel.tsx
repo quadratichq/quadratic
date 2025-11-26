@@ -27,18 +27,22 @@ export const useAIModel = (): UseAIModelReturn => {
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debug } = useDebugFlags();
 
-  const [modelTypeRaw, setModelTypeRaw] = useLocalStorage<MODEL_TYPE | 'max_plus'>(AI_MODEL_TYPE_KEY, 'auto');
-
-  // Migrate old 'max_plus' -> 'max' (max_plus no longer exists)
-  useEffect(() => {
-    if (modelTypeRaw === 'max_plus') {
-      setModelTypeRaw('max');
-    }
-  }, [modelTypeRaw, setModelTypeRaw]);
-
-  const modelType = (modelTypeRaw === 'max_plus' ? 'max' : modelTypeRaw) as MODEL_TYPE;
-  const setModelType = setModelTypeRaw as (value: MODEL_TYPE) => void;
+  const [modelTypeRaw, setModelTypeRaw] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'auto');
   const [othersModelKey, setOthersModelKey] = useLocalStorage<AIModelKey | undefined>(AI_MODEL_OTHERS_KEY, undefined);
+  const [hasMigratedMax, setHasMigratedMax] = useLocalStorage<boolean>('aiModelMaxMigrated', false);
+
+  // Migrate old 'max' (Sonnet 4.5) -> 'auto' since Max tier was renamed
+  // Old 'max' in prod = Sonnet 4.5, which is now 'auto' mode
+  // Only migrate once to avoid resetting users who select the new Max tier
+  useEffect(() => {
+    if (!hasMigratedMax && modelTypeRaw === 'max') {
+      setModelTypeRaw('auto');
+      setHasMigratedMax(true);
+    }
+  }, [hasMigratedMax, modelTypeRaw, setModelTypeRaw, setHasMigratedMax]);
+
+  const modelType = modelTypeRaw;
+  const setModelType = setModelTypeRaw;
 
   const othersModelKeys: AIModelKey[] = useMemo(() => {
     return Object.keys(MODELS_CONFIGURATION).filter((key) => {
