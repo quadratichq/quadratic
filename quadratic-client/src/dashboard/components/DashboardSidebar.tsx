@@ -1,3 +1,4 @@
+import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -5,7 +6,6 @@ import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialog, showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
@@ -271,20 +271,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex flex-shrink-0 items-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-8 w-8"
-                  onClick={showSettingsDialog}
-                  disabled={!loggedInUser}
-                >
-                  <SettingsIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Settings</TooltipContent>
-            </Tooltip>
+            <ThemePickerMenu />
           </div>
         </div>
       </div>
