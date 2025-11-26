@@ -123,6 +123,8 @@ export const Component = () => {
   const [suggestions, setSuggestions] = useState<SuggestedPrompt[]>(DEFAULT_SUGGESTIONS);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isEditingRequest, setIsEditingRequest] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState('');
 
   const planTextareaRef = useRef<HTMLTextAreaElement>(null);
   const executeButtonRef = useRef<HTMLButtonElement>(null);
@@ -816,11 +818,59 @@ export const Component = () => {
             </div>
 
             <div className="mb-4 rounded-lg bg-accent/50 p-4">
-              <div className="mb-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Pencil1Icon className="h-4 w-4" />
-                Your request
+              <div className="mb-1 flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Your request</span>
+                {!isEditingRequest && !isGeneratingPlan && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    onClick={() => {
+                      setEditedPrompt(prompt);
+                      setIsEditingRequest(true);
+                    }}
+                  >
+                    <Pencil1Icon className="h-3 w-3" />
+                    Edit
+                  </Button>
+                )}
               </div>
-              <p className="text-sm">{prompt}</p>
+              {isEditingRequest ? (
+                <div className="mt-2 space-y-2">
+                  <Textarea
+                    value={editedPrompt}
+                    onChange={(e) => setEditedPrompt(e.target.value)}
+                    className="min-h-20 resize-none text-sm"
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingRequest(false);
+                        setEditedPrompt('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={!editedPrompt.trim() || editedPrompt === prompt}
+                      onClick={() => {
+                        setPrompt(editedPrompt);
+                        setIsEditingRequest(false);
+                        generatePlan(editedPrompt);
+                      }}
+                    >
+                      <ReloadIcon className="mr-1.5 h-3 w-3" />
+                      Regenerate
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm">{prompt}</p>
+              )}
             </div>
 
             {planError && (
