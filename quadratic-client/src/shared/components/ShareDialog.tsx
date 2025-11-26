@@ -172,6 +172,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
                     method: 'POST',
                     action,
                     encType: 'application/json',
+                    navigate: false,
                   });
                 }
               : undefined
@@ -224,6 +225,7 @@ function ManageTeamUser({
           method: 'POST',
           action,
           encType: 'application/json',
+          navigate: false,
         });
       }}
       onDelete={
@@ -239,6 +241,7 @@ function ManageTeamUser({
                   method: 'POST',
                   action,
                   encType: 'application/json',
+                  navigate: false,
                 });
               }
             }
@@ -355,6 +358,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
                     method: 'POST',
                     action,
                     encType: 'application/json',
+                    navigate: false,
                   });
                 }
               : undefined
@@ -398,7 +402,7 @@ function ManageFileUser({
           ? async (submit, userId) => {
               if (await confirmFn()) {
                 const data: FileShareAction['request.delete-file-user'] = { intent: 'delete-file-user', userId };
-                submit(data, { method: 'POST', action, encType: 'application/json' });
+                submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
               }
             }
           : undefined
@@ -412,7 +416,7 @@ function ManageFileUser({
                 // @ts-expect-error fix type here because role
                 role,
               };
-              submit(data, { method: 'POST', action, encType: 'application/json' });
+              submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
             }
           : undefined
       }
