@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import {
   clearFormattingAndBorders,
   removeNumericFormat,
@@ -59,7 +60,6 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
-import type { ColorResult } from 'react-color';
 
 type FormatActionSpec = Pick<
   ActionSpecRecord,

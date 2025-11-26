@@ -3,8 +3,8 @@ import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { DateFormat } from '@/app/ui/components/DateFormat';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -217,16 +217,27 @@ export const FormatColorPickerButton = memo(
     const label = actionSpec.label();
     const Icon = actionSpec.Icon;
 
+    const iconNode = Icon ? (
+      <div className="relative flex items-center justify-center">
+        <Icon />
+        <div
+          className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+          style={{ backgroundColor: activeColor ?? 'currentColor' }}
+        />
+      </div>
+    ) : null;
+
     return (
       <FormatButtonDropdown
         tooltipLabel={label}
-        IconNode={Icon && <Icon style={activeColor ? { color: activeColor } : undefined} />}
+        IconNode={iconNode}
         checked={activeColor !== undefined}
         hideLabel={hideLabel}
         action={action}
       >
         <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
-          <QColorPicker
+          <ColorPicker
+            color={activeColor}
             onChangeComplete={(color) => {
               actionSpec.run(color);
               focusGrid();
