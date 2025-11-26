@@ -172,7 +172,6 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
                     method: 'POST',
                     action,
                     encType: 'application/json',
-                    navigate: false,
                   });
                 }
               : undefined
@@ -225,7 +224,6 @@ function ManageTeamUser({
           method: 'POST',
           action,
           encType: 'application/json',
-          navigate: false,
         });
       }}
       onDelete={
@@ -241,7 +239,6 @@ function ManageTeamUser({
                   method: 'POST',
                   action,
                   encType: 'application/json',
-                  navigate: false,
                 });
               }
             }
@@ -358,7 +355,6 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
                     method: 'POST',
                     action,
                     encType: 'application/json',
-                    navigate: false,
                   });
                 }
               : undefined
@@ -402,7 +398,7 @@ function ManageFileUser({
           ? async (submit, userId) => {
               if (await confirmFn()) {
                 const data: FileShareAction['request.delete-file-user'] = { intent: 'delete-file-user', userId };
-                submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
+                submit(data, { method: 'POST', action, encType: 'application/json' });
               }
             }
           : undefined
@@ -416,7 +412,7 @@ function ManageFileUser({
                 // @ts-expect-error fix type here because role
                 role,
               };
-              submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
+              submit(data, { method: 'POST', action, encType: 'application/json' });
             }
           : undefined
       }
@@ -728,11 +724,12 @@ function ManageUser({
   user: ShareUser;
   roles: (UserTeamRole | UserFileRole)[];
 }) {
-  const fetcherDelete = useFetcher();
-  const fetcherUpdate = useFetcher();
+  const userId = String(user.id);
+  // Use consistent fetcher keys so updates can be tracked across the app
+  const fetcherDelete = useFetcher({ key: `delete-user-${userId}` });
+  const fetcherUpdate = useFetcher({ key: `update-user-${userId}` });
 
   const isReadOnly = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
-  const userId = String(user.id);
   let activeRole = user.role;
   let error = undefined;
 
