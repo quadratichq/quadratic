@@ -96,6 +96,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
     file: {
       publicLinkAccess,
     },
+    team: {
+      name: dbFile.ownerTeam.name,
+      uuid: dbFile.ownerTeam.uuid,
+    },
     users: dbUsers.map(({ user: { id }, role }) => {
       const { email, name, picture } = usersById[id];
       return { id, email, name, picture, role };

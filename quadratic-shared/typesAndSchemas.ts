@@ -223,6 +223,7 @@ export const ApiSchemas = {
     file: FileSchema.pick({
       publicLinkAccess: true,
     }),
+    team: TeamSchema.pick({ name: true, uuid: true }),
     userMakingRequest: z.object({
       id: FileUserSchema.shape.id,
       filePermissions: z.array(FilePermissionSchema),

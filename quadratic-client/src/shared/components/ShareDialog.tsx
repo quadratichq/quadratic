@@ -3,12 +3,15 @@ import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { GroupAddIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import {
   Select,
   SelectContent,
@@ -301,6 +304,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
           intent="create-file-invite"
           disallowedEmails={disallowedEmails}
           roles={[UserFileRoleSchema.enum.EDITOR, UserFileRoleSchema.enum.VIEWER]}
+          team={data.team}
         />
       )}
 
@@ -585,12 +589,16 @@ export function InviteForm({
   intent,
   roles,
   roleDefaultValue,
+  team,
 }: {
   disallowedEmails: string[];
   intent: TeamAction['request.create-team-invite']['intent'] | FileShareAction['request.create-file-invite']['intent'];
   action: string;
   roles: (UserTeamRole | UserFileRole)[];
   roleDefaultValue?: UserTeamRole | UserFileRole;
+  // If this is passed in, we'll allow optionally upgrading the person to a team
+  // member while also doing the invite
+  team?: { name: string; uuid: string };
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -607,6 +615,7 @@ export function InviteForm({
       ).length > 0,
     [fetchers]
   );
+  const [upgradeToTeamMember, setUpgradeToTeamMember] = useState(false);
 
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
@@ -639,8 +648,22 @@ export function InviteForm({
         inputRef.current.value = '';
         inputRef.current.focus();
       }
+
+      // Handle (optionally) upgrading the invite to a team member
+      if (team && upgradeToTeamMember) {
+        setUpgradeToTeamMember(false);
+        // Note: we set the type here so we can grep the codebase later for where
+        // we fire this action. But that means we have to manually cast the role
+        // until we can better set types for this part of the code.
+        const data: TeamAction['request.create-team-invite'] = {
+          intent: 'create-team-invite',
+          email,
+          role: role as unknown as UserTeamRole,
+        };
+        submit(data, { method: 'POST', action: ROUTES.TEAM(team.uuid), encType: 'application/json', navigate: false });
+      }
     },
-    [action, disallowedEmails, intent, submit]
+    [action, disallowedEmails, intent, submit, upgradeToTeamMember, team]
   );
 
   // Manage focus if a delete is triggered
@@ -658,54 +681,79 @@ export function InviteForm({
   }, []);
 
   return (
-    <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
-      <div className="flex flex-grow flex-col">
-        <Input
-          autoComplete="off"
-          spellCheck="false"
-          aria-label="Email"
-          placeholder="Email"
-          // We have to put the `search` in the name because Safari
-          // https://bytes.grubhub.com/disabling-safari-autofill-for-a-single-line-address-input-b83137b5b1c7
-          name="email_search"
-          autoFocus
-          ref={inputRef}
-          onChange={(e) => {
-            setError('');
+    <>
+      <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
+        <div className="flex flex-grow flex-col">
+          <Input
+            autoComplete="off"
+            spellCheck="false"
+            aria-label="Email"
+            placeholder="Email"
+            // We have to put the `search` in the name because Safari
+            // https://bytes.grubhub.com/disabling-safari-autofill-for-a-single-line-address-input-b83137b5b1c7
+            name="email_search"
+            autoFocus
+            ref={inputRef}
+            onChange={(e) => {
+              setError('');
+            }}
+          />
+          {error && (
+            <Type variant="formError" className="mt-1">
+              {error}
+            </Type>
+          )}
+
+          {team && (
+            <Label className="mt-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Checkbox
+                checked={upgradeToTeamMember}
+                onCheckedChange={(checked) => setUpgradeToTeamMember(Boolean(checked))}
+                className="border-muted-foreground/50"
+              />
+              Upgrade to team member
+            </Label>
+          )}
+        </div>
+
+        <div className="flex-shrink-0">
+          <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((role, i) => (
+                <SelectItem key={role} value={role}>
+                  {getRoleLabel(role)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button
+          data-testid="share-file-invite-button"
+          type="submit"
+          onClick={() => {
+            inputRef.current?.focus();
           }}
-        />
-        {error && (
-          <Type variant="formError" className="mt-1">
-            {error}
-          </Type>
-        )}
-      </div>
-
-      <div className="flex-shrink-0">
-        <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role">
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {roles.map((role, i) => (
-              <SelectItem key={role} value={role}>
-                {getRoleLabel(role)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button
-        data-testid="share-file-invite-button"
-        type="submit"
-        onClick={() => {
-          inputRef.current?.focus();
-        }}
-      >
-        Invite
-      </Button>
-    </form>
+        >
+          Invite
+        </Button>
+      </form>
+      {team && upgradeToTeamMember && (
+        <div className="flex flex-col gap-2 rounded-md bg-accent p-4 text-sm">
+          <p>
+            This person will also be added to {team.name}, giving them access to this file, other team files, and team
+            features like increased AI usage.
+          </p>
+          <p className="flex items-center gap-2 italic">
+            <GroupAddIcon />
+            Reminder: additional team members are billed per seat.
+          </p>
+        </div>
+      )}
+    </>
   );
 }
 
