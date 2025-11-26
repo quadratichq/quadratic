@@ -12,7 +12,7 @@ export const FloatingFPS = memo(() => {
 
   return (
     <div
-      className="pointer-events-none absolute bottom-12 z-50 flex items-center gap-2 rounded-md px-3 py-1.5 text-xs text-muted-foreground shadow-lg"
+      className="pointer-events-none absolute bottom-12 z-50 flex items-center gap-2 rounded-md bg-[rgba(255,255,255,0.5)] px-3 py-1.5 text-xs text-muted-foreground shadow-md"
       style={{ left: `${leftHeading + 5}px` }}
     >
       <div

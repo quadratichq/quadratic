@@ -1638,12 +1638,12 @@ export type CoreClientMessage =
   | CoreClientMultiplayerState
   | CoreClientConnectionState
   | CoreClientOfflineTransactions
+  | CoreClientOfflineTransactionsApplied
   | CoreClientUndoRedo
   | CoreClientGetJwt
   | CoreClientImage
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
-  | CoreClientOfflineTransactionsApplied
   | CoreClientGetValidations
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
