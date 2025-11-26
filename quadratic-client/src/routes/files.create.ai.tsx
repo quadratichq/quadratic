@@ -572,7 +572,7 @@ export const Component = () => {
   // Selection View
   if (view === 'selection') {
     return (
-      <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+      <div className="relative flex h-full flex-col bg-background">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -663,7 +663,7 @@ export const Component = () => {
   // File Upload View
   if (view === 'file-upload') {
     return (
-      <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+      <div className="relative flex h-full flex-col bg-background">
         <button
           onClick={handleBack}
           className="absolute left-6 top-6 z-10 flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-background text-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
@@ -698,7 +698,7 @@ export const Component = () => {
   // PDF Upload View
   if (view === 'pdf-upload') {
     return (
-      <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+      <div className="relative flex h-full flex-col bg-background">
         <button
           onClick={handleBack}
           className="absolute left-6 top-6 z-10 flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-background text-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
@@ -733,7 +733,7 @@ export const Component = () => {
   // Connection Focused View
   if (view === 'connection-focused') {
     return (
-      <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+      <div className="relative flex h-full flex-col bg-background">
         <button
           onClick={handleBack}
           className="absolute left-6 top-6 z-10 flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-background text-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
@@ -798,7 +798,7 @@ export const Component = () => {
   // Plan Review View
   if (view === 'plan-review') {
     return (
-      <div className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20">
+      <div className="relative flex h-full flex-col bg-background">
         <button
           onClick={handleBack}
           className="absolute left-6 top-6 z-10 flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-background text-foreground shadow-sm transition-all hover:border-primary hover:shadow-md"
@@ -950,7 +950,7 @@ export const Component = () => {
   // Outline View (default)
   return (
     <div
-      className="relative flex h-full flex-col bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950/20 dark:via-blue-950/20 dark:to-indigo-950/20"
+      className="relative flex h-full flex-col bg-background"
       onDrop={(e) => handleDrop(e, [...FILE_TYPES, ...PDF_TYPES])}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
