@@ -75,6 +75,26 @@ const DEFAULT_SUGGESTIONS: SuggestedPrompt[] = [
   },
 ];
 
+const WEB_RESEARCH_SUGGESTIONS: SuggestedPrompt[] = [
+  {
+    title: 'Competitor Analysis',
+    description: 'Research and compare market competitors',
+    prompt:
+      'Research the top 5 competitors in [your industry] and create a comparison table with pricing, features, and market share',
+  },
+  {
+    title: 'Stock Market Data',
+    description: 'Track stock prices and performance',
+    prompt:
+      'Look up current stock prices for AAPL, MSFT, GOOGL, AMZN, and NVDA and create a performance comparison dashboard',
+  },
+  {
+    title: 'Industry Statistics',
+    description: 'Gather market trends and data',
+    prompt: 'Research the latest statistics and trends for the SaaS industry and create a market overview spreadsheet',
+  },
+];
+
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const { activeTeamUuid } = await requireAuth(loaderArgs.request);
   const teamData = await apiClient.teams.get(activeTeamUuid);
@@ -119,7 +139,8 @@ export const Component = () => {
   // Generate contextual suggestions when files or connections change
   useEffect(() => {
     if (uploadedFiles.length === 0 && !selectedConnection) {
-      setSuggestions(DEFAULT_SUGGESTIONS);
+      // Use web research suggestions when that's the entry source
+      setSuggestions(entrySource === 'web-research' ? WEB_RESEARCH_SUGGESTIONS : DEFAULT_SUGGESTIONS);
       return;
     }
 
@@ -175,7 +196,7 @@ export const Component = () => {
     return () => {
       suggestionsAbortRef.current?.abort();
     };
-  }, [uploadedFiles, selectedConnection, teamUuid]);
+  }, [uploadedFiles, selectedConnection, teamUuid, entrySource]);
 
   // Check if execute button is visible in viewport
   useEffect(() => {
