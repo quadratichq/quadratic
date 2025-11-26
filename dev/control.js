@@ -637,6 +637,8 @@ export class Control {
         this.ui = ui;
         // if Redis and PostgreSQL are not running, we quit before continuing
         await this.checkServices();
+        // If checkServices() found errors, quit() was called and process will exit
+        // Only continue if services are running
         this.runNpmInstall();
         this.runRust();
         this.runPython();
