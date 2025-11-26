@@ -13,7 +13,7 @@ import { Separator } from '@/shared/shadcn/ui/separator';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { PieChartIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useFetcher, useSubmit } from 'react-router';
+import { useFetcher, useSubmit } from 'react-router';
 
 export function TeamSettings() {
   const { teamData } = useTeamData();
@@ -137,16 +137,7 @@ export function TeamSettings() {
             <h4 className="mb-3 text-sm font-semibold">Current usage</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm">
-                  Team members{' '}
-                  <span className="text-muted-foreground">
-                    (
-                    <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
-                      manage
-                    </Link>
-                    )
-                  </span>
-                </span>
+                <span className="text-sm">Team members</span>
                 <span className="text-sm font-medium">{users.length}</span>
               </div>
               <div className="flex items-center justify-between">

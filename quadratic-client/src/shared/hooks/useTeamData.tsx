@@ -1,42 +1,154 @@
-import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import type { GetTeamData } from '@/routes/api.teams.$teamUuid';
+import { ROUTE_LOADER_IDS, ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useMemo } from 'react';
-import { useFetchers, useRouteLoaderData } from 'react-router';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFetcher, useFetchers, useRouteLoaderData } from 'react-router';
 
 type TeamData = ApiTypes['/v0/teams/:uuid.GET.response'];
+
+// Dashboard route loader data type
+type DashboardLoaderData = {
+  teams: ApiTypes['/v0/teams.GET.response']['teams'];
+  userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'] & {
+    clientDataKv?: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'];
+  };
+  eduStatus: ApiTypes['/v0/education.GET.response']['eduStatus'];
+  activeTeam: TeamData;
+};
 
 export function useTeamData() {
   // Try to get team data from dashboard route loader
   let dashboardTeam: TeamData | null = null;
   try {
-    const dashboardData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as
-      | {
-          activeTeam: TeamData;
-        }
-      | null
-      | undefined;
+    const dashboardData = useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as DashboardLoaderData | null | undefined;
     dashboardTeam = dashboardData?.activeTeam ?? null;
   } catch {
     dashboardTeam = null;
   }
 
-  // Try to get team data from file route loader
-  let fileTeam: TeamData | null = null;
+  // Try to get team UUID from file route loader (but not full team data)
+  let fileTeamUuid: string | null = null;
   try {
     const fileData = useFileRouteLoaderData();
-    fileTeam = fileData?.activeTeam ?? null;
+    // Get team UUID from file data
+    fileTeamUuid = fileData?.team?.uuid ?? null;
   } catch {
-    fileTeam = null;
+    fileTeamUuid = null;
   }
 
-  // Get all fetchers to apply optimistic updates
+  // Use fetcher to load team data when we have UUID but no data (file context)
+  const teamFetcher = useFetcher<GetTeamData>({ key: 'team-data-fetcher' });
+  const teamUuid = dashboardTeam?.team.uuid ?? fileTeamUuid;
+  const hasFetchedRef = useRef(false);
+
+  // Reset fetch flag when team UUID changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+    hasLoadedDataRef.current = false; // Reset loaded flag when team UUID changes
+  }, [teamUuid]);
+
+  // Load team data via fetcher if we're in file context and don't have team data
+  useEffect(() => {
+    if (teamUuid && !dashboardTeam && teamFetcher.state === 'idle' && !teamFetcher.data && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      // Load from the API route which returns team data directly
+      teamFetcher.load(ROUTES.API.TEAM(teamUuid));
+    }
+  }, [teamUuid, dashboardTeam, teamFetcher]);
+
+  // Keep previous team data to prevent flicker during reload
+  const previousFetcherTeamRef = useRef<TeamData | null>(null);
+  // Track if we've successfully loaded data at least once (to distinguish initial load from reloads)
+  const hasLoadedDataRef = useRef(false);
+
+  // Get team data from fetcher if available
+  // The fetcher loads from the API route which returns GetTeamData
+  const fetcherTeam: TeamData | null = useMemo(() => {
+    if (!teamFetcher.data || typeof teamFetcher.data !== 'object') {
+      // Return previous data if available to prevent flicker during reload
+      return previousFetcherTeamRef.current;
+    }
+    if (
+      'ok' in teamFetcher.data &&
+      teamFetcher.data.ok === true &&
+      'data' in teamFetcher.data &&
+      teamFetcher.data.data
+    ) {
+      const newData = teamFetcher.data.data;
+      previousFetcherTeamRef.current = newData;
+      hasLoadedDataRef.current = true; // Mark that we've successfully loaded data
+      return newData;
+    }
+    // Return previous data if current data is invalid
+    return previousFetcherTeamRef.current;
+  }, [teamFetcher.data]);
+
+  // Get all fetchers to apply optimistic updates and detect action completions
   const fetchers = useFetchers();
+  const previousActionCountRef = useRef(0);
+  const reloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reload team data when team actions complete successfully
+  // Only reload for actions that need fresh data (invites), not for user updates/deletes which have good optimistic updates
+  useEffect(() => {
+    // Only reload for invite actions - user updates/deletes have comprehensive optimistic updates
+    const actionsNeedingReload = ['create-team-invite', 'delete-team-invite'];
+
+    const completedActions = fetchers.filter((f) => {
+      if (f.state !== 'idle' || !f.data || !isJsonObject(f.data) || !('ok' in f.data) || f.data.ok !== true) {
+        return false;
+      }
+      if (!isJsonObject(f.json)) {
+        return false;
+      }
+      const json = f.json as { intent?: string };
+      if (!('intent' in json) || typeof json.intent !== 'string') {
+        return false;
+      }
+      return actionsNeedingReload.includes(json.intent);
+    });
+
+    const currentActionCount = completedActions.length;
+
+    // Only reload for invite actions, and only in file context (not dashboard)
+    // Dashboard already has fresh data from route revalidation
+    if (
+      currentActionCount > previousActionCountRef.current &&
+      teamUuid &&
+      !dashboardTeam &&
+      teamFetcher.state === 'idle'
+    ) {
+      // Clear any pending reload timeout
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
+
+      // Delay reload to let optimistic updates render smoothly and debounce multiple actions
+      // Use a longer delay to ensure UI has settled before reloading
+      reloadTimeoutRef.current = setTimeout(() => {
+        // Only reload if fetcher is still idle (not already loading)
+        if (teamFetcher.state === 'idle') {
+          hasFetchedRef.current = false; // Reset so we can reload
+          teamFetcher.load(ROUTES.API.TEAM(teamUuid));
+        }
+      }, 800);
+    }
+
+    previousActionCountRef.current = currentActionCount;
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
+    };
+  }, [fetchers, teamUuid, dashboardTeam, teamFetcher]);
 
   // Determine which data source to use and apply optimistic updates
   const teamData = useMemo(() => {
-    const baseData = dashboardTeam ?? fileTeam ?? null;
+    const baseData = dashboardTeam ?? fetcherTeam ?? null;
     if (!baseData) return null;
 
     // Apply optimistic updates from fetchers
@@ -63,11 +175,110 @@ export function useTeamData() {
       optimisticData.users = optimisticData.users.filter((user) => !deletingUserIds.includes(String(user.id)));
     }
 
+    // Watch for invite deletions (optimistic)
+    const deleteInviteFetchers = fetchers.filter(
+      (f) => f.state !== 'idle' && isJsonObject(f.json) && 'intent' in f.json && f.json.intent === 'delete-team-invite'
+    );
+    if (deleteInviteFetchers.length > 0) {
+      const deletingInviteIds = deleteInviteFetchers
+        .map((f) => {
+          if (isJsonObject(f.json) && 'inviteId' in f.json) {
+            return String(f.json.inviteId);
+          }
+          return null;
+        })
+        .filter((id): id is string => id !== null);
+      optimisticData.invites = optimisticData.invites.filter(
+        (invite) => !deletingInviteIds.includes(String(invite.id))
+      );
+    }
+
+    // Watch for invite creations (optimistic) - show pending invites
+    // But only for invites that haven't been converted to users yet
+    const createInviteFetchers = fetchers.filter(
+      (f) =>
+        isJsonObject(f.json) &&
+        'intent' in f.json &&
+        f.json.intent === 'create-team-invite' &&
+        'email' in f.json &&
+        'role' in f.json
+    );
+
+    // Separate pending (not yet completed) and completed invite fetchers
+    const pendingInviteFetchers = createInviteFetchers.filter((f) => f.state !== 'idle');
+    const completedInviteFetchers = createInviteFetchers.filter(
+      (f) => f.state === 'idle' && f.data && isJsonObject(f.data) && 'ok' in f.data && f.data.ok === true
+    );
+
+    // Get emails of existing users to avoid duplicates
+    const existingUserEmails = new Set(optimisticData.users.map((user) => user.email));
+
+    // Get emails from completed invite actions - these should be removed from optimistic invites
+    // since the server has processed them (either as invites or users)
+    const completedInviteEmails = new Set(
+      completedInviteFetchers
+        .map((f) => {
+          if (isJsonObject(f.json) && 'email' in f.json) {
+            return String(f.json.email);
+          }
+          return null;
+        })
+        .filter((email): email is string => email !== null)
+    );
+
+    if (pendingInviteFetchers.length > 0) {
+      const pendingInvites = pendingInviteFetchers
+        .map((f, i) => {
+          const json = f.json as { email: string; role: string };
+          return {
+            id: -i - 1, // Negative ID to avoid conflicts
+            email: json.email,
+            role: json.role as ApiTypes['/v0/teams/:uuid.GET.response']['invites'][0]['role'],
+          };
+        })
+        // Filter out invites for emails that already exist as users
+        // (This happens when inviting an existing user - server immediately adds them as a user)
+        .filter((invite) => !existingUserEmails.has(invite.email));
+
+      // Also filter out any existing invites with the same email to avoid duplicates
+      const pendingInviteEmails = new Set(pendingInvites.map((inv) => inv.email));
+      optimisticData.invites = [
+        ...optimisticData.invites.filter((inv) => !pendingInviteEmails.has(inv.email)),
+        ...pendingInvites,
+      ];
+    }
+
+    // Remove optimistic invites that have been completed (server has processed them)
+    if (completedInviteEmails.size > 0) {
+      optimisticData.invites = optimisticData.invites.filter((invite) => !completedInviteEmails.has(invite.email));
+    }
+
+    // Ensure no duplicate users by email (do this before filtering invites by user emails)
+    const seenUserEmails = new Set<string>();
+    optimisticData.users = optimisticData.users.filter((user) => {
+      if (seenUserEmails.has(user.email)) {
+        return false;
+      }
+      seenUserEmails.add(user.email);
+      return true;
+    });
+
+    // Also filter out any invites that match existing user emails (in case server added them as users)
+    // This prevents showing both an invite and a user for the same email
+    // Use the deduplicated user emails set
+    optimisticData.invites = optimisticData.invites.filter((invite) => !seenUserEmails.has(invite.email));
+
     return optimisticData;
-  }, [dashboardTeam, fileTeam, fetchers]);
+  }, [dashboardTeam, fetcherTeam, fetchers]);
+
+  // Only show loading state on initial load, not on subsequent reloads
+  // If we've loaded data before (hasLoadedDataRef) or have previous data (previousFetcherTeamRef),
+  // we should not show loading state during reloads
+  const isLoading =
+    !dashboardTeam && teamFetcher.state !== 'idle' && !hasLoadedDataRef.current && !previousFetcherTeamRef.current;
 
   return {
     teamData: teamData ? { activeTeam: teamData } : null,
-    isLoading: false,
+    isLoading,
   };
 }

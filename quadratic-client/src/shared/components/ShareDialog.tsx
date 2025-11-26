@@ -6,6 +6,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
+import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -66,30 +67,45 @@ export function DialogBody({ children }: { children: ReactNode }) {
   return <div className={`flex flex-col gap-3`}>{children}</div>;
 }
 
-export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.response'] }) {
-  const {
-    userMakingRequest,
-    users,
-    invites,
-    team: { uuid },
-    license,
-  } = data;
-  const action = useMemo(() => ROUTES.TEAM(uuid), [uuid]);
+export function ShareTeamDialog() {
+  const { teamData, isLoading } = useTeamData();
+  const data = teamData?.activeTeam;
+  const fetchers = useFetchers();
+
+  // Extract data with useMemo to avoid dependency issues
+  const users = useMemo(() => data?.users ?? [], [data?.users]);
+  const invites = useMemo(() => data?.invites ?? [], [data?.invites]);
+  const uuid = useMemo(() => data?.team?.uuid ?? '', [data?.team?.uuid]);
+  const userMakingRequest = data?.userMakingRequest;
+  const license = data?.license;
+
+  // All hooks must be called before any conditional returns
+  const action = useMemo(() => (uuid ? ROUTES.TEAM(uuid) : ''), [uuid]);
   const numberOfOwners = useMemo(() => users.filter((user) => user.role === 'OWNER').length, [users]);
 
-  const pendingInvites = useFetchers()
-    .filter(
-      (fetcher) =>
-        isJsonObject(fetcher.json) && fetcher.json.intent === 'create-team-invite' && fetcher.state !== 'idle'
-    )
-    .map((fetcher, i) => {
-      const { email, role } = fetcher.json as TeamAction['request.create-team-invite'];
-      return {
-        id: i,
-        email,
-        role,
-      };
-    });
+  const pendingInvites = useMemo(() => {
+    const inviteEmails = new Set(invites.map((inv) => inv.email));
+    const userEmails = new Set(users.map((user) => user.email));
+
+    return (
+      fetchers
+        .filter(
+          (fetcher) =>
+            isJsonObject(fetcher.json) && fetcher.json.intent === 'create-team-invite' && fetcher.state !== 'idle'
+        )
+        .map((fetcher, i) => {
+          const { email, role } = fetcher.json as TeamAction['request.create-team-invite'];
+          return {
+            id: i,
+            email,
+            role,
+          };
+        })
+        // Filter out invites that are already in the invites list (from useTeamData optimistic updates)
+        // or that match existing users (when inviting existing users, they're immediately added as users)
+        .filter((invite) => !inviteEmails.has(invite.email) && !userEmails.has(invite.email))
+    );
+  }, [fetchers, invites, users]);
 
   // Get all emails of users and pending invites so user can't input them
   const existingTeamEmails: string[] = useMemo(
@@ -100,6 +116,19 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
     ],
     [invites, pendingInvites, users]
   );
+
+  // Now we can do conditional returns after all hooks
+  if (isLoading || !data || !userMakingRequest || !license) {
+    return (
+      <DialogBody>
+        <ListItem>
+          <Skeleton className={`h-6 w-6 rounded-full`} />
+          <Skeleton className={`h-4 w-40 rounded-sm`} />
+          <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
+        </ListItem>
+      </DialogBody>
+    );
+  }
 
   // <Button
   //   variant="link"
@@ -632,7 +661,7 @@ export function InviteForm({
 
       // Submit the data
       // TODO: (enhancement) enhance types so it knows which its submitting to
-      submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json' });
+      submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
 
       // Reset the email input & focus it
       if (inputRef.current) {

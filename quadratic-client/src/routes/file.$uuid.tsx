@@ -32,9 +32,7 @@ import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams,
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 
-type FileData = ApiTypes['/v0/files/:uuid.GET.response'] & {
-  activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'];
-};
+type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
   currentParams.uuid !== nextParams.uuid;
@@ -170,37 +168,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   handleSentryReplays(data.team.settings.analyticsAi);
 
-  // Fetch full team data for settings and clientDataKv
-  let activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'] | undefined = undefined;
+  // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
   let clientDataKv: ApiTypes['/v0/user/client-data-kv.GET.response']['clientDataKv'] | undefined = undefined;
   try {
-    const [fetchedTeam, fetchedClientDataKv] = await Promise.all([
-      apiClient.teams.get(data.team.uuid),
-      apiClient.user.clientDataKv.get(),
-    ]);
-    // Sort the users so the logged-in user is first in the list
-    fetchedTeam.users.sort((a, b) => {
-      const loggedInUser = fetchedTeam.userMakingRequest.id;
-      if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
-      if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
-      return 0;
-    });
-    activeTeam = fetchedTeam;
+    const fetchedClientDataKv = await apiClient.user.clientDataKv.get();
     clientDataKv = fetchedClientDataKv.clientDataKv;
   } catch {
-    // If we can't fetch team data, continue without it
-    activeTeam = undefined;
+    // If we can't fetch clientDataKv, continue without it
     clientDataKv = undefined;
   }
 
   startupTimer.end('file.loader');
-  return { ...data, activeTeam, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
+  return { ...data, userMakingRequest: { ...data.userMakingRequest, clientDataKv } };
 };
 
 export const Component = memo(() => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
-  const loaderData = useLoaderData() as FileData & { activeTeam?: ApiTypes['/v0/teams/:uuid.GET.response'] };
+  const loaderData = useLoaderData() as FileData;
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },

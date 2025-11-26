@@ -28,7 +28,7 @@ export function TeamMembersSettings() {
       </div>
 
       <div className="w-full max-w-2xl">
-        <ShareTeamDialog data={activeTeam} />
+        <ShareTeamDialog />
       </div>
 
       {billing?.status === 'ACTIVE' && (
