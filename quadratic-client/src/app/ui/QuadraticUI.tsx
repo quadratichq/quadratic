@@ -14,11 +14,11 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { AIGetFileName } from '@/app/ui/components/AIGetFileName';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
-import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
@@ -131,12 +131,11 @@ export default function QuadraticUI() {
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
+            <FloatingFPS />
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
         </div>
-
-        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
       {/* Global overlay menus */}
       {canEditFile && isAuthenticated && <AIGetFileName />}

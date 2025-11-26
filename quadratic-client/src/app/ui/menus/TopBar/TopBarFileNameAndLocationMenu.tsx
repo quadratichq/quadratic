@@ -2,6 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -43,6 +44,7 @@ export const TopBarFileNameAndLocationMenu = () => {
                 <span className={`block max-w-[50vw] truncate`}>{name}</span>
               )}
             </Type>
+            <ConnectionStatusIcon />
           </div>
         </div>
       )}

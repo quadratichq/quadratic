@@ -4,6 +4,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { SelectionSummaryDropdown } from '@/app/ui/menus/SheetBar/SelectionSummaryDropdown';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
@@ -463,6 +464,8 @@ export const SheetBar = memo((): JSX.Element => {
           <ChevronRightIcon />
         </SheetBarButton>
       </div>
+
+      <SelectionSummaryDropdown />
     </div>
   );
 });
