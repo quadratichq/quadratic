@@ -178,7 +178,7 @@ function renderServiceList() {
 
             // Update classes - don't show selected when All mode is active
             // Add error class for checks service when it fails
-            const hasError = service.name === 'checks' && service.status === 'error';
+            const hasError = service.name === 'checks' && service.status.toLowerCase() === 'error';
             item.className = `service-item ${isSelected ? 'selected' : ''} ${hasError ? 'service-error' : ''}`;
 
             // Update service item content

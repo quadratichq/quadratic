@@ -219,16 +219,13 @@ impl Control {
                         continue;
                     }
 
+                    // Transition to appropriate state whenever pattern is detected, regardless of current state
                     if service_config.success_patterns.iter().any(|p| line.contains(p)) {
-                        if matches!(current_status, ServiceStatus::Starting | ServiceStatus::Stopped) {
-                            status_guard.insert(name.clone(), ServiceStatus::Running);
-                        }
+                        status_guard.insert(name.clone(), ServiceStatus::Running);
                     } else if service_config.error_patterns.iter().any(|p| line.contains(p)) {
                         status_guard.insert(name.clone(), ServiceStatus::Error);
                     } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
-                        if matches!(current_status, ServiceStatus::Stopped) {
-                            status_guard.insert(name.clone(), ServiceStatus::Starting);
-                        }
+                        status_guard.insert(name.clone(), ServiceStatus::Starting);
                     }
                         }
                         Ok(None) => {

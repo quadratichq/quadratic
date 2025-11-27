@@ -25,7 +25,7 @@ impl Service for ClientService {
             ]),
             cwd: None,
             success_patterns: vec![
-                "Found 0 errors.".to_string(),
+                "Found 0 error".to_string(),
                 "Network: use --host to expose".to_string(),
                 "Local:".to_string(),
                 "preview server running".to_string(),
