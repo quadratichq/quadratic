@@ -164,7 +164,8 @@ impl Control {
         }
 
         let watching = *self.watching.read().await.get(name).unwrap_or(&false);
-        let mut cmd = service.build_command(watching);
+        let base_dir = self.base_dir.clone();
+        let mut cmd = service.build_command(watching, &base_dir);
 
 
         let mut child = match cmd.spawn() {

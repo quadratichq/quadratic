@@ -35,7 +35,7 @@ npm run dev:rust:watch
 The dev server supports the following command-line options:
 
 - `--port <PORT>`: Port to run the server on (default: `8080`)
-- `--dir <DIR>`: Base directory for state and other files (default: `.`)
+- `--dir <DIR>`: Base directory for state and other files (default: automatically detects workspace root)
 
 Examples:
 
@@ -43,8 +43,8 @@ Examples:
 # Run on a different port
 cargo run -- --port 9000
 
-# Use a different base directory for state.json
-cargo run -- --dir /path/to/dir
+# Use a different base directory (should be the workspace root, not dev-rust)
+cargo run -- --dir /path/to/quadratic
 
 # Combine both options
 cargo run -- --port 9000 --dir /path/to/dir
@@ -54,7 +54,8 @@ cargo run -- --port 9000 --dir /path/to/dir
 
 1. Start the dev server: `npm run dev:rust` (or `npm run dev:rust:watch` for auto-reload)
    - Optionally specify `--port` to use a different port (default: `8080`)
-   - Optionally specify `--dir` to use a different base directory for state files (default: current directory)
+   - Optionally specify `--dir` to use a different base directory (default: automatically detects workspace root)
+   - **Note**: The `--dir` should point to the main quadratic workspace root (where `Cargo.toml` with `[workspace]` or `package.json` is located), not the `dev-rust` subdirectory
 2. Open your browser to `http://localhost:8080` (or the port you specified)
 3. Use the web UI to:
    - View logs from all services

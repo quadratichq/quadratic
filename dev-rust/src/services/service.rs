@@ -3,47 +3,6 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
 
-/// Find the project root by looking for the workspace Cargo.toml file
-/// This handles the case where dev-rust is run from the dev-rust directory
-fn find_project_root() -> Option<PathBuf> {
-    let mut current = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return None,
-    };
-
-    // If we're in dev-rust directory, go up one level first
-    if current
-        .file_name()
-        .and_then(|n| n.to_str())
-        .map(|s| s == "dev-rust")
-        .unwrap_or(false)
-    {
-        if let Some(parent) = current.parent() {
-            current = parent.to_path_buf();
-        }
-    }
-
-    loop {
-        // Check if this directory contains a Cargo.toml with [workspace]
-        let cargo_toml = current.join("Cargo.toml");
-        if cargo_toml.exists() {
-            if let Ok(contents) = std::fs::read_to_string(&cargo_toml) {
-                if contents.contains("[workspace]") {
-                    return Some(current);
-                }
-            }
-        }
-
-        // Go up one directory
-        match current.parent() {
-            Some(parent) => current = parent.to_path_buf(),
-            None => break,
-        }
-    }
-
-    None
-}
-
 pub trait Service: Send + Sync {
     fn config(&self) -> ServiceConfig;
 
@@ -51,7 +10,7 @@ pub trait Service: Send + Sync {
         self.config().port
     }
 
-    fn build_command(&self, watching: bool) -> Command {
+    fn build_command(&self, watching: bool, base_dir: &std::path::Path) -> Command {
         let config = self.config();
         let command = if watching {
             config.watch_command.as_ref().unwrap_or(&config.command)
@@ -74,19 +33,21 @@ pub trait Service: Send + Sync {
                 // Build the full command, including cd if cwd is set
                 let mut full_cmd = String::new();
                 if let Some(cwd) = &config.cwd {
-                    // Resolve the cwd path relative to the project root
-                    let resolved_cwd = find_project_root()
-                        .unwrap_or_else(|| {
-                            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                        })
+                    // Resolve the cwd path relative to the base directory
+                    // Use absolute path to avoid issues when running from different directories
+                    let resolved_cwd = base_dir
                         .join(cwd)
                         .canonicalize()
                         .unwrap_or_else(|_| {
-                            find_project_root()
-                                .unwrap_or_else(|| {
-                                    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                                })
-                                .join(cwd)
+                            // If canonicalize fails, at least make it absolute
+                            if base_dir.is_absolute() {
+                                base_dir.join(cwd)
+                            } else {
+                                std::env::current_dir()
+                                    .unwrap_or_else(|_| PathBuf::from("."))
+                                    .join(base_dir)
+                                    .join(cwd)
+                            }
                         });
                     let escaped_cwd = resolved_cwd.to_string_lossy().replace('"', "\"\"");
                     full_cmd.push_str(&format!("cd /d \"{}\" && ", escaped_cwd));
@@ -118,36 +79,45 @@ pub trait Service: Send + Sync {
                 // Build the full command, including cd if cwd is set
                 let mut full_cmd = String::new();
 
-                // For npm commands without a cwd, ensure we run from project root
+                // For npm commands without a cwd, ensure we run from base directory
                 // This helps npm resolve workspace dependencies and local node_modules
-                // Also ensure cargo watch commands run from project root
+                // Also ensure cargo watch commands run from base directory
+                // Use absolute path to avoid issues when running from different directories
                 if (command[0] == "npm"
                     || (command[0] == "cargo" && command.len() > 1 && command[1] == "watch"))
                     && config.cwd.is_none()
                 {
-                    // Get the project root directory
-                    if let Some(project_root) = find_project_root() {
-                        let escaped_dir = project_root.to_string_lossy().replace('\'', "'\\''");
-                        full_cmd.push_str(&format!("cd '{}' && ", escaped_dir));
-                    } else if let Ok(current_dir) = std::env::current_dir() {
-                        let escaped_dir = current_dir.to_string_lossy().replace('\'', "'\\''");
-                        full_cmd.push_str(&format!("cd '{}' && ", escaped_dir));
-                    }
+                    // Ensure we use an absolute path
+                    let abs_base_dir = base_dir
+                        .canonicalize()
+                        .unwrap_or_else(|_| {
+                            if base_dir.is_absolute() {
+                                base_dir.to_path_buf()
+                            } else {
+                                std::env::current_dir()
+                                    .unwrap_or_else(|_| PathBuf::from("."))
+                                    .join(base_dir)
+                            }
+                        });
+                    let escaped_dir = abs_base_dir.to_string_lossy().replace('\'', "'\\''");
+                    full_cmd.push_str(&format!("cd '{}' && ", escaped_dir));
                 } else if let Some(cwd) = &config.cwd {
-                    // Resolve the cwd path relative to the project root
+                    // Resolve the cwd path relative to the base directory
                     // This ensures the path works regardless of where the shell is executed from
-                    let resolved_cwd = find_project_root()
-                        .unwrap_or_else(|| {
-                            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                        })
+                    // Use absolute path to avoid issues when running from different directories
+                    let resolved_cwd = base_dir
                         .join(cwd)
                         .canonicalize()
                         .unwrap_or_else(|_| {
-                            find_project_root()
-                                .unwrap_or_else(|| {
-                                    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                                })
-                                .join(cwd)
+                            // If canonicalize fails, at least make it absolute
+                            if base_dir.is_absolute() {
+                                base_dir.join(cwd)
+                            } else {
+                                std::env::current_dir()
+                                    .unwrap_or_else(|_| PathBuf::from("."))
+                                    .join(base_dir)
+                                    .join(cwd)
+                            }
                         });
                     let escaped_cwd = resolved_cwd.to_string_lossy().replace('\'', "'\\''");
                     full_cmd.push_str(&format!("cd '{}' && ", escaped_cwd));
@@ -176,19 +146,21 @@ pub trait Service: Send + Sync {
             let mut c = Command::new(&command[0]);
             c.args(&command[1..]);
             if let Some(cwd) = &config.cwd {
-                // Resolve the cwd path relative to the project root
-                let resolved_cwd = find_project_root()
-                    .unwrap_or_else(|| {
-                        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                    })
+                // Resolve the cwd path relative to the base directory
+                // Use absolute path to avoid issues when running from different directories
+                let resolved_cwd = base_dir
                     .join(cwd)
                     .canonicalize()
                     .unwrap_or_else(|_| {
-                        find_project_root()
-                            .unwrap_or_else(|| {
-                                std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-                            })
-                            .join(cwd)
+                        // If canonicalize fails, at least make it absolute
+                        if base_dir.is_absolute() {
+                            base_dir.join(cwd)
+                        } else {
+                            std::env::current_dir()
+                                .unwrap_or_else(|_| PathBuf::from("."))
+                                .join(base_dir)
+                                .join(cwd)
+                        }
                     });
                 c.current_dir(resolved_cwd);
             }
@@ -202,19 +174,27 @@ pub trait Service: Send + Sync {
             cmd.env(key, value);
         }
 
-        // For npm and cargo watch commands, ensure we're running from the project root
+        // For npm and cargo watch commands, ensure we're running from the base directory
         // This helps npm resolve workspace dependencies and local node_modules
         // Cargo watch needs to run from workspace root to find the Cargo.toml
+        // Use absolute path to avoid issues when running from different directories
         if (command[0] == "npm"
             || (command[0] == "cargo" && command.len() > 1 && command[1] == "watch"))
             && config.cwd.is_none()
         {
-            // Get the project root directory
-            if let Some(project_root) = find_project_root() {
-                cmd.current_dir(&project_root);
-            } else if let Ok(current_dir) = std::env::current_dir() {
-                cmd.current_dir(&current_dir);
-            }
+            // Ensure we use an absolute path
+            let abs_base_dir = base_dir
+                .canonicalize()
+                .unwrap_or_else(|_| {
+                    if base_dir.is_absolute() {
+                        base_dir.to_path_buf()
+                    } else {
+                        std::env::current_dir()
+                            .unwrap_or_else(|_| PathBuf::from("."))
+                            .join(base_dir)
+                    }
+                });
+            cmd.current_dir(&abs_base_dir);
         }
 
         // Set npm configuration to prefer local packages and avoid prompts
