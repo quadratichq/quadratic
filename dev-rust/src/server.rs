@@ -38,7 +38,7 @@ pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<()
         .with_state(control);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    println!("Dev server running on http://localhost:{}", port);
+    println!("Quadratic Dev server running on http://localhost:{}", port);
     axum::serve(listener, app).await?;
 
     Ok(())
