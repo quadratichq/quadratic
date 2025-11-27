@@ -20,38 +20,19 @@ cargo build --release
 
 ## Running
 
+Use the npm scripts from the root of the project:
+
 ```bash
-# Run with default settings (port 8080, client watching enabled)
-cargo run
+# Run the dev server (release mode)
+npm run dev:rust
 
-# Run on a custom port
-cargo run -- --port 3000
-
-# Enable watching for specific services
-cargo run -- --api --core --multiplayer
-
-# Watch all services
-cargo run -- --all
+# Run the dev server with auto-reload on code changes
+npm run dev:rust:watch
 ```
-
-## CLI Options
-
-- `-p, --port <PORT>`: Port for the web server (default: 8080)
-- `-r, --client`: Watch client (default: true)
-- `-a, --api`: Watch API
-- `-c, --core`: Watch core
-- `-m, --multiplayer`: Watch multiplayer
-- `-f, --files`: Watch files
-- `-n, --connection`: Watch connection
-- `-y, --python`: Watch python
-- `-s, --shared`: Watch shared
-- `-l, --all`: Watch all services
-- `-t, --skip-types`: Skip types compilation
-- `-u, --no-rust`: Run without Rust compilation
 
 ## Usage
 
-1. Start the dev server: `cargo run`
+1. Start the dev server: `npm run dev:rust` (or `npm run dev:rust:watch` for auto-reload)
 2. Open your browser to `http://localhost:8080`
 3. Use the web UI to:
    - View logs from all services
@@ -87,17 +68,8 @@ cargo run -- --all
 ## Architecture
 
 - **main.rs**: Entry point and server initialization
-- **cli.rs**: Command-line argument parsing
 - **control.rs**: Process management and service control
 - **server.rs**: Web server with REST API and WebSocket support
 - **types.rs**: Data structures and service configurations
-- **static/index.html**: Web UI
-
-## Differences from `/dev`
-
-- Written in Rust instead of TypeScript
-- Web-based UI instead of terminal UI
-- WebSocket-based log streaming
-- REST API for service control
-- Better suited for remote development and monitoring
-
+- **services/**: Service definitions and configurations
+- **static/**: Web UI assets (HTML, CSS, JavaScript)
