@@ -1,5 +1,6 @@
 use crate::types::ServiceStatus;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::process::Command;
@@ -9,6 +10,53 @@ use tokio::sync::RwLock;
 pub struct Checks {
     log_sender: broadcast::Sender<(String, String, u64, String)>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
+}
+
+/// Find the project root by looking for the workspace Cargo.toml or package.json file
+fn find_project_root() -> Option<PathBuf> {
+    let mut current = match std::env::current_dir() {
+        Ok(dir) => dir,
+        Err(_) => return None,
+    };
+
+    // If we're in dev-rust directory, go up one level first
+    if current
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|s| s == "dev-rust")
+        .unwrap_or(false)
+    {
+        if let Some(parent) = current.parent() {
+            current = parent.to_path_buf();
+        }
+    }
+
+    loop {
+        // Check if this directory contains a Cargo.toml with [workspace] or package.json
+        let cargo_toml = current.join("Cargo.toml");
+        let package_json = current.join("package.json");
+
+        if cargo_toml.exists() {
+            if let Ok(contents) = std::fs::read_to_string(&cargo_toml) {
+                if contents.contains("[workspace]") {
+                    return Some(current);
+                }
+            }
+        }
+
+        if package_json.exists() {
+            // This is likely the project root (has package.json)
+            return Some(current);
+        }
+
+        // Go up one directory
+        match current.parent() {
+            Some(parent) => current = parent.to_path_buf(),
+            None => break,
+        }
+    }
+
+    None
 }
 
 impl Checks {
@@ -95,6 +143,18 @@ impl Checks {
             self.log_with_stream("checks", "✗ Database connection FAILED (PostgreSQL not running)".to_string(), "stderr").await;
         }
 
+        // Check database migrations
+        if postgres_running {
+            let migrations_ok = self.check_migrations().await;
+            if migrations_ok {
+                self.log("checks", "✓ Database migrations OK".to_string()).await;
+            } else {
+                self.log_with_stream("checks", "✗ Database migrations FAILED".to_string(), "stderr").await;
+            }
+        } else {
+            self.log_with_stream("checks", "✗ Database migrations check skipped (PostgreSQL not running)".to_string(), "stderr").await;
+        }
+
         // Update status based on results
         let all_ok = redis_running && postgres_running;
         {
@@ -160,6 +220,47 @@ impl Checks {
                         false
                     }
                 }
+            }
+        }
+    }
+
+    async fn check_migrations(&self) -> bool {
+        // Find project root
+        let project_root = find_project_root()
+            .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+
+        // Run npm run prisma:migrate --workspace=quadratic-api
+        // This runs prisma migrate dev which checks if migrations are up to date
+        let output = Command::new("npm")
+            .arg("run")
+            .arg("prisma:migrate")
+            .arg("--workspace=quadratic-api")
+            .current_dir(&project_root)
+            .output()
+            .await;
+
+        match output {
+            Ok(o) if o.status.success() => true,
+            Ok(o) => {
+                // Command failed - log the error for debugging
+                let stderr = String::from_utf8_lossy(&o.stderr);
+                let stdout = String::from_utf8_lossy(&o.stdout);
+                self.log_with_stream(
+                    "checks",
+                    format!("Migration check failed: status={}, stdout={:?}, stderr={:?}",
+                        o.status.code().unwrap_or(-1), stdout, stderr),
+                    "stderr"
+                ).await;
+                false
+            }
+            Err(e) => {
+                // Command not found or other error
+                self.log_with_stream(
+                    "checks",
+                    format!("Migration check error: {}", e),
+                    "stderr"
+                ).await;
+                false
             }
         }
     }
