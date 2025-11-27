@@ -74,18 +74,35 @@ function startFaviconAnimation() {
     if (faviconAnimationFrame !== null) {
         return; // Already animating
     }
-    animateFavicon();
+    faviconLastTime = null; // Reset timestamp when starting
+    faviconAnimationFrame = requestAnimationFrame(animateFavicon);
 }
 
 function stopFaviconAnimation() {
     if (faviconAnimationFrame !== null) {
         cancelAnimationFrame(faviconAnimationFrame);
         faviconAnimationFrame = null;
+        faviconLastTime = null;
     }
 }
 
-function animateFavicon() {
-    faviconRotation = (faviconRotation + 8) % 360;
+function animateFavicon(timestamp) {
+    // Use performance.now() if timestamp is not provided (shouldn't happen with RAF, but safety check)
+    const currentTime = timestamp || performance.now();
+
+    if (faviconLastTime === null) {
+        faviconLastTime = currentTime;
+    }
+
+    // Calculate rotation based on elapsed time
+    // 240 degrees per second = consistent speed across all refresh rates
+    const deltaTime = currentTime - faviconLastTime;
+    const degreesPerSecond = 240;
+    const rotationIncrement = (degreesPerSecond * deltaTime) / 1000;
+
+    faviconRotation = (faviconRotation + rotationIncrement) % 360;
+    faviconLastTime = currentTime;
+
     createFavicon(faviconRotation);
     faviconAnimationFrame = requestAnimationFrame(animateFavicon);
 }

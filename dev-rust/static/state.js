@@ -8,6 +8,7 @@ let previousServiceData = null; // Track previous service state to avoid unneces
 let htmlETag = null;
 let faviconAnimationFrame = null;
 let faviconRotation = 0;
+let faviconLastTime = null;
 
 // Load logs from server on page load
 async function loadLogsFromServer() {
