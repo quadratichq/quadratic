@@ -100,3 +100,4 @@ cargo run -- --all
 - WebSocket-based log streaming
 - REST API for service control
 - Better suited for remote development and monitoring
+
