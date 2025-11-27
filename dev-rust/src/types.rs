@@ -24,6 +24,12 @@ pub struct LogMessage {
     pub service: String,
     pub message: String,
     pub timestamp: u64,
+    #[serde(default = "default_stream")]
+    pub stream: String, // "stdout" or "stderr"
+}
+
+fn default_stream() -> String {
+    "stdout".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

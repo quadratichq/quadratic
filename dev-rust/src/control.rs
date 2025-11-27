@@ -1,4 +1,4 @@
-use crate::cli::Cli;
+use crate::checks::Checks;
 use crate::types::ServiceStatus;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -9,27 +9,26 @@ use tokio::sync::broadcast;
 use tokio::sync::RwLock;
 
 pub struct Control {
-    cli: Cli,
     processes: Arc<RwLock<HashMap<String, Option<Child>>>>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
     watching: Arc<RwLock<HashMap<String, bool>>>,
     hidden: Arc<RwLock<HashMap<String, bool>>>,
-    log_sender: broadcast::Sender<(String, String, u64)>,
-    logs: Arc<RwLock<Vec<(String, String, u64)>>>, // Store logs: (service, message, timestamp)
+    log_sender: broadcast::Sender<(String, String, u64, String)>, // (service, message, timestamp, stream)
+    logs: Arc<RwLock<Vec<(String, String, u64, String)>>>, // Store logs: (service, message, timestamp, stream)
     quitting: Arc<RwLock<bool>>,
 }
 
 impl Control {
-    pub fn new(cli: Cli) -> Self {
+    pub fn new() -> Self {
         let (log_sender, mut log_receiver) = broadcast::channel(1000);
         let logs = Arc::new(RwLock::new(Vec::new()));
         let logs_clone = logs.clone();
 
         // Spawn task to store all logs
         tokio::spawn(async move {
-            while let Ok((service, message, timestamp)) = log_receiver.recv().await {
+            while let Ok((service, message, timestamp, stream)) = log_receiver.recv().await {
                 let mut logs_guard = logs_clone.write().await;
-                logs_guard.push((service, message, timestamp));
+                logs_guard.push((service, message, timestamp, stream));
                 // Keep only last 100000 logs to avoid memory issues
                 if logs_guard.len() > 100000 {
                     logs_guard.drain(0..10000); // Remove oldest 10000
@@ -41,7 +40,7 @@ impl Control {
         let mut watching = HashMap::new();
         let mut hidden = HashMap::new();
 
-        // Load state from JSON file if it exists, otherwise use CLI defaults
+        // Load state from JSON file if it exists, otherwise use defaults
         let state_file = std::path::Path::new("state.json");
         let (saved_watching, saved_hidden, _saved_theme) = if state_file.exists() {
             if let Ok(content) = std::fs::read_to_string(state_file) {
@@ -63,23 +62,8 @@ impl Control {
 
         for service in crate::services::get_services() {
             status.insert(service.name.clone(), ServiceStatus::Stopped);
-            // Use saved state if available, otherwise use CLI defaults
-            let should_watch = if let Some(&saved) = saved_watching.get(&service.name) {
-                saved
-            } else {
-                match service.name.as_str() {
-                    "client" => cli.client, // Client defaults to true in CLI
-                    "types" => !cli.skip_types, // Start unless explicitly skipped
-                    "core" => cli.core && !cli.no_rust, // Start if core enabled and not no_rust
-                    "api" => cli.api, // Start if API enabled
-                    "multiplayer" => cli.multiplayer && !cli.no_rust, // Start if enabled and not no_rust
-                    "files" => cli.files && !cli.no_rust, // Start if enabled and not no_rust
-                    "connection" => cli.connection && !cli.no_rust, // Start if enabled and not no_rust
-                    "python" => cli.python, // Start if python enabled
-                    "shared" => cli.shared, // Start if shared enabled
-                    _ => true, // Default to true for any other services
-                }
-            };
+            // Use saved state if available, otherwise default to true (all services enabled)
+            let should_watch = saved_watching.get(&service.name).copied().unwrap_or(true);
             watching.insert(service.name.clone(), should_watch);
             hidden.insert(
                 service.name.clone(),
@@ -88,7 +72,6 @@ impl Control {
         }
 
         Self {
-            cli,
             processes: Arc::new(RwLock::new(HashMap::new())),
             status: Arc::new(RwLock::new(status)),
             watching: Arc::new(RwLock::new(watching)),
@@ -99,7 +82,7 @@ impl Control {
         }
     }
 
-    pub fn get_log_sender(&self) -> broadcast::Sender<(String, String, u64)> {
+    pub fn get_log_sender(&self) -> broadcast::Sender<(String, String, u64, String)> {
         self.log_sender.clone()
     }
 
@@ -110,79 +93,39 @@ impl Control {
         // Start all services by default (unless explicitly disabled)
         // Start in a logical order: dependencies first
 
+        // Start all services by default (in logical order: dependencies first)
         // Start types first (needed for core)
-        if !self.cli.skip_types {
-            self.start_service("types").await;
-        }
+        self.start_service("types").await;
 
         // Start core (needed for client)
-        if self.cli.core && !self.cli.no_rust {
-            self.start_service("core").await;
-        }
+        self.start_service("core").await;
 
         // Start shared (needed for api)
-        if self.cli.shared {
-            self.start_service("shared").await;
-        }
+        self.start_service("shared").await;
 
         // Start client
-        if self.cli.client {
-            self.start_service("client").await;
-        }
+        self.start_service("client").await;
 
         // Start python
-        if self.cli.python {
-            self.start_service("python").await;
-        }
+        self.start_service("python").await;
 
         // Start API (depends on shared)
-        if self.cli.api {
-            self.start_service("api").await;
-        }
+        self.start_service("api").await;
 
-        // Start Rust services (unless no_rust flag is set)
-        if !self.cli.no_rust {
-            if self.cli.multiplayer {
-                self.start_service("multiplayer").await;
-            }
-            if self.cli.files {
-                self.start_service("files").await;
-            }
-            if self.cli.connection {
-                self.start_service("connection").await;
-            }
-        }
+        // Start Rust services
+        self.start_service("multiplayer").await;
+        self.start_service("files").await;
+        self.start_service("connection").await;
     }
 
     async fn check_services(&self) {
-        // Check Redis and PostgreSQL
-        // This is a simplified version - you can expand this
-        let redis_running = self.check_redis().await;
-        let postgres_running = self.check_postgres().await;
-
-        if !redis_running {
-            self.log("system", "Redis is not running!".to_string()).await;
-        }
-        if !postgres_running {
-            self.log("system", "PostgreSQL is not running!".to_string()).await;
-        }
+        // Run checks and output to checks service
+        self.run_checks().await;
     }
 
-    async fn check_redis(&self) -> bool {
-        let output = Command::new("redis-cli")
-            .arg("ping")
-            .output()
-            .await;
-
-        matches!(output, Ok(o) if o.status.success())
-    }
-
-    async fn check_postgres(&self) -> bool {
-        let output = Command::new("pg_isready")
-            .output()
-            .await;
-
-        matches!(output, Ok(o) if o.status.success())
+    async fn run_checks(&self) {
+        let checks = Checks::new(self.log_sender.clone(), self.status.clone());
+        checks.run().await;
     }
 
     pub async fn start_service(&self, name: &str) {
@@ -196,6 +139,13 @@ impl Control {
             if matches!(status.get(name), Some(ServiceStatus::Killed)) {
                 return;
             }
+        }
+
+        // Handle checks service specially - run checks and exit
+        if name == "checks" {
+            let checks = Checks::new(self.log_sender.clone(), self.status.clone());
+            checks.run().await;
+            return;
         }
 
         let service = crate::services::get_service_by_name(name);
@@ -254,7 +204,7 @@ impl Control {
                                 .duration_since(UNIX_EPOCH)
                                 .unwrap_or_default()
                                 .as_secs();
-                            let _ = sender.send((name.clone(), line.clone(), timestamp));
+                            let _ = sender.send((name.clone(), line.clone(), timestamp, "stdout".to_string()));
 
                     // Check for success/error patterns using service methods
                     // Don't update status if service is killed
@@ -298,6 +248,11 @@ impl Control {
             let status = self.status.clone();
             let service_config = service.config();
 
+            // For cargo-based services (like core), stderr contains normal informational output
+            // We'll check if it's an actual error, otherwise treat as stdout
+            let is_cargo_service = name == "core" || name == "multiplayer" || name == "files" || name == "connection";
+            let error_patterns = service_config.error_patterns.clone();
+
             tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
                 let mut lines = reader.lines();
@@ -308,11 +263,23 @@ impl Control {
                                 .duration_since(UNIX_EPOCH)
                                 .unwrap_or_default()
                                 .as_secs();
-                            let _ = sender.send((name.clone(), line.clone(), timestamp));
 
-                    // Check for error patterns
+                            // Check if this line matches error patterns
+                            let is_error = error_patterns.iter().any(|p| line.contains(p));
+
+                            // For cargo-based services: if it's an error, mark as stderr; otherwise as stdout
+                            // For other services: always mark as stderr
+                            let stream = if is_cargo_service {
+                                if is_error { "stderr" } else { "stdout" }
+                            } else {
+                                "stderr"
+                            };
+
+                            let _ = sender.send((name.clone(), line.clone(), timestamp, stream.to_string()));
+
+                    // Check for error patterns to update status
                     // Don't update status if service is killed
-                    if service_config.error_patterns.iter().any(|p| line.contains(p)) {
+                    if is_error {
                         let mut status_guard = status.write().await;
                         let current_status = status_guard.get(&name).cloned().unwrap_or(ServiceStatus::Stopped);
                         // Don't change status if service is killed
@@ -448,8 +415,13 @@ impl Control {
         self.hidden.read().await.clone()
     }
 
-    pub async fn get_logs(&self) -> Vec<(String, String, u64)> {
+    pub async fn get_logs(&self) -> Vec<(String, String, u64, String)> {
         self.logs.read().await.clone()
+    }
+
+    pub async fn clear_logs(&self) {
+        let mut logs = self.logs.write().await;
+        logs.clear();
     }
 
     pub async fn save_state(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -554,6 +526,33 @@ impl Control {
         self.start_service(name).await;
     }
 
+    pub async fn restart_all_services(&self) {
+        // Clear all logs first
+        self.clear_logs().await;
+
+        self.log("system", "Restarting all services...".to_string()).await;
+
+        // Get all service names from status
+        let service_names: Vec<String> = {
+            let status = self.status.read().await;
+            status.keys().cloned().collect()
+        };
+
+        // Restart all services
+        for service_name in service_names {
+            // Skip shared if it's in watch mode (same logic as restart_service)
+            if service_name == "shared" {
+                let watching = self.watching.read().await;
+                if *watching.get("shared").unwrap_or(&false) {
+                    continue;
+                }
+            }
+            self.restart_service(&service_name).await;
+        }
+
+        self.log("system", "All services restarted.".to_string()).await;
+    }
+
     pub async fn kill_all_services(&self) {
         // Set quitting flag to prevent new services from starting
         {
@@ -578,10 +577,14 @@ impl Control {
     }
 
     async fn log(&self, service: &str, message: String) {
+        self.log_with_stream(service, message, "stdout").await;
+    }
+
+    async fn log_with_stream(&self, service: &str, message: String, stream: &str) {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let _ = self.log_sender.send((service.to_string(), message, timestamp));
+        let _ = self.log_sender.send((service.to_string(), message, timestamp, stream.to_string()));
     }
 }

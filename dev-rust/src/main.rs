@@ -1,11 +1,9 @@
-mod cli;
+mod checks;
 mod control;
 mod server;
 mod services;
 mod types;
 
-use clap::Parser;
-use cli::Cli;
 use control::Control;
 use server::start_server;
 use std::sync::Arc;
@@ -15,8 +13,7 @@ use tokio::sync::RwLock;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let cli = Cli::parse();
-    let control = Arc::new(RwLock::new(Control::new(cli.clone())));
+    let control = Arc::new(RwLock::new(Control::new()));
 
     // Start the control system
     {
@@ -30,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Set up signal handler for graceful shutdown
     let control_for_server = control.clone();
     let control_for_cleanup = control.clone();
-    let port = cli.port;
+    let port = 8080; // Default port
     let server_handle = tokio::spawn(async move {
         if let Err(e) = start_server(control_for_server, port).await {
             eprintln!("Server error: {}", e);

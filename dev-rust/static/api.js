@@ -59,6 +59,21 @@ async function restartService(service) {
     }
 }
 
+async function restartAllServices() {
+    try {
+        // Clear logs on the frontend
+        clearLogs();
+
+        await fetch('/api/restart-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        updateStatus();
+    } catch (error) {
+        console.error('Failed to restart all services:', error);
+    }
+}
+
 async function saveState() {
     try {
         const watching = {};

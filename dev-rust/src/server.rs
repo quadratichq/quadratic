@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ws::WebSocketUpgrade, State},
+    extract::{ws::WebSocketUpgrade, Path, State},
     http::{header, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
@@ -14,7 +14,17 @@ use tower_http::cors::CorsLayer;
 use crate::control::Control;
 use crate::types::{FilterRequest, LogMessage, ServiceInfo, SetStateRequest, SetWatchRequest, StatusUpdate, ToggleRequest};
 
+// Server startup time - changes when server restarts
+static SERVER_START_TIME: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+
 pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize server start time
+    SERVER_START_TIME.get_or_init(|| {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    });
     let app = Router::new()
         .route("/", get(index).head(index_head))
         .route("/ws", get(websocket_handler))
@@ -24,16 +34,12 @@ pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<()
         .route("/api/filter", post(toggle_filter))
         .route("/api/kill", post(kill_service))
         .route("/api/restart", post(restart_service))
+        .route("/api/restart-all", post(restart_all_services))
         .route("/api/state", get(get_state).post(set_state))
         .route("/api/set-watch", post(set_watch))
-        .route("/styles.css", get(serve_css))
-        .route("/state.js", get(serve_state_js))
-        .route("/utils.js", get(serve_utils_js))
-        .route("/websocket.js", get(serve_websocket_js))
-        .route("/services.js", get(serve_services_js))
-        .route("/logs.js", get(serve_logs_js))
-        .route("/api.js", get(serve_api_js))
-        .route("/ui.js", get(serve_ui_js))
+        .route("/api/static-hash", get(get_static_hash).head(get_static_hash_head))
+        .route("/api/server-version", get(get_server_version).head(get_server_version_head))
+        .route("/*path", get(serve_static_file).head(serve_static_file_head))
         .layer(CorsLayer::permissive())
         .with_state(control);
 
@@ -66,60 +72,145 @@ async fn index_head() -> impl IntoResponse {
     headers
 }
 
-async fn serve_css() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "text/css")],
-        include_str!("../static/styles.css"),
-    )
+fn get_static_files_hash() -> axum::http::HeaderValue {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Hash all static files (HTML, CSS, and JavaScript)
+    let mut hasher = DefaultHasher::new();
+    include_str!("../static/index.html").hash(&mut hasher);
+    include_str!("../static/styles.css").hash(&mut hasher);
+    include_str!("../static/state.js").hash(&mut hasher);
+    include_str!("../static/utils.js").hash(&mut hasher);
+    include_str!("../static/websocket.js").hash(&mut hasher);
+    include_str!("../static/services.js").hash(&mut hasher);
+    include_str!("../static/logs.js").hash(&mut hasher);
+    include_str!("../static/api.js").hash(&mut hasher);
+    include_str!("../static/ui.js").hash(&mut hasher);
+
+    let etag = format!("\"{}\"", hasher.finish());
+    axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
 }
 
-async fn serve_state_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/state.js"),
-    )
+async fn get_static_hash_head() -> impl IntoResponse {
+    use axum::http::{HeaderMap, HeaderValue};
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::ETAG, get_static_files_hash());
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+    headers
 }
 
-async fn serve_utils_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/utils.js"),
-    )
+async fn get_static_hash() -> impl IntoResponse {
+    use axum::http::HeaderValue;
+
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(header::ETAG, get_static_files_hash());
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+
+    (headers, "ok")
 }
 
-async fn serve_websocket_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/websocket.js"),
-    )
+fn get_server_version_hash() -> axum::http::HeaderValue {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+
+    // Hash server start time - changes when server restarts
+    if let Some(start_time) = SERVER_START_TIME.get() {
+        start_time.hash(&mut hasher);
+    }
+
+    // Also hash static files to catch static file changes
+    include_str!("../static/index.html").hash(&mut hasher);
+    include_str!("../static/styles.css").hash(&mut hasher);
+    include_str!("../static/state.js").hash(&mut hasher);
+    include_str!("../static/utils.js").hash(&mut hasher);
+    include_str!("../static/websocket.js").hash(&mut hasher);
+    include_str!("../static/services.js").hash(&mut hasher);
+    include_str!("../static/logs.js").hash(&mut hasher);
+    include_str!("../static/api.js").hash(&mut hasher);
+    include_str!("../static/ui.js").hash(&mut hasher);
+
+    let etag = format!("\"{}\"", hasher.finish());
+    axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
 }
 
-async fn serve_services_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/services.js"),
-    )
+async fn get_server_version_head() -> impl IntoResponse {
+    use axum::http::{HeaderMap, HeaderValue};
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::ETAG, get_server_version_hash());
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+    (StatusCode::OK, headers).into_response()
 }
 
-async fn serve_logs_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/logs.js"),
-    )
+async fn get_server_version() -> impl IntoResponse {
+    use axum::http::HeaderValue;
+
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(header::ETAG, get_server_version_hash());
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+
+    (StatusCode::OK, headers, "ok").into_response()
 }
 
-async fn serve_api_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/api.js"),
-    )
+fn get_static_file(path: &str) -> Option<(&'static str, &'static str)> {
+    // Map file paths to (content, content_type)
+    match path {
+        "styles.css" => Some((include_str!("../static/styles.css"), "text/css")),
+        "state.js" => Some((include_str!("../static/state.js"), "application/javascript")),
+        "utils.js" => Some((include_str!("../static/utils.js"), "application/javascript")),
+        "websocket.js" => Some((include_str!("../static/websocket.js"), "application/javascript")),
+        "services.js" => Some((include_str!("../static/services.js"), "application/javascript")),
+        "logs.js" => Some((include_str!("../static/logs.js"), "application/javascript")),
+        "api.js" => Some((include_str!("../static/api.js"), "application/javascript")),
+        "ui.js" => Some((include_str!("../static/ui.js"), "application/javascript")),
+        _ => None,
+    }
 }
 
-async fn serve_ui_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../static/ui.js"),
-    )
+fn get_file_etag(path: &str) -> Option<axum::http::HeaderValue> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    get_static_file(path).map(|(content, _)| {
+        let mut hasher = DefaultHasher::new();
+        content.hash(&mut hasher);
+        let etag = format!("\"{}\"", hasher.finish());
+        axum::http::HeaderValue::from_str(&etag).unwrap_or_else(|_| axum::http::HeaderValue::from_static("\"0\""))
+    })
+}
+
+async fn serve_static_file_head(Path(path): Path<String>) -> impl IntoResponse {
+    use axum::http::{HeaderMap, HeaderValue};
+
+    if let Some((_, content_type)) = get_static_file(&path) {
+        let mut headers = HeaderMap::new();
+        if let Some(etag) = get_file_etag(&path) {
+            headers.insert(header::ETAG, etag);
+        }
+        headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+        (StatusCode::OK, headers).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+async fn serve_static_file(Path(path): Path<String>) -> impl IntoResponse {
+    use axum::http::HeaderValue;
+
+    if let Some((content, content_type)) = get_static_file(&path) {
+        let mut headers = axum::http::HeaderMap::new();
+        if let Some(etag) = get_file_etag(&path) {
+            headers.insert(header::ETAG, etag);
+        }
+        headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+        (StatusCode::OK, headers, content).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
 }
 
 async fn websocket_handler(
@@ -153,7 +244,7 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
     let control_logs = control.clone();
     let tx_logs = tx.clone();
     tokio::spawn(async move {
-        while let Ok((service, message, timestamp)) = log_receiver_clone.recv().await {
+        while let Ok((service, message, timestamp, stream)) = log_receiver_clone.recv().await {
             let hidden = {
                 let ctrl = control_logs.read().await;
                 ctrl.get_hidden().await
@@ -167,6 +258,7 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
                 service,
                 message,
                 timestamp,
+                stream,
             };
 
             if let Ok(json) = serde_json::to_string(&log_msg) {
@@ -246,10 +338,11 @@ async fn get_logs(
 
     let log_messages: Vec<LogMessage> = logs
         .into_iter()
-        .map(|(service, message, timestamp)| LogMessage {
+        .map(|(service, message, timestamp, stream)| LogMessage {
             service,
             message,
             timestamp,
+            stream,
         })
         .collect();
 
@@ -402,6 +495,15 @@ async fn restart_service(
     // Restart the service
     let ctrl = control.write().await;
     ctrl.restart_service(&req.service).await;
+
+    (StatusCode::OK, Json(json!({"success": true})))
+}
+
+async fn restart_all_services(
+    State(control): State<Arc<RwLock<Control>>>,
+) -> impl IntoResponse {
+    let ctrl = control.write().await;
+    ctrl.restart_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))
 }

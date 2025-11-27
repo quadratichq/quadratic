@@ -53,6 +53,7 @@ npm run dev:rust:watch
 - Badges:
   - 👀 Watching: Service is in watch mode
   - 🙈 Hidden: Logs are hidden for this service
+  - ✕ Kill: Service can be killed (shows ↻ when killed to restart)
 
 ### Logs View
 - Real-time log streaming from all services

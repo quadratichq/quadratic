@@ -23,17 +23,22 @@ async function loadLogsFromServer() {
     }
 }
 
+let serverVersionETag = null;
+
 async function checkForReload() {
     try {
-        const response = await fetch('/?check=' + Date.now(), { method: 'HEAD' });
+        // Check server version hash (includes static files + build timestamp)
+        // This detects both static file changes and server restarts
+        const response = await fetch('/api/server-version?check=' + Date.now(), { method: 'HEAD' });
         const etag = response.headers.get('etag');
-        if (htmlETag && etag && etag !== htmlETag) {
-            console.log('HTML file changed, reloading...');
+        if (serverVersionETag && etag && etag !== serverVersionETag) {
+            console.log('Server version changed, reloading...');
             clearLogs();
             window.location.reload();
+            return;
         }
-        if (!htmlETag) {
-            htmlETag = etag;
+        if (!serverVersionETag) {
+            serverVersionETag = etag;
         }
     } catch (error) {
         // Silently fail - this is just a convenience feature

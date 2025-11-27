@@ -22,8 +22,17 @@ impl Service for CoreService {
                 "watch:wasm:javascript".to_string(),
             ]),
             cwd: None,
-            success_patterns: vec!["[Finished running. Exit status: 0".to_string(), "ready to publish".to_string()],
-            error_patterns: vec!["error[".to_string()],
+            success_patterns: vec![
+                "[Finished running. Exit status: 0".to_string(),
+                "ready to publish".to_string(),
+            ],
+            error_patterns: vec![
+                "error[".to_string(),
+                "error:".to_string(),
+                "failed to compile".to_string(),
+                "Exit status: 1".to_string(),
+                "npm ERR!".to_string(),
+            ],
             start_patterns: vec!["> quadratic".to_string(), "[Running ".to_string()],
         }
     }

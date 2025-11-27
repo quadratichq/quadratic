@@ -13,8 +13,8 @@
     --button-bg: #0e639c;
     --button-hover: #1177bb;
     --button-active: #0a4d73;
-    --error-color: #f48771;
-    --error-hover: #ff9a85;
+    --error-color: #ff6b6b;
+    --error-hover: #ff8787;
 }
 
 body.light-mode {
@@ -32,8 +32,8 @@ body.light-mode {
     --button-bg: #0e639c;
     --button-hover: #1177bb;
     --button-active: #0a4d73;
-    --error-color: #d16969;
-    --error-hover: #c05555;
+    --error-color: #ff4444;
+    --error-hover: #ff6666;
 }
 
 * {
@@ -181,6 +181,18 @@ body {
     box-shadow: 0 0 0 2px rgba(78, 201, 176, 0.3);
 }
 
+.service-item.service-error {
+    background: rgba(255, 107, 107, 0.15);
+}
+
+.service-item.service-error:hover {
+    background: rgba(255, 107, 107, 0.25);
+}
+
+.service-item.service-error.selected {
+    border-color: var(--error-color);
+}
+
 .service-name {
     font-weight: bold;
     display: flex;
@@ -297,6 +309,21 @@ body {
     background: var(--bg-tertiary);
 }
 
+.log-entry-stderr {
+    border-left: 2px solid var(--error-color);
+    padding-left: calc(0.5rem - 2px);
+}
+
+.stderr-badge {
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    background: var(--error-color);
+    color: #fff;
+    font-weight: bold;
+    margin-right: 0.25rem;
+}
+
 .log-service {
     font-weight: bold;
     min-width: 100px;
@@ -322,6 +349,7 @@ body {
 .service-python { color: #4fc1ff; }
 .service-types { color: #d16969; }
 .service-shared { color: var(--text-secondary); }
+.service-checks { color: #569cd6; }
 .service-system { color: var(--text-secondary); }
 
 button {

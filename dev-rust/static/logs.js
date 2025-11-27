@@ -15,6 +15,9 @@ function renderLogs() {
     const scrollBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     const wasAtBottom = scrollBottom < 10;
 
+    // Store the scroll position before rendering
+    const previousScrollTop = container.scrollTop;
+
     // Show logs from all selected services, or all logs if none selected
     const filtered = selectedServices.size > 0
         ? logs.filter(log => selectedServices.has(log.service))
@@ -25,16 +28,15 @@ function renderLogs() {
         return;
     }
 
-    // Store the previous scroll height to calculate the difference
-    const previousScrollHeight = container.scrollHeight;
-    const previousScrollTop = container.scrollTop;
-
     container.innerHTML = filtered.map(log => {
         const serviceClass = `service-${log.service}`;
         const time = new Date(log.timestamp * 1000).toLocaleTimeString();
+        const isStderr = (log.stream || 'stdout') === 'stderr';
+        const stderrBadge = isStderr ? '<span class="stderr-badge" title="stderr">stderr</span>' : '';
         return `
-            <div class="log-entry">
+            <div class="log-entry ${isStderr ? 'log-entry-stderr' : ''}">
                 <span class="log-service ${serviceClass}">[${log.service}]</span>
+                ${stderrBadge}
                 <span class="log-message">${ansiToHtml(log.message)}</span>
                 <span class="log-timestamp">${time}</span>
             </div>
@@ -45,9 +47,8 @@ function renderLogs() {
     if (wasAtBottom) {
         container.scrollTop = container.scrollHeight;
     } else {
-        // Maintain scroll position by adjusting for the height difference
-        const heightDiff = container.scrollHeight - previousScrollHeight;
-        container.scrollTop = previousScrollTop + heightDiff;
+        // Maintain the same scroll position (don't scroll when new content is added)
+        container.scrollTop = previousScrollTop;
     }
 }
 

@@ -90,7 +90,8 @@ function renderServiceList() {
     const serviceSections = [
         { title: 'client', services: ['client', 'core', 'python', 'types'] },
         { title: 'api', services: ['api', 'shared'] },
-        { title: 'services', services: ['multiplayer', 'files', 'connection'] }
+        { title: 'services', services: ['multiplayer', 'files', 'connection'] },
+        { title: 'system', services: ['checks'] }
     ];
 
     // Render service sections
@@ -176,7 +177,9 @@ function renderServiceList() {
             }
 
             // Update classes - don't show selected when All mode is active
-            item.className = `service-item ${isSelected ? 'selected' : ''}`;
+            // Add error class for checks service when it fails
+            const hasError = service.name === 'checks' && service.status === 'error';
+            item.className = `service-item ${isSelected ? 'selected' : ''} ${hasError ? 'service-error' : ''}`;
 
             // Update service item content
             const itemContent = `
@@ -197,8 +200,8 @@ function renderServiceList() {
                         title="${service.watching ? 'Stop watching' : 'Start watching'}">👀</button>
             ` : '<span style="min-width: 28px;"></span>';
 
-            // For types and shared services, show refresh button instead of kill button
-            const isOneTimeService = service.name === 'types' || service.name === 'shared';
+            // For types, shared, and checks services, show refresh button instead of kill button
+            const isOneTimeService = service.name === 'types' || service.name === 'shared' || service.name === 'checks';
             const actionButton = isOneTimeService ? `
                 <button class="kill refresh"
                         onclick="event.stopPropagation(); restartService('${service.name}')"
@@ -300,7 +303,7 @@ function updateSelectedServiceUI() {
                     ${service.watching ? 'Stop Watching' : 'Start Watching'}
                 </button>
         ` : '';
-        const isOneTimeService = service.name === 'types' || service.name === 'shared';
+        const isOneTimeService = service.name === 'types' || service.name === 'shared' || service.name === 'checks';
         const actionButton = isOneTimeService ? `
                 <button class="kill refresh" onclick="restartService('${service.name}')">
                     Refresh
