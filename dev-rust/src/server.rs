@@ -424,7 +424,7 @@ async fn get_state(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResp
     let mut theme = None;
     let state_file = {
         let ctrl = control.read().await;
-        ctrl.get_base_dir().join("state.json")
+        ctrl.get_base_dir().join("dev-rust-state.json")
     };
     if state_file.exists() {
         if let Ok(content) = std::fs::read_to_string(state_file) {

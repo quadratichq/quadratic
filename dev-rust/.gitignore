@@ -1,3 +1,2 @@
-state.json
-target/
 *.rs.bk
+dev-rust-state.json

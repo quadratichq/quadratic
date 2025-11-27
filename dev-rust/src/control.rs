@@ -42,7 +42,7 @@ impl Control {
         let mut hidden = HashMap::new();
 
         // Load state from JSON file if it exists, otherwise use defaults
-        let state_file = base_dir.join("state.json");
+        let state_file = base_dir.join("dev-rust-state.json");
         let (saved_watching, saved_hidden, _saved_theme) = if state_file.exists() {
             if let Ok(content) = std::fs::read_to_string(state_file) {
                 if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
@@ -434,7 +434,7 @@ impl Control {
 
         // Load existing state to preserve theme
         let mut theme = None;
-        let state_file = self.base_dir.join("state.json");
+        let state_file = self.base_dir.join("dev-rust-state.json");
         if state_file.exists() {
             if let Ok(content) = std::fs::read_to_string(state_file) {
                 if let Ok(existing_state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
@@ -450,7 +450,7 @@ impl Control {
         };
 
         let json = serde_json::to_string_pretty(&state)?;
-        std::fs::write(self.base_dir.join("state.json"), json)?;
+        std::fs::write(self.base_dir.join("dev-rust-state.json"), json)?;
         Ok(())
     }
 
@@ -465,7 +465,7 @@ impl Control {
         };
 
         let json = serde_json::to_string_pretty(&state)?;
-        std::fs::write(self.base_dir.join("state.json"), json)?;
+        std::fs::write(self.base_dir.join("dev-rust-state.json"), json)?;
         Ok(())
     }
 
