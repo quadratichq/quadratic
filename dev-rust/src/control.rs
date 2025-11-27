@@ -518,12 +518,8 @@ impl Control {
         // Save state to file
         let _ = self.save_state().await;
 
-        // Restart the service if needed
-        if watching {
-            self.start_service(name).await;
-        } else {
-            self.kill_service(name).await;
-        }
+        // Restart the service with the appropriate command (watcher or non-watcher)
+        self.start_service(name).await;
     }
 
     pub async fn set_hidden(&self, name: &str, hidden: bool) {
