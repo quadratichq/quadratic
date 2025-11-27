@@ -494,6 +494,23 @@ impl Control {
     }
 
     pub async fn set_watch(&self, name: &str, watching: bool) {
+        // Check if the watch state is actually changing
+        let current_watching = {
+            let watch_map = self.watching.read().await;
+            *watch_map.get(name).unwrap_or(&false)
+        };
+
+        // Only restart if the state actually changed
+        if current_watching == watching {
+            // State hasn't changed, just save it
+            let mut watch_map = self.watching.write().await;
+            watch_map.insert(name.to_string(), watching);
+            drop(watch_map);
+            let _ = self.save_state().await;
+            return;
+        }
+
+        // State changed, update it
         let mut watch_map = self.watching.write().await;
         watch_map.insert(name.to_string(), watching);
         drop(watch_map);
