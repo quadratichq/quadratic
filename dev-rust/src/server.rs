@@ -12,7 +12,7 @@ use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 
 use crate::control::Control;
-use crate::types::{FilterRequest, LogMessage, ServiceInfo, SetStateRequest, SetWatchRequest, StatusUpdate, ToggleRequest};
+use crate::types::{FilterRequest, LogMessage, ServiceInfo, SetPerfRequest, SetStateRequest, SetWatchRequest, StatusUpdate, ToggleRequest};
 
 // Server startup time - changes when server restarts
 static SERVER_START_TIME: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
@@ -35,8 +35,10 @@ pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<()
         .route("/api/kill", post(kill_service))
         .route("/api/restart", post(restart_service))
         .route("/api/restart-all", post(restart_all_services))
+        .route("/api/stop-all", post(stop_all_services))
         .route("/api/state", get(get_state).post(set_state))
         .route("/api/set-watch", post(set_watch))
+        .route("/api/set-perf", post(set_perf))
         .route("/api/static-hash", get(get_static_hash).head(get_static_hash_head))
         .route("/api/server-version", get(get_server_version).head(get_server_version_head))
         .route("/*path", get(serve_static_file).head(serve_static_file_head))
@@ -287,12 +289,21 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
                 let ctrl = control_status.read().await;
                 ctrl.get_hidden().await
             };
+            let perf = {
+                let ctrl = control_status.read().await;
+                ctrl.get_perf().await
+            };
 
             let services: Vec<ServiceInfo> = status
                 .iter()
                 .map(|(name, status)| {
-                    let has_watch_command = crate::services::get_service_by_name(name)
-                        .map(|s| s.config().watch_command.is_some())
+                    let service_config = crate::services::get_service_by_name(name)
+                        .map(|s| s.config());
+                    let has_watch_command = service_config.as_ref()
+                        .map(|c| c.watch_command.is_some())
+                        .unwrap_or(false);
+                    let has_perf_command = service_config.as_ref()
+                        .map(|c| c.perf_command.is_some())
                         .unwrap_or(false);
 
                     ServiceInfo {
@@ -301,6 +312,8 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
                         watching: *watching.get(name).unwrap_or(&false),
                         hidden: *hidden.get(name).unwrap_or(&false),
                         has_watch_command,
+                        perf: if name == "core" { perf } else { false },
+                        has_perf_command,
                     }
                 })
                 .collect();
@@ -362,12 +375,21 @@ async fn get_status(State(control): State<Arc<RwLock<Control>>>) -> impl IntoRes
         let ctrl = control.read().await;
         ctrl.get_hidden().await
     };
+    let perf = {
+        let ctrl = control.read().await;
+        ctrl.get_perf().await
+    };
 
     let services: Vec<ServiceInfo> = status
         .iter()
         .map(|(name, status)| {
-            let has_watch_command = crate::services::get_service_by_name(name)
-                .map(|s| s.config().watch_command.is_some())
+            let service_config = crate::services::get_service_by_name(name)
+                .map(|s| s.config());
+            let has_watch_command = service_config.as_ref()
+                .map(|c| c.watch_command.is_some())
+                .unwrap_or(false);
+            let has_perf_command = service_config.as_ref()
+                .map(|c| c.perf_command.is_some())
                 .unwrap_or(false);
 
             ServiceInfo {
@@ -376,6 +398,8 @@ async fn get_status(State(control): State<Arc<RwLock<Control>>>) -> impl IntoRes
                 watching: *watching.get(name).unwrap_or(&false),
                 hidden: *hidden.get(name).unwrap_or(&false),
                 has_watch_command,
+                perf: if name == "core" { perf } else { false },
+                has_perf_command,
             }
         })
         .collect();
@@ -419,6 +443,10 @@ async fn get_state(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResp
         let ctrl = control.read().await;
         ctrl.get_hidden().await
     };
+    let perf = {
+        let ctrl = control.read().await;
+        ctrl.get_perf().await
+    };
 
     // Load theme from state file
     let mut theme = None;
@@ -438,6 +466,7 @@ async fn get_state(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResp
         watching: Some(watching),
         hidden: Some(hidden),
         theme,
+        perf: Some(perf),
     };
 
     Json(state)
@@ -480,6 +509,15 @@ async fn set_watch(
     (StatusCode::OK, Json(json!({"success": true})))
 }
 
+async fn set_perf(
+    State(control): State<Arc<RwLock<Control>>>,
+    Json(req): Json<SetPerfRequest>,
+) -> impl IntoResponse {
+    let ctrl = control.read().await;
+    ctrl.set_perf(req.perf).await;
+    (StatusCode::OK, Json(json!({"success": true})))
+}
+
 async fn restart_service(
     State(control): State<Arc<RwLock<Control>>>,
     Json(req): Json<ToggleRequest>,
@@ -507,6 +545,15 @@ async fn restart_all_services(
 ) -> impl IntoResponse {
     let ctrl = control.write().await;
     ctrl.restart_all_services().await;
+
+    (StatusCode::OK, Json(json!({"success": true})))
+}
+
+async fn stop_all_services(
+    State(control): State<Arc<RwLock<Control>>>,
+) -> impl IntoResponse {
+    let ctrl = control.read().await;
+    ctrl.stop_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))
 }

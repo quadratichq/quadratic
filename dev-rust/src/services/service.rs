@@ -10,12 +10,17 @@ pub trait Service: Send + Sync {
         self.config().port
     }
 
-    fn build_command(&self, watching: bool, base_dir: &std::path::Path) -> Command {
+    fn build_command(&self, watching: bool, perf: bool, base_dir: &std::path::Path) -> Command {
         let config = self.config();
-        let command = if watching {
-            config.watch_command.as_ref().unwrap_or(&config.command)
-        } else {
-            &config.command
+        let command = match (watching, perf) {
+            (true, true) => config
+                .perf_watch_command
+                .as_ref()
+                .or(config.watch_command.as_ref())
+                .unwrap_or(&config.command),
+            (true, false) => config.watch_command.as_ref().unwrap_or(&config.command),
+            (false, true) => config.perf_command.as_ref().unwrap_or(&config.command),
+            (false, false) => &config.command,
         };
 
         // For npm commands, use shell execution to ensure PATH and npm scripts work correctly
@@ -35,20 +40,17 @@ pub trait Service: Send + Sync {
                 if let Some(cwd) = &config.cwd {
                     // Resolve the cwd path relative to the base directory
                     // Use absolute path to avoid issues when running from different directories
-                    let resolved_cwd = base_dir
-                        .join(cwd)
-                        .canonicalize()
-                        .unwrap_or_else(|_| {
-                            // If canonicalize fails, at least make it absolute
-                            if base_dir.is_absolute() {
-                                base_dir.join(cwd)
-                            } else {
-                                std::env::current_dir()
-                                    .unwrap_or_else(|_| PathBuf::from("."))
-                                    .join(base_dir)
-                                    .join(cwd)
-                            }
-                        });
+                    let resolved_cwd = base_dir.join(cwd).canonicalize().unwrap_or_else(|_| {
+                        // If canonicalize fails, at least make it absolute
+                        if base_dir.is_absolute() {
+                            base_dir.join(cwd)
+                        } else {
+                            std::env::current_dir()
+                                .unwrap_or_else(|_| PathBuf::from("."))
+                                .join(base_dir)
+                                .join(cwd)
+                        }
+                    });
                     let escaped_cwd = resolved_cwd.to_string_lossy().replace('"', "\"\"");
                     full_cmd.push_str(&format!("cd /d \"{}\" && ", escaped_cwd));
                 }
@@ -73,6 +75,9 @@ pub trait Service: Send + Sync {
             }
             #[cfg(not(target_os = "windows"))]
             {
+                // Use a shell wrapper that creates a new process group
+                // On Linux: use setsid if available
+                // On macOS: use a shell trick to create a new process group
                 let mut c = Command::new("sh");
                 c.arg("-c");
 
@@ -88,37 +93,32 @@ pub trait Service: Send + Sync {
                     && config.cwd.is_none()
                 {
                     // Ensure we use an absolute path
-                    let abs_base_dir = base_dir
-                        .canonicalize()
-                        .unwrap_or_else(|_| {
-                            if base_dir.is_absolute() {
-                                base_dir.to_path_buf()
-                            } else {
-                                std::env::current_dir()
-                                    .unwrap_or_else(|_| PathBuf::from("."))
-                                    .join(base_dir)
-                            }
-                        });
+                    let abs_base_dir = base_dir.canonicalize().unwrap_or_else(|_| {
+                        if base_dir.is_absolute() {
+                            base_dir.to_path_buf()
+                        } else {
+                            std::env::current_dir()
+                                .unwrap_or_else(|_| PathBuf::from("."))
+                                .join(base_dir)
+                        }
+                    });
                     let escaped_dir = abs_base_dir.to_string_lossy().replace('\'', "'\\''");
                     full_cmd.push_str(&format!("cd '{}' && ", escaped_dir));
                 } else if let Some(cwd) = &config.cwd {
                     // Resolve the cwd path relative to the base directory
                     // This ensures the path works regardless of where the shell is executed from
                     // Use absolute path to avoid issues when running from different directories
-                    let resolved_cwd = base_dir
-                        .join(cwd)
-                        .canonicalize()
-                        .unwrap_or_else(|_| {
-                            // If canonicalize fails, at least make it absolute
-                            if base_dir.is_absolute() {
-                                base_dir.join(cwd)
-                            } else {
-                                std::env::current_dir()
-                                    .unwrap_or_else(|_| PathBuf::from("."))
-                                    .join(base_dir)
-                                    .join(cwd)
-                            }
-                        });
+                    let resolved_cwd = base_dir.join(cwd).canonicalize().unwrap_or_else(|_| {
+                        // If canonicalize fails, at least make it absolute
+                        if base_dir.is_absolute() {
+                            base_dir.join(cwd)
+                        } else {
+                            std::env::current_dir()
+                                .unwrap_or_else(|_| PathBuf::from("."))
+                                .join(base_dir)
+                                .join(cwd)
+                        }
+                    });
                     let escaped_cwd = resolved_cwd.to_string_lossy().replace('\'', "'\\''");
                     full_cmd.push_str(&format!("cd '{}' && ", escaped_cwd));
                 }
@@ -148,20 +148,17 @@ pub trait Service: Send + Sync {
             if let Some(cwd) = &config.cwd {
                 // Resolve the cwd path relative to the base directory
                 // Use absolute path to avoid issues when running from different directories
-                let resolved_cwd = base_dir
-                    .join(cwd)
-                    .canonicalize()
-                    .unwrap_or_else(|_| {
-                        // If canonicalize fails, at least make it absolute
-                        if base_dir.is_absolute() {
-                            base_dir.join(cwd)
-                        } else {
-                            std::env::current_dir()
-                                .unwrap_or_else(|_| PathBuf::from("."))
-                                .join(base_dir)
-                                .join(cwd)
-                        }
-                    });
+                let resolved_cwd = base_dir.join(cwd).canonicalize().unwrap_or_else(|_| {
+                    // If canonicalize fails, at least make it absolute
+                    if base_dir.is_absolute() {
+                        base_dir.join(cwd)
+                    } else {
+                        std::env::current_dir()
+                            .unwrap_or_else(|_| PathBuf::from("."))
+                            .join(base_dir)
+                            .join(cwd)
+                    }
+                });
                 c.current_dir(resolved_cwd);
             }
             c
@@ -183,17 +180,15 @@ pub trait Service: Send + Sync {
             && config.cwd.is_none()
         {
             // Ensure we use an absolute path
-            let abs_base_dir = base_dir
-                .canonicalize()
-                .unwrap_or_else(|_| {
-                    if base_dir.is_absolute() {
-                        base_dir.to_path_buf()
-                    } else {
-                        std::env::current_dir()
-                            .unwrap_or_else(|_| PathBuf::from("."))
-                            .join(base_dir)
-                    }
-                });
+            let abs_base_dir = base_dir.canonicalize().unwrap_or_else(|_| {
+                if base_dir.is_absolute() {
+                    base_dir.to_path_buf()
+                } else {
+                    std::env::current_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."))
+                        .join(base_dir)
+                }
+            });
             cmd.current_dir(&abs_base_dir);
         }
 
@@ -218,6 +213,21 @@ pub trait Service: Send + Sync {
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
+
+        // Create a new process group with this process as the leader.
+        // This allows us to reliably kill the entire process tree using killpg.
+        // The child's PID becomes its PGID, so we can use child.id() as the PGID for killing.
+        #[cfg(unix)]
+        unsafe {
+            cmd.pre_exec(|| {
+                // setpgid(0, 0) sets the process group ID to our own PID,
+                // making this process the leader of a new process group.
+                // All child processes will inherit this PGID.
+                nix::unistd::setpgid(nix::unistd::Pid::from_raw(0), nix::unistd::Pid::from_raw(0))
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                Ok(())
+            });
+        }
 
         cmd
     }

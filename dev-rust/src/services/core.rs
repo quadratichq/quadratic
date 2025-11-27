@@ -21,6 +21,16 @@ impl Service for CoreService {
                 "run".to_string(),
                 "watch:wasm:javascript".to_string(),
             ]),
+            perf_command: Some(vec![
+                "npm".to_string(),
+                "run".to_string(),
+                "build:wasm:perf:javascript".to_string(),
+            ]),
+            perf_watch_command: Some(vec![
+                "npm".to_string(),
+                "run".to_string(),
+                "watch:wasm:perf:javascript".to_string(),
+            ]),
             cwd: None,
             success_patterns: vec![
                 "[Finished running. Exit status: 0".to_string(),

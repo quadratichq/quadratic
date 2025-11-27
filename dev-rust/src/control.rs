@@ -8,11 +8,15 @@ use tokio::process::{Child, Command};
 use tokio::sync::broadcast;
 use tokio::sync::RwLock;
 
+#[cfg(unix)]
+use nix::unistd::Pid;
+
 pub struct Control {
     processes: Arc<RwLock<HashMap<String, Option<Child>>>>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
     watching: Arc<RwLock<HashMap<String, bool>>>,
     hidden: Arc<RwLock<HashMap<String, bool>>>,
+    perf: Arc<RwLock<bool>>, // Perf mode for core service
     log_sender: broadcast::Sender<(String, String, u64, String)>, // (service, message, timestamp, stream)
     logs: Arc<RwLock<Vec<(String, String, u64, String)>>>, // Store logs: (service, message, timestamp, stream)
     quitting: Arc<RwLock<bool>>,
@@ -43,22 +47,23 @@ impl Control {
 
         // Load state from JSON file if it exists, otherwise use defaults
         let state_file = base_dir.join("dev-rust-state.json");
-        let (saved_watching, saved_hidden, _saved_theme) = if state_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(state_file) {
+        let (saved_watching, saved_hidden, _saved_theme, saved_perf) = if state_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&state_file) {
                 if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
                     (
                         state.watching.unwrap_or_default(),
                         state.hidden.unwrap_or_default(),
                         state.theme,
+                        state.perf.unwrap_or(false),
                     )
                 } else {
-                    (HashMap::new(), HashMap::new(), None)
+                    (HashMap::new(), HashMap::new(), None, false)
                 }
             } else {
-                (HashMap::new(), HashMap::new(), None)
+                (HashMap::new(), HashMap::new(), None, false)
             }
         } else {
-            (HashMap::new(), HashMap::new(), None)
+            (HashMap::new(), HashMap::new(), None, false)
         };
 
         for service in crate::services::get_services() {
@@ -77,6 +82,7 @@ impl Control {
             status: Arc::new(RwLock::new(status)),
             watching: Arc::new(RwLock::new(watching)),
             hidden: Arc::new(RwLock::new(hidden)),
+            perf: Arc::new(RwLock::new(saved_perf)),
             log_sender,
             logs,
             quitting: Arc::new(RwLock::new(false)),
@@ -164,8 +170,13 @@ impl Control {
         }
 
         let watching = *self.watching.read().await.get(name).unwrap_or(&false);
+        let perf = if name == "core" {
+            *self.perf.read().await
+        } else {
+            false
+        };
         let base_dir = self.base_dir.clone();
-        let mut cmd = service.build_command(watching, &base_dir);
+        let mut cmd = service.build_command(watching, perf, &base_dir);
 
 
         let mut child = match cmd.spawn() {
@@ -300,7 +311,7 @@ impl Control {
             });
         }
 
-        // Store process
+        // Store the process - the child's PID is its PGID due to pre_exec setpgid(0,0)
         {
             let mut processes = self.processes.write().await;
             processes.insert(name.to_string(), Some(child));
@@ -316,50 +327,60 @@ impl Control {
             }
         }
 
-        // Then kill the spawned process and its process group
+        // Kill the spawned process and its entire process group
         let mut processes = self.processes.write().await;
         if let Some(Some(mut child)) = processes.remove(name) {
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(unix)]
             {
-                // On Unix, kill the entire process group
-                // When spawning through a shell, the shell is the process group leader
-                // Killing with negative PID kills the entire process group (shell + npm + vite + all children)
+                // The child's PID is its PGID due to pre_exec setpgid(0,0)
+                // Kill the entire process group using killpg
                 if let Some(pid) = child.id() {
-                    // Kill the entire process group (negative PID)
-                    let _ = Command::new("kill")
-                        .args(&["-9", &format!("-{}", pid)])
-                        .output()
-                        .await;
+                    // Safety check: don't kill our own process
+                    let current_pid = nix::unistd::getpid();
+                    if pid as i32 == current_pid.as_raw() {
+                        eprintln!(
+                            "ERROR: Attempted to kill process {} which is dev-rust itself! Aborting for {}.",
+                            pid, name
+                        );
+                        return;
+                    }
+
+                    // Kill the entire process group (PGID = PID due to setpgid in pre_exec)
+                    let _ = nix::sys::signal::killpg(
+                        Pid::from_raw(pid as i32),
+                        nix::sys::signal::Signal::SIGKILL,
+                    );
                 }
-                // Also kill the direct process as fallback
-                let _ = child.kill();
             }
-            #[cfg(target_os = "windows")]
+            #[cfg(not(unix))]
             {
                 // On Windows, just kill the process
                 let _ = child.kill();
             }
-            let _ = child.wait();
+            // Wait for the process to fully exit
+            let _ = child.wait().await;
         }
     }
 
     async fn kill_port(&self, port: u16) {
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(unix)]
         {
             let output = Command::new("lsof")
-                .args(&["-ti", &format!("tcp:{}", port)])
+                .args(["-ti", &format!("tcp:{}", port)])
                 .output()
                 .await;
 
             if let Ok(output) = output {
                 if !output.stdout.is_empty() {
-                    let pid = String::from_utf8_lossy(&output.stdout);
-                    let pid = pid.trim();
-                    if !pid.is_empty() {
-                        let _ = Command::new("kill")
-                            .args(&["-9", pid])
-                            .output()
-                            .await;
+                    let pids_str = String::from_utf8_lossy(&output.stdout);
+                    for pid_str in pids_str.trim().split('\n') {
+                        if let Ok(pid) = pid_str.parse::<i32>() {
+                            // Kill the process directly
+                            let _ = nix::sys::signal::kill(
+                                Pid::from_raw(pid),
+                                nix::sys::signal::Signal::SIGKILL,
+                            );
+                        }
                     }
                 }
             }
@@ -415,6 +436,31 @@ impl Control {
         self.hidden.read().await.clone()
     }
 
+    pub async fn get_perf(&self) -> bool {
+        *self.perf.read().await
+    }
+
+    pub async fn set_perf(&self, perf: bool) {
+        let current_perf = *self.perf.read().await;
+
+        // Only restart if the state actually changed
+        if current_perf == perf {
+            return;
+        }
+
+        // Update perf state
+        {
+            let mut perf_state = self.perf.write().await;
+            *perf_state = perf;
+        }
+
+        // Save state to file
+        let _ = self.save_state().await;
+
+        // Restart core service with the new perf mode
+        self.restart_service("core").await;
+    }
+
     pub fn get_base_dir(&self) -> &std::path::Path {
         &self.base_dir
     }
@@ -431,12 +477,13 @@ impl Control {
     pub async fn save_state(&self) -> Result<(), Box<dyn std::error::Error>> {
         let watching = self.watching.read().await.clone();
         let hidden = self.hidden.read().await.clone();
+        let perf = *self.perf.read().await;
 
         // Load existing state to preserve theme
         let mut theme = None;
         let state_file = self.base_dir.join("dev-rust-state.json");
         if state_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(state_file) {
+            if let Ok(content) = std::fs::read_to_string(&state_file) {
                 if let Ok(existing_state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
                     theme = existing_state.theme;
                 }
@@ -447,6 +494,7 @@ impl Control {
             watching: Some(watching),
             hidden: Some(hidden),
             theme,
+            perf: Some(perf),
         };
 
         let json = serde_json::to_string_pretty(&state)?;
@@ -457,11 +505,13 @@ impl Control {
     pub async fn save_state_with_theme(&self, theme: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         let watching = self.watching.read().await.clone();
         let hidden = self.hidden.read().await.clone();
+        let perf = *self.perf.read().await;
 
         let state = crate::types::SetStateRequest {
             watching: Some(watching),
             hidden: Some(hidden),
             theme,
+            perf: Some(perf),
         };
 
         let json = serde_json::to_string_pretty(&state)?;
@@ -555,6 +605,25 @@ impl Control {
         }
 
         self.log("system", "All services restarted.".to_string()).await;
+    }
+
+    pub async fn stop_all_services(&self) {
+        self.log("system", "Stopping all services...".to_string()).await;
+
+        // Get all service names
+        let service_names: Vec<String> = {
+            let status = self.status.read().await;
+            status.keys().cloned().collect()
+        };
+
+        // Stop all services (kill and mark as Killed so they can be restarted)
+        for service_name in service_names {
+            self.kill_service(&service_name).await;
+            let mut status = self.status.write().await;
+            status.insert(service_name.clone(), ServiceStatus::Killed);
+        }
+
+        self.log("system", "All services stopped.".to_string()).await;
     }
 
     pub async fn kill_all_services(&self) {

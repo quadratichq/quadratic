@@ -23,6 +23,8 @@ impl Service for ClientService {
                 "start".to_string(),
                 "--workspace=quadratic-client".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec![
                 "Found 0 error".to_string(),

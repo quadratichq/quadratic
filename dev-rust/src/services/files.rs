@@ -25,6 +25,8 @@ impl Service for FilesService {
                 "-x".to_string(),
                 "run -p quadratic-files --target-dir=target".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: Some("quadratic-files".to_string()),
             success_patterns: vec!["listening on".to_string()],
             error_patterns: vec!["error[".to_string(), "npm ERR!".to_string()],

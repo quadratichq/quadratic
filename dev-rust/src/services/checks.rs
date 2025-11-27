@@ -13,6 +13,8 @@ impl Service for ChecksService {
             port: None,
             command: vec!["echo".to_string(), "checks".to_string()],
             watch_command: None,
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec!["✓".to_string(), "OK".to_string(), "running".to_string()],
             error_patterns: vec![

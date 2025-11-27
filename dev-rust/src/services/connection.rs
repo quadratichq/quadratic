@@ -25,6 +25,8 @@ impl Service for ConnectionService {
                 "-x".to_string(),
                 "run -p quadratic-connection --target-dir=target".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: Some("quadratic-connection".to_string()),
             success_patterns: vec!["listening on".to_string()],
             error_patterns: vec![

@@ -23,6 +23,8 @@ impl Service for SharedService {
                 "watch".to_string(),
                 "--workspace=quadratic-shared".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec![" 0 errors.".to_string(), "successfully".to_string()],
             error_patterns: vec!["error".to_string()],

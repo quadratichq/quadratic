@@ -44,6 +44,19 @@ function updateServices(serviceList) {
     renderServiceList();
     updateFavicon();
     updatePageTitle();
+    updateStopAllButton();
+}
+
+function updateStopAllButton() {
+    const stopAllBtn = document.getElementById('stopAllBtn');
+    if (!stopAllBtn) return;
+
+    // Disable the button if all services are already stopped or killed
+    const allStopped = Object.values(services).every(
+        service => service.status.toLowerCase() === 'stopped' || service.status.toLowerCase() === 'killed'
+    );
+
+    stopAllBtn.disabled = allStopped || Object.keys(services).length === 0;
 }
 
 function renderServiceList() {
@@ -193,12 +206,19 @@ function renderServiceList() {
                 item.innerHTML = itemContent;
             }
 
-            // Update buttons content - only show watch button if service has watch command
+            // Update buttons content - only show perf button for core service
+            const perfButton = service.has_perf_command ? `
+                <button class="perf ${service.perf ? 'active' : ''}"
+                        onclick="event.stopPropagation(); togglePerf()"
+                        title="${service.perf ? 'Disable perf mode' : 'Enable perf mode'}">🚀</button>
+            ` : '';
+
+            // Only show watch button if service has watch command
             const watchButton = service.has_watch_command ? `
                 <button class="watch ${service.watching ? 'active' : ''}"
                         onclick="event.stopPropagation(); toggleWatch('${service.name}')"
                         title="${service.watching ? 'Stop watching' : 'Start watching'}">👀</button>
-            ` : '<span style="min-width: 28px;"></span>';
+            ` : '';
 
             // For types, shared, and checks services, show refresh button instead of kill button
             const isOneTimeService = service.name === 'types' || service.name === 'shared' || service.name === 'checks';
@@ -213,6 +233,7 @@ function renderServiceList() {
             `;
 
             const buttonsContent = `
+                ${perfButton}
                 ${watchButton}
                 <button class="hidden ${service.hidden ? 'active' : ''}"
                         onclick="event.stopPropagation(); toggleFilter('${service.name}')"

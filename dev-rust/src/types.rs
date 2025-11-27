@@ -17,6 +17,8 @@ pub struct ServiceInfo {
     pub watching: bool,
     pub hidden: bool,
     pub has_watch_command: bool,
+    pub perf: bool,
+    pub has_perf_command: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,10 +57,16 @@ pub struct SetWatchRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetPerfRequest {
+    pub perf: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetStateRequest {
     pub watching: Option<std::collections::HashMap<String, bool>>,
     pub hidden: Option<std::collections::HashMap<String, bool>>,
     pub theme: Option<String>,
+    pub perf: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,6 +78,8 @@ pub struct ServiceConfig {
     pub port: Option<u16>,
     pub command: Vec<String>,
     pub watch_command: Option<Vec<String>>,
+    pub perf_command: Option<Vec<String>>,
+    pub perf_watch_command: Option<Vec<String>>,
     pub cwd: Option<String>,
     pub success_patterns: Vec<String>,
     pub error_patterns: Vec<String>,

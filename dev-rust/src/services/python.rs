@@ -21,6 +21,8 @@ impl Service for PythonService {
                 "run".to_string(),
                 "watch:python".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec!["Python complete".to_string()],
             error_patterns: vec!["Python error!".to_string()],

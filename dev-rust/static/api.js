@@ -13,6 +13,21 @@ async function toggleWatch(service) {
     }
 }
 
+async function togglePerf() {
+    try {
+        const currentState = services['core']?.perf ?? false;
+        const newState = !currentState;
+        await fetch('/api/set-perf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ perf: newState })
+        });
+        updateStatus();
+    } catch (error) {
+        console.error('Failed to toggle perf:', error);
+    }
+}
+
 async function toggleFilter(service) {
     try {
         const newState = !services[service]?.hidden ?? false;
@@ -71,6 +86,18 @@ async function restartAllServices() {
         updateStatus();
     } catch (error) {
         console.error('Failed to restart all services:', error);
+    }
+}
+
+async function stopAllServices() {
+    try {
+        await fetch('/api/stop-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        updateStatus();
+    } catch (error) {
+        console.error('Failed to stop all services:', error);
     }
 }
 

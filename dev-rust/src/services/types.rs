@@ -13,6 +13,8 @@ impl Service for TypesService {
             port: None,
             command: vec!["npm".to_string(), "run".to_string(), "build:wasm:types".to_string()],
             watch_command: None,
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec!["Types exported successfully".to_string(), "Running ".to_string()],
             error_patterns: vec!["error:".to_string()],

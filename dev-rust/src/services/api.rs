@@ -23,6 +23,8 @@ impl Service for ApiService {
                 "start".to_string(),
                 "--workspace=quadratic-api".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: None,
             success_patterns: vec!["Server running".to_string()],
             error_patterns: vec!["\"level\":\"error\"".to_string()],

@@ -25,6 +25,8 @@ impl Service for MultiplayerService {
                 "-x".to_string(),
                 "run -p quadratic-multiplayer --target-dir=target".to_string(),
             ]),
+            perf_command: None,
+            perf_watch_command: None,
             cwd: Some("quadratic-multiplayer".to_string()),
             success_patterns: vec!["listening on".to_string()],
             error_patterns: vec!["error[".to_string()],

@@ -469,12 +469,13 @@ button:disabled:hover {
     gap: 0.25rem;
     align-items: stretch;
     height: 100%;
+    flex-shrink: 0;
 }
 
 .service-item-buttons button {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
-    min-width: 28px;
+    width: 36px;
     height: 100%;
     min-height: 100%;
     display: flex;
@@ -504,6 +505,26 @@ button:disabled:hover {
 
 .service-item-buttons button.watch.active:hover {
     background: var(--accent-hover);
+}
+
+.service-item-buttons button.perf {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.service-item-buttons button.perf.active {
+    background: #FFC800;
+    color: #1e1e1e;
+    border-color: #FFC800;
+}
+
+.service-item-buttons button.perf:hover {
+    background: var(--bg-hover);
+}
+
+.service-item-buttons button.perf.active:hover {
+    background: #FFD633;
 }
 
 .service-item-buttons button.hidden {
