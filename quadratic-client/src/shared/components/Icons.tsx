@@ -179,6 +179,10 @@ export const CheckIcon: IconComponent = (props) => {
   return <Icon {...props}>check</Icon>;
 };
 
+export const ChecklistIcon: IconComponent = (props) => {
+  return <Icon {...props}>checklist</Icon>;
+};
+
 export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
 };

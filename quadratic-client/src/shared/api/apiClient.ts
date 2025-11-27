@@ -385,6 +385,22 @@ export const apiClient = {
         );
       },
     },
+    tutorialBonusPrompts: {
+      get() {
+        return fetchFromApi(
+          `/v0/user/tutorial-bonus-prompts`,
+          { method: 'GET' },
+          ApiSchemas['/v0/user/tutorial-bonus-prompts.GET.response']
+        );
+      },
+      claim(body: ApiTypes['/v0/user/tutorial-bonus-prompts.POST.request']) {
+        return fetchFromApi(
+          `/v0/user/tutorial-bonus-prompts`,
+          { method: 'POST', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/tutorial-bonus-prompts.POST.response']
+        );
+      },
+    },
   },
 
   education: {

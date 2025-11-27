@@ -40,6 +40,7 @@ import {
 } from 'react';
 import type { SetterOrUpdater } from 'recoil';
 
+type AIAnalystUIContext = 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
 export interface AIUserMessageFormWrapperProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   autoFocusRef?: React.RefObject<boolean>;
@@ -48,7 +49,7 @@ export interface AIUserMessageFormWrapperProps {
   messageIndex: number;
   onContentChange?: (content: Content) => void;
   showEmptyChatPromptSuggestions?: boolean;
-  uiContext: 'analyst-new-chat' | 'analyst-edit-chat' | 'assistant-new-chat' | 'assistant-edit-chat';
+  uiContext: AIAnalystUIContext;
 }
 
 export interface SubmitPromptArgs {
@@ -72,6 +73,7 @@ interface AIUserMessageFormProps extends AIUserMessageFormWrapperProps {
   maxHeight?: string;
   waitingOnMessageIndex?: number;
   filesSupportedText: string;
+  primary?: boolean;
 }
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
@@ -98,6 +100,7 @@ export const AIUserMessageForm = memo(
       waitingOnMessageIndex,
       filesSupportedText,
       uiContext,
+      primary = false,
     } = props;
 
     const [editing, setEditing] = useState(!initialContent?.length);
@@ -124,6 +127,19 @@ export const AIUserMessageForm = memo(
 
       setContext?.(initialContext ? { ...initialContext } : {});
     }, [initialContent, initialContext, setContext, setPrompt]);
+
+    useEffect(() => {
+      if (primary) {
+        const handlePopulateAIChatBox = (text: string) => {
+          setPrompt(text);
+          textareaRef.current?.focus();
+        };
+        events.on('populateAIChatBox', handlePopulateAIChatBox);
+        return () => {
+          events.off('populateAIChatBox', handlePopulateAIChatBox);
+        };
+      }
+    }, [primary]);
 
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
@@ -157,8 +173,12 @@ export const AIUserMessageForm = memo(
           setPrompt('');
           setContext?.({});
         }
+
+        if (primary) {
+          events.emit('tutorialTrigger', 'ai-analyst-submit-prompt');
+        }
       },
-      [context, files, importFiles, initialContent, setContext, submitPrompt]
+      [context, files, importFiles, initialContent, primary, setContext, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {
@@ -355,6 +375,7 @@ export const AIUserMessageForm = memo(
 
     const textarea = (
       <Textarea
+        id={uiContext === 'analyst-new-chat' ? 'tutorial-ai-analyst-user-message-form' : ''}
         ref={textareaRef}
         value={prompt}
         className={cn(
@@ -376,7 +397,7 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
+      <div className={'flex flex-col'}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
           <AIAnalystEmptyChatPromptSuggestions
             submit={handleSubmit}
@@ -442,6 +463,7 @@ export const AIUserMessageForm = memo(
           {showAIUsageExceeded && <AIUsageExceeded />}
 
           <AIUserMessageFormFooter
+            uiContext={uiContext}
             show={editing}
             loading={loading}
             waitingOnMessageIndex={waitingOnMessageIndex}
@@ -537,6 +559,7 @@ interface AIUserMessageFormFooterProps {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   filesSupportedText: string;
   isAnalyst: boolean;
+  uiContext: AIAnalystUIContext;
 }
 const AIUserMessageFormFooter = memo(
   ({
@@ -557,6 +580,7 @@ const AIUserMessageFormFooter = memo(
     setContext,
     filesSupportedText,
     isAnalyst,
+    uiContext,
   }: AIUserMessageFormFooterProps) => {
     const handleClickSubmit = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -631,6 +655,7 @@ const AIUserMessageFormFooter = memo(
                 )}
               >
                 <Button
+                  id={uiContext === 'analyst-new-chat' ? 'tutorial-ai-analyst-user-message-form-submit-button' : ''}
                   size="icon-sm"
                   className="rounded-full"
                   onClick={(e) => {

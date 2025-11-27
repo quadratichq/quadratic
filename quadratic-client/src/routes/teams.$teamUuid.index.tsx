@@ -2,7 +2,6 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
-import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Avatar } from '@/shared/components/Avatar';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -38,8 +37,6 @@ export const Component = () => {
 
   return (
     <div className="flex flex-grow flex-col">
-      <OnboardingBanner />
-
       <DashboardHeader
         title="Team files"
         actions={

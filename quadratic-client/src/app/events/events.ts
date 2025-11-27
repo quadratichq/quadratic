@@ -176,6 +176,12 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystMessagesLeftRefresh: () => void;
+
+  tutorialTrigger: (trigger: string) => void;
+  populateAIChatBox: (text: string) => void;
+  onboardingChecklistClose: () => void;
+  shareFileEmailSubmitted: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

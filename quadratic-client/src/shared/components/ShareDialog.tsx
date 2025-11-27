@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import type { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
@@ -531,7 +532,11 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
               <Button
                 variant={null}
                 size="icon"
-                onClick={onClose}
+                id="tutorial-share-file-close-button"
+                onClick={() => {
+                  events.emit('tutorialTrigger', 'cancel');
+                  onClose();
+                }}
                 className="opacity-70 transition-opacity hover:opacity-100"
               >
                 <Cross2Icon />
@@ -634,6 +639,9 @@ export function InviteForm({
       // TODO: (enhancement) enhance types so it knows which its submitting to
       submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
 
+      // Emit event for tutorial tracking
+      events.emit('shareFileEmailSubmitted');
+
       // Reset the email input & focus it
       if (inputRef.current) {
         inputRef.current.value = '';
@@ -658,7 +666,7 @@ export function InviteForm({
   }, []);
 
   return (
-    <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
+    <form id="tutorial-share-file" className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
       <div className="flex flex-grow flex-col">
         <Input
           autoComplete="off"

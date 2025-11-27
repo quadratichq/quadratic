@@ -5,6 +5,7 @@ import {
   BillingAIUsageForCurrentMonth,
   BillingAIUsageLimitExceeded,
   BillingAIUsageMonthlyForUserInTeam,
+  getBonusPromptsRemaining,
 } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
@@ -71,12 +72,20 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Get usage
   const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-  const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  let exceededBillingLimit = false;
+  const exceededBy = BillingAIUsageLimitExceeded(usage);
+
+  const bonusRemaining = (await getBonusPromptsRemaining(userId)) ?? 0;
+
+  // include bonus prompts in the calculation
+  if (exceededBy > 0) {
+    exceededBillingLimit = exceededBy > bonusRemaining;
+  }
   const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
 
   const data = {
     exceededBillingLimit,
-    billingLimit: BILLING_AI_USAGE_LIMIT,
+    billingLimit: BILLING_AI_USAGE_LIMIT + bonusRemaining,
     currentPeriodUsage,
   };
   return res.status(200).json(data);
