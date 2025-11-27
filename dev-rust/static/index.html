@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadratic Dev Server</title>
+    <link rel="icon" id="favicon" type="image/png" href="">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <svg class="quadratic-logo" viewBox="0 0 13 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0H6V6H0V0Z" fill="#CB8999" />
+                <path d="M6 7H0V13H6V7Z" fill="#5D576B" />
+                <path d="M13 0H7V6H13V0Z" fill="#8ECB89" />
+                <path d="M13 14H7V20H13V14Z" fill="#FFC800" />
+                <path d="M13 7H7V13H13V7Z" fill="#6CD4FF" />
+            </svg>
+            Quadratic Dev Server
+        </h1>
+        <div class="controls">
+            <button id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌓</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="service-list" id="serviceList">
+            <div class="service-list-content"></div>
+        </div>
+        <div class="logs-container">
+            <div class="logs-header">
+                <h2>Logs</h2>
+                <div id="selectedService"></div>
+            </div>
+            <div class="logs" id="logs"></div>
+        </div>
+    </div>
+
+    <script src="state.js"></script>
+    <script src="utils.js"></script>
+    <script src="websocket.js"></script>
+    <script src="services.js"></script>
+    <script src="logs.js"></script>
+    <script src="api.js"></script>
+    <script src="ui.js"></script>
+    <script>
+        // Initialize static favicon
+        setStaticFavicon();
+        init();
+    </script>
+</body>
+</html>

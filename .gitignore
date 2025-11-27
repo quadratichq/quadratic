@@ -40,15 +40,9 @@ venv/*
 .idea
 
 # Generated Rust files
-/target
-quadratic-connection/target/
-quadratic-core/target/
+**/target
 quadratic-core/tmp.txt
-quadratic-files/target/
 quadratic-files/storage
-quadratic-multiplayer/target/
-quadratic-rust-shared/target/
-poc/**/target/
 
 quadratic-rust-shared/src/auto_gen_path.rs
 

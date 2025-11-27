@@ -25,6 +25,7 @@
     "start:services-local": "node dev -L",
     "dev": "node dev -l",
     "dev:services-local": "node dev -l -L",
+    "dev-rust": "cd dev-rust && cargo run",
     "api:start": "npm start --workspace=quadratic-api",
     "clean": "npm i -g rimraf && npm exec --workspaces -- npm run clean && npx rimraf node_modules dist build target && npm cache clean --force",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
