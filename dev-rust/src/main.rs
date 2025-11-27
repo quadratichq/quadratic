@@ -4,16 +4,34 @@ mod server;
 mod services;
 mod types;
 
+use clap::Parser;
 use control::Control;
 use server::start_server;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+#[derive(Parser, Debug)]
+#[command(name = "dev-rust")]
+#[command(about = "Quadratic Dev Server")]
+struct Args {
+    /// Port to run the server on
+    #[arg(long, default_value = "8080")]
+    port: u16,
+
+    /// Base directory for state and other files
+    #[arg(long, default_value = ".")]
+    dir: PathBuf,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let control = Arc::new(RwLock::new(Control::new()));
+    let args = Args::parse();
+    let base_dir = args.dir.canonicalize().unwrap_or(args.dir);
+
+    let control = Arc::new(RwLock::new(Control::new(base_dir)));
 
     // Start the control system
     {
@@ -27,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Set up signal handler for graceful shutdown
     let control_for_server = control.clone();
     let control_for_cleanup = control.clone();
-    let port = 8080; // Default port
+    let port = args.port;
     let server_handle = tokio::spawn(async move {
         if let Err(e) = start_server(control_for_server, port).await {
             eprintln!("Server error: {}", e);

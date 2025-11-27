@@ -30,10 +30,32 @@ npm run dev:rust
 npm run dev:rust:watch
 ```
 
+### Command-Line Options
+
+The dev server supports the following command-line options:
+
+- `--port <PORT>`: Port to run the server on (default: `8080`)
+- `--dir <DIR>`: Base directory for state and other files (default: `.`)
+
+Examples:
+
+```bash
+# Run on a different port
+cargo run -- --port 9000
+
+# Use a different base directory for state.json
+cargo run -- --dir /path/to/dir
+
+# Combine both options
+cargo run -- --port 9000 --dir /path/to/dir
+```
+
 ## Usage
 
 1. Start the dev server: `npm run dev:rust` (or `npm run dev:rust:watch` for auto-reload)
-2. Open your browser to `http://localhost:8080`
+   - Optionally specify `--port` to use a different port (default: `8080`)
+   - Optionally specify `--dir` to use a different base directory for state files (default: current directory)
+2. Open your browser to `http://localhost:8080` (or the port you specified)
 3. Use the web UI to:
    - View logs from all services
    - Filter logs by selecting a service

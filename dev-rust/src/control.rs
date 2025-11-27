@@ -16,10 +16,11 @@ pub struct Control {
     log_sender: broadcast::Sender<(String, String, u64, String)>, // (service, message, timestamp, stream)
     logs: Arc<RwLock<Vec<(String, String, u64, String)>>>, // Store logs: (service, message, timestamp, stream)
     quitting: Arc<RwLock<bool>>,
+    base_dir: std::path::PathBuf,
 }
 
 impl Control {
-    pub fn new() -> Self {
+    pub fn new(base_dir: std::path::PathBuf) -> Self {
         let (log_sender, mut log_receiver) = broadcast::channel(1000);
         let logs = Arc::new(RwLock::new(Vec::new()));
         let logs_clone = logs.clone();
@@ -41,7 +42,7 @@ impl Control {
         let mut hidden = HashMap::new();
 
         // Load state from JSON file if it exists, otherwise use defaults
-        let state_file = std::path::Path::new("state.json");
+        let state_file = base_dir.join("state.json");
         let (saved_watching, saved_hidden, _saved_theme) = if state_file.exists() {
             if let Ok(content) = std::fs::read_to_string(state_file) {
                 if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
@@ -79,6 +80,7 @@ impl Control {
             log_sender,
             logs,
             quitting: Arc::new(RwLock::new(false)),
+            base_dir,
         }
     }
 
@@ -415,6 +417,10 @@ impl Control {
         self.hidden.read().await.clone()
     }
 
+    pub fn get_base_dir(&self) -> &std::path::Path {
+        &self.base_dir
+    }
+
     pub async fn get_logs(&self) -> Vec<(String, String, u64, String)> {
         self.logs.read().await.clone()
     }
@@ -430,7 +436,7 @@ impl Control {
 
         // Load existing state to preserve theme
         let mut theme = None;
-        let state_file = std::path::Path::new("state.json");
+        let state_file = self.base_dir.join("state.json");
         if state_file.exists() {
             if let Ok(content) = std::fs::read_to_string(state_file) {
                 if let Ok(existing_state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
@@ -446,7 +452,7 @@ impl Control {
         };
 
         let json = serde_json::to_string_pretty(&state)?;
-        std::fs::write("state.json", json)?;
+        std::fs::write(self.base_dir.join("state.json"), json)?;
         Ok(())
     }
 
@@ -461,7 +467,7 @@ impl Control {
         };
 
         let json = serde_json::to_string_pretty(&state)?;
-        std::fs::write("state.json", json)?;
+        std::fs::write(self.base_dir.join("state.json"), json)?;
         Ok(())
     }
 
