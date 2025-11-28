@@ -460,7 +460,7 @@ async fn set_state(
     State(control): State<Arc<RwLock<Control>>>,
     Json(req): Json<SetStateRequest>,
 ) -> impl IntoResponse {
-    let ctrl = control.write().await;
+    let ctrl = control.read().await;
 
     if let Some(watching) = req.watching {
         for (service, should_watch) in watching {
@@ -506,19 +506,17 @@ async fn restart_service(
     State(control): State<Arc<RwLock<Control>>>,
     Json(req): Json<ToggleRequest>,
 ) -> impl IntoResponse {
+    let ctrl = control.read().await;
+
     // Check if shared is watching - if so, do nothing
     if req.service == "shared" {
-        let watching = {
-            let ctrl = control.read().await;
-            ctrl.get_watching().await
-        };
+        let watching = ctrl.get_watching().await;
         if *watching.get("shared").unwrap_or(&false) {
             return (StatusCode::OK, Json(json!({"success": true, "message": "Shared is in watch mode, skipping restart"})));
         }
     }
 
     // Restart the service
-    let ctrl = control.write().await;
     ctrl.restart_service(&req.service).await;
 
     (StatusCode::OK, Json(json!({"success": true})))
@@ -527,7 +525,7 @@ async fn restart_service(
 async fn restart_all_services(
     State(control): State<Arc<RwLock<Control>>>,
 ) -> impl IntoResponse {
-    let ctrl = control.write().await;
+    let ctrl = control.read().await;
     ctrl.restart_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))

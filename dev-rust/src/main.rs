@@ -115,8 +115,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.dir.clone()
     };
 
-    // Load state file in background (non-blocking)
-    let state_data_future = {
+    // Load state file before starting services
+    let saved_state = {
         let state_file = initial_base_dir.join("dev-rust-state.json");
         tokio::task::spawn_blocking(move || {
             if state_file.exists() {
@@ -129,48 +129,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 None
             }
         })
+        .await
+        .ok()
+        .flatten()
     };
 
-    // Create Control immediately with empty state (avoids blocking file read)
-    // State will be loaded and applied in background
-    use std::collections::HashMap;
-    let empty_state = crate::types::SetStateRequest {
-        watching: Some(HashMap::new()),
-        hidden: Some(HashMap::new()),
-        theme: None,
-        perf: Some(false),
-    };
+    // Create Control with loaded state
     let control = Arc::new(RwLock::new(Control::new_with_state(
         initial_base_dir.clone(),
-        Some(empty_state),
+        saved_state,
     )));
-
-    // Load and apply state once ready (in background, doesn't block server start)
-    {
-        let control_clone = control.clone();
-        tokio::spawn(async move {
-            if let Ok(Some(state)) = state_data_future.await {
-                // Apply the loaded state to Control
-                let ctrl = control_clone.read().await;
-                if let Some(watching) = &state.watching {
-                    for (service, should_watch) in watching {
-                        ctrl.set_watch(service, *should_watch).await;
-                    }
-                }
-                if let Some(hidden) = &state.hidden {
-                    for (service, should_hide) in hidden {
-                        ctrl.set_hidden(service, *should_hide).await;
-                    }
-                }
-                if let Some(perf) = state.perf {
-                    ctrl.set_perf(perf).await;
-                }
-                if state.theme.is_some() {
-                    ctrl.set_theme(state.theme).await;
-                }
-            }
-        });
-    }
 
     // Resolve base_dir properly in background (find workspace root + canonicalize)
     // This doesn't block server startup - we don't need to update Control since
