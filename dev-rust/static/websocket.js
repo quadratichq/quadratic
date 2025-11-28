@@ -24,6 +24,10 @@ function connectWebSocket() {
         if (typeof renderServiceList === 'function') {
             renderServiceList();
         }
+        // Update favicon when connection is restored
+        if (typeof updateFavicon === 'function') {
+            updateFavicon();
+        }
         console.log('WebSocket connected');
     };
 
@@ -52,6 +56,10 @@ function connectWebSocket() {
         if (typeof renderServiceList === 'function') {
             renderServiceList();
         }
+        // Update favicon to show red X when connection is lost
+        if (typeof updateFavicon === 'function') {
+            updateFavicon();
+        }
     };
 
     ws.onclose = (event) => {
@@ -61,6 +69,10 @@ function connectWebSocket() {
         // Re-render services to show red status
         if (typeof renderServiceList === 'function') {
             renderServiceList();
+        }
+        // Update favicon to show red X when connection is lost
+        if (typeof updateFavicon === 'function') {
+            updateFavicon();
         }
         // Show error banner if not a clean close
         if (event.code !== 1000) {

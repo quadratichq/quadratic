@@ -200,11 +200,6 @@ impl Control {
         self.theme.read().await.clone()
     }
 
-    pub async fn set_theme(&self, theme: Option<String>) {
-        let mut theme_state = self.theme.write().await;
-        *theme_state = theme;
-    }
-
     pub async fn set_perf(&self, perf: bool) {
         let current_perf = *self.perf.read().await;
 

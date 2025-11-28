@@ -57,6 +57,14 @@ function updatePageTitle() {
 }
 
 function updateFavicon() {
+    // Check connection status first - show red X if connection is lost
+    if (connectionLost) {
+        stopFaviconAnimation();
+        wasAnimatingFavicon = false;
+        createFavicon(0, 'error');
+        return;
+    }
+
     // Check if any services are starting
     const hasStartingServices = Object.values(services).some(
         service => service.status.toLowerCase() === 'starting'
@@ -201,6 +209,21 @@ function createFavicon(rotation, type = 'checkmark') {
         ctx.stroke();
 
         ctx.restore();
+    } else if (type === 'error') {
+        // Draw red X
+        ctx.strokeStyle = '#F44336'; // Red color
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Draw X (two diagonal lines)
+        const size = 10;
+        ctx.beginPath();
+        ctx.moveTo(centerX - size, centerY - size);
+        ctx.lineTo(centerX + size, centerY + size);
+        ctx.moveTo(centerX + size, centerY - size);
+        ctx.lineTo(centerX - size, centerY + size);
+        ctx.stroke();
     } else {
         // Draw green checkmark
         ctx.strokeStyle = '#4CAF50'; // Green color
