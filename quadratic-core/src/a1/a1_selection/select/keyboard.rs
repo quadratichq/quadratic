@@ -807,7 +807,7 @@ mod tests {
 
         // Move up - should grow up (anchor aligned with bottom edge)
         selection.keyboard_select_to(0, -1, &context, &merge_cells);
-        assert_eq!(selection.test_to_string(), "A2:D4");
+        assert_eq!(selection.test_to_string(), "A1:D4");
 
         // End position is still at the anchor (D4)
         assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D4"));
