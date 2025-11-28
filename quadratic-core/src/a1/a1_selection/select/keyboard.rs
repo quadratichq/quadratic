@@ -402,13 +402,19 @@ fn keyboard_jump_select_sheet_range(
     } else if anchor.x < col {
         rect.max.x = col;
         rect.min.x = anchor.x;
+    } else {
+        rect.min.x = anchor.x;
+        rect.max.x = anchor.x;
     }
     if anchor.y > row {
         rect.min.y = row;
         rect.max.y = anchor.y;
-    } else if anchor.y < row {
+    } else if anchor.y <= row {
         rect.max.y = row;
         rect.min.y = anchor.y;
+    } else {
+        rect.min.y = anchor.y;
+        rect.max.y = anchor.y;
     }
 
     *range = RefRangeBounds::new_relative_rect(rect);
