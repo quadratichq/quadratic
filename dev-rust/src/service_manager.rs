@@ -64,6 +64,17 @@ impl ServiceManager {
     }
 
     pub async fn start_all_services(&self) {
+        // Set all services to Starting (pending) unless they're Killed
+        {
+            let mut status = self.status.write().await;
+            for service in crate::services::get_services() {
+                let current_status = status.get(&service.name).cloned().unwrap_or(ServiceStatus::Stopped);
+                if !matches!(current_status, ServiceStatus::Killed) {
+                    status.insert(service.name.clone(), ServiceStatus::Starting);
+                }
+            }
+        }
+
         // Start all services by default (in logical order: dependencies first)
         // Start types first (needed for core)
         self.start_service("types").await;

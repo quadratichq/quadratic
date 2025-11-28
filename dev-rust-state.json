@@ -1,27 +1,27 @@
 {
   "watching": {
-    "shared": true,
-    "core": true,
-    "connection": true,
-    "api": true,
-    "types": true,
     "client": true,
+    "core": true,
+    "shared": true,
+    "files": true,
+    "types": true,
+    "api": true,
     "multiplayer": true,
     "python": true,
-    "checks": true,
-    "files": true
+    "connection": true,
+    "checks": true
   },
   "hidden": {
-    "python": false,
-    "files": false,
-    "connection": false,
-    "types": false,
-    "client": false,
-    "core": false,
-    "checks": false,
     "api": false,
     "multiplayer": false,
-    "shared": false
+    "core": false,
+    "python": false,
+    "checks": false,
+    "client": false,
+    "files": false,
+    "connection": false,
+    "shared": false,
+    "types": false
   },
   "theme": null,
   "perf": false

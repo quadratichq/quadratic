@@ -156,7 +156,8 @@ function renderServiceList() {
             }
 
             const isSelected = !allServicesSelected && selectedServices.has(service.name);
-            const statusClass = `status-${service.status.toLowerCase()}`;
+            // If connection is lost, show all services as error (red)
+            const statusClass = connectionLost ? 'status-error' : `status-${service.status.toLowerCase()}`;
 
             // Check if row already exists
             let row = sectionContainer.querySelector(`[data-service-name="${service.name}"]`);
@@ -190,8 +191,8 @@ function renderServiceList() {
             }
 
             // Update classes - don't show selected when All mode is active
-            // Add error class for checks service when it fails
-            const hasError = service.name === 'checks' && service.status.toLowerCase() === 'error';
+            // Add error class for checks service when it fails, or when connection is lost
+            const hasError = connectionLost || (service.name === 'checks' && service.status.toLowerCase() === 'error');
             item.className = `service-item ${isSelected ? 'selected' : ''} ${hasError ? 'service-error' : ''}`;
 
             // Update service item content

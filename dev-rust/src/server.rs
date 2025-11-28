@@ -224,9 +224,9 @@ async fn websocket_handler(
 
 async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock<Control>>) {
     let (mut sender, mut receiver) = socket.split();
-    let log_receiver = {
+    let (log_receiver, hidden_arc) = {
         let ctrl = control.read().await;
-        ctrl.get_log_sender().subscribe()
+        (ctrl.get_log_sender().subscribe(), ctrl.get_hidden_arc())
     };
 
     // Channel for sending messages to the websocket
@@ -243,18 +243,15 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
 
     // Spawn task to send logs
     let mut log_receiver_clone = log_receiver;
-    let control_logs = control.clone();
+    let hidden_for_logs = hidden_arc.clone();
     let tx_logs = tx.clone();
     tokio::spawn(async move {
         while let Ok((service, message, timestamp, stream)) = log_receiver_clone.recv().await {
-            let hidden = {
-                let ctrl = control_logs.read().await;
-                ctrl.get_hidden().await
-            };
-
+            let hidden = hidden_for_logs.read().await;
             if hidden.get(&service).copied().unwrap_or(false) {
                 continue;
             }
+            drop(hidden);
 
             let log_msg = LogMessage {
                 service,
@@ -270,29 +267,26 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
     });
 
     // Spawn task to send status updates
-    let control_status = control.clone();
+    let (status_arc, watching_arc, hidden_for_status, perf_arc) = {
+        let ctrl = control.read().await;
+        let service_manager = ctrl.get_service_manager();
+        (
+            service_manager.get_status(),
+            service_manager.get_watching(),
+            ctrl.get_hidden_arc(),
+            ctrl.get_perf_arc(),
+        )
+    };
     let tx_status = tx.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(500));
         loop {
             interval.tick().await;
 
-            let status = {
-                let ctrl = control_status.read().await;
-                ctrl.get_status().await
-            };
-            let watching = {
-                let ctrl = control_status.read().await;
-                ctrl.get_watching().await
-            };
-            let hidden = {
-                let ctrl = control_status.read().await;
-                ctrl.get_hidden().await
-            };
-            let perf = {
-                let ctrl = control_status.read().await;
-                ctrl.get_perf().await
-            };
+            let status = status_arc.read().await.clone();
+            let watching = watching_arc.read().await.clone();
+            let hidden = hidden_for_status.read().await.clone();
+            let perf = *perf_arc.read().await;
 
             let services: Vec<ServiceInfo> = status
                 .iter()
@@ -447,20 +441,10 @@ async fn get_state(State(control): State<Arc<RwLock<Control>>>) -> impl IntoResp
         let ctrl = control.read().await;
         ctrl.get_perf().await
     };
-
-    // Load theme from state file
-    let mut theme = None;
-    let state_file = {
+    let theme = {
         let ctrl = control.read().await;
-        ctrl.get_base_dir().join("dev-rust-state.json")
+        ctrl.get_theme().await
     };
-    if state_file.exists() {
-        if let Ok(content) = std::fs::read_to_string(state_file) {
-            if let Ok(existing_state) = serde_json::from_str::<SetStateRequest>(&content) {
-                theme = existing_state.theme;
-            }
-        }
-    }
 
     let state = SetStateRequest {
         watching: Some(watching),

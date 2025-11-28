@@ -4,11 +4,13 @@ let selectedServices = new Set(); // Use Set for multiple selections
 let logs = [];
 let services = {};
 let previousServiceData = null; // Track previous service state to avoid unnecessary re-renders
+let connectionLost = false; // Track if WebSocket connection is lost
 
 let htmlETag = null;
 let faviconAnimationFrame = null;
 let faviconRotation = 0;
 let faviconLastTime = null;
+let wasAnimatingFavicon = false; // Track if favicon was animating previously
 
 // Load logs from server on page load
 async function loadLogsFromServer() {

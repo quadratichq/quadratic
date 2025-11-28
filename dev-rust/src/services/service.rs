@@ -167,6 +167,19 @@ pub trait Service: Send + Sync {
                     }
                 });
                 c.current_dir(resolved_cwd);
+            } else {
+                // If no cwd specified, run from base_dir (workspace root)
+                // This ensures cargo commands can find the workspace Cargo.toml
+                let abs_base_dir = base_dir.canonicalize().unwrap_or_else(|_| {
+                    if base_dir.is_absolute() {
+                        base_dir.to_path_buf()
+                    } else {
+                        std::env::current_dir()
+                            .unwrap_or_else(|_| PathBuf::from("."))
+                            .join(base_dir)
+                    }
+                });
+                c.current_dir(&abs_base_dir);
             }
             c
         };

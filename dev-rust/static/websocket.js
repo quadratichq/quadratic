@@ -17,8 +17,13 @@ function connectWebSocket() {
     ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
     ws.onopen = () => {
-        // Connection established - hide error banner
+        // Connection established - hide error banner and clear connection lost flag
         hideConnectionError();
+        connectionLost = false;
+        // Re-render services to clear red status
+        if (typeof renderServiceList === 'function') {
+            renderServiceList();
+        }
         console.log('WebSocket connected');
     };
 
@@ -42,10 +47,21 @@ function connectWebSocket() {
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
         showConnectionError();
+        connectionLost = true;
+        // Re-render services to show red status
+        if (typeof renderServiceList === 'function') {
+            renderServiceList();
+        }
     };
 
     ws.onclose = (event) => {
         console.log('WebSocket closed, reconnecting...');
+        // Set connection lost flag whenever connection closes (we're disconnected)
+        connectionLost = true;
+        // Re-render services to show red status
+        if (typeof renderServiceList === 'function') {
+            renderServiceList();
+        }
         // Show error banner if not a clean close
         if (event.code !== 1000) {
             showConnectionError();

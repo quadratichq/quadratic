@@ -64,9 +64,37 @@ function updateFavicon() {
 
     if (hasStartingServices) {
         startFaviconAnimation();
+        wasAnimatingFavicon = true;
     } else {
+        // If we were animating and now we're not, ensure favicon is updated immediately
+        // This is important for tabs that are not focused, where requestAnimationFrame is throttled
+        const wasAnimating = wasAnimatingFavicon;
         stopFaviconAnimation();
+        wasAnimatingFavicon = false;
+
+        // Always set static favicon when not animating
         setStaticFavicon();
+
+        // When transitioning from animating to finished, force browser to recognize the change
+        // by removing and re-adding the favicon element. This ensures the favicon updates
+        // even when the tab is not focused (where requestAnimationFrame is throttled)
+        if (wasAnimating) {
+            const favicon = document.getElementById('favicon');
+            if (favicon) {
+                // Remove and re-add the favicon element to force browser update
+                const parent = favicon.parentNode;
+                const dataUrl = favicon.href;
+                favicon.remove();
+
+                // Create a new favicon link element
+                const newFavicon = document.createElement('link');
+                newFavicon.id = 'favicon';
+                newFavicon.rel = 'icon';
+                newFavicon.type = 'image/png';
+                newFavicon.href = dataUrl;
+                parent.appendChild(newFavicon);
+            }
+        }
     }
 }
 

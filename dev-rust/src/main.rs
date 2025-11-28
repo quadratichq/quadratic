@@ -75,37 +75,170 @@ fn find_workspace_root() -> Option<PathBuf> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
+    eprintln!("Starting Quadratic Dev Server...");
 
     let args = Args::parse();
-    // If dir is the default "." and we can find the workspace root, use that instead
-    let base_dir = if args.dir == PathBuf::from(".") {
-        find_workspace_root()
-            .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+
+    // Do blocking file I/O operations in parallel, but start server immediately
+    // Quick initial base_dir - try to find workspace root quickly, fallback to current dir
+    let initial_base_dir = if args.dir == PathBuf::from(".") {
+        // Quick check: if we're in dev-rust, go up one level
+        let current = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        if current.file_name().and_then(|n| n.to_str()) == Some("dev-rust") {
+            current.parent().unwrap_or(&current).to_path_buf()
+        } else {
+            // Quick check for workspace root in current dir or parent
+            let check_workspace = |dir: &PathBuf| -> bool {
+                dir.join("Cargo.toml").exists() && {
+                    if let Ok(content) = std::fs::read_to_string(dir.join("Cargo.toml")) {
+                        content.contains("[workspace]")
+                    } else {
+                        false
+                    }
+                }
+            };
+
+            if check_workspace(&current) {
+                current
+            } else if let Some(parent) = current.parent() {
+                let parent = parent.to_path_buf();
+                if check_workspace(&parent) {
+                    parent
+                } else {
+                    current
+                }
+            } else {
+                current
+            }
+        }
     } else {
-        args.dir
+        args.dir.clone()
     };
 
-    // Always canonicalize to an absolute path to ensure consistency
-    let base_dir = base_dir
-        .canonicalize()
-        .unwrap_or_else(|_| {
-            // If canonicalize fails (e.g., path doesn't exist yet), try to make it absolute
-            if base_dir.is_absolute() {
-                base_dir
+    // Load state file in background (non-blocking)
+    let state_data_future = {
+        let state_file = initial_base_dir.join("dev-rust-state.json");
+        tokio::task::spawn_blocking(move || {
+            if state_file.exists() {
+                if let Ok(content) = std::fs::read_to_string(&state_file) {
+                    serde_json::from_str::<crate::types::SetStateRequest>(&content).ok()
+                } else {
+                    None
+                }
             } else {
-                std::env::current_dir()
-                    .unwrap_or_else(|_| PathBuf::from("."))
-                    .join(base_dir)
+                None
+            }
+        })
+    };
+
+    // Create Control immediately with empty state (avoids blocking file read)
+    // State will be loaded and applied in background
+    use std::collections::HashMap;
+    let empty_state = crate::types::SetStateRequest {
+        watching: Some(HashMap::new()),
+        hidden: Some(HashMap::new()),
+        theme: None,
+        perf: Some(false),
+    };
+    let control = Arc::new(RwLock::new(Control::new_with_state(
+        initial_base_dir.clone(),
+        Some(empty_state),
+    )));
+
+    // Load and apply state once ready (in background, doesn't block server start)
+    {
+        let control_clone = control.clone();
+        tokio::spawn(async move {
+            if let Ok(Some(state)) = state_data_future.await {
+                // Apply the loaded state to Control
+                let ctrl = control_clone.read().await;
+                if let Some(watching) = &state.watching {
+                    for (service, should_watch) in watching {
+                        ctrl.set_watch(service, *should_watch).await;
+                    }
+                }
+                if let Some(hidden) = &state.hidden {
+                    for (service, should_hide) in hidden {
+                        ctrl.set_hidden(service, *should_hide).await;
+                    }
+                }
+                if let Some(perf) = state.perf {
+                    ctrl.set_perf(perf).await;
+                }
+                if state.theme.is_some() {
+                    ctrl.set_theme(state.theme).await;
+                }
             }
         });
+    }
 
-    let control = Arc::new(RwLock::new(Control::new(base_dir)));
+    // Resolve base_dir properly in background (find workspace root + canonicalize)
+    // This doesn't block server startup - we don't need to update Control since
+    // it already works with initial_base_dir
+    {
+        let args_dir = args.dir.clone();
+        tokio::spawn(async move {
+            let resolved_dir = if args_dir == PathBuf::from(".") {
+                tokio::task::spawn_blocking(|| {
+                    find_workspace_root()
+                        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+                })
+                .await
+                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+            } else {
+                args_dir
+            };
+
+            // Canonicalize with timeout
+            let base_dir_clone = resolved_dir.clone();
+            let base_dir_fallback = resolved_dir.clone();
+            let _resolved_base_dir = tokio::time::timeout(
+                tokio::time::Duration::from_millis(500),
+                tokio::task::spawn_blocking(move || {
+                    base_dir_clone
+                        .canonicalize()
+                        .unwrap_or_else(|_| {
+                            if base_dir_clone.is_absolute() {
+                                base_dir_clone
+                            } else {
+                                std::env::current_dir()
+                                    .unwrap_or_else(|_| PathBuf::from("."))
+                                    .join(base_dir_clone)
+                            }
+                        })
+                })
+            )
+            .await
+            .unwrap_or_else(|_| {
+                let fallback = base_dir_fallback.clone();
+                Ok(if fallback.is_absolute() {
+                    fallback
+                } else {
+                    std::env::current_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."))
+                        .join(fallback)
+                })
+            })
+            .unwrap_or_else(|_| {
+                if base_dir_fallback.is_absolute() {
+                    base_dir_fallback
+                } else {
+                    std::env::current_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."))
+                        .join(base_dir_fallback)
+                }
+            });
+
+            // Note: We could reload state here if needed, but for now
+            // the initial state load from current_dir is sufficient
+        });
+    }
 
     // Start the control system
     {
         let control_clone = control.clone();
         tokio::spawn(async move {
-            let mut ctrl = control_clone.write().await;
+            let ctrl = control_clone.read().await;
             ctrl.start().await;
         });
     }

@@ -326,6 +326,8 @@ body {
     font-size: 0.75rem;
     line-height: 1.2;
     background: var(--bg-primary);
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .log-entry {
@@ -335,10 +337,34 @@ body {
     display: flex;
     gap: 0.5rem;
     line-height: 1.2;
+    position: relative;
+    align-items: flex-start;
 }
 
 .log-entry:hover {
     background: var(--bg-tertiary);
+}
+
+.log-metadata {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
+}
+
+.log-service,
+.stderr-badge,
+.log-timestamp {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
 }
 
 .log-entry-stderr {
@@ -364,12 +390,31 @@ body {
 .log-message {
     flex: 1;
     word-break: break-word;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    white-space: pre-wrap;
+    min-width: 0;
 }
 
 .log-timestamp {
     color: var(--text-secondary);
     font-size: 0.6875rem;
     min-width: 80px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Ensure selection only includes text from log messages */
+.log-entry::selection {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+}
+
+.log-entry ::selection {
+    background: var(--accent-color);
+    color: var(--bg-primary);
 }
 
 .service-client { color: #d16969; }

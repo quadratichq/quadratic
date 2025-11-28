@@ -9,13 +9,17 @@ pub struct Control {
     service_manager: Arc<ServiceManager>,
     hidden: Arc<RwLock<HashMap<String, bool>>>,
     perf: Arc<RwLock<bool>>, // Perf mode for core service
+    theme: Arc<RwLock<Option<String>>>, // Theme preference (light/dark)
     log_sender: broadcast::Sender<(String, String, u64, String)>, // (service, message, timestamp, stream)
     logs: Arc<RwLock<Vec<(String, String, u64, String)>>>, // Store logs: (service, message, timestamp, stream)
     base_dir: std::path::PathBuf,
 }
 
 impl Control {
-    pub fn new(base_dir: std::path::PathBuf) -> Self {
+    pub fn new_with_state(
+        base_dir: std::path::PathBuf,
+        state: Option<crate::types::SetStateRequest>,
+    ) -> Self {
         let (log_sender, mut log_receiver) = broadcast::channel(1000);
         let logs = Arc::new(RwLock::new(Vec::new()));
         let logs_clone = logs.clone();
@@ -34,25 +38,35 @@ impl Control {
 
         let mut hidden = HashMap::new();
 
-        // Load state from JSON file if it exists, otherwise use defaults
-        let state_file = base_dir.join("dev-rust-state.json");
-        let (saved_watching, saved_hidden, _saved_theme, saved_perf) = if state_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&state_file) {
-                if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
-                    (
-                        state.watching.unwrap_or_default(),
-                        state.hidden.unwrap_or_default(),
-                        state.theme,
-                        state.perf.unwrap_or(false),
-                    )
+        // Use provided state or load from file
+        let (saved_watching, saved_hidden, saved_theme, saved_perf) = if let Some(state) = state {
+            (
+                state.watching.unwrap_or_default(),
+                state.hidden.unwrap_or_default(),
+                state.theme,
+                state.perf.unwrap_or(false),
+            )
+        } else {
+            // Load state from JSON file if it exists, otherwise use defaults
+            let state_file = base_dir.join("dev-rust-state.json");
+            if state_file.exists() {
+                if let Ok(content) = std::fs::read_to_string(&state_file) {
+                    if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
+                        (
+                            state.watching.unwrap_or_default(),
+                            state.hidden.unwrap_or_default(),
+                            state.theme,
+                            state.perf.unwrap_or(false),
+                        )
+                    } else {
+                        (HashMap::new(), HashMap::new(), None, false)
+                    }
                 } else {
                     (HashMap::new(), HashMap::new(), None, false)
                 }
             } else {
                 (HashMap::new(), HashMap::new(), None, false)
             }
-        } else {
-            (HashMap::new(), HashMap::new(), None, false)
         };
 
         for service in crate::services::get_services() {
@@ -72,6 +86,7 @@ impl Control {
             service_manager,
             hidden: Arc::new(RwLock::new(hidden)),
             perf: Arc::new(RwLock::new(saved_perf)),
+            theme: Arc::new(RwLock::new(saved_theme)),
             log_sender,
             logs,
             base_dir,
@@ -82,23 +97,22 @@ impl Control {
         self.log_sender.clone()
     }
 
-    pub async fn start(&mut self) {
-        // Check services first
-        self.check_services().await;
+    pub async fn start(&self) {
+        // Run checks in background (don't wait for them)
+        self.spawn_checks();
 
-        // Start all services
+        // Start all services immediately
         self.service_manager.start_all_services().await;
     }
 
-    async fn check_services(&self) {
-        // Run checks and output to checks service
-        self.run_checks().await;
-    }
-
-    async fn run_checks(&self) {
-        use crate::checks::Checks;
-        let checks = Checks::new(self.log_sender.clone(), self.service_manager.get_status());
-        checks.run().await;
+    fn spawn_checks(&self) {
+        let log_sender = self.log_sender.clone();
+        let status = self.service_manager.get_status();
+        tokio::spawn(async move {
+            use crate::checks::Checks;
+            let checks = Checks::new(log_sender, status);
+            checks.run().await;
+        });
     }
 
     // Delegate service management methods to ServiceManager
@@ -166,8 +180,29 @@ impl Control {
         self.hidden.read().await.clone()
     }
 
+    pub fn get_hidden_arc(&self) -> Arc<RwLock<HashMap<String, bool>>> {
+        self.hidden.clone()
+    }
+
     pub async fn get_perf(&self) -> bool {
         *self.perf.read().await
+    }
+
+    pub fn get_perf_arc(&self) -> Arc<RwLock<bool>> {
+        self.perf.clone()
+    }
+
+    pub fn get_service_manager(&self) -> Arc<ServiceManager> {
+        self.service_manager.clone()
+    }
+
+    pub async fn get_theme(&self) -> Option<String> {
+        self.theme.read().await.clone()
+    }
+
+    pub async fn set_theme(&self, theme: Option<String>) {
+        let mut theme_state = self.theme.write().await;
+        *theme_state = theme;
     }
 
     pub async fn set_perf(&self, perf: bool) {
@@ -191,10 +226,6 @@ impl Control {
         self.restart_service("core").await;
     }
 
-    pub fn get_base_dir(&self) -> &std::path::Path {
-        &self.base_dir
-    }
-
     pub async fn get_logs(&self) -> Vec<(String, String, u64, String)> {
         self.logs.read().await.clone()
     }
@@ -208,17 +239,7 @@ impl Control {
         let watching = self.service_manager.get_watching_map().await;
         let hidden = self.hidden.read().await.clone();
         let perf = *self.perf.read().await;
-
-        // Load existing state to preserve theme
-        let mut theme = None;
-        let state_file = self.base_dir.join("dev-rust-state.json");
-        if state_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&state_file) {
-                if let Ok(existing_state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
-                    theme = existing_state.theme;
-                }
-            }
-        }
+        let theme = self.theme.read().await.clone();
 
         let state = crate::types::SetStateRequest {
             watching: Some(watching),
@@ -233,6 +254,12 @@ impl Control {
     }
 
     pub async fn save_state_with_theme(&self, theme: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+        // Update in-memory theme
+        {
+            let mut theme_state = self.theme.write().await;
+            *theme_state = theme.clone();
+        }
+
         let watching = self.service_manager.get_watching_map().await;
         let hidden = self.hidden.read().await.clone();
         let perf = *self.perf.read().await;
