@@ -3,6 +3,13 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
 
+#[cfg(unix)]
+use nix::unistd;
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+#[cfg(unix)]
+use std::process::Command as StdCommand;
+
 pub trait Service: Send + Sync {
     fn config(&self) -> ServiceConfig;
 
@@ -23,10 +30,8 @@ pub trait Service: Send + Sync {
             (false, false) => &config.command,
         };
 
-        // For npm commands, use shell execution to ensure PATH and npm scripts work correctly
-        // For cargo watch commands with complex arguments, also use shell
-        let use_shell = command[0] == "npm"
-            || (command[0] == "cargo" && command.len() > 1 && command[1] == "watch");
+        // Use a shell only for cargo watch commands, which rely on shell features.
+        let use_shell = command[0] == "cargo" && command.len() > 1 && command[1] == "watch";
 
         let mut cmd = if use_shell {
             // Use shell to execute the command (allows PATH resolution and shell features)
@@ -136,6 +141,8 @@ pub trait Service: Send + Sync {
                     })
                     .collect::<Vec<_>>()
                     .join(" ");
+                // Use exec so the shell does not stay alive; this keeps the spawned PID stable.
+                full_cmd.push_str("exec ");
                 full_cmd.push_str(&cmd_str);
 
                 c.arg(&full_cmd);
@@ -218,15 +225,46 @@ pub trait Service: Send + Sync {
         // This allows us to reliably kill the entire process tree using killpg.
         // The child's PID becomes its PGID, so we can use child.id() as the PGID for killing.
         #[cfg(unix)]
-        unsafe {
-            cmd.pre_exec(|| {
-                // setpgid(0, 0) sets the process group ID to our own PID,
-                // making this process the leader of a new process group.
-                // All child processes will inherit this PGID.
-                nix::unistd::setpgid(nix::unistd::Pid::from_raw(0), nix::unistd::Pid::from_raw(0))
-                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-                Ok(())
-            });
+        {
+            // Convert tokio::process::Command to std::process::Command to set pre_exec
+            // We'll rebuild it as std::process::Command, set pre_exec, then convert back
+            let std_cmd_ref = cmd.as_std();
+
+            // Create a new std::process::Command with the same configuration
+            let mut std_cmd = StdCommand::new(std_cmd_ref.get_program());
+            for arg in std_cmd_ref.get_args() {
+                std_cmd.arg(arg);
+            }
+            if let Some(cwd) = std_cmd_ref.get_current_dir() {
+                std_cmd.current_dir(cwd);
+            }
+            for (key, value) in std_cmd_ref.get_envs() {
+                match value {
+                    Some(val) => {
+                        std_cmd.env(key, val);
+                    }
+                    None => {
+                        std_cmd.env_remove(key);
+                    }
+                }
+            }
+            std_cmd.stdout(Stdio::piped());
+            std_cmd.stderr(Stdio::piped());
+
+            // Set pre_exec to create a new process group
+            unsafe {
+                std_cmd.pre_exec(|| {
+                    // setpgid(0, 0) sets the process group ID to our own PID,
+                    // making this process the leader of a new process group.
+                    // All child processes will inherit this PGID.
+                    unistd::setpgid(unistd::Pid::from_raw(0), unistd::Pid::from_raw(0))
+                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                    Ok(())
+                });
+            }
+
+            // Convert back to tokio::process::Command
+            cmd = Command::from(std_cmd);
         }
 
         cmd

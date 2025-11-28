@@ -29,7 +29,11 @@ impl Service for FilesService {
             perf_watch_command: None,
             cwd: Some("quadratic-files".to_string()),
             success_patterns: vec!["listening on".to_string()],
-            error_patterns: vec!["error[".to_string(), "npm ERR!".to_string()],
+            error_patterns: vec![
+                "error[".to_string(),
+                "npm ERR!".to_string(),
+                "Exit status: 1".to_string(),
+            ],
             start_patterns: vec!["    Compiling".to_string()],
         }
     }

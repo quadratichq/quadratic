@@ -29,7 +29,7 @@ impl Service for MultiplayerService {
             perf_watch_command: None,
             cwd: Some("quadratic-multiplayer".to_string()),
             success_patterns: vec!["listening on".to_string()],
-            error_patterns: vec!["error[".to_string()],
+            error_patterns: vec!["error[".to_string(), "Exit status: 1".to_string()],
             start_patterns: vec!["    Compiling".to_string()],
         }
     }

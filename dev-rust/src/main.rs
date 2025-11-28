@@ -1,6 +1,7 @@
 mod checks;
 mod control;
 mod server;
+mod service_manager;
 mod services;
 mod types;
 
@@ -109,50 +110,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    // Set up signal handler for graceful shutdown
+    // Run the HTTP server and wait for either completion or a shutdown signal.
     let control_for_server = control.clone();
-    let control_for_cleanup = control.clone();
-    let port = args.port;
-    let server_handle = tokio::spawn(async move {
-        if let Err(e) = start_server(control_for_server, port).await {
-            eprintln!("Server error: {}", e);
-        }
-    });
+    let mut server_future = Box::pin(start_server(control_for_server, args.port));
 
-    // Wait for either server to finish or a signal
-    tokio::select! {
-        _ = server_handle => {
-            // Server finished (shouldn't normally happen)
+    let shutdown_reason = tokio::select! {
+        result = &mut server_future => {
+            if let Err(e) = result {
+                eprintln!("Server error: {}", e);
+            }
+            "server finished"
         }
-        _ = async {
-            #[cfg(unix)]
-            {
-                use tokio::signal::unix::{signal, SignalKind};
-                let mut sigterm = signal(SignalKind::terminate()).unwrap();
-                let mut sigint = signal(SignalKind::interrupt()).unwrap();
+        reason = wait_for_shutdown_signal() => {
+            eprintln!("\nReceived {reason}, shutting down...");
+            reason
+        }
+    };
 
-                tokio::select! {
-                    _ = sigterm.recv() => {
-                        eprintln!("\nReceived SIGTERM, shutting down...");
-                    }
-                    _ = sigint.recv() => {
-                        eprintln!("\nReceived SIGINT, shutting down...");
-                    }
-                }
-            }
-            #[cfg(windows)]
-            {
-                use tokio::signal::windows::ctrl_c;
-                let mut ctrl_c = ctrl_c().unwrap();
-                ctrl_c.recv().await;
-                eprintln!("\nReceived Ctrl+C, shutting down...");
-            }
-        } => {
-            // Kill all services before exiting
-            let ctrl = control_for_cleanup.write().await;
-            ctrl.kill_all_services().await;
-        }
+    // Ensure all services are killed before exiting.
+    {
+        let ctrl = control.write().await;
+        ctrl.kill_all_services().await;
+    }
+
+    if shutdown_reason != "server finished" {
+        // If we exited due to a signal, ensure the server future is dropped so it stops serving.
+        drop(server_future);
     }
 
     Ok(())
+}
+
+async fn wait_for_shutdown_signal() -> &'static str {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        let mut sigterm = signal(SignalKind::terminate()).expect("failed to install SIGTERM handler");
+        let mut sigint = signal(SignalKind::interrupt()).expect("failed to install SIGINT handler");
+
+        tokio::select! {
+            _ = sigterm.recv() => "SIGTERM",
+            _ = sigint.recv() => "SIGINT",
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+        "Ctrl+C"
+    }
 }
