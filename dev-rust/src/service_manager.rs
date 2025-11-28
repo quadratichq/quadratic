@@ -7,6 +7,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::broadcast;
 use tokio::sync::RwLock;
+use futures::future;
 
 #[cfg(unix)]
 use nix::unistd::Pid;
@@ -249,15 +250,23 @@ impl ServiceManager {
 
                             let _ = sender.send((name.clone(), line.clone(), timestamp, stream.to_string()));
 
-                            // Check for error patterns to update status
+                            // Check for success/error/start patterns to update status
                             // Don't update status if service is killed
-                            if is_error {
-                                let mut status_guard = status.write().await;
-                                let current_status = status_guard.get(&name).cloned().unwrap_or(ServiceStatus::Stopped);
-                                // Don't change status if service is killed
-                                if !matches!(current_status, ServiceStatus::Killed) {
-                                    status_guard.insert(name.clone(), ServiceStatus::Error);
-                                }
+                            let mut status_guard = status.write().await;
+                            let current_status = status_guard.get(&name).cloned().unwrap_or(ServiceStatus::Stopped);
+
+                            // Don't change status if service is killed
+                            if matches!(current_status, ServiceStatus::Killed) {
+                                continue;
+                            }
+
+                            // Check patterns in order: success, error, start
+                            if service_config.success_patterns.iter().any(|p| line.contains(p)) {
+                                status_guard.insert(name.clone(), ServiceStatus::Running);
+                            } else if is_error {
+                                status_guard.insert(name.clone(), ServiceStatus::Error);
+                            } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
+                                status_guard.insert(name.clone(), ServiceStatus::Starting);
                             }
                         }
                         Ok(None) => {
@@ -620,16 +629,106 @@ impl ServiceManager {
 
         self.log("system", "Shutting down all services...".to_string()).await;
 
-        // Get all service names
-        let service_names: Vec<String> = {
-            let status = self.status.read().await;
-            status.keys().cloned().collect()
-        };
+        // Collect all processes to kill - we need to keep Child handles for Windows
+        #[cfg(not(unix))]
+        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
+        #[cfg(unix)]
+        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
 
-        // Kill all services
-        for service_name in service_names {
-            self.kill_service(&service_name).await;
+        {
+            let mut processes = self.processes.write().await;
+            let status = self.status.read().await;
+
+            for name in status.keys() {
+                #[cfg(unix)]
+                {
+                    if let Some(Some(child)) = processes.remove(name) {
+                        let pid = child.id();
+                        let port = crate::services::get_service_by_name(name)
+                            .and_then(|s| s.port());
+                        // On Unix, we can kill by PID, so we don't need the Child handle
+                        pids_and_ports.push((name.clone(), pid, port));
+                    }
+                }
+                #[cfg(not(unix))]
+                {
+                    if let Some(Some(mut child)) = processes.remove(name) {
+                        let port = crate::services::get_service_by_name(name)
+                            .and_then(|s| s.port());
+                        // On Windows, we need the Child handle to kill
+                        processes_to_kill.push((name.clone(), child, port));
+                    }
+                }
+            }
         }
+
+        // Kill all processes in parallel
+        let mut kill_futures = Vec::new();
+
+        #[cfg(unix)]
+        {
+            // On Unix, kill by PID (fast, no need to wait for Child)
+            for (_name, pid, port) in pids_and_ports {
+                kill_futures.push(async move {
+                    if let Some(pid) = pid {
+                        // Safety check: don't kill our own process
+                        let current_pid = nix::unistd::getpid();
+                        if pid as i32 == current_pid.as_raw() {
+                            return;
+                        }
+
+                        // Kill the entire process group (PGID = PID due to setpgid)
+                        let _ = nix::sys::signal::kill(
+                            Pid::from_raw(-(pid as i32)),
+                            nix::sys::signal::Signal::SIGKILL,
+                        );
+                    }
+
+                    // Also kill any processes on the port (in case of lingering processes)
+                    if let Some(port) = port {
+                        if let Ok(output) = Command::new("lsof")
+                            .args(["-ti", &format!("tcp:{}", port)])
+                            .output()
+                            .await
+                        {
+                            let pids_str = String::from_utf8_lossy(&output.stdout);
+                            let current_pid = nix::unistd::getpid().as_raw();
+                            for pid_str in pids_str.trim().split('\n') {
+                                if let Ok(pid) = pid_str.trim().parse::<i32>() {
+                                    if pid != current_pid {
+                                        let _ = nix::sys::signal::kill(
+                                            Pid::from_raw(pid),
+                                            nix::sys::signal::Signal::SIGKILL,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        #[cfg(not(unix))]
+        {
+            // On Windows, kill using Child handles
+            for (name, mut child, port) in processes_to_kill {
+                kill_futures.push(async move {
+                    let _ = child.kill();
+                    // On Windows, also try port-based killing as fallback
+                    if let Some(port) = port {
+                        // Port killing on Windows would go here if needed
+                        // For now, child.kill() should be sufficient
+                    }
+                });
+            }
+        }
+
+        // Execute all kills in parallel with a short timeout
+        tokio::time::timeout(
+            tokio::time::Duration::from_millis(500),
+            future::join_all(kill_futures)
+        ).await.ok();
 
         self.log("system", "All services stopped.".to_string()).await;
     }
