@@ -76,6 +76,22 @@ impl JsSelection {
         );
     }
 
+    #[wasm_bindgen(js_name = "keyboardJumpSelectTo")]
+    pub fn keyboard_jump_select_to(
+        &mut self,
+        col: u32,
+        row: u32,
+        context: &JsA1Context,
+        merge_cells: &JsMergeCells,
+    ) {
+        self.selection.keyboard_jump_select_to(
+            col as i64,
+            row as i64,
+            context.get_context(),
+            merge_cells.get_merge_cells(),
+        );
+    }
+
     #[wasm_bindgen(js_name = "selectTo")]
     pub fn select_to(
         &mut self,

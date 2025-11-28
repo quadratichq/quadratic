@@ -19,17 +19,14 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   const sheetId = sheets.current;
 
   const cursorPos = cursor.position;
-  const selEnd = cursor.selectionEnd;
 
   let jumpStartX = cursorPos.x;
   let jumpStartY = cursorPos.y;
 
   if (select) {
-    if (direction === Direction.Up || direction === Direction.Down) {
-      jumpStartY = selEnd.y;
-    } else {
-      jumpStartX = selEnd.x;
-    }
+    const endPos = cursor.selectionEnd;
+    jumpStartX = endPos.x;
+    jumpStartY = endPos.y;
   }
 
   let newPos: Pos;
@@ -72,7 +69,7 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   if (select) {
     // Let Rust handle all selection logic including axis handling
     // Rust's select_to will determine the correct start position and extend appropriately
-    cursor.keyboardSelectTo(jumpCol, jumpRow);
+    cursor.keyboardJumpSelectTo(jumpCol, jumpRow);
     ensureVisible({ x: jumpCol, y: jumpRow });
   } else {
     cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });
@@ -81,26 +78,6 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
 
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
-
-  // // Determine direction from delta
-  // let direction: Direction;
-  // if (deltaY < 0) {
-  //   direction = Direction.Up;
-  // } else if (deltaY > 0) {
-  //   direction = Direction.Down;
-  // } else if (deltaX < 0) {
-  //   direction = Direction.Left;
-  // } else {
-  //   direction = Direction.Right;
-  // }
-
-  // const dataTablesCache = sheets.sheet.dataTablesCache;
-  // if (!dataTablesCache) {
-  //   console.error('Failed to select: dataTablesCache is undefined');
-  //   return;
-  // }
-
-  // Use the Rust function which handles all the pivot logic
   cursor.keyboardSelectTo(deltaX, deltaY);
   cursor.updatePosition(true);
 }

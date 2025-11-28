@@ -5,6 +5,42 @@ use crate::{
 };
 
 impl A1Selection {
+    /// Jumps the selection to the given col and row (found via jump_cursor)
+    pub fn keyboard_jump_select_to(
+        &mut self,
+        col: i64,
+        row: i64,
+        a1_context: &A1Context,
+        merge_cells: &MergeCells,
+    ) {
+        // If selection is empty, initialize with cursor as anchor
+        if self.ranges.is_empty() {
+            self.ranges
+                .push(CellRefRange::new_relative_pos(self.cursor));
+        }
+
+        if let Some(last) = self.ranges.last_mut() {
+            match last {
+                CellRefRange::Table { range } => {
+                    // Convert table to sheet range for keyboard selection
+                    if let Some(range_converted) = range
+                        .clone()
+                        .convert_to_ref_range_bounds(false, a1_context, false, false)
+                    {
+                        *last = CellRefRange::Sheet {
+                            range: range_converted,
+                        };
+                        // Recursively handle as sheet range
+                        self.keyboard_jump_select_to(col, row, a1_context, merge_cells);
+                    }
+                }
+                CellRefRange::Sheet { range } => {
+                    keyboard_jump_select_sheet_range(range, self.cursor, col, row, merge_cells);
+                }
+            }
+        }
+    }
+
     /// Extends or contracts selection from anchor point using keyboard (shift+arrow)
     ///
     /// The cursor position acts as the anchor (stays fixed during selection).
@@ -347,6 +383,32 @@ fn keyboard_select_sheet_range(
         } else {
             shrink_down(&mut rect, merge_cells);
         }
+    }
+
+    *range = RefRangeBounds::new_relative_rect(rect);
+}
+
+fn keyboard_jump_select_sheet_range(
+    range: &mut RefRangeBounds,
+    anchor: Pos,
+    col: i64,
+    row: i64,
+    _merge_cells: &MergeCells,
+) {
+    let mut rect = range.to_rect_unbounded();
+    if anchor.x > col {
+        rect.min.x = col;
+        rect.max.x = anchor.x;
+    } else if anchor.x < col {
+        rect.max.x = col;
+        rect.min.x = anchor.x;
+    }
+    if anchor.y > row {
+        rect.min.y = row;
+        rect.max.y = anchor.y;
+    } else if anchor.y < row {
+        rect.max.y = row;
+        rect.min.y = anchor.y;
     }
 
     *range = RefRangeBounds::new_relative_rect(rect);
