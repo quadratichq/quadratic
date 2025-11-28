@@ -103,15 +103,15 @@ function animateFavicon(timestamp) {
     faviconRotation = (faviconRotation + rotationIncrement) % 360;
     faviconLastTime = currentTime;
 
-    createFavicon(faviconRotation);
+    createFavicon(faviconRotation, 'in-progress');
     faviconAnimationFrame = requestAnimationFrame(animateFavicon);
 }
 
 function setStaticFavicon() {
-    createFavicon(0);
+    createFavicon(0, 'checkmark');
 }
 
-function createFavicon(rotation) {
+function createFavicon(rotation, type = 'checkmark') {
     const canvas = document.createElement('canvas');
     canvas.width = 32;
     canvas.height = 32;
@@ -120,27 +120,72 @@ function createFavicon(rotation) {
     // Clear canvas
     ctx.clearRect(0, 0, 32, 32);
 
-    // Draw Quadratic logo colors in a circular pattern
     const centerX = 16;
     const centerY = 16;
-    const radius = 12;
 
-    // Colors from the Quadratic logo
-    const colors = ['#CB8999', '#5D576B', '#8ECB89', '#FFC800', '#6CD4FF'];
-    const numSegments = 5;
-    const segmentAngle = (2 * Math.PI) / numSegments;
+    if (type === 'in-progress') {
+        // Draw circular arrows (refresh icon) that rotates
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate((rotation * Math.PI) / 180);
 
-    // Draw rotating segments
-    for (let i = 0; i < numSegments; i++) {
-        const startAngle = (i * segmentAngle) + (rotation * Math.PI / 180);
-        const endAngle = ((i + 1) * segmentAngle) + (rotation * Math.PI / 180);
+        // Draw circular arrow - two curved arrows pointing at each other
+        ctx.strokeStyle = '#4CAF50'; // Green color
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
+        const radius = 10;
+        const gapAngle = Math.PI / 6; // 30 degree gap on each side
+
+        // First arrow (top half circle) - going clockwise, with gaps
+        const arrow1Start = -Math.PI / 2 + gapAngle;
+        const arrow1End = Math.PI / 2 - gapAngle;
         ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-        ctx.closePath();
-        ctx.fillStyle = colors[i];
-        ctx.fill();
+        ctx.arc(0, 0, radius, arrow1Start, arrow1End, false);
+        ctx.stroke();
+
+        // Arrowhead for first arrow (pointing right)
+        const arrow1X = radius * Math.cos(arrow1End);
+        const arrow1Y = radius * Math.sin(arrow1End);
+        ctx.beginPath();
+        ctx.moveTo(arrow1X, arrow1Y);
+        ctx.lineTo(arrow1X - 4, arrow1Y - 3);
+        ctx.moveTo(arrow1X, arrow1Y);
+        ctx.lineTo(arrow1X - 4, arrow1Y + 3);
+        ctx.stroke();
+
+        // Second arrow (bottom half circle) - going counter-clockwise, with gaps
+        const arrow2Start = Math.PI / 2 + gapAngle;
+        const arrow2End = -Math.PI / 2 - gapAngle; // Equivalent to 3π/2 - gapAngle
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, arrow2Start, arrow2End, false);
+        ctx.stroke();
+
+        // Arrowhead for second arrow (pointing left)
+        const arrow2X = radius * Math.cos(arrow2End);
+        const arrow2Y = radius * Math.sin(arrow2End);
+        ctx.beginPath();
+        ctx.moveTo(arrow2X, arrow2Y);
+        ctx.lineTo(arrow2X + 4, arrow2Y - 3);
+        ctx.moveTo(arrow2X, arrow2Y);
+        ctx.lineTo(arrow2X + 4, arrow2Y + 3);
+        ctx.stroke();
+
+        ctx.restore();
+    } else {
+        // Draw green checkmark
+        ctx.strokeStyle = '#4CAF50'; // Green color
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Draw checkmark
+        ctx.beginPath();
+        ctx.moveTo(9, 16);
+        ctx.lineTo(14, 21);
+        ctx.lineTo(23, 10);
+        ctx.stroke();
     }
 
     // Convert canvas to data URL and update favicon

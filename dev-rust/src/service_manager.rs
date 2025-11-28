@@ -120,8 +120,14 @@ impl ServiceManager {
         // Kill existing process
         self.kill_service(name).await;
 
-        // Wait for port to be free if the service uses a port
+        // For services with ports, proactively kill any processes on that port
         if let Some(port) = service.port() {
+            // Kill any processes still using the port (in case kill_service didn't catch them)
+            self.kill_processes_on_port(port).await;
+
+            // Give the OS a moment to release the port after killing processes
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
             // Wait up to 2 seconds for the port to be released
             if !self.wait_for_port_free(port, 2000).await {
                 self.log(name, format!("Warning: Port {} may still be in use, proceeding anyway", port)).await;
