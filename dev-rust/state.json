@@ -1,0 +1,27 @@
+{
+  "watching": {
+    "python": true,
+    "shared": true,
+    "files": true,
+    "connection": true,
+    "types": true,
+    "multiplayer": true,
+    "core": true,
+    "checks": true,
+    "client": true,
+    "api": true
+  },
+  "hidden": {
+    "files": false,
+    "shared": false,
+    "api": false,
+    "checks": false,
+    "client": false,
+    "connection": false,
+    "core": false,
+    "types": false,
+    "python": false,
+    "multiplayer": false
+  },
+  "theme": null
+}

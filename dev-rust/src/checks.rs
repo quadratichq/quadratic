@@ -13,52 +13,6 @@ pub struct Checks {
     status_change_sender: broadcast::Sender<()>,
 }
 
-/// Find the project root by looking for the workspace Cargo.toml or package.json file
-fn find_project_root() -> Option<PathBuf> {
-    let mut current = match std::env::current_dir() {
-        Ok(dir) => dir,
-        Err(_) => return None,
-    };
-
-    // If we're in dev-rust directory, go up one level first
-    if current
-        .file_name()
-        .and_then(|n| n.to_str())
-        .map(|s| s == "dev-rust")
-        .unwrap_or(false)
-    {
-        if let Some(parent) = current.parent() {
-            current = parent.to_path_buf();
-        }
-    }
-
-    loop {
-        // Check if this directory contains a Cargo.toml with [workspace] or package.json
-        let cargo_toml = current.join("Cargo.toml");
-        let package_json = current.join("package.json");
-
-        if cargo_toml.exists() {
-            if let Ok(contents) = std::fs::read_to_string(&cargo_toml) {
-                if contents.contains("[workspace]") {
-                    return Some(current);
-                }
-            }
-        }
-
-        if package_json.exists() {
-            // This is likely the project root (has package.json)
-            return Some(current);
-        }
-
-        // Go up one directory
-        match current.parent() {
-            Some(parent) => current = parent.to_path_buf(),
-            None => break,
-        }
-    }
-
-    None
-}
 
 impl Checks {
     pub fn new(
@@ -147,19 +101,21 @@ impl Checks {
         }
 
         // Check database migrations
-        if postgres_running {
-            let migrations_ok = self.check_migrations().await;
-            if migrations_ok {
+        let migrations_ok = if postgres_running {
+            let ok = self.check_migrations().await;
+            if ok {
                 self.log("checks", "✓ Database migrations OK".to_string()).await;
             } else {
                 self.log_with_stream("checks", "✗ Database migrations FAILED".to_string(), "stderr").await;
             }
+            ok
         } else {
             self.log_with_stream("checks", "✗ Database migrations check skipped (PostgreSQL not running)".to_string(), "stderr").await;
-        }
+            false
+        };
 
         // Update status based on results
-        let all_ok = redis_running && postgres_running;
+        let all_ok = redis_running && postgres_running && migrations_ok;
         {
             let mut status = self.status.write().await;
             if all_ok {
@@ -230,8 +186,9 @@ impl Checks {
 
     async fn check_migrations(&self) -> bool {
         // Find project root
-        let project_root = find_project_root()
-            .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+        let base_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let project_root = crate::target::find_project_root(&base_dir)
+            .unwrap_or_else(|| base_dir.clone());
 
         // Run npm run prisma:migrate --workspace=quadratic-api
         // This runs prisma migrate dev which checks if migrations are up to date
@@ -244,18 +201,38 @@ impl Checks {
             .await;
 
         match output {
-            Ok(o) if o.status.success() => true,
             Ok(o) => {
-                // Command failed - log the error for debugging
                 let stderr = String::from_utf8_lossy(&o.stderr);
                 let stdout = String::from_utf8_lossy(&o.stdout);
-                self.log_with_stream(
-                    "checks",
-                    format!("Migration check failed: status={}, stdout={:?}, stderr={:?}",
-                        o.status.code().unwrap_or(-1), stdout, stderr),
-                    "stderr"
-                ).await;
-                false
+
+                // Check for migration failure patterns in output
+                let failure_patterns = [
+                    "✗ Database migrations FAILED",
+                    "Database migrations FAILED",
+                    "migrations FAILED",
+                    "Migration failed",
+                    "Error:",
+                    "error:",
+                ];
+
+                let output_text = format!("{} {}", stdout, stderr);
+                let has_failure_pattern = failure_patterns.iter().any(|pattern| {
+                    output_text.contains(pattern)
+                });
+
+                // If command failed OR we detected failure patterns in output, treat as failure
+                if !o.status.success() || has_failure_pattern {
+                    // Log the error for debugging
+                    self.log_with_stream(
+                        "checks",
+                        format!("Migration check failed: status={}, stdout={:?}, stderr={:?}",
+                            o.status.code().unwrap_or(-1), stdout, stderr),
+                        "stderr"
+                    ).await;
+                    false
+                } else {
+                    true
+                }
             }
             Err(e) => {
                 // Command not found or other error

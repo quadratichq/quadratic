@@ -36,6 +36,8 @@ pub async fn start_server(control: Arc<RwLock<Control>>, port: u16) -> Result<()
         .route("/api/restart", post(restart_service))
         .route("/api/restart-all", post(restart_all_services))
         .route("/api/stop-all", post(stop_all_services))
+        .route("/api/check-target", get(check_target_sizes))
+        .route("/api/purge-target", post(purge_target_directories))
         .route("/api/state", get(get_state).post(set_state))
         .route("/api/set-watch", post(set_watch))
         .route("/api/set-perf", post(set_perf))
@@ -560,4 +562,58 @@ async fn stop_all_services(
     ctrl.stop_all_services().await;
 
     (StatusCode::OK, Json(json!({"success": true})))
+}
+
+async fn check_target_sizes(
+    State(control): State<Arc<RwLock<Control>>>,
+) -> impl IntoResponse {
+    let ctrl = control.read().await;
+    let sizes = ctrl.check_target_sizes().await;
+
+    let results: Vec<serde_json::Value> = sizes
+        .into_iter()
+        .map(|(path, size)| {
+            json!({
+                "path": path,
+                "size": size,
+                "size_formatted": format_size(size)
+            })
+        })
+        .collect();
+
+    (StatusCode::OK, Json(json!({"success": true, "sizes": results})))
+}
+
+async fn purge_target_directories(
+    State(control): State<Arc<RwLock<Control>>>,
+) -> impl IntoResponse {
+    let ctrl = control.read().await;
+    match ctrl.purge_target_directories().await {
+        Ok(deleted) => {
+            (StatusCode::OK, Json(json!({"success": true, "deleted": deleted})))
+        }
+        Err(e) => {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": e.to_string()})),
+            )
+        }
+    }
+}
+
+fn format_size(bytes: u64) -> String {
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
+    let mut size = bytes as f64;
+    let mut unit_index = 0;
+
+    while size >= 1024.0 && unit_index < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit_index += 1;
+    }
+
+    if unit_index == 0 {
+        format!("{} {}", bytes, UNITS[unit_index])
+    } else {
+        format!("{:.2} {}", size, UNITS[unit_index])
+    }
 }

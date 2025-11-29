@@ -37,6 +37,29 @@
     <div class="main-content">
         <div class="service-list" id="serviceList">
             <div class="service-list-content"></div>
+            <div class="service-list-divider"></div>
+            <div class="target-info-pane" id="targetInfoPane">
+                <div class="target-info-header" onclick="toggleTargetInfo()">
+                    <span class="target-info-toggle">▼</span>
+                    <span class="target-info-title">/target sizes</span>
+                    <span class="target-info-total" id="targetInfoTotal">
+                        <span class="target-info-loading"><span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></span>
+                    </span>
+                </div>
+                <div class="target-info-content" id="targetInfoContent" style="display: none;">
+                    <div class="target-info-list" id="targetInfoList"></div>
+                </div>
+            </div>
+            <div class="target-progress" id="targetProgress" style="display: none;">
+                <div class="target-progress-bar-container">
+                    <div class="target-progress-bar" id="targetProgressBar"></div>
+                </div>
+                <div class="target-progress-text" id="targetProgressText"></div>
+            </div>
+            <div class="target-controls">
+                <button id="checkTargetBtn" onclick="checkTargetSizes()" title="Refresh /target sizes">↻</button>
+                <button id="purgeTargetBtn" onclick="purgeTargetDirectories()" title="Stop all services and delete all /target directories">Purge /target</button>
+            </div>
         </div>
         <div class="logs-container">
             <div class="logs-header">

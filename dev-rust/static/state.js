@@ -80,4 +80,9 @@ async function init() {
     // Services will be selected automatically when they're loaded in updateServices()
     // Initial page title update
     updatePageTitle();
+
+    // Auto-check target sizes on page load
+    if (typeof checkTargetSizes === 'function') {
+        checkTargetSizes();
+    }
 }

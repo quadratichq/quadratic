@@ -3,6 +3,7 @@ mod control;
 mod server;
 mod service_manager;
 mod services;
+mod target;
 mod types;
 
 use clap::Parser;

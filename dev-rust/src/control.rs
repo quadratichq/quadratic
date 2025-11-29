@@ -307,4 +307,21 @@ impl Control {
         let _ = self.save_state().await;
     }
 
+    /// Check the size of all target directories
+    pub async fn check_target_sizes(&self) -> Vec<(String, u64)> {
+        crate::target::check_target_sizes(&self.base_dir).await
+    }
+
+    /// Purge all target directories (stops all services first, then deletes)
+    pub async fn purge_target_directories(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        // First, stop all services
+        self.stop_all_services().await;
+
+        // Give services a moment to stop
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+        // Then purge target directories
+        crate::target::purge_target_directories(&self.base_dir, self.log_sender.clone()).await
+    }
+
 }

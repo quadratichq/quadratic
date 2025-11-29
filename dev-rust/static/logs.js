@@ -1,4 +1,11 @@
 function addLog(log) {
+    // Check if this is a target-purge progress message
+    if (log.service === 'target-purge' && log.message.startsWith('PROGRESS:')) {
+        handleTargetPurgeProgress(log.message);
+        // Don't add progress messages to logs
+        return;
+    }
+
     logs.push(log);
     // Don't limit logs here - server handles that
     // Just keep reasonable limit in browser (100000)
@@ -6,6 +13,37 @@ function addLog(log) {
         logs.shift();
     }
     renderLogs();
+}
+
+function handleTargetPurgeProgress(message) {
+    // Parse PROGRESS:percentage:total:status message
+    const parts = message.split(':');
+    if (parts.length >= 4 && parts[0] === 'PROGRESS') {
+        const percentage = parseInt(parts[1], 10);
+        const total = parseInt(parts[2], 10);
+        const status = parts.slice(3).join(':'); // Rejoin in case status contains ':'
+
+        updateTargetPurgeProgress(percentage, total, status);
+    }
+}
+
+function updateTargetPurgeProgress(percentage, total, status) {
+    const progressContainer = document.getElementById('targetProgress');
+    const progressBar = document.getElementById('targetProgressBar');
+    const progressText = document.getElementById('targetProgressText');
+
+    if (progressContainer && progressBar && progressText) {
+        progressContainer.style.display = 'block';
+        progressBar.style.width = `${percentage}%`;
+        progressText.textContent = status;
+
+        // Hide progress when complete
+        if (percentage >= 100) {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 1000);
+        }
+    }
 }
 
 function saveSelection() {
