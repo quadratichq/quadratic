@@ -161,7 +161,7 @@ function updateTargetInfoPane(data) {
     const listEl = document.getElementById('targetInfoList');
 
     // Update total
-    totalEl.textContent = `Total: ${formatSize(totalSize)}`;
+    totalEl.textContent = formatSize(totalSize);
 
     // Update list
     listEl.innerHTML = '';

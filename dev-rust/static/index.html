@@ -45,9 +45,11 @@
                     <span class="target-info-total" id="targetInfoTotal">
                         <span class="target-info-loading"><span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></span>
                     </span>
+                    <button id="checkTargetBtn" onclick="event.stopPropagation(); checkTargetSizes()" title="Refresh /target sizes">↻</button>
                 </div>
                 <div class="target-info-content" id="targetInfoContent" style="display: none;">
                     <div class="target-info-list" id="targetInfoList"></div>
+                    <button id="purgeTargetBtn" onclick="purgeTargetDirectories()" title="Stop all services and delete all /target directories">Purge all directories</button>
                 </div>
             </div>
             <div class="target-progress" id="targetProgress" style="display: none;">
@@ -55,10 +57,6 @@
                     <div class="target-progress-bar" id="targetProgressBar"></div>
                 </div>
                 <div class="target-progress-text" id="targetProgressText"></div>
-            </div>
-            <div class="target-controls">
-                <button id="checkTargetBtn" onclick="checkTargetSizes()" title="Refresh /target sizes">↻</button>
-                <button id="purgeTargetBtn" onclick="purgeTargetDirectories()" title="Stop all services and delete all /target directories">Purge /target</button>
             </div>
         </div>
         <div class="logs-container">

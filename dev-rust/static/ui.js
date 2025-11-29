@@ -181,14 +181,19 @@ function createFavicon(rotation, type = 'checkmark') {
         ctx.arc(0, 0, radius, arrow1Start, arrow1End, false);
         ctx.stroke();
 
-        // Arrowhead for first arrow (pointing right)
+        // Arrowhead for first arrow (pointing in direction of clockwise motion)
         const arrow1X = radius * Math.cos(arrow1End);
         const arrow1Y = radius * Math.sin(arrow1End);
+        // Tangent direction for clockwise motion
+        const tan1X = Math.sin(arrow1End);
+        const tan1Y = -Math.cos(arrow1End);
+        const arrowLen = 5;
+        const arrowSpread = 3;
         ctx.beginPath();
         ctx.moveTo(arrow1X, arrow1Y);
-        ctx.lineTo(arrow1X - 4, arrow1Y - 3);
+        ctx.lineTo(arrow1X + tan1X * arrowLen + tan1Y * arrowSpread, arrow1Y + tan1Y * arrowLen - tan1X * arrowSpread);
         ctx.moveTo(arrow1X, arrow1Y);
-        ctx.lineTo(arrow1X - 4, arrow1Y + 3);
+        ctx.lineTo(arrow1X + tan1X * arrowLen - tan1Y * arrowSpread, arrow1Y + tan1Y * arrowLen + tan1X * arrowSpread);
         ctx.stroke();
 
         // Second arrow (bottom half circle) - going counter-clockwise, with gaps
@@ -198,14 +203,17 @@ function createFavicon(rotation, type = 'checkmark') {
         ctx.arc(0, 0, radius, arrow2Start, arrow2End, false);
         ctx.stroke();
 
-        // Arrowhead for second arrow (pointing left)
+        // Arrowhead for second arrow (pointing in direction of clockwise motion)
         const arrow2X = radius * Math.cos(arrow2End);
         const arrow2Y = radius * Math.sin(arrow2End);
+        // Tangent direction for clockwise motion: perpendicular to radius, rotated 90° clockwise
+        const tan2X = Math.sin(arrow2End);  // perpendicular to radius
+        const tan2Y = -Math.cos(arrow2End); // rotated clockwise
         ctx.beginPath();
         ctx.moveTo(arrow2X, arrow2Y);
-        ctx.lineTo(arrow2X + 4, arrow2Y - 3);
+        ctx.lineTo(arrow2X + tan2X * arrowLen + tan2Y * arrowSpread, arrow2Y + tan2Y * arrowLen - tan2X * arrowSpread);
         ctx.moveTo(arrow2X, arrow2Y);
-        ctx.lineTo(arrow2X + 4, arrow2Y + 3);
+        ctx.lineTo(arrow2X + tan2X * arrowLen - tan2Y * arrowSpread, arrow2Y + tan2Y * arrowLen + tan2X * arrowSpread);
         ctx.stroke();
 
         ctx.restore();
