@@ -175,28 +175,51 @@ class InlineEditorMonaco {
     }
 
     // set text wrap and padding for vertical text alignment
+    // For 'clip' mode, use 'auto' scrollbar with zero size to enable scrolling without visible scrollbar
     this.editor.updateOptions({
       wordWrap: textWrap === 'wrap' ? 'on' : 'off',
       padding: { top: paddingTop, bottom: 0 },
+      scrollbar: {
+        horizontal: textWrap === 'clip' ? 'auto' : 'hidden',
+        vertical: 'hidden',
+        alwaysConsumeMouseWheel: false,
+        verticalScrollbarSize: 0,
+        horizontalScrollbarSize: 0,
+      },
+      scrollBeyondLastColumn: textWrap === 'clip' ? 5 : 0,
     });
 
     const scrollWidth = textarea.scrollWidth;
-    width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
+    // Only expand width for 'overflow' mode; 'wrap' and 'clip' stay constrained to cell width
+    width = textWrap === 'overflow' ? Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY) : width;
     height = Math.max(contentHeight, height);
 
     const viewportRectangle = pixiApp.getViewportRectangle();
     const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
     if (width > maxWidthDueToViewport) {
-      textWrap = 'wrap';
-      width = maxWidthDueToViewport;
-      this.editor.updateOptions({
-        wordWrap: textWrap === 'wrap' ? 'on' : 'off',
-        padding: { top: paddingTop, bottom: 0 },
-      });
+      // For 'clip' mode, keep it clipped; for others, force wrap if needed
+      if (textWrap === 'clip') {
+        width = Math.min(width, maxWidthDueToViewport);
+      } else {
+        textWrap = 'wrap';
+        width = maxWidthDueToViewport;
+        this.editor.updateOptions({
+          wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+          padding: { top: paddingTop, bottom: 0 },
+        });
+      }
     }
 
     // set final width and height
     this.editor.layout({ width, height });
+
+    // For clip mode, ensure the cursor is visible by scrolling to it
+    if (textWrap === 'clip') {
+      const position = this.editor.getPosition();
+      if (position) {
+        this.editor.revealPosition(position, monaco.editor.ScrollType.Immediate);
+      }
+    }
 
     return { width, height };
   };
