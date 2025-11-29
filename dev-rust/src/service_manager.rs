@@ -18,6 +18,7 @@ pub struct ServiceManager {
     watching: Arc<RwLock<HashMap<String, bool>>>,
     quitting: Arc<RwLock<bool>>,
     log_sender: broadcast::Sender<(String, String, u64, String)>,
+    status_change_sender: broadcast::Sender<()>, // Notifies when status changes
     base_dir: std::path::PathBuf,
 }
 
@@ -37,12 +38,15 @@ impl ServiceManager {
             watching.insert(service.name.clone(), should_watch);
         }
 
+        let (status_change_sender, _) = broadcast::channel(100);
+
         Self {
             processes: Arc::new(RwLock::new(HashMap::new())),
             status: Arc::new(RwLock::new(status)),
             watching: Arc::new(RwLock::new(watching)),
             quitting: Arc::new(RwLock::new(false)),
             log_sender,
+            status_change_sender,
             base_dir,
         }
     }
@@ -53,6 +57,10 @@ impl ServiceManager {
 
     pub fn get_watching(&self) -> Arc<RwLock<HashMap<String, bool>>> {
         self.watching.clone()
+    }
+
+    pub fn get_status_change_sender(&self) -> broadcast::Sender<()> {
+        self.status_change_sender.clone()
     }
 
     pub async fn get_status_map(&self) -> HashMap<String, ServiceStatus> {
@@ -74,6 +82,7 @@ impl ServiceManager {
                 }
             }
         }
+        self.notify_status_change();
 
         // Start all services by default (in logical order: dependencies first)
         // Start types first (needed for core)
@@ -119,7 +128,7 @@ impl ServiceManager {
 
         // Handle checks service specially - run checks and exit
         if name == "checks" {
-            let checks = Checks::new(self.log_sender.clone(), self.status.clone());
+            let checks = Checks::new(self.log_sender.clone(), self.status.clone(), self.status_change_sender.clone());
             checks.run().await;
             return;
         }
@@ -158,6 +167,8 @@ impl ServiceManager {
                 self.log(name, format!("Failed to start: {}", e)).await;
                 let mut status = self.status.write().await;
                 status.insert(name.to_string(), ServiceStatus::Error);
+                drop(status);
+                self.notify_status_change();
                 return;
             }
         };
@@ -170,6 +181,7 @@ impl ServiceManager {
             let mut status = self.status.write().await;
             status.insert(name.to_string(), ServiceStatus::Starting);
         }
+        self.notify_status_change();
 
         self.log(name, format!("Starting...")).await;
 
@@ -180,6 +192,7 @@ impl ServiceManager {
             let sender = self.log_sender.clone();
             let status = self.status.clone();
             let service_config = service.config();
+            let status_notifier = self.status_change_sender.clone();
 
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
@@ -204,12 +217,21 @@ impl ServiceManager {
                             }
 
                             // Transition to appropriate state whenever pattern is detected, regardless of current state
+                            let mut status_changed = false;
                             if service_config.success_patterns.iter().any(|p| line.contains(p)) {
                                 status_guard.insert(name.clone(), ServiceStatus::Running);
+                                status_changed = true;
                             } else if service_config.error_patterns.iter().any(|p| line.contains(p)) {
                                 status_guard.insert(name.clone(), ServiceStatus::Error);
+                                status_changed = true;
                             } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
                                 status_guard.insert(name.clone(), ServiceStatus::Starting);
+                                status_changed = true;
+                            }
+                            drop(status_guard);
+
+                            if status_changed {
+                                let _ = status_notifier.send(());
                             }
                         }
                         Ok(None) => {
@@ -231,6 +253,7 @@ impl ServiceManager {
             let sender = self.log_sender.clone();
             let status = self.status.clone();
             let service_config = service.config();
+            let status_notifier = self.status_change_sender.clone();
 
             // For cargo-based services (like core), stderr contains normal informational output
             // We'll check if it's an actual error, otherwise treat as stdout
@@ -272,12 +295,21 @@ impl ServiceManager {
                             }
 
                             // Check patterns in order: success, error, start
+                            let mut status_changed = false;
                             if service_config.success_patterns.iter().any(|p| line.contains(p)) {
                                 status_guard.insert(name.clone(), ServiceStatus::Running);
+                                status_changed = true;
                             } else if is_error {
                                 status_guard.insert(name.clone(), ServiceStatus::Error);
+                                status_changed = true;
                             } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
                                 status_guard.insert(name.clone(), ServiceStatus::Starting);
+                                status_changed = true;
+                            }
+                            drop(status_guard);
+
+                            if status_changed {
+                                let _ = status_notifier.send(());
                             }
                         }
                         Ok(None) => {
@@ -580,6 +612,7 @@ impl ServiceManager {
             let mut status = self.status.write().await;
             status.insert(name.to_string(), ServiceStatus::Stopped);
         }
+        self.notify_status_change();
 
         // Small delay to ensure cleanup completes
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
@@ -627,6 +660,7 @@ impl ServiceManager {
             let mut status = self.status.write().await;
             status.insert(service_name.clone(), ServiceStatus::Killed);
         }
+        self.notify_status_change();
 
         self.log("system", "All services stopped.".to_string()).await;
     }
@@ -766,12 +800,15 @@ impl ServiceManager {
                 let mut status = self.status.write().await;
                 status.insert(name.to_string(), ServiceStatus::Stopped);
             }
+            self.notify_status_change();
             self.start_service(name).await;
         } else {
             // Kill the service
             self.kill_service(name).await;
             let mut status = self.status.write().await;
             status.insert(name.to_string(), ServiceStatus::Killed);
+            drop(status);
+            self.notify_status_change();
         }
     }
 
@@ -806,5 +843,11 @@ impl ServiceManager {
             .unwrap_or_default()
             .as_secs();
         let _ = self.log_sender.send((service.to_string(), message, timestamp, "stdout".to_string()));
+    }
+
+    /// Notify subscribers that status has changed
+    fn notify_status_change(&self) {
+        // Ignore send errors - it's ok if no one is listening
+        let _ = self.status_change_sender.send(());
     }
 }

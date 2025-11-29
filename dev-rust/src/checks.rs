@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 pub struct Checks {
     log_sender: broadcast::Sender<(String, String, u64, String)>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
+    status_change_sender: broadcast::Sender<()>,
 }
 
 /// Find the project root by looking for the workspace Cargo.toml or package.json file
@@ -63,8 +64,9 @@ impl Checks {
     pub fn new(
         log_sender: broadcast::Sender<(String, String, u64, String)>,
         status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
+        status_change_sender: broadcast::Sender<()>,
     ) -> Self {
-        Self { log_sender, status }
+        Self { log_sender, status, status_change_sender }
     }
 
     pub async fn run(&self) {
@@ -75,6 +77,7 @@ impl Checks {
             let mut status = self.status.write().await;
             status.insert("checks".to_string(), ServiceStatus::Starting);
         }
+        self.notify_status_change();
 
         // Check Redis
         let redis_running = self.check_redis().await;
@@ -165,6 +168,7 @@ impl Checks {
                 status.insert("checks".to_string(), ServiceStatus::Error);
             }
         }
+        self.notify_status_change();
 
         self.log("checks", "Checks completed.".to_string()).await;
     }
@@ -320,5 +324,10 @@ impl Checks {
             .unwrap_or_default()
             .as_secs();
         let _ = self.log_sender.send((service.to_string(), message, timestamp, stream.to_string()));
+    }
+
+    fn notify_status_change(&self) {
+        // Ignore send errors - it's ok if no one is listening
+        let _ = self.status_change_sender.send(());
     }
 }

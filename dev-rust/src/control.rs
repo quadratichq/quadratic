@@ -108,9 +108,10 @@ impl Control {
     fn spawn_checks(&self) {
         let log_sender = self.log_sender.clone();
         let status = self.service_manager.get_status();
+        let status_change_sender = self.service_manager.get_status_change_sender();
         tokio::spawn(async move {
             use crate::checks::Checks;
-            let checks = Checks::new(log_sender, status);
+            let checks = Checks::new(log_sender, status, status_change_sender);
             checks.run().await;
         });
     }

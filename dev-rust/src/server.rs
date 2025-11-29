@@ -267,7 +267,7 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
     });
 
     // Spawn task to send status updates
-    let (status_arc, watching_arc, hidden_for_status, perf_arc) = {
+    let (status_arc, watching_arc, hidden_for_status, perf_arc, mut status_change_receiver) = {
         let ctrl = control.read().await;
         let service_manager = ctrl.get_service_manager();
         (
@@ -275,14 +275,13 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
             service_manager.get_watching(),
             ctrl.get_hidden_arc(),
             ctrl.get_perf_arc(),
+            service_manager.get_status_change_sender().subscribe(),
         )
     };
     let tx_status = tx.clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(500));
-        loop {
-            interval.tick().await;
-
+        // Helper function to build and send status update
+        let send_status_update = || async {
             let status = status_arc.read().await.clone();
             let watching = watching_arc.read().await.clone();
             let hidden = hidden_for_status.read().await.clone();
@@ -317,6 +316,29 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
             if let Ok(json) = serde_json::to_string(&update) {
                 let _ = tx_status.send(axum::extract::ws::Message::Text(format!("status:{}", json)));
             }
+        };
+
+        // Send initial status immediately when client connects
+        send_status_update().await;
+
+        // Then wait for status change notifications and send updates
+        // Using a small debounce to avoid flooding on rapid changes
+        loop {
+            // Wait for a status change notification
+            if status_change_receiver.recv().await.is_err() {
+                // Channel closed, exit
+                break;
+            }
+
+            // Debounce: drain any additional notifications that arrived immediately after
+            // This prevents sending multiple updates for rapid consecutive changes
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+            while status_change_receiver.try_recv().is_ok() {
+                // Drain pending notifications
+            }
+
+            // Send the status update
+            send_status_update().await;
         }
     });
 
