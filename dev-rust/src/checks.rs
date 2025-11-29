@@ -11,6 +11,7 @@ pub struct Checks {
     log_sender: broadcast::Sender<(String, String, u64, String)>,
     status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
     status_change_sender: broadcast::Sender<()>,
+    base_dir: PathBuf,
 }
 
 
@@ -19,8 +20,9 @@ impl Checks {
         log_sender: broadcast::Sender<(String, String, u64, String)>,
         status: Arc<RwLock<HashMap<String, ServiceStatus>>>,
         status_change_sender: broadcast::Sender<()>,
+        base_dir: PathBuf,
     ) -> Self {
-        Self { log_sender, status, status_change_sender }
+        Self { log_sender, status, status_change_sender, base_dir }
     }
 
     pub async fn run(&self) {
@@ -185,10 +187,9 @@ impl Checks {
     }
 
     async fn check_migrations(&self) -> bool {
-        // Find project root
-        let base_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        let project_root = crate::target::find_project_root(&base_dir)
-            .unwrap_or_else(|| base_dir.clone());
+        // Find project root using the user-provided base_dir
+        let project_root = crate::target::find_project_root(&self.base_dir)
+            .unwrap_or_else(|| self.base_dir.clone());
 
         // Run npm run prisma:migrate --workspace=quadratic-api
         // This runs prisma migrate dev which checks if migrations are up to date

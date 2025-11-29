@@ -109,9 +109,10 @@ impl Control {
         let log_sender = self.log_sender.clone();
         let status = self.service_manager.get_status();
         let status_change_sender = self.service_manager.get_status_change_sender();
+        let base_dir = self.base_dir.clone();
         tokio::spawn(async move {
             use crate::checks::Checks;
-            let checks = Checks::new(log_sender, status, status_change_sender);
+            let checks = Checks::new(log_sender, status, status_change_sender, base_dir);
             checks.run().await;
         });
     }

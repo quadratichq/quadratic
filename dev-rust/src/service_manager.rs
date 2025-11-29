@@ -128,7 +128,7 @@ impl ServiceManager {
 
         // Handle checks service specially - run checks and exit
         if name == "checks" {
-            let checks = Checks::new(self.log_sender.clone(), self.status.clone(), self.status_change_sender.clone());
+            let checks = Checks::new(self.log_sender.clone(), self.status.clone(), self.status_change_sender.clone(), self.base_dir.clone());
             checks.run().await;
             return;
         }
