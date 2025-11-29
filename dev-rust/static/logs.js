@@ -228,13 +228,19 @@ function renderLogs() {
         return;
     }
 
+    // Rust services that output compilation to stderr (normal, not errors)
+    const rustServices = ['types', 'core', 'connection', 'multiplayer', 'files'];
+
     container.innerHTML = filtered.map(log => {
         const serviceClass = `service-${log.service}`;
         const time = new Date(log.timestamp * 1000).toLocaleTimeString();
         const isStderr = (log.stream || 'stdout') === 'stderr';
-        const stderrBadge = isStderr ? '<span class="stderr-badge" title="stderr">stderr</span>' : '';
+        const isRustService = rustServices.includes(log.service);
+        // Don't show stderr badge/styling for Rust services (compilation output is normal)
+        const showStderrBadge = isStderr && !isRustService;
+        const stderrBadge = showStderrBadge ? '<span class="stderr-badge" title="stderr">stderr</span>' : '';
         return `
-            <div class="log-entry ${isStderr ? 'log-entry-stderr' : ''}">
+            <div class="log-entry ${showStderrBadge ? 'log-entry-stderr' : ''}">
                 <span class="log-metadata">
                     <span class="log-service ${serviceClass}">[${log.service}]</span>
                     ${stderrBadge}

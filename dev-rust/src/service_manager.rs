@@ -332,9 +332,21 @@ impl ServiceManager {
     }
 
     pub async fn kill_service(&self, name: &str) {
-        // Get the service's port before killing (for fallback)
+        // Get the service's port and cwd before killing (for fallback)
         let service_port = crate::services::get_service_by_name(name)
             .and_then(|s| s.port());
+        let service_cwd = crate::services::get_service_by_name(name)
+            .and_then(|s| s.cwd());
+
+        // For services with ports, also kill processes on that port first (catches child processes)
+        if let Some(port) = service_port {
+            self.kill_processes_on_port(port).await;
+        }
+
+        // For cargo-based services, also kill cargo and rustc processes in the service directory
+        if let Some(cwd) = service_cwd {
+            self.kill_cargo_processes(&cwd).await;
+        }
 
         // Kill the spawned process and its entire process group
         let mut processes = self.processes.write().await;
@@ -493,6 +505,80 @@ impl ServiceManager {
         false
     }
 
+    async fn kill_cargo_processes(&self, cwd: &str) {
+        #[cfg(unix)]
+        {
+            // Extract the package name from cwd (e.g., "quadratic-files" from "quadratic-files")
+            let package_name = cwd.split('/').last().unwrap_or(cwd);
+            // Convert to crate name format (replace - with _)
+            let crate_name = package_name.replace('-', "_");
+
+            // Find cargo processes related to this specific package
+            // Match patterns like "cargo.*quadratic-files" or "cargo.*-p quadratic-files"
+            let pattern = format!("cargo.*{}", package_name);
+            let output = Command::new("pgrep")
+                .args(["-f", &pattern])
+                .output()
+                .await;
+
+            if let Ok(output) = output {
+                let pids_str = String::from_utf8_lossy(&output.stdout);
+                let current_pid = nix::unistd::getpid().as_raw();
+
+                for pid_str in pids_str.trim().split('\n').filter(|s| !s.is_empty()) {
+                    if let Ok(pid) = pid_str.trim().parse::<i32>() {
+                        if pid == current_pid {
+                            continue;
+                        }
+
+                        // Kill the process and its process group
+                        // Try process group first (more thorough)
+                        let _ = nix::sys::signal::kill(
+                            Pid::from_raw(-pid), // Negative PID kills process group
+                            nix::sys::signal::Signal::SIGKILL,
+                        );
+                        // Also kill the process directly as fallback
+                        let _ = nix::sys::signal::kill(
+                            Pid::from_raw(pid),
+                            nix::sys::signal::Signal::SIGKILL,
+                        );
+                    }
+                }
+            }
+
+            // Kill rustc processes that are compiling this specific crate
+            // rustc uses crate names (underscores) like "--crate-name quadratic_files"
+            let rustc_pattern = format!("--crate-name {}", crate_name);
+            let rustc_output = Command::new("pgrep")
+                .args(["-f", &rustc_pattern])
+                .output()
+                .await;
+
+            if let Ok(rustc_output) = rustc_output {
+                let pids_str = String::from_utf8_lossy(&rustc_output.stdout);
+                let current_pid = nix::unistd::getpid().as_raw();
+
+                for pid_str in pids_str.trim().split('\n').filter(|s| !s.is_empty()) {
+                    if let Ok(pid) = pid_str.trim().parse::<i32>() {
+                        if pid == current_pid {
+                            continue;
+                        }
+                        // Kill rustc processes related to this crate
+                        let _ = nix::sys::signal::kill(
+                            Pid::from_raw(pid),
+                            nix::sys::signal::Signal::SIGKILL,
+                        );
+                    }
+                }
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            // On Windows, cargo processes are handled differently
+            // The port-based killing should be sufficient
+        }
+    }
+
     async fn kill_processes_on_port(&self, port: u16) {
         #[cfg(unix)]
         {
@@ -622,6 +708,12 @@ impl ServiceManager {
     }
 
     pub async fn restart_all_services(&self) {
+        // Reset quitting flag to allow services to start
+        {
+            let mut quitting = self.quitting.write().await;
+            *quitting = false;
+        }
+
         self.log("system", "Restarting all services...".to_string()).await;
 
         // Get all service names from status

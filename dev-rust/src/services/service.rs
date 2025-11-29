@@ -17,6 +17,10 @@ pub trait Service: Send + Sync {
         self.config().port
     }
 
+    fn cwd(&self) -> Option<String> {
+        self.config().cwd.clone()
+    }
+
     fn build_command(&self, watching: bool, perf: bool, base_dir: &std::path::Path) -> Command {
         let config = self.config();
         let command = match (watching, perf) {

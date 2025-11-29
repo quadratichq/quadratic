@@ -314,11 +314,11 @@ impl Control {
 
     /// Purge all target directories (stops all services first, then deletes)
     pub async fn purge_target_directories(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        // First, stop all services
-        self.stop_all_services().await;
+        // First, forcefully kill all services
+        self.kill_all_services().await;
 
-        // Give services a moment to stop
-        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        // Give services more time to fully terminate (especially important for files service)
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         // Then purge target directories
         crate::target::purge_target_directories(&self.base_dir, self.log_sender.clone()).await

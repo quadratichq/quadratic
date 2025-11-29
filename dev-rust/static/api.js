@@ -350,11 +350,20 @@ async function purgeTargetDirectories() {
         const data = await response.json();
 
         if (data.success) {
+            // Hide progress bar
+            const progressContainer = document.getElementById('targetProgress');
+            if (progressContainer) {
+                progressContainer.style.display = 'none';
+            }
+
+            // Re-enable UI immediately after purge completes (before restart)
+            enableUI();
+
             // Refresh target sizes to show updated info
             await checkTargetSizes();
 
-            // Restart all services after purge
-            await restartAllServices();
+            // Restart all services after purge (don't wait - let it happen in background)
+            restartAllServices();
 
             // Refresh status after purge
             updateStatus();
@@ -365,6 +374,8 @@ async function purgeTargetDirectories() {
             if (progressContainer) {
                 progressContainer.style.display = 'none';
             }
+            // Re-enable UI on error
+            enableUI();
         }
     } catch (error) {
         console.error('Failed to purge target directories:', error);
@@ -374,8 +385,7 @@ async function purgeTargetDirectories() {
         if (progressContainer) {
             progressContainer.style.display = 'none';
         }
-    } finally {
-        // Re-enable all UI after purge completes
+        // Re-enable UI on error
         enableUI();
     }
 }
