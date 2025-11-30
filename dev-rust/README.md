@@ -57,12 +57,15 @@ cargo run -- --port 9000 --dir /path/to/dir
    - Optionally specify `--dir` to use a different base directory (default: automatically detects workspace root)
    - **Note**: The `--dir` should point to the main quadratic workspace root (where `Cargo.toml` with `[workspace]` or `package.json` is located), not the `dev-rust` subdirectory
 2. Open your browser to `http://localhost:8080` (or the port you specified)
+   - **Note**: The web UI on port 8080 is only for visualization and monitoring. The dev server runs all services independently and does not require this page to be open.
 3. Use the web UI to:
    - View logs from all services
    - Filter logs by selecting a service
    - Toggle watch mode for services
    - Show/hide logs from specific services
    - Kill/restart services
+
+**Note**: All changes to service modes (watching, hidden, killed status) are automatically saved to `dev-rust-state.json` in the workspace root. The next time you start the dev server, it will restore these settings and start services accordingly. This file is gitignored and will not be committed to version control.
 
 ## Web UI Features
 

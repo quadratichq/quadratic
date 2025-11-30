@@ -2,8 +2,8 @@ use crate::service_manager::ServiceManager;
 use crate::types::ServiceStatus;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::broadcast;
 use tokio::sync::RwLock;
+use tokio::sync::broadcast;
 
 // Log entry: (service, message, timestamp, stream)
 type LogEntry = (String, String, u64, String);
@@ -13,10 +13,10 @@ type Logs = Arc<RwLock<Vec<LogEntry>>>;
 pub struct Control {
     service_manager: Arc<ServiceManager>,
     hidden: Arc<RwLock<HashMap<String, bool>>>,
-    perf: Arc<RwLock<bool>>, // Perf mode for core service
-    theme: Arc<RwLock<Option<String>>>, // Theme preference (light/dark)
+    perf: Arc<RwLock<bool>>,                 // Perf mode for core service
+    theme: Arc<RwLock<Option<String>>>,      // Theme preference (light/dark)
     log_sender: broadcast::Sender<LogEntry>, // (service, message, timestamp, stream)
-    logs: Logs, // Store logs: (service, message, timestamp, stream)
+    logs: Logs,                              // Store logs: (service, message, timestamp, stream)
     base_dir: std::path::PathBuf,
 }
 
@@ -56,7 +56,9 @@ impl Control {
             let state_file = base_dir.join("dev-rust-state.json");
             if state_file.exists() {
                 if let Ok(content) = std::fs::read_to_string(&state_file) {
-                    if let Ok(state) = serde_json::from_str::<crate::types::SetStateRequest>(&content) {
+                    if let Ok(state) =
+                        serde_json::from_str::<crate::types::SetStateRequest>(&content)
+                    {
                         (
                             state.watching.unwrap_or_default(),
                             state.hidden.unwrap_or_default(),
@@ -146,7 +148,9 @@ impl Control {
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
         // Start the service with the correct perf mode
-        self.service_manager.start_service_with_perf(name, perf).await;
+        self.service_manager
+            .start_service_with_perf(name, perf)
+            .await;
     }
 
     pub async fn restart_all_services(&self) {
@@ -155,10 +159,32 @@ impl Control {
         self.service_manager.restart_all_services().await;
     }
 
+    /// Gracefully stops all services.
+    ///
+    /// This method performs a clean shutdown by:
+    /// - Killing processes on each service's port (catches child processes)
+    /// - Killing cargo/rustc processes in service directories
+    /// - Killing the spawned process and its process group
+    /// - Setting service status to `Killed` (allowing them to be restarted later)
+    ///
+    /// Services can be restarted after calling this method. The `quitting` flag is not set,
+    /// so new services can still be started.
     pub async fn stop_all_services(&self) {
         self.service_manager.stop_all_services().await;
     }
 
+    /// Forcefully kills all services.
+    ///
+    /// This method performs a forceful shutdown by:
+    /// - Setting the `quitting` flag to `true` (prevents new services from starting)
+    /// - Directly killing processes without cleanup (no port-based or cargo process cleanup)
+    /// - Removing processes from the processes map
+    /// - Using a timeout for kill operations
+    ///
+    /// This is more aggressive than `stop_all_services` and is typically used when
+    /// you need to ensure all services are fully terminated (e.g., before purging
+    /// target directories). Services cannot be easily restarted after this call
+    /// without resetting the `quitting` flag.
     pub async fn kill_all_services(&self) {
         self.service_manager.kill_all_services().await;
     }
@@ -255,7 +281,10 @@ impl Control {
         Ok(())
     }
 
-    pub async fn save_state_with_theme(&self, theme: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn save_state_with_theme(
+        &self,
+        theme: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Update in-memory theme
         {
             let mut theme_state = self.theme.write().await;
@@ -319,7 +348,9 @@ impl Control {
     }
 
     /// Purge all target directories (stops all services first, then deletes)
-    pub async fn purge_target_directories(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    pub async fn purge_target_directories(
+        &self,
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         // First, forcefully kill all services
         self.kill_all_services().await;
 
@@ -329,5 +360,4 @@ impl Control {
         // Then purge target directories
         crate::target::purge_target_directories(&self.base_dir, self.log_sender.clone()).await
     }
-
 }
