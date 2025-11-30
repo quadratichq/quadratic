@@ -347,10 +347,8 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, control: Arc<RwLock
     // Handle incoming messages (currently just keep connection alive)
     use futures::StreamExt;
     while let Some(msg) = receiver.next().await {
-        if let Ok(msg) = msg {
-            if matches!(msg, axum::extract::ws::Message::Close(_)) {
-                break;
-            }
+        if matches!(msg, Ok(axum::extract::ws::Message::Close(_))) {
+            break;
         }
     }
 

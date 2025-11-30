@@ -275,7 +275,7 @@ pub trait Service: Send + Sync {
                     // making this process the leader of a new process group.
                     // All child processes will inherit this PGID.
                     unistd::setpgid(unistd::Pid::from_raw(0), unistd::Pid::from_raw(0))
-                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                        .map_err(std::io::Error::other)?;
                     Ok(())
                 });
             }

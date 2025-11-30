@@ -5,13 +5,18 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::RwLock;
 
+// Log entry: (service, message, timestamp, stream)
+type LogEntry = (String, String, u64, String);
+// Logs storage: thread-safe vector of log entries
+type Logs = Arc<RwLock<Vec<LogEntry>>>;
+
 pub struct Control {
     service_manager: Arc<ServiceManager>,
     hidden: Arc<RwLock<HashMap<String, bool>>>,
     perf: Arc<RwLock<bool>>, // Perf mode for core service
     theme: Arc<RwLock<Option<String>>>, // Theme preference (light/dark)
-    log_sender: broadcast::Sender<(String, String, u64, String)>, // (service, message, timestamp, stream)
-    logs: Arc<RwLock<Vec<(String, String, u64, String)>>>, // Store logs: (service, message, timestamp, stream)
+    log_sender: broadcast::Sender<LogEntry>, // (service, message, timestamp, stream)
+    logs: Logs, // Store logs: (service, message, timestamp, stream)
     base_dir: std::path::PathBuf,
 }
 
@@ -93,7 +98,7 @@ impl Control {
         }
     }
 
-    pub fn get_log_sender(&self) -> broadcast::Sender<(String, String, u64, String)> {
+    pub fn get_log_sender(&self) -> broadcast::Sender<LogEntry> {
         self.log_sender.clone()
     }
 
@@ -223,7 +228,7 @@ impl Control {
         self.restart_service("core").await;
     }
 
-    pub async fn get_logs(&self) -> Vec<(String, String, u64, String)> {
+    pub async fn get_logs(&self) -> Vec<LogEntry> {
         self.logs.read().await.clone()
     }
 

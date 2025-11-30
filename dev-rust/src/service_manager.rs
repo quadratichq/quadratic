@@ -1,13 +1,13 @@
 use crate::checks::Checks;
 use crate::types::ServiceStatus;
+use futures::future;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
-use tokio::sync::broadcast;
 use tokio::sync::RwLock;
-use futures::future;
+use tokio::sync::broadcast;
 
 #[cfg(unix)]
 use nix::unistd::Pid;
@@ -76,7 +76,10 @@ impl ServiceManager {
         {
             let mut status = self.status.write().await;
             for service in crate::services::get_services() {
-                let current_status = status.get(&service.name).cloned().unwrap_or(ServiceStatus::Stopped);
+                let current_status = status
+                    .get(&service.name)
+                    .cloned()
+                    .unwrap_or(ServiceStatus::Stopped);
                 if !matches!(current_status, ServiceStatus::Killed) {
                     status.insert(service.name.clone(), ServiceStatus::Starting);
                 }
@@ -128,7 +131,12 @@ impl ServiceManager {
 
         // Handle checks service specially - run checks and exit
         if name == "checks" {
-            let checks = Checks::new(self.log_sender.clone(), self.status.clone(), self.status_change_sender.clone(), self.base_dir.clone());
+            let checks = Checks::new(
+                self.log_sender.clone(),
+                self.status.clone(),
+                self.status_change_sender.clone(),
+                self.base_dir.clone(),
+            );
             checks.run().await;
             return;
         }
@@ -151,7 +159,14 @@ impl ServiceManager {
 
             // Wait up to 2 seconds for the port to be released
             if !self.wait_for_port_free(port, 2000).await {
-                self.log(name, format!("Warning: Port {} may still be in use, proceeding anyway", port)).await;
+                self.log(
+                    name,
+                    format!(
+                        "Warning: Port {} may still be in use, proceeding anyway",
+                        port
+                    ),
+                )
+                .await;
             } else {
                 self.log(name, format!("Port {} is now free", port)).await;
             }
@@ -174,7 +189,8 @@ impl ServiceManager {
         };
 
         // Log that we've started the process (for debugging)
-        self.log(name, format!("Process spawned successfully")).await;
+        self.log(name, "Process spawned successfully".to_string())
+            .await;
 
         // Update status
         {
@@ -183,7 +199,7 @@ impl ServiceManager {
         }
         self.notify_status_change();
 
-        self.log(name, format!("Starting...")).await;
+        self.log(name, "Starting...".to_string()).await;
 
         // Handle stdout
         let stdout = child.stdout.take();
@@ -204,12 +220,20 @@ impl ServiceManager {
                                 .duration_since(UNIX_EPOCH)
                                 .unwrap_or_default()
                                 .as_secs();
-                            let _ = sender.send((name.clone(), line.clone(), timestamp, "stdout".to_string()));
+                            let _ = sender.send((
+                                name.clone(),
+                                line.clone(),
+                                timestamp,
+                                "stdout".to_string(),
+                            ));
 
                             // Check for success/error patterns using service methods
                             // Don't update status if service is killed
                             let mut status_guard = status.write().await;
-                            let current_status = status_guard.get(&name).cloned().unwrap_or(ServiceStatus::Stopped);
+                            let current_status = status_guard
+                                .get(&name)
+                                .cloned()
+                                .unwrap_or(ServiceStatus::Stopped);
 
                             // Don't change status if service is killed
                             if matches!(current_status, ServiceStatus::Killed) {
@@ -218,13 +242,25 @@ impl ServiceManager {
 
                             // Transition to appropriate state whenever pattern is detected, regardless of current state
                             let mut status_changed = false;
-                            if service_config.success_patterns.iter().any(|p| line.contains(p)) {
+                            if service_config
+                                .success_patterns
+                                .iter()
+                                .any(|p| line.contains(p))
+                            {
                                 status_guard.insert(name.clone(), ServiceStatus::Running);
                                 status_changed = true;
-                            } else if service_config.error_patterns.iter().any(|p| line.contains(p)) {
+                            } else if service_config
+                                .error_patterns
+                                .iter()
+                                .any(|p| line.contains(p))
+                            {
                                 status_guard.insert(name.clone(), ServiceStatus::Error);
                                 status_changed = true;
-                            } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
+                            } else if service_config
+                                .start_patterns
+                                .iter()
+                                .any(|p| line.contains(p))
+                            {
                                 status_guard.insert(name.clone(), ServiceStatus::Starting);
                                 status_changed = true;
                             }
@@ -257,7 +293,8 @@ impl ServiceManager {
 
             // For cargo-based services (like core), stderr contains normal informational output
             // We'll check if it's an actual error, otherwise treat as stdout
-            let is_cargo_service = name == "core" || name == "multiplayer" || name == "files" || name == "connection";
+            let is_cargo_service =
+                name == "core" || name == "multiplayer" || name == "files" || name == "connection";
             let error_patterns = service_config.error_patterns.clone();
 
             tokio::spawn(async move {
@@ -282,12 +319,20 @@ impl ServiceManager {
                                 "stderr"
                             };
 
-                            let _ = sender.send((name.clone(), line.clone(), timestamp, stream.to_string()));
+                            let _ = sender.send((
+                                name.clone(),
+                                line.clone(),
+                                timestamp,
+                                stream.to_string(),
+                            ));
 
                             // Check for success/error/start patterns to update status
                             // Don't update status if service is killed
                             let mut status_guard = status.write().await;
-                            let current_status = status_guard.get(&name).cloned().unwrap_or(ServiceStatus::Stopped);
+                            let current_status = status_guard
+                                .get(&name)
+                                .cloned()
+                                .unwrap_or(ServiceStatus::Stopped);
 
                             // Don't change status if service is killed
                             if matches!(current_status, ServiceStatus::Killed) {
@@ -296,13 +341,21 @@ impl ServiceManager {
 
                             // Check patterns in order: success, error, start
                             let mut status_changed = false;
-                            if service_config.success_patterns.iter().any(|p| line.contains(p)) {
+                            if service_config
+                                .success_patterns
+                                .iter()
+                                .any(|p| line.contains(p))
+                            {
                                 status_guard.insert(name.clone(), ServiceStatus::Running);
                                 status_changed = true;
                             } else if is_error {
                                 status_guard.insert(name.clone(), ServiceStatus::Error);
                                 status_changed = true;
-                            } else if service_config.start_patterns.iter().any(|p| line.contains(p)) {
+                            } else if service_config
+                                .start_patterns
+                                .iter()
+                                .any(|p| line.contains(p))
+                            {
                                 status_guard.insert(name.clone(), ServiceStatus::Starting);
                                 status_changed = true;
                             }
@@ -333,10 +386,8 @@ impl ServiceManager {
 
     pub async fn kill_service(&self, name: &str) {
         // Get the service's port and cwd before killing (for fallback)
-        let service_port = crate::services::get_service_by_name(name)
-            .and_then(|s| s.port());
-        let service_cwd = crate::services::get_service_by_name(name)
-            .and_then(|s| s.cwd());
+        let service_port = crate::services::get_service_by_name(name).and_then(|s| s.port());
+        let service_cwd = crate::services::get_service_by_name(name).and_then(|s| s.cwd());
 
         // For services with ports, also kill processes on that port first (catches child processes)
         if let Some(port) = service_port {
@@ -354,14 +405,22 @@ impl ServiceManager {
             // Check if the process already exited to avoid killing unrelated reused PIDs
             match child.try_wait() {
                 Ok(Some(status)) => {
-                    self.log(name, format!("Process already exited with status: {:?}", status.code())).await;
+                    self.log(
+                        name,
+                        format!("Process already exited with status: {:?}", status.code()),
+                    )
+                    .await;
                     return;
                 }
                 Ok(None) => {
                     // Still running, continue with kill logic
                 }
                 Err(e) => {
-                    self.log(name, format!("Failed to check process state before killing: {}", e)).await;
+                    self.log(
+                        name,
+                        format!("Failed to check process state before killing: {}", e),
+                    )
+                    .await;
                 }
             }
             let pid = child.id();
@@ -394,7 +453,11 @@ impl ServiceManager {
                             kill_succeeded = true;
                         }
                         Err(e) => {
-                            self.log(name, format!("Warning: Failed to kill process group: {}", e)).await;
+                            self.log(
+                                name,
+                                format!("Warning: Failed to kill process group: {}", e),
+                            )
+                            .await;
                             kill_succeeded = false;
                         }
                     }
@@ -407,20 +470,27 @@ impl ServiceManager {
             }
 
             // Wait for the process to fully exit with a timeout
-            let wait_result = tokio::time::timeout(
-                tokio::time::Duration::from_secs(5),
-                child.wait()
-            ).await;
+            let wait_result =
+                tokio::time::timeout(tokio::time::Duration::from_secs(5), child.wait()).await;
 
             match wait_result {
                 Ok(Ok(status)) => {
-                    self.log(name, format!("Process exited with status: {:?}", status.code())).await;
+                    self.log(
+                        name,
+                        format!("Process exited with status: {:?}", status.code()),
+                    )
+                    .await;
                 }
                 Ok(Err(e)) => {
-                    self.log(name, format!("Error waiting for process: {}", e)).await;
+                    self.log(name, format!("Error waiting for process: {}", e))
+                        .await;
                 }
                 Err(_) => {
-                    self.log(name, "Process did not exit within timeout, but continuing anyway".to_string()).await;
+                    self.log(
+                        name,
+                        "Process did not exit within timeout, but continuing anyway".to_string(),
+                    )
+                    .await;
                 }
             }
 
@@ -435,7 +505,11 @@ impl ServiceManager {
                     );
                     if check_result.is_ok() {
                         // Process still exists, try killing again
-                        self.log(name, format!("Process {} still exists, sending SIGKILL again", pid)).await;
+                        self.log(
+                            name,
+                            format!("Process {} still exists, sending SIGKILL again", pid),
+                        )
+                        .await;
                         match nix::sys::signal::kill(
                             Pid::from_raw(-(pid as i32)),
                             nix::sys::signal::Signal::SIGKILL,
@@ -459,10 +533,22 @@ impl ServiceManager {
             // If we failed to kill the process and the service has a port, kill all processes on that port
             if !kill_succeeded {
                 if let Some(port) = service_port {
-                    self.log(name, format!("Failed to kill process, killing all processes on port {}", port)).await;
+                    self.log(
+                        name,
+                        format!(
+                            "Failed to kill process, killing all processes on port {}",
+                            port
+                        ),
+                    )
+                    .await;
                     self.kill_processes_on_port(port).await;
                 } else {
-                    self.log(name, "Failed to kill process and service has no port to fall back to".to_string()).await;
+                    self.log(
+                        name,
+                        "Failed to kill process and service has no port to fall back to"
+                            .to_string(),
+                    )
+                    .await;
                 }
             }
         }
@@ -509,17 +595,14 @@ impl ServiceManager {
         #[cfg(unix)]
         {
             // Extract the package name from cwd (e.g., "quadratic-files" from "quadratic-files")
-            let package_name = cwd.split('/').last().unwrap_or(cwd);
+            let package_name = cwd.split('/').next_back().unwrap_or(cwd);
             // Convert to crate name format (replace - with _)
             let crate_name = package_name.replace('-', "_");
 
             // Find cargo processes related to this specific package
             // Match patterns like "cargo.*quadratic-files" or "cargo.*-p quadratic-files"
             let pattern = format!("cargo.*{}", package_name);
-            let output = Command::new("pgrep")
-                .args(["-f", &pattern])
-                .output()
-                .await;
+            let output = Command::new("pgrep").args(["-f", &pattern]).output().await;
 
             if let Ok(output) = output {
                 let pids_str = String::from_utf8_lossy(&output.stdout);
@@ -590,10 +673,15 @@ impl ServiceManager {
 
             if let Ok(output) = output {
                 let pids_str = String::from_utf8_lossy(&output.stdout);
-                let pids: Vec<&str> = pids_str.trim().split('\n').filter(|s| !s.is_empty()).collect();
+                let pids: Vec<&str> = pids_str
+                    .trim()
+                    .split('\n')
+                    .filter(|s| !s.is_empty())
+                    .collect();
 
                 if pids.is_empty() {
-                    self.log("system", format!("No processes found on port {}", port)).await;
+                    self.log("system", format!("No processes found on port {}", port))
+                        .await;
                     return;
                 }
 
@@ -604,7 +692,11 @@ impl ServiceManager {
                     if let Ok(pid) = pid_str.trim().parse::<i32>() {
                         // Don't kill our own process
                         if pid == current_pid {
-                            self.log("system", format!("Skipping our own process {} on port {}", pid, port)).await;
+                            self.log(
+                                "system",
+                                format!("Skipping our own process {} on port {}", pid, port),
+                            )
+                            .await;
                             continue;
                         }
 
@@ -614,26 +706,41 @@ impl ServiceManager {
                             nix::sys::signal::Signal::SIGKILL,
                         ) {
                             Ok(()) => {
-                                self.log("system", format!("Killed process {} on port {}", pid, port)).await;
+                                self.log(
+                                    "system",
+                                    format!("Killed process {} on port {}", pid, port),
+                                )
+                                .await;
                             }
                             Err(e) => {
-                                self.log("system", format!("Failed to kill process {} on port {}: {}", pid, port, e)).await;
+                                self.log(
+                                    "system",
+                                    format!(
+                                        "Failed to kill process {} on port {}: {}",
+                                        pid, port, e
+                                    ),
+                                )
+                                .await;
                             }
                         }
                     }
                 }
             } else {
-                self.log("system", format!("Failed to find processes on port {}: lsof command failed", port)).await;
+                self.log(
+                    "system",
+                    format!(
+                        "Failed to find processes on port {}: lsof command failed",
+                        port
+                    ),
+                )
+                .await;
             }
         }
         #[cfg(not(unix))]
         {
             // On Windows, use netstat and taskkill
             // Find processes using the port
-            let output = Command::new("netstat")
-                .args(["-ano"])
-                .output()
-                .await;
+            let output = Command::new("netstat").args(["-ano"]).output().await;
 
             if let Ok(output) = output {
                 let output_str = String::from_utf8_lossy(&output.stdout);
@@ -654,7 +761,8 @@ impl ServiceManager {
                 }
 
                 if pids.is_empty() {
-                    self.log("system", format!("No processes found on port {}", port)).await;
+                    self.log("system", format!("No processes found on port {}", port))
+                        .await;
                     return;
                 }
 
@@ -667,18 +775,34 @@ impl ServiceManager {
 
                     match output {
                         Ok(output) if output.status.success() => {
-                            self.log("system", format!("Killed process {} on port {}", pid, port)).await;
+                            self.log("system", format!("Killed process {} on port {}", pid, port))
+                                .await;
                         }
                         Ok(_) => {
-                            self.log("system", format!("Failed to kill process {} on port {}", pid, port)).await;
+                            self.log(
+                                "system",
+                                format!("Failed to kill process {} on port {}", pid, port),
+                            )
+                            .await;
                         }
                         Err(e) => {
-                            self.log("system", format!("Error killing process {} on port {}: {}", pid, port, e)).await;
+                            self.log(
+                                "system",
+                                format!("Error killing process {} on port {}: {}", pid, port, e),
+                            )
+                            .await;
                         }
                     }
                 }
             } else {
-                self.log("system", format!("Failed to find processes on port {}: netstat command failed", port)).await;
+                self.log(
+                    "system",
+                    format!(
+                        "Failed to find processes on port {}: netstat command failed",
+                        port
+                    ),
+                )
+                .await;
             }
         }
     }
@@ -714,7 +838,8 @@ impl ServiceManager {
             *quitting = false;
         }
 
-        self.log("system", "Restarting all services...".to_string()).await;
+        self.log("system", "Restarting all services...".to_string())
+            .await;
 
         // Get all service names from status
         let service_names: Vec<String> = {
@@ -734,11 +859,13 @@ impl ServiceManager {
             self.restart_service(&service_name).await;
         }
 
-        self.log("system", "All services restarted.".to_string()).await;
+        self.log("system", "All services restarted.".to_string())
+            .await;
     }
 
     pub async fn stop_all_services(&self) {
-        self.log("system", "Stopping all services...".to_string()).await;
+        self.log("system", "Stopping all services...".to_string())
+            .await;
 
         // Get all service names
         let service_names: Vec<String> = {
@@ -754,7 +881,8 @@ impl ServiceManager {
         }
         self.notify_status_change();
 
-        self.log("system", "All services stopped.".to_string()).await;
+        self.log("system", "All services stopped.".to_string())
+            .await;
     }
 
     pub async fn kill_all_services(&self) {
@@ -764,7 +892,8 @@ impl ServiceManager {
             *quitting = true;
         }
 
-        self.log("system", "Shutting down all services...".to_string()).await;
+        self.log("system", "Shutting down all services...".to_string())
+            .await;
 
         // Collect all processes to kill - we need to keep Child handles for Windows
         #[cfg(not(unix))]
@@ -781,8 +910,8 @@ impl ServiceManager {
                 {
                     if let Some(Some(child)) = processes.remove(name) {
                         let pid = child.id();
-                        let port = crate::services::get_service_by_name(name)
-                            .and_then(|s| s.port());
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
                         // On Unix, we can kill by PID, so we don't need the Child handle
                         pids_and_ports.push((name.clone(), pid, port));
                     }
@@ -790,8 +919,8 @@ impl ServiceManager {
                 #[cfg(not(unix))]
                 {
                     if let Some(Some(mut child)) = processes.remove(name) {
-                        let port = crate::services::get_service_by_name(name)
-                            .and_then(|s| s.port());
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
                         // On Windows, we need the Child handle to kill
                         processes_to_kill.push((name.clone(), child, port));
                     }
@@ -822,23 +951,22 @@ impl ServiceManager {
                     }
 
                     // Also kill any processes on the port (in case of lingering processes)
-                    if let Some(port) = port {
-                        if let Ok(output) = Command::new("lsof")
+                    if let Some(port) = port
+                        && let Ok(output) = Command::new("lsof")
                             .args(["-ti", &format!("tcp:{}", port)])
                             .output()
                             .await
-                        {
-                            let pids_str = String::from_utf8_lossy(&output.stdout);
-                            let current_pid = nix::unistd::getpid().as_raw();
-                            for pid_str in pids_str.trim().split('\n') {
-                                if let Ok(pid) = pid_str.trim().parse::<i32>() {
-                                    if pid != current_pid {
-                                        let _ = nix::sys::signal::kill(
-                                            Pid::from_raw(pid),
-                                            nix::sys::signal::Signal::SIGKILL,
-                                        );
-                                    }
-                                }
+                    {
+                        let pids_str = String::from_utf8_lossy(&output.stdout);
+                        let current_pid = nix::unistd::getpid().as_raw();
+                        for pid_str in pids_str.trim().split('\n') {
+                            if let Ok(pid) = pid_str.trim().parse::<i32>()
+                                && pid != current_pid
+                            {
+                                let _ = nix::sys::signal::kill(
+                                    Pid::from_raw(pid),
+                                    nix::sys::signal::Signal::SIGKILL,
+                                );
                             }
                         }
                     }
@@ -864,10 +992,13 @@ impl ServiceManager {
         // Execute all kills in parallel with a short timeout
         tokio::time::timeout(
             tokio::time::Duration::from_millis(500),
-            future::join_all(kill_futures)
-        ).await.ok();
+            future::join_all(kill_futures),
+        )
+        .await
+        .ok();
 
-        self.log("system", "All services stopped.".to_string()).await;
+        self.log("system", "All services stopped.".to_string())
+            .await;
     }
 
     pub async fn toggle_watch(&self, name: &str) {
@@ -928,13 +1059,17 @@ impl ServiceManager {
         self.start_service(name).await;
     }
 
-
     async fn log(&self, service: &str, message: String) {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let _ = self.log_sender.send((service.to_string(), message, timestamp, "stdout".to_string()));
+        let _ = self.log_sender.send((
+            service.to_string(),
+            message,
+            timestamp,
+            "stdout".to_string(),
+        ));
     }
 
     /// Notify subscribers that status has changed
