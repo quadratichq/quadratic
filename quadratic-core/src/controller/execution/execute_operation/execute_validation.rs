@@ -85,18 +85,18 @@ impl GridController {
 
                 // Skip non-anchor cells in merge cells - only the anchor cell
                 // should have validation warnings
-                if let Some(anchor) = sheet.merge_cells.get_anchor(value_pos) {
-                    if anchor != value_pos {
-                        // This is a non-anchor cell in a merge - remove any
-                        // existing warning and skip validation
-                        if sheet.validations.has_warning(value_pos) {
-                            transaction.validation_warning_deleted(sheet.id, value_pos);
-                            sheet
-                                .validations
-                                .set_warning(value_pos.to_sheet_pos(sheet.id), None);
-                        }
-                        continue;
+                if let Some(anchor) = sheet.merge_cells.get_anchor(value_pos)
+                    && anchor != value_pos
+                {
+                    // This is a non-anchor cell in a merge - remove any
+                    // existing warning and skip validation
+                    if sheet.validations.has_warning(value_pos) {
+                        transaction.validation_warning_deleted(sheet.id, value_pos);
+                        sheet
+                            .validations
+                            .set_warning(value_pos.to_sheet_pos(sheet.id), None);
                     }
+                    continue;
                 }
 
                 if let Some(validation) =
@@ -185,18 +185,18 @@ impl GridController {
             values.iter().for_each(|(pos, _)| {
                 // Skip non-anchor cells in merge cells - only the anchor cell
                 // should have validation warnings
-                if let Some(anchor) = sheet.merge_cells.get_anchor(*pos) {
-                    if anchor != *pos {
-                        // This is a non-anchor cell in a merge - remove any
-                        // existing warning and skip validation
-                        if sheet
-                            .validations
-                            .has_warning_for_validation(*pos, validation.id)
-                        {
-                            remove_warnings.push(*pos);
-                        }
-                        return;
+                if let Some(anchor) = sheet.merge_cells.get_anchor(*pos)
+                    && anchor != *pos
+                {
+                    // This is a non-anchor cell in a merge - remove any
+                    // existing warning and skip validation
+                    if sheet
+                        .validations
+                        .has_warning_for_validation(*pos, validation.id)
+                    {
+                        remove_warnings.push(*pos);
                     }
+                    return;
                 }
 
                 if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {

@@ -14,6 +14,7 @@ use crate::{
 
 /// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
 #[wasm_bindgen(js_name = "jumpCursor")]
+#[allow(clippy::too_many_arguments)]
 pub fn js_jump_cursor(
     sheet_id: String,
     col: i32,

@@ -50,7 +50,7 @@ impl A1Selection {
         for range in &self.ranges {
             match range {
                 CellRefRange::Sheet { range } => {
-                    let mut range = range.clone();
+                    let mut range = *range;
                     // Check if this is a row range (unbounded in columns, starting at column 1)
                     let is_row_range = range.end.col.is_unbounded() && range.start.col() == 1;
 
@@ -115,20 +115,11 @@ impl A1Selection {
                         } else {
                             range.end =
                                 CellRefRangeEnd::new_relative_xy(range.start.col(), col - 1);
-                            let second = if range.end.col.is_unbounded() {
-                                CellRefRange::Sheet {
-                                    range: RefRangeBounds {
-                                        start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
-                                        end: range.end,
-                                    },
-                                }
-                            } else {
-                                CellRefRange::Sheet {
-                                    range: RefRangeBounds {
-                                        start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
-                                        end: range.end,
-                                    },
-                                }
+                            let second = CellRefRange::Sheet {
+                                range: RefRangeBounds {
+                                    start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
+                                    end: range.end,
+                                },
                             };
                             ranges.push(CellRefRange::Sheet { range });
                             ranges.push(second);
@@ -141,20 +132,11 @@ impl A1Selection {
                                 end: CellRefRangeEnd::new_relative_xy(col - 1, range.end.row()),
                             },
                         };
-                        let second = if range.end.col.is_unbounded() {
-                            CellRefRange::Sheet {
-                                range: RefRangeBounds {
-                                    start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
-                                    end: range.end,
-                                },
-                            }
-                        } else {
-                            CellRefRange::Sheet {
-                                range: RefRangeBounds {
-                                    start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
-                                    end: range.end,
-                                },
-                            }
+                        let second = CellRefRange::Sheet {
+                            range: RefRangeBounds {
+                                start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
+                                end: range.end,
+                            },
                         };
                         ranges.push(first);
                         ranges.push(second);
@@ -199,32 +181,27 @@ impl A1Selection {
     pub fn extend_column(&mut self, col: i64, _top: i64) {
         // First, check if we have a cell selection that we should extend from
         // If the last range is a single cell, extend it to a column range
-        if let Some(last_range) = self.ranges.last() {
-            if let CellRefRange::Sheet { range } = last_range {
-                // Check if this is a single cell (not a column or row range)
-                if !range.end.row.is_unbounded()
-                    && !range.end.col.is_unbounded()
-                    && range.start.col() == range.end.col()
-                    && range.start.row() == range.end.row()
-                {
-                    let start_col = range.start.col();
-                    let start_row = range.start.row();
+        if let Some(CellRefRange::Sheet { range }) = self.ranges.last()
+            // Check if this is a single cell (not a column or row range)
+            && !range.end.row.is_unbounded()
+            && !range.end.col.is_unbounded()
+            && range.start.col() == range.end.col()
+            && range.start.row() == range.end.row()
+        {
+            let start_col = range.start.col();
+            let start_row = range.start.row();
 
-                    // Create a range from the cell to the column
-                    let min_col = start_col.min(col);
-                    let max_col = start_col.max(col);
+            // Create a range from the cell to the column
+            let min_col = start_col.min(col);
+            let max_col = start_col.max(col);
 
-                    // Replace the last range with a range from the cell to the column
-                    if let Some(last_range) = self.ranges.last_mut() {
-                        if let CellRefRange::Sheet { range: range_ref } = last_range {
-                            range_ref.start = CellRefRangeEnd::new_relative_xy(min_col, start_row);
-                            range_ref.end = CellRefRangeEnd::new_relative_xy(max_col, UNBOUNDED);
-                            self.cursor.x = min_col;
-                            self.cursor.y = start_row;
-                            return;
-                        }
-                    }
-                }
+            // Replace the last range with a range from the cell to the column
+            if let Some(CellRefRange::Sheet { range: range_ref }) = self.ranges.last_mut() {
+                range_ref.start = CellRefRangeEnd::new_relative_xy(min_col, start_row);
+                range_ref.end = CellRefRangeEnd::new_relative_xy(max_col, UNBOUNDED);
+                self.cursor.x = min_col;
+                self.cursor.y = start_row;
+                return;
             }
         }
 
@@ -327,7 +304,7 @@ impl A1Selection {
         for range in &self.ranges {
             match range {
                 CellRefRange::Sheet { range } => {
-                    let mut range = range.clone();
+                    let mut range = *range;
                     // Check if this is a column range (unbounded in rows, starting at row 1)
                     let is_col_range = range.end.row.is_unbounded() && range.start.row() == 1;
 
@@ -374,20 +351,11 @@ impl A1Selection {
                                 range.end.col(),
                                 range.start.row(),
                             );
-                            let second = if range.end.row.is_unbounded() {
-                                CellRefRange::Sheet {
-                                    range: RefRangeBounds {
-                                        start: CellRefRangeEnd::new_relative_xy(1, row + 1),
-                                        end: range.end,
-                                    },
-                                }
-                            } else {
-                                CellRefRange::Sheet {
-                                    range: RefRangeBounds {
-                                        start: CellRefRangeEnd::new_relative_xy(1, row + 1),
-                                        end: range.end,
-                                    },
-                                }
+                            let second = CellRefRange::Sheet {
+                                range: RefRangeBounds {
+                                    start: CellRefRangeEnd::new_relative_xy(1, row + 1),
+                                    end: range.end,
+                                },
                             };
                             ranges.push(CellRefRange::Sheet { range });
                             ranges.push(second);
@@ -400,20 +368,11 @@ impl A1Selection {
                                 end: CellRefRangeEnd::new_relative_xy(range.end.col(), row - 1),
                             },
                         };
-                        let second = if range.end.row.is_unbounded() {
-                            CellRefRange::Sheet {
-                                range: RefRangeBounds {
-                                    start: CellRefRangeEnd::new_relative_xy(1, row + 1),
-                                    end: range.end,
-                                },
-                            }
-                        } else {
-                            CellRefRange::Sheet {
-                                range: RefRangeBounds {
-                                    start: CellRefRangeEnd::new_relative_xy(1, row + 1),
-                                    end: range.end,
-                                },
-                            }
+                        let second = CellRefRange::Sheet {
+                            range: RefRangeBounds {
+                                start: CellRefRangeEnd::new_relative_xy(1, row + 1),
+                                end: range.end,
+                            },
                         };
                         ranges.push(first);
                         ranges.push(second);
@@ -462,10 +421,8 @@ impl A1Selection {
         a1_context: &A1Context,
     ) {
         // For right-click, if the column is already selected, keep the selection unchanged
-        if is_right_click && !ctrl_key && !shift_key {
-            if self.is_entire_column_selected(col) {
-                return;
-            }
+        if is_right_click && !ctrl_key && !shift_key && self.is_entire_column_selected(col) {
+            return;
         }
 
         if ctrl_key && !shift_key {
@@ -482,8 +439,9 @@ impl A1Selection {
         // A row range has end.col.is_unbounded()
         let mut found_row_range = false;
         for range in &mut self.ranges {
-            if let CellRefRange::Sheet { range: range_ref } = range {
-                if range_ref.end.col.is_unbounded() {
+            if let CellRefRange::Sheet { range: range_ref } = range
+                && range_ref.end.col.is_unbounded()
+            {
                     let start_row = range_ref.start.row();
                     let end_row = range_ref.end.row();
 
@@ -523,7 +481,6 @@ impl A1Selection {
                         found_row_range = true;
                         break;
                     }
-                }
             }
         }
 
@@ -531,15 +488,15 @@ impl A1Selection {
         if !found_row_range {
             let mut cell_to_convert: Option<usize> = None;
             for (idx, range) in self.ranges.iter_mut().enumerate() {
-                if let CellRefRange::Sheet { range: range_ref } = range {
-                    if !range_ref.start.col.is_unbounded() && !range_ref.end.col.is_unbounded() {
-                        // This is a regular cell/range (not a row or column range)
-                        // If it's a single cell or single-row range, convert it to a row range
-                        if range_ref.start.row() == range_ref.end.row() {
-                            cell_to_convert = Some(idx);
-                            break;
-                        }
-                    }
+                if let CellRefRange::Sheet { range: range_ref } = range
+                    && !range_ref.start.col.is_unbounded()
+                    && !range_ref.end.col.is_unbounded()
+                    // This is a regular cell/range (not a row or column range)
+                    // If it's a single cell or single-row range, convert it to a row range
+                    && range_ref.start.row() == range_ref.end.row()
+                {
+                    cell_to_convert = Some(idx);
+                    break;
                 }
             }
 
@@ -572,10 +529,8 @@ impl A1Selection {
         a1_context: &A1Context,
     ) {
         // For right-click, if the row is already selected, keep the selection unchanged
-        if is_right_click && !ctrl_key && !shift_key {
-            if self.is_entire_row_selected(row) {
-                return;
-            }
+        if is_right_click && !ctrl_key && !shift_key && self.is_entire_row_selected(row) {
+            return;
         }
 
         if ctrl_key && !shift_key {

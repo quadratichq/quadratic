@@ -240,7 +240,7 @@ pub(crate) fn has_content_ignore_blank_table_with_merge(
 ) -> bool {
     // If we're in a merged cell, check the anchor cell for content
     if let Some(merge_cells) = merge_cells
-        && let Some(merge_cell) = merge_cells.get_merge_cell_rect(pos.into())
+        && let Some(merge_cell) = merge_cells.get_merge_cell_rect(pos)
     {
         return content_cache.has_content_at_pos(merge_cell.min);
     }

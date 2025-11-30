@@ -245,7 +245,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
                     );
                     value_to_rects
                         .entry(value)
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(full_block_rect);
                 }
             }

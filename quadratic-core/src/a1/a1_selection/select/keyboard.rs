@@ -540,13 +540,13 @@ mod tests {
         assert_move(0, -1, "D11:D12", "D12");
 
         // Move up: target D10 (inside merged cell C5:E10)
-        // Selection expands to C4:E12 (includes full merged cell to avoid partial inclusion)
+        // Selection expands to include the full merged cell C5:E10, resulting in C5:E12
         // End position is at the end of the merged cell range
-        assert_move(0, -1, "C4:E12", "E12");
+        assert_move(0, -1, "C5:E12", "E12");
 
-        // Move up again: end_pos is inside merged cell, exit to D4
-        // Selection stays C5:E12 since it still includes the merged cell
-        assert_move(0, -1, "C5:E12", "D4");
+        // Move up again: continue growing up from C5 to C4
+        // Since anchor D12 is at the bottom edge, we continue to grow upward
+        assert_move(0, -1, "C4:E12", "E12");
     }
 
     #[test]

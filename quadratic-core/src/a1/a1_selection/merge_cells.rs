@@ -16,27 +16,27 @@ impl A1Selection {
         let mut anchors_to_add = HashSet::new();
 
         // Check cursor position
-        if let Some(anchor) = merge_cells.get_anchor(self.cursor) {
-            if anchor != self.cursor {
-                anchors_to_add.insert(anchor);
-            }
+        if let Some(anchor) = merge_cells.get_anchor(self.cursor)
+            && anchor != self.cursor
+        {
+            anchors_to_add.insert(anchor);
         }
 
         // Check all positions in ranges
         for range in &self.ranges {
             match range {
                 CellRefRange::Sheet { range } => {
-                    if range.is_finite() {
-                        if let Some(rect) = range.to_rect() {
-                            // Check all positions in the range for merged cells
-                            for x in rect.min.x..=rect.max.x {
-                                for y in rect.min.y..=rect.max.y {
-                                    let pos = Pos { x, y };
-                                    if let Some(anchor) = merge_cells.get_anchor(pos) {
-                                        // Add anchor if it's not already in the range
-                                        if !rect.contains(anchor) {
-                                            anchors_to_add.insert(anchor);
-                                        }
+                    if range.is_finite()
+                        && let Some(rect) = range.to_rect()
+                    {
+                        // Check all positions in the range for merged cells
+                        for x in rect.min.x..=rect.max.x {
+                            for y in rect.min.y..=rect.max.y {
+                                let pos = Pos { x, y };
+                                if let Some(anchor) = merge_cells.get_anchor(pos) {
+                                    // Add anchor if it's not already in the range
+                                    if !rect.contains(anchor) {
+                                        anchors_to_add.insert(anchor);
                                     }
                                 }
                             }
@@ -105,21 +105,21 @@ impl A1Selection {
         for range in &self.ranges {
             match range {
                 CellRefRange::Sheet { range } => {
-                    if range.is_finite() {
-                        if let Some(rect) = range.to_rect() {
-                            // Check all positions in the range for merged cells
-                            for x in rect.min.x..=rect.max.x {
-                                for y in rect.min.y..=rect.max.y {
-                                    let pos = Pos { x, y };
-                                    if let Some(merge_rect) = merge_cells.get_merge_cell_rect(pos) {
-                                        let merge_key = (
-                                            merge_rect.min.x,
-                                            merge_rect.min.y,
-                                            merge_rect.max.x,
-                                            merge_rect.max.y,
-                                        );
-                                        merge_rects_to_add.insert((merge_key, merge_rect));
-                                    }
+                    if range.is_finite()
+                        && let Some(rect) = range.to_rect()
+                    {
+                        // Check all positions in the range for merged cells
+                        for x in rect.min.x..=rect.max.x {
+                            for y in rect.min.y..=rect.max.y {
+                                let pos = Pos { x, y };
+                                if let Some(merge_rect) = merge_cells.get_merge_cell_rect(pos) {
+                                    let merge_key = (
+                                        merge_rect.min.x,
+                                        merge_rect.min.y,
+                                        merge_rect.max.x,
+                                        merge_rect.max.y,
+                                    );
+                                    merge_rects_to_add.insert((merge_key, merge_rect));
                                 }
                             }
                         }

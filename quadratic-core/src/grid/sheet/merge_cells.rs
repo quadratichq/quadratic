@@ -31,9 +31,9 @@ impl MergeCells {
         self.merge_cells
             .set_from(
                 &merge_cells_updates
-                    .map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    .map_ref(|value| value.as_ref().map(|value| (*value).into())),
             )
-            .map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+            .map_ref(|value| value.as_ref().map(|value| (*value).into()))
     }
 
     pub fn merge_cells(&mut self, rect: Rect) -> MergeCellsUpdate {
@@ -46,8 +46,8 @@ impl MergeCells {
             Some(ClearOption::Some(rect.min)),
         );
         self.merge_cells
-            .set_from(&update.map_ref(|value| value.as_ref().map(|value| value.clone().into())))
-            .map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+            .set_from(&update.map_ref(|value| value.as_ref().map(|value| (*value).into())))
+            .map_ref(|value| value.as_ref().map(|value| (*value).into()))
     }
 
     pub fn unmerge_cells(&mut self, rect: Rect) -> MergeCellsUpdate {
@@ -60,8 +60,8 @@ impl MergeCells {
             Some(ClearOption::Clear),
         );
         self.merge_cells
-            .set_from(&update.map_ref(|value| value.as_ref().map(|value| value.clone().into())))
-            .map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+            .set_from(&update.map_ref(|value| value.as_ref().map(|value| (*value).into())))
+            .map_ref(|value| value.as_ref().map(|value| (*value).into()))
     }
 
     /// Returns true if the given position is part of a merged cell.

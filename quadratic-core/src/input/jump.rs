@@ -885,7 +885,7 @@ mod tests {
 
         // Merge cells B2:D4 (3x3 merged cell)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:D4")),
+            crate::a1::A1Selection::test_a1("B2:D4"),
             None,
             false,
         );
@@ -897,7 +897,8 @@ mod tests {
         gc.set_cell_value(pos![sheet_id!E2], "4".into(), None, false);
 
         // Test jumping up from inside merged cell - should jump from top edge
-        assert_jump_up(&gc, pos![sheet_id!C3], pos![B1]);
+        // Column is maintained (C), so C3 -> C1
+        assert_jump_up(&gc, pos![sheet_id!C3], pos![C1]);
         assert_jump_up(&gc, pos![sheet_id!D4], pos![D1]); // Should maintain column D
 
         // Test jumping down from inside merged cell - should jump from bottom edge

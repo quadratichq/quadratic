@@ -9,6 +9,9 @@ use crate::{
     },
 };
 
+/// Return type for adjust_for_merge_cells to reduce type complexity
+type BorderAdjustmentResult = Vec<(u64, u64, Option<u64>, Option<u64>, BorderStyleTimestamp)>;
+
 impl Borders {
     /// Adjust the borders for a merged cell. The input is a rect of borders on a
     /// given side set with a given border style.
@@ -17,6 +20,7 @@ impl Borders {
     /// to account for the merged cells. The merged cells always use their
     /// anchor cell's borders as the border style across the entire merged cell
     /// range, treating it as a single cell instead of a collection of cells.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn adjust_for_merge_cells(
         &self,
         side: BorderSide,
@@ -26,7 +30,7 @@ impl Borders {
         y2: Option<u64>,
         border: BorderStyleTimestamp,
         merge_cells: Option<&MergeCells>,
-    ) -> Vec<(u64, u64, Option<u64>, Option<u64>, BorderStyleTimestamp)> {
+    ) -> BorderAdjustmentResult {
         if let Some(merge_cells) = merge_cells {
             let borders = match side {
                 BorderSide::Top => &self.top,
@@ -37,8 +41,8 @@ impl Borders {
             let border_rect = Rect::new(
                 x1 as i64,
                 y1 as i64,
-                x2.map(|x2| x2 as i64).unwrap_or(UNBOUNDED as i64),
-                y2.map(|y2| y2 as i64).unwrap_or(UNBOUNDED as i64),
+                x2.map(|x2| x2 as i64).unwrap_or(UNBOUNDED),
+                y2.map(|y2| y2 as i64).unwrap_or(UNBOUNDED),
             );
             let merged_cells = merge_cells.get_merge_cells(border_rect);
 
@@ -59,8 +63,8 @@ impl Borders {
                     let seg_rect = Rect::new(
                         seg_x1 as i64,
                         seg_y1 as i64,
-                        seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED as i64),
-                        seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64),
+                        seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED),
+                        seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED),
                     );
 
                     // Check if this segment intersects with the merged cell
@@ -83,8 +87,8 @@ impl Borders {
                             let merge_x_max = merged_cell.max.x;
 
                             let seg_y1_i64 = seg_y1 as i64;
-                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64);
-                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED as i64);
+                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED);
+                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED);
 
                             // Part 1: Borders at y < merge_y_min (above the merged cell)
                             // These don't need adjustment, keep as-is
@@ -138,7 +142,7 @@ impl Borders {
                                         Some(merge_y_min as u64),
                                         seg_border,
                                     ));
-                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED {
                                     new_segments.push((
                                         (merge_x_max + 1) as u64,
                                         merge_y_min as u64,
@@ -174,7 +178,7 @@ impl Borders {
                                         Some(inside_y_max as u64),
                                         seg_border,
                                     ));
-                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED {
                                     new_segments.push((
                                         (merge_x_max + 1) as u64,
                                         inside_y_min as u64,
@@ -209,8 +213,8 @@ impl Borders {
                             let merge_x_max = merged_cell.max.x;
 
                             let seg_y1_i64 = seg_y1 as i64;
-                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64);
-                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED as i64);
+                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED);
+                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED);
 
                             let bottom_edge_y = merge_y_max + 1;
 
@@ -252,7 +256,7 @@ impl Borders {
                                         Some(inside_y_max as u64),
                                         seg_border,
                                     ));
-                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED {
                                     new_segments.push((
                                         (merge_x_max + 1) as u64,
                                         inside_y_min as u64,
@@ -311,7 +315,7 @@ impl Borders {
                                         Some(bottom_edge_y as u64),
                                         seg_border,
                                     ));
-                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED {
                                     new_segments.push((
                                         (merge_x_max + 1) as u64,
                                         bottom_edge_y as u64,
@@ -346,8 +350,8 @@ impl Borders {
                             let merge_y_max = merged_cell.max.y;
 
                             let seg_x1_i64 = seg_x1 as i64;
-                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED as i64);
-                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64);
+                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED);
+                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED);
 
                             // Part 1: Borders at x < merge_x_min (left of the merged cell)
                             // These don't need adjustment, keep as-is
@@ -401,7 +405,7 @@ impl Borders {
                                         seg_y2,
                                         seg_border,
                                     ));
-                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED {
                                     new_segments.push((
                                         merge_x_min as u64,
                                         (merge_y_max + 1) as u64,
@@ -437,7 +441,7 @@ impl Borders {
                                         seg_y2,
                                         seg_border,
                                     ));
-                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED {
                                     new_segments.push((
                                         inside_x_min as u64,
                                         (merge_y_max + 1) as u64,
@@ -472,8 +476,8 @@ impl Borders {
                             let merge_y_max = merged_cell.max.y;
 
                             let seg_x1_i64 = seg_x1 as i64;
-                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED as i64);
-                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED as i64);
+                            let seg_x2_val = seg_x2.map(|x| x as i64).unwrap_or(UNBOUNDED);
+                            let seg_y2_val = seg_y2.map(|y| y as i64).unwrap_or(UNBOUNDED);
 
                             let right_edge_x = merge_x_max + 1;
 
@@ -515,7 +519,7 @@ impl Borders {
                                         seg_y2,
                                         seg_border,
                                     ));
-                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED {
                                     new_segments.push((
                                         inside_x_min as u64,
                                         (merge_y_max + 1) as u64,
@@ -574,7 +578,7 @@ impl Borders {
                                         seg_y2,
                                         seg_border,
                                     ));
-                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED {
                                     new_segments.push((
                                         right_edge_x as u64,
                                         (merge_y_max + 1) as u64,

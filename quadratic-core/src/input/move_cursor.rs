@@ -455,7 +455,7 @@ mod tests {
 
         // Merge cells B2:D4 (3x3 merged cell)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:D4")),
+            crate::a1::A1Selection::test_a1("B2:D4"),
             None,
             false,
         );
@@ -581,7 +581,7 @@ mod tests {
 
         // Merge cells B2:E2 (horizontal merged cell, 4 columns wide)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:E2")),
+            crate::a1::A1Selection::test_a1("B2:E2"),
             None,
             false,
         );
@@ -647,7 +647,7 @@ mod tests {
 
         // Merge cells B2:B5 (vertical merged cell, 4 rows tall)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:B5")),
+            crate::a1::A1Selection::test_a1("B2:B5"),
             None,
             false,
         );
@@ -713,7 +713,7 @@ mod tests {
 
         // Merge cells B2:D4 (3x3 merged cell)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:D4")),
+            crate::a1::A1Selection::test_a1("B2:D4"),
             None,
             false,
         );
@@ -768,14 +768,14 @@ mod tests {
 
         // Create first merged cell B2:C3
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("B2:C3")),
+            crate::a1::A1Selection::test_a1("B2:C3"),
             None,
             false,
         );
 
         // Create second merged cell E5:F6
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("E5:F6")),
+            crate::a1::A1Selection::test_a1("E5:F6"),
             None,
             false,
         );
@@ -841,14 +841,14 @@ mod tests {
 
         // Create first merged cell D5:G13
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("D5:G13")),
+            crate::a1::A1Selection::test_a1("D5:G13"),
             None,
             false,
         );
 
         // Create second merged cell G25:J37 (shares column G with first merged cell)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("G25:J37")),
+            crate::a1::A1Selection::test_a1("G25:J37"),
             None,
             false,
         );
@@ -926,7 +926,7 @@ mod tests {
 
         // Merge cells A1:C3 (starts at column 1 and row 1)
         gc.merge_cells(
-            crate::a1::A1Selection::test_a1(&format!("A1:C3")),
+            crate::a1::A1Selection::test_a1("A1:C3"),
             None,
             false,
         );

@@ -439,16 +439,16 @@ impl GridController {
                                         merge_rect.min.y,
                                     )
                                 } else {
-                                    range.clone()
+                                    *range
                                 }
                             } else {
-                                range.clone()
+                                *range
                             }
                         } else {
-                            range.clone()
+                            *range
                         }
                     } else {
-                        range.clone()
+                        *range
                     };
 
                     self.a1_border_style_range(
