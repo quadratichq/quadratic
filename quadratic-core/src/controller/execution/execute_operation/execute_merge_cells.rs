@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, Rect, SheetPos,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
     cell_values::CellValues,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -172,6 +172,17 @@ impl GridController {
                     values.set(0, 0, value);
                     sheet.merge_cell_values(rect.min, &values);
                 }
+            }
+        }
+
+        // Check validations for the affected merge cell rects
+        // This ensures that:
+        // - When merging: warnings are removed from non-anchor cells, only anchor retains warning
+        // - When unmerging: warnings are rechecked for all cells that were part of the merge
+        for (x1, y1, x2, y2, _) in &rects_for_spill_check {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                let sheet_rect = SheetRect::new(*x1, *y1, *x2, *y2, sheet_id);
+                self.check_validations(transaction, sheet_rect);
             }
         }
 
