@@ -150,7 +150,40 @@ impl Borders {
                             }
 
                             // Part 3: Borders at y in (merge_y_min, merge_y_max] (inside)
-                            // These should be cleared - we simply don't add them
+                            // Clear the portion inside the merged cell's x-range,
+                            // but KEEP the portions outside the merged cell's x-range
+                            let inside_y_min = (merge_y_min + 1).max(seg_y1_i64);
+                            let inside_y_max = merge_y_max.min(seg_y2_val);
+                            if inside_y_min <= inside_y_max {
+                                // There are y values inside the merged cell
+                                // Output the x portions that are outside the merged cell
+                                if (seg_x1 as i64) < merge_x_min {
+                                    new_segments.push((
+                                        seg_x1,
+                                        inside_y_min as u64,
+                                        Some((merge_x_min - 1) as u64),
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                }
+                                if seg_x2_val > merge_x_max {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        inside_y_min as u64,
+                                        seg_x2,
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        inside_y_min as u64,
+                                        None,
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                }
+                            }
 
                             // Part 4: Borders at y > merge_y_max (below the merged cell)
                             if seg_y2_val > merge_y_max {
@@ -194,10 +227,41 @@ impl Borders {
                                 ));
                             }
 
-                            // Part 2: Borders at y in (merge_y_min, merge_y_max] (inside)
-                            // These should be cleared - we simply don't add them
-                            // But if it's the anchor's bottom border, we'll render it at the
-                            // bottom edge below.
+                            // Part 2: Borders at y in (merge_y_min, bottom_edge_y) (inside)
+                            // Clear the portion inside the merged cell's x-range,
+                            // but KEEP the portions outside the merged cell's x-range
+                            let inside_y_min = (merge_y_min + 1).max(seg_y1_i64);
+                            let inside_y_max = (bottom_edge_y - 1).min(seg_y2_val);
+                            if inside_y_min <= inside_y_max {
+                                // There are y values inside the merged cell
+                                // Output the x portions that are outside the merged cell
+                                if (seg_x1 as i64) < merge_x_min {
+                                    new_segments.push((
+                                        seg_x1,
+                                        inside_y_min as u64,
+                                        Some((merge_x_min - 1) as u64),
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                }
+                                if seg_x2_val > merge_x_max {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        inside_y_min as u64,
+                                        seg_x2,
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                } else if seg_x2.is_none() && merge_x_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        (merge_x_max + 1) as u64,
+                                        inside_y_min as u64,
+                                        None,
+                                        Some(inside_y_max as u64),
+                                        seg_border,
+                                    ));
+                                }
+                            }
 
                             // Part 3: Borders at y == bottom_edge_y (the bottom edge)
                             // OR if the segment includes the anchor's bottom border (which
@@ -349,7 +413,40 @@ impl Borders {
                             }
 
                             // Part 3: Borders at x in (merge_x_min, merge_x_max] (inside)
-                            // These should be cleared - we simply don't add them
+                            // Clear the portion inside the merged cell's y-range,
+                            // but KEEP the portions outside the merged cell's y-range
+                            let inside_x_min = (merge_x_min + 1).max(seg_x1_i64);
+                            let inside_x_max = merge_x_max.min(seg_x2_val);
+                            if inside_x_min <= inside_x_max {
+                                // There are x values inside the merged cell
+                                // Output the y portions that are outside the merged cell
+                                if (seg_y1 as i64) < merge_y_min {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        seg_y1,
+                                        Some(inside_x_max as u64),
+                                        Some((merge_y_min - 1) as u64),
+                                        seg_border,
+                                    ));
+                                }
+                                if seg_y2_val > merge_y_max {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        (merge_y_max + 1) as u64,
+                                        Some(inside_x_max as u64),
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        (merge_y_max + 1) as u64,
+                                        Some(inside_x_max as u64),
+                                        None,
+                                        seg_border,
+                                    ));
+                                }
+                            }
 
                             // Part 4: Borders at x > merge_x_max (right of the merged cell)
                             if seg_x2_val > merge_x_max {
@@ -393,10 +490,41 @@ impl Borders {
                                 ));
                             }
 
-                            // Part 2: Borders at x in (merge_x_min, merge_x_max] (inside)
-                            // These should be cleared - we simply don't add them
-                            // But if it's the anchor's right border, we'll render it at the
-                            // right edge below.
+                            // Part 2: Borders at x in (merge_x_min, right_edge_x) (inside)
+                            // Clear the portion inside the merged cell's y-range,
+                            // but KEEP the portions outside the merged cell's y-range
+                            let inside_x_min = (merge_x_min + 1).max(seg_x1_i64);
+                            let inside_x_max = (right_edge_x - 1).min(seg_x2_val);
+                            if inside_x_min <= inside_x_max {
+                                // There are x values inside the merged cell
+                                // Output the y portions that are outside the merged cell
+                                if (seg_y1 as i64) < merge_y_min {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        seg_y1,
+                                        Some(inside_x_max as u64),
+                                        Some((merge_y_min - 1) as u64),
+                                        seg_border,
+                                    ));
+                                }
+                                if seg_y2_val > merge_y_max {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        (merge_y_max + 1) as u64,
+                                        Some(inside_x_max as u64),
+                                        seg_y2,
+                                        seg_border,
+                                    ));
+                                } else if seg_y2.is_none() && merge_y_max < UNBOUNDED as i64 {
+                                    new_segments.push((
+                                        inside_x_min as u64,
+                                        (merge_y_max + 1) as u64,
+                                        Some(inside_x_max as u64),
+                                        None,
+                                        seg_border,
+                                    ));
+                                }
+                            }
 
                             // Part 3: Borders at x == right_edge_x (the right edge)
                             // OR if the segment includes the anchor's right border (which
@@ -964,6 +1092,78 @@ mod tests {
                 width: Some(3),
                 unbounded: false,
             }])
+        );
+    }
+
+    /// Test that borders outside a merged cell are not affected by the merged cell.
+    /// When setting borders on A1:E5 with a merged cell at B2:D3, the top borders
+    /// at A3 and E3 (outside the merged cell) should still render.
+    #[test]
+    fn test_merged_cells_borders_outside_not_affected() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells B2:D3 (3x2 merged cell)
+        gc.merge_cells(A1Selection::test_a1("B2:D3"), None, false);
+
+        // Set all borders on A1:E5 (larger than the merged cell)
+        gc.set_borders(
+            A1Selection::test_a1("A1:E5"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Get rendered borders with merge cells
+        let horizontal = sheet
+            .borders
+            .horizontal_borders(None, Some(&sheet.merge_cells))
+            .unwrap();
+
+        // Check that we have a border at y=3 for column A (x=1)
+        let has_a3_top = horizontal
+            .iter()
+            .any(|b| b.y == 3 && b.x == 1 && b.width == Some(1));
+        assert!(
+            has_a3_top,
+            "Should have top border at A3 (y=3, x=1). Borders: {:?}",
+            horizontal
+        );
+
+        // Check that we have a border at y=3 for column E (x=5)
+        let has_e3_top = horizontal
+            .iter()
+            .any(|b| b.y == 3 && b.x == 5 && b.width == Some(1));
+        assert!(
+            has_e3_top,
+            "Should have top border at E3 (y=3, x=5). Borders: {:?}",
+            horizontal
+        );
+
+        // Also check vertical borders - left border at C1 (x=3) should still exist
+        // above and below the merged cell
+        let vertical = sheet
+            .borders
+            .vertical_borders(None, Some(&sheet.merge_cells))
+            .unwrap();
+
+        // Check that we have a left border at x=3 for row 1 (above merged cell)
+        let has_c1_left = vertical.iter().any(|b| b.x == 3 && b.y == 1);
+        assert!(
+            has_c1_left,
+            "Should have left border at C1 (x=3, y=1). Vertical borders: {:?}",
+            vertical
+        );
+
+        // Check that we have a left border at x=3 for rows 4-5 (below merged cell)
+        let has_c4_left = vertical.iter().any(|b| b.x == 3 && b.y == 4);
+        assert!(
+            has_c4_left,
+            "Should have left border at C4 (x=3, y=4). Vertical borders: {:?}",
+            vertical
         );
     }
 
