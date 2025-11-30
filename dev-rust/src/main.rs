@@ -69,6 +69,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.dir.clone()
     };
 
+    // Canonicalize base_dir immediately to ensure consistent paths regardless of where we run from
+    // This prevents cargo from using different target directories when run from different locations
+    let initial_base_dir = initial_base_dir.canonicalize().unwrap_or(initial_base_dir);
+
     // Load state file before starting services
     let saved_state = {
         let state_file = initial_base_dir.join("dev-rust-state.json");

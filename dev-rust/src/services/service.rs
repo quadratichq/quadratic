@@ -227,6 +227,13 @@ pub trait Service: Send + Sync {
         // Set RUST_LOG
         cmd.env("RUST_LOG", "info");
 
+        // For cargo commands, set CARGO_TARGET_DIR to ensure consistent target directory
+        // regardless of where the command is run from
+        if command[0] == "cargo" {
+            let target_dir = base_dir.join("target");
+            cmd.env("CARGO_TARGET_DIR", &target_dir);
+        }
+
         // For cargo watch, ensure output is not buffered and all output is shown
         if command[0] == "cargo" && command.len() > 1 && command[1] == "watch" {
             // Ensure cargo watch shows all output (don't use --quiet flag)
