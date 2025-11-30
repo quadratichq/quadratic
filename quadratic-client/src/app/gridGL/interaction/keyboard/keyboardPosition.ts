@@ -24,7 +24,6 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   let jumpStartY = cursorPos.y;
 
   if (select) {
-    // TODO: this is not correct for cursor on the right or bottom edge of the selection
     const endPos = cursor.selectionEnd;
     jumpStartX = endPos.x;
     jumpStartY = endPos.y;
@@ -66,6 +65,11 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
 
   const jumpCol = Math.max(1, Number(newPos.x));
   const jumpRow = Math.max(1, Number(newPos.y));
+
+  // Skip if position hasn't changed (e.g., at boundary)
+  if (jumpCol === jumpStartX && jumpRow === jumpStartY) {
+    return;
+  }
 
   if (select) {
     // Let Rust handle all selection logic including axis handling

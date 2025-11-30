@@ -37,9 +37,13 @@ pub fn move_cursor(
                 }
             } else if let Some(merge_rect) = merge_cell_bounds {
                 // Skip to the cell above the merged cell, maintaining the current column
-                Pos {
-                    x: pos.x,
-                    y: merge_rect.min.y - 1,
+                if merge_rect.min.y == 1 {
+                    pos.into()
+                } else {
+                    Pos {
+                        x: pos.x,
+                        y: merge_rect.min.y - 1,
+                    }
                 }
             } else {
                 Pos {
@@ -71,9 +75,13 @@ pub fn move_cursor(
             if pos.x == 1 {
                 pos.into()
             } else if let Some(chart_bounds) = chart_at(pos, table_cache, context) {
-                Pos {
-                    x: chart_bounds.min.x - 1,
-                    y: pos.y,
+                if chart_bounds.min.x == 1 {
+                    pos.into()
+                } else {
+                    Pos {
+                        x: chart_bounds.min.x - 1,
+                        y: pos.y,
+                    }
                 }
             } else if let Some(table_bounds) = table_header_at(pos, table_cache, context) {
                 Pos {
@@ -86,9 +94,13 @@ pub fn move_cursor(
                 }
             } else if let Some(merge_rect) = merge_cell_bounds {
                 // Skip to the cell to the left of the merged cell
-                Pos {
-                    x: merge_rect.min.x - 1,
-                    y: pos.y,
+                if merge_rect.min.x == 1 {
+                    pos.into()
+                } else {
+                    Pos {
+                        x: merge_rect.min.x - 1,
+                        y: pos.y,
+                    }
                 }
             } else {
                 Pos {
@@ -904,6 +916,74 @@ mod tests {
                 merge_cells
             ),
             pos![G38] // Should skip to G38 (below second merged cell)
+        );
+    }
+
+    #[test]
+    fn test_merge_cell_at_boundary() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Merge cells A1:C3 (starts at column 1 and row 1)
+        gc.merge_cells(
+            crate::a1::A1Selection::test_a1(&format!("A1:C3")),
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context();
+        let merge_cells = Some(&sheet.merge_cells);
+
+        // Test moving left from within a merged cell starting at column 1
+        // Should stay in place (return same position), not go to column 0
+        assert_eq!(
+            move_cursor(
+                pos![sheet_id!C2], // Right side of merge at column A
+                Direction::Left,
+                sheet_data_tables_cache,
+                context,
+                merge_cells
+            ),
+            pos![C2] // Should stay in place since merge starts at column 1
+        );
+
+        // Test moving up from within a merged cell starting at row 1
+        // Should stay in place (return same position), not go to row 0
+        assert_eq!(
+            move_cursor(
+                pos![sheet_id!B3], // Bottom of merge at row 1
+                Direction::Up,
+                sheet_data_tables_cache,
+                context,
+                merge_cells
+            ),
+            pos![B3] // Should stay in place since merge starts at row 1
+        );
+
+        // Test moving left from anchor of merge at column 1
+        assert_eq!(
+            move_cursor(
+                pos![sheet_id!A1],
+                Direction::Left,
+                sheet_data_tables_cache,
+                context,
+                merge_cells
+            ),
+            pos![A1] // Should stay at A1
+        );
+
+        // Test moving up from anchor of merge at row 1
+        assert_eq!(
+            move_cursor(
+                pos![sheet_id!A1],
+                Direction::Up,
+                sheet_data_tables_cache,
+                context,
+                merge_cells
+            ),
+            pos![A1] // Should stay at A1
         );
     }
 }

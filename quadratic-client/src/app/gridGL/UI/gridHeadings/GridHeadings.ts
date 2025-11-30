@@ -784,6 +784,11 @@ export class GridHeadings extends Container {
 
   /// Returns future sizes based on a new viewport position (top left)
   getFutureSizes = (viewportTopY: number): HeadingSize => {
+    // When headings are off, return all zeros
+    if (!pixiAppSettings.showHeadings) {
+      return { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
+    }
+
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const viewportHeight = bounds.height;
