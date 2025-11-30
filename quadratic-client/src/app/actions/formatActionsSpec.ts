@@ -3,6 +3,7 @@ import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
 import {
   clearFormattingAndBorders,
   mergeCells,
@@ -64,7 +65,6 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
-import type { ColorResult } from 'react-color';
 
 type FormatActionSpec = Pick<
   ActionSpecRecord,

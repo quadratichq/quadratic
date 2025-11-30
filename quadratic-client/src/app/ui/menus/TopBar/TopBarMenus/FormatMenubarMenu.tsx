@@ -1,10 +1,15 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { DateFormat } from '@/app/ui/components/DateFormat';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   BorderAllIcon,
   FormatAlignLeftIcon,
@@ -22,8 +27,36 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
+import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const FormatMenubarMenu = () => {
+  // get the format summary for the current selection
+  const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
+  const transactionsInfo = useRecoilValue(editorInteractionStateTransactionsInfoAtom);
+  useEffect(() => {
+    const updateFormatSummary = async () => {
+      // don't update the format summary if there are transactions in progress
+      if (transactionsInfo.length > 0) return;
+      try {
+        const summary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
+        if (summary && 'error' in summary) {
+          console.error('[FormatMenubarMenu] Error getting format summary', summary.error);
+        } else {
+          setFormatSummary(summary);
+        }
+      } catch (e) {
+        console.error('[FormatMenubarMenu] Error getting format summary', e);
+      }
+    };
+    updateFormatSummary();
+
+    events.on('cursorPosition', updateFormatSummary);
+    return () => {
+      events.off('cursorPosition', updateFormatSummary);
+    };
+  }, [transactionsInfo.length]);
+
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
@@ -112,9 +145,15 @@ export const FormatMenubarMenu = () => {
 
         <MenubarSeparator />
 
-        <MenubarColorPickerSubMenu action={Action.FormatTextColor} />
+        <MenubarColorPickerSubMenu
+          action={Action.FormatTextColor}
+          activeColor={formatSummary?.textColor ?? undefined}
+        />
 
-        <MenubarColorPickerSubMenu action={Action.FormatFillColor} />
+        <MenubarColorPickerSubMenu
+          action={Action.FormatFillColor}
+          activeColor={formatSummary?.fillColor ?? undefined}
+        />
 
         <MenubarSub>
           <MenubarSubTrigger>
@@ -156,20 +195,37 @@ function DataTimeSubMenu({ action }: { action: Action.FormatDateTime }) {
   );
 }
 
-function MenubarColorPickerSubMenu({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
+function MenubarColorPickerSubMenu({
+  action,
+  activeColor,
+}: {
+  action: Action.FormatTextColor | Action.FormatFillColor;
+  activeColor?: string;
+}) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
+  const iconNode = Icon ? (
+    <div className="relative flex items-center justify-center">
+      <Icon />
+      <div
+        className="absolute bottom-0 left-0.5 right-0.5 h-1 rounded-sm"
+        style={{ backgroundColor: activeColor ?? 'currentColor' }}
+      />
+    </div>
+  ) : null;
+
   return (
     <MenubarSub>
       <MenubarSubTrigger>
-        {Icon && <Icon />}
+        {iconNode}
         {label}
       </MenubarSubTrigger>
       <MenubarSubContent>
         <MenubarItem className="color-picker-dropdown-menu flex-col gap-0 p-0 hover:bg-background focus:bg-background">
-          <QColorPicker
+          <ColorPicker
+            color={activeColor}
             onChangeComplete={(color) => {
               actionSpec.run(color);
               focusGrid();

@@ -1,7 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import type { ColorResult } from '@/app/ui/components/ColorPicker';
+import { ColorPicker } from '@/app/ui/components/ColorPicker';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -17,7 +18,6 @@ import {
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import '@szhsin/react-menu/dist/index.css';
 import type { JSX } from 'react';
-import type { ColorResult } from 'react-color';
 
 interface Props {
   handleClose: () => void;
@@ -69,7 +69,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="gap-4">Change color</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="color-picker-dropdown-menu">
-            <QColorPicker
+            <ColorPicker
               onChangeComplete={(change: ColorResult) => {
                 const color = convertReactColorToString(change);
                 sheets.sheet.setColor(color, false);

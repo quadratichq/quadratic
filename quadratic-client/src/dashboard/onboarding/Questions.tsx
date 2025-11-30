@@ -18,6 +18,7 @@ import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 
 const FETCHER_KEY = 'onboarding-form-submission';
+const RESET_FORM_DELAY = 600;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',
@@ -317,17 +318,46 @@ export const questionsById: Record<
     title: 'Who would you like to invite to your team?',
     subtitle: 'Quadratic is better with your team. We’ll send them an invite.',
     Form: (props) => {
+      const [values, setValues] = useState<string[]>(Array(4).fill(''));
+      const [searchParams] = useSearchParams();
+
+      // Reset the form values when search params change (navigating to next question)
+      // We have to do this manually because form values are controlled not uncontrolled
+      useEffect(() => {
+        setTimeout(() => {
+          setValues(Array(4).fill(''));
+        }, RESET_FORM_DELAY);
+      }, [searchParams]);
+
+      const handleInputChange = (index: number, value: string) => {
+        const newValues = [...values];
+        newValues[index] = value;
+
+        // Count how many fields have values
+        const filledCount = newValues.filter((v) => v.trim().length > 0).length;
+        const emptyCount = newValues.length - filledCount;
+
+        // If there are no more empty fields, add 2 more
+        if (emptyCount < 1) {
+          setValues([...newValues, '', '']);
+        } else {
+          setValues(newValues);
+        }
+      };
+
       return (
         <Question title={props.title} subtitle={props.subtitle}>
           <QuestionForm>
             <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
-              {['john@example.com', '', '', ''].map((placeholder) => (
+              {values.map((value, index) => (
                 <Input
-                  key={placeholder}
+                  key={index}
                   className="h-12 w-full text-lg placeholder:text-muted-foreground/70"
                   type="email"
                   name={props.id}
-                  placeholder={placeholder}
+                  placeholder={index === 0 ? 'john@example.com' : ''}
+                  value={value}
+                  onChange={(e) => handleInputChange(index, e.target.value)}
                 />
               ))}
             </div>
@@ -606,7 +636,7 @@ function QuestionForm({
         setSearchParams(newSearchParams);
         setTimeout(() => {
           form.reset();
-        }, 1000);
+        }, RESET_FORM_DELAY);
       }}
       className={className}
     >
