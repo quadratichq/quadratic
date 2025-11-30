@@ -396,25 +396,24 @@ fn keyboard_jump_select_sheet_range(
     _merge_cells: &MergeCells,
 ) {
     let mut rect = range.to_rect_unbounded();
+
+    // Only update x range if col has actually changed from anchor
+    // When moving vertically (anchor.x == col), preserve existing x range
     if anchor.x > col {
         rect.min.x = col;
         rect.max.x = anchor.x;
     } else if anchor.x < col {
         rect.max.x = col;
         rect.min.x = anchor.x;
-    } else {
-        rect.min.x = anchor.x;
-        rect.max.x = anchor.x;
     }
+    // Only update y range if row has actually changed from anchor
+    // When moving horizontally (anchor.y == row), preserve existing y range
     if anchor.y > row {
         rect.min.y = row;
         rect.max.y = anchor.y;
-    } else if anchor.y <= row {
+    } else if anchor.y < row {
         rect.max.y = row;
         rect.min.y = anchor.y;
-    } else {
-        rect.min.y = anchor.y;
-        rect.max.y = anchor.y;
     }
 
     *range = RefRangeBounds::new_relative_rect(rect);
@@ -942,5 +941,40 @@ mod tests {
         assert_eq!(selection.test_to_string(), "B5:F8");
         // End position is at the end of the merged cell range
         assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F8"));
+    }
+
+    #[test]
+    fn test_keyboard_jump_select_preserves_perpendicular_range() {
+        let context = A1Context::default();
+        let merge_cells = MergeCells::default();
+
+        // Start at C5, jump-select left to A5, then jump-select up to row 1
+        // This simulates: at C5, cmd+shift+left to A5:C5, then cmd+shift+up to A1:C5
+        let mut selection = A1Selection::test_a1("C5");
+
+        // Jump select left to A5 (should create A5:C5)
+        selection.keyboard_jump_select_to(1, 5, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A5:C5");
+        assert_eq!(selection.cursor, Pos::test_a1("C5")); // cursor stays at C5
+
+        // Jump select up to row 1 (should create A1:C5, preserving A-C columns)
+        selection.keyboard_jump_select_to(3, 1, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A1:C5");
+        assert_eq!(selection.cursor, Pos::test_a1("C5")); // cursor stays at C5
+
+        // Test the reverse: start wide horizontally, then extend vertically the other way
+        let mut selection = A1Selection::test_a1("C5");
+        selection.keyboard_jump_select_to(1, 5, &context, &merge_cells); // A5:C5
+        selection.keyboard_jump_select_to(3, 10, &context, &merge_cells); // Should be A5:C10
+        assert_eq!(selection.test_to_string(), "A5:C10");
+
+        // Test preserving y range when jumping horizontally
+        let mut selection = A1Selection::test_a1("C5");
+        selection.keyboard_jump_select_to(3, 1, &context, &merge_cells); // C1:C5
+        assert_eq!(selection.test_to_string(), "C1:C5");
+
+        // Now jump select right (should preserve 1-5 row range)
+        selection.keyboard_jump_select_to(10, 5, &context, &merge_cells); // Should be C1:J5
+        assert_eq!(selection.test_to_string(), "C1:J5");
     }
 }
