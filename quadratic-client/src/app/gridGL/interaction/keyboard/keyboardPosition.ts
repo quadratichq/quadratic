@@ -48,14 +48,6 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
         sheets.jsA1Context,
         sheets.sheet.mergeCells
       );
-      console.log({
-        jumpStartX,
-        jumpStartY,
-        newPosX: newPos.x,
-        newPosY: newPos.y,
-        endPosX: cursor.selectionEnd.x,
-        endPosY: cursor.selectionEnd.y,
-      });
     } else {
       newPos = moveCursor(
         sheetId,
@@ -79,7 +71,6 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
     // Let Rust handle all selection logic including axis handling
     // Rust's select_to will determine the correct start position and extend appropriately
     cursor.keyboardJumpSelectTo(jumpCol, jumpRow);
-    console.log({ jumpCol, jumpRow });
     ensureVisible({ x: jumpCol, y: jumpRow });
   } else {
     cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });
