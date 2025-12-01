@@ -7,7 +7,7 @@ import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 export default function QuadraticUIContext() {
   return (
     <FileProvider>
-      <TooltipProvider>
+      <TooltipProvider skipDelayDuration={0} delayDuration={700}>
         <QuadraticUI />
         <PixiAppEffects />
         <Events />
