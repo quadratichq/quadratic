@@ -853,30 +853,6 @@ impl ServiceManager {
         }
     }
 
-    pub async fn restart_service(&self, name: &str) {
-        // Kill the service first (this handles ports and processes)
-        self.kill_service(name).await;
-
-        // Ensure process is removed from processes map (in case it already finished)
-        {
-            let mut processes = self.processes.write().await;
-            processes.remove(name);
-        }
-
-        // Force status to Stopped so start_service will run
-        {
-            let mut status = self.status.write().await;
-            status.insert(name.to_string(), ServiceStatus::Stopped);
-        }
-        self.notify_status_change();
-
-        // Small delay to ensure cleanup completes
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-
-        // Now start the service
-        self.start_service(name).await;
-    }
-
     pub async fn restart_all_services(&self) {
         // Reset quitting flag to allow services to start
         {
@@ -887,28 +863,108 @@ impl ServiceManager {
         self.log("system", "Restarting all services...".to_string())
             .await;
 
-        // Get all service names from status
-        let service_names: Vec<String> = {
-            let status = self.status.read().await;
-            status.keys().cloned().collect()
-        };
+        // First, kill all services in parallel (fast)
+        #[cfg(unix)]
+        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
+        #[cfg(not(unix))]
+        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
 
-        // Restart all services (including shared, regardless of watch mode)
-        for service_name in service_names {
-            // Log what we're doing for shared
-            if service_name == "shared" {
-                let watching = self.watching.read().await;
-                let is_watching = *watching.get("shared").unwrap_or(&false);
-                if is_watching {
-                    self.log("system", "Restarting shared (watch mode)".to_string())
-                        .await;
-                } else {
-                    self.log("system", "Restarting shared (compile mode)".to_string())
-                        .await;
+        {
+            let mut processes = self.processes.write().await;
+            let status = self.status.read().await;
+
+            for name in status.keys() {
+                #[cfg(unix)]
+                {
+                    if let Some(Some(child)) = processes.remove(name) {
+                        let pid = child.id();
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
+                        pids_and_ports.push((name.clone(), pid, port));
+                    }
+                }
+                #[cfg(not(unix))]
+                {
+                    if let Some(Some(child)) = processes.remove(name) {
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
+                        processes_to_kill.push((name.clone(), child, port));
+                    }
                 }
             }
-            self.restart_service(&service_name).await;
         }
+
+        // Kill all processes in parallel
+        let mut kill_futures = Vec::new();
+
+        #[cfg(unix)]
+        {
+            for (_name, pid, port) in pids_and_ports {
+                kill_futures.push(async move {
+                    if let Some(pid) = pid {
+                        let current_pid = nix::unistd::getpid();
+                        if pid as i32 != current_pid.as_raw() {
+                            let _ = nix::sys::signal::kill(
+                                Pid::from_raw(-(pid as i32)),
+                                nix::sys::signal::Signal::SIGKILL,
+                            );
+                        }
+                    }
+
+                    if let Some(port) = port
+                        && let Ok(output) = Command::new("lsof")
+                            .args(["-ti", &format!("tcp:{}", port)])
+                            .output()
+                            .await
+                    {
+                        let pids_str = String::from_utf8_lossy(&output.stdout);
+                        let current_pid = nix::unistd::getpid().as_raw();
+                        for pid_str in pids_str.trim().split('\n') {
+                            if let Ok(pid) = pid_str.trim().parse::<i32>()
+                                && pid != current_pid
+                            {
+                                let _ = nix::sys::signal::kill(
+                                    Pid::from_raw(pid),
+                                    nix::sys::signal::Signal::SIGKILL,
+                                );
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        #[cfg(not(unix))]
+        {
+            for (_name, mut child, _port) in processes_to_kill {
+                kill_futures.push(async move {
+                    let _ = child.kill();
+                });
+            }
+        }
+
+        // Execute all kills in parallel with a timeout
+        tokio::time::timeout(
+            tokio::time::Duration::from_millis(500),
+            future::join_all(kill_futures),
+        )
+        .await
+        .ok();
+
+        // Reset all service statuses to Stopped
+        {
+            let mut status = self.status.write().await;
+            for name in status.keys().cloned().collect::<Vec<_>>() {
+                status.insert(name, ServiceStatus::Stopped);
+            }
+        }
+        self.notify_status_change();
+
+        // Small delay to ensure cleanup completes
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        // Now start all services in the proper dependency order
+        self.start_all_services().await;
 
         self.log("system", "All services restarted.".to_string())
             .await;
@@ -918,17 +974,105 @@ impl ServiceManager {
         self.log("system", "Stopping all services...".to_string())
             .await;
 
-        // Get all service names
-        let service_names: Vec<String> = {
-            let status = self.status.read().await;
-            status.keys().cloned().collect()
-        };
+        // Collect all processes to kill - similar to kill_all_services but without setting quitting flag
+        #[cfg(not(unix))]
+        let mut processes_to_kill: Vec<(String, Child, Option<u16>)> = Vec::new();
+        #[cfg(unix)]
+        let mut pids_and_ports: Vec<(String, Option<u32>, Option<u16>)> = Vec::new();
 
-        // Stop all services (kill and mark as Killed so they can be restarted)
-        for service_name in service_names {
-            self.kill_service(&service_name).await;
+        {
+            let mut processes = self.processes.write().await;
+            let status = self.status.read().await;
+
+            for name in status.keys() {
+                #[cfg(unix)]
+                {
+                    if let Some(Some(child)) = processes.remove(name) {
+                        let pid = child.id();
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
+                        pids_and_ports.push((name.clone(), pid, port));
+                    }
+                }
+                #[cfg(not(unix))]
+                {
+                    if let Some(Some(child)) = processes.remove(name) {
+                        let port =
+                            crate::services::get_service_by_name(name).and_then(|s| s.port());
+                        processes_to_kill.push((name.clone(), child, port));
+                    }
+                }
+            }
+        }
+
+        // Kill all processes in parallel
+        let mut kill_futures = Vec::new();
+
+        #[cfg(unix)]
+        {
+            for (_name, pid, port) in pids_and_ports {
+                kill_futures.push(async move {
+                    if let Some(pid) = pid {
+                        // Safety check: don't kill our own process
+                        let current_pid = nix::unistd::getpid();
+                        if pid as i32 == current_pid.as_raw() {
+                            return;
+                        }
+
+                        // Kill the entire process group (PGID = PID due to setpgid)
+                        let _ = nix::sys::signal::kill(
+                            Pid::from_raw(-(pid as i32)),
+                            nix::sys::signal::Signal::SIGKILL,
+                        );
+                    }
+
+                    // Also kill any processes on the port (in case of lingering processes)
+                    if let Some(port) = port
+                        && let Ok(output) = Command::new("lsof")
+                            .args(["-ti", &format!("tcp:{}", port)])
+                            .output()
+                            .await
+                    {
+                        let pids_str = String::from_utf8_lossy(&output.stdout);
+                        let current_pid = nix::unistd::getpid().as_raw();
+                        for pid_str in pids_str.trim().split('\n') {
+                            if let Ok(pid) = pid_str.trim().parse::<i32>()
+                                && pid != current_pid
+                            {
+                                let _ = nix::sys::signal::kill(
+                                    Pid::from_raw(pid),
+                                    nix::sys::signal::Signal::SIGKILL,
+                                );
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        #[cfg(not(unix))]
+        {
+            for (_name, mut child, _port) in processes_to_kill {
+                kill_futures.push(async move {
+                    let _ = child.kill();
+                });
+            }
+        }
+
+        // Execute all kills in parallel with a timeout
+        tokio::time::timeout(
+            tokio::time::Duration::from_millis(500),
+            future::join_all(kill_futures),
+        )
+        .await
+        .ok();
+
+        // Mark all services as Killed (so they can be restarted)
+        {
             let mut status = self.status.write().await;
-            status.insert(service_name.clone(), ServiceStatus::Killed);
+            for name in status.keys().cloned().collect::<Vec<_>>() {
+                status.insert(name, ServiceStatus::Killed);
+            }
         }
         self.notify_status_change();
 
