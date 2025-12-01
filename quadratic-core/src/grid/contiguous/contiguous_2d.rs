@@ -376,6 +376,25 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
         .unwrap_or_default()
     }
 
+    /// Returns the Y block bounds (min_y, max_y inclusive) and value for the
+    /// given position. This is useful for rectangular data like merged cells
+    /// where the Y extent is stored contiguously in a single block.
+    ///
+    /// Returns `(y_min, y_max, value)` or None if the position is invalid.
+    pub fn get_y_block_bounds(&self, pos: Pos) -> Option<(i64, i64, T)> {
+        let (x, y) = convert_pos(pos)?;
+        let x_block = self.0.get_block_containing(x)?;
+        let y_block = x_block.value.get_block_containing(y)?;
+
+        let y_min = y_block.start as i64;
+        let y_max = if y_block.end == u64::MAX {
+            i64::MAX
+        } else {
+            y_block.end.saturating_sub(1) as i64
+        };
+        Some((y_min, y_max, y_block.value.clone()))
+    }
+
     /// Sets a single value and returns the old one, or `T::default()` if `pos`
     /// is invalid.
     pub fn set(&mut self, pos: Pos, value: T) -> T {
@@ -1663,5 +1682,50 @@ mod tests {
         assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 5, 5)));
         c.set_rect(1, 1, Some(5), Some(5), 0); // set to default
         assert_eq!(c.bounding_rect(), None);
+    }
+
+    #[test]
+    fn test_get_y_block_bounds() {
+        // Test single rect
+        let mut c = Contiguous2D::<Option<u8>>::new();
+        c.set_rect(2, 3, Some(5), Some(7), Some(42));
+
+        // Query within the rect - should return Y bounds and value
+        let result = c.get_y_block_bounds(pos![B3]);
+        assert_eq!(result, Some((3, 7, Some(42))));
+
+        let result = c.get_y_block_bounds(pos![E7]);
+        assert_eq!(result, Some((3, 7, Some(42))));
+
+        // Query outside the rect - returns default value bounds
+        let result = c.get_y_block_bounds(pos![A1]);
+        assert!(result.is_some());
+        let (_, _, value) = result.unwrap();
+        assert_eq!(value, None); // default value
+
+        // Test two adjacent rects with same Y range but different values
+        let mut c = Contiguous2D::<Option<u8>>::new();
+        c.set_rect(2, 2, Some(4), Some(4), Some(10)); // B2:D4
+        c.set_rect(5, 2, Some(7), Some(4), Some(20)); // E2:G4
+
+        // Query first rect
+        let result = c.get_y_block_bounds(pos![B2]);
+        assert_eq!(result, Some((2, 4, Some(10))));
+
+        let result = c.get_y_block_bounds(pos![D4]);
+        assert_eq!(result, Some((2, 4, Some(10))));
+
+        // Query second rect - should have different value
+        let result = c.get_y_block_bounds(pos![E2]);
+        assert_eq!(result, Some((2, 4, Some(20))));
+
+        let result = c.get_y_block_bounds(pos![G4]);
+        assert_eq!(result, Some((2, 4, Some(20))));
+
+        // Query gap between rects (column A)
+        let result = c.get_y_block_bounds(pos![A2]);
+        assert!(result.is_some());
+        let (_, _, value) = result.unwrap();
+        assert_eq!(value, None); // default value
     }
 }
