@@ -795,6 +795,12 @@ export const LinkOffIcon: IconComponent = (props) => {
   return <Icon {...props}>link_off</Icon>;
 };
 
-export const CheckCircleIcon: IconComponent = (props) => {
-  return <Icon {...props}>check_circle</Icon>;
+export const SyncingDoneIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_done</Icon>;
+};
+export const SyncingInProgressIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_sync</Icon>;
+};
+export const SyncingAlertIcon: IconComponent = (props) => {
+  return <Icon {...props}>cloud_alert</Icon>;
 };
