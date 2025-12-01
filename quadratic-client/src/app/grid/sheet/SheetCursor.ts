@@ -6,6 +6,7 @@ import { events } from '@/app/events/events';
 import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
@@ -291,23 +292,19 @@ export class SheetCursor {
   };
 
   selectPageDown = () => {
-    // if (isAnimating()) return;
-    // const { x, y, row } = calculatePageUpDown(false, true);
-    // const column = this.selectionEnd.x;
-    // const state = this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context, null);
-    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
-    // this.updatePosition(false);
-    // animateViewport({ x: -x, y: -y });
+    if (isAnimating()) return;
+    const { x, y, row } = calculatePageUpDown(false, true);
+    const column = this.selectionEnd.x;
+    this.selectTo(column, row, false, false);
+    animateViewport({ x: -x, y: -y });
   };
 
   selectPageUp = () => {
-    // if (isAnimating()) return;
-    // const { x, y, row } = calculatePageUpDown(true, true);
-    // const column = this.selectionEnd.x;
-    // const state = this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context, null);
-    // this.jsSelection.adjustSelectionForMergedCells(column, row, this.sheets.jsA1Context, this.sheet.mergeCells, state);
-    // this.updatePosition(false);
-    // animateViewport({ x: -x, y: -y });
+    if (isAnimating()) return;
+    const { x, y, row } = calculatePageUpDown(true, true);
+    const column = this.selectionEnd.x;
+    this.selectTo(column, row, false, false);
+    animateViewport({ x: -x, y: -y });
   };
 
   isMultiCursor = (): boolean => {
